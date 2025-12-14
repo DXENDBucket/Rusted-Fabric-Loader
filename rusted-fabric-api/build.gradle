@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.github.endx'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+}
+
+dependencies {
+    implementation "net.fabricmc:fabric-loader:0.18.1"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8 // RW:13
+}
