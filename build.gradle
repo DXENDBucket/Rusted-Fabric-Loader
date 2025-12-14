@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.github.endx'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url "https://repo.spongepowered.org/maven/" }
+}
+
+dependencies {
+    // Fabric
+    implementation "net.fabricmc:fabric-loader:0.18.1"        // 举例
+    implementation "net.fabricmc:access-widener:2.1.0"
+    implementation "net.fabricmc:tiny-mappings-parser:0.2.2.14"
+    implementation "com.google.guava:guava:21.0"
+    implementation "com.google.code.gson:gson:2.8.7"
+
+    // ASM
+    implementation "org.ow2.asm:asm:9.2"
+    implementation "org.ow2.asm:asm-analysis:9.2"
+    implementation "org.ow2.asm:asm-commons:9.2"
+    implementation "org.ow2.asm:asm-tree:9.2"
+    implementation "org.ow2.asm:asm-util:9.2"
+
+    // sponge-mixin
+    implementation "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
+
+    // RW
+    compileOnly files("libs/game-lib.jar")
+}
+
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8 // RW:13
+}
+
+tasks.register('copyFabricRuntime', Copy) {
+    from configurations.runtimeClasspath
+    into layout.buildDirectory.dir("fabric-runtime")
+}
+

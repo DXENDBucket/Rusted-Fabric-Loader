@@ -1,0 +1,12 @@
+package io.github.endx.rustedfabricapi.api;
+
+public final class RustedFabricAPIKeys {
+    private RustedFabricAPIKeys() {}
+
+    public static final String CLASSPATH_READY = "rustedfabricloader:classpath_ready";
+    public static final String BEFORE_GAME     = "rustedfabricloader:before_game";
+
+    public static final String K_GAME_DIR   = "gameDir";
+    public static final String K_GAME_ARGS  = "gameArgs";
+    public static final String K_ANDROID    = "androidRuntime";
+}

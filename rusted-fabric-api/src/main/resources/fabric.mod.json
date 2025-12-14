@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "rustedfabricapi",
+  "version": "0.1.0",
+  "name": "Rusted Fabric API",
+  "description": "Base API for Rusted Fabric Loader",
+  "environment": "*"
+}
