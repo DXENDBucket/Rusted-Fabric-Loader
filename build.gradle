@@ -42,6 +42,15 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 13 // RW:13
 }
 
+jar {
+    manifest {
+        attributes(
+                'Game-Id': 'rusted_warfare',
+                'Game-Version': 'unknown'
+        )
+    }
+}
+
 tasks.register('copyFabricRuntime', Copy) {
     from configurations.runtimeClasspath
     into layout.buildDirectory.dir("fabric-runtime")

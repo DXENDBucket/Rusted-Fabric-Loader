@@ -36,6 +36,11 @@ pause
 
 Adjust `JAVA_EXE` and memory options as needed for your environment.
 
+## Mappings
+The `src/main/resources/mappings/mappings.tiny` file is packaged into the GameProvider jar at `mappings/mappings.tiny`, the resource path Fabric Loader checks by default.
+
+The current runtime namespace is still `official` because the launched `game-lib.jar` is not remapped before it is added to the classpath. The mappings are therefore available to Fabric's mapping services and development tooling, but mods should not assume that `named` or `intermediary` game class names exist at runtime until a game-jar/mod remap pipeline is added.
+
 ## Modding with Fabric
 Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a few conveniences for Rusted Warfare:
 

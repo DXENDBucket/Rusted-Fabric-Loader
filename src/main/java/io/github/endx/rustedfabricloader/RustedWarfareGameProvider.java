@@ -33,6 +33,7 @@ public class RustedWarfareGameProvider implements GameProvider {
     private static final LogCategory LOG_CATEGORY = LogCategory.create("GameProvider", "RustedWarfare");
 
     private static final String FABRIC_ADD_MODS = "fabric.addMods";
+    private static final String OFFICIAL_NAMESPACE = "official";
 
     // Optional: -Drusted.javamodsDir=...
     private static final String JAVA_MODS_DIR_PROPERTY = "rusted.javamodsDir";
@@ -84,6 +85,16 @@ public class RustedWarfareGameProvider implements GameProvider {
     @Override
     public String getNormalizedGameVersion() {
         return getRawGameVersion();
+    }
+
+    @Override
+    public String getRuntimeNamespace(String defaultNamespace) {
+        return OFFICIAL_NAMESPACE;
+    }
+
+    @Override
+    public String getDefaultModDistributionNamespace(String defaultNamespace) {
+        return OFFICIAL_NAMESPACE;
     }
 
     @Override
