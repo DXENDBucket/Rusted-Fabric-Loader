@@ -595,6 +595,7 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("gameArgs", getLaunchArguments(false));
         ctx.put("androidRuntime", isAndroidRuntime());
         ctx.put("runtimeNamespace", getRequestedRuntimeNamespace());
+        ctx.put("entrypointKey", key);
 
         FabricLoader.getInstance().invokeEntrypoints(
                 key,

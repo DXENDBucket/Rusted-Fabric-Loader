@@ -11,4 +11,5 @@ public final class RustedFabricAPIKeys {
     public static final String K_GAME_ARGS  = "gameArgs";
     public static final String K_ANDROID    = "androidRuntime";
     public static final String K_RUNTIME_NAMESPACE = "runtimeNamespace";
+    public static final String K_ENTRYPOINT_KEY = "entrypointKey";
 }

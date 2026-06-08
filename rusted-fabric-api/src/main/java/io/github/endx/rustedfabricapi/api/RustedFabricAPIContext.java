@@ -26,6 +26,10 @@ public final class RustedFabricAPIContext {
         return (String) raw.get(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE);
     }
 
+    public String entrypointKey() {
+        return (String) raw.get(RustedFabricAPIKeys.K_ENTRYPOINT_KEY);
+    }
+
     public boolean androidRuntime() {
         Object v = raw.get(RustedFabricAPIKeys.K_ANDROID);
         return v instanceof Boolean && (Boolean) v;

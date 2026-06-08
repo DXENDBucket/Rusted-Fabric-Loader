@@ -36,6 +36,32 @@ pause
 
 Adjust `JAVA_EXE` and memory options as needed for your environment.
 
+## Installing into a game directory
+Use `installToGameDir` to build and install the loader artifacts into an existing Rusted Warfare directory:
+
+```bat
+set "JAVA_HOME=C:\Program Files\Java\jdk-21"
+set "PATH=%JAVA_HOME%\bin;%PATH%"
+gradlew.bat installToGameDir -PgameDir="C:\Users\57991\Desktop\Rusted Warfare"
+```
+
+The task creates or updates:
+
+```text
+fabric-libs/
+rusted-fabric-loader/
+javamods/
+run-rusted-fabric.bat
+```
+
+By default it also builds and installs the official-runtime example mod. To avoid building or updating the example mod during install, run:
+
+```bat
+gradlew.bat installToGameDir -PgameDir="C:\Users\57991\Desktop\Rusted Warfare" -PinstallExampleMod=false
+```
+
+This does not delete existing files in `javamods`.
+
 ## Mappings
 The `src/main/resources/mappings/mappings.tiny` file is packaged into the GameProvider jar at `mappings/mappings.tiny`, the resource path Fabric Loader checks by default.
 
@@ -94,6 +120,37 @@ gradlew.bat remapNamedJarToOfficial -PremapInput=path\to\named-mod.jar -PremapOu
 Use the same `-PmappingsTiny=...` value when remapping a mod that was compiled with custom mappings.
 
 Mapping coverage is still partial: only classes, methods, and fields present in `mappings.tiny` receive named identifiers. Unmapped game symbols remain in their original names.
+
+## Example Mod
+The `example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
+
+Build the named development jar:
+
+```bat
+gradlew.bat :example-mod:build
+```
+
+This creates:
+
+```text
+example-mod/build/libs/rusted-fabric-example-mod-1.0-SNAPSHOT.jar
+```
+
+Use that jar in a named development launch with `-Drusted.devNamed=true` and `game-lib-named.jar`.
+
+Build the official-runtime jar:
+
+```bat
+gradlew.bat :example-mod:remapJarToOfficial
+```
+
+This creates:
+
+```text
+example-mod/build/libs/rusted-fabric-example-mod-1.0-SNAPSHOT-official.jar
+```
+
+Use the official jar with the normal `game-lib.jar` runtime.
 
 ## Modding with Fabric
 Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a few conveniences for Rusted Warfare:

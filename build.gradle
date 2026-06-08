@@ -157,3 +157,104 @@ tasks.register('copyFabricRuntime', Copy) {
     into layout.buildDirectory.dir("fabric-runtime")
 }
 
+def installGameDirFile = {
+    project.hasProperty('gameDir') ? file(project.property('gameDir')) : null
+}
+
+def installExampleModEnabled = {
+    !project.hasProperty('installExampleMod') || project.property('installExampleMod').toString().toBoolean()
+}
+
+tasks.register('installToGameDir') {
+    group = 'rusted fabric'
+    description = 'Installs Fabric runtime jars, the GameProvider, API jar, optional example mod, and the launch script into a Rusted Warfare game directory. Use -PgameDir=... [-PinstallExampleMod=false].'
+    dependsOn 'jar', 'copyFabricRuntime', ':rusted-fabric-api:jar'
+
+    if (installExampleModEnabled()) {
+        dependsOn ':example-mod:remapJarToOfficial'
+    }
+
+    doLast {
+        def gameDir = installGameDirFile()
+        if (gameDir == null) {
+            throw new GradleException('Missing -PgameDir=/path/to/Rusted Warfare')
+        }
+        if (!gameDir.isDirectory()) {
+            throw new GradleException("Game directory does not exist: ${gameDir}")
+        }
+
+        def javaExe = new File(gameDir, 'jvm64/bin/java.exe')
+        if (!javaExe.isFile()) {
+            throw new GradleException("Missing bundled Java executable used by the launch script: ${javaExe}")
+        }
+
+        def rootGameJar = new File(gameDir, 'game-lib.jar')
+        def libsGameJar = new File(gameDir, 'libs/game-lib.jar')
+        if (!rootGameJar.isFile() && !libsGameJar.isFile()) {
+            throw new GradleException("Missing game-lib.jar in ${rootGameJar} or ${libsGameJar}")
+        }
+
+        def fabricLibsDir = new File(gameDir, 'fabric-libs')
+        def providerDir = new File(gameDir, 'rusted-fabric-loader')
+        def javaModsDir = new File(gameDir, 'javamods')
+        [fabricLibsDir, providerDir, javaModsDir].each { it.mkdirs() }
+
+        copy {
+            from layout.buildDirectory.dir('fabric-runtime')
+            include '*.jar'
+            into fabricLibsDir
+        }
+
+        copy {
+            from tasks.jar.archiveFile.get().asFile
+            into providerDir
+        }
+
+        copy {
+            from project(':rusted-fabric-api').tasks.named('jar').get().archiveFile.get().asFile
+            into javaModsDir
+        }
+
+        if (installExampleModEnabled()) {
+            def exampleRemapTask = project(':example-mod').tasks.named('remapJarToOfficial').get()
+            copy {
+                from exampleRemapTask.outputs.files.singleFile
+                into javaModsDir
+            }
+        }
+
+        def launchScript = new File(gameDir, 'run-rusted-fabric.bat')
+        launchScript.text = [
+                '@echo off',
+                'setlocal',
+                '',
+                'set "JAVA_EXE=jvm64\\bin\\java"',
+                'set "HEAP_OPTS=-Xmx4096M"',
+                '',
+                'rem Fabric Loader and libs',
+                'set "FABRIC_CP=fabric-libs/*"',
+                '',
+                'rem GameProvider',
+                'set "GP_CP=rusted-fabric-loader/*"',
+                '',
+                'set "CLASSPATH=%FABRIC_CP%;%GP_CP%"',
+                '',
+                '%JAVA_EXE% %HEAP_OPTS% ^',
+                '  -verbose:class ^',
+                '  -Dfile.encoding=UTF-8 ^',
+                '  -cp "%CLASSPATH%" ^',
+                '  net.fabricmc.loader.impl.launch.knot.KnotClient ^',
+                '  %* > classlog.txt 2>&1',
+                '',
+                'endlocal',
+                'pause'
+        ].join(System.lineSeparator()) + System.lineSeparator()
+
+        logger.lifecycle("Installed Rusted Fabric Loader to ${gameDir.absolutePath}")
+        logger.lifecycle("  fabric-libs: ${fabricLibsDir.absolutePath}")
+        logger.lifecycle("  provider: ${providerDir.absolutePath}")
+        logger.lifecycle("  javamods: ${javaModsDir.absolutePath}")
+        logger.lifecycle("  launch script: ${launchScript.absolutePath}")
+    }
+}
+
