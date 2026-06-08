@@ -4,8 +4,16 @@
   "package": "io.github.endx.rustedfabricapi.mixin",
   "compatibilityLevel": "JAVA_13",
   "mixins": [
+    "CustomActionEffectRuntimeNamedMixin",
+    "CustomActionEffectRuntimeOfficialMixin",
     "CustomUnitLoaderOfficialMixin",
-    "CustomUnitLoaderNamedMixin"
+    "CustomUnitLoaderNamedMixin",
+    "CustomUnitRuntimeNamedMixin",
+    "CustomUnitRuntimeOfficialMixin",
+    "MutableStatRuntimeNamedMixin",
+    "MutableStatRuntimeOfficialMixin",
+    "ResourceAmountRuntimeNamedMixin",
+    "ResourceAmountRuntimeOfficialMixin"
   ],
   "injectors": {
     "defaultRequire": 0

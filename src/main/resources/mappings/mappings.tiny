@@ -41,7 +41,7 @@ c	com/corrodinggames/librocket/b	rw/client/ui/LibRocketUiEngine	rustedwarfare/cl
 	m	(I)V	ReleaseTexture	method_LibRocketUiEngine_ReleaseTexture	ReleaseTexture
 	m	(IIII)V	SetScissorRegion	method_LibRocketUiEngine_SetScissorRegion	SetScissorRegion
 	m	(Ljava/lang/String;)Ljava/lang/String;	TranslateString	method_LibRocketUiEngine_TranslateString	TranslateString
-	m	()V	a	method_LibRocketUiEngine_resetFrameTextureCounter	resetFrameTextureCounter
+	m	()V	a	method_LibRocketUiEngine_startNewFrame	startNewFrame
 	m	(Lcom/ElementDocument;)Z	a	method_LibRocketUiEngine_showPopupDocument	showPopupDocument
 	m	(Lcom/ElementDocument;Ljava/lang/String;Ljava/lang/Object;Ljava/util/HashMap;)V	a	method_LibRocketUiEngine_configurePopupButton	configurePopupButton
 	m	(Lcom/corrodinggames/librocket/d;)Lcom/ElementDocument;	a	method_LibRocketUiEngine_createPopupDocumentFromData	createPopupDocumentFromData
@@ -421,8 +421,38 @@ c	com/corrodinggames/librocket/scripts/ScriptEngine$Action	rw/client/ui/script/S
 c	com/corrodinggames/librocket/scripts/ScriptEngine$RunnableAction	rw/client/ui/script/ScriptEngine$RunnableAction	rustedwarfare/client/ui/script/ScriptEngine$RunnableAction
 	f	Ljava/lang/Runnable;	runnable	field_ScriptEngine_RunnableAction_runnable	runnable
 	m	(Lcom/corrodinggames/librocket/scripts/ScriptEngine;)V	run	method_ScriptEngine_RunnableAction_run_79b369	run
+c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game/Projectile
+c	com/corrodinggames/rts/game/g	rustedwarfare/game/BaseProjectileTemplate	rustedwarfare/game/BaseProjectileTemplate
 c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/core/RustedWarfareGameEngine
 	m	(Landroid/content/Context;)V	a	method_game_i_a_initializeGameContentAndLoadMods	initializeGameContentAndLoadMods
+c	com/corrodinggames/rts/game/units/a/a	rustedwarfare/unit/action/ActionAvailabilityFilter	rustedwarfare/unit/action/ActionAvailabilityFilter
+c	com/corrodinggames/rts/game/units/a/c	rustedwarfare/unit/action/UnitActionId	rustedwarfare/unit/action/UnitActionId
+c	com/corrodinggames/rts/game/units/a/s	rustedwarfare/unit/action/UnitAction	rustedwarfare/unit/action/UnitAction
+c	com/corrodinggames/rts/game/units/a/t	rustedwarfare/unit/action/ActionDisplayType	rustedwarfare/unit/action/ActionDisplayType
+	f	Lcom/corrodinggames/rts/game/units/a/t;	a	field_ActionDisplayType_none	none
+	f	Lcom/corrodinggames/rts/game/units/a/t;	b	field_ActionDisplayType_rally	rally
+	f	Lcom/corrodinggames/rts/game/units/a/t;	c	field_ActionDisplayType_upgrade	upgrade
+	f	Lcom/corrodinggames/rts/game/units/a/t;	d	field_ActionDisplayType_queueUnit	queueUnit
+	f	Lcom/corrodinggames/rts/game/units/a/t;	e	field_ActionDisplayType_building	building
+	f	Lcom/corrodinggames/rts/game/units/a/t;	f	field_ActionDisplayType_action	action
+	f	Lcom/corrodinggames/rts/game/units/a/t;	g	field_ActionDisplayType_infoOnly	infoOnly
+	f	Lcom/corrodinggames/rts/game/units/a/t;	h	field_ActionDisplayType_infoOnlyNoBox	infoOnlyNoBox
+	f	Lcom/corrodinggames/rts/game/units/a/t;	i	field_ActionDisplayType_infoOnlyStockpile	infoOnlyStockpile
+c	com/corrodinggames/rts/game/units/a/u	rustedwarfare/unit/action/ActionCommandType	rustedwarfare/unit/action/ActionCommandType
+	f	Lcom/corrodinggames/rts/game/units/a/u;	a	field_ActionCommandType_none	none
+	f	Lcom/corrodinggames/rts/game/units/a/u;	b	field_ActionCommandType_placeBuilding	placeBuilding
+	f	Lcom/corrodinggames/rts/game/units/a/u;	c	field_ActionCommandType_popupQueue	popupQueue
+	f	Lcom/corrodinggames/rts/game/units/a/u;	d	field_ActionCommandType_setRally	setRally
+	f	Lcom/corrodinggames/rts/game/units/a/u;	e	field_ActionCommandType_reclaimTarget	reclaimTarget
+	f	Lcom/corrodinggames/rts/game/units/a/u;	f	field_ActionCommandType_repairTarget	repairTarget
+	f	Lcom/corrodinggames/rts/game/units/a/u;	g	field_ActionCommandType_targetGround	targetGround
+	f	Lcom/corrodinggames/rts/game/units/a/u;	h	field_ActionCommandType_attackMove	attackMove
+	f	Lcom/corrodinggames/rts/game/units/a/u;	i	field_ActionCommandType_infoOnly	infoOnly
+	f	Lcom/corrodinggames/rts/game/units/a/u;	j	field_ActionCommandType_pingMap	pingMap
+	f	Lcom/corrodinggames/rts/game/units/a/u;	k	field_ActionCommandType_directToAction	directToAction
+	f	Lcom/corrodinggames/rts/game/units/a/u;	l	field_ActionCommandType_guardUnit	guardUnit
+	f	Lcom/corrodinggames/rts/game/units/a/u;	m	field_ActionCommandType_patrol	patrol
+c	com/corrodinggames/rts/game/units/a/w	rustedwarfare/unit/action/QueueableUnitAction	rustedwarfare/unit/action/QueueableUnitAction
 c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	F	cA	field_am_cA_maxShield	maxShield
 	f	F	cB	field_am_cB_energy	energy
@@ -430,8 +460,179 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	F	cv	field_am_cv_maxHp	maxHp
 	f	F	cx	field_am_cx_shield	shield
 c	com/corrodinggames/rts/game/units/as	rw/unit/UnitType	rustedwarfare/unit/UnitType
+c	com/corrodinggames/rts/game/units/custom/a/a	rustedwarfare/custom/action/effect/CustomActionEffect	rustedwarfare/custom/action/effect/CustomActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+c	com/corrodinggames/rts/game/units/custom/a/a/a	rustedwarfare/custom/action/effect/ResourceModificationActionEffect	rustedwarfare/custom/action/effect/ResourceModificationActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_ResourceModificationActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/b	rustedwarfare/custom/action/effect/WaypointActionEffect	rustedwarfare/custom/action/effect/WaypointActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_WaypointActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/c	rustedwarfare/custom/action/effect/WaypointUnitSearchCallback	rustedwarfare/custom/action/effect/WaypointUnitSearchCallback
+c	com/corrodinggames/rts/game/units/custom/a/a/d	rustedwarfare/custom/action/effect/AnimationActionEffect	rustedwarfare/custom/action/effect/AnimationActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_AnimationActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/e	rustedwarfare/custom/action/effect/AttachmentActionEffect	rustedwarfare/custom/action/effect/AttachmentActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_AttachmentActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/f	rustedwarfare/custom/action/effect/MessageActionEffect	rustedwarfare/custom/action/effect/MessageActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_MessageActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/g	rustedwarfare/custom/action/effect/ResourceConversionActionEffect	rustedwarfare/custom/action/effect/ResourceConversionActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_ResourceConversionActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/h	rustedwarfare/custom/action/effect/MemoryAndTargetActionEffect	rustedwarfare/custom/action/effect/MemoryAndTargetActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_MemoryAndTargetActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/i	rustedwarfare/custom/action/effect/SendMessageActionEffect	rustedwarfare/custom/action/effect/SendMessageActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_SendMessageActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/j	rustedwarfare/custom/action/effect/SelfMutationActionEffect	rustedwarfare/custom/action/effect/SelfMutationActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_SelfMutationActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/k	rustedwarfare/custom/action/effect/SpawnUnitsActionEffect	rustedwarfare/custom/action/effect/SpawnUnitsActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_SpawnUnitsActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/l	rustedwarfare/custom/action/effect/TagModificationActionEffect	rustedwarfare/custom/action/effect/TagModificationActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_TagModificationActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/m	rustedwarfare/custom/action/effect/TakeResourcesActionEffect	rustedwarfare/custom/action/effect/TakeResourcesActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_TakeResourcesActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/a/n	rustedwarfare/custom/action/effect/TakeResourcesSearchCallback	rustedwarfare/custom/action/effect/TakeResourcesSearchCallback
+c	com/corrodinggames/rts/game/units/custom/a/a/o	rustedwarfare/custom/action/effect/TransportActionEffect	rustedwarfare/custom/action/effect/TransportActionEffect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/a/d;Ljava/lang/String;Z)V	a	method_TransportActionEffect_parseAndAttach	parseAndAttach
+c	com/corrodinggames/rts/game/units/custom/a/b	rustedwarfare/custom/action/ActionCostFilter	rustedwarfare/custom/action/ActionCostFilter
+	f	Lcom/corrodinggames/rts/game/units/a/a;	b	field_ActionCostFilter_baseFilter	baseFilter
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	c	field_ActionCostFilter_price	price
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	d	field_ActionCostFilter_streamingCost	streamingCost
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	a	method_ActionCostFilter_getPrice	getPrice
+	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	a	method_ActionCostFilter_isAvailable	isAvailable
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	b	method_ActionCostFilter_getStreamingCost	getStreamingCost
+c	com/corrodinggames/rts/game/units/custom/a/c	rustedwarfare/custom/action/ActionConditionFilter	rustedwarfare/custom/action/ActionConditionFilter
 c	com/corrodinggames/rts/game/units/custom/a/d	rw/custom/action/CustomActionConfig	rustedwarfare/custom/action/CustomActionConfig
+	f	Lcom/corrodinggames/rts/game/units/custom/aj;	A	field_CustomActionConfig_isLockedMessage	isLockedMessage
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	B	field_CustomActionConfig_isLockedAlt	isLockedAlt
+	f	Lcom/corrodinggames/rts/game/units/custom/aj;	C	field_CustomActionConfig_isLockedAltMessage	isLockedAltMessage
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	D	field_CustomActionConfig_isLockedAlt2	isLockedAlt2
+	f	Lcom/corrodinggames/rts/game/units/custom/aj;	E	field_CustomActionConfig_isLockedAlt2Message	isLockedAlt2Message
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	F	field_CustomActionConfig_aiIsHighPriority	aiIsHighPriority
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	G	field_CustomActionConfig_aiIsDisabled	aiIsDisabled
+	f	Lcom/corrodinggames/rts/game/units/custom/v;	H	field_CustomActionConfig_convertTo	convertTo
+	f	Lcom/corrodinggames/rts/game/units/custom/v;	I	field_CustomActionConfig_aiConsiderSameAsBuilding	aiConsiderSameAsBuilding
+	f	Lcom/corrodinggames/rts/game/units/custom/v;	J	field_CustomActionConfig_guiBuildUnit	guiBuildUnit
+	f	Z	K	field_CustomActionConfig_highPriorityQueue	highPriorityQueue
+	f	Z	L	field_CustomActionConfig_onlyOneUnitAtATime	onlyOneUnitAtATime
+	f	Z	M	field_CustomActionConfig_canPlayerCancel	canPlayerCancel
+	f	Z	N	field_CustomActionConfig_allowMultipleInQueue	allowMultipleInQueue
+	f	Z	O	field_CustomActionConfig_alwaysSinglePress	alwaysSinglePress
+	f	Z	P	field_CustomActionConfig_singlePressSecondaryFlag	singlePressSecondaryFlag
+	f	Z	Q	field_CustomActionConfig_convertToKeepCurrentTags	convertToKeepCurrentTags
+	f	[Lcom/corrodinggames/rts/game/units/custom/at;	R	field_CustomActionConfig_convertToKeepCurrentFields	convertToKeepCurrentFields
+	f	F	S	field_CustomActionConfig_buildSpeed	buildSpeed
+	f	Z	T	field_CustomActionConfig_buildSpeedIgnoreFactorySpeedModifiers	buildSpeedIgnoreFactorySpeedModifiers
+	f	Z	U	field_CustomActionConfig_whenBuildingCannotMove	whenBuildingCannotMove
+	f	Lcom/corrodinggames/rts/game/units/custom/o;	V	field_CustomActionConfig_whenBuildingPlayAnimation	whenBuildingPlayAnimation
+	f	Ljava/lang/Float;	W	field_CustomActionConfig_whenBuildingRotateTo	whenBuildingRotateTo
+	f	Z	X	field_CustomActionConfig_whenBuildingRotateToOrBackwards	whenBuildingRotateToOrBackwards
+	f	Z	Y	field_CustomActionConfig_whenBuildingRotateToWaitTillRotated	whenBuildingRotateToWaitTillRotated
+	f	Z	Z	field_CustomActionConfig_whenBuildingRotateToAimAtActionTarget	whenBuildingRotateToAimAtActionTarget
+	f	I	a	field_CustomActionConfig_actionIndex	actionIndex
+	f	I	aA	field_CustomActionConfig_iconExtraColor	iconExtraColor
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	aB	field_CustomActionConfig_iconExtraIsVisible	iconExtraIsVisible
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;	aC	field_CustomActionConfig_unitShownInUI	unitShownInUI
+	f	Z	aD	field_CustomActionConfig_unitShownInUIWithHpBar	unitShownInUIWithHpBar
+	f	Z	aE	field_CustomActionConfig_unitShownInUIWithProgressBar	unitShownInUIWithProgressBar
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	aF	field_CustomActionConfig_isGuiBlinking	isGuiBlinking
+	f	Lcom/corrodinggames/rts/game/units/a/t;	aG	field_CustomActionConfig_displayType	displayType
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	aH	field_CustomActionConfig_resetCustomTimerCondition	resetCustomTimerCondition
+	f	Z	aI	field_CustomActionConfig_displayRemainingStockpile	displayRemainingStockpile
+	f	I	aJ	field_CustomActionConfig_tech	tech
+	f	Z	aK	field_CustomActionConfig_forceNano	forceNano
+	f	Ljava/lang/String;	aL	field_CustomActionConfig_actionTypeString	actionTypeString
+	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	aM	field_CustomActionConfig_actionType	actionType
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	aN	field_CustomActionConfig_aiUse	aiUse
+	f	Lcom/corrodinggames/rts/game/units/custom/bn;	aa	field_CustomActionConfig_whenBuildingRotateToRotateTurret	whenBuildingRotateToRotateTurret
+	f	Lcom/corrodinggames/rts/game/units/custom/u;	ab	field_CustomActionConfig_whenBuildingTriggerAction	whenBuildingTriggerAction
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	ac	field_CustomActionConfig_actionEffects	actionEffects
+	f	Ljava/lang/Float;	ad	field_CustomActionConfig_customTimerDelta	customTimerDelta
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	ae	field_CustomActionConfig_addResources	addResources
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	af	field_CustomActionConfig_addResourcesScaledByAIHandicaps	addResourcesScaledByAIHandicaps
+	f	Ljava/lang/Integer;	ag	field_CustomActionConfig_fireTurretXAtGroundTurretIndex	fireTurretXAtGroundTurretIndex
+	f	Landroid/graphics/PointF;	ah	field_CustomActionConfig_fireTurretXAtGroundOffset	fireTurretXAtGroundOffset
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	ai	field_CustomActionConfig_fireTurretXAtGroundTarget	fireTurretXAtGroundTarget
+	f	Lcom/corrodinggames/rts/game/units/custom/bh;	aj	field_CustomActionConfig_fireTurretXAtGroundProjectile	fireTurretXAtGroundProjectile
+	f	I	ak	field_CustomActionConfig_fireTurretXAtGroundCount	fireTurretXAtGroundCount
+	f	Lcom/corrodinggames/rts/game/units/ao;	al	field_CustomActionConfig_fireTurretXAtGroundOnlyOverPassableTileOf	fireTurretXAtGroundOnlyOverPassableTileOf
+	f	Lcom/corrodinggames/rts/game/units/custom/b/g;	am	field_CustomActionConfig_fireTurretXAtGroundShowGuideDecals	fireTurretXAtGroundShowGuideDecals
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	an	field_CustomActionConfig_alsoActionTarget	alsoActionTarget
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	ao	field_CustomActionConfig_alsoActionCondition	alsoActionCondition
+	f	Lcom/corrodinggames/rts/game/units/custom/u;	ap	field_CustomActionConfig_alsoTriggerAction	alsoTriggerAction
+	f	Lcom/corrodinggames/rts/game/units/custom/u;	aq	field_CustomActionConfig_alsoQueueAction	alsoQueueAction
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	ar	field_CustomActionConfig_alsoTriggerActionRepeat	alsoTriggerActionRepeat
+	f	Lcom/corrodinggames/rts/game/units/custom/z;	as	field_CustomActionConfig_spawnEffects	spawnEffects
+	f	Lcom/corrodinggames/rts/game/units/custom/z;	at	field_CustomActionConfig_spawnEffectsOnQueue	spawnEffectsOnQueue
+	f	Lcom/corrodinggames/rts/game/units/custom/bl;	au	field_CustomActionConfig_playSoundAtUnit	playSoundAtUnit
+	f	Lcom/corrodinggames/rts/game/units/custom/bl;	av	field_CustomActionConfig_playSoundGlobally	playSoundGlobally
+	f	Lcom/corrodinggames/rts/game/units/custom/bl;	aw	field_CustomActionConfig_playSoundToPlayer	playSoundToPlayer
+	f	Lcom/corrodinggames/rts/game/units/custom/bl;	ax	field_CustomActionConfig_playSoundToPlayerOnQueue	playSoundToPlayerOnQueue
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	ay	field_CustomActionConfig_iconImage	iconImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	az	field_CustomActionConfig_iconExtraImage	iconExtraImage
+	f	Ljava/lang/String;	b	field_CustomActionConfig_explicitActionId	explicitActionId
+	f	Ljava/lang/String;	c	field_CustomActionConfig_fallbackText	fallbackText
+	f	Lcom/corrodinggames/rts/game/units/custom/aj;	d	field_CustomActionConfig_text	text
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;	e	field_CustomActionConfig_textAddUnitName	textAddUnitName
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;	f	field_CustomActionConfig_descriptionAddFromUnit	descriptionAddFromUnit
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;	g	field_CustomActionConfig_descriptionAddUnitStats	descriptionAddUnitStats
+	f	Lcom/corrodinggames/rts/game/units/custom/bb;	h	field_CustomActionConfig_textPostFix	textPostFix
+	f	Lcom/corrodinggames/rts/game/units/custom/aj;	i	field_CustomActionConfig_description	description
+	f	Lcom/corrodinggames/rts/game/units/a/u;	j	field_CustomActionConfig_actionCommandType	actionCommandType
+	f	Ljava/lang/String;	k	field_CustomActionConfig_actionName	actionName
+	f	Lcom/corrodinggames/rts/game/units/custom/v;	l	field_CustomActionConfig_whenBuildingTemporarilyConvertTo	whenBuildingTemporarilyConvertTo
+	f	[Lcom/corrodinggames/rts/game/units/custom/at;	m	field_CustomActionConfig_whenBuildingTemporarilyConvertToKeepCurrentFields	whenBuildingTemporarilyConvertToKeepCurrentFields
+	f	Z	n	field_CustomActionConfig_shouldHaveEffect	shouldHaveEffect
+	f	Z	o	field_CustomActionConfig_extraLagHidingInUI	extraLagHidingInUI
+	f	F	p	field_CustomActionConfig_uiPosition	uiPosition
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	q	field_CustomActionConfig_price	price
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	r	field_CustomActionConfig_streamingCost	streamingCost
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	s	field_CustomActionConfig_tags	tags
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	t	field_CustomActionConfig_requireConditional	requireConditional
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	u	field_CustomActionConfig_isActive	isActive
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	v	field_CustomActionConfig_isVisible	isVisible
+	f	Z	w	field_CustomActionConfig_isAlsoViewableByAllies	isAlsoViewableByAllies
+	f	Z	x	field_CustomActionConfig_isAlsoViewableByEnemies	isAlsoViewableByEnemies
+	f	Z	y	field_CustomActionConfig_hasLockedConditions	hasLockedConditions
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	z	field_CustomActionConfig_isLocked	isLocked
+c	com/corrodinggames/rts/game/units/custom/a/e	rustedwarfare/custom/action/CustomActionAiUse	rustedwarfare/custom/action/CustomActionAiUse
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	a	field_CustomActionAiUse_auto	auto
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	b	field_CustomActionAiUse_disabled	disabled
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	c	field_CustomActionAiUse_upgrade	upgrade
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	d	field_CustomActionAiUse_movementChange	movementChange
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	e	field_CustomActionAiUse_sameAsBuilding	sameAsBuilding
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	f	field_CustomActionAiUse_launch	launch
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	g	field_CustomActionAiUse_launchAmmo	launchAmmo
+c	com/corrodinggames/rts/game/units/custom/a/f	rustedwarfare/custom/action/CustomActionType	rustedwarfare/custom/action/CustomActionType
+	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	a	field_CustomActionType_build	build
+	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	b	field_CustomActionType_convert	convert
+	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	c	field_CustomActionType_none	none
 c	com/corrodinggames/rts/game/units/custom/a/g	rw/custom/action/CustomAction	rustedwarfare/custom/action/CustomAction
+	f	Lcom/corrodinggames/rts/game/units/custom/a/d;	a	field_CustomAction_config	config
+	f	Lcom/corrodinggames/rts/game/units/custom/v;	b	field_CustomAction_unitTypeReference	unitTypeReference
+	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	c	field_CustomAction_aiUse	aiUse
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	B	method_CustomAction_getPrice	getPrice
+	m	()Lcom/corrodinggames/rts/game/units/as;	E	method_CustomAction_getUnitTypeReference	getUnitTypeReference
+	m	()Lcom/corrodinggames/rts/game/units/custom/h;	P	method_CustomAction_getTags	getTags
+	m	(Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomAction_isLockedForConditionIndex	isLockedForConditionIndex
+	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	a	method_CustomAction_isActiveAndQueueAllowed	isActiveAndQueueAllowed
+	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_CustomAction_canPlayerCancel	canPlayerCancel
+	m	()Lcom/corrodinggames/rts/game/units/a/t;	f	method_CustomAction_getDisplayType	getDisplayType
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	g	method_CustomAction_isLocked	isLocked
+	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_CustomAction_getBuildUnitType	getBuildUnitType
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	k	method_CustomAction_isAlwaysSinglePress	isAlwaysSinglePress
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	l	method_CustomAction_isSecondarySinglePress	isSecondarySinglePress
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	r_	method_CustomAction_getStreamingCost	getStreamingCost
+	m	()Lcom/corrodinggames/rts/game/units/as;	y	method_CustomAction_getBuildUnitTypeAlt	getBuildUnitTypeAlt
 c	com/corrodinggames/rts/game/units/custom/ag	rw/custom/CustomUnitLoader	rustedwarfare/custom/CustomUnitLoader
 	f	I	b	field_0700_totalUnitConfigsLoaded	totalUnitConfigsLoaded
 	f	I	c	field_0701_modUnitConfigsLoaded	modUnitConfigsLoaded
@@ -527,6 +728,20 @@ c	com/corrodinggames/rts/game/units/custom/as	rw/custom/MutableUnitStats	rustedw
 	m	(Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter;	a	method_as_a_createMutableStatWriter	createMutableStatWriter
 	m	()Lcom/corrodinggames/rts/game/units/custom/as;	b	method_as_b_immutableClone	immutableClone
 c	com/corrodinggames/rts/game/units/custom/at	rw/custom/MutableStatField	rustedwarfare/custom/MutableStatField
+	f	I	a	field_MutableStatAccessor_id	id
+	f	Ljava/lang/String;	b	field_MutableStatAccessor_name	name
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	a	method_MutableStatAccessor_getReturnType	getReturnType
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MutableStatAccessor_read	read
+	m	()Z	b	method_MutableStatAccessor_isRuntimeField	isRuntimeField
+c	com/corrodinggames/rts/game/units/custom/au	rustedwarfare/custom/stats/MutableStatWriterFactory	rustedwarfare/custom/stats/MutableStatWriterFactory
+c	com/corrodinggames/rts/game/units/custom/av	rustedwarfare/custom/stats/MutableStatCachedWriterElement	rustedwarfare/custom/stats/MutableStatCachedWriterElement
+	f	Lcom/corrodinggames/rts/game/units/custom/at;	a	field_MutableStatCachedWriterElement_statAccessor	statAccessor
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	b	field_MutableStatCachedWriterElement_valueExpression	valueExpression
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$Operator;	c	field_MutableStatCachedWriterElement_operator	operator
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	writeToUnit	method_MutableStatCachedWriterElement_writeToUnit	writeToUnit
+c	com/corrodinggames/rts/game/units/custom/aw	rustedwarfare/custom/stats/MetadataMutableStatAccessor	rustedwarfare/custom/stats/MetadataMutableStatAccessor
+c	com/corrodinggames/rts/game/units/custom/ax	rustedwarfare/custom/stats/RuntimeMutableStatAccessor	rustedwarfare/custom/stats/RuntimeMutableStatAccessor
 c	com/corrodinggames/rts/game/units/custom/ay	rw/custom/EffectTemplate	rustedwarfare/custom/EffectTemplate
 	f	F	alpha	field_ay_alpha_alpha	alpha
 	f	Lcom/corrodinggames/rts/game/units/custom/z;	alsoEmitEffects	field_ay_alsoEmitEffects_alsoEmitEffects	alsoEmitEffects
@@ -817,6 +1032,16 @@ c	com/corrodinggames/rts/game/units/custom/bq	rw/custom/spawn/SpawnUnitEntry	rus
 	f	F	u	field_bq_u_offsetRandomDir	offsetRandomDir
 	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	v	field_bq_v_addResources	addResources
 	f	S	w	field_bq_w_transportedUnitsToTransfer	transportedUnitsToTransfer
+c	com/corrodinggames/rts/game/units/custom/d/a	rustedwarfare/custom/resource/ResourceAmountBase	rustedwarfare/custom/resource/ResourceAmountBase
+c	com/corrodinggames/rts/game/units/custom/d/b	rustedwarfare/custom/resource/ResourceAmount	rustedwarfare/custom/resource/ResourceAmount
+	m	(Lcom/corrodinggames/rts/game/units/am;DZ)V	a	method_ResourceAmount_addToUnitScaled	addToUnitScaled
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/d/b;)Lcom/corrodinggames/rts/game/units/custom/d/b;	a	method_ResourceAmount_parse	parse
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Z)Lcom/corrodinggames/rts/game/units/custom/d/b;	a	method_ResourceAmount_parseRequired	parseRequired
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/d/b;	a	method_ResourceAmount_parseString	parseString
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	b	method_ResourceAmount_hasEnoughResources	hasEnoughResources
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/d/b;)Lcom/corrodinggames/rts/game/units/custom/d/b;	b	method_ResourceAmount_parseStreaming	parseStreaming
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	h	method_ResourceAmount_addToUnit	addToUnit
+c	com/corrodinggames/rts/game/units/custom/d/c	rustedwarfare/custom/resource/DynamicResourceAmount	rustedwarfare/custom/resource/DynamicResourceAmount
 c	com/corrodinggames/rts/game/units/custom/e/a	rw/custom/resource/ResourceType	rustedwarfare/custom/resource/ResourceType
 c	com/corrodinggames/rts/game/units/custom/e/d	rw/custom/resource/ResourceDefinition	rustedwarfare/custom/resource/ResourceDefinition
 	f	Z	C	field_d_C_iconImageUseInText	iconImageUseInText
@@ -838,6 +1063,7 @@ c	com/corrodinggames/rts/game/units/custom/e/d	rw/custom/resource/ResourceDefini
 	f	Z	x	field_d_x_displayTextAppendResourceWithGap	displayTextAppendResourceWithGap
 	f	Z	y	field_d_y_appendResourceInHUDWhenThisZero	appendResourceInHUDWhenThisZero
 	f	Ljava/lang/String;	z	field_d_z_equivalentGlobalResourceForAI	equivalentGlobalResourceForAI
+c	com/corrodinggames/rts/game/units/custom/e/f	rustedwarfare/custom/resource/StoredResourceSet	rustedwarfare/custom/resource/StoredResourceSet
 c	com/corrodinggames/rts/game/units/custom/g	rw/custom/UnitTag	rustedwarfare/custom/UnitTag
 c	com/corrodinggames/rts/game/units/custom/h	rw/custom/UnitTagList	rustedwarfare/custom/UnitTagList
 c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/custom/CustomUnit
@@ -852,13 +1078,42 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	f	Lcom/corrodinggames/rts/game/units/custom/as;	y	field_j_y_mutableStats	mutableStats
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	z	field_0901_previousMetadata	revertMetadata
 	m	(ZLcom/corrodinggames/rts/game/units/custom/l;)V	<init>	method_j__init___init_	<init>
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	C	method_CustomUnit_addUnitToTransport	addUnitToTransport
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	D	method_CustomUnit_notifyUnitRemovedFromTransport	notifyUnitRemovedFromTransport
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	E	method_CustomUnit_queueRepairOrAssistTarget	queueRepairOrAssistTarget
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	F	method_CustomUnit_placeBuiltUnit	placeBuiltUnit
 	m	(Lcom/corrodinggames/rts/game/units/am;)Z	G	method_j_G_hasTransportCapacityFor	hasTransportCapacityFor
+	m	()V	K	method_CustomUnit_ensureTurretPointArrays	ensureTurretPointArrays
+	m	()V	a	method_CustomUnit_removeFromGame	removeFromGame
+	m	(F)V	a	method_CustomUnit_update	update
+	m	(ILcom/corrodinggames/rts/game/units/am;ZZ)Z	a	method_CustomUnit_canTurretAttackTarget	canTurretAttackTarget
+	m	(Lcom/corrodinggames/rts/game/f;Lcom/corrodinggames/rts/game/units/am;ILcom/corrodinggames/rts/game/units/custom/bh;FFFF)V	a	method_CustomUnit_applyProjectileTemplateToProjectile	applyProjectileTemplateToProjectile
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomUnit_executeCustomAction	executeCustomAction
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;II)Z	a	method_CustomUnit_executeActionWithContext	executeActionWithContext
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Z)V	a	method_CustomUnit_queueActionNoTarget	queueActionNoTarget
+	m	(Lcom/corrodinggames/rts/game/units/a/s;ZLandroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)V	a	method_CustomUnit_queueAction	queueAction
+	m	(Lcom/corrodinggames/rts/game/units/am;FFILcom/corrodinggames/rts/game/units/custom/bh;I)Lcom/corrodinggames/rts/game/f;	a	method_CustomUnit_fireProjectileAtGround	fireProjectileAtGround
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_CustomUnit_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/am;ILcom/corrodinggames/rts/game/units/custom/bh;FFFF)Lcom/corrodinggames/rts/game/f;	a	method_CustomUnit_createProjectileFromTemplate	createProjectileFromTemplate
+	m	(Lcom/corrodinggames/rts/game/units/custom/bn;)Z	a	method_CustomUnit_canUseTurret	canUseTurret
+	m	(Lcom/corrodinggames/rts/game/units/custom/bn;IFFZ)Z	a	method_CustomUnit_canTurretFireAtGround	canTurretFireAtGround
+	m	(Lcom/corrodinggames/rts/game/units/custom/bn;ILcom/corrodinggames/rts/game/units/am;ZZ)Z	a	method_CustomUnit_canTurretFireAtTarget	canTurretFireAtTarget
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;ZZ)V	a	method_j_a_applyUnitMetadata	applyUnitMetadata
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;ZZ[Lcom/corrodinggames/rts/game/units/custom/at;)V	a	method_j_a_applyUnitMetadata	applyUnitMetadata
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_CustomUnit_completeBuildQueueItem	completeBuildQueueItem
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_CustomUnit_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_CustomUnit_deserialize	deserialize
+	m	()[Landroid/graphics/PointF;	b	method_CustomUnit_getTurretEndPoints	getTurretEndPoints
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Z)V	b	method_CustomUnit_cancelQueuedAction	cancelQueuedAction
+	m	(Lcom/corrodinggames/rts/game/units/custom/bn;)V	b	method_CustomUnit_resetTurretAfterFiring	resetTurretAfterFiring
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	b	method_CustomUnit_triggerWhenBuildingAction	triggerWhenBuildingAction
 	m	()I	bB	method_j_bB_getTransportedUnitCount	getTransportedUnitCount
+	m	()V	bu	method_CustomUnit_onKilled	onKilled
 	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	bz	method_j_bz_getTransportedUnits	getTransportedUnits
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_j_d_canTransportUnit	canTransportUnit
 	m	()Lcom/corrodinggames/rts/game/units/custom/l;	dt	method_j_dt_getUnitMetadata	getUnitMetadata
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	e	method_CustomUnit_removeUnitFromTransport	removeUnitFromTransport
+	m	()[Landroid/graphics/PointF;	e_	method_CustomUnit_getTurretEndPointTargets	getTurretEndPointTargets
 c	com/corrodinggames/rts/game/units/custom/k	rw/custom/logic/LogicEventContext	rustedwarfare/custom/logic/LogicEventContext
 	f	Lcom/corrodinggames/rts/game/units/custom/ae;	a	field_k_a_actionSource	actionSource
 	f	Lcom/corrodinggames/rts/game/units/custom/j;	b	field_k_b_sourceCustomUnit	sourceCustomUnit
@@ -1496,6 +1751,7 @@ c	com/corrodinggames/rts/game/units/custom/v	rw/custom/UnitTypeReference	rustedw
 	m	()Lcom/corrodinggames/rts/game/units/as;	c	method_v_c_getResolvedUnitType	getResolvedUnitType
 	m	()Ljava/lang/String;	d	method_v_d_getUnitTypeNameForDisplay	getUnitTypeNameForDisplay
 c	com/corrodinggames/rts/game/units/custom/z	rw/custom/EffectList	rustedwarfare/custom/EffectList
+c	com/corrodinggames/rts/game/units/d/j	rustedwarfare/unit/build/BuildQueueItem	rustedwarfare/unit/build/BuildQueueItem
 c	com/corrodinggames/rts/game/units/w	rw/unit/AbstractOrderableUnit	rustedwarfare/unit/AbstractOrderableUnit
 c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/OrderableUnit
 c	com/corrodinggames/rts/gameFramework/SettingsEngine	rw/core/SettingsEngine	rustedwarfare/core/SettingsEngine
@@ -1761,7 +2017,7 @@ c	com/corrodinggames/rts/java/d/a	rw/client/ui/LibRocketSlickRenderer	rustedwarf
 	m	(Z)V	EnableScissorRegion	EnableScissorRegion	EnableScissorRegion
 	m	(I[B)Z	GenerateTexture	GenerateTexture	GenerateTexture
 	m	([F[F[I[IIFFLcom/LibRocket$CompiledGeometry;)V	RenderGeometryPossiblyCompiled	RenderGeometryPossiblyCompiled	RenderGeometryPossiblyCompiled
-	m	()V	a	method_LibRocketSlickRenderer_startNewFrame	startNewFrame
+	m	()V	a	method_LibRocketUiEngine_startNewFrame	startNewFrame
 	m	(Lorg/newdawn/slick/Graphics;)V	a	method_LibRocketSlickRenderer_setGraphics	setGraphics
 	m	()Lcom/LibRocket$TextureHolder;	getFromTextureHolderFactory	method_LibRocketSlickRenderer_getFromTextureHolderFactory	getFromTextureHolderFactory
 c	com/corrodinggames/rts/java/d/b	rw/client/ui/SlickLibRocketTextureHolder	rustedwarfare/client/ui/SlickLibRocketTextureHolder
