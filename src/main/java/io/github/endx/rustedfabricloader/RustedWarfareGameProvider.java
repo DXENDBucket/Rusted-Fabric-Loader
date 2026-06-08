@@ -256,8 +256,6 @@ public class RustedWarfareGameProvider implements GameProvider {
 
          */
 
-        runRustedFabricAPIStage("rustedfabricloader:classpath_ready");
-
     }
 
     private List<Path> buildOrderedGameClasspath() throws IOException {
@@ -513,6 +511,8 @@ public class RustedWarfareGameProvider implements GameProvider {
             FabricLoader fl = net.fabricmc.loader.api.FabricLoader.getInstance();
 
             // fl.invokeEntrypoints("rustedfabricloader:before_game", Runnable.class, Runnable::run);
+
+            runRustedFabricAPIStage("rustedfabricloader:classpath_ready");
 
             fl.invokeEntrypoints("main", net.fabricmc.api.ModInitializer.class, net.fabricmc.api.ModInitializer::onInitialize);
             fl.invokeEntrypoints("client", net.fabricmc.api.ClientModInitializer.class, net.fabricmc.api.ClientModInitializer::onInitializeClient);

@@ -54,6 +54,9 @@ tasks.register('remapJarToOfficial', JavaExec) {
     mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
 
     def outputJar = layout.buildDirectory.file("libs/rusted-fabric-example-mod-${project.version}-official.jar")
+    inputs.file(tasks.jar.archiveFile)
+    inputs.file(provider { mappingsTinyFile() })
+    inputs.file(provider { namedGameJarFile() })
     outputs.file outputJar
 
     doFirst {

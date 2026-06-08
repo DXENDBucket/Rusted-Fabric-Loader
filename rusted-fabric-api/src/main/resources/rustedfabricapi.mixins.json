@@ -10,6 +10,8 @@
     "CustomUnitLoaderNamedMixin",
     "CustomUnitRuntimeNamedMixin",
     "CustomUnitRuntimeOfficialMixin",
+    "MinimapSetupNamedMixin",
+    "MinimapSetupOfficialMixin",
     "MutableStatRuntimeNamedMixin",
     "MutableStatRuntimeOfficialMixin",
     "ResourceAmountRuntimeNamedMixin",

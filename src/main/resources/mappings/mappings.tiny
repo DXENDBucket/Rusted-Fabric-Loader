@@ -1,5 +1,5 @@
 tiny	2	0	official	intermediary	named
-c	com/corrodinggames/librocket/a	rw/client/ui/LibRocketUiController	rustedwarfare/client/ui/LibRocketUiController
+c	com/corrodinggames/librocket/a	rw/ui/LibRocketUiController	rustedwarfare/ui/LibRocketUiController
 	f	Lcom/corrodinggames/librocket/a;	a	field_LibRocketUiController_instance	instance
 	f	Lcom/corrodinggames/librocket/b;	b	field_LibRocketUiController_libRocket	libRocket
 	f	Lcom/corrodinggames/rts/appFramework/f;	c	field_LibRocketUiController_appFramework	appFramework
@@ -23,7 +23,7 @@ c	com/corrodinggames/librocket/a	rw/client/ui/LibRocketUiController	rustedwarfar
 	m	()I	i	method_LibRocketUiController_getKeyModifierState	getKeyModifierState
 	m	()Z	j	method_LibRocketUiController_isUiOpen	isUiOpen
 	m	()V	o	method_LibRocketUiController_closeBattleroomIfOpen	closeBattleroomIfOpen
-c	com/corrodinggames/librocket/b	rw/client/ui/LibRocketUiEngine	rustedwarfare/client/ui/LibRocketUiEngine
+c	com/corrodinggames/librocket/b	rw/ui/LibRocketUiEngine	rustedwarfare/ui/LibRocketUiEngine
 	f	Lcom/corrodinggames/rts/gameFramework/bt;	a	field_LibRocketUiEngine_textureLoadTimer	textureLoadTimer
 	f	Ljava/lang/String;	b	field_LibRocketUiEngine_guiBasePath	guiBasePath
 	f	Lcom/corrodinggames/librocket/scripts/ScriptEngine;	c	field_LibRocketUiEngine_scriptEngine	scriptEngine
@@ -72,7 +72,7 @@ c	com/corrodinggames/librocket/b	rw/client/ui/LibRocketUiEngine	rustedwarfare/cl
 	m	(Lcom/ElementDocument;)V	newDocumentLoaded	method_LibRocketUiEngine_newDocumentLoaded	newDocumentLoaded
 	m	(Lcom/ElementDocument;)V	newDocumentShown	method_LibRocketUiEngine_newDocumentShown	newDocumentShown
 	m	()V	postUpdate	method_LibRocketUiEngine_postUpdate	postUpdate
-c	com/corrodinggames/librocket/c	rw/client/ui/LibRocketTextureHolder	rustedwarfare/client/ui/LibRocketTextureHolder
+c	com/corrodinggames/librocket/c	rw/ui/LibRocketTextureHolder	rustedwarfare/ui/LibRocketTextureHolder
 	f	Ljava/lang/String;	a	field_LibRocketTextureHolder_path	path
 	f	Z	b	field_LibRocketTextureHolder_lazy	lazy
 	f	Z	c	field_LibRocketTextureHolder_thumbnail	thumbnail
@@ -81,7 +81,7 @@ c	com/corrodinggames/librocket/c	rw/client/ui/LibRocketTextureHolder	rustedwarfa
 	f	Lcom/corrodinggames/rts/game/units/as;	f	field_LibRocketTextureHolder_unitType	unitType
 	f	Lcom/corrodinggames/librocket/b;	g	field_LibRocketTextureHolder_libRocket	libRocket
 	m	()Z	a	method_LibRocketTextureHolder_loadTexture	loadTexture
-c	com/corrodinggames/librocket/d	rw/client/ui/PopupDocumentData	rustedwarfare/client/ui/PopupDocumentData
+c	com/corrodinggames/librocket/d	rw/ui/PopupDocumentData	rustedwarfare/ui/PopupDocumentData
 	f	Lcom/ElementDocument;	a	field_PopupDocumentData_document	document
 	f	Ljava/lang/String;	b	field_PopupDocumentData_title	title
 	f	Ljava/lang/String;	c	field_PopupDocumentData_message	message
@@ -91,14 +91,14 @@ c	com/corrodinggames/librocket/d	rw/client/ui/PopupDocumentData	rustedwarfare/cl
 	f	Z	g	field_PopupDocumentData_showImmediately	showImmediately
 	f	Z	h	field_PopupDocumentData_showBackButton	showBackButton
 	f	Ljava/lang/Runnable;	i	field_PopupDocumentData_onClose	onClose
-c	com/corrodinggames/librocket/e	rw/client/ui/PopupButton	rustedwarfare/client/ui/PopupButton
+c	com/corrodinggames/librocket/e	rw/ui/PopupButton	rustedwarfare/ui/PopupButton
 	f	Ljava/lang/String;	a	field_PopupButton_label	label
 	f	Ljava/lang/Runnable;	b	field_PopupButton_runnable	runnable
 	f	Z	c	field_PopupButton_bindEnterKey	bindEnterKey
 c	com/corrodinggames/librocket/scripts/Debug	rw/script/DebugScript	rustedwarfare/script/DebugScript
 	m	(IFFIZ)Ljava/lang/Long;	createCustomUnitFromTypeId	createCustomUnitFromTypeId	createCustomUnitFromTypeId
 	m	()I	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId
-c	com/corrodinggames/librocket/scripts/Mods	rw/client/ui/script/ModsScript	rustedwarfare/client/ui/script/ModsScript
+c	com/corrodinggames/librocket/scripts/Mods	rw/ui/script/ModsScript	rustedwarfare/ui/script/ModsScript
 	f	I	checkWorkshopSkip	field_Mods_checkWorkshopSkip	checkWorkshopSkip
 	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_Mods_root	root
 	f	Ljava/lang/Runnable;	updateModsRunnable	field_Mods_updateModsRunnable	updateModsRunnable
@@ -123,7 +123,7 @@ c	com/corrodinggames/librocket/scripts/Mods	rw/client/ui/script/ModsScript	ruste
 	m	(Ljava/lang/String;)V	uploadMod	method_Mods_uploadMod_490de6	uploadMod
 	m	(Ljava/lang/String;)V	uploadModAsk	method_Mods_uploadModAsk_f86b3f	uploadModAsk
 	m	(Ljava/lang/String;)V	viewMod	method_Mods_viewMod_11ac93	viewMod
-c	com/corrodinggames/librocket/scripts/Multiplayer	rw/client/ui/script/MultiplayerScript	rustedwarfare/client/ui/script/MultiplayerScript
+c	com/corrodinggames/librocket/scripts/Multiplayer	rw/ui/script/MultiplayerScript	rustedwarfare/ui/script/MultiplayerScript
 	f	[Ljava/lang/String;	currentDropdownRawArray	field_Multiplayer_currentDropdownRawArray	currentDropdownRawArray
 	f	Lcom/corrodinggames/librocket/scripts/Root$TableData;	lastPlayerTable	field_Multiplayer_lastPlayerTable	lastPlayerTable
 	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_Multiplayer_root	root
@@ -172,10 +172,10 @@ c	com/corrodinggames/librocket/scripts/Multiplayer	rw/client/ui/script/Multiplay
 	m	()V	surrenderPrompt	method_Multiplayer_surrenderPrompt_21e247	surrenderPrompt
 	m	()V	teamsSet_apply	method_Multiplayer_teamsSet_apply_a6659c	teamsSet_apply
 	m	(Lcom/Element;Ljava/lang/String;Ljava/lang/String;)V	updateMapDropdown	method_Multiplayer_updateMapDropdown_c5dae3	updateMapDropdown
-c	com/corrodinggames/librocket/scripts/Multiplayer$DropdownOption	rw/client/ui/script/MultiplayerScript$DropdownOption	rustedwarfare/client/ui/script/MultiplayerScript$DropdownOption
+c	com/corrodinggames/librocket/scripts/Multiplayer$DropdownOption	rw/ui/script/MultiplayerScript$DropdownOption	rustedwarfare/ui/script/MultiplayerScript$DropdownOption
 	f	Ljava/lang/String;	key	field_Multiplayer_DropdownOption_key	key
 	f	Ljava/lang/String;	value	field_Multiplayer_DropdownOption_value	value
-c	com/corrodinggames/librocket/scripts/Root	rw/client/ui/script/RootScript	rustedwarfare/client/ui/script/RootScript
+c	com/corrodinggames/librocket/scripts/Root	rw/ui/script/RootScript	rustedwarfare/ui/script/RootScript
 	f	Z	DEBUG_TIMING	field_Root_DEBUG_TIMING	DEBUG_TIMING
 	f	Lcom/corrodinggames/rts/gameFramework/bt;	convertTextStopwatch	field_Root_convertTextStopwatch	convertTextStopwatch
 	f	Lcom/ElementDocument;	lastConnectingPopup	field_Root_lastConnectingPopup	lastConnectingPopup
@@ -347,7 +347,7 @@ c	com/corrodinggames/librocket/scripts/Root	rw/client/ui/script/RootScript	ruste
 	m	(Ljava/lang/String;Lcom/corrodinggames/librocket/scripts/Root$TableData;Lcom/corrodinggames/librocket/scripts/Root$TableData;)V	updateTableTextOnly	method_Root_updateTableTextOnly_5b5e2c	updateTableTextOnly
 	m	()Z	usingMods	method_Root_usingMods_9ba2a0	usingMods
 	m	(Ljava/lang/String;)V	writeGameLog	method_Root_writeGameLog_4df6d1	writeGameLog
-c	com/corrodinggames/librocket/scripts/Root$TableCell	rw/client/ui/script/RootScript$TableCell	rustedwarfare/client/ui/script/RootScript$TableCell
+c	com/corrodinggames/librocket/scripts/Root$TableCell	rw/ui/script/RootScript$TableCell	rustedwarfare/ui/script/RootScript$TableCell
 	f	Ljava/lang/String;	classes	field_Root_TableCell_classes	classes
 	f	Ljava/lang/Integer;	color	field_Root_TableCell_color	color
 	f	Ljava/lang/String;	librocketOnClick	field_Root_TableCell_librocketOnClick	librocketOnClick
@@ -355,10 +355,10 @@ c	com/corrodinggames/librocket/scripts/Root$TableCell	rw/client/ui/script/RootSc
 	m	(Ljava/lang/String;)V	addClass	method_Root_TableCell_addClass_e29fb9	addClass
 	m	(Lcom/corrodinggames/librocket/scripts/Root$TableCell;Z)Z	same	method_Root_TableCell_same_ab708f	same
 	m	(Ljava/lang/String;)V	setLibrocketOnClick	method_Root_TableCell_setLibrocketOnClick_7714a5	setLibrocketOnClick
-c	com/corrodinggames/librocket/scripts/Root$TableData	rw/client/ui/script/RootScript$TableData	rustedwarfare/client/ui/script/RootScript$TableData
+c	com/corrodinggames/librocket/scripts/Root$TableData	rw/ui/script/RootScript$TableData	rustedwarfare/ui/script/RootScript$TableData
 	f	Ljava/util/ArrayList;	rows	field_Root_TableData_rows	rows
 	m	(Lcom/corrodinggames/librocket/scripts/Root$TableData;Z)Z	same	method_Root_TableData_same_3cf112	same
-c	com/corrodinggames/librocket/scripts/Root$TableRow	rw/client/ui/script/RootScript$TableRow	rustedwarfare/client/ui/script/RootScript$TableRow
+c	com/corrodinggames/librocket/scripts/Root$TableRow	rw/ui/script/RootScript$TableRow	rustedwarfare/ui/script/RootScript$TableRow
 	f	Ljava/lang/Runnable;	androidOnclick	field_Root_TableRow_androidOnclick	androidOnclick
 	f	Ljava/lang/String;	extraClasses	field_Root_TableRow_extraClasses	extraClasses
 	f	Ljava/lang/String;	librocketOnClick	field_Root_TableRow_librocketOnClick	librocketOnClick
@@ -368,12 +368,12 @@ c	com/corrodinggames/librocket/scripts/Root$TableRow	rw/client/ui/script/RootScr
 	m	(Lcom/corrodinggames/librocket/scripts/Root$TableRow;Z)Z	same	method_Root_TableRow_same_d555b6	same
 	m	(Ljava/lang/Runnable;)V	setAndroidOnClick	method_Root_TableRow_setAndroidOnClick_920f44	setAndroidOnClick
 	m	(Ljava/lang/String;)V	setLibrocketOnClick	method_Root_TableRow_setLibrocketOnClick_bb759a	setLibrocketOnClick
-c	com/corrodinggames/librocket/scripts/ScriptContext	rw/client/ui/script/ScriptContext	rustedwarfare/client/ui/script/ScriptContext
+c	com/corrodinggames/librocket/scripts/ScriptContext	rw/ui/script/ScriptContext	rustedwarfare/ui/script/ScriptContext
 	f	Lcom/corrodinggames/librocket/a;	guiEngine	field_ScriptContext_guiEngine	guiEngine
 	f	Lcom/corrodinggames/librocket/b;	libRocket	field_ScriptContext_libRocket	libRocket
 	f	Ljava/util/HashMap;	methods	field_ScriptContext_methods	methods
 	f	Lcom/corrodinggames/librocket/scripts/ScriptEngine;	scriptEngine	field_ScriptContext_scriptEngine	scriptEngine
-c	com/corrodinggames/librocket/scripts/ScriptEngine	rw/client/ui/script/ScriptEngine	rustedwarfare/client/ui/script/ScriptEngine
+c	com/corrodinggames/librocket/scripts/ScriptEngine	rw/ui/script/ScriptEngine	rustedwarfare/ui/script/ScriptEngine
 	f	Ljava/util/HashMap;	globals	field_ScriptEngine_globals	globals
 	f	Z	inDebugScript	field_ScriptEngine_inDebugScript	inDebugScript
 	f	Ljava/lang/ThreadLocal;	isMainScriptThread	field_ScriptEngine_isMainScriptThread	isMainScriptThread
@@ -410,7 +410,7 @@ c	com/corrodinggames/librocket/scripts/ScriptEngine	rw/client/ui/script/ScriptEn
 	m	(Lcom/corrodinggames/librocket/scripts/ScriptContext;)V	setupScriptContext	method_ScriptEngine_setupScriptContext_faa344	setupScriptContext
 	m	(Ljava/lang/String;Ljava/lang/Throwable;)V	throwDelayedException	method_ScriptEngine_throwDelayedException_8044d4	throwDelayedException
 	m	(F)V	update	method_ScriptEngine_update_c2fd3b	update
-c	com/corrodinggames/librocket/scripts/ScriptEngine$Action	rw/client/ui/script/ScriptEngine$Action	rustedwarfare/client/ui/script/ScriptEngine$Action
+c	com/corrodinggames/librocket/scripts/ScriptEngine$Action	rw/ui/script/ScriptEngine$Action	rustedwarfare/ui/script/ScriptEngine$Action
 	f	Ljava/lang/String;	caughtCrash	field_ScriptEngine_Action_caughtCrash	caughtCrash
 	f	Z	completed	field_ScriptEngine_Action_completed	completed
 	f	I	framesDelay	field_ScriptEngine_Action_framesDelay	framesDelay
@@ -418,11 +418,119 @@ c	com/corrodinggames/librocket/scripts/ScriptEngine$Action	rw/client/ui/script/S
 	f	Z	tryToCatchCrash	field_ScriptEngine_Action_tryToCatchCrash	tryToCatchCrash
 	m	(Lcom/corrodinggames/librocket/scripts/ScriptEngine;)V	run	method_ScriptEngine_Action_run_86af20	run
 	m	(Z)Ljava/lang/String;	waitForCompletionOrCrash	method_ScriptEngine_Action_waitForCompletionOrCrash_b60d84	waitForCompletionOrCrash
-c	com/corrodinggames/librocket/scripts/ScriptEngine$RunnableAction	rw/client/ui/script/ScriptEngine$RunnableAction	rustedwarfare/client/ui/script/ScriptEngine$RunnableAction
+c	com/corrodinggames/librocket/scripts/ScriptEngine$RunnableAction	rw/ui/script/ScriptEngine$RunnableAction	rustedwarfare/ui/script/ScriptEngine$RunnableAction
 	f	Ljava/lang/Runnable;	runnable	field_ScriptEngine_RunnableAction_runnable	runnable
 	m	(Lcom/corrodinggames/librocket/scripts/ScriptEngine;)V	run	method_ScriptEngine_RunnableAction_run_79b369	run
 c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game/Projectile
+	f	Z	D	field_f_D_nukeWeapon	nukeWeapon
+	f	Z	G	field_f_G_flameWeapon	flameWeapon
+	f	F	H	field_f_H_deflectionPower	deflectionPower
+	f	F	U	field_f_U_directDamage	directDamage
+	f	F	Y	field_f_Y_areaDamage	areaDamage
+	f	F	Z	field_f_Z_areaRadius	areaRadius
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_f_a_activeProjectiles	activeProjectiles
+	f	F	aV	field_f_aV_impactX	impactX
+	f	F	aW	field_f_aW_impactY	impactY
+	f	F	aX	field_f_aX_impactHeight	impactHeight
+	f	Z	aY	field_f_aY_shouldRevealFog	shouldRevealFog
+	f	Z	aZ	field_f_aZ_alwaysVisibleInFog	alwaysVisibleInFog
+	f	Z	aa	field_f_aa_onlyDamageEnemyUnits	onlyDamageEnemyUnits
+	f	Z	ab	field_f_ab_ignoreEnemyUnits	ignoreEnemyUnits
+	f	Z	ac	field_f_ac_areaHitUnderwaterAlways	areaHitUnderwaterAlways
+	f	Z	ad	field_f_ad_canAreaHitAirUnits	canAreaHitAirUnits
+	f	Z	ae	field_f_ae_areaHitOnlySameAirLandLayer	areaHitOnlySameAirLandLayer
+	f	Z	af	field_f_af_explodeOnEndOfLife	explodeOnEndOfLife
+	f	F	ag	field_f_ag_pushForce	pushForce
+	f	F	ah	field_f_ah_pushVelocity	pushVelocity
+	f	F	ai	field_f_ai_buildingDamageMultiplier	buildingDamageMultiplier
+	f	F	ak	field_f_ak_shieldDamageMultiplier	shieldDamageMultiplier
+	f	F	al	field_f_al_shieldDeflectionMultiplier	shieldDeflectionMultiplier
+	f	F	am	field_f_am_hullDamageMultiplier	hullDamageMultiplier
+	f	F	an	field_f_an_armourIgnoreAmount	armourIgnoreAmount
+	f	Z	ao	field_f_ao_trackAreaHitUnits	trackAreaHitUnits
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	ap	field_f_ap_areaHitUnitsAlreadyHit	areaHitUnitsAlreadyHit
+	f	Lcom/corrodinggames/rts/game/g;	g	field_f_g_projectileTemplate	projectileTemplate
+	f	F	h	field_f_h_remainingLife	remainingLife
+	f	F	i	field_f_i_delayedStartTimer	delayedStartTimer
+	f	Lcom/corrodinggames/rts/game/units/am;	j	field_f_j_sourceUnit	sourceUnit
+	f	S	k	field_f_k_sourceTurretIndex	sourceTurretIndex
+	f	Lcom/corrodinggames/rts/game/units/am;	l	field_f_l_targetUnit	targetUnit
+	f	Z	m	field_f_m_targetGround	targetGround
+	f	F	n	field_f_n_targetX	targetX
+	f	F	o	field_f_o_targetY	targetY
+	f	F	p	field_f_p_targetHeight	targetHeight
+	f	Lcom/corrodinggames/rts/game/f;	q	field_f_q_targetProjectile	targetProjectile
+	f	F	t	field_f_t_speed	speed
+	m	()V	a	method_f_a_removeFromGame	removeFromGame
+	m	(F)V	a	method_f_a_update	update
+	m	(FFLcom/corrodinggames/rts/game/units/custom/h;)V	a	method_f_a_retargetInFlight	retargetInFlight
+	m	(FLcom/corrodinggames/rts/game/units/am;F)V	a	method_f_a_applyAreaDamageToUnit	applyAreaDamageToUnit
+	m	(Lcom/corrodinggames/rts/game/f;)Lcom/corrodinggames/rts/game/f;	a	method_f_a_copyDamageMultipliersToScratchProjectile	copyDamageMultipliersToScratchProjectile
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_f_a_applyHitImpulse	applyHitImpulse
+	m	(Lcom/corrodinggames/rts/game/units/am;FF)Lcom/corrodinggames/rts/game/f;	a	method_f_a_createProjectile	createProjectile
+	m	(Lcom/corrodinggames/rts/game/units/am;FFF)V	a	method_f_a_setSourceAndPosition	setSourceAndPosition
+	m	(Lcom/corrodinggames/rts/game/units/am;FFFI)Lcom/corrodinggames/rts/game/f;	a	method_f_a_createProjectileWithHeightAndTurret	createProjectileWithHeightAndTurret
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/am;FLcom/corrodinggames/rts/game/f;Z)V	a	method_f_a_applyProjectileDamage	applyProjectileDamage
+	m	(Lcom/corrodinggames/rts/gameFramework/l;)Z	a	method_f_a_isVisibleInCamera	isVisibleInCamera
+	m	()V	b	method_f_b_explodeAndRemove	explodeAndRemove
+	m	(F)V	b	method_f_b_updateAreaDamage	updateAreaDamage
+	m	(Lcom/corrodinggames/rts/game/units/am;FF)V	b	method_f_b_tryApplyAreaDamageToUnit	tryApplyAreaDamageToUnit
+	m	()F	e	method_f_e_getLifeProgressRatio	getLifeProgressRatio
 c	com/corrodinggames/rts/game/g	rustedwarfare/game/BaseProjectileTemplate	rustedwarfare/game/BaseProjectileTemplate
+	f	Lcom/corrodinggames/rts/game/g;	a	field_g_a_defaultTemplate	defaultTemplate
+	f	Z	aI	field_g_aI_flameWeapon	flameWeapon
+	f	Z	aJ	field_g_aJ_hitSound	hitSound
+	f	Z	aN	field_g_aN_ignoreParentShootDamageMultiplier	ignoreParentShootDamageMultiplier
+	f	Z	aO	field_g_aO_explodeOnEndOfLife	explodeOnEndOfLife
+	f	F	aP	field_g_aP_pushForce	pushForce
+	f	F	aQ	field_g_aQ_pushVelocity	pushVelocity
+	f	F	aR	field_g_aR_buildingDamageMultiplier	buildingDamageMultiplier
+	f	F	aS	field_g_aS_shieldDamageMultiplier	shieldDamageMultiplier
+	f	F	aT	field_g_aT_shieldDeflectionMultiplier	shieldDeflectionMultiplier
+	f	F	aU	field_g_aU_hullDamageMultiplier	hullDamageMultiplier
+	f	F	aV	field_g_aV_armourIgnoreAmount	armourIgnoreAmount
+	f	F	aW	field_g_aW_areaExpandTime	areaExpandTime
+	f	Lcom/corrodinggames/rts/game/units/custom/z;	aX	field_g_aX_explodeEffect	explodeEffect
+	f	Lcom/corrodinggames/rts/game/units/custom/z;	aY	field_g_aY_explodeEffectOnShield	explodeEffectOnShield
+	f	I	b	field_g_b_directDamage	directDamage
+	f	Z	bc	field_g_bc_convertHitToSourceTeam	convertHitToSourceTeam
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	be	field_g_be_directHitDamageModifiers	directHitDamageModifiers
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	bf	field_g_bf_areaHitDamageModifiers	areaHitDamageModifiers
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	bg	field_g_bg_changedExplodeEffectModifiers	changedExplodeEffectModifiers
+	f	I	c	field_g_c_areaDamage	areaDamage
+	f	Z	d	field_g_d_interceptProjectileRemoveTargetLifeOnly	interceptProjectileRemoveTargetLifeOnly
+	f	Z	e	field_g_e_hasAreaDamageEffects	hasAreaDamageEffects
+	f	Z	f	field_g_f_skipAreaDamageScan	skipAreaDamageScan
+	f	Z	g	field_g_g_areaDamageNoFalloff	areaDamageNoFalloff
+	f	Z	h	field_g_h_areaRadiusFromEdge	areaRadiusFromEdge
+	f	I	i	field_g_i_areaRadius	areaRadius
+	f	F	j	field_g_j_areaIgnoreUnitsCloserThan	areaIgnoreUnitsCloserThan
+	f	Z	k	field_g_k_friendlyFire	friendlyFire
+	f	Z	l	field_g_l_friendlyFireOnlyIgnoreEnemy	friendlyFireOnlyIgnoreEnemy
+	f	Z	m	field_g_m_areaHitAirAndLandAtSameTime	areaHitAirAndLandAtSameTime
+	f	Z	n	field_g_n_areaHitUnderwaterAlways	areaHitUnderwaterAlways
+	f	F	o	field_g_o_deflectionPower	deflectionPower
+	f	Z	p	field_g_p_nukeWeapon	nukeWeapon
+	f	Z	q	field_g_q_shouldRevealFog	shouldRevealFog
+	f	Z	r	field_g_r_alwaysVisibleInFog	alwaysVisibleInFog
+	f	Z	s	field_g_s_targetGround	targetGround
+	f	Z	t	field_g_t_targetGroundIncludeTargetHeight	targetGroundIncludeTargetHeight
+	f	F	u	field_g_u_delayedStartTimer	delayedStartTimer
+	f	F	v	field_g_v_life	life
+	f	F	w	field_g_w_speed	speed
+	m	(Lcom/corrodinggames/rts/game/g;Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_g_a_writeProjectileTemplateLink	writeProjectileTemplateLink
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/custom/z;	a	method_g_a_getChangedExplodeEffectForUnit	getChangedExplodeEffectForUnit
+	m	(Lcom/corrodinggames/rts/game/units/am;FZ)F	a	method_g_a_applyDamageModifiers	applyDamageModifiers
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)Lcom/corrodinggames/rts/game/g;	a	method_g_a_readProjectileTemplateLink	readProjectileTemplateLink
+c	com/corrodinggames/rts/game/h	rw/game/ProjectileDamageModifier	rustedwarfare/game/ProjectileDamageModifier
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	a	field_h_a_ifUnitWithTags	ifUnitWithTags
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	b	field_h_b_ifUnitWithoutTags	ifUnitWithoutTags
+	f	F	c	field_h_c_directDamageMultiplier	directDamageMultiplier
+	f	F	d	field_h_d_areaDamageMultiplier	areaDamageMultiplier
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	e	field_h_e_addResourcesDirectHit	addResourcesDirectHit
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	f	field_h_f_addResourcesAreaHit	addResourcesAreaHit
+	f	Lcom/corrodinggames/rts/game/units/custom/z;	g	field_h_g_changedExplodeEffect	changedExplodeEffect
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	a	method_h_a_matchesUnit	matchesUnit
 c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/core/RustedWarfareGameEngine
 	m	(Landroid/content/Context;)V	a	method_game_i_a_initializeGameContentAndLoadMods	initializeGameContentAndLoadMods
 c	com/corrodinggames/rts/game/units/a/a	rustedwarfare/unit/action/ActionAvailabilityFilter	rustedwarfare/unit/action/ActionAvailabilityFilter
@@ -459,6 +567,9 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	F	cu	field_am_cu_hp	hp
 	f	F	cv	field_am_cv_maxHp	maxHp
 	f	F	cx	field_am_cx_shield	shield
+	m	(Lcom/corrodinggames/rts/game/units/am;FLcom/corrodinggames/rts/game/f;)F	a	method_am_a_applyDamage	applyDamage
+	m	(Lcom/corrodinggames/rts/game/units/am;FLcom/corrodinggames/rts/game/f;)F	b	method_am_b_applyRepairOrHealing	applyRepairOrHealing
+	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	df	method_Unit_df_getDisplayResources	getDisplayResources
 c	com/corrodinggames/rts/game/units/as	rw/unit/UnitType	rustedwarfare/unit/UnitType
 c	com/corrodinggames/rts/game/units/custom/a/a	rustedwarfare/custom/action/effect/CustomActionEffect	rustedwarfare/custom/action/effect/CustomActionEffect
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomActionEffect_execute	execute
@@ -727,7 +838,7 @@ c	com/corrodinggames/rts/game/units/custom/as	rw/custom/MutableUnitStats	rustedw
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;[Lcom/corrodinggames/rts/game/units/custom/at;)V	a	method_as_a_applyChangedStatsToUnit	applyChangedStatsToUnit
 	m	(Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter;	a	method_as_a_createMutableStatWriter	createMutableStatWriter
 	m	()Lcom/corrodinggames/rts/game/units/custom/as;	b	method_as_b_immutableClone	immutableClone
-c	com/corrodinggames/rts/game/units/custom/at	rw/custom/MutableStatField	rustedwarfare/custom/MutableStatField
+c	com/corrodinggames/rts/game/units/custom/at	rw/custom/stats/MutableStatAccessor	rustedwarfare/custom/stats/MutableStatAccessor
 	f	I	a	field_MutableStatAccessor_id	id
 	f	Ljava/lang/String;	b	field_MutableStatAccessor_name	name
 	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	a	method_MutableStatAccessor_getReturnType	getReturnType
@@ -1769,6 +1880,289 @@ c	com/corrodinggames/rts/gameFramework/e/a	rw/io/GameFileSystem	rustedwarfare/io
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	k	method_0201_openInputStream	openInputStream
 	m	(Ljava/lang/String;)Ljava/lang/String;	p	method_0203_resolveAssetPath	resolveAssetPath
 c	com/corrodinggames/rts/gameFramework/e/c	rw/io/FileSystemBackend	rustedwarfare/io/FileSystemBackend
+c	com/corrodinggames/rts/gameFramework/f/a	rw/ui/CommandInterface	rustedwarfare/ui/CommandInterface
+	f	Ljava/lang/String;	am	field_CommandInterface_currentWarningText	currentWarningText
+	f	F	an	field_CommandInterface_currentWarningTimer	currentWarningTimer
+	m	(Ljava/lang/String;)V	a	method_CommandInterface_clearCommandWarning	clearCommandWarning
+	m	(Ljava/lang/String;I)V	a	method_CommandInterface_showCommandWarning	showCommandWarning
+	m	(Ljava/lang/String;I)V	b	method_CommandInterface_showCommandWarningIfNew	showCommandWarningIfNew
+c	com/corrodinggames/rts/gameFramework/f/a/a	rw/ui/widget/UiRoot	rustedwarfare/ui/widget/UiRoot
+c	com/corrodinggames/rts/gameFramework/f/a/b	rw/ui/widget/ButtonWidget	rustedwarfare/ui/widget/ButtonWidget
+	m	(FF)V	a	method_b_a_drawAt	drawAt
+c	com/corrodinggames/rts/gameFramework/f/a/c	rw/ui/widget/UiInputEvent	rustedwarfare/ui/widget/UiInputEvent
+	f	I	a	field_UiInputEvent_x	x
+	f	I	b	field_UiInputEvent_y	y
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/d;	c	field_UiInputEvent_type	type
+	f	I	d	field_UiInputEvent_button	button
+	m	()Z	a	method_UiInputEvent_isDownOrClick	isDownOrClick
+	m	(II)Lcom/corrodinggames/rts/gameFramework/f/a/c;	a	method_UiInputEvent_mouseMove	mouseMove
+	m	()Z	b	method_UiInputEvent_isMove	isMove
+	m	(II)Lcom/corrodinggames/rts/gameFramework/f/a/c;	b	method_UiInputEvent_mouseClick	mouseClick
+c	com/corrodinggames/rts/gameFramework/f/a/d	rw/ui/widget/UiInputEventType	rustedwarfare/ui/widget/UiInputEventType
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/d;	a	field_UiInputEventType_MOUSE_MOVE	MOUSE_MOVE
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/d;	b	field_UiInputEventType_MOUSE_CLICK	MOUSE_CLICK
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/d;	c	field_UiInputEventType_MOUSE_UP	MOUSE_UP
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/d;	d	field_UiInputEventType_MOUSE_DOWN	MOUSE_DOWN
+c	com/corrodinggames/rts/gameFramework/f/a/e	rw/ui/widget/NinePatchDrawable	rustedwarfare/ui/widget/NinePatchDrawable
+	f	I	a	field_e_a_cornerWidth	cornerWidth
+	f	I	b	field_e_b_cornerHeight	cornerHeight
+	f	F	c	field_e_c_sourceScaleX	sourceScaleX
+	f	F	d	field_e_d_sourceScaleY	sourceScaleY
+	f	Z	e	field_e_e_tileCenterX	tileCenterX
+	f	Z	f	field_e_f_tileCenterY	tileCenterY
+	f	F	g	field_e_g_alpha	alpha
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;II)V	a	method_e_a_setNinePatchImage	setNinePatchImage
+	m	()Lcom/corrodinggames/rts/gameFramework/f/a/e;	a	method_e_a_copy	copy
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/h;)V	a	method_e_a_copyFrom	copyFrom
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_e_a_setImage	setImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/Rect;)V	a	method_e_a_drawRect	drawRect
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/Rect;)V	b	method_e_b_drawNinePatch	drawNinePatch
+c	com/corrodinggames/rts/gameFramework/f/a/f	rw/ui/widget/DialogWidget	rustedwarfare/ui/widget/DialogWidget
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/g;	a	field_f_a_contentLayout	contentLayout
+	m	(Ljava/lang/String;Z)Lcom/corrodinggames/rts/gameFramework/f/a/f;	a	method_f_a_createDialog	createDialog
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/a/b;	a	method_f_a_addButton	addButton
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/a/b;	b	method_f_b_addCloseButton	addCloseButton
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/f/a/k;)Lcom/corrodinggames/rts/gameFramework/f/a/b;	a	method_f_a_addButtonWithHandler	addButtonWithHandler
+	m	()V	u_	method_f_u__show	show
+	m	()V	b	method_f_b_layout	layout
+c	com/corrodinggames/rts/gameFramework/f/a/g	rw/ui/widget/LayoutWidget	rustedwarfare/ui/widget/LayoutWidget
+	m	(FF)V	a	method_g_a_drawAt	drawAt
+	m	()V	b	method_g_b_layout	layout
+c	com/corrodinggames/rts/gameFramework/f/a/h	rw/ui/widget/UiStyle	rustedwarfare/ui/widget/UiStyle
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	j	field_h_j_DEFAULT	DEFAULT
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	k	field_h_k_BUTTON	BUTTON
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	l	field_h_l_BUTTON_HOVERED	BUTTON_HOVERED
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	m	field_h_m_DIALOG	DIALOG
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	n	field_h_n_IMAGE	IMAGE
+	f	Landroid/graphics/Paint;	o	field_h_o_fillPaint	fillPaint
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	p	field_h_p_image	image
+	f	Landroid/graphics/Paint;	q	field_h_q_borderPaint	borderPaint
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	r	field_h_r_hoverStyle	hoverStyle
+	f	I	s	field_h_s_paddingLeft	paddingLeft
+	f	I	t	field_h_t_paddingTop	paddingTop
+	f	I	u	field_h_u_paddingRight	paddingRight
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	v	field_h_v_fallbackStyle	fallbackStyle
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_h_a_setImage	setImage
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/h;)V	a	method_h_a_copyFrom	copyFrom
+	m	()V	b	method_h_b_initializeDefaultStyles	initializeDefaultStyles
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/RectF;)V	a	method_h_a_drawRectF	drawRectF
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/Rect;)V	a	method_h_a_drawRect	drawRect
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/Rect;Lcom/corrodinggames/rts/gameFramework/f/a/i;)V	a	method_h_a_drawRectForState	drawRectForState
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/Rect;)V	c	method_h_c_drawBorder	drawBorder
+c	com/corrodinggames/rts/gameFramework/f/a/i	rw/ui/widget/UiStyleState	rustedwarfare/ui/widget/UiStyleState
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/i;	a	field_UiStyleState_NORMAL	NORMAL
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/i;	b	field_UiStyleState_HOVERED	HOVERED
+c	com/corrodinggames/rts/gameFramework/f/a/j	rw/ui/widget/TextWidget	rustedwarfare/ui/widget/TextWidget
+	f	Ljava/lang/String;	a	field_j_a_text	text
+	f	Landroid/graphics/Paint;	b	field_j_b_textPaint	textPaint
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	c	field_j_c_backgroundStyle	backgroundStyle
+	f	Ljava/util/ArrayList;	d	field_j_d_wrappedLines	wrappedLines
+	m	(F)V	a	method_j_a_setTextSize	setTextSize
+	m	(I)V	a	method_j_a_setTextColor	setTextColor
+	m	()Ljava/lang/String;	a	method_j_a_getDebugLabel	getDebugLabel
+	m	(FF)V	a	method_j_a_drawAt	drawAt
+	m	(Ljava/lang/String;)V	a	method_j_a_setText	setText
+	m	()Landroid/graphics/Rect;	c	method_j_c_getTextBounds	getTextBounds
+	m	()V	b	method_j_b_layout	layout
+c	com/corrodinggames/rts/gameFramework/f/a/k	rw/ui/widget/UiClickHandler	rustedwarfare/ui/widget/UiClickHandler
+c	com/corrodinggames/rts/gameFramework/f/a/l	rw/ui/widget/UiElement	rustedwarfare/ui/widget/UiElement
+	f	F	g	field_l_g_x	x
+	f	F	h	field_l_h_y	y
+	f	F	i	field_l_i_width	width
+	f	F	j	field_l_j_height	height
+	f	F	k	field_l_k_paddingTop	paddingTop
+	f	F	l	field_l_l_paddingBottom	paddingBottom
+	f	F	m	field_l_m_paddingLeft	paddingLeft
+	f	F	n	field_l_n_paddingRight	paddingRight
+	f	F	o	field_l_o_marginTop	marginTop
+	f	F	p	field_l_p_marginBottom	marginBottom
+	f	F	q	field_l_q_marginLeft	marginLeft
+	f	F	r	field_l_r_marginRight	marginRight
+	f	Z	s	field_l_s_layoutDirty	layoutDirty
+	f	Z	t	field_l_t_drawDebug	drawDebug
+	f	Z	u	field_l_u_hovered	hovered
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/l;	v	field_l_v_parent	parent
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	w	field_l_w_children	children
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/m;	x	field_l_x_layoutDirection	layoutDirection
+	f	F	y	field_l_y_measuredWidth	measuredWidth
+	f	F	z	field_l_z_measuredHeight	measuredHeight
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/k;	B	field_l_B_clickHandler	clickHandler
+	m	()Ljava/lang/String;	a	method_l_a_getDebugLabel	getDebugLabel
+	m	()Lcom/corrodinggames/rts/gameFramework/m/y;	d	method_l_d_getRenderer	getRenderer
+	m	(Landroid/graphics/RectF;FF)Landroid/graphics/RectF;	a	method_l_a_getLocalRectAt	getLocalRectAt
+	m	(Landroid/graphics/RectF;)Landroid/graphics/RectF;	a	method_l_a_getAbsoluteRect	getAbsoluteRect
+	m	()V	b	method_l_b_layout	layout
+	m	(FFLcom/corrodinggames/rts/gameFramework/utility/m;)V	a	method_l_a_layoutVertical	layoutVertical
+	m	(FFLcom/corrodinggames/rts/gameFramework/utility/m;)V	b	method_l_b_layoutHorizontal	layoutHorizontal
+	m	(Landroid/graphics/PointF;)V	a	method_l_a_toAbsolutePoint	toAbsolutePoint
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/l;)V	a	method_l_a_addToParent	addToParent
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/l;)V	b	method_l_b_setParent	setParent
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/l;Z)V	a	method_l_a_setParentInternal	setParentInternal
+	m	()V	e	method_l_e_invalidateLayout	invalidateLayout
+	m	(F)V	b	method_l_b_updateRecursive	updateRecursive
+	m	()V	f	method_l_f_drawRecursive	drawRecursive
+	m	(FF)V	a	method_l_a_drawAt	drawAt
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/k;)V	a	method_l_a_setClickHandler	setClickHandler
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/c;)Z	a	method_l_a_handleInputEvent	handleInputEvent
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/c;)Z	b	method_l_b_dispatchInputEvent	dispatchInputEvent
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/c;)Z	c	method_l_c_containsInputEvent	containsInputEvent
+	m	(F)V	c	method_l_c_setCenterX	setCenterX
+	m	(F)V	d	method_l_d_setCenterY	setCenterY
+	m	(F)V	e	method_l_e_setMarginAll	setMarginAll
+	m	(F)V	f	method_l_f_setPaddingAll	setPaddingAll
+	m	()F	g	method_l_g_getOuterWidth	getOuterWidth
+	m	()F	h	method_l_h_getOuterHeight	getOuterHeight
+	m	()V	i	method_l_i_detachFromParent	detachFromParent
+c	com/corrodinggames/rts/gameFramework/f/a/m	rw/ui/widget/UiLayoutDirection	rustedwarfare/ui/widget/UiLayoutDirection
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/m;	a	field_UiLayoutDirection_NONE	NONE
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/m;	b	field_UiLayoutDirection_VERTICAL	VERTICAL
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/m;	c	field_UiLayoutDirection_HORIZONTAL	HORIZONTAL
+c	com/corrodinggames/rts/gameFramework/f/a/n	rw/ui/widget/ImageWidget	rustedwarfare/ui/widget/ImageWidget
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/h;	b	field_n_b_style	style
+	m	(FF)V	a	method_n_a_drawAt	drawAt
+c	com/corrodinggames/rts/gameFramework/f/an	rw/ui/LagHidingResourceTracker	rustedwarfare/ui/LagHidingResourceTracker
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_LagHidingResourceTracker_snapshots	snapshots
+	m	()V	a	method_LagHidingResourceTracker_clear	clear
+	m	(J)Lcom/corrodinggames/rts/gameFramework/f/ao;	a	method_LagHidingResourceTracker_getSnapshotByUnitId	getSnapshotByUnitId
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/gameFramework/f/ao;	a	method_LagHidingResourceTracker_getOrCreateSnapshot	getOrCreateSnapshot
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/custom/d/b;)V	a	method_LagHidingResourceTracker_addResourcesPrediction	addResourcesPrediction
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;Lcom/corrodinggames/rts/game/units/y;)Z	a	method_LagHidingResourceTracker_hasLogicBooleanWithPrediction	hasLogicBooleanWithPrediction
+	m	(Lcom/corrodinggames/rts/game/units/y;Lcom/corrodinggames/rts/game/units/a/s;)V	a	method_LagHidingResourceTracker_removeOldSnapshotForAction	removeOldSnapshotForAction
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/custom/d/b;)V	b	method_LagHidingResourceTracker_subtractResourcesPrediction	subtractResourcesPrediction
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/custom/d/b;)Z	c	method_LagHidingResourceTracker_hasResourcesWithPrediction	hasResourcesWithPrediction
+c	com/corrodinggames/rts/gameFramework/f/ao	rw/ui/LagHidingResourceSnapshot	rustedwarfare/ui/LagHidingResourceSnapshot
+	f	J	a	field_LagHidingResourceSnapshot_unitId	unitId
+	f	I	b	field_LagHidingResourceSnapshot_ammo	ammo
+	f	I	c	field_LagHidingResourceSnapshot_queueOrCredits	queueOrCredits
+	f	I	d	field_LagHidingResourceSnapshot_networkFrame	networkFrame
+	f	Lcom/corrodinggames/rts/game/units/custom/e/f;	e	field_LagHidingResourceSnapshot_customResources	customResources
+c	com/corrodinggames/rts/gameFramework/f/ap	rw/ui/WarLogInterface	rustedwarfare/ui/WarLogInterface
+	f	Lcom/corrodinggames/rts/gameFramework/l;	a	field_WarLogInterface_gameEngine	gameEngine
+	f	Landroid/graphics/Paint;	b	field_WarLogInterface_textPaint	textPaint
+	f	Ljava/util/ArrayList;	c	field_WarLogInterface_entries	entries
+	m	()V	a	method_WarLogInterface_initializePaint	initializePaint
+	m	(F)V	a	method_WarLogInterface_draw	draw
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_WarLogInterface_addUnitCreated	addUnitCreated
+	m	(Lcom/corrodinggames/rts/gameFramework/f/au;)V	a	method_WarLogInterface_addOrMergeEntry	addOrMergeEntry
+	m	(Ljava/lang/String;)V	a	method_WarLogInterface_addTextEntry	addTextEntry
+	m	(Ljava/lang/String;I)V	a	method_WarLogInterface_addTimedTextEntry	addTimedTextEntry
+	m	()V	b	method_WarLogInterface_clearEntries	clearEntries
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	b	method_WarLogInterface_addUpgradeCompleted	addUpgradeCompleted
+	m	()V	c	method_WarLogInterface_pruneExpiredEntries	pruneExpiredEntries
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	c	method_WarLogInterface_addUnitDamaged	addUnitDamaged
+	m	()V	d	method_WarLogInterface_jumpToFirstUnreadEntry	jumpToFirstUnreadEntry
+c	com/corrodinggames/rts/gameFramework/f/aq	rw/ui/WarLogTextEntry	rustedwarfare/ui/WarLogTextEntry
+c	com/corrodinggames/rts/gameFramework/f/ar	rw/ui/WarLogUnitCreatedEntry	rustedwarfare/ui/WarLogUnitCreatedEntry
+	f	Lcom/corrodinggames/rts/game/units/as;	a	field_WarLogUnitCreatedEntry_unitType	unitType
+	f	I	b	field_WarLogUnitCreatedEntry_count	count
+c	com/corrodinggames/rts/gameFramework/f/as	rw/ui/WarLogUnitDamagedEntry	rustedwarfare/ui/WarLogUnitDamagedEntry
+	f	Z	a	field_WarLogUnitDamagedEntry_baseDamaged	baseDamaged
+c	com/corrodinggames/rts/gameFramework/f/at	rw/ui/WarLogUpgradeCompletedEntry	rustedwarfare/ui/WarLogUpgradeCompletedEntry
+c	com/corrodinggames/rts/gameFramework/f/au	rw/ui/WarLogEntry	rustedwarfare/ui/WarLogEntry
+	f	J	c	field_WarLogEntry_createdTimeMillis	createdTimeMillis
+	f	J	d	field_WarLogEntry_displayDurationMs	displayDurationMs
+	f	F	e	field_WarLogEntry_worldX	worldX
+	f	F	f	field_WarLogEntry_worldY	worldY
+	f	Ljava/lang/String;	g	field_WarLogEntry_cachedText	cachedText
+	f	Z	h	field_WarLogEntry_seen	seen
+	f	Z	i	field_WarLogEntry_forceVisible	forceVisible
+	m	()Ljava/lang/String;	a	method_WarLogEntry_getText	getText
+	m	(Lcom/corrodinggames/rts/gameFramework/f/au;)Z	a	method_WarLogEntry_canMergeWith	canMergeWith
+	m	()J	b	method_WarLogEntry_getMergeWindowMillis	getMergeWindowMillis
+	m	(Lcom/corrodinggames/rts/gameFramework/f/au;)V	b	method_WarLogEntry_mergeFrom	mergeFrom
+	m	(Lcom/corrodinggames/rts/gameFramework/f/au;)I	c	method_WarLogEntry_compareToEntry	compareToEntry
+c	com/corrodinggames/rts/gameFramework/f/f	rw/ui/EndGameInterface	rustedwarfare/ui/EndGameInterface
+	f	Z	b	field_EndGameInterface_visible	visible
+	f	Ljava/lang/String;	p	field_EndGameInterface_rateGameTitle	rateGameTitle
+	f	Ljava/lang/String;	q	field_EndGameInterface_rateGameYesText	rateGameYesText
+	f	Ljava/lang/String;	r	field_EndGameInterface_rateGameNoText	rateGameNoText
+	m	()V	a	method_EndGameInterface_initializeButtons	initializeButtons
+	m	(F)V	a	method_EndGameInterface_updateAndDraw	updateAndDraw
+	m	()Z	b	method_EndGameInterface_isGameOverPanelVisible	isGameOverPanelVisible
+	m	()V	c	method_EndGameInterface_showRateGamePrompt	showRateGamePrompt
+c	com/corrodinggames/rts/gameFramework/f/g	rw/ui/InterfaceEngine	rustedwarfare/ui/InterfaceEngine
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/c;	bS	field_InterfaceEngine_pendingWidgetInputEvent	pendingWidgetInputEvent
+	f	Lcom/corrodinggames/rts/gameFramework/f/a;	g	field_InterfaceEngine_commandInterface	commandInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/m;	h	field_InterfaceEngine_messageInterface	messageInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/ap;	i	field_InterfaceEngine_warLogInterface	warLogInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/k;	j	field_InterfaceEngine_leaderboardInterface	leaderboardInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/f;	k	field_InterfaceEngine_endGameInterface	endGameInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/l;	s	field_InterfaceEngine_widgetRoot	widgetRoot
+	m	()Z	a	method_InterfaceEngine_isCircleSelectEnabled	isCircleSelectEnabled
+	m	(F)V	a	method_InterfaceEngine_update	update
+	m	(Landroid/content/Context;)V	a	method_InterfaceEngine_initialize	initialize
+	m	(Lcom/corrodinggames/rts/gameFramework/f/h;)Z	a	method_InterfaceEngine_isChoiceButtonPressed	isChoiceButtonPressed
+	m	(Lcom/corrodinggames/rts/gameFramework/f/h;Z)Z	a	method_InterfaceEngine_isChoiceButtonPressedWithConsume	isChoiceButtonPressedWithConsume
+	m	(Ljava/lang/String;)V	a	method_InterfaceEngine_clearCommandWarning	clearCommandWarning
+	m	(Ljava/lang/String;I)V	a	method_InterfaceEngine_showCommandWarning	showCommandWarning
+	m	(Ljava/lang/String;)V	b	method_InterfaceEngine_showCommandWarningLong	showCommandWarningLong
+	m	(Ljava/lang/String;I)V	b	method_InterfaceEngine_showCommandWarningIfNew	showCommandWarningIfNew
+	m	(Ljava/lang/String;)V	c	method_InterfaceEngine_showCommandWarningMedium	showCommandWarningMedium
+	m	()V	d	method_InterfaceEngine_clearSelectionInputState	clearSelectionInputState
+	m	(Ljava/lang/String;)V	d	method_InterfaceEngine_showCommandWarningShort	showCommandWarningShort
+	m	()V	g	method_InterfaceEngine_resetUi	resetUi
+	f	Lcom/corrodinggames/rts/game/units/h;	f	field_g_f_selectedUnits	selectedUnits
+	m	()Lcom/corrodinggames/rts/game/units/h;	i	method_g_i_getSelectedUnits	getSelectedUnits
+	m	(Lcom/corrodinggames/rts/game/units/h;)V	a	method_g_a_setSelectedUnits	setSelectedUnits
+	m	(Lcom/corrodinggames/rts/gameFramework/l;)Z	a	method_g_a_isShiftKeyDown	isShiftKeyDown
+	m	(Lcom/corrodinggames/rts/gameFramework/l;)Z	b	method_g_b_isCtrlKeyDown	isCtrlKeyDown
+	m	(Lcom/corrodinggames/rts/gameFramework/l;)Z	c	method_g_c_isAltKeyDown	isAltKeyDown
+	m	(F)V	b	method_g_b_drawGameInterface	drawGameInterface
+c	com/corrodinggames/rts/gameFramework/f/h	rw/ui/ChoiceButtonType	rustedwarfare/ui/ChoiceButtonType
+	f	Lcom/corrodinggames/rts/gameFramework/f/h;	a	field_ChoiceButtonType_YES	YES
+	f	Lcom/corrodinggames/rts/gameFramework/f/h;	b	field_ChoiceButtonType_NO	NO
+	f	Lcom/corrodinggames/rts/gameFramework/f/h;	c	field_ChoiceButtonType_MORE	MORE
+c	com/corrodinggames/rts/gameFramework/f/i	rw/ui/UiButtonKind	rustedwarfare/ui/UiButtonKind
+	f	Lcom/corrodinggames/rts/gameFramework/f/i;	a	field_UiButtonKind_NONE	NONE
+	f	Lcom/corrodinggames/rts/gameFramework/f/i;	b	field_UiButtonKind_ZOOM_BUTTON	ZOOM_BUTTON
+	f	Lcom/corrodinggames/rts/gameFramework/f/i;	c	field_UiButtonKind_UNSELECT_ALL_BUTTON	UNSELECT_ALL_BUTTON
+c	com/corrodinggames/rts/gameFramework/f/k	rw/ui/LeaderboardInterface	rustedwarfare/ui/LeaderboardInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/g;	a	field_LeaderboardInterface_interfaceEngine	interfaceEngine
+	f	Lcom/corrodinggames/rts/gameFramework/l;	b	field_LeaderboardInterface_gameEngine	gameEngine
+	f	Landroid/graphics/Paint;	c	field_LeaderboardInterface_normalPaint	normalPaint
+	f	Landroid/graphics/Paint;	d	field_LeaderboardInterface_highlightPaint	highlightPaint
+	f	Landroid/graphics/RectF;	e	field_LeaderboardInterface_backgroundRect	backgroundRect
+	m	()V	a	method_LeaderboardInterface_initializePaint	initializePaint
+	m	(FI)I	a	method_LeaderboardInterface_drawLeaderboard	drawLeaderboard
+c	com/corrodinggames/rts/gameFramework/f/m	rw/ui/MessageInterface	rustedwarfare/ui/MessageInterface
+	f	Lcom/corrodinggames/rts/gameFramework/f/g;	b	field_MessageInterface_interfaceEngine	interfaceEngine
+	f	Lcom/corrodinggames/rts/gameFramework/l;	c	field_MessageInterface_gameEngine	gameEngine
+	f	Landroid/graphics/Paint;	d	field_MessageInterface_textPaint	textPaint
+	f	Z	e	field_MessageInterface_chatMutedWarningShown	chatMutedWarningShown
+	f	Ljava/util/ArrayList;	f	field_MessageInterface_messages	messages
+	m	()V	a	method_MessageInterface_initializePaint	initializePaint
+	m	(FI)I	a	method_MessageInterface_drawMessages	drawMessages
+	m	(Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/n;	a	method_MessageInterface_addMessage	addMessage
+	m	()V	b	method_MessageInterface_clearMessages	clearMessages
+	m	()V	c	method_MessageInterface_trimMessageHistory	trimMessageHistory
+c	com/corrodinggames/rts/gameFramework/f/n	rw/ui/MessageLine	rustedwarfare/ui/MessageLine
+	f	Ljava/lang/String;	a	field_MessageLine_senderName	senderName
+	f	Ljava/lang/String;	b	field_MessageLine_message	message
+	f	J	c	field_MessageLine_createdTimeMillis	createdTimeMillis
+	f	Ljava/lang/String;	d	field_MessageLine_formattedTime	formattedTime
+	f	I	e	field_MessageLine_typewriterDurationMs	typewriterDurationMs
+	f	I	f	field_MessageLine_textColor	textColor
+	m	()I	a	method_MessageLine_getAgeMillis	getAgeMillis
+	m	()Z	b	method_MessageLine_isVisible	isVisible
+c	com/corrodinggames/rts/gameFramework/f/o	rw/ui/Minimap	rustedwarfare/ui/Minimap
+	m	()V	a	method_Minimap_updateBounds	updateBounds
+	m	(F)V	a	method_Minimap_updateAndDraw	updateAndDraw
+	m	(Landroid/content/Context;)V	a	method_Minimap_initialize	initialize
+	m	(Lcom/corrodinggames/rts/game/b/b;Z)V	a	method_Minimap_setupForMap	setupForMap
+	m	()I	b	method_Minimap_getBottom	getBottom
+	m	(FF)Landroid/graphics/Point;	b	method_Minimap_worldToMinimapPoint	worldToMinimapPoint
+	m	()V	c	method_Minimap_releaseBuffers	releaseBuffers
+	m	(FF)Landroid/graphics/Point;	c	method_Minimap_screenToMapPoint	screenToMapPoint
+c	com/corrodinggames/rts/gameFramework/f/p	rw/ui/MinimapDrawPoint	rustedwarfare/ui/MinimapDrawPoint
+c	com/corrodinggames/rts/gameFramework/f/q	rw/ui/MinimapScanPoint	rustedwarfare/ui/MinimapScanPoint
+c	com/corrodinggames/rts/gameFramework/f/r	rw/ui/MinimapMarkerType	rustedwarfare/ui/MinimapMarkerType
+	f	Lcom/corrodinggames/rts/gameFramework/f/r;	a	field_r_a_BASE	BASE
+	f	Lcom/corrodinggames/rts/gameFramework/f/r;	b	field_r_b_UNIT	UNIT
+	f	Lcom/corrodinggames/rts/gameFramework/f/r;	c	field_r_c_NUKE	NUKE
+	f	Lcom/corrodinggames/rts/gameFramework/f/r;	d	field_r_d_MESSAGE	MESSAGE
+c	com/corrodinggames/rts/gameFramework/f/s	rw/ui/MinimapLineBatch	rustedwarfare/ui/MinimapLineBatch
+c	com/corrodinggames/rts/gameFramework/f/t	rw/ui/MinimapTileEntry	rustedwarfare/ui/MinimapTileEntry
+c	com/corrodinggames/rts/gameFramework/f/u	rw/ui/MinimapUnitEntry	rustedwarfare/ui/MinimapUnitEntry
 c	com/corrodinggames/rts/gameFramework/h/a	rw/core/LanguageSettings	rustedwarfare/core/LanguageSettings
 	f	Ljava/lang/String;	d	field_LanguageSettings_d_forcedLanguage	forcedLanguage
 c	com/corrodinggames/rts/gameFramework/i/a	rw/mod/ModManager	rustedwarfare/mod/ModManager
@@ -1829,17 +2223,24 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	f	Z	ax	field_0111_logColorEnabled	logColorEnabled
 	f	Z	ay	field_0112_noBackgroundMode	noBackgroundMode
 	f	Lcom/corrodinggames/rts/gameFramework/SettingsEngine;	bQ	field_0101_settings	settings
+	f	Lcom/corrodinggames/rts/gameFramework/f/g;	bS	field_GameEngine_interfaceEngine	interfaceEngine
+	f	Lcom/corrodinggames/rts/gameFramework/f/o;	bW	field_GameEngine_minimap	minimap
 	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	bX	field_0131_networkEngine	networkEngine
 	f	Lcom/corrodinggames/rts/gameFramework/i/a;	bZ	field_0100_modManager	modManager
 	f	Z	bb	field_0129_gameEngineInitStarted	gameEngineInitStarted
 	f	Ljava/lang/Class;	bg	field_0130_rendererClass	rendererClass
 	f	Landroid/graphics/Point;	ck	field_0132_initialScreenSize	initialScreenSize
+	f	Ljava/lang/String;	dl	field_GameEngine_currentMapPath	currentMapPath
 	f	Ljava/lang/String;	dz	field_0133_buildNumber	buildNumber
 	m	()Lcom/corrodinggames/rts/gameFramework/l;	B	method_0100_getInstance	getInstance
 	m	(Landroid/content/Context;Lcom/corrodinggames/rts/gameFramework/n;)Lcom/corrodinggames/rts/gameFramework/l;	a	method_0110_createGameEngine	createGameEngine
+	m	()Ljava/lang/String;	ak	method_GameEngine_getCurrentMapPath	getCurrentMapPath
+	m	()Ljava/lang/String;	al	method_GameEngine_getCurrentMapDisplayName	getCurrentMapDisplayName
+	m	()Ljava/lang/String;	am	method_GameEngine_getCurrentMapBaseName	getCurrentMapBaseName
 	m	()V	aq	method_0111_initLogging	initLogging
 	m	(Ljava/lang/String;)V	b	method_0113_debugLog	debugLog
 	m	(Ljava/lang/String;)V	e	method_0112_log	log
+	m	(Ljava/lang/String;Ljava/lang/String;)V	f	method_GameEngine_addMessage	addMessage
 c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/client/render/GameImage
 c	com/corrodinggames/rts/gameFramework/m/x	rw/render/CanvasGraphicsEngine	rustedwarfare/render/CanvasGraphicsEngine
 c	com/corrodinggames/rts/gameFramework/n	rw/core/PlatformCallbacks	rustedwarfare/core/PlatformCallbacks
@@ -1998,7 +2399,7 @@ c	com/corrodinggames/rts/java/b	rw/client/RustedWarfareAppGameContainer	rustedwa
 	m	()V	destroy	method_1104_destroy	destroy
 	m	()V	gameLoop	method_1102_gameLoop	gameLoop
 	m	(I)V	updateAndRender	method_1103_updateAndRender	updateAndRender
-c	com/corrodinggames/rts/java/b/a	rw/client/ui/DesktopLibRocket	rustedwarfare/client/ui/DesktopLibRocket
+c	com/corrodinggames/rts/java/b/a	rw/ui/DesktopLibRocket	rustedwarfare/ui/DesktopLibRocket
 	f	Lcom/corrodinggames/rts/java/Main;	f	field_DesktopLibRocket_f_main	main
 	f	Z	g	field_DesktopLibRocket_unknownFlag	unknownFlag
 	m	(Z)V	d	method_DesktopLibRocket_shutdownAndExit	shutdownAndExit
@@ -2011,7 +2412,7 @@ c	com/corrodinggames/rts/java/d	rw/client/DesktopAppFramework	rustedwarfare/clie
 	f	I	b	field_1301_height	height
 	f	Lcom/corrodinggames/rts/appFramework/m;	d	field_1302_inputHandler	inputHandler
 	f	Lcom/corrodinggames/rts/gameFramework/m/n;	g	field_1303_graphicsContext	graphicsContext
-c	com/corrodinggames/rts/java/d/a	rw/client/ui/LibRocketSlickRenderer	rustedwarfare/client/ui/LibRocketSlickRenderer
+c	com/corrodinggames/rts/java/d/a	rw/ui/LibRocketSlickRenderer	rustedwarfare/ui/LibRocketSlickRenderer
 	f	Lorg/newdawn/slick/Graphics;	j	field_LibRocketSlickRenderer_graphics	graphics
 	f	Lorg/newdawn/slick/opengl/renderer/SGL;	k	field_LibRocketSlickRenderer_sgl	sgl
 	m	(Z)V	EnableScissorRegion	EnableScissorRegion	EnableScissorRegion
@@ -2020,7 +2421,7 @@ c	com/corrodinggames/rts/java/d/a	rw/client/ui/LibRocketSlickRenderer	rustedwarf
 	m	()V	a	method_LibRocketUiEngine_startNewFrame	startNewFrame
 	m	(Lorg/newdawn/slick/Graphics;)V	a	method_LibRocketSlickRenderer_setGraphics	setGraphics
 	m	()Lcom/LibRocket$TextureHolder;	getFromTextureHolderFactory	method_LibRocketSlickRenderer_getFromTextureHolderFactory	getFromTextureHolderFactory
-c	com/corrodinggames/rts/java/d/b	rw/client/ui/SlickLibRocketTextureHolder	rustedwarfare/client/ui/SlickLibRocketTextureHolder
+c	com/corrodinggames/rts/java/d/b	rw/ui/SlickLibRocketTextureHolder	rustedwarfare/ui/SlickLibRocketTextureHolder
 	f	Lorg/newdawn/slick/Image;	h	field_SlickLibRocketTextureHolder_image	image
 	f	Z	i	field_SlickLibRocketTextureHolder_usingFallbackImage	usingFallbackImage
 	f	Lorg/newdawn/slick/ImageBuffer;	j	field_SlickLibRocketTextureHolder_pendingImageBuffer	pendingImageBuffer
@@ -2072,3 +2473,229 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	m	(Lorg/newdawn/slick/GameContainer;Lorg/newdawn/slick/Graphics;)V	render	method_1007_render	render
 	m	(Lorg/newdawn/slick/GameContainer;I)V	update	method_1005_update	update
 c	com/corrodinggames/rts/java/v	rw/input/DesktopControllerInput	rustedwarfare/input/DesktopControllerInput
+c	com/corrodinggames/rts/appFramework/a	rw/ui/android/AndroidStubActivity	rustedwarfare/ui/android/AndroidStubActivity
+c	com/corrodinggames/rts/appFramework/b	rw/ui/android/AndroidBaseActivity	rustedwarfare/ui/android/AndroidBaseActivity
+	f	Ljava/util/ArrayList;	b	field_b_b_pendingUiRunnables	pendingUiRunnables
+	m	(Ljava/lang/Runnable;)V	a	method_b_a_runOnUiThreadSafe	runOnUiThreadSafe
+c	com/corrodinggames/rts/appFramework/c	rw/ui/android/AndroidUiHelper	rustedwarfare/ui/android/AndroidUiHelper
+	f	Landroid/os/Handler;	a	field_c_a_mainHandler	mainHandler
+	f	Landroid/content/Context;	b	field_c_b_applicationContext	applicationContext
+	f	Lcom/corrodinggames/rts/appFramework/e;	c	field_c_c_defaultViewMode	defaultViewMode
+	f	Lcom/corrodinggames/rts/appFramework/e;	d	field_c_d_currentViewMode	currentViewMode
+	m	(Ljava/lang/String;)I	a	method_c_a_getNumberOfPlayersInMapName	getNumberOfPlayersInMapName
+	m	(Ljava/lang/String;)Ljava/lang/String;	b	method_c_b_getMapDisplayName	getMapDisplayName
+	m	(Ljava/lang/String;)Ljava/lang/String;	c	method_c_c_getMapThumbnailPath	getMapThumbnailPath
+	m	(Ljava/lang/Runnable;)V	a	method_c_a_postToUiThread	postToUiThread
+	m	()Landroid/content/Context;	a	method_c_a_getApplicationContext	getApplicationContext
+c	com/corrodinggames/rts/appFramework/d	rw/ui/android/AndroidStorageCallback	rustedwarfare/ui/android/AndroidStorageCallback
+c	com/corrodinggames/rts/appFramework/e	rw/ui/android/AndroidGameViewMode	rustedwarfare/ui/android/AndroidGameViewMode
+	f	Lcom/corrodinggames/rts/appFramework/e;	a	field_e_a_SINGLE_THREADED_SURFACE	SINGLE_THREADED_SURFACE
+	f	Lcom/corrodinggames/rts/appFramework/e;	b	field_e_b_SINGLE_THREADED_SURFACE_IF_HARDWARE	SINGLE_THREADED_SURFACE_IF_HARDWARE
+	f	Lcom/corrodinggames/rts/appFramework/e;	c	field_e_c_MULTI_THREADED_SURFACE	MULTI_THREADED_SURFACE
+	f	Lcom/corrodinggames/rts/appFramework/e;	d	field_e_d_MULTI_THREADED_NON_SURFACE	MULTI_THREADED_NON_SURFACE
+	f	Lcom/corrodinggames/rts/appFramework/e;	e	field_e_e_OPENGL	OPENGL
+	f	Lcom/corrodinggames/rts/appFramework/e;	f	field_e_f_DYNAMIC_DEFAULT	DYNAMIC_DEFAULT
+c	com/corrodinggames/rts/appFramework/f	rw/ui/android/GameViewHost	rustedwarfare/ui/android/GameViewHost
+c	com/corrodinggames/rts/appFramework/g	rw/ui/android/InGameActivity	rustedwarfare/ui/android/InGameActivity
+c	com/corrodinggames/rts/appFramework/h	rw/ui/android/InGameActivityTextRunnable	rustedwarfare/ui/android/InGameActivityTextRunnable
+c	com/corrodinggames/rts/appFramework/i	rw/ui/android/MapSelectActivity	rustedwarfare/ui/android/MapSelectActivity
+	f	Z	c	field_i_c_showCustomMaps	showCustomMaps
+	f	Ljava/lang/String;	d	field_i_d_mapRootPath	mapRootPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_i_d_getMapDisplayName	getMapDisplayName
+	m	(Ljava/lang/String;Ljava/lang/String;)Z	a	method_i_a_isMapInDirectory	isMapInDirectory
+	m	(Ljava/lang/String;)Z	f	method_i_f_isCustomMapPath	isCustomMapPath
+	m	(Ljava/lang/String;)Z	g	method_i_g_isWorkshopOrModMapPath	isWorkshopOrModMapPath
+c	com/corrodinggames/rts/appFramework/j	rw/ui/android/SaveGameSelectActivity	rustedwarfare/ui/android/SaveGameSelectActivity
+	f	[Ljava/lang/String;	c	field_j_c_saveFileNames	saveFileNames
+	m	()[Ljava/lang/String;	l	method_j_l_listSaveFiles	listSaveFiles
+c	com/corrodinggames/rts/appFramework/k	rw/ui/android/SaveGameFileComparator	rustedwarfare/ui/android/SaveGameFileComparator
+	f	Ljava/util/regex/Pattern;	a	field_k_a_filenameDatePattern	filenameDatePattern
+	m	(Ljava/lang/String;Ljava/lang/String;)I	a	method_k_a_compareFileNamesByDate	compareFileNamesByDate
+	m	(Ljava/lang/String;)Ljava/util/Date;	a	method_k_a_parseDateFromFileName	parseDateFromFileName
+c	com/corrodinggames/rts/appFramework/l	rw/ui/android/MultiTouchReflection	rustedwarfare/ui/android/MultiTouchReflection
+c	com/corrodinggames/rts/appFramework/m	rw/ui/android/MultiTouchState	rustedwarfare/ui/android/MultiTouchState
+	m	()I	a	method_m_a_getPointerCount	getPointerCount
+	m	()Z	b	method_m_b_isDown	isDown
+	m	()V	c	method_m_c_clear	clear
+	m	(FF)V	a	method_m_a_setSingleTouch	setSingleTouch
+	m	(FFZI)V	a	method_m_a_setSingleTouchWithState	setSingleTouchWithState
+	m	()[F	d	method_m_d_getPointerXs	getPointerXs
+	m	()[I	e	method_m_e_getPointerIds	getPointerIds
+	m	()[F	f	method_m_f_getPointerYs	getPointerYs
+c	com/corrodinggames/rts/appFramework/n	rw/ui/android/MultiplayerBattleroomActivity	rustedwarfare/ui/android/MultiplayerBattleroomActivity
+	f	Lcom/corrodinggames/rts/appFramework/n;	c	field_n_c_currentActivity	currentActivity
+	f	Z	d	field_n_d_refreshPending	refreshPending
+	f	Landroid/os/Handler;	e	field_n_e_handler	handler
+	f	Z	f	field_n_f_startGameRequested	startGameRequested
+	f	Z	g	field_n_g_chatScrollPending	chatScrollPending
+	f	Landroid/widget/TextView;	h	field_n_h_chatLogTextView	chatLogTextView
+	m	()Z	l	method_n_l_isOpen	isOpen
+	m	()V	m	method_n_m_refreshAll	refreshAll
+	m	(Ljava/lang/String;)V	d	method_n_d_setStatusText	setStatusText
+	m	(Ljava/lang/String;Ljava/lang/String;)V	a	method_n_a_showPasswordDialog	showPasswordDialog
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_n_a_setConnectionResult	setConnectionResult
+c	com/corrodinggames/rts/appFramework/o	rw/ui/android/BattleroomSlotInfo	rustedwarfare/ui/android/BattleroomSlotInfo
+	f	Ljava/lang/String;	a	field_o_a_label	label
+	f	I	b	field_o_b_slotIndex	slotIndex
+	f	I	c	field_o_c_teamIndex	teamIndex
+	f	Lcom/corrodinggames/rts/game/n;	d	field_o_d_player	player
+	f	Lcom/corrodinggames/rts/game/n;	e	field_o_e_previousPlayer	previousPlayer
+	m	(Lcom/corrodinggames/rts/game/n;I)V	a	method_o_a_setPlayerAndTeam	setPlayerAndTeam
+	m	()Z	a	method_o_a_isEmpty	isEmpty
+c	com/corrodinggames/rts/appFramework/p	rw/ui/android/MultiplayerPlayerListActivity	rustedwarfare/ui/android/MultiplayerPlayerListActivity
+c	com/corrodinggames/rts/appFramework/q	rw/ui/android/ReplaySelectActivity	rustedwarfare/ui/android/ReplaySelectActivity
+	f	[Ljava/lang/String;	c	field_q_c_replayFileNames	replayFileNames
+	m	()[Ljava/lang/String;	l	method_q_l_listReplayFiles	listReplayFiles
+c	com/corrodinggames/rts/appFramework/r	rw/ui/android/ReplayFileComparator	rustedwarfare/ui/android/ReplayFileComparator
+	f	Ljava/util/regex/Pattern;	a	field_r_a_filenameDatePattern	filenameDatePattern
+	m	(Ljava/lang/String;Ljava/lang/String;)I	a	method_r_a_compareFileNamesByDate	compareFileNamesByDate
+	m	(Ljava/lang/String;)Ljava/util/Date;	a	method_r_a_parseDateFromFileName	parseDateFromFileName
+c	com/corrodinggames/rts/appFramework/s	rw/ui/android/AndroidStorageSetupActivity	rustedwarfare/ui/android/AndroidStorageSetupActivity
+	f	Z	c	field_s_c_requestInProgress	requestInProgress
+	f	Z	d	field_s_d_hasShownSetup	hasShownSetup
+	f	[I	e	field_s_e_requestCodes	requestCodes
+	f	Lcom/corrodinggames/rts/appFramework/d;	f	field_s_f_storageCallback	storageCallback
+	m	()V	l	method_s_l_startFolderSelection	startFolderSelection
+c	com/corrodinggames/rts/gameFramework/bj	rw/ui/stats/StatMetricType	rustedwarfare/ui/stats/StatMetricType
+	f	Lcom/corrodinggames/rts/gameFramework/bj;	a	field_bj_a_INCOME	INCOME
+	f	Lcom/corrodinggames/rts/gameFramework/bj;	b	field_bj_b_ARMY_VALUE	ARMY_VALUE
+	f	Lcom/corrodinggames/rts/gameFramework/bj;	c	field_bj_c_BUILDING_VALUE	BUILDING_VALUE
+	f	Lcom/corrodinggames/rts/gameFramework/bj;	d	field_bj_d_TOTAL_VALUE	TOTAL_VALUE
+	f	Lcom/corrodinggames/rts/gameFramework/g/f;	e	field_bj_e_statProvider	statProvider
+	m	()Lcom/corrodinggames/rts/gameFramework/g/f;	a	method_bj_a_getStatProvider	getStatProvider
+c	com/corrodinggames/rts/gameFramework/f/aa	rw/ui/MinimapPaintSet	rustedwarfare/ui/MinimapPaintSet
+	f	Lcom/corrodinggames/rts/gameFramework/bn;	a	field_aa_a_basePaint	basePaint
+	f	Ljava/lang/String;	b	field_aa_b_debugName	debugName
+	f	I	c	field_aa_c_baseColor	baseColor
+	f	[Lcom/corrodinggames/rts/gameFramework/m/ag;	d	field_aa_d_normalAlphaPaints	normalAlphaPaints
+	f	[Lcom/corrodinggames/rts/gameFramework/m/ag;	e	field_aa_e_boldAlphaPaints	boldAlphaPaints
+	m	(IZ)Lcom/corrodinggames/rts/gameFramework/m/ag;	a	method_aa_a_getPaintForAlpha	getPaintForAlpha
+c	com/corrodinggames/rts/gameFramework/f/ab	rw/ui/stats/StatsSeries	rustedwarfare/ui/stats/StatsSeries
+	f	Lcom/corrodinggames/rts/gameFramework/bj;	a	field_ab_a_metric	metric
+	f	I	b	field_ab_b_minValue	minValue
+	f	I	c	field_ab_c_maxValue	maxValue
+	f	I	d	field_ab_d_maxIndex	maxIndex
+	f	Ljava/util/ArrayList;	e	field_ab_e_values	values
+	m	(Ljava/util/ArrayList;)V	a	method_ab_a_buildValues	buildValues
+c	com/corrodinggames/rts/gameFramework/f/ac	rw/ui/stats/StatsPanelTab	rustedwarfare/ui/stats/StatsPanelTab
+	f	Lcom/corrodinggames/rts/gameFramework/f/ac;	a	field_ac_a_OVERALL_STATS	OVERALL_STATS
+	f	Lcom/corrodinggames/rts/gameFramework/f/ac;	b	field_ac_b_INCOME_CHART	INCOME_CHART
+	f	Lcom/corrodinggames/rts/gameFramework/f/ac;	c	field_ac_c_ARMY_VALUE_CHART	ARMY_VALUE_CHART
+	f	Lcom/corrodinggames/rts/gameFramework/f/ac;	d	field_ac_d_BUILDING_VALUE_CHART	BUILDING_VALUE_CHART
+	f	Lcom/corrodinggames/rts/gameFramework/f/ac;	e	field_ac_e_TOTAL_VALUE_CHART	TOTAL_VALUE_CHART
+	f	Ljava/lang/String;	f	field_ac_f_shortLabel	shortLabel
+	f	Lcom/corrodinggames/rts/gameFramework/bj;	g	field_ac_g_statMetric	statMetric
+	m	()Lcom/corrodinggames/rts/gameFramework/bj;	a	method_ac_a_getStatMetric	getStatMetric
+c	com/corrodinggames/rts/gameFramework/f/ad	rw/ui/stats/StatsBucketedSeries	rustedwarfare/ui/stats/StatsBucketedSeries
+	f	I	a	field_ad_a_bucketCount	bucketCount
+	f	[I	b	field_ad_b_values	values
+	f	I	c	field_ad_c_maxValue	maxValue
+	m	(II)V	a	method_ad_a_addValue	addValue
+	m	(I)F	a	method_ad_a_getNormalizedValue	getNormalizedValue
+c	com/corrodinggames/rts/gameFramework/f/ae	rw/ui/text/StyledTextBlock	rustedwarfare/ui/text/StyledTextBlock
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	i	field_ae_i_segments	segments
+	f	Landroid/graphics/Paint;	d	field_ae_d_defaultPaint	defaultPaint
+	f	Landroid/graphics/Paint;	e	field_ae_e_currentPaint	currentPaint
+	f	Landroid/graphics/Paint;	g	field_ae_g_highlightPaint	highlightPaint
+	m	(Landroid/graphics/Paint;)V	a	method_ae_a_setCurrentPaint	setCurrentPaint
+	m	(Z)V	a	method_ae_a_setCentered	setCentered
+	m	()Ljava/lang/String;	a	method_ae_a_getPlainText	getPlainText
+	m	(Ljava/lang/String;)V	a	method_ae_a_appendText	appendText
+	m	()V	b	method_ae_b_clear	clear
+	m	(Lcom/corrodinggames/rts/gameFramework/f/af;)V	a	method_ae_a_addSegment	addSegment
+	m	(Ljava/lang/String;)V	b	method_ae_b_appendLine	appendLine
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)V	a	method_ae_a_appendTextWithPaint	appendTextWithPaint
+	m	(Ljava/lang/String;I)V	a	method_ae_a_appendTextWithColor	appendTextWithColor
+	m	(Ljava/lang/String;IZ)V	a	method_ae_a_appendTextWithColorAndFlag	appendTextWithColorAndFlag
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;II)V	a	method_ae_a_appendImage	appendImage
+	m	()I	c	method_ae_c_measureHeight	measureHeight
+	m	(IZ)Lcom/corrodinggames/rts/gameFramework/f/aj;	a	method_ae_a_layoutLine	layoutLine
+c	com/corrodinggames/rts/gameFramework/f/af	rw/ui/text/StyledTextSegment	rustedwarfare/ui/text/StyledTextSegment
+	m	(Landroid/graphics/Paint;)I	a	method_af_a_measureWidth	measureWidth
+c	com/corrodinggames/rts/gameFramework/f/ag	rw/ui/text/PaintedTextSegment	rustedwarfare/ui/text/PaintedTextSegment
+	f	Landroid/graphics/Paint;	a	field_ag_a_paint	paint
+	f	I	b	field_ag_b_forcedWidth	forcedWidth
+	f	Lcom/corrodinggames/rts/gameFramework/f/ae;	c	field_ag_c_ownerBlock	ownerBlock
+	m	(Landroid/graphics/Paint;)Landroid/graphics/Paint;	b	method_ag_b_resolvePaint	resolvePaint
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/ag;	a	method_ag_a_copyWithTextAndPaint	copyWithTextAndPaint
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/ai;	b	method_ag_b_copyWithText	copyWithText
+c	com/corrodinggames/rts/gameFramework/f/ah	rw/ui/text/ImageTextSegment	rustedwarfare/ui/text/ImageTextSegment
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	a	field_ah_a_image	image
+	f	F	b	field_ah_b_scale	scale
+	f	I	c	field_ah_c_width	width
+	f	I	d	field_ah_d_height	height
+	f	Lcom/corrodinggames/rts/gameFramework/f/ae;	e	field_ah_e_ownerBlock	ownerBlock
+	m	(Landroid/graphics/Paint;)I	a	method_ah_a_measureWidth	measureWidth
+c	com/corrodinggames/rts/gameFramework/f/ai	rw/ui/text/TextSegment	rustedwarfare/ui/text/TextSegment
+	f	Ljava/lang/String;	d	field_ai_d_text	text
+	f	Lcom/corrodinggames/rts/gameFramework/f/ae;	e	field_ai_e_ownerBlock	ownerBlock
+	m	(Landroid/graphics/Paint;)I	a	method_ai_a_measureWidth	measureWidth
+	m	(Landroid/graphics/Paint;)Landroid/graphics/Paint;	b	method_ai_b_resolvePaint	resolvePaint
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/ai;	b	method_ai_b_copyWithText	copyWithText
+c	com/corrodinggames/rts/gameFramework/f/aj	rw/ui/text/StyledTextLine	rustedwarfare/ui/text/StyledTextLine
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_aj_a_segments	segments
+	f	Landroid/graphics/Rect;	b	field_aj_b_bounds	bounds
+	f	Landroid/graphics/Paint;	c	field_aj_c_backgroundPaint	backgroundPaint
+	f	Landroid/graphics/Paint;	d	field_aj_d_textPaint	textPaint
+	m	(FF)V	a	method_aj_a_drawAt	drawAt
+c	com/corrodinggames/rts/gameFramework/f/ak	rw/ui/text/StyledTextLineBuilder	rustedwarfare/ui/text/StyledTextLineBuilder
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_ak_a_segments	segments
+	f	I	b	field_ak_b_currentWidth	currentWidth
+	m	(Lcom/corrodinggames/rts/gameFramework/f/af;)V	a	method_ak_a_addSegment	addSegment
+c	com/corrodinggames/rts/gameFramework/f/al	rw/ui/SelectedUnitFilter	rustedwarfare/ui/SelectedUnitFilter
+c	com/corrodinggames/rts/gameFramework/f/am	rw/ui/CommandQueueOverlay	rustedwarfare/ui/CommandQueueOverlay
+c	com/corrodinggames/rts/gameFramework/f/b	rw/ui/EndGameMenuOption	rustedwarfare/ui/EndGameMenuOption
+	f	Ljava/lang/String;	a	field_b_a_text	text
+	m	()Ljava/lang/String;	a	method_b_a_getText	getText
+	m	()V	b	method_b_b_run	run
+c	com/corrodinggames/rts/gameFramework/f/c	rw/ui/ActionProgressCache	rustedwarfare/ui/ActionProgressCache
+	f	Lcom/corrodinggames/rts/game/units/am;	a	field_c_a_unit	unit
+	f	Lcom/corrodinggames/rts/game/units/a/s;	b	field_c_b_action	action
+	f	F	c	field_c_c_progress	progress
+	f	Z	d	field_c_d_queued	queued
+	f	Z	e	field_c_e_secondary	secondary
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	f	field_c_f_cacheEntries	cacheEntries
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/a/s;ZZ)V	a	method_c_a_recordActionProgress	recordActionProgress
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/a/s;Z)Lcom/corrodinggames/rts/gameFramework/f/c;	a	method_c_a_findActionProgressEntry	findActionProgressEntry
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/a/s;Z)F	b	method_c_b_getActionProgress	getActionProgress
+	m	(F)V	a	method_c_a_updateAll	updateAll
+c	com/corrodinggames/rts/gameFramework/f/d	rw/ui/UiDrawUtils	rustedwarfare/ui/UiDrawUtils
+	m	(Landroid/graphics/Paint;)I	a	method_d_a_getTextHeight	getTextHeight
+	m	(Landroid/graphics/Paint;)I	b	method_d_b_getTextBaselineOffset	getTextBaselineOffset
+	m	(Ljava/lang/String;Landroid/graphics/Rect;Landroid/graphics/Paint;Landroid/graphics/Paint;Z)Ljava/util/ArrayList;	a	method_d_a_wrapTextIntoLines	wrapTextIntoLines
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;Landroid/graphics/Paint;FFFF)V	a	method_d_a_drawTextWithBackground	drawTextWithBackground
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FF)F	a	method_d_a_getImageScaleToFit	getImageScaleToFit
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFFF)F	a	method_d_a_getImageScaleToFitRect	getImageScaleToFitRect
+c	com/corrodinggames/rts/gameFramework/f/e	rw/ui/TooltipLine	rustedwarfare/ui/TooltipLine
+	f	Ljava/lang/String;	a	field_e_a_label	label
+	f	Ljava/lang/String;	b	field_e_b_valueText	valueText
+	f	F	c	field_e_c_value	value
+	f	F	d	field_e_d_sortValue	sortValue
+	m	()Ljava/util/ArrayList;	a	method_e_a_createDefaultTooltipLines	createDefaultTooltipLines
+c	com/corrodinggames/rts/gameFramework/f/j	rw/ui/TileGridUtils	rustedwarfare/ui/TileGridUtils
+c	com/corrodinggames/rts/gameFramework/f/l	rw/ui/DualTextLine	rustedwarfare/ui/DualTextLine
+c	com/corrodinggames/rts/gameFramework/f/v	rw/ui/SimpleMenu	rustedwarfare/ui/SimpleMenu
+	f	Ljava/util/ArrayList;	a	field_v_a_items	items
+c	com/corrodinggames/rts/gameFramework/f/w	rw/ui/SimpleMenuItem	rustedwarfare/ui/SimpleMenuItem
+	f	Ljava/lang/CharSequence;	a	field_w_a_title	title
+	f	Landroid/graphics/drawable/Drawable;	b	field_w_b_icon	icon
+	f	I	c	field_w_c_itemId	itemId
+	m	(I)Landroid/view/MenuItem;	a	method_w_a_setItemId	setItemId
+c	com/corrodinggames/rts/gameFramework/f/x	rw/ui/ResourceDisplayPlaceholderUnit	rustedwarfare/ui/ResourceDisplayPlaceholderUnit
+	f	Lcom/corrodinggames/rts/game/units/custom/e/f;	a	field_x_a_resourceDisplaySet	resourceDisplaySet
+	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	df	method_x_df_getDisplayResources	getDisplayResources
+	m	(Lcom/corrodinggames/rts/game/units/custom/e/f;)V	a	method_x_a_setDisplayResources	setDisplayResources
+c	com/corrodinggames/rts/gameFramework/f/y	rw/ui/stats/StatsChartRenderer	rustedwarfare/ui/stats/StatsChartRenderer
+	f	Lcom/corrodinggames/rts/gameFramework/f/ac;	f	field_y_f_currentTab	currentTab
+	f	Lcom/corrodinggames/rts/gameFramework/f/z;	g	field_y_g_scaleMode	scaleMode
+	f	[Lcom/corrodinggames/rts/gameFramework/f/ab;	i	field_y_i_incomeSeries	incomeSeries
+	f	[Lcom/corrodinggames/rts/gameFramework/f/ab;	k	field_y_k_armySeries	armySeries
+	f	[Lcom/corrodinggames/rts/gameFramework/f/ab;	m	field_y_m_buildingSeries	buildingSeries
+	f	Landroid/graphics/Paint;	c	field_y_c_textPaint	textPaint
+	f	Landroid/graphics/Paint;	d	field_y_d_gridPaint	gridPaint
+	m	()Lcom/corrodinggames/rts/gameFramework/f/y;	a	method_y_a_createForCurrentGame	createForCurrentGame
+	m	()V	b	method_y_b_initializePaints	initializePaints
+	m	(Landroid/graphics/Rect;Landroid/graphics/Rect;FZZ)V	a	method_y_a_drawStatsPanel	drawStatsPanel
+c	com/corrodinggames/rts/gameFramework/f/z	rw/ui/stats/StatsChartScaleMode	rustedwarfare/ui/stats/StatsChartScaleMode
+	f	Lcom/corrodinggames/rts/gameFramework/f/z;	a	field_z_a_ABSOLUTE	ABSOLUTE
+	f	Lcom/corrodinggames/rts/gameFramework/f/z;	b	field_z_b_RELATIVE	RELATIVE
