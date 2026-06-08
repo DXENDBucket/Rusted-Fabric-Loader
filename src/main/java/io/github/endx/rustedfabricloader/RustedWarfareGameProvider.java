@@ -33,7 +33,18 @@ public class RustedWarfareGameProvider implements GameProvider {
     private static final LogCategory LOG_CATEGORY = LogCategory.create("GameProvider", "RustedWarfare");
 
     private static final String FABRIC_ADD_MODS = "fabric.addMods";
+    private static final String FABRIC_RUNTIME_MAPPING_NAMESPACE = "fabric.runtimeMappingNamespace";
     private static final String OFFICIAL_NAMESPACE = "official";
+    private static final String NAMED_NAMESPACE = "named";
+
+    // Optional: -Drusted.devNamed=true
+    private static final String DEV_NAMED_PROPERTY = "rusted.devNamed";
+
+    // Optional: -Drusted.gameJar=...
+    private static final String GAME_JAR_PROPERTY = "rusted.gameJar";
+
+    // Optional: -Drusted.namedGameJar=...
+    private static final String NAMED_GAME_JAR_PROPERTY = "rusted.namedGameJar";
 
     // Optional: -Drusted.javamodsDir=...
     private static final String JAVA_MODS_DIR_PROPERTY = "rusted.javamodsDir";
@@ -43,8 +54,12 @@ public class RustedWarfareGameProvider implements GameProvider {
     private static final String GAME_DIR_PROPERTY = "rusted.gameDir";
 
     private static final String GAME_LIB_JAR_NAME = "game-lib.jar";
+    private static final String NAMED_GAME_LIB_JAR_NAME = "game-lib-named.jar";
     private static final String LIBS_DIR_NAME = "libs";
     private static final String ANDROID_JAR_NAME = "android.jar";
+
+    private static final String OFFICIAL_ENTRYPOINT = "com.corrodinggames.rts.java.Main";
+    private static final String NAMED_ENTRYPOINT = "rustedwarfare.client.RustedWarfareMain";
 
     // Desktop filter: remove Android SDK stubs that shadow JRE modules (java.xml)
     private static final String[] ANDROID_JAR_EXCLUDE_PREFIXES = new String[] {
@@ -89,12 +104,12 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public String getRuntimeNamespace(String defaultNamespace) {
-        return OFFICIAL_NAMESPACE;
+        return getRequestedRuntimeNamespace();
     }
 
     @Override
     public String getDefaultModDistributionNamespace(String defaultNamespace) {
-        return OFFICIAL_NAMESPACE;
+        return getRequestedRuntimeNamespace();
     }
 
     @Override
@@ -104,7 +119,7 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public String getEntrypoint() {
-        return "com.corrodinggames.rts.java.Main";
+        return isNamedRuntimeRequested() ? NAMED_ENTRYPOINT : OFFICIAL_ENTRYPOINT;
     }
 
     @Override
@@ -142,7 +157,7 @@ public class RustedWarfareGameProvider implements GameProvider {
             this.gameDir = Paths.get(".").toAbsolutePath().normalize();
         }
 
-        this.gameLibJar = gameDir.resolve(GAME_LIB_JAR_NAME).toAbsolutePath().normalize();
+        this.gameLibJar = resolveGameLibJar();
         this.libsDir = gameDir.resolve(LIBS_DIR_NAME).toAbsolutePath().normalize();
 
         configureFabricModDirs();
@@ -152,6 +167,67 @@ public class RustedWarfareGameProvider implements GameProvider {
     @Override
     public void initialize(FabricLauncher launcher) {
         // no-op
+    }
+
+    private Path resolveGameLibJar() {
+        if (isNamedRuntimeRequested()) {
+            Path override = resolvePathProperty(NAMED_GAME_JAR_PROPERTY, gameDir);
+            if (override != null) {
+                return override;
+            }
+
+            Path[] candidates = new Path[] {
+                    gameDir.resolve(NAMED_GAME_LIB_JAR_NAME),
+                    gameDir.resolve(LIBS_DIR_NAME).resolve(NAMED_GAME_LIB_JAR_NAME),
+                    gameDir.resolve(".rustedfabricloader").resolve("dev").resolve(NAMED_GAME_LIB_JAR_NAME),
+                    Paths.get("build").resolve("rusted-dev").resolve(NAMED_GAME_LIB_JAR_NAME)
+            };
+
+            return firstExistingOrFirst(candidates);
+        }
+
+        Path override = resolvePathProperty(GAME_JAR_PROPERTY, gameDir);
+        if (override != null) {
+            return override;
+        }
+
+        return firstExistingOrFirst(new Path[] {
+                gameDir.resolve(GAME_LIB_JAR_NAME),
+                gameDir.resolve(LIBS_DIR_NAME).resolve(GAME_LIB_JAR_NAME)
+        });
+    }
+
+    private static Path firstExistingOrFirst(Path[] candidates) {
+        Path first = null;
+
+        for (Path candidate : candidates) {
+            if (candidate == null) {
+                continue;
+            }
+
+            Path normalized = candidate.toAbsolutePath().normalize();
+            if (first == null) {
+                first = normalized;
+            }
+            if (Files.isRegularFile(normalized)) {
+                return normalized;
+            }
+        }
+
+        return first;
+    }
+
+    private static Path resolvePathProperty(String propertyName, Path baseDir) {
+        String value = System.getProperty(propertyName);
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+
+        Path path = Paths.get(value);
+        if (!path.isAbsolute() && baseDir != null) {
+            path = baseDir.resolve(path);
+        }
+        return path.toAbsolutePath().normalize();
     }
 
     @Override
@@ -207,6 +283,9 @@ public class RustedWarfareGameProvider implements GameProvider {
                 stream = Files.list(libsDir);
                 for (Path p : (Iterable<Path>) stream::iterator) {
                     String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
+                    if (name.equalsIgnoreCase(GAME_LIB_JAR_NAME) || name.equalsIgnoreCase(NAMED_GAME_LIB_JAR_NAME)) {
+                        continue;
+                    }
                     if (name.endsWith(".jar")) {
                         tmp.add(p.toAbsolutePath().normalize());
                     }
@@ -405,6 +484,24 @@ public class RustedWarfareGameProvider implements GameProvider {
         return vmName.contains("dalvik") || runtimeName.contains("android");
     }
 
+    private static String getRequestedRuntimeNamespace() {
+        return isNamedRuntimeRequested() ? NAMED_NAMESPACE : OFFICIAL_NAMESPACE;
+    }
+
+    private static boolean isNamedRuntimeRequested() {
+        String fabricRuntimeNamespace = System.getProperty(FABRIC_RUNTIME_MAPPING_NAMESPACE);
+        if (NAMED_NAMESPACE.equals(fabricRuntimeNamespace)) {
+            return true;
+        }
+
+        if (Boolean.getBoolean(DEV_NAMED_PROPERTY)) {
+            return true;
+        }
+
+        String namedGameJar = System.getProperty(NAMED_GAME_JAR_PROPERTY);
+        return namedGameJar != null && !namedGameJar.isEmpty();
+    }
+
     @Override
     public void launch(ClassLoader loader) {
         try {
@@ -494,8 +591,10 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("rustedfabricapi.ctxVersion", 1);
 
         ctx.put("gameDir", gameDir);
+        ctx.put("gameJar", gameLibJar);
         ctx.put("gameArgs", getLaunchArguments(false));
         ctx.put("androidRuntime", isAndroidRuntime());
+        ctx.put("runtimeNamespace", getRequestedRuntimeNamespace());
 
         FabricLoader.getInstance().invokeEntrypoints(
                 key,

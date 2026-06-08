@@ -11,6 +11,18 @@ repositories {
     maven { url "https://repo.spongepowered.org/maven/" }
 }
 
+def gameLibJarFile = {
+    project.hasProperty('gameLibJar') ? file(project.property('gameLibJar')) : file("libs/game-lib.jar")
+}
+def mappingsTinyFile = {
+    project.hasProperty('mappingsTiny') ? file(project.property('mappingsTiny')) : file("src/main/resources/mappings/mappings.tiny")
+}
+def namedGameJarFile = {
+    project.hasProperty('namedGameJar')
+            ? file(project.property('namedGameJar'))
+            : layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
+}
+
 dependencies {
     // Fabric
     implementation "net.fabricmc:fabric-loader:0.18.1"        // 举例
@@ -30,9 +42,15 @@ dependencies {
     implementation "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
 
     // RW
-    compileOnly files("libs/game-lib.jar")
+    compileOnly files({ gameLibJarFile() })
 }
 
+configurations {
+    namedGameJarElements {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+}
 
 test {
     useJUnitPlatform()
@@ -48,6 +66,89 @@ jar {
                 'Game-Id': 'rusted_warfare',
                 'Game-Version': 'unknown'
         )
+    }
+}
+
+def remapClasspath = {
+    def jars = []
+    def libsDir = file("libs")
+    if (libsDir.isDirectory()) {
+        def inputJar = gameLibJarFile().canonicalFile
+        def outputJar = namedGameJarFile().canonicalFile
+        jars.addAll(fileTree(libsDir) {
+            include "*.jar"
+        }.files.findAll { it.canonicalFile != inputJar && it.canonicalFile != outputJar })
+    }
+    jars.addAll(configurations.runtimeClasspath.files)
+    jars
+}
+
+tasks.register('generateNamedGameJar', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Remaps the game jar from official names to named names for mod development. Use -PgameLibJar=... [-PmappingsTiny=...] [-PnamedGameJar=...].'
+    dependsOn classes
+
+    inputs.file provider { gameLibJarFile() }
+    inputs.file provider { mappingsTinyFile() }
+    outputs.file provider { namedGameJarFile() }
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
+
+    doFirst {
+        def input = gameLibJarFile()
+        if (!input.isFile()) {
+            throw new GradleException("Missing game jar: ${input}. Provide one with -PgameLibJar=/path/to/game-lib.jar")
+        }
+        if (!mappingsTinyFile().isFile()) {
+            throw new GradleException("Missing mappings file: ${mappingsTinyFile()}. Provide one with -PmappingsTiny=/path/to/mappings.tiny")
+        }
+
+        def output = namedGameJarFile()
+        output.parentFile.mkdirs()
+        setArgs([
+                input.absolutePath,
+                output.absolutePath,
+                mappingsTinyFile().absolutePath,
+                'official',
+                'named'
+        ] + remapClasspath().collect { it.absolutePath })
+    }
+}
+
+tasks.register('remapNamedJarToOfficial', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Remaps a named mod jar back to official runtime names. Use -PremapInput=... [-PremapOutput=...].'
+    dependsOn classes, generateNamedGameJar
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
+
+    doFirst {
+        if (!project.hasProperty('remapInput')) {
+            throw new GradleException('Missing -PremapInput=/path/to/named-mod.jar')
+        }
+
+        def input = file(project.property('remapInput'))
+        def output = project.hasProperty('remapOutput')
+                ? file(project.property('remapOutput'))
+                : layout.buildDirectory.file("rusted-dev/remapped/${input.name}").get().asFile
+        output.parentFile.mkdirs()
+
+        setArgs([
+                input.absolutePath,
+                output.absolutePath,
+                mappingsTinyFile().absolutePath,
+                'named',
+                'official',
+                namedGameJarFile().absolutePath
+        ] + remapClasspath().collect { it.absolutePath })
+    }
+}
+
+artifacts {
+    namedGameJarElements(provider { namedGameJarFile() }) {
+        builtBy generateNamedGameJar
     }
 }
 

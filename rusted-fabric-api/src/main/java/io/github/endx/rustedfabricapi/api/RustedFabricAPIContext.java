@@ -14,8 +14,16 @@ public final class RustedFabricAPIContext {
         return (Path) raw.get(RustedFabricAPIKeys.K_GAME_DIR);
     }
 
+    public Path gameJar() {
+        return (Path) raw.get(RustedFabricAPIKeys.K_GAME_JAR);
+    }
+
     public String[] gameArgs() {
         return (String[]) raw.get(RustedFabricAPIKeys.K_GAME_ARGS);
+    }
+
+    public String runtimeNamespace() {
+        return (String) raw.get(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE);
     }
 
     public boolean androidRuntime() {
