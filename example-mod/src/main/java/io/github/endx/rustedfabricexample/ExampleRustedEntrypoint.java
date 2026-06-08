@@ -12,5 +12,6 @@ public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
                 + ", gameDir=" + ctx.gameDir()
                 + ", gameJar=" + ctx.gameJar());
         ExampleMod.logNamedGameTypes(ctx.entrypointKey());
+        ExampleMod.startVisibleSettingsTweaks(ctx.entrypointKey());
     }
 }
