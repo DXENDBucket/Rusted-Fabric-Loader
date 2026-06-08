@@ -8,10 +8,12 @@ version = '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
     maven { url = "https://maven.fabricmc.net/" }
+    maven { url "https://repo.spongepowered.org/maven/" }
 }
 
 dependencies {
     implementation "net.fabricmc:fabric-loader:0.18.1"
+    compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
 }
 
 test {

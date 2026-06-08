@@ -4,5 +4,8 @@
   "version": "0.1.0",
   "name": "Rusted Fabric API",
   "description": "Base API for Rusted Fabric Loader",
-  "environment": "*"
+  "environment": "*",
+  "mixins": [
+    "rustedfabricapi.mixins.json"
+  ]
 }

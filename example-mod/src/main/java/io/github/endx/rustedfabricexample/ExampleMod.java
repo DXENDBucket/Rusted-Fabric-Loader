@@ -5,6 +5,8 @@ import net.fabricmc.api.ModInitializer;
 import rustedwarfare.core.GameEngine;
 import rustedwarfare.core.SettingsEngine;
 import rustedwarfare.mod.ModManager;
+import rustedwarfare.ui.InGameMessage;
+import rustedwarfare.ui.MessageInterface;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -60,13 +62,36 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
 
     private static void waitForSettingsAndApplyTweaks(String stage) {
         Throwable lastFailure = null;
+        boolean settingsApplied = false;
+        boolean settingsTimeoutLogged = false;
+        String lastMessageMapPath = null;
 
-        for (int attempt = 1; attempt <= 600; attempt++) {
+        for (int attempt = 1; ; attempt++) {
             try {
                 GameEngine engine = GameEngine.getInstance();
-                if (engine != null && engine.settings != null) {
-                    applyVisibleSettingsTweaks(stage, engine.settings);
-                    return;
+                if (engine != null) {
+                    if (!settingsApplied && engine.settings != null) {
+                        applyVisibleSettingsTweaks(stage, engine.settings);
+                        settingsApplied = true;
+                    }
+
+                    String currentMapPath = engine.getCurrentMapPath();
+                    if (!isPlayableMapPath(currentMapPath)) {
+                        lastMessageMapPath = null;
+                    } else if (!currentMapPath.equals(lastMessageMapPath)
+                            && sendExampleInGameMessage(stage, engine, currentMapPath)) {
+                        lastMessageMapPath = currentMapPath;
+                    }
+
+                    if (!settingsApplied && !settingsTimeoutLogged && attempt >= 600) {
+                        settingsTimeoutLogged = true;
+                        if (lastFailure != null) {
+                            log("visible settings tweaks still waiting, last failure="
+                                    + lastFailure.getClass().getName() + ": " + lastFailure.getMessage());
+                        } else {
+                            log("visible settings tweaks still waiting before SettingsEngine was ready");
+                        }
+                    }
                 }
             } catch (Throwable t) {
                 lastFailure = t;
@@ -79,13 +104,6 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
                 log("visible settings tweaks interrupted before GameEngine was ready");
                 return;
             }
-        }
-
-        if (lastFailure != null) {
-            log("visible settings tweaks timed out, last failure="
-                    + lastFailure.getClass().getName() + ": " + lastFailure.getMessage());
-        } else {
-            log("visible settings tweaks timed out before SettingsEngine was ready");
         }
     }
 
@@ -108,6 +126,25 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
                 + ", showHpChanges " + oldShowHpChanges + "->" + settings.showHpChanges
                 + ", showUnitIcons " + oldShowUnitIcons + "->" + settings.showUnitIcons
                 + ", showWarLogOnScreen " + oldShowWarLogOnScreen + "->" + settings.showWarLogOnScreen);
+    }
+
+    private static boolean sendExampleInGameMessage(String stage, GameEngine engine, String currentMapPath) {
+        if (engine.interfaceEngine == null || engine.interfaceEngine.messageInterface == null) {
+            return false;
+        }
+
+        MessageInterface messageInterface = engine.interfaceEngine.messageInterface;
+        InGameMessage message = messageInterface.addMessage(null,
+                "[Rusted Fabric Example] named HUD message from " + stage);
+        message.color = 0xff66ccff;
+        log("sent colored in-game HUD message with MessageInterface.addMessage on " + currentMapPath);
+        return true;
+    }
+
+    private static boolean isPlayableMapPath(String mapPath) {
+        return mapPath != null
+                && !mapPath.isEmpty()
+                && !mapPath.startsWith("maps/menu_background/");
     }
 
     static void log(String message) {

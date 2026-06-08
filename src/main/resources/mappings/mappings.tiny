@@ -1,7 +1,428 @@
 tiny	2	0	official	intermediary	named
+c	com/corrodinggames/librocket/a	rw/client/ui/LibRocketUiController	rustedwarfare/client/ui/LibRocketUiController
+	f	Lcom/corrodinggames/librocket/a;	a	field_LibRocketUiController_instance	instance
+	f	Lcom/corrodinggames/librocket/b;	b	field_LibRocketUiController_libRocket	libRocket
+	f	Lcom/corrodinggames/rts/appFramework/f;	c	field_LibRocketUiController_appFramework	appFramework
+	f	Z	e	field_LibRocketUiController_resumeGameFlag	resumeGameFlag
+	m	()Lcom/corrodinggames/librocket/a;	a	method_LibRocketUiController_getInstance	getInstance
+	m	(IC)V	a	method_LibRocketUiController_handleKeyPressed	handleKeyPressed
+	m	(Lcom/corrodinggames/librocket/b;Lcom/corrodinggames/rts/appFramework/f;)V	a	method_LibRocketUiController_init	init
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_LibRocketUiController_queueConnectionResultPopup	queueConnectionResultPopup
+	m	(Ljava/lang/String;)V	a	method_LibRocketUiController_startNewGame	startNewGame
+	m	(Z)V	a	method_LibRocketUiController_resumeGameWithFlag	resumeGameWithFlag
+	m	()V	b	method_LibRocketUiController_showMainMenu	showMainMenu
+	m	(Ljava/lang/String;)Z	b	method_LibRocketUiController_openUrl	openUrl
+	m	(Z)V	b	method_LibRocketUiController_endGame	endGame
+	m	(Z)V	c	method_LibRocketUiController_setResumeGameFlag	setResumeGameFlag
+	m	()V	d	method_LibRocketUiController_showSettings	showSettings
+	m	(Z)V	d	method_LibRocketUiController_shutdownAndExit	shutdownAndExit
+	m	()V	e	method_LibRocketUiController_showLeaderboard	showLeaderboard
+	m	()V	f	method_LibRocketUiController_resumeGame	resumeGame
+	m	()V	g	method_LibRocketUiController_requestDisplayRefresh	requestDisplayRefresh
+	m	()V	h	method_LibRocketUiController_queueSaveSettings	queueSaveSettings
+	m	()I	i	method_LibRocketUiController_getKeyModifierState	getKeyModifierState
+	m	()Z	j	method_LibRocketUiController_isUiOpen	isUiOpen
+	m	()V	o	method_LibRocketUiController_closeBattleroomIfOpen	closeBattleroomIfOpen
+c	com/corrodinggames/librocket/b	rw/client/ui/LibRocketUiEngine	rustedwarfare/client/ui/LibRocketUiEngine
+	f	Lcom/corrodinggames/rts/gameFramework/bt;	a	field_LibRocketUiEngine_textureLoadTimer	textureLoadTimer
+	f	Ljava/lang/String;	b	field_LibRocketUiEngine_guiBasePath	guiBasePath
+	f	Lcom/corrodinggames/librocket/scripts/ScriptEngine;	c	field_LibRocketUiEngine_scriptEngine	scriptEngine
+	f	I	d	field_LibRocketUiEngine_frameTextureCounter	frameTextureCounter
+	f	Z	e	field_LibRocketUiEngine_insideEvent	insideEvent
+	f	Landroid/graphics/Rect;	f	field_LibRocketUiEngine_scissorRect	scissorRect
+	f	Landroid/graphics/RectF;	g	field_LibRocketUiEngine_scissorRectF	scissorRectF
+	f	Z	h	field_LibRocketUiEngine_scissorEnabled	scissorEnabled
+	f	Ljava/util/regex/Pattern;	i	field_LibRocketUiEngine_dynamicTextPattern	dynamicTextPattern
+	f	Lcom/corrodinggames/librocket/d;	j	field_LibRocketUiEngine_alertDocumentData	alertDocumentData
+	f	Lcom/corrodinggames/librocket/d;	k	field_LibRocketUiEngine_popupDocumentData	popupDocumentData
+	m	(Z)V	EnableScissorRegion	method_LibRocketUiEngine_EnableScissorRegion	EnableScissorRegion
+	m	(Ljava/lang/String;)V	HandleEvent	method_LibRocketUiEngine_HandleEvent	HandleEvent
+	m	(ILjava/lang/String;)Z	LoadTexture	method_LibRocketUiEngine_LoadTexture	LoadTexture
+	m	(I)V	ReleaseTexture	method_LibRocketUiEngine_ReleaseTexture	ReleaseTexture
+	m	(IIII)V	SetScissorRegion	method_LibRocketUiEngine_SetScissorRegion	SetScissorRegion
+	m	(Ljava/lang/String;)Ljava/lang/String;	TranslateString	method_LibRocketUiEngine_TranslateString	TranslateString
+	m	()V	a	method_LibRocketUiEngine_resetFrameTextureCounter	resetFrameTextureCounter
+	m	(Lcom/ElementDocument;)Z	a	method_LibRocketUiEngine_showPopupDocument	showPopupDocument
+	m	(Lcom/ElementDocument;Ljava/lang/String;Ljava/lang/Object;Ljava/util/HashMap;)V	a	method_LibRocketUiEngine_configurePopupButton	configurePopupButton
+	m	(Lcom/corrodinggames/librocket/d;)Lcom/ElementDocument;	a	method_LibRocketUiEngine_createPopupDocumentFromData	createPopupDocumentFromData
+	m	(Ljava/lang/String;)Ljava/lang/String;	a	method_LibRocketUiEngine_convertTexturePath	convertTexturePath
+	m	(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;Z)Lcom/ElementDocument;	a	method_LibRocketUiEngine_createPopupFromDocumentPath	createPopupFromDocumentPath
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/regex/Matcher;	a	method_LibRocketUiEngine_matchRegex	matchRegex
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/librocket/e;Lcom/corrodinggames/librocket/e;Z)V	a	method_LibRocketUiEngine_showPopupWithButtons	showPopupWithButtons
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;ZZ)Lcom/ElementDocument;	a	method_LibRocketUiEngine_createAndMaybeShowPopup	createAndMaybeShowPopup
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V	a	method_LibRocketUiEngine_showPopupWithButtonScripts	showPopupWithButtonScripts
+	m	()Z	b	method_LibRocketUiEngine_isNoDocumentOrPopupActive	isNoDocumentOrPopupActive
+	m	(Lcom/ElementDocument;)Z	b	method_LibRocketUiEngine_closeDocumentIfPopup	closeDocumentIfPopup
+	m	(Lcom/corrodinggames/librocket/d;)Z	b	method_LibRocketUiEngine_showAlertDocumentData	showAlertDocumentData
+	m	(Ljava/lang/String;)Ljava/lang/Object;	b	method_LibRocketUiEngine_getActiveDocumentMetadataValue	getActiveDocumentMetadataValue
+	m	(Ljava/lang/String;Ljava/lang/String;)V	b	method_LibRocketUiEngine_showAlert	showAlert
+	m	()Lcom/ElementDocument;	c	method_LibRocketUiEngine_getPopupDocument	getPopupDocument
+	m	(Lcom/corrodinggames/librocket/d;)Z	c	method_LibRocketUiEngine_showPopupDocumentData	showPopupDocumentData
+	m	(Ljava/lang/String;)V	c	method_LibRocketUiEngine_showAlertText	showAlertText
+	m	()Lcom/ElementDocument;	d	method_LibRocketUiEngine_getAlertDocument	getAlertDocument
+	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_LibRocketUiEngine_resolveTextExpressions	resolveTextExpressions
+	m	()Lcom/ElementDocument;	e	method_LibRocketUiEngine_getAlertOrPopupDocument	getAlertOrPopupDocument
+	m	()Lcom/ElementDocument;	f	method_LibRocketUiEngine_getPopupOrActiveDocument	getPopupOrActiveDocument
+	m	()Lcom/ElementDocument;	g	method_LibRocketUiEngine_getTopmostDocument	getTopmostDocument
+	m	(Ljava/lang/String;)J	getFileLastModified	method_LibRocketUiEngine_getFileLastModified	getFileLastModified
+	m	()Z	h	method_LibRocketUiEngine_closeAlertOrPopup	closeAlertOrPopup
+	m	()Z	i	method_LibRocketUiEngine_closeAlert	closeAlert
+	m	()Z	j	method_LibRocketUiEngine_closePopup	closePopup
+	m	()Ljava/lang/String;	k	method_LibRocketUiEngine_getPopupText	getPopupText
+	m	(Lcom/ElementDocument;)V	newDocumentLoaded	method_LibRocketUiEngine_newDocumentLoaded	newDocumentLoaded
+	m	(Lcom/ElementDocument;)V	newDocumentShown	method_LibRocketUiEngine_newDocumentShown	newDocumentShown
+	m	()V	postUpdate	method_LibRocketUiEngine_postUpdate	postUpdate
+c	com/corrodinggames/librocket/c	rw/client/ui/LibRocketTextureHolder	rustedwarfare/client/ui/LibRocketTextureHolder
+	f	Ljava/lang/String;	a	field_LibRocketTextureHolder_path	path
+	f	Z	b	field_LibRocketTextureHolder_lazy	lazy
+	f	Z	c	field_LibRocketTextureHolder_thumbnail	thumbnail
+	f	Z	d	field_LibRocketTextureHolder_noColor	noColor
+	f	F	e	field_LibRocketTextureHolder_alpha	alpha
+	f	Lcom/corrodinggames/rts/game/units/as;	f	field_LibRocketTextureHolder_unitType	unitType
+	f	Lcom/corrodinggames/librocket/b;	g	field_LibRocketTextureHolder_libRocket	libRocket
+	m	()Z	a	method_LibRocketTextureHolder_loadTexture	loadTexture
+c	com/corrodinggames/librocket/d	rw/client/ui/PopupDocumentData	rustedwarfare/client/ui/PopupDocumentData
+	f	Lcom/ElementDocument;	a	field_PopupDocumentData_document	document
+	f	Ljava/lang/String;	b	field_PopupDocumentData_title	title
+	f	Ljava/lang/String;	c	field_PopupDocumentData_message	message
+	f	Ljava/lang/String;	d	field_PopupDocumentData_inputDefaultValue	inputDefaultValue
+	f	Ljava/lang/Object;	e	field_PopupDocumentData_button1	button1
+	f	Ljava/lang/Object;	f	field_PopupDocumentData_button2	button2
+	f	Z	g	field_PopupDocumentData_showImmediately	showImmediately
+	f	Z	h	field_PopupDocumentData_showBackButton	showBackButton
+	f	Ljava/lang/Runnable;	i	field_PopupDocumentData_onClose	onClose
+c	com/corrodinggames/librocket/e	rw/client/ui/PopupButton	rustedwarfare/client/ui/PopupButton
+	f	Ljava/lang/String;	a	field_PopupButton_label	label
+	f	Ljava/lang/Runnable;	b	field_PopupButton_runnable	runnable
+	f	Z	c	field_PopupButton_bindEnterKey	bindEnterKey
 c	com/corrodinggames/librocket/scripts/Debug	rw/script/DebugScript	rustedwarfare/script/DebugScript
 	m	(IFFIZ)Ljava/lang/Long;	createCustomUnitFromTypeId	createCustomUnitFromTypeId	createCustomUnitFromTypeId
 	m	()I	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId
+c	com/corrodinggames/librocket/scripts/Mods	rw/client/ui/script/ModsScript	rustedwarfare/client/ui/script/ModsScript
+	f	I	checkWorkshopSkip	field_Mods_checkWorkshopSkip	checkWorkshopSkip
+	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_Mods_root	root
+	f	Ljava/lang/Runnable;	updateModsRunnable	field_Mods_updateModsRunnable	updateModsRunnable
+	m	()V	_rememberTempModSelection	method_Mods__rememberTempModSelection_20a044	_rememberTempModSelection
+	m	()V	_restoreTempModSelection	method_Mods__restoreTempModSelection_09ff5f	_restoreTempModSelection
+	m	(Z)V	_saveModsCommon	method_Mods__saveModsCommon_42f9eb	_saveModsCommon
+	m	(Z)V	_saveModsMessages	method_Mods__saveModsMessages_a91cc3	_saveModsMessages
+	m	()V	applyModFilter	method_Mods_applyModFilter_72b0e8	applyModFilter
+	m	(Ljava/lang/String;)V	deleteMod	method_Mods_deleteMod_4f04d7	deleteMod
+	m	(Ljava/lang/String;)V	deleteModPopup	method_Mods_deleteModPopup_3d7c15	deleteModPopup
+	m	()V	disableAll	method_Mods_disableAll_ff68ba	disableAll
+	m	()V	disableAllAsk	method_Mods_disableAllAsk_f56f2a	disableAllAsk
+	m	()Lcom/corrodinggames/rts/gameFramework/o/a;	getSteam	method_Mods_getSteam_ad6d1d	getSteam
+	m	()V	loadMods	method_Mods_loadMods_ebe083	loadMods
+	m	()V	openWorkshop	method_Mods_openWorkshop_d7c520	openWorkshop
+	m	()V	refreshModList	method_Mods_refreshModList_d12b7e	refreshModList
+	m	()V	reloadModData	method_Mods_reloadModData_5cab8e	reloadModData
+	m	()V	reloadModDataAsk	method_Mods_reloadModDataAsk_8f7589	reloadModDataAsk
+	m	()V	saveMods	method_Mods_saveMods_e039d1	saveMods
+	m	(Ljava/lang/String;)V	setModFilter	method_Mods_setModFilter_559193	setModFilter
+	m	()V	updateMods	method_Mods_updateMods_a60d5a	updateMods
+	m	(Ljava/lang/String;)V	uploadMod	method_Mods_uploadMod_490de6	uploadMod
+	m	(Ljava/lang/String;)V	uploadModAsk	method_Mods_uploadModAsk_f86b3f	uploadModAsk
+	m	(Ljava/lang/String;)V	viewMod	method_Mods_viewMod_11ac93	viewMod
+c	com/corrodinggames/librocket/scripts/Multiplayer	rw/client/ui/script/MultiplayerScript	rustedwarfare/client/ui/script/MultiplayerScript
+	f	[Ljava/lang/String;	currentDropdownRawArray	field_Multiplayer_currentDropdownRawArray	currentDropdownRawArray
+	f	Lcom/corrodinggames/librocket/scripts/Root$TableData;	lastPlayerTable	field_Multiplayer_lastPlayerTable	lastPlayerTable
+	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_Multiplayer_root	root
+	f	Z	useMapDropdown	field_Multiplayer_useMapDropdown	useMapDropdown
+	m	()Ljava/lang/String;	_getRandomDefaultPlayerName	method_Multiplayer__getRandomDefaultPlayerName_1652dd	_getRandomDefaultPlayerName
+	m	()V	addAI	method_Multiplayer_addAI_a8a1e2	addAI
+	m	()V	askPassword	method_Multiplayer_askPassword_14340e	askPassword
+	m	(Ljava/lang/String;)V	askPasswordEntered	method_Multiplayer_askPasswordEntered_831170	askPasswordEntered
+	m	()V	battleroomSetup	method_Multiplayer_battleroomSetup_6b6820	battleroomSetup
+	m	()V	cancelPaswordAsk	method_Multiplayer_cancelPaswordAsk_8ad907	cancelPaswordAsk
+	m	()V	closeBattleroomIfOpen	method_Multiplayer_closeBattleroomIfOpen_2a6b4a	closeBattleroomIfOpen
+	m	(Ljava/lang/String;)V	disconnect	method_Multiplayer_disconnect_7fa913	disconnect
+	m	()V	gameOptionsGet	method_Multiplayer_gameOptionsGet_a25219	gameOptionsGet
+	m	(Z)V	gameOptionsGetOrPush	method_Multiplayer_gameOptionsGetOrPush_8a9183	gameOptionsGetOrPush
+	m	()V	gameOptionsPush	method_Multiplayer_gameOptionsPush_666bf9	gameOptionsPush
+	m	()V	gameOptionsRefreshTypes	method_Multiplayer_gameOptionsRefreshTypes_910cd1	gameOptionsRefreshTypes
+	m	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/String;	generateOption	method_Multiplayer_generateOption_2d4785	generateOption
+	m	(Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Integer;Z)Ljava/lang/String;	generateOption	method_Multiplayer_generateOption_986bea	generateOption
+	m	()Lcom/Element;	getMapDropdown	method_Multiplayer_getMapDropdown_1ea932	getMapDropdown
+	m	()Ljava/lang/String;	getMapDropdownSelected	method_Multiplayer_getMapDropdownSelected_569dbd	getMapDropdownSelected
+	m	()Lcom/corrodinggames/librocket/scripts/Root$TableData;	getPlayerTable	method_Multiplayer_getPlayerTable_2bca7b	getPlayerTable
+	m	()Ljava/util/ArrayList;	getStartingUnitOptions	method_Multiplayer_getStartingUnitOptions_9d1c72	getStartingUnitOptions
+	m	()V	getUsernameFromInterface	method_Multiplayer_getUsernameFromInterface_f11b66	getUsernameFromInterface
+	m	()Z	isInControlOfServer	method_Multiplayer_isInControlOfServer_70b194	isInControlOfServer
+	m	()V	loadUsername	method_Multiplayer_loadUsername_a02fce	loadUsername
+	m	()V	multiplayerBackPrompt	method_Multiplayer_multiplayerBackPrompt_1f57eb	multiplayerBackPrompt
+	m	()V	multiplayerExitPrompt	method_Multiplayer_multiplayerExitPrompt_d2e9a5	multiplayerExitPrompt
+	m	()V	multiplayerStart	method_Multiplayer_multiplayerStart_eae28d	multiplayerStart
+	m	()V	playerConfig_apply	method_Multiplayer_playerConfig_apply_322a09	playerConfig_apply
+	m	()V	playerConfig_kick	method_Multiplayer_playerConfig_kick_6e9c72	playerConfig_kick
+	m	()V	readInterfaceIntoNetworkSettings	method_Multiplayer_readInterfaceIntoNetworkSettings_1788ae	readInterfaceIntoNetworkSettings
+	m	()V	refreshPlayerTable	method_Multiplayer_refreshPlayerTable_468154	refreshPlayerTable
+	m	()V	refreshUI	method_Multiplayer_refreshUI_933ddd	refreshUI
+	m	()V	reinviteAsk	method_Multiplayer_reinviteAsk_4c4afa	reinviteAsk
+	m	()V	sendReturnToBattleroomEvent	method_Multiplayer_sendReturnToBattleroomEvent_0759ec	sendReturnToBattleroomEvent
+	m	(Ljava/lang/String;)V	setMapFromPopup	method_Multiplayer_setMapFromPopup_e756b3	setMapFromPopup
+	m	(Lcom/Element;ZZLcom/corrodinggames/rts/game/n;)V	setupPlayerColorDropDown	method_Multiplayer_setupPlayerColorDropDown_7a6bbf	setupPlayerColorDropDown
+	m	(Lcom/Element;Z)V	setupStartingUnitDropDown	method_Multiplayer_setupStartingUnitDropDown_93153f	setupStartingUnitDropDown
+	m	()V	showMapSelect	method_Multiplayer_showMapSelect_b3b6d2	showMapSelect
+	m	(Ljava/lang/String;)V	showPlayerConfig	method_Multiplayer_showPlayerConfig_30fa64	showPlayerConfig
+	m	()V	showPlayerConfigForSelf	method_Multiplayer_showPlayerConfigForSelf_d157b3	showPlayerConfigForSelf
+	m	(Ljava/lang/String;)V	showPlayerConfigNow	method_Multiplayer_showPlayerConfigNow_e11d16	showPlayerConfigNow
+	m	()V	showSetTeamsDialog	method_Multiplayer_showSetTeamsDialog_0a2d62	showSetTeamsDialog
+	m	()V	showSteamInviteDialog	method_Multiplayer_showSteamInviteDialog_cb5529	showSteamInviteDialog
+	m	()V	surrender	method_Multiplayer_surrender_ccbb49	surrender
+	m	()V	surrenderPrompt	method_Multiplayer_surrenderPrompt_21e247	surrenderPrompt
+	m	()V	teamsSet_apply	method_Multiplayer_teamsSet_apply_a6659c	teamsSet_apply
+	m	(Lcom/Element;Ljava/lang/String;Ljava/lang/String;)V	updateMapDropdown	method_Multiplayer_updateMapDropdown_c5dae3	updateMapDropdown
+c	com/corrodinggames/librocket/scripts/Multiplayer$DropdownOption	rw/client/ui/script/MultiplayerScript$DropdownOption	rustedwarfare/client/ui/script/MultiplayerScript$DropdownOption
+	f	Ljava/lang/String;	key	field_Multiplayer_DropdownOption_key	key
+	f	Ljava/lang/String;	value	field_Multiplayer_DropdownOption_value	value
+c	com/corrodinggames/librocket/scripts/Root	rw/client/ui/script/RootScript	rustedwarfare/client/ui/script/RootScript
+	f	Z	DEBUG_TIMING	field_Root_DEBUG_TIMING	DEBUG_TIMING
+	f	Lcom/corrodinggames/rts/gameFramework/bt;	convertTextStopwatch	field_Root_convertTextStopwatch	convertTextStopwatch
+	f	Lcom/ElementDocument;	lastConnectingPopup	field_Root_lastConnectingPopup	lastConnectingPopup
+	f	Ljava/util/ArrayList;	lastSortedDiscoveredServers	field_Root_lastSortedDiscoveredServers	lastSortedDiscoveredServers
+	f	Lcom/corrodinggames/rts/gameFramework/bt;	loadSettingsStopwatch	field_Root_loadSettingsStopwatch	loadSettingsStopwatch
+	f	Lcom/corrodinggames/librocket/scripts/Mods;	mods	field_Root_mods	mods
+	f	Lcom/corrodinggames/librocket/scripts/Multiplayer;	multiplayer	field_Root_multiplayer	multiplayer
+	f	Lcom/corrodinggames/rts/gameFramework/bt;	openDocumentTimer	field_Root_openDocumentTimer	openDocumentTimer
+	f	Lcom/corrodinggames/rts/gameFramework/j/an;	threadedGameConnector	field_Root_threadedGameConnector	threadedGameConnector
+	m	(Ljava/lang/String;Z)V	_loadConfigAndStartNewSandboxCommon	method_Root__loadConfigAndStartNewSandboxCommon_5caa64	_loadConfigAndStartNewSandboxCommon
+	m	(Z)V	_startAdvancedMode	method_Root__startAdvancedMode_507dcd	_startAdvancedMode
+	m	(Ljava/lang/String;)V	alert	method_Root_alert_b5c5b9	alert
+	m	(ZZ)Z	and	method_Root_and_5fe2de	and
+	m	()V	applyResolution	method_Root_applyResolution_80eb96	applyResolution
+	m	()V	askQuitGame	method_Root_askQuitGame_a7582d	askQuitGame
+	m	()V	back	method_Root_back_c44270	back
+	m	()V	backOrClose	method_Root_backOrClose_912bc9	backOrClose
+	m	()V	backWarnIfOverlappingKeyBinding	method_Root_backWarnIfOverlappingKeyBinding_13049b	backWarnIfOverlappingKeyBinding
+	m	()Z	canResume	method_Root_canResume_b12a83	canResume
+	m	()V	cancelJoinServer	method_Root_cancelJoinServer_199f82	cancelJoinServer
+	m	()V	checkServerListScroll	method_Root_checkServerListScroll_cf278c	checkServerListScroll
+	m	(Lcom/Element;)Z	clickElement	method_Root_clickElement_4ae0ac	clickElement
+	m	(Ljava/lang/String;)V	clickedServer	method_Root_clickedServer_894ac8	clickedServer
+	m	(I)V	clickedServerRow	method_Root_clickedServerRow_ca18a6	clickedServerRow
+	m	()Z	closeAlertOnly	method_Root_closeAlertOnly_64c86c	closeAlertOnly
+	m	()Z	closePopup	method_Root_closePopup_58eeca	closePopup
+	m	()Z	closePopupOnly	method_Root_closePopupOnly_367966	closePopupOnly
+	m	()V	closeSettings	method_Root_closeSettings_fa0b34	closeSettings
+	m	(Ljava/lang/String;)Ljava/lang/String;	convertMapName	method_Root_convertMapName_cacb7a	convertMapName
+	m	(Ljava/lang/String;)Ljava/lang/String;	convertMapNameWithoutTranslation	method_Root_convertMapNameWithoutTranslation_cb88dd	convertMapNameWithoutTranslation
+	m	()V	convertTextOnPage	method_Root_convertTextOnPage_98594a	convertTextOnPage
+	m	(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)Lcom/ElementDocument;	createAndShowPopup	method_Root_createAndShowPopup_72c3a0	createAndShowPopup
+	m	(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)Lcom/ElementDocument;	createPopupHidden	method_Root_createPopupHidden_26d792	createPopupHidden
+	m	(Ljava/lang/String;Ljava/lang/Object;)V	delayedOpenNoHistory	method_Root_delayedOpenNoHistory_5e4988	delayedOpenNoHistory
+	m	()V	directJoinPopup	method_Root_directJoinPopup_3ab87f	directJoinPopup
+	m	()V	displayServerList	method_Root_displayServerList_3392c7	displayServerList
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V	displayServerListRaw	method_Root_displayServerListRaw_dea58e	displayServerListRaw
+	m	(Ljava/lang/String;)Ljava/lang/String;	escapedString	method_Root_escapedString_42cefb	escapedString
+	m	()V	event_unicodeEntered	method_Root_event_unicodeEntered_bb8c59	event_unicodeEntered
+	m	()V	exit	method_Root_exit_397075	exit
+	m	()V	exportGameLog	method_Root_exportGameLog_de1e58	exportGameLog
+	m	(Ljava/lang/String;)V	exportMap	method_Root_exportMap_2b967a	exportMap
+	m	()Ljava/lang/String;	fullVersionOnlyStyle	method_Root_fullVersionOnlyStyle_653201	fullVersionOnlyStyle
+	m	()Lcom/ElementDocument;	getAlertOrPopup	method_Root_getAlertOrPopup_b48841	getAlertOrPopup
+	m	()Ljava/lang/String;	getCreditsText	method_Root_getCreditsText_4f12a4	getCreditsText
+	m	()Ljava/lang/String;	getCurrentDocumentPath	method_Root_getCurrentDocumentPath_563eea	getCurrentDocumentPath
+	m	()Ljava/lang/String;	getCurrentPopupPath	method_Root_getCurrentPopupPath_86e0e7	getCurrentPopupPath
+	m	(Ljava/lang/String;)Lcom/Element;	getElementById	method_Root_getElementById_f2a274	getElementById
+	m	(Ljava/lang/String;)Ljava/lang/String;	getHTMLMapNameFromPath	method_Root_getHTMLMapNameFromPath_7a10e4	getHTMLMapNameFromPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	getHTMLMapThumbnail	method_Root_getHTMLMapThumbnail_a39885	getHTMLMapThumbnail
+	m	(ILcom/corrodinggames/rts/gameFramework/ad;I)Ljava/lang/String;	getKeyBindingAction	method_Root_getKeyBindingAction_7d09c8	getKeyBindingAction
+	m	(Ljava/lang/String;)Ljava/lang/String;	getMapDetails	method_Root_getMapDetails_bd1c31	getMapDetails
+	m	(Ljava/lang/String;)Ljava/lang/String;	getMapNameFromPath	method_Root_getMapNameFromPath_e65e29	getMapNameFromPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	getMapThumbnail	method_Root_getMapThumbnail_673b66	getMapThumbnail
+	m	(Lcom/Element;Ljava/lang/String;)Ljava/lang/String;	getModeMapPath	method_Root_getModeMapPath_b29609	getModeMapPath
+	m	()Lcom/ElementDocument;	getPopup	method_Root_getPopup_e0d6ab	getPopup
+	m	()Ljava/lang/String;	getPopupText	method_Root_getPopupText_e58521	getPopupText
+	m	(Ljava/lang/String;)Ljava/lang/String;	getValueById	method_Root_getValueById_b85d73	getValueById
+	m	()Ljava/lang/String;	getVersionName	method_Root_getVersionName_eb8b03	getVersionName
+	m	()Z	hasModSupport	method_Root_hasModSupport_7943ca	hasModSupport
+	m	()Z	hasReloadSupport	method_Root_hasReloadSupport_f7b4fe	hasReloadSupport
+	m	()Z	hasWorkshopSupport	method_Root_hasWorkshopSupport_c1bfb0	hasWorkshopSupport
+	m	(Z)Ljava/lang/String;	hideClass	method_Root_hideClass_603ce0	hideClass
+	m	(Z)Ljava/lang/String;	hideIf	method_Root_hideIf_382ff7	hideIf
+	m	()Ljava/lang/String;	hideIfMobile	method_Root_hideIfMobile_31890a	hideIfMobile
+	m	()V	hideKeyboard	method_Root_hideKeyboard_82021b	hideKeyboard
+	m	(Z)Ljava/lang/String;	hideStyle	method_Root_hideStyle_8e3bd8	hideStyle
+	m	(Z)Ljava/lang/String;	hideUnless	method_Root_hideUnless_ebe998	hideUnless
+	m	(Z)V	hostStart	method_Root_hostStart_151fe8	hostStart
+	m	(Z)V	hostStartFromPopup	method_Root_hostStartFromPopup_97578b	hostStartFromPopup
+	m	(ZLjava/lang/String;)V	hostStartWithPassword	method_Root_hostStartWithPassword_a409e4	hostStartWithPassword
+	m	(ZLjava/lang/String;Z)V	hostStartWithPasswordAndMods	method_Root_hostStartWithPasswordAndMods_957078	hostStartWithPasswordAndMods
+	m	(Ljava/lang/String;)Ljava/lang/String;	htmlString	method_Root_htmlString_0d865b	htmlString
+	m	(Ljava/lang/String;)Ljava/lang/String;	htmlStringWithNewlines	method_Root_htmlStringWithNewlines_f6d5b3	htmlStringWithNewlines
+	m	(Ljava/lang/String;)Ljava/lang/String;	i	method_Root_i_09f7e4	i
+	m	(ZLjava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;	ifCondition	method_Root_ifCondition_fbffec	ifCondition
+	m	()V	importFilePopup	method_Root_importFilePopup_8312bb	importFilePopup
+	m	()Z	isDesktop	method_Root_isDesktop_710533	isDesktop
+	m	()Z	isIOS	method_Root_isIOS_fe920d	isIOS
+	m	()Z	isLinux	method_Root_isLinux_904b29	isLinux
+	m	()Z	isMac	method_Root_isMac_36161e	isMac
+	m	(Ljava/lang/String;)Z	isMapSkirmish	method_Root_isMapSkirmish_44fbc3	isMapSkirmish
+	m	()Z	isMobile	method_Root_isMobile_5cee05	isMobile
+	m	()Z	isSliderOrUIElementSelected	method_Root_isSliderOrUIElementSelected_01a25b	isSliderOrUIElementSelected
+	m	()Z	isVersionBeta	method_Root_isVersionBeta_676a7d	isVersionBeta
+	m	(Ljava/lang/String;)V	joinServer	method_Root_joinServer_e32b80	joinServer
+	m	()V	joinServerCallback	method_Root_joinServerCallback_f6a68d	joinServerCallback
+	m	(Ljava/lang/String;)V	joinServerFromPopup	method_Root_joinServerFromPopup_6f63ea	joinServerFromPopup
+	m	(Ljava/lang/String;Ljava/lang/String;)V	joinServerWithId	method_Root_joinServerWithId_35561e	joinServerWithId
+	m	(Z)V	keyBindingPopup_apply	method_Root_keyBindingPopup_apply_fb94b2	keyBindingPopup_apply
+	m	(I)V	keyBindingPopup_onKeydown	method_Root_keyBindingPopup_onKeydown_406c05	keyBindingPopup_onKeydown
+	m	(Ljava/lang/String;)V	loadConfigAndStartNew	method_Root_loadConfigAndStartNew_b4a727	loadConfigAndStartNew
+	m	(Ljava/lang/String;)V	loadConfigAndStartNewSandbox	method_Root_loadConfigAndStartNewSandbox_e8d5f9	loadConfigAndStartNewSandbox
+	m	(Ljava/lang/String;)V	loadConfigAndStartNewSandboxInAdvanced	method_Root_loadConfigAndStartNewSandboxInAdvanced_7d3e18	loadConfigAndStartNewSandboxInAdvanced
+	m	(Ljava/lang/String;)V	loadConfigAndStartSwitchToAdvanced	method_Root_loadConfigAndStartSwitchToAdvanced_26bf90	loadConfigAndStartSwitchToAdvanced
+	m	(Ljava/lang/String;Z)V	loadConfigCommon	method_Root_loadConfigCommon_ea2baf	loadConfigCommon
+	m	(Ljava/lang/String;)V	loadGame	method_Root_loadGame_1dc5d3	loadGame
+	m	(Ljava/lang/String;)V	loadGameEdit	method_Root_loadGameEdit_eccb7d	loadGameEdit
+	m	()V	loadLeaderboard	method_Root_loadLeaderboard_da5842	loadLeaderboard
+	m	(Ljava/lang/String;)V	loadReplay	method_Root_loadReplay_681e7d	loadReplay
+	m	(Ljava/lang/String;)V	loadReplayEdit	method_Root_loadReplayEdit_e11d66	loadReplayEdit
+	m	()V	loadSettings	method_Root_loadSettings_781989	loadSettings
+	m	(Ljava/lang/String;)V	logDebug	method_Root_logDebug_c24aa2	logDebug
+	m	(Ljava/lang/String;)V	logWarn	method_Root_logWarn_8f50cf	logWarn
+	m	(Ljava/lang/String;)V	makeExportMapGamePopup	method_Root_makeExportMapGamePopup_66ff4a	makeExportMapGamePopup
+	m	(Ljava/lang/String;)V	makeSaveGamePopup	method_Root_makeSaveGamePopup_1b9cb6	makeSaveGamePopup
+	m	()V	makeSendMessagePopup	method_Root_makeSendMessagePopup_b1314c	makeSendMessagePopup
+	m	()V	makeSendTeamMessagePopup	method_Root_makeSendTeamMessagePopup_1c3859	makeSendTeamMessagePopup
+	m	(Ljava/lang/String;)V	makeSendTeamMessagePopupWithDefaultText	method_Root_makeSendTeamMessagePopupWithDefaultText_9e2d41	makeSendTeamMessagePopupWithDefaultText
+	m	(Z)Z	not	method_Root_not_917579	not
+	m	()V	onEnter	method_Root_onEnter_d437eb	onEnter
+	m	()V	onEscape	method_Root_onEscape_f27cf0	onEscape
+	m	(F)V	onFrameUpdate	method_Root_onFrameUpdate_126543	onFrameUpdate
+	m	()V	onShowNewScreen	method_Root_onShowNewScreen_467afe	onShowNewScreen
+	m	()V	onTouch	method_Root_onTouch_1f2a9a	onTouch
+	m	(Ljava/lang/String;Ljava/lang/Object;)V	open	method_Root_open_2b7b9a	open
+	m	(Ljava/lang/String;)V	openAfterHelpPopup	method_Root_openAfterHelpPopup_6fe0d6	openAfterHelpPopup
+	m	(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;)V	openIfNotDemo	method_Root_openIfNotDemo_464a93	openIfNotDemo
+	m	(Ljava/lang/String;)V	openLinkToCG	method_Root_openLinkToCG_6aa362	openLinkToCG
+	m	(Ljava/lang/String;)V	openWhitelistedLink	method_Root_openWhitelistedLink_14d06c	openWhitelistedLink
+	m	(ZZ)Z	or	method_Root_or_5ce9d4	or
+	m	()V	playNextMusicTrack	method_Root_playNextMusicTrack_8277e4	playNextMusicTrack
+	m	(ILjava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	receiveChatMessage	method_Root_receiveChatMessage_4021d1	receiveChatMessage
+	m	()V	refreshAfterFileImport	method_Root_refreshAfterFileImport_763913	refreshAfterFileImport
+	m	()V	refreshChat	method_Root_refreshChat_8d51bc	refreshChat
+	m	()V	refreshServerList	method_Root_refreshServerList_639d04	refreshServerList
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V	refreshServerListRaw	method_Root_refreshServerListRaw_2959b4	refreshServerListRaw
+	m	(Ljava/lang/String;Lcom/corrodinggames/librocket/scripts/Root$TableData;)V	refreshTable	method_Root_refreshTable_b54808	refreshTable
+	m	(Ljava/lang/String;)Ljava/lang/String;	restrictedString	method_Root_restrictedString_bac950	restrictedString
+	m	()V	resume	method_Root_resume_a19c3e	resume
+	m	()V	resumeNonMenu	method_Root_resumeNonMenu_3d7bd6	resumeNonMenu
+	m	(Ljava/lang/Runnable;)V	runRunnable	method_Root_runRunnable_0813bf	runRunnable
+	m	(Ljava/lang/String;)V	saveGame	method_Root_saveGame_4d972f	saveGame
+	m	()V	saveLeaderboard	method_Root_saveLeaderboard_581fe6	saveLeaderboard
+	m	()V	saveSettings	method_Root_saveSettings_f33998	saveSettings
+	m	(F)V	scrollFromFocusedElement	method_Root_scrollFromFocusedElement_4112b8	scrollFromFocusedElement
+	m	(Ljava/lang/String;)V	sendChatMessage	method_Root_sendChatMessage_116e26	sendChatMessage
+	m	(Ljava/lang/String;)V	sendTeamChatMessage	method_Root_sendTeamChatMessage_75c793	sendTeamChatMessage
+	m	(Ljava/lang/String;)V	sendTeamChatMessageAndPing	method_Root_sendTeamChatMessageAndPing_b14d91	sendTeamChatMessageAndPing
+	m	(Ljava/lang/String;)V	setDocument	method_Root_setDocument_f4a3bc	setDocument
+	m	(Lcom/ElementDocument;Ljava/lang/Runnable;)V	setDocumentUpdate	method_Root_setDocumentUpdate_c91e3a	setDocumentUpdate
+	m	(FF)V	setPageMinWidthAndHeight	method_Root_setPageMinWidthAndHeight_7e317c	setPageMinWidthAndHeight
+	m	(Ljava/lang/String;)V	setSandboxMapFromPopup	method_Root_setSandboxMapFromPopup_dcf5e8	setSandboxMapFromPopup
+	m	(Ljava/lang/String;Ljava/lang/String;)V	setValueById	method_Root_setValueById_dfc174	setValueById
+	m	(Ljava/lang/String;)V	showAlert	method_Root_showAlert_658d25	showAlert
+	m	()V	showBattleroom	method_Root_showBattleroom_3d70be	showBattleroom
+	m	()V	showHostOptions	method_Root_showHostOptions_9f52bb	showHostOptions
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V	showInputPopup	method_Root_showInputPopup_c85f26	showInputPopup
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V	showInputPopupNonClose	method_Root_showInputPopupNonClose_332e5d	showInputPopupNonClose
+	m	()V	showKeyBinding	method_Root_showKeyBinding_9943aa	showKeyBinding
+	m	()V	showKeyBindingPopup	method_Root_showKeyBindingPopup_23701b	showKeyBindingPopup
+	m	()V	showLevelOptions	method_Root_showLevelOptions_ef61c9	showLevelOptions
+	m	()V	showMainMenu	method_Root_showMainMenu_37b38f	showMainMenu
+	m	(Ljava/lang/String;Ljava/lang/String;)V	showMapPopup	method_Root_showMapPopup_ee8127	showMapPopup
+	m	()Z	showMaps	method_Root_showMaps_7bff4f	showMaps
+	m	(Lcom/ElementDocument;)Z	showMapsWithDoc	method_Root_showMapsWithDoc_921a96	showMapsWithDoc
+	m	(Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)V	showPopup	method_Root_showPopup_ca117c	showPopup
+	m	(Ljava/lang/String;Ljava/lang/String;ZLcom/corrodinggames/librocket/e;Lcom/corrodinggames/librocket/e;)V	showPopupWithButtons	method_Root_showPopupWithButtons_132d02	showPopupWithButtons
+	m	(Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Lcom/corrodinggames/librocket/e;Lcom/corrodinggames/librocket/e;)V	showPopupWithButtonsAndInput	method_Root_showPopupWithButtonsAndInput_40b01d	showPopupWithButtonsAndInput
+	m	(Ljava/lang/String;Ljava/lang/String;Z)V	showRangeValue	method_Root_showRangeValue_a5c7f0	showRangeValue
+	m	()V	showSandboxMapSelect	method_Root_showSandboxMapSelect_91f0d2	showSandboxMapSelect
+	m	()V	showSandboxMapSelectOnChange	method_Root_showSandboxMapSelectOnChange_bce2c0	showSandboxMapSelectOnChange
+	m	(Ljava/lang/String;)V	startNew	method_Root_startNew_8ef5b2	startNew
+	m	()V	toggleMusic	method_Root_toggleMusic_10408f	toggleMusic
+	m	(Ljava/lang/String;)V	trace	method_Root_trace_b338aa	trace
+	m	(Lcom/ElementDocument;)Z	tryToShowPopupDocument	method_Root_tryToShowPopupDocument_c8d338	tryToShowPopupDocument
+	m	(Ljava/lang/String;)V	updateMusicButton	method_Root_updateMusicButton_2a851f	updateMusicButton
+	m	(Z)V	updateRenderScaleInSettings	method_Root_updateRenderScaleInSettings_666d56	updateRenderScaleInSettings
+	m	(Ljava/lang/String;Lcom/corrodinggames/librocket/scripts/Root$TableData;Lcom/corrodinggames/librocket/scripts/Root$TableData;)V	updateTableTextOnly	method_Root_updateTableTextOnly_5b5e2c	updateTableTextOnly
+	m	()Z	usingMods	method_Root_usingMods_9ba2a0	usingMods
+	m	(Ljava/lang/String;)V	writeGameLog	method_Root_writeGameLog_4df6d1	writeGameLog
+c	com/corrodinggames/librocket/scripts/Root$TableCell	rw/client/ui/script/RootScript$TableCell	rustedwarfare/client/ui/script/RootScript$TableCell
+	f	Ljava/lang/String;	classes	field_Root_TableCell_classes	classes
+	f	Ljava/lang/Integer;	color	field_Root_TableCell_color	color
+	f	Ljava/lang/String;	librocketOnClick	field_Root_TableCell_librocketOnClick	librocketOnClick
+	f	Ljava/lang/String;	text	field_Root_TableCell_text	text
+	m	(Ljava/lang/String;)V	addClass	method_Root_TableCell_addClass_e29fb9	addClass
+	m	(Lcom/corrodinggames/librocket/scripts/Root$TableCell;Z)Z	same	method_Root_TableCell_same_ab708f	same
+	m	(Ljava/lang/String;)V	setLibrocketOnClick	method_Root_TableCell_setLibrocketOnClick_7714a5	setLibrocketOnClick
+c	com/corrodinggames/librocket/scripts/Root$TableData	rw/client/ui/script/RootScript$TableData	rustedwarfare/client/ui/script/RootScript$TableData
+	f	Ljava/util/ArrayList;	rows	field_Root_TableData_rows	rows
+	m	(Lcom/corrodinggames/librocket/scripts/Root$TableData;Z)Z	same	method_Root_TableData_same_3cf112	same
+c	com/corrodinggames/librocket/scripts/Root$TableRow	rw/client/ui/script/RootScript$TableRow	rustedwarfare/client/ui/script/RootScript$TableRow
+	f	Ljava/lang/Runnable;	androidOnclick	field_Root_TableRow_androidOnclick	androidOnclick
+	f	Ljava/lang/String;	extraClasses	field_Root_TableRow_extraClasses	extraClasses
+	f	Ljava/lang/String;	librocketOnClick	field_Root_TableRow_librocketOnClick	librocketOnClick
+	f	Ljava/util/ArrayList;	tableCells	field_Root_TableRow_tableCells	tableCells
+	m	(Ljava/lang/String;)Lcom/corrodinggames/librocket/scripts/Root$TableCell;	addCell	method_Root_TableRow_addCell_60f861	addCell
+	m	(Ljava/lang/String;)V	addClass	method_Root_TableRow_addClass_b46a5b	addClass
+	m	(Lcom/corrodinggames/librocket/scripts/Root$TableRow;Z)Z	same	method_Root_TableRow_same_d555b6	same
+	m	(Ljava/lang/Runnable;)V	setAndroidOnClick	method_Root_TableRow_setAndroidOnClick_920f44	setAndroidOnClick
+	m	(Ljava/lang/String;)V	setLibrocketOnClick	method_Root_TableRow_setLibrocketOnClick_bb759a	setLibrocketOnClick
+c	com/corrodinggames/librocket/scripts/ScriptContext	rw/client/ui/script/ScriptContext	rustedwarfare/client/ui/script/ScriptContext
+	f	Lcom/corrodinggames/librocket/a;	guiEngine	field_ScriptContext_guiEngine	guiEngine
+	f	Lcom/corrodinggames/librocket/b;	libRocket	field_ScriptContext_libRocket	libRocket
+	f	Ljava/util/HashMap;	methods	field_ScriptContext_methods	methods
+	f	Lcom/corrodinggames/librocket/scripts/ScriptEngine;	scriptEngine	field_ScriptContext_scriptEngine	scriptEngine
+c	com/corrodinggames/librocket/scripts/ScriptEngine	rw/client/ui/script/ScriptEngine	rustedwarfare/client/ui/script/ScriptEngine
+	f	Ljava/util/HashMap;	globals	field_ScriptEngine_globals	globals
+	f	Z	inDebugScript	field_ScriptEngine_inDebugScript	inDebugScript
+	f	Ljava/lang/ThreadLocal;	isMainScriptThread	field_ScriptEngine_isMainScriptThread	isMainScriptThread
+	f	Z	mainScriptThreadMarked	field_ScriptEngine_mainScriptThreadMarked	mainScriptThreadMarked
+	f	Ljava/util/ArrayList;	queuedScripts	field_ScriptEngine_queuedScripts	queuedScripts
+	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_ScriptEngine_root	root
+	f	Ljava/util/ArrayList;	runningScripts	field_ScriptEngine_runningScripts	runningScripts
+	f	Lcom/corrodinggames/librocket/scripts/ScriptEngine;	scriptEngine	field_ScriptEngine_scriptEngine	scriptEngine
+	f	Ljava/lang/Throwable;	scriptError	field_ScriptEngine_scriptError	scriptError
+	f	Ljava/lang/String;	scriptErrorMessage	field_ScriptEngine_scriptErrorMessage	scriptErrorMessage
+	f	Lcom/corrodinggames/librocket/b;	slickLibRocket	field_ScriptEngine_slickLibRocket	slickLibRocket
+	m	(Ljava/lang/Runnable;)Lcom/corrodinggames/librocket/scripts/ScriptEngine$Action;	addRunnableToQueue	method_ScriptEngine_addRunnableToQueue_41de0b	addRunnableToQueue
+	m	(Ljava/lang/String;)Lcom/corrodinggames/librocket/scripts/ScriptEngine$Action;	addScriptToQueue	method_ScriptEngine_addScriptToQueue_70b826	addScriptToQueue
+	m	(Ljava/lang/String;Z)Lcom/corrodinggames/librocket/scripts/ScriptEngine$Action;	addScriptToQueue	method_ScriptEngine_addScriptToQueue_2a0d4e	addScriptToQueue
+	m	(Ljava/lang/String;)Lcom/corrodinggames/librocket/scripts/ScriptEngine$Action;	addScriptToQueueIfNotAlreadyQueued	method_ScriptEngine_addScriptToQueueIfNotAlreadyQueued_c0fe88	addScriptToQueueIfNotAlreadyQueued
+	m	()V	checkForErrors	method_ScriptEngine_checkForErrors_503c25	checkForErrors
+	m	()V	checkThreadAccess	method_ScriptEngine_checkThreadAccess_586387	checkThreadAccess
+	m	(Lcom/corrodinggames/librocket/b;)Lcom/corrodinggames/librocket/scripts/ScriptEngine;	createScriptEngine	method_ScriptEngine_createScriptEngine_abef4e	createScriptEngine
+	m	()Lcom/corrodinggames/librocket/scripts/ScriptEngine;	getInstance	method_ScriptEngine_getInstance_ae932a	getInstance
+	m	()Lcom/corrodinggames/librocket/scripts/Root;	getRoot	method_ScriptEngine_getRoot_9704fe	getRoot
+	m	()Lcom/corrodinggames/librocket/scripts/Root;	getRootNoCheck	method_ScriptEngine_getRootNoCheck_747c33	getRootNoCheck
+	m	(Ljava/lang/String;Z)Ljava/lang/Object;	getScriptVariable	method_ScriptEngine_getScriptVariable_2e8f84	getScriptVariable
+	m	()Z	isStrict	method_ScriptEngine_isStrict_9e8cc1	isStrict
+	m	(Ljava/lang/String;)V	logCritical	method_ScriptEngine_logCritical_85904e	logCritical
+	m	(Ljava/lang/String;)V	logError	method_ScriptEngine_logError_03fc43	logError
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/util/regex/Matcher;	match	method_ScriptEngine_match_fc7c2b	match
+	m	(Ljava/util/HashMap;)V	printMetadata	method_ScriptEngine_printMetadata_a27f65	printMetadata
+	m	(Ljava/lang/String;)Ljava/lang/Object;	processArg	method_ScriptEngine_processArg_a2e6a0	processArg
+	m	(Ljava/lang/String;Ljava/util/regex/Matcher;)Ljava/lang/Object;	processFunction	method_ScriptEngine_processFunction_07f328	processFunction
+	m	(Ljava/lang/String;)V	processScript	method_ScriptEngine_processScript_49ac6a	processScript
+	m	(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;	runFunction	method_ScriptEngine_runFunction_3c2d96	runFunction
+	m	(Ljava/lang/String;Ljava/lang/Object;)V	setGlobalVariable	method_ScriptEngine_setGlobalVariable_7eadc5	setGlobalVariable
+	m	(Ljava/lang/String;Ljava/lang/Object;)V	setLocalVariable	method_ScriptEngine_setLocalVariable_9e3173	setLocalVariable
+	m	(Lcom/corrodinggames/librocket/scripts/ScriptContext;)V	setupScriptContext	method_ScriptEngine_setupScriptContext_faa344	setupScriptContext
+	m	(Ljava/lang/String;Ljava/lang/Throwable;)V	throwDelayedException	method_ScriptEngine_throwDelayedException_8044d4	throwDelayedException
+	m	(F)V	update	method_ScriptEngine_update_c2fd3b	update
+c	com/corrodinggames/librocket/scripts/ScriptEngine$Action	rw/client/ui/script/ScriptEngine$Action	rustedwarfare/client/ui/script/ScriptEngine$Action
+	f	Ljava/lang/String;	caughtCrash	field_ScriptEngine_Action_caughtCrash	caughtCrash
+	f	Z	completed	field_ScriptEngine_Action_completed	completed
+	f	I	framesDelay	field_ScriptEngine_Action_framesDelay	framesDelay
+	f	Ljava/lang/String;	script	field_ScriptEngine_Action_script	script
+	f	Z	tryToCatchCrash	field_ScriptEngine_Action_tryToCatchCrash	tryToCatchCrash
+	m	(Lcom/corrodinggames/librocket/scripts/ScriptEngine;)V	run	method_ScriptEngine_Action_run_86af20	run
+	m	(Z)Ljava/lang/String;	waitForCompletionOrCrash	method_ScriptEngine_Action_waitForCompletionOrCrash_b60d84	waitForCompletionOrCrash
+c	com/corrodinggames/librocket/scripts/ScriptEngine$RunnableAction	rw/client/ui/script/ScriptEngine$RunnableAction	rustedwarfare/client/ui/script/ScriptEngine$RunnableAction
+	f	Ljava/lang/Runnable;	runnable	field_ScriptEngine_RunnableAction_runnable	runnable
+	m	(Lcom/corrodinggames/librocket/scripts/ScriptEngine;)V	run	method_ScriptEngine_RunnableAction_run_79b369	run
+c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/core/RustedWarfareGameEngine
+	m	(Landroid/content/Context;)V	a	method_game_i_a_initializeGameContentAndLoadMods	initializeGameContentAndLoadMods
 c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	F	cA	field_am_cA_maxShield	maxShield
 	f	F	cB	field_am_cB_energy	energy
@@ -20,23 +441,64 @@ c	com/corrodinggames/rts/game/units/custom/ag	rw/custom/CustomUnitLoader	rustedw
 	f	I	i	field_0705_imageCacheMisses	imageCacheMisses
 	f	I	j	field_0706_imageCacheHits	imageCacheHits
 	f	Ljava/util/HashMap;	n	field_0707_iniConfigCache	iniConfigCache
+	m	()V	a	method_ag_a_dumpAndResetCustomUnitLoadTimings	dumpAndResetCustomUnitLoadTimings
+	m	(I)V	a	method_ag_a_recordImageBytesForCurrentMod	recordImageBytesForCurrentMod
+	m	(JLcom/corrodinggames/rts/game/units/custom/ah;)V	a	method_ag_a_recordCustomUnitLoadTiming	recordCustomUnitLoadTiming
+	m	(Lcom/corrodinggames/rts/game/units/as;)V	a	method_ag_a_setupUnitTypeActionsAndBuildLinks	setupUnitTypeActionsAndBuildLinks
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;)Lcom/corrodinggames/rts/game/units/custom/l;	a	method_ag_a_reloadSingleCustomUnitMetadata	reloadSingleCustomUnitMetadata
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;I)V	a	method_0707_applyCoreCopyFrom	applyCoreCopyFrom
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;I)V	a	method_0708_applyCopyFromSection	applyCopyFromSection
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Z)V	a	method_0706_mergeConfigFromPath	mergeConfigFromPath
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_0709_resolveUnitResourcePath	resolveUnitResourcePath
+	m	(Lcom/corrodinggames/rts/gameFramework/a/i;)V	a	method_ag_a_markSoundUsedByCurrentMod	markSoundUsedByCurrentMod
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_ag_a_markImageUsedByCurrentMod	markImageUsedByCurrentMod
+	m	(Lcom/corrodinggames/rts/gameFramework/utility/m;)Z	a	method_ag_a_reloadChangedCustomUnitTypes	reloadChangedCustomUnitTypes
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/ab;	a	method_0704_loadIniConfigCached	loadIniConfigCached
 	m	(Ljava/lang/String;IZLcom/corrodinggames/rts/gameFramework/i/b;Ljava/lang/String;Ljava/lang/String;)V	a	method_0701_readAllCustomUnitConfigs	readAllCustomUnitConfigs
 	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/i/b;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/l;	a	method_0702_loadCustomUnitFromConfigPath	loadCustomUnitFromConfigPath
 	m	(Ljava/lang/String;Ljava/io/InputStream;JLcom/corrodinggames/rts/gameFramework/i/b;Lcom/corrodinggames/rts/gameFramework/utility/j;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/l;	a	method_0703_parseCustomUnitMetadata	parseCustomUnitMetadata
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/i/b;)Z	a	method_0712_isFileInsideMod	isFileInsideMod
+	m	(Ljava/util/ArrayList;)Ljava/lang/String;	a	method_ag_a_summarizeCustomUnitTypeList	summarizeCustomUnitTypeList
+	m	(Z)Ljava/util/ArrayList;	a	method_ag_a_collectLoadableCustomUnitTypes	collectLoadableCustomUnitTypes
+	m	([Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_ag_a_markImageArrayUsedByCurrentMod	markImageArrayUsedByCurrentMod
+	m	()V	b	method_ag_b_reloadCustomUnitsUsedByActiveUnits	reloadCustomUnitsUsedByActiveUnits
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	b	method_0705_openGameAssetStream	openGameAssetStream
 	m	(Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;)Lcom/corrodinggames/rts/gameFramework/a/i;	b	method_0711_loadSoundInConfig	loadSoundInConfig
 	m	(Ljava/lang/String;Ljava/lang/String;ZLcom/corrodinggames/rts/game/units/custom/l;)Lcom/corrodinggames/rts/gameFramework/m/e;	b	method_0710_loadImageInConfig	loadImageInConfig
+	m	(Ljava/util/ArrayList;)V	b	method_ag_b_sortActionList	sortActionList
+	m	(Z)Ljava/lang/String;	b	method_ag_b_enableAllLoadedCustomUnitTypes	enableAllLoadedCustomUnitTypes
+	m	()V	c	method_ag_c_checkAndReloadChangedCustomUnits	checkAndReloadChangedCustomUnits
 	m	(Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;)Lcom/corrodinggames/rts/gameFramework/utility/j;	c	method_0713_findUnitAssetStream	findUnitAssetStream
+	m	(Z)Z	c	method_ag_c_validateCustomUnitLookupAndActionLinks	validateCustomUnitLookupAndActionLinks
+	m	()V	d	method_ag_d_applyPendingNetworkCustomUnitTypes	applyPendingNetworkCustomUnitTypes
+	m	()V	e	method_ag_e_rebuildActiveUnitTypeRegistrySynchronized	rebuildActiveUnitTypeRegistrySynchronized
+	m	()V	f	method_ag_f_recalculateCustomUnitRadiusLimits	recalculateCustomUnitRadiusLimits
+	m	()V	g	method_ag_g_rebuildCustomUnitLookupAndActionLinks	rebuildCustomUnitLookupAndActionLinks
 	m	()V	h	method_0700_loadAllCustomUnitConfigs	loadAllCustomUnitConfigs
+	m	()V	i	method_ag_i_dumpCustomUnitLoadTimings	dumpCustomUnitLoadTimings
+	m	()V	j	method_ag_j_resetCustomUnitLoadTimings	resetCustomUnitLoadTimings
 	m	()Ljava/lang/String;	k	method_0714_getBuiltinModsDir	getBuiltinModsDir
 	m	()Ljava/lang/String;	l	method_0715_getEnabledBuiltinModsDir	getEnabledBuiltinModsDir
 	m	()Ljava/lang/String;	m	method_0716_getExternalCustomUnitsDir	getExternalCustomUnitsDir
+	m	()V	n	method_ag_n_rebuildActiveUnitTypeRegistryInternal	rebuildActiveUnitTypeRegistryInternal
+	m	()V	o	method_ag_o_rebuildCustomUnitLookupAndActionLinksInternal	rebuildCustomUnitLookupAndActionLinksInternal
+c	com/corrodinggames/rts/game/units/custom/ah	rw/custom/CustomUnitLoadTimingPhase	rustedwarfare/custom/CustomUnitLoadTimingPhase
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	a	field_ah_a_imageLoad	imageLoad
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	b	field_ah_b_imageLoadOrGet	imageLoadOrGet
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	c	field_ah_c_soundLoad	soundLoad
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	d	field_ah_d_soundLoadOrGet	soundLoadOrGet
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	e	field_ah_e_iniParse	iniParse
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	f	field_ah_f_unitParse	unitParse
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	g	field_ah_g_iniOpen	iniOpen
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	h	field_ah_h_iniClose	iniClose
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	i	field_ah_i_iniSetup	iniSetup
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	j	field_ah_j_actionParse	actionParse
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	k	field_ah_k_unitParsePartA	unitParsePartA
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	l	field_ah_l_unitParsePartB	unitParsePartB
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	m	field_ah_m_unitParsePartC	unitParsePartC
+	f	Lcom/corrodinggames/rts/game/units/custom/ah;	n	field_ah_n_unitParsePartD	unitParsePartD
+	f	D	o	field_ah_o_accumulatedTimeMillis	accumulatedTimeMillis
+	f	[Lcom/corrodinggames/rts/game/units/custom/ah;	p	field_ah_p_values	$VALUES
 c	com/corrodinggames/rts/game/units/custom/aj	rw/custom/LocalizedString	rustedwarfare/custom/LocalizedString
 c	com/corrodinggames/rts/game/units/custom/as	rw/custom/MutableUnitStats	rustedwarfare/custom/MutableUnitStats
 	f	Z	a	field_as_a_mutableCopy	mutableCopy
@@ -397,6 +859,13 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	bz	method_j_bz_getTransportedUnits	getTransportedUnits
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_j_d_canTransportUnit	canTransportUnit
 	m	()Lcom/corrodinggames/rts/game/units/custom/l;	dt	method_j_dt_getUnitMetadata	getUnitMetadata
+c	com/corrodinggames/rts/game/units/custom/k	rw/custom/logic/LogicEventContext	rustedwarfare/custom/logic/LogicEventContext
+	f	Lcom/corrodinggames/rts/game/units/custom/ae;	a	field_k_a_actionSource	actionSource
+	f	Lcom/corrodinggames/rts/game/units/custom/j;	b	field_k_b_sourceCustomUnit	sourceCustomUnit
+	f	Lcom/corrodinggames/rts/game/units/am;	c	field_k_c_targetUnit	targetUnit
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	d	field_k_d_eventTags	eventTags
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope;	e	field_k_e_eventData	eventData
+	m	()V	a	method_k_a_clear	clear
 c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rustedwarfare/custom/CustomUnitMetadata
 	f	Z	A	field_l_A_showSelectionIndicator	showSelectionIndicator
 	f	Ljava/lang/String;	D	field_0804_configPath	configPath
@@ -600,6 +1069,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	I	fF	field_l_fF_whenUsingAsHarvesterRecommendedGlobal	whenUsingAsHarvesterRecommendedGlobal
 	f	Z	fG	field_l_fG_whenUsingAsHarvesterIncludeOtherHarvesterCounts	whenUsingAsHarvesterIncludeOtherHarvesterCounts
 	f	Ljava/lang/String;	fI	field_l_fI_upgradedFrom	upgradedFrom
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	fL	field_l_fL_relatedUnitTypes	relatedUnitTypes
 	f	Z	fM	field_l_fM_lowPriorityTargetForOtherUnits	lowPriorityTargetForOtherUnits
 	f	Z	fN	field_l_fN_notPassivelyTargetedByOtherUnits	notPassivelyTargetedByOtherUnits
 	f	[Lcom/corrodinggames/rts/game/units/custom/bn;	fQ	field_l_fQ_turretTemplates	turretTemplates
@@ -612,11 +1082,16 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	Z	fp	field_l_fp_useAsBuilder	useAsBuilder
 	f	Z	fr	field_l_fr_useAsHarvester	useAsHarvester
 	f	Z	fs	field_l_fs_useAsAttacker	useAsAttacker
+	f	Z	fu	field_l_fu_hasBuildActions	hasBuildActions
 	f	Z	fw	field_l_fw_disableUse	disableUse
 	f	I	fx	field_l_fx_maxGlobal	maxGlobal
 	f	I	fy	field_l_fy_maxEachBase	maxEachBase
 	f	F	fz	field_l_fz_buildPriority	buildPriority
+	f	Ljava/util/ArrayList;	g	field_l_g_pickableStartingUnitTypes	pickableStartingUnitTypes
+	f	Ljava/util/ArrayList;	gg	field_l_gg_builtFromLinks	builtFromLinks
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	gp	field_l_gp_actionReferenceLists	actionReferenceLists
 	f	Z	gs	field_0815_logIfCreditResourceUsed	logIfCreditResourceUsed
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	p	field_l_p_unitTypeReferences	unitTypeReferences
 	f	Z	s	field_l_s_teamColorsOnTurret	teamColorsOnTurret
 	f	Z	t	field_l_t_showHealthBar	showHealthBar
 	f	Z	u	field_l_u_showHealthBarChanges	showHealthBarChanges
@@ -639,9 +1114,387 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/as;	m	method_0805_findReplacementByUnitName	findReplacementByUnitName
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/l;	n	method_0804_findByNameOrAlias	findByNameOrAlias
 	m	()Ljava/lang/String;	t	method_0803_getStableUnitId	getStableUnitId
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/BooleanParseException	rw/custom/logic/BooleanParseException	rustedwarfare/custom/logic/BooleanParseException
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean	rw/custom/logic/CompareJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareBooleanOnly	rw/custom/logic/CompareJoinerBoolean$CompareBooleanOnly	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareBooleanOnly
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareEqualBoolean	rw/custom/logic/CompareJoinerBoolean$CompareEqualBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareEqualBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareEqualNumbers	rw/custom/logic/CompareJoinerBoolean$CompareEqualNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareEqualNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareEqualStrings	rw/custom/logic/CompareJoinerBoolean$CompareEqualStrings	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareEqualStrings
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareEqualUnits	rw/custom/logic/CompareJoinerBoolean$CompareEqualUnits	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareEqualUnits
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareGreaterThanNumbers	rw/custom/logic/CompareJoinerBoolean$CompareGreaterThanNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareGreaterThanNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareGreaterThanOrEqualNumbers	rw/custom/logic/CompareJoinerBoolean$CompareGreaterThanOrEqualNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareGreaterThanOrEqualNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareLessThanNumbers	rw/custom/logic/CompareJoinerBoolean$CompareLessThanNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareLessThanNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareLessThanOrEqualNumbers	rw/custom/logic/CompareJoinerBoolean$CompareLessThanOrEqualNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareLessThanOrEqualNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareNotEqualBoolean	rw/custom/logic/CompareJoinerBoolean$CompareNotEqualBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareNotEqualBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareNotEqualNumbers	rw/custom/logic/CompareJoinerBoolean$CompareNotEqualNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareNotEqualNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareNotEqualStrings	rw/custom/logic/CompareJoinerBoolean$CompareNotEqualStrings	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareNotEqualStrings
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareNotEqualUnits	rw/custom/logic/CompareJoinerBoolean$CompareNotEqualUnits	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareNotEqualUnits
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$CompareNumbers	rw/custom/logic/CompareJoinerBoolean$CompareNumbers	rustedwarfare/custom/logic/CompareJoinerBoolean$CompareNumbers
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$MathAddJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$MathAddJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$MathAddJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$MathDivideJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$MathDivideJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$MathDivideJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$MathJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$MathJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$MathJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$MathModulusJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$MathModulusJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$MathModulusJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$MathMultiplyJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$MathMultiplyJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$MathMultiplyJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$MathSubtractJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$MathSubtractJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$MathSubtractJoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean$StringJoinerBoolean	rw/custom/logic/CompareJoinerBoolean$StringJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean$StringJoinerBoolean
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean	rw/custom/logic/LogicBoolean	rustedwarfare/custom/logic/LogicBoolean
+	f	Lcom/corrodinggames/rts/game/units/custom/k;	activeEvent	field_logic_LogicBoolean_activeEvent	activeEvent
+	f	Ljava/util/HashMap;	booleans	field_logic_LogicBoolean_booleans	booleans
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$CallContext_self;	callContext_self	field_logic_LogicBoolean_callContext_self	callContext_self
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$CallContext_selfAndTarget;	callContext_selfAndTarget	field_logic_LogicBoolean_callContext_selfAndTarget	callContext_selfAndTarget
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$StaticBoolean;	falseBoolean	field_logic_LogicBoolean_falseBoolean	falseBoolean
+	f	Z	not	field_logic_LogicBoolean_not	not
+	f	Lcom/corrodinggames/rts/game/units/y;	outerUnitParameterContext	field_logic_LogicBoolean_outerUnitParameterContext	outerUnitParameterContext
+	f	Ljava/util/HashMap;	parameterMappings	field_logic_LogicBoolean_parameterMappings	parameterMappings
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$StaticBoolean;	trueBoolean	field_logic_LogicBoolean_trueBoolean	trueBoolean
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;[Ljava/lang/String;)V	addBooleanType	method_logic_LogicBoolean_addBooleanType_e5d589	addBooleanType
+	m	()V	clearContext	method_logic_LogicBoolean_clearContext_229ae3	clearContext
+	m	()V	clearOuterUnitParameterContext	method_logic_LogicBoolean_clearOuterUnitParameterContext_9fdc18	clearOuterUnitParameterContext
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	convertAlwaysTrueToNull	method_logic_LogicBoolean_convertAlwaysTrueToNull_7298f4	convertAlwaysTrueToNull
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	create	method_logic_LogicBoolean_create_f5b286	create
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	create	method_logic_LogicBoolean_create_6684fe	create
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	createContext	method_logic_LogicBoolean_createContext_47de96	createContext
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	createLocked	method_logic_LogicBoolean_createLocked_341559	createLocked
+	m	()V	enableContextEventSource	method_logic_LogicBoolean_enableContextEventSource_fbd13e	enableContextEventSource
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;)V	forMeta	method_logic_LogicBoolean_forMeta_1a85b3	forMeta
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	getAllParametersDebug	method_logic_LogicBoolean_getAllParametersDebug_c0668e	getAllParametersDebug
+	m	(Lcom/corrodinggames/rts/game/units/y;)I	getArraySize	method_logic_LogicBoolean_getArraySize_ca8e7b	getArraySize
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)Ljava/lang/String;	getDebugDetails	method_logic_LogicBoolean_getDebugDetails_d8fe71	getDebugDetails
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)F	getKnownStaticNumber	method_logic_LogicBoolean_getKnownStaticNumber_8cfe0f	getKnownStaticNumber
+	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	getMatchFailReasonForPlayer	method_logic_LogicBoolean_getMatchFailReasonForPlayer_7bd8e1	getMatchFailReasonForPlayer
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/y;	getParameterContext	method_logic_LogicBoolean_getParameterContext_acd18f	getParameterContext
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ParameterMapping;	getParameters	method_logic_LogicBoolean_getParameters_73c220	getParameters
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	getReturnType	method_logic_LogicBoolean_getReturnType_952008	getReturnType
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Ljava/lang/Float;	getStaticNumber	method_logic_LogicBoolean_getStaticNumber_ca3d23	getStaticNumber
+	m	()Z	isLocked	method_logic_LogicBoolean_isLocked_2c3cb7	isLocked
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Z	isStaticFalse	method_logic_LogicBoolean_isStaticFalse_1163cb	isStaticFalse
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Z	isStaticNull	method_logic_LogicBoolean_isStaticNull_ab75f8	isStaticNull
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Z	isStaticNumber	method_logic_LogicBoolean_isStaticNumber_045e09	isStaticNumber
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Z	isStaticTrue	method_logic_LogicBoolean_isStaticTrue_6c0f31	isStaticTrue
+	m	(Lcom/corrodinggames/rts/game/units/y;)Z	read	method_logic_LogicBoolean_read_72378b	read
+	m	(Lcom/corrodinggames/rts/game/units/y;I)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	readArrayElement	method_logic_LogicBoolean_readArrayElement_f98c59	readArrayElement
+	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_logic_LogicBoolean_readNumber_95539c	readNumber
+	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	readString	method_logic_LogicBoolean_readString_ce01dd	readString
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	readUnit	method_logic_LogicBoolean_readUnit_6541f5	readUnit
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)V	setArgumentsRaw	method_logic_LogicBoolean_setArgumentsRaw_848842	setArgumentsRaw
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	setChild	method_logic_LogicBoolean_setChild_7b5da4	setChild
+	m	(Lcom/corrodinggames/rts/game/units/custom/k;)V	setContextEventSource	method_logic_LogicBoolean_setContextEventSource_4655a9	setContextEventSource
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	setOuterUnitParameterContext	method_logic_LogicBoolean_setOuterUnitParameterContext_488a14	setOuterUnitParameterContext
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)V	setParent	method_logic_LogicBoolean_setParent_341d94	setParent
+	m	(Ljava/lang/String;)V	throwVoidReturnError	method_logic_LogicBoolean_throwVoidReturnError_a6177f	throwVoidReturnError
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)V	validate	method_logic_LogicBoolean_validate_97d0aa	validate
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	validateAndOptimize	method_logic_LogicBoolean_validateAndOptimize_64770c	validateAndOptimize
+	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	valueToStringDebug	method_logic_LogicBoolean_valueToStringDebug_15d6dc	valueToStringDebug
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	with	method_logic_LogicBoolean_with_95f848	with
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	with	method_logic_LogicBoolean_with_6bbba4	with
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$AbstractNumberBoolean	rw/custom/logic/LogicBoolean$AbstractNumberBoolean	rustedwarfare/custom/logic/LogicBoolean$AbstractNumberBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$AndBoolean	rw/custom/logic/LogicBoolean$AndBoolean	rustedwarfare/custom/logic/LogicBoolean$AndBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$CallContext	rw/custom/logic/LogicBoolean$CallContext	rustedwarfare/custom/logic/LogicBoolean$CallContext
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$CallContext_self	rw/custom/logic/LogicBoolean$CallContext_self	rustedwarfare/custom/logic/LogicBoolean$CallContext_self
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$CallContext_selfAndTarget	rw/custom/logic/LogicBoolean$CallContext_selfAndTarget	rustedwarfare/custom/logic/LogicBoolean$CallContext_selfAndTarget
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$JoinerBoolean	rw/custom/logic/LogicBoolean$JoinerBoolean	rustedwarfare/custom/logic/LogicBoolean$JoinerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$LogicBooleanCommon	rw/custom/logic/LogicBoolean$LogicBooleanCommon	rustedwarfare/custom/logic/LogicBoolean$LogicBooleanCommon
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$LogicBooleanCommonLocking	rw/custom/logic/LogicBoolean$LogicBooleanCommonLocking	rustedwarfare/custom/logic/LogicBoolean$LogicBooleanCommonLocking
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$LogicNumberOnly	rw/custom/logic/LogicBoolean$LogicNumberOnly	rustedwarfare/custom/logic/LogicBoolean$LogicNumberOnly
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$NotBoolean	rw/custom/logic/LogicBoolean$NotBoolean	rustedwarfare/custom/logic/LogicBoolean$NotBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$OrBoolean	rw/custom/logic/LogicBoolean$OrBoolean	rustedwarfare/custom/logic/LogicBoolean$OrBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$Parameter	rw/custom/logic/LogicBoolean$Parameter	rustedwarfare/custom/logic/LogicBoolean$Parameter
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType	rw/custom/logic/LogicBooleanReturnType	rustedwarfare/custom/logic/LogicBoolean$ReturnType
-c	com/corrodinggames/rts/game/units/custom/u	rw/custom/UnitReference	rustedwarfare/custom/UnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$StaticBoolean	rw/custom/logic/LogicBoolean$StaticBoolean	rustedwarfare/custom/logic/LogicBoolean$StaticBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$StaticBooleanFalse	rw/custom/logic/LogicBoolean$StaticBooleanFalse	rustedwarfare/custom/logic/LogicBoolean$StaticBooleanFalse
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$StaticBooleanTrue	rw/custom/logic/LogicBoolean$StaticBooleanTrue	rustedwarfare/custom/logic/LogicBoolean$StaticBooleanTrue
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$StaticValueBoolean	rw/custom/logic/LogicBoolean$StaticValueBoolean	rustedwarfare/custom/logic/LogicBoolean$StaticValueBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$TimeBoolean	rw/custom/logic/LogicBoolean$TimeBoolean	rustedwarfare/custom/logic/LogicBoolean$TimeBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanActionFilter	rw/custom/logic/LogicBooleanActionFilter	rustedwarfare/custom/logic/LogicBooleanActionFilter
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions	rw/custom/logic/LogicBooleanGameFunctions	rustedwarfare/custom/logic/LogicBooleanGameFunctions
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$AmmoBoolean	rw/custom/logic/LogicBooleanGameFunctions$AmmoBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$AmmoBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$AmmoIncludingQueuedBoolean	rw/custom/logic/LogicBooleanGameFunctions$AmmoIncludingQueuedBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$AmmoIncludingQueuedBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$BuiltAmountBoolean	rw/custom/logic/LogicBooleanGameFunctions$BuiltAmountBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$BuiltAmountBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$CompareUnitsBroken	rw/custom/logic/LogicBooleanGameFunctions$CompareUnitsBroken	rustedwarfare/custom/logic/LogicBooleanGameFunctions$CompareUnitsBroken
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$CompletedBoolean	rw/custom/logic/LogicBooleanGameFunctions$CompletedBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$CompletedBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$CustomTimerBoolean	rw/custom/logic/LogicBooleanGameFunctions$CustomTimerBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$CustomTimerBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$EnergyBoolean	rw/custom/logic/LogicBooleanGameFunctions$EnergyBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$EnergyBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$EnergyIncludingQueuedBoolean	rw/custom/logic/LogicBooleanGameFunctions$EnergyIncludingQueuedBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$EnergyIncludingQueuedBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$EventTagsBoolean	rw/custom/logic/LogicBooleanGameFunctions$EventTagsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$EventTagsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$GameMapHeightBoolean	rw/custom/logic/LogicBooleanGameFunctions$GameMapHeightBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$GameMapHeightBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$GameMapWidthBoolean	rw/custom/logic/LogicBooleanGameFunctions$GameMapWidthBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$GameMapWidthBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$GameModeBoolean	rw/custom/logic/LogicBooleanGameFunctions$GameModeBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$GameModeBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasActiveWaypoint	rw/custom/logic/LogicBooleanGameFunctions$HasActiveWaypoint	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasActiveWaypoint
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasFlagBoolean	rw/custom/logic/LogicBooleanGameFunctions$HasFlagBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasFlagBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasFlagDynamicBoolean	rw/custom/logic/LogicBooleanGameFunctions$HasFlagDynamicBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasFlagDynamicBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasParent	rw/custom/logic/LogicBooleanGameFunctions$HasParent	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasParent
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasResourcesBoolean	rw/custom/logic/LogicBooleanGameFunctions$HasResourcesBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasResourcesBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasTakenDamage	rw/custom/logic/LogicBooleanGameFunctions$HasTakenDamage	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasTakenDamage
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HeightBoolean	rw/custom/logic/LogicBooleanGameFunctions$HeightBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HeightBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HeightValueBoolean	rw/custom/logic/LogicBooleanGameFunctions$HeightValueBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HeightValueBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HpBoolean	rw/custom/logic/LogicBooleanGameFunctions$HpBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HpBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$InMapBoolean	rw/custom/logic/LogicBooleanGameFunctions$InMapBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$InMapBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$IsAttackingBoolean	rw/custom/logic/LogicBooleanGameFunctions$IsAttackingBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$IsAttackingBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$IsControlledByAI	rw/custom/logic/LogicBooleanGameFunctions$IsControlledByAI	rustedwarfare/custom/logic/LogicBooleanGameFunctions$IsControlledByAI
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$IsGameFrameBoolean	rw/custom/logic/LogicBooleanGameFunctions$IsGameFrameBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$IsGameFrameBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$IsOnTeam	rw/custom/logic/LogicBooleanGameFunctions$IsOnTeam	rustedwarfare/custom/logic/LogicBooleanGameFunctions$IsOnTeam
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$IsResourceLargerThan	rw/custom/logic/LogicBooleanGameFunctions$IsResourceLargerThan	rustedwarfare/custom/logic/LogicBooleanGameFunctions$IsResourceLargerThan
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$IsReversingBoolean	rw/custom/logic/LogicBooleanGameFunctions$IsReversingBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$IsReversingBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$KillsBoolean	rw/custom/logic/LogicBooleanGameFunctions$KillsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$KillsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$LastConvertedBoolean	rw/custom/logic/LogicBooleanGameFunctions$LastConvertedBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$LastConvertedBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$MaxEnergyBoolean	rw/custom/logic/LogicBooleanGameFunctions$MaxEnergyBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$MaxEnergyBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$MaxHpBoolean	rw/custom/logic/LogicBooleanGameFunctions$MaxHpBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$MaxHpBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$MaxMoveSpeedBoolean	rw/custom/logic/LogicBooleanGameFunctions$MaxMoveSpeedBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$MaxMoveSpeedBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$MaxShieldBoolean	rw/custom/logic/LogicBooleanGameFunctions$MaxShieldBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$MaxShieldBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$MovingBoolean	rw/custom/logic/LogicBooleanGameFunctions$MovingBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$MovingBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfAttachedUnitsBoolean	rw/custom/logic/LogicBooleanGameFunctions$NumberOfAttachedUnitsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfAttachedUnitsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfConnectionsBoolean	rw/custom/logic/LogicBooleanGameFunctions$NumberOfConnectionsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfConnectionsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfQueuedWaypoints	rw/custom/logic/LogicBooleanGameFunctions$NumberOfQueuedWaypoints	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfQueuedWaypoints
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam	rw/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam$HandleCallbackCountAlly	rw/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam$HandleCallbackCountAlly	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam$HandleCallbackCountAlly
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam$HandleCallbackCountEnemies	rw/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam$HandleCallbackCountEnemies	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInEnemyOrAllyTeam$HandleCallbackCountEnemies
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfUnitsInTeam	rw/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInTeam	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInTeam
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$NumberOfUnitsInTeam$HandleCallbackCount	rw/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInTeam$HandleCallbackCount	rustedwarfare/custom/logic/LogicBooleanGameFunctions$NumberOfUnitsInTeam$HandleCallbackCount
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$OverCliftBoolean	rw/custom/logic/LogicBooleanGameFunctions$OverCliftBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$OverCliftBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$OverLiquidBoolean	rw/custom/logic/LogicBooleanGameFunctions$OverLiquidBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$OverLiquidBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$OverPassableTileBoolean	rw/custom/logic/LogicBooleanGameFunctions$OverPassableTileBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$OverPassableTileBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$OverWaterBoolean	rw/custom/logic/LogicBooleanGameFunctions$OverWaterBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$OverWaterBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$PositionXBoolean	rw/custom/logic/LogicBooleanGameFunctions$PositionXBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$PositionXBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$PositionYBoolean	rw/custom/logic/LogicBooleanGameFunctions$PositionYBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$PositionYBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$PriceCreditsBoolean	rw/custom/logic/LogicBooleanGameFunctions$PriceCreditsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$PriceCreditsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$QueueSize	rw/custom/logic/LogicBooleanGameFunctions$QueueSize	rustedwarfare/custom/logic/LogicBooleanGameFunctions$QueueSize
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$ResourceCountBoolean	rw/custom/logic/LogicBooleanGameFunctions$ResourceCountBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$ResourceCountBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$ResourceScope	rw/custom/logic/LogicBooleanGameFunctions$ResourceScope	rustedwarfare/custom/logic/LogicBooleanGameFunctions$ResourceScope
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$RotationBoolean	rw/custom/logic/LogicBooleanGameFunctions$RotationBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$RotationBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$ShieldBoolean	rw/custom/logic/LogicBooleanGameFunctions$ShieldBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$ShieldBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$SpeedBoolean	rw/custom/logic/LogicBooleanGameFunctions$SpeedBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$SpeedBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$SpeedValueBoolean	rw/custom/logic/LogicBooleanGameFunctions$SpeedValueBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$SpeedValueBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TagsBoolean	rw/custom/logic/LogicBooleanGameFunctions$TagsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TagsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TeamDefeatedTechBoolean	rw/custom/logic/LogicBooleanGameFunctions$TeamDefeatedTechBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TeamDefeatedTechBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TeamIdBoolean	rw/custom/logic/LogicBooleanGameFunctions$TeamIdBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TeamIdBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TeamTagBoolean	rw/custom/logic/LogicBooleanGameFunctions$TeamTagBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TeamTagBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TeamVictoryBoolean	rw/custom/logic/LogicBooleanGameFunctions$TeamVictoryBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TeamVictoryBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TeamWipedOutBoolean	rw/custom/logic/LogicBooleanGameFunctions$TeamWipedOutBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TeamWipedOutBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$ThisActionRepeatedCount	rw/custom/logic/LogicBooleanGameFunctions$ThisActionRepeatedCount	rustedwarfare/custom/logic/LogicBooleanGameFunctions$ThisActionRepeatedCount
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TimeAliveBoolean	rw/custom/logic/LogicBooleanGameFunctions$TimeAliveBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TimeAliveBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TouchWaterBoolean	rw/custom/logic/LogicBooleanGameFunctions$TouchWaterBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TouchWaterBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TransportingCountBoolean	rw/custom/logic/LogicBooleanGameFunctions$TransportingCountBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TransportingCountBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$TransportingUnitWithTagsBoolean	rw/custom/logic/LogicBooleanGameFunctions$TransportingUnitWithTagsBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$TransportingUnitWithTagsBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$UnitIdBoolean	rw/custom/logic/LogicBooleanGameFunctions$UnitIdBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$UnitIdBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$isDead	rw/custom/logic/LogicBooleanGameFunctions$isDead	rustedwarfare/custom/logic/LogicBooleanGameFunctions$isDead
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$isEnergyRechargingBoolean	rw/custom/logic/LogicBooleanGameFunctions$isEnergyRechargingBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$isEnergyRechargingBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$isTransportUnloading	rw/custom/logic/LogicBooleanGameFunctions$isTransportUnloading	rustedwarfare/custom/logic/LogicBooleanGameFunctions$isTransportUnloading
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader	rw/custom/logic/LogicBooleanLoader	rustedwarfare/custom/logic/LogicBooleanLoader
+	f	Z	TRACE	field_logic_LogicBooleanLoader_TRACE	TRACE
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	boolArrayContextReader	field_logic_LogicBooleanLoader_boolArrayContextReader	boolArrayContextReader
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	defaultContextReader	field_logic_LogicBooleanLoader_defaultContextReader	defaultContextReader
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	numberArrayContextReader	field_logic_LogicBooleanLoader_numberArrayContextReader	numberArrayContextReader
+	f	Ljava/util/regex/Pattern;	patternDoubleQuote	field_logic_LogicBooleanLoader_patternDoubleQuote	patternDoubleQuote
+	f	Ljava/util/regex/Pattern;	patternFloat	field_logic_LogicBooleanLoader_patternFloat	patternFloat
+	f	Ljava/util/regex/Pattern;	patternInteger	field_logic_LogicBooleanLoader_patternInteger	patternInteger
+	f	Ljava/util/regex/Pattern;	patternSingleQuote	field_logic_LogicBooleanLoader_patternSingleQuote	patternSingleQuote
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	unitArrayContextReader	field_logic_LogicBooleanLoader_unitArrayContextReader	unitArrayContextReader
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	voidArrayContextReader	field_logic_LogicBooleanLoader_voidArrayContextReader	voidArrayContextReader
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	voidBoolContextReader	field_logic_LogicBooleanLoader_voidBoolContextReader	voidBoolContextReader
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	voidContextReader	field_logic_LogicBooleanLoader_voidContextReader	voidContextReader
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	voidNumberContextReader	field_logic_LogicBooleanLoader_voidNumberContextReader	voidNumberContextReader
+	m	(Ljava/lang/String;)Ljava/lang/String;	breakOuterLayerBrackets	method_logic_LogicBooleanLoader_breakOuterLayerBrackets_cf6f53	breakOuterLayerBrackets
+	m	(Ljava/lang/String;Ljava/lang/Class;Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;Ljava/lang/String;)Ljava/lang/Object;	convertParameterData	method_logic_LogicBooleanLoader_convertParameterData_de71d8	convertParameterData
+	m	(Ljava/lang/String;)Ljava/lang/String;	fixArguments	method_logic_LogicBooleanLoader_fixArguments_4142e7	fixArguments
+	m	(Ljava/util/List;Ljava/lang/Class;)Ljava/util/List;	getAllFieldsInherited	method_logic_LogicBooleanLoader_getAllFieldsInherited_cc85a6	getAllFieldsInherited
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ParameterMapping$FieldOrMethod;Ljava/lang/Object;)Ljava/lang/Object;	getArgumentTextWithMapping	method_logic_LogicBooleanLoader_getArgumentTextWithMapping_1fb052	getArgumentTextWithMapping
+	m	(Ljava/lang/String;)Z	isEmptyIgnoringPlusMinus	method_logic_LogicBooleanLoader_isEmptyIgnoringPlusMinus_55eb8a	isEmptyIgnoringPlusMinus
+	m	(Ljava/util/regex/Pattern;Ljava/lang/String;)Ljava/util/regex/Matcher;	match	method_logic_LogicBooleanLoader_match_472775	match
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	parseBooleanBlock	method_logic_LogicBooleanLoader_parseBooleanBlock_f908cb	parseBooleanBlock
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	parseNumberBlock	method_logic_LogicBooleanLoader_parseNumberBlock_523560	parseNumberBlock
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ParameterMapping;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;)V	setArgumentWithMapping	method_logic_LogicBooleanLoader_setArgumentWithMapping_1bdcaf	setArgumentWithMapping
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ParameterMapping;Ljava/lang/Object;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)V	setArgumentsWithMapping	method_logic_LogicBooleanLoader_setArgumentsWithMapping_2d2db9	setArgumentsWithMapping
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ArrayContextReader	rw/custom/logic/LogicBooleanLoader$ArrayContextReader	rustedwarfare/custom/logic/LogicBooleanLoader$ArrayContextReader
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ArrayContextReader$ArrayContains	rw/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayContains	rustedwarfare/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayContains
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ArrayContextReader$ArrayFunction	rw/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayFunction	rustedwarfare/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayFunction
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ArrayContextReader$ArrayGet	rw/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayGet	rustedwarfare/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayGet
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ArrayContextReader$ArrayGetUnit	rw/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayGetUnit	rustedwarfare/custom/logic/LogicBooleanLoader$ArrayContextReader$ArrayGetUnit
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ArrayContextReader$ArraySize	rw/custom/logic/LogicBooleanLoader$ArrayContextReader$ArraySize	rustedwarfare/custom/logic/LogicBooleanLoader$ArrayContextReader$ArraySize
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$DefaultContextReader	rw/custom/logic/LogicBooleanLoader$DefaultContextReader	rustedwarfare/custom/logic/LogicBooleanLoader$DefaultContextReader
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext	rw/custom/logic/LogicBooleanLoader$LogicBooleanContext	rustedwarfare/custom/logic/LogicBooleanLoader$LogicBooleanContext
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContextWithDefault	rw/custom/logic/LogicBooleanLoader$LogicBooleanContextWithDefault	rustedwarfare/custom/logic/LogicBooleanLoader$LogicBooleanContextWithDefault
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanScopeOnly	rw/custom/logic/LogicBooleanLoader$LogicBooleanScopeOnly	rustedwarfare/custom/logic/LogicBooleanLoader$LogicBooleanScopeOnly
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ParameterMapping	rw/custom/logic/LogicBooleanLoader$ParameterMapping	rustedwarfare/custom/logic/LogicBooleanLoader$ParameterMapping
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$ParameterMapping$FieldOrMethod	rw/custom/logic/LogicBooleanLoader$ParameterMapping$FieldOrMethod	rustedwarfare/custom/logic/LogicBooleanLoader$ParameterMapping$FieldOrMethod
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$VoidContextReader	rw/custom/logic/LogicBooleanLoader$VoidContextReader	rustedwarfare/custom/logic/LogicBooleanLoader$VoidContextReader
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction	rw/custom/logic/LogicNumberFunction	rustedwarfare/custom/logic/LogicNumberFunction
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$CreateMarker	rw/custom/logic/LogicNumberFunction$CreateMarker	rustedwarfare/custom/logic/LogicNumberFunction$CreateMarker
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionCos	rw/custom/logic/LogicNumberFunction$FunctionCos	rustedwarfare/custom/logic/LogicNumberFunction$FunctionCos
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDirection	rw/custom/logic/LogicNumberFunction$FunctionDirection	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDirection
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDirectionBetween	rw/custom/logic/LogicNumberFunction$FunctionDirectionBetween	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDirectionBetween
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistance	rw/custom/logic/LogicNumberFunction$FunctionDistance	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistance
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistanceBetween	rw/custom/logic/LogicNumberFunction$FunctionDistanceBetween	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistanceBetween
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistanceBetweenSquared	rw/custom/logic/LogicNumberFunction$FunctionDistanceBetweenSquared	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistanceBetweenSquared
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistanceSquared	rw/custom/logic/LogicNumberFunction$FunctionDistanceSquared	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistanceSquared
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionInt	rw/custom/logic/LogicNumberFunction$FunctionInt	rustedwarfare/custom/logic/LogicNumberFunction$FunctionInt
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionLength	rw/custom/logic/LogicNumberFunction$FunctionLength	rustedwarfare/custom/logic/LogicNumberFunction$FunctionLength
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionMax	rw/custom/logic/LogicNumberFunction$FunctionMax	rustedwarfare/custom/logic/LogicNumberFunction$FunctionMax
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionMin	rw/custom/logic/LogicNumberFunction$FunctionMin	rustedwarfare/custom/logic/LogicNumberFunction$FunctionMin
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionRnd	rw/custom/logic/LogicNumberFunction$FunctionRnd	rustedwarfare/custom/logic/LogicNumberFunction$FunctionRnd
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionSin	rw/custom/logic/LogicNumberFunction$FunctionSin	rustedwarfare/custom/logic/LogicNumberFunction$FunctionSin
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionSquareRoot	rw/custom/logic/LogicNumberFunction$FunctionSquareRoot	rustedwarfare/custom/logic/LogicNumberFunction$FunctionSquareRoot
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$LogicNumberFunctionRawArgs	rw/custom/logic/LogicNumberFunction$LogicNumberFunctionRawArgs	rustedwarfare/custom/logic/LogicNumberFunction$LogicNumberFunctionRawArgs
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString	rw/custom/logic/LogicString	rustedwarfare/custom/logic/LogicString
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$Debug	rw/custom/logic/LogicString$Debug	rustedwarfare/custom/logic/LogicString$Debug
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$DebugPassthrough	rw/custom/logic/LogicString$DebugPassthrough	rustedwarfare/custom/logic/LogicString$DebugPassthrough
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$LowerString	rw/custom/logic/LogicString$LowerString	rustedwarfare/custom/logic/LogicString$LowerString
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$Playername	rw/custom/logic/LogicString$Playername	rustedwarfare/custom/logic/LogicString$Playername
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$Select	rw/custom/logic/LogicString$Select	rustedwarfare/custom/logic/LogicString$Select
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$StaticString	rw/custom/logic/LogicString$StaticString	rustedwarfare/custom/logic/LogicString$StaticString
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$StringCast	rw/custom/logic/LogicString$StringCast	rustedwarfare/custom/logic/LogicString$StringCast
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$StringCast$NumberToStringCast	rw/custom/logic/LogicString$StringCast$NumberToStringCast	rustedwarfare/custom/logic/LogicString$StringCast$NumberToStringCast
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$Substring	rw/custom/logic/LogicString$Substring	rustedwarfare/custom/logic/LogicString$Substring
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$TeamName	rw/custom/logic/LogicString$TeamName	rustedwarfare/custom/logic/LogicString$TeamName
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$UpperString	rw/custom/logic/LogicString$UpperString	rustedwarfare/custom/logic/LogicString$UpperString
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicString$WrappingLogicString	rw/custom/logic/LogicString$WrappingLogicString	rustedwarfare/custom/logic/LogicString$WrappingLogicString
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference	rw/custom/logic/UnitReference	rustedwarfare/custom/logic/UnitReference
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	placeholderUnitContext	field_logic_UnitReference_placeholderUnitContext	placeholderUnitContext
+	f	Ljava/util/HashMap;	referenceTypes	field_logic_UnitReference_referenceTypes	referenceTypes
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$SelfUnitReference;	selfUnitReference	field_logic_UnitReference_selfUnitReference	selfUnitReference
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	unitContextChangingContext	field_logic_UnitReference_unitContextChangingContext	unitContextChangingContext
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;[Ljava/lang/String;)V	addUnitReferenceType	method_logic_UnitReference_addUnitReferenceType_5ea86b	addUnitReferenceType
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;	createContext	method_logic_UnitReference_createContext_e1aed4	createContext
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;)V	forMeta	method_logic_UnitReference_forMeta_0b6f04	forMeta
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/am;	get	method_logic_UnitReference_get_cacb41	get
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	get	method_logic_UnitReference_get_78a32f	get
+	m	()Ljava/lang/String;	getClassDebugName	method_logic_UnitReference_getClassDebugName_45fb90	getClassDebugName
+	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	getMatchFailReasonForPlayer	method_logic_UnitReference_getMatchFailReasonForPlayer_1f5f79	getMatchFailReasonForPlayer
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getRealUnitOnly	method_logic_UnitReference_getRealUnitOnly_119612	getRealUnitOnly
+	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	getReturnType	method_logic_UnitReference_getReturnType_1eeb3a	getReturnType
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getSingleRaw	method_logic_UnitReference_getSingleRaw_7b94e9	getSingleRaw
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;	parseSingleUnitReferenceBlock	method_logic_UnitReference_parseSingleUnitReferenceBlock_b79383	parseSingleUnitReferenceBlock
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;	parseSingleUnitReferenceElement	method_logic_UnitReference_parseSingleUnitReferenceElement_0d16cd	parseSingleUnitReferenceElement
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;	parseUnitReference	method_logic_UnitReference_parseUnitReference_fddf83	parseUnitReference
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;	parseUnitReferenceFromConf	method_logic_UnitReference_parseUnitReferenceFromConf_5fe131	parseUnitReferenceFromConf
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;	parseUnitTypeOrReference	method_logic_UnitReference_parseUnitTypeOrReference_9dc898	parseUnitTypeOrReference
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType;	parseUnitTypeOrReferenceFromConf	method_logic_UnitReference_parseUnitTypeOrReferenceFromConf_e20f8b	parseUnitTypeOrReferenceFromConf
+	m	(Lcom/corrodinggames/rts/game/units/y;)Z	read	method_logic_UnitReference_read_c55b36	read
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	readUnit	method_logic_UnitReference_readUnit_1ddafa	readUnit
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	setChild	method_logic_UnitReference_setChild_d0991e	setChild
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	with	method_logic_UnitReference_with_8e5962	with
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;	with	method_logic_UnitReference_with_e13fed	with
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	with	method_logic_UnitReference_with_16d553	with
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference;	with	method_logic_UnitReference_with_b16d8c	with
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$ActiveWaypointTargetReference	rw/custom/logic/UnitReference$ActiveWaypointTargetReference	rustedwarfare/custom/logic/UnitReference$ActiveWaypointTargetReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$AttachmentUnitReference	rw/custom/logic/UnitReference$AttachmentUnitReference	rustedwarfare/custom/logic/UnitReference$AttachmentUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$AttackingReference	rw/custom/logic/UnitReference$AttackingReference	rustedwarfare/custom/logic/UnitReference$AttackingReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$ChainedUnitReference	rw/custom/logic/UnitReference$ChainedUnitReference	rustedwarfare/custom/logic/UnitReference$ChainedUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$EventSourceReference	rw/custom/logic/UnitReference$EventSourceReference	rustedwarfare/custom/logic/UnitReference$EventSourceReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$FirstUnitReference	rw/custom/logic/UnitReference$FirstUnitReference	rustedwarfare/custom/logic/UnitReference$FirstUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetAsMarker	rw/custom/logic/UnitReference$GetAsMarker	rustedwarfare/custom/logic/UnitReference$GetAsMarker
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetOffsetAbsolute	rw/custom/logic/UnitReference$GetOffsetAbsolute	rustedwarfare/custom/logic/UnitReference$GetOffsetAbsolute
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetOffsetRelative	rw/custom/logic/UnitReference$GetOffsetRelative	rustedwarfare/custom/logic/UnitReference$GetOffsetRelative
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetOffsetRelativeStatic	rw/custom/logic/UnitReference$GetOffsetRelativeStatic	rustedwarfare/custom/logic/UnitReference$GetOffsetRelativeStatic
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$LastDamagedByUnitReference	rw/custom/logic/UnitReference$LastDamagedByUnitReference	rustedwarfare/custom/logic/UnitReference$LastDamagedByUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$LockedUnitReference	rw/custom/logic/UnitReference$LockedUnitReference	rustedwarfare/custom/logic/UnitReference$LockedUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$Memory1UnitReference	rw/custom/logic/UnitReference$Memory1UnitReference	rustedwarfare/custom/logic/UnitReference$Memory1UnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$Memory2UnitReference	rw/custom/logic/UnitReference$Memory2UnitReference	rustedwarfare/custom/logic/UnitReference$Memory2UnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$NearestUnitReference	rw/custom/logic/UnitReference$NearestUnitReference	rustedwarfare/custom/logic/UnitReference$NearestUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$NearestUnitReference$HandleCallbackNearest	rw/custom/logic/UnitReference$NearestUnitReference$HandleCallbackNearest	rustedwarfare/custom/logic/UnitReference$NearestUnitReference$HandleCallbackNearest
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$NullUnitReference	rw/custom/logic/UnitReference$NullUnitReference	rustedwarfare/custom/logic/UnitReference$NullUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$ParentUnitReference	rw/custom/logic/UnitReference$ParentUnitReference	rustedwarfare/custom/logic/UnitReference$ParentUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$PlaceholderUnitReference	rw/custom/logic/UnitReference$PlaceholderUnitReference	rustedwarfare/custom/logic/UnitReference$PlaceholderUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$SelfUnitReference	rw/custom/logic/UnitReference$SelfUnitReference	rustedwarfare/custom/logic/UnitReference$SelfUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$ThisActionTargetReference	rw/custom/logic/UnitReference$ThisActionTargetReference	rustedwarfare/custom/logic/UnitReference$ThisActionTargetReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$TransportingUnitReference	rw/custom/logic/UnitReference$TransportingUnitReference	rustedwarfare/custom/logic/UnitReference$TransportingUnitReference
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitContextChangingBooleanByLogic	rw/custom/logic/UnitReference$UnitContextChangingBooleanByLogic	rustedwarfare/custom/logic/UnitReference$UnitContextChangingBooleanByLogic
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitContextChangingContext	rw/custom/logic/UnitReference$UnitContextChangingContext	rustedwarfare/custom/logic/UnitReference$UnitContextChangingContext
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$UnitReferenceOrUnitType	rw/custom/logic/UnitReference$UnitReferenceOrUnitType	rustedwarfare/custom/logic/UnitReference$UnitReferenceOrUnitType
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope	rw/custom/logic/VariableScope	rustedwarfare/custom/logic/VariableScope
+	f	[Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;	emptyData	field_logic_VariableScope_emptyData	emptyData
+	f	[Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;	emptyNames	field_logic_VariableScope_emptyNames	emptyNames
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope;	emptyVariableScope	field_logic_VariableScope_emptyVariableScope	emptyVariableScope
+	f	Ljava/lang/String;	nullOrMissingString	field_logic_VariableScope_nullOrMissingString	nullOrMissingString
+	f	[Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;	variableData	field_logic_VariableScope_variableData	variableData
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataNull;	variableDataNull	field_logic_VariableScope_variableDataNull	variableDataNull
+	f	[Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;	variableNames	field_logic_VariableScope_variableNames	variableNames
+	m	()V	clearAllData	method_logic_VariableScope_clearAllData_e48157	clearAllData
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryWriter;	createGenericKeyValueWriter	method_logic_VariableScope_createGenericKeyValueWriter_ca4531	createGenericKeyValueWriter
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryNames;	createMemoryNameList	method_logic_VariableScope_createMemoryNameList_92b272	createMemoryNameList
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryWriter;	createMemoryWriter	method_logic_VariableScope_createMemoryWriter_f956d1	createMemoryWriter
+	m	(ZZ)Ljava/lang/String;	debugMemory	method_logic_VariableScope_debugMemory_8a5651	debugMemory
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	getAsLogicBoolean	method_logic_VariableScope_getAsLogicBoolean_f2c9cd	getAsLogicBoolean
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)Z	getBoolean	method_logic_VariableScope_getBoolean_f15497	getBoolean
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;	getDataObjectRaw	method_logic_VariableScope_getDataObjectRaw_c91ba3	getDataObjectRaw
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)D	getNumber	method_logic_VariableScope_getNumber_f9161c	getNumber
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/am;	getSafeUnitReferenceForStorage	method_logic_VariableScope_getSafeUnitReferenceForStorage_7922f5	getSafeUnitReferenceForStorage
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)Ljava/lang/String;	getString	method_logic_VariableScope_getString_f4aa00	getString
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)Lcom/corrodinggames/rts/game/units/am;	getUnit	method_logic_VariableScope_getUnit_eef57a	getUnit
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	getUserType	method_logic_VariableScope_getUserType_f55a72	getUserType
+	m	()Z	isEmpty	method_logic_VariableScope_isEmpty_0146f2	isEmpty
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	isMarker	method_logic_VariableScope_isMarker_e95c33	isMarker
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope;	readIn	method_logic_VariableScope_readIn_0b6f64	readIn
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;	readInDynamicData	method_logic_VariableScope_readInDynamicData_5a07c6	readInDynamicData
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)Lcom/corrodinggames/rts/game/units/am;	readInUnitOrPlaceholder	method_logic_VariableScope_readInUnitOrPlaceholder_3fd2b6	readInUnitOrPlaceholder
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;I)V	setArrayDataRaw	method_logic_VariableScope_setArrayDataRaw_f4d87d	setArrayDataRaw
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;)V	setDataRaw	method_logic_VariableScope_setDataRaw_98d899	setDataRaw
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;Lcom/corrodinggames/rts/game/units/y;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)V	setFromLogicBoolean	method_logic_VariableScope_setFromLogicBoolean_d2bd82	setFromLogicBoolean
+	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDefinition;Lcom/corrodinggames/rts/game/units/am;)V	setUnit	method_logic_VariableScope_setUnit_804438	setUnit
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope;)V	writeOut	method_logic_VariableScope_writeOut_f4fac9	writeOut
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData;)V	writeOutDynamicData	method_logic_VariableScope_writeOutDynamicData_01e49c	writeOutDynamicData
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;Lcom/corrodinggames/rts/game/units/am;)V	writeOutUnitOrPlaceholder	method_logic_VariableScope_writeOutUnitOrPlaceholder_e5f04a	writeOutUnitOrPlaceholder
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$AbstractMemoryLogicBoolean	rw/custom/logic/VariableScope$AbstractMemoryLogicBoolean	rustedwarfare/custom/logic/VariableScope$AbstractMemoryLogicBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter	rw/custom/logic/VariableScope$CachedWriter	rustedwarfare/custom/logic/VariableScope$CachedWriter
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$Operator	rw/custom/logic/VariableScope$CachedWriter$Operator	rustedwarfare/custom/logic/VariableScope$CachedWriter$Operator
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$WriterElement	rw/custom/logic/VariableScope$CachedWriter$WriterElement	rustedwarfare/custom/logic/VariableScope$CachedWriter$WriterElement
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$WriterFactory	rw/custom/logic/VariableScope$CachedWriter$WriterFactory	rustedwarfare/custom/logic/VariableScope$CachedWriter$WriterFactory
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$EmptyVariableScope	rw/custom/logic/VariableScope$EmptyVariableScope	rustedwarfare/custom/logic/VariableScope$EmptyVariableScope
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$KnownMemoryReadLogicBoolean	rw/custom/logic/VariableScope$KnownMemoryReadLogicBoolean	rustedwarfare/custom/logic/VariableScope$KnownMemoryReadLogicBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$KnownMemoryScopeLogicBoolean	rw/custom/logic/VariableScope$KnownMemoryScopeLogicBoolean	rustedwarfare/custom/logic/VariableScope$KnownMemoryScopeLogicBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryNames	rw/custom/logic/VariableScope$MemoryNames	rustedwarfare/custom/logic/VariableScope$MemoryNames
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryWriter	rw/custom/logic/VariableScope$MemoryWriter	rustedwarfare/custom/logic/VariableScope$MemoryWriter
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryWriterFactory	rw/custom/logic/VariableScope$MemoryWriterFactory	rustedwarfare/custom/logic/VariableScope$MemoryWriterFactory
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryWriterFactory$MemoryWriterElement	rw/custom/logic/VariableScope$MemoryWriterFactory$MemoryWriterElement	rustedwarfare/custom/logic/VariableScope$MemoryWriterFactory$MemoryWriterElement
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$MemoryWriterFactory$MemoryWriterElementIndex	rw/custom/logic/VariableScope$MemoryWriterFactory$MemoryWriterElementIndex	rustedwarfare/custom/logic/VariableScope$MemoryWriterFactory$MemoryWriterElementIndex
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$ReadEventMemoryLogicBoolean	rw/custom/logic/VariableScope$ReadEventMemoryLogicBoolean	rustedwarfare/custom/logic/VariableScope$ReadEventMemoryLogicBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$ReadUnitMemoryLogicBoolean	rw/custom/logic/VariableScope$ReadUnitMemoryLogicBoolean	rustedwarfare/custom/logic/VariableScope$ReadUnitMemoryLogicBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableData	rw/custom/logic/VariableScope$VariableData	rustedwarfare/custom/logic/VariableScope$VariableData
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataArray	rw/custom/logic/VariableScope$VariableDataArray	rustedwarfare/custom/logic/VariableScope$VariableDataArray
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataBoolArray	rw/custom/logic/VariableScope$VariableDataBoolArray	rustedwarfare/custom/logic/VariableScope$VariableDataBoolArray
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataBoolean	rw/custom/logic/VariableScope$VariableDataBoolean	rustedwarfare/custom/logic/VariableScope$VariableDataBoolean
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataNull	rw/custom/logic/VariableScope$VariableDataNull	rustedwarfare/custom/logic/VariableScope$VariableDataNull
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataNumber	rw/custom/logic/VariableScope$VariableDataNumber	rustedwarfare/custom/logic/VariableScope$VariableDataNumber
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataNumberArray	rw/custom/logic/VariableScope$VariableDataNumberArray	rustedwarfare/custom/logic/VariableScope$VariableDataNumberArray
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataString	rw/custom/logic/VariableScope$VariableDataString	rustedwarfare/custom/logic/VariableScope$VariableDataString
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataUnit	rw/custom/logic/VariableScope$VariableDataUnit	rustedwarfare/custom/logic/VariableScope$VariableDataUnit
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDataUnitArray	rw/custom/logic/VariableScope$VariableDataUnitArray	rustedwarfare/custom/logic/VariableScope$VariableDataUnitArray
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableDefinition	rw/custom/logic/VariableScope$VariableDefinition	rustedwarfare/custom/logic/VariableScope$VariableDefinition
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableMapping	rw/custom/logic/VariableScope$VariableMapping	rustedwarfare/custom/logic/VariableScope$VariableMapping
+c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName	rw/custom/logic/VariableScope$VariableName	rustedwarfare/custom/logic/VariableScope$VariableName
+c	com/corrodinggames/rts/game/units/custom/p	rw/custom/BuiltFromLink	rustedwarfare/custom/BuiltFromLink
+	f	Ljava/lang/String;	a	field_p_a_targetUnitName	targetUnitName
+	f	F	b	field_p_b_position	position
+	f	Z	c	field_p_c_forceNano	forceNano
+	f	Ljava/lang/String;	d	field_p_d_sourceDescription	sourceDescription
+	f	Z	e	field_p_e_resolved	resolved
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	f	field_p_f_isLocked	isLocked
+	f	Lcom/corrodinggames/rts/game/units/custom/bb;	g	field_p_g_isLockedMessage	isLockedMessage
+	m	(Ljava/lang/String;Ljava/lang/String;)V	<init>	method_p_init	<init>
+c	com/corrodinggames/rts/game/units/custom/q	rw/custom/CustomUnitInternalNameComparator	rustedwarfare/custom/CustomUnitInternalNameComparator
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/game/units/custom/l;)I	a	method_q_a_compareCustomUnitInternalNames	compareCustomUnitInternalNames
+	m	(Ljava/lang/Object;Ljava/lang/Object;)I	compare	method_q_compare	compare
+c	com/corrodinggames/rts/game/units/custom/u	rw/custom/ActionReferenceList	rustedwarfare/custom/ActionReferenceList
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_u_a_actionNames	actionNames
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	b	field_u_b_resolvedActions	resolvedActions
+	f	Ljava/lang/String;	c	field_u_c_sourceKey	sourceKey
+	f	Ljava/lang/String;	d	field_u_d_sourceSection	sourceSection
+	m	()V	<init>	method_u_init	<init>
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)V	a	method_u_a_fireLinkedActions	fireLinkedActions
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;)V	a	method_u_a_beforeLinkActionReferences	beforeLinkActionReferences
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;)V	b	method_u_b_linkActionReferences	linkActionReferences
+c	com/corrodinggames/rts/game/units/custom/v	rw/custom/UnitTypeReference	rustedwarfare/custom/UnitTypeReference
+	f	Ljava/lang/String;	a	field_v_a_sourceKey	sourceKey
+	f	Ljava/lang/String;	b	field_v_b_sourceSection	sourceSection
+	f	Ljava/lang/String;	c	field_v_c_unitTypeName	unitTypeName
+	f	Lcom/corrodinggames/rts/game/units/as;	d	field_v_d_resolvedUnitType	resolvedUnitType
+	f	Z	e	field_v_e_alreadyResolved	alreadyResolved
+	f	Z	f	field_v_f_requireUnitRefPrefixHint	requireUnitRefPrefixHint
+	m	()V	<init>	method_v_init_default	<init>
+	m	(Lcom/corrodinggames/rts/game/units/as;)V	<init>	method_v_init_unitType	<init>
+	m	()V	a	method_v_a_resolveUnitType	resolveUnitType
+	m	()V	b	method_v_b_postResolveUnitTypeReference	postResolveUnitTypeReference
+	m	()Lcom/corrodinggames/rts/game/units/as;	c	method_v_c_getResolvedUnitType	getResolvedUnitType
+	m	()Ljava/lang/String;	d	method_v_d_getUnitTypeNameForDisplay	getUnitTypeNameForDisplay
 c	com/corrodinggames/rts/game/units/custom/z	rw/custom/EffectList	rustedwarfare/custom/EffectList
 c	com/corrodinggames/rts/game/units/w	rw/unit/AbstractOrderableUnit	rustedwarfare/unit/AbstractOrderableUnit
 c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/OrderableUnit
@@ -720,17 +1573,17 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	f	Z	ax	field_0111_logColorEnabled	logColorEnabled
 	f	Z	ay	field_0112_noBackgroundMode	noBackgroundMode
 	f	Lcom/corrodinggames/rts/gameFramework/SettingsEngine;	bQ	field_0101_settings	settings
+	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	bX	field_0131_networkEngine	networkEngine
 	f	Lcom/corrodinggames/rts/gameFramework/i/a;	bZ	field_0100_modManager	modManager
 	f	Z	bb	field_0129_gameEngineInitStarted	gameEngineInitStarted
 	f	Ljava/lang/Class;	bg	field_0130_rendererClass	rendererClass
 	f	Landroid/graphics/Point;	ck	field_0132_initialScreenSize	initialScreenSize
 	f	Ljava/lang/String;	dz	field_0133_buildNumber	buildNumber
 	m	()Lcom/corrodinggames/rts/gameFramework/l;	B	method_0100_getInstance	getInstance
-	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	bX	field_0131_networkEngine	networkEngine
 	m	(Landroid/content/Context;Lcom/corrodinggames/rts/gameFramework/n;)Lcom/corrodinggames/rts/gameFramework/l;	a	method_0110_createGameEngine	createGameEngine
 	m	()V	aq	method_0111_initLogging	initLogging
-	m	(Ljava/lang/String;)V	e	method_0112_log	log
 	m	(Ljava/lang/String;)V	b	method_0113_debugLog	debugLog
+	m	(Ljava/lang/String;)V	e	method_0112_log	log
 c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/client/render/GameImage
 c	com/corrodinggames/rts/gameFramework/m/x	rw/render/CanvasGraphicsEngine	rustedwarfare/render/CanvasGraphicsEngine
 c	com/corrodinggames/rts/gameFramework/n	rw/core/PlatformCallbacks	rustedwarfare/core/PlatformCallbacks
@@ -752,7 +1605,7 @@ c	com/corrodinggames/rts/gameFramework/utility/ab	rw/config/IniFile	rustedwarfar
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/h;)Lcom/corrodinggames/rts/game/units/custom/h;	a	method_0542_getTagList	getTagList
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	method_0535_getLogicBoolean	getLogicBoolean
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	method_0538_getLogicBooleanOfType	getLogicBooleanOfType
-	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/u;)Lcom/corrodinggames/rts/game/units/custom/u;	a	method_0543_getUnitTypeReference	getUnitTypeReference
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/u;)Lcom/corrodinggames/rts/game/units/custom/u;	a	method_ab_a_getActionReferenceList	getActionReferenceList
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/aj;	a	method_0532_getLocalizedString	getLocalizedString
 	m	(Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_0512_mergeFromDefaults	mergeFromDefaults
 	m	(Ljava/io/BufferedReader;)V	a	method_0504_parseBufferedReader	parseBufferedReader
@@ -827,8 +1680,8 @@ c	com/corrodinggames/rts/gameFramework/utility/ai	rw/math/Point3F	rustedwarfare/
 	m	(Landroid/graphics/PointF;)V	a	method_Point3F_setFromPointF	setFromPointF
 c	com/corrodinggames/rts/gameFramework/utility/aj	rw/util/MainThreadTaskQueue	rustedwarfare/util/MainThreadTaskQueue
 	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	a	field_1500_queue	queue
-	m	(Ljava/lang/Runnable;)V	a	method_1500_enqueue	enqueue
 	m	()V	a	method_1501_drain	drain
+	m	(Ljava/lang/Runnable;)V	a	method_1500_enqueue	enqueue
 c	com/corrodinggames/rts/gameFramework/utility/j	rw/io/GameInputStream	rustedwarfare/io/GameInputStream
 	m	()Ljava/lang/String;	d	method_0600_getResolvedPath	getResolvedPath
 c	com/corrodinggames/rts/gameFramework/utility/m	rw/util/RwArrayList	rustedwarfare/util/RwArrayList
@@ -853,6 +1706,7 @@ c	com/corrodinggames/rts/java/Main	rw/client/Main	rustedwarfare/client/RustedWar
 	f	Z	u	field_Main_u_saveSettingsQueued	saveSettingsQueued
 	f	I	v	field_Main_v_saveSettingsFrames	saveSettingsFrames
 	m	(F)V	a	method_0009_updateTaskQueue	updateTaskQueue
+	m	(ILjava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_0011_queueChatMessageToUi	queueChatMessageToUi
 	m	(Ljava/lang/String;)V	a	method_0003_log	log
 	m	(Z)V	a	method_0010_shutdownAndExit	shutdownAndExit
 	m	([Ljava/lang/String;)V	a	method_0001_startWithArgs	startWithArgs
@@ -863,11 +1717,22 @@ c	com/corrodinggames/rts/java/Main	rw/client/Main	rustedwarfare/client/RustedWar
 	m	()V	h	method_0007_initializeGameSystems	initializeGameSystems
 	m	()V	i	method_Main_refreshDisplay	refreshDisplay
 	m	([Ljava/lang/String;)V	main	main	main
-	m	(ILjava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_0011_queueChatMessageToUi	queueChatMessageToUi
+c	com/corrodinggames/rts/java/Main$1	rw/client/StdinCommandLoopRunnable	rustedwarfare/client/RustedWarfareMain$StdinCommandLoopRunnable
+	m	()V	run	method_1600_run	run
 c	com/corrodinggames/rts/java/Main$2	rw/client/LooperBootstrapRunnable	rustedwarfare/client/RustedWarfareMain$LooperBootstrapRunnable
 	f	Ljava/util/concurrent/Semaphore;	a	field_1601_semaphore	semaphore
 	f	Lcom/corrodinggames/rts/java/Main;	b	field_1602_main	main
 	m	()V	run	method_1601_run	run
+c	com/corrodinggames/rts/java/Main$3	rw/client/StartGameEventRunnable	rustedwarfare/client/RustedWarfareMain$StartGameEventRunnable
+	f	Lcom/corrodinggames/rts/java/Main;	a	field_1603_main	main
+	m	()V	run	method_1602_run	run
+c	com/corrodinggames/rts/java/Main$4	rw/client/ReceiveChatMessageRunnable	rustedwarfare/client/RustedWarfareMain$ReceiveChatMessageRunnable
+	f	I	a	field_1604_playerSlot	playerSlot
+	f	Ljava/lang/String;	b	field_1605_sender	sender
+	f	Ljava/lang/String;	c	field_1606_message	message
+	f	Lcom/corrodinggames/rts/gameFramework/j/c;	d	field_1607_connection	connection
+	f	Lcom/corrodinggames/rts/java/Main;	e	field_1608_main	main
+	m	()V	run	method_1603_run	run
 c	com/corrodinggames/rts/java/b	rw/client/RustedWarfareAppGameContainer	rustedwarfare/client/RustedWarfareAppGameContainer
 	f	Z	a	field_1100_destroyed	destroyed
 	f	Ljava/lang/Object;	b	field_1101_lock	lock
@@ -879,15 +1744,33 @@ c	com/corrodinggames/rts/java/b	rw/client/RustedWarfareAppGameContainer	rustedwa
 	m	(I)V	updateAndRender	method_1103_updateAndRender	updateAndRender
 c	com/corrodinggames/rts/java/b/a	rw/client/ui/DesktopLibRocket	rustedwarfare/client/ui/DesktopLibRocket
 	f	Lcom/corrodinggames/rts/java/Main;	f	field_DesktopLibRocket_f_main	main
+	f	Z	g	field_DesktopLibRocket_unknownFlag	unknownFlag
+	m	(Z)V	d	method_DesktopLibRocket_shutdownAndExit	shutdownAndExit
+	m	()V	g	method_DesktopLibRocket_requestDisplayRefresh	requestDisplayRefresh
+	m	()V	h	method_DesktopLibRocket_queueSaveSettings	queueSaveSettings
+	m	()I	i	method_DesktopLibRocket_getKeyModifierState	getKeyModifierState
 	m	()Lcom/corrodinggames/rts/java/b/a;	p	method_DesktopLibRocket_getInstance	getInstance
 c	com/corrodinggames/rts/java/d	rw/client/DesktopAppFramework	rustedwarfare/client/DesktopAppFramework
 	f	I	a	field_1300_width	width
 	f	I	b	field_1301_height	height
 	f	Lcom/corrodinggames/rts/appFramework/m;	d	field_1302_inputHandler	inputHandler
 	f	Lcom/corrodinggames/rts/gameFramework/m/n;	g	field_1303_graphicsContext	graphicsContext
-c	com/corrodinggames/rts/java/d/a	rw/client/LibRocketSlickRenderer	rustedwarfare/client/LibRocketSlickRenderer
-	m	(ILjava/lang/String;Z)Z	GenerateTexture	GenerateTexture	GenerateTexture
-	m	([F[F[IILcom/ElementDocument;)V	RenderGeometryPossiblyCompiled	RenderGeometryPossiblyCompiled	RenderGeometryPossiblyCompiled
+c	com/corrodinggames/rts/java/d/a	rw/client/ui/LibRocketSlickRenderer	rustedwarfare/client/ui/LibRocketSlickRenderer
+	f	Lorg/newdawn/slick/Graphics;	j	field_LibRocketSlickRenderer_graphics	graphics
+	f	Lorg/newdawn/slick/opengl/renderer/SGL;	k	field_LibRocketSlickRenderer_sgl	sgl
+	m	(Z)V	EnableScissorRegion	EnableScissorRegion	EnableScissorRegion
+	m	(I[B)Z	GenerateTexture	GenerateTexture	GenerateTexture
+	m	([F[F[I[IIFFLcom/LibRocket$CompiledGeometry;)V	RenderGeometryPossiblyCompiled	RenderGeometryPossiblyCompiled	RenderGeometryPossiblyCompiled
+	m	()V	a	method_LibRocketSlickRenderer_startNewFrame	startNewFrame
+	m	(Lorg/newdawn/slick/Graphics;)V	a	method_LibRocketSlickRenderer_setGraphics	setGraphics
+	m	()Lcom/LibRocket$TextureHolder;	getFromTextureHolderFactory	method_LibRocketSlickRenderer_getFromTextureHolderFactory	getFromTextureHolderFactory
+c	com/corrodinggames/rts/java/d/b	rw/client/ui/SlickLibRocketTextureHolder	rustedwarfare/client/ui/SlickLibRocketTextureHolder
+	f	Lorg/newdawn/slick/Image;	h	field_SlickLibRocketTextureHolder_image	image
+	f	Z	i	field_SlickLibRocketTextureHolder_usingFallbackImage	usingFallbackImage
+	f	Lorg/newdawn/slick/ImageBuffer;	j	field_SlickLibRocketTextureHolder_pendingImageBuffer	pendingImageBuffer
+	f	Lcom/corrodinggames/rts/java/d/a;	k	field_SlickLibRocketTextureHolder_renderer	renderer
+	m	()Z	a	method_SlickLibRocketTextureHolder_loadTexture	loadTexture
+	m	()V	remove	remove	remove
 c	com/corrodinggames/rts/java/e	rw/client/render/SlickGraphicsBackend	rustedwarfare/client/render/SlickGraphicsBackend
 c	com/corrodinggames/rts/java/i	rw/client/DesktopPlatformCallbacks	rustedwarfare/client/DesktopPlatformCallbacks
 	f	Lcom/corrodinggames/rts/java/Main;	a	field_1400_main	main
@@ -906,6 +1789,7 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	f	Lorg/newdawn/slick/GameContainer;	a	field_1000_gameContainer	gameContainer
 	f	Lcom/corrodinggames/rts/java/Main;	b	field_1001_main	main
 	f	Lcom/corrodinggames/rts/java/b;	c	field_1002_appGameContainer	appGameContainer
+	f	Lcom/corrodinggames/rts/gameFramework/m/n;	d	field_1003_graphicsContext	graphicsContext
 	f	Lcom/corrodinggames/rts/gameFramework/l;	e	field_1004_gameEngine	gameEngine
 	f	Lcom/corrodinggames/rts/java/d;	f	field_1005_appFramework	appFramework
 	f	Ljava/lang/Object;	h	field_SlickGameAdapter_h_loadLock	loadLock
@@ -931,17 +1815,4 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	m	(Lorg/newdawn/slick/GameContainer;)V	init	method_1000_init	init
 	m	(Lorg/newdawn/slick/GameContainer;Lorg/newdawn/slick/Graphics;)V	render	method_1007_render	render
 	m	(Lorg/newdawn/slick/GameContainer;I)V	update	method_1005_update	update
-	f	Lcom/corrodinggames/rts/gameFramework/m/n;	d	field_1003_graphicsContext	graphicsContext
 c	com/corrodinggames/rts/java/v	rw/input/DesktopControllerInput	rustedwarfare/input/DesktopControllerInput
-c	com/corrodinggames/rts/java/Main$1	rw/client/StdinCommandLoopRunnable	rustedwarfare/client/RustedWarfareMain$StdinCommandLoopRunnable
-	m	()V	run	method_1600_run	run
-c	com/corrodinggames/rts/java/Main$3	rw/client/StartGameEventRunnable	rustedwarfare/client/RustedWarfareMain$StartGameEventRunnable
-	f	Lcom/corrodinggames/rts/java/Main;	a	field_1603_main	main
-	m	()V	run	method_1602_run	run
-c	com/corrodinggames/rts/java/Main$4	rw/client/ReceiveChatMessageRunnable	rustedwarfare/client/RustedWarfareMain$ReceiveChatMessageRunnable
-	f	I	a	field_1604_playerSlot	playerSlot
-	f	Ljava/lang/String;	b	field_1605_sender	sender
-	f	Ljava/lang/String;	c	field_1606_message	message
-	f	Lcom/corrodinggames/rts/gameFramework/j/c;	d	field_1607_connection	connection
-	f	Lcom/corrodinggames/rts/java/Main;	e	field_1608_main	main
-	m	()V	run	method_1603_run	run
