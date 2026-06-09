@@ -14,8 +14,12 @@
     "MinimapSetupOfficialMixin",
     "MutableStatRuntimeNamedMixin",
     "MutableStatRuntimeOfficialMixin",
+    "ResourceConversionNamedMixin",
+    "ResourceConversionOfficialMixin",
     "ResourceAmountRuntimeNamedMixin",
-    "ResourceAmountRuntimeOfficialMixin"
+    "ResourceAmountRuntimeOfficialMixin",
+    "TakeResourcesCollectNamedMixin",
+    "TakeResourcesCollectOfficialMixin"
   ],
   "injectors": {
     "defaultRequire": 0
