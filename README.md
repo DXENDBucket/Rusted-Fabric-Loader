@@ -162,3 +162,11 @@ Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a f
   - `rustedfabricloader:before_game` runs immediately before the game main class is invoked. The same `Consumer<Map<String, Object>>` contract applies.
 
 Each callback receives a `RustedFabricAPIContext` describing the game directory, launch arguments, and whether the runtime is Android, enabling mods to adjust behavior for desktop vs. mobile builds.
+
+### Java custom unit assets
+`rusted-fabric-api` includes `io.github.endx.rustedfabricapi.api.asset.JavaUnitAssetLoader` for Java-authored custom units. It is intentionally namespace-neutral: public methods accept and return `Object`, while the implementation resolves named and official game classes reflectively. The helper covers the v0.22 asset contracts:
+
+- Load native images and sounds through `CustomUnitLoader` helpers.
+- Apply `CustomUnitMetadata.image` plus frame layout fields consistently.
+- Generate team-color body, turret, and zoomed-out icon arrays through the native `createTeamColorImages` helper.
+- Set shadow/build icon fields, create sound/effect lists, register metadata in `pendingCustomUnitTypes`, and validate the basic asset contract before native finalization.

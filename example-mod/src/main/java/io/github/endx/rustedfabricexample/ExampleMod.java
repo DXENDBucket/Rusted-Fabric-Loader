@@ -3,7 +3,7 @@ package io.github.endx.rustedfabricexample;
 import android.graphics.Paint;
 import android.graphics.Paint$Style;
 import android.graphics.Rect;
-import com.corrodinggames.rts.gameFramework.m.y;
+import io.github.endx.rustedfabricapi.api.event.CommandEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
@@ -12,11 +12,14 @@ import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
+import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
+import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.ModInitializer;
 import rustedwarfare.core.GameEngine;
 import rustedwarfare.core.SettingsEngine;
 import rustedwarfare.mod.ModManager;
+import rustedwarfare.render.GraphicsEngine;
 import rustedwarfare.ui.script.RootScript;
 import rustedwarfare.ui.script.ScriptEngine;
 
@@ -186,6 +189,95 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
 
         CustomUnitEvents.AFTER_CUSTOM_UNIT_LINK_GRAPH_BUILT.register(() ->
                 showEventProbeMessage(stage, "AfterCustomUnitLinkGraphBuilt", null));
+
+        GameLifecycleEvents.AFTER_FRAME_UPDATE.register((renderer, gameContainer, delta) ->
+                showEventProbeMessage(stage, "AfterFrameUpdate",
+                        "AfterFrameUpdate delta=" + delta
+                                + " renderer=" + describeObject(renderer),
+                        renderer, 5000L));
+
+        UnitLifecycleEvents.BEFORE_UNIT_REGISTER.register(unit ->
+                showEventProbeMessage(stage, "BeforeUnitRegister",
+                        "BeforeUnitRegister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        UnitLifecycleEvents.AFTER_UNIT_REGISTER.register(unit ->
+                showEventProbeMessage(stage, "AfterUnitRegister",
+                        "AfterUnitRegister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        UnitLifecycleEvents.BEFORE_UNIT_UNREGISTER.register(unit ->
+                showEventProbeMessage(stage, "BeforeUnitUnregister",
+                        "BeforeUnitUnregister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        UnitLifecycleEvents.AFTER_UNIT_UNREGISTER.register(unit ->
+                showEventProbeMessage(stage, "AfterUnitUnregister",
+                        "AfterUnitUnregister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        SelectionEvents.BEFORE_UNIT_SELECT.register((interfaceEngine, unit, append) -> {
+            showEventProbeMessage(stage, "BeforeUnitSelect",
+                    "BeforeUnitSelect append=" + append
+                            + " unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_UNIT_SELECT.register((interfaceEngine, unit, append) ->
+                showEventProbeMessage(stage, "AfterUnitSelect",
+                        "AfterUnitSelect append=" + append
+                                + " unit=" + describeObject(unit),
+                        unit, 300L));
+
+        SelectionEvents.BEFORE_UNIT_ADDED_TO_SELECTION.register((interfaceEngine, unit) -> {
+            showEventProbeMessage(stage, "BeforeUnitAddedToSelection",
+                    "BeforeUnitAddedToSelection unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_UNIT_ADDED_TO_SELECTION.register((interfaceEngine, unit, result) ->
+                showEventProbeMessage(stage, "AfterUnitAddedToSelection",
+                        "AfterUnitAddedToSelection result=" + result
+                                + " unit=" + describeObject(unit),
+                        unit, 300L));
+
+        SelectionEvents.BEFORE_UNIT_DESELECT.register((interfaceEngine, unit) -> {
+            showEventProbeMessage(stage, "BeforeUnitDeselect",
+                    "BeforeUnitDeselect unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_UNIT_DESELECT.register((interfaceEngine, unit) ->
+                showEventProbeMessage(stage, "AfterUnitDeselect",
+                        "AfterUnitDeselect unit=" + describeObject(unit),
+                        unit, 300L));
+
+        SelectionEvents.BEFORE_SELECTION_CLEAR.register(interfaceEngine -> {
+            showEventProbeMessage(stage, "BeforeSelectionClear",
+                    "BeforeSelectionClear interface=" + describeObject(interfaceEngine),
+                    interfaceEngine, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_SELECTION_CLEAR.register(interfaceEngine ->
+                showEventProbeMessage(stage, "AfterSelectionClear",
+                        "AfterSelectionClear interface=" + describeObject(interfaceEngine),
+                        interfaceEngine, 300L));
+
+        CommandEvents.BEFORE_COMMAND_ISSUE.register(command -> {
+            showEventProbeMessage(stage, "BeforeCommandIssue",
+                    "BeforeCommandIssue command=" + describeObject(command),
+                    command, 500L);
+            return false;
+        });
+
+        CommandEvents.AFTER_COMMAND_ISSUE.register(command ->
+                showEventProbeMessage(stage, "AfterCommandIssue",
+                        "AfterCommandIssue command=" + describeObject(command),
+                        command, 500L));
 
         CustomUnitRuntimeEvents.BEFORE_CUSTOM_ACTION_EXECUTE.register((unit, action, targetPoint, targetUnit, recursionDepth) -> {
             showEventProbeMessage(stage, "BeforeCustomActionExecute",
@@ -848,7 +940,7 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
             return;
         }
 
-        y renderer = engine.bO;
+        GraphicsEngine renderer = engine.bO;
         int[] surfaceSize = getOverlaySurfaceSize(frameRenderer, engine);
         int screenWidth = surfaceSize[0];
         int screenHeight = surfaceSize[1];
@@ -927,7 +1019,7 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
         return slickGameContainerField != null ? slickGameContainerField.get(frameRenderer) : null;
     }
 
-    private static Object getSlickGraphics(y renderer) throws ReflectiveOperationException {
+    private static Object getSlickGraphics(GraphicsEngine renderer) throws ReflectiveOperationException {
         if (renderer == null) {
             return null;
         }
@@ -1083,7 +1175,7 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
         overlayTextPaint.b(13.0f);
     }
 
-    private static String fitOverlayText(y renderer, String text, int maxWidth) {
+    private static String fitOverlayText(GraphicsEngine renderer, String text, int maxWidth) {
         if (text == null) {
             return "";
         }
