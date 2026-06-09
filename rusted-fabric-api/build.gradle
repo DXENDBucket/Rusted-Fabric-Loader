@@ -11,9 +11,20 @@ repositories {
     maven { url "https://repo.spongepowered.org/maven/" }
 }
 
+def gameLibJarFile = {
+    rootProject.hasProperty('gameLibJar') ? rootProject.file(rootProject.property('gameLibJar')) : rootProject.file("libs/game-lib.jar")
+}
+def namedGameJarFile = {
+    rootProject.hasProperty('namedGameJar')
+            ? rootProject.file(rootProject.property('namedGameJar'))
+            : rootProject.layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
+}
+
 dependencies {
     implementation "net.fabricmc:fabric-loader:0.18.1"
     compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
+    compileOnly files({ gameLibJarFile() })
+    compileOnly files({ namedGameJarFile() })
 }
 
 test {
@@ -21,5 +32,6 @@ test {
 }
 
 tasks.withType(JavaCompile).configureEach {
+    dependsOn rootProject.tasks.named('generateNamedGameJar')
     options.release = 13 // RW:13
 }

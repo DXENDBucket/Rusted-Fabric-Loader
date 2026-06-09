@@ -22,6 +22,8 @@
     "GameFileSystemMapDiscoveryOfficialMixin",
     "MapEngineLifecycleNamedMixin",
     "MapEngineLifecycleOfficialMixin",
+    "MapObjectSpawnNamedMixin",
+    "MapObjectSpawnOfficialMixin",
     "MinimapSetupNamedMixin",
     "MinimapSetupOfficialMixin",
     "MissionTriggerLinkerNamedMixin",
@@ -44,8 +46,12 @@
     "ResourceConversionOfficialMixin",
     "ResourceAmountRuntimeNamedMixin",
     "ResourceAmountRuntimeOfficialMixin",
+    "StartingUnitSpawnNamedMixin",
+    "StartingUnitSpawnOfficialMixin",
     "TakeResourcesCollectNamedMixin",
-    "TakeResourcesCollectOfficialMixin"
+    "TakeResourcesCollectOfficialMixin",
+    "TilePropertySpawnNamedMixin",
+    "TilePropertySpawnOfficialMixin"
   ],
   "injectors": {
     "defaultRequire": 0
