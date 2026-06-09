@@ -15,5 +15,7 @@ public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
         ExampleMod.startVisibleSettingsTweaks(ctx.entrypointKey());
         ExampleMod.startMainMenuPopup(ctx.entrypointKey());
         ExampleMod.registerMapEntryMessage(ctx.entrypointKey());
+        ExampleMod.registerEventProbeMessages(ctx.entrypointKey());
+        ExampleMod.registerOverlayRenderer(ctx.entrypointKey());
     }
 }
