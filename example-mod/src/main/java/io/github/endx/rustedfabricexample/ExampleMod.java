@@ -23,6 +23,8 @@ import rustedwarfare.core.GameEngine;
 import rustedwarfare.core.SettingsEngine;
 import rustedwarfare.mod.ModManager;
 import rustedwarfare.render.GraphicsEngine;
+import rustedwarfare.ui.InterfaceEngine;
+import rustedwarfare.ui.UiButtonKind;
 import rustedwarfare.ui.script.RootScript;
 import rustedwarfare.ui.script.ScriptEngine;
 
@@ -30,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,18 +47,24 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     private static final AtomicBoolean MAP_ENTRY_MESSAGE_REGISTERED = new AtomicBoolean();
     private static final AtomicBoolean EVENT_PROBE_MESSAGES_REGISTERED = new AtomicBoolean();
     private static final AtomicBoolean OVERLAY_RENDERER_REGISTERED = new AtomicBoolean();
+    private static final AtomicBoolean DEBUG_PANEL_RENDERER_REGISTERED = new AtomicBoolean();
     private static final AtomicBoolean OVERLAY_RENDER_HOOK_SEEN = new AtomicBoolean();
     private static final AtomicBoolean OVERLAY_SLICK_DRAW_SEEN = new AtomicBoolean();
     private static final AtomicBoolean OVERLAY_DIMENSIONS_LOGGED = new AtomicBoolean();
     private static final Object MAP_ENTRY_MESSAGE_LOCK = new Object();
     private static final Object EVENT_PROBE_MESSAGE_LOCK = new Object();
     private static final Object OVERLAY_LOCK = new Object();
+    private static final Object DEBUG_PANEL_LOCK = new Object();
     private static final int OVERLAY_BORDER_COLOR = 0xFF44FF66;
     private static final int OVERLAY_TEXT_COLOR = 0xFFFFFFFF;
     private static final int MAX_OVERLAY_MESSAGES = 5;
     private static final float SLICK_TEXT_SCALE = 0.78f;
     private static final List<OverlayMessage> OVERLAY_MESSAGES = new ArrayList<>();
     private static final Rect OVERLAY_RECT = new Rect();
+    private static final Rect DEBUG_PANEL_RECT = new Rect();
+    private static final Map<DebugProbeGroup, Boolean> DEBUG_PROBE_GROUPS = new EnumMap<>(DebugProbeGroup.class);
+    private static final Map<DebugRenderPart, Boolean> DEBUG_RENDER_PARTS = new EnumMap<>(DebugRenderPart.class);
+    private static volatile boolean debugPanelOpen;
     private static Paint overlayFillPaint;
     private static Paint overlayBorderPaint;
     private static Paint overlayTextPaint;
@@ -86,6 +95,16 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     private static long lastMapEntryMessageMillis;
     private static final Map<String, Long> LAST_EVENT_PROBE_MILLIS_BY_KEY = new HashMap<>();
     private static long lastOverlayDrawFailureLogMillis;
+    private static long lastDebugPanelDrawFailureLogMillis;
+
+    static {
+        for (DebugProbeGroup group : DebugProbeGroup.values()) {
+            DEBUG_PROBE_GROUPS.put(group, Boolean.TRUE);
+        }
+        for (DebugRenderPart part : DebugRenderPart.values()) {
+            DEBUG_RENDER_PARTS.put(part, Boolean.TRUE);
+        }
+    }
 
     @Override
     public void onInitialize() {
@@ -152,12 +171,15 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     }
 
     static void registerOverlayRenderer(String stage) {
-        if (!OVERLAY_RENDERER_REGISTERED.compareAndSet(false, true)) {
-            return;
+        if (OVERLAY_RENDERER_REGISTERED.compareAndSet(false, true)) {
+            GameLifecycleEvents.AFTER_FRAME_RENDER.register(ExampleMod::drawOverlayMessages);
+            log("registered green overlay renderer from " + stage);
         }
 
-        GameLifecycleEvents.AFTER_FRAME_RENDER.register(ExampleMod::drawOverlayMessages);
-        log("registered green overlay renderer from " + stage);
+        if (DEBUG_PANEL_RENDERER_REGISTERED.compareAndSet(false, true)) {
+            GameLifecycleEvents.AFTER_GAME_INTERFACE_DRAW.register(ExampleMod::drawDebugPanel);
+            log("registered Java Debug panel renderer from " + stage);
+        }
     }
 
     static void registerMapEntryMessage(String stage) {
@@ -330,7 +352,24 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
                     "AfterGetTurretImage turret=" + turretIndex
                             + " image=" + describeObject(image),
                     unit, 4000L);
-            return image;
+            return isDebugRenderPartEnabled(DebugRenderPart.TURRET_IMAGE) ? image : null;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_SHIELD_IMAGE.register((unit, image) -> {
+            showEventProbeMessage(stage, "AfterGetShieldImage",
+                    "AfterGetShieldImage image=" + describeObject(image),
+                    unit, 4000L);
+            return isDebugRenderPartEnabled(DebugRenderPart.SHIELD_IMAGE) ? image : null;
+        });
+
+        CustomUnitRenderEvents.BEFORE_DRAW_BACK_IMAGE.register((unit, renderDelta) -> {
+            if (!isDebugRenderPartEnabled(DebugRenderPart.BACK_IMAGE)) {
+                showEventProbeMessage(stage, "BeforeDrawBackImage",
+                        "BeforeDrawBackImage cancelled by Java Debug",
+                        unit, 1000L);
+                return true;
+            }
+            return false;
         });
 
         CustomUnitRenderEvents.AFTER_TURRET_WORLD_TRANSFORM.register((unit, turretIndex, includeHeight, transform) -> {
@@ -1009,6 +1048,10 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     }
 
     private static void showMapEntryMessage(String stage, Object map) {
+        if (!isDebugProbeGroupEnabled(DebugProbeGroup.MAP)) {
+            return;
+        }
+
         String mapPath = getCurrentMapPathForLog();
         if (isDuplicateMapEntryMessage(mapPath)) {
             return;
@@ -1022,6 +1065,10 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     }
 
     private static void showEventProbeMessage(String stage, String key, String message, Object source, long minIntervalMillis) {
+        if (!isDebugProbeGroupEnabled(classifyDebugProbeGroup(key))) {
+            return;
+        }
+
         if (isDuplicateEventProbeMessage(key, minIntervalMillis)) {
             return;
         }
@@ -1041,6 +1088,172 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
         log("queued overlay message from " + stage
                 + ": " + text
                 + ", source=" + (source != null ? source.getClass().getName() : "null"));
+    }
+
+    private static void drawDebugPanel(Object interfaceEngine, float delta) {
+        try {
+            if (interfaceEngine instanceof InterfaceEngine) {
+                drawDebugPanelUnchecked((InterfaceEngine) interfaceEngine);
+            }
+        } catch (Throwable t) {
+            logDebugPanelDrawFailure(t);
+        }
+    }
+
+    private static void drawDebugPanelUnchecked(InterfaceEngine interfaceEngine) throws ReflectiveOperationException {
+        GameEngine engine = GameEngine.getInstance();
+        if (engine == null || engine.bO == null) {
+            return;
+        }
+
+        GraphicsEngine renderer = engine.bO;
+        initOverlayPaints();
+
+        int[] surfaceSize = getOverlaySurfaceSize(null, engine);
+        int screenWidth = surfaceSize[0];
+        int margin = 24;
+        int left = margin;
+        int top = 72;
+        int buttonWidth = 160;
+        int buttonHeight = 30;
+        int panelWidth = Math.min(420, Math.max(320, screenWidth - margin * 2));
+        int rowHeight = 28;
+        int labelHeight = 22;
+        int groupRows = (DebugProbeGroup.values().length + 1) / 2;
+        int renderRows = (DebugRenderPart.values().length + 1) / 2;
+        int panelHeight = 14 + labelHeight + groupRows * rowHeight + 12 + labelHeight + renderRows * rowHeight + 14;
+
+        if (interfaceEngine.drawButtonAndHandleClick(left, top, buttonWidth, buttonHeight,
+                debugPanelOpen ? "Java Debug: ON" : "Java Debug", UiButtonKind.NONE, false, 0)) {
+            debugPanelOpen = !debugPanelOpen;
+            enqueueOverlayMessage("debug", "Java Debug panel " + (debugPanelOpen ? "opened" : "closed"), interfaceEngine);
+        }
+
+        if (!debugPanelOpen) {
+            return;
+        }
+
+        int panelTop = top + buttonHeight + 8;
+        DEBUG_PANEL_RECT.a(left, panelTop, left + panelWidth, panelTop + panelHeight);
+        renderer.b(DEBUG_PANEL_RECT, overlayFillPaint);
+        renderer.b(DEBUG_PANEL_RECT, overlayBorderPaint);
+
+        int contentLeft = left + 10;
+        int y = panelTop + 20;
+        renderer.a("Event probe groups", contentLeft, y, overlayTextPaint);
+        y += 10;
+        drawDebugProbeGroupButtons(interfaceEngine, contentLeft, y, panelWidth - 20, rowHeight);
+
+        y += groupRows * rowHeight + 20;
+        renderer.a("Render parts", contentLeft, y, overlayTextPaint);
+        y += 10;
+        drawDebugRenderPartButtons(interfaceEngine, contentLeft, y, panelWidth - 20, rowHeight);
+    }
+
+    private static void drawDebugProbeGroupButtons(InterfaceEngine interfaceEngine, int left, int top, int width, int rowHeight) {
+        DebugProbeGroup[] groups = DebugProbeGroup.values();
+        int gap = 6;
+        int cellWidth = (width - gap) / 2;
+        for (int i = 0; i < groups.length; i++) {
+            DebugProbeGroup group = groups[i];
+            int x = left + (i % 2) * (cellWidth + gap);
+            int y = top + (i / 2) * rowHeight;
+            boolean enabled = isDebugProbeGroupEnabled(group);
+            if (interfaceEngine.drawButtonAndHandleClick(x, y, cellWidth, 24,
+                    (enabled ? "[x] " : "[ ] ") + group.label, UiButtonKind.NONE, false, 0)) {
+                setDebugProbeGroupEnabled(group, !enabled);
+                enqueueOverlayMessage("debug", group.label + " probes " + (!enabled ? "enabled" : "disabled"), interfaceEngine);
+            }
+        }
+    }
+
+    private static void drawDebugRenderPartButtons(InterfaceEngine interfaceEngine, int left, int top, int width, int rowHeight) {
+        DebugRenderPart[] parts = DebugRenderPart.values();
+        int gap = 6;
+        int cellWidth = (width - gap) / 2;
+        for (int i = 0; i < parts.length; i++) {
+            DebugRenderPart part = parts[i];
+            int x = left + (i % 2) * (cellWidth + gap);
+            int y = top + (i / 2) * rowHeight;
+            boolean enabled = isDebugRenderPartEnabled(part);
+            if (interfaceEngine.drawButtonAndHandleClick(x, y, cellWidth, 24,
+                    (enabled ? "[x] " : "[ ] ") + part.label, UiButtonKind.NONE, false, 0)) {
+                setDebugRenderPartEnabled(part, !enabled);
+                enqueueOverlayMessage("debug", part.label + " " + (!enabled ? "enabled" : "disabled"), interfaceEngine);
+            }
+        }
+    }
+
+    private static DebugProbeGroup classifyDebugProbeGroup(String key) {
+        String text = key != null ? key : "";
+        if (containsAny(text, "Resource", "TakeResources")) {
+            return DebugProbeGroup.RESOURCE;
+        }
+        if (containsAny(text, "Save", "Replay", "Checksum", "Serialize", "Deserialize", "WriteSave", "ReadSave", "NetworkResync")) {
+            return DebugProbeGroup.SAVE;
+        }
+        if (containsAny(text, "Map", "Tmx", "Tileset", "Mission", "StartingUnitSpawn", "TileProperty", "ExtraMaps", "NetworkMap")) {
+            return DebugProbeGroup.MAP;
+        }
+        if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList", "NativeCustomUnit", "CustomUnitRegistry", "CustomUnitOverride", "CustomUnitLink")) {
+            return DebugProbeGroup.ASSET;
+        }
+        if (containsAny(text, "GetBodyImage", "GetTurretImage", "GetShieldImage", "GetShadowImage", "GetZoomed", "FrameSourceRect", "ImageDestinationRect", "Draw", "TurretWorldTransform", "FrameRender", "FrameUpdate")) {
+            return DebugProbeGroup.RENDER;
+        }
+        if (containsAny(text, "Select", "Selection", "CommandIssue")) {
+            return DebugProbeGroup.SELECTION;
+        }
+        if (containsAny(text, "Action", "TurretFire", "Projectile", "FireProjectile", "Convert", "Transport", "BuildQueue", "MutableStats")) {
+            return DebugProbeGroup.ACTION;
+        }
+        if (containsAny(text, "Unit", "Metadata", "Killed", "Removed", "Register")) {
+            return DebugProbeGroup.LIFECYCLE;
+        }
+        return DebugProbeGroup.GAME;
+    }
+
+    private static boolean containsAny(String value, String... patterns) {
+        for (String pattern : patterns) {
+            if (value.contains(pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isDebugProbeGroupEnabled(DebugProbeGroup group) {
+        synchronized (DEBUG_PANEL_LOCK) {
+            return Boolean.TRUE.equals(DEBUG_PROBE_GROUPS.get(group));
+        }
+    }
+
+    private static void setDebugProbeGroupEnabled(DebugProbeGroup group, boolean enabled) {
+        synchronized (DEBUG_PANEL_LOCK) {
+            DEBUG_PROBE_GROUPS.put(group, Boolean.valueOf(enabled));
+        }
+    }
+
+    private static boolean isDebugRenderPartEnabled(DebugRenderPart part) {
+        synchronized (DEBUG_PANEL_LOCK) {
+            return Boolean.TRUE.equals(DEBUG_RENDER_PARTS.get(part));
+        }
+    }
+
+    private static void setDebugRenderPartEnabled(DebugRenderPart part, boolean enabled) {
+        synchronized (DEBUG_PANEL_LOCK) {
+            DEBUG_RENDER_PARTS.put(part, Boolean.valueOf(enabled));
+        }
+    }
+
+    private static void logDebugPanelDrawFailure(Throwable t) {
+        long now = System.currentTimeMillis();
+        if (now - lastDebugPanelDrawFailureLogMillis < 5000L) {
+            return;
+        }
+
+        lastDebugPanelDrawFailureLogMillis = now;
+        log("debug panel draw failed: " + t.getClass().getName() + ": " + t.getMessage());
     }
 
     private static void drawOverlayMessages(Object renderer) {
@@ -1442,6 +1655,36 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
 
     static void log(String message) {
         System.out.println("[Rusted Fabric Example] " + message);
+    }
+
+    private enum DebugProbeGroup {
+        GAME("Game"),
+        ASSET("Asset"),
+        LIFECYCLE("Lifecycle"),
+        RENDER("Render"),
+        ACTION("Action"),
+        SELECTION("Selection"),
+        MAP("Map"),
+        RESOURCE("Resource"),
+        SAVE("Save");
+
+        final String label;
+
+        DebugProbeGroup(String label) {
+            this.label = label;
+        }
+    }
+
+    private enum DebugRenderPart {
+        BACK_IMAGE("Back image"),
+        TURRET_IMAGE("Turret image"),
+        SHIELD_IMAGE("Shield image");
+
+        final String label;
+
+        DebugRenderPart(String label) {
+            this.label = label;
+        }
     }
 
     private static final class OverlayMessage {
