@@ -26,6 +26,8 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_action_projectile_runtime_field_binding_v0_30.csv";
     private static final String DEFERRED_AMBIGUOUS_TURRET_FIELDS_RESOURCE =
             "/rustedfabricapi/mapping/rw_deferred_ambiguous_turret_fields_v0_30.csv";
+    private static final String RUNTIME_PATHING_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_pathing_added_rows_v0_31.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -58,6 +60,10 @@ public final class MappingEvidenceDiagnostics {
         return Holder.DEFERRED_AMBIGUOUS_TURRET_FIELDS;
     }
 
+    public static List<MappingEvidenceRow> allRuntimePathingRows() {
+        return Holder.RUNTIME_PATHING_ROWS;
+    }
+
     public static List<MappingEvidenceRow> findLogicBooleanMembers(String text) {
         return findByText(Holder.LOGIC_BOOLEAN_MEMBERS, text);
     }
@@ -80,6 +86,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<RuntimeFieldBindingRow> findActionProjectileRuntimeFieldBindings(String text) {
         return findRuntimeFieldBindingsByText(Holder.ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimePathingRows(String text) {
+        return findByText(Holder.RUNTIME_PATHING_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {
@@ -316,6 +326,8 @@ public final class MappingEvidenceDiagnostics {
                 loadRuntimeFieldBindingRows(ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS_RESOURCE);
         private static final List<DeferredMemberRow> DEFERRED_AMBIGUOUS_TURRET_FIELDS =
                 loadDeferredMemberRows(DEFERRED_AMBIGUOUS_TURRET_FIELDS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_PATHING_ROWS =
+                loadRows(RUNTIME_PATHING_ROWS_RESOURCE);
     }
 
     public static final class MappingEvidenceRow {

@@ -1042,8 +1042,10 @@ c	com/corrodinggames/rts/game/units/a/w	rustedwarfare/unit/action/QueueableUnitA
 	m	()Z	u	method_w_u_isQueuedAction	isQueuedAction
 c	com/corrodinggames/rts/game/units/ai	rw/unit/effect/SpreadingFireUnit	rustedwarfare/unit/effect/SpreadingFireUnit
 	m	()V	n	method_SpreadingFireUnit_onMapSpawned	onMapSpawned
+	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_ai_h_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/al	rw/unit/environment/TreeUnit	rustedwarfare/unit/environment/TreeUnit
 	m	()V	n	method_TreeUnit_onMapSpawned	onMapSpawned
+	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_al_h_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	Z	bM	field_Unit_bM_createdFromMap	createdFromMap
 	f	Z	bN	field_Unit_bN_mapAiDisabled	mapAiDisabled
@@ -1082,6 +1084,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	(Lcom/corrodinggames/rts/game/n;)V	e	method_Unit_changeTeam	changeTeam
 	m	(F)V	h	method_Unit_setDirection	setDirection
 	m	()V	n	method_Unit_onMapSpawned	onMapSpawned
+	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_am_h_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/ar	rw/unit/BuiltinUnitType	rustedwarfare/unit/BuiltinUnitType
 	f	Lcom/corrodinggames/rts/game/units/ar;	A	field_BuiltinUnitType_tree	tree
 	f	Lcom/corrodinggames/rts/game/units/ar;	B	field_BuiltinUnitType_repairBay	repairBay
@@ -1153,6 +1156,7 @@ c	com/corrodinggames/rts/game/units/ar	rw/unit/BuiltinUnitType	rustedwarfare/uni
 	m	()Ljava/lang/String;	i	method_BuiltinUnitType_getInternalName	getInternalName
 	m	()V	t	method_BuiltinUnitType_finishLoadingAll	finishLoadingAll
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	u	method_getBuildPrice	getBuildPrice
+	m	()Lcom/corrodinggames/rts/game/units/ao;	o	method_ar_o_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/ar$1	rw/unit/BuiltinUnitType$1	rustedwarfare/unit/BuiltinUnitType$1
 	m	()F	D	method_getBuildSpeed	getBuildSpeed
 	m	()I	c	method_getBuildCostCredits	getBuildCostCredits
@@ -1332,6 +1336,7 @@ c	com/corrodinggames/rts/game/units/as	rw/unit/UnitType	rustedwarfare/unit/UnitT
 	m	()V	h	method_resetActionListsByTechLevel	resetActionListsByTechLevel
 	m	()Ljava/lang/String;	i	method_UnitType_getInternalName	getInternalName
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	u	method_getBuildPrice	getBuildPrice
+	m	()Lcom/corrodinggames/rts/game/units/ao;	o	method_as_o_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/at	rw/unit/action/UnitActionList	rustedwarfare/unit/action/UnitActionList
 	f	Ljava/util/ArrayList;	a	field_actions	actions
 c	com/corrodinggames/rts/game/units/au	rw/unit/UnitOrder	rustedwarfare/unit/UnitOrder
@@ -2936,6 +2941,7 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(F)V	p	method_CustomUnit_drawRenderBehaviorOverlayPhase	drawRenderBehaviorOverlayPhase
 	m	(I)F	p	method_CustomUnit_getTurretImageScale	getTurretImageScale
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	v	method_CustomUnit_getZoomedOutIconImage	getZoomedOutIconImage
+	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_j_h_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/custom/k	rw/custom/logic/LogicEventContext	rustedwarfare/custom/logic/LogicEventContext
 	f	Lcom/corrodinggames/rts/game/units/custom/ae;	a	field_LogicEventContext_eventAction	eventAction
 	f	Lcom/corrodinggames/rts/game/units/custom/j;	b	field_LogicEventContext_sourceCustomUnit	sourceCustomUnit
@@ -3307,6 +3313,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	u	method_getBuildPrice	getBuildPrice
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	z	method_l_getBuildIconImage	getBuildIconImage
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/x;	b	method_CustomUnitMetadata_resolveProjectileReference	resolveProjectileReference
+	m	()Lcom/corrodinggames/rts/game/units/ao;	o	method_l_o_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/BooleanParseException	rw/custom/logic/BooleanParseException	rustedwarfare/custom/logic/BooleanParseException
 	f	J	serialVersionUID	field_BooleanParseException_serialVersionUID	serialVersionUID
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean	rw/custom/logic/CompareJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean
@@ -4644,6 +4651,7 @@ c	com/corrodinggames/rts/game/units/custom/z	rw/custom/EffectList	rustedwarfare/
 c	com/corrodinggames/rts/game/units/d/j	rustedwarfare/unit/build/BuildQueueItem	rustedwarfare/unit/build/BuildQueueItem
 c	com/corrodinggames/rts/game/units/e	rw/unit/resource/CrystalResourceUnit	rustedwarfare/unit/resource/CrystalResourceUnit
 	m	()V	n	method_CrystalResourceUnit_onMapSpawned	onMapSpawned
+	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_e_h_getMovementType	getMovementType
 c	com/corrodinggames/rts/game/units/h/d	rw/unit/water/ScoutShipUnit	rustedwarfare/unit/water/ScoutShipUnit
 c	com/corrodinggames/rts/game/units/w	rw/unit/AbstractOrderableUnit	rustedwarfare/unit/AbstractOrderableUnit
 c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/OrderableUnit
@@ -5746,6 +5754,7 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	m	(Ljava/lang/String;)V	b	method_0113_debugLog	debugLog
 	m	(Ljava/lang/String;)V	e	method_0112_log	log
 	m	(Ljava/lang/String;Ljava/lang/String;)V	f	method_GameEngine_addMessage	addMessage
+	f	Lcom/corrodinggames/rts/gameFramework/k/l;	bU	field_GameEngine_pathEngine	pathEngine
 c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/client/render/GameImage
 	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	a	field_e_teamColorCachePureGreen	teamColorCachePureGreen
 	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_e_teamColorCacheHueAdd	teamColorCacheHueAdd
@@ -6461,3 +6470,203 @@ c	com/corrodinggames/rts/game/units/custom/e/c	rw/custom/resource/ResourceShorta
 	m	(Lcom/corrodinggames/rts/game/units/custom/d/b;)Z	a	method_c_containsAnyPriceResource	containsAnyPriceResource
 	m	()V	a	method_c_clear	clear
 c	com/corrodinggames/rts/game/units/custom/ai	rw/custom/ini/UnitTemplateOverrideMap	rustedwarfare/custom/ini/UnitTemplateOverrideMap
+c	com/corrodinggames/rts/game/units/ao	rw/unit/MovementType	rustedwarfare/unit/MovementType
+	f	Lcom/corrodinggames/rts/game/units/ao;	a	field_MovementType_none	none
+	f	Lcom/corrodinggames/rts/game/units/ao;	b	field_MovementType_land	land
+	f	Lcom/corrodinggames/rts/game/units/ao;	c	field_MovementType_building	building
+	f	Lcom/corrodinggames/rts/game/units/ao;	d	field_MovementType_air	air
+	f	Lcom/corrodinggames/rts/game/units/ao;	e	field_MovementType_water	water
+	f	Lcom/corrodinggames/rts/game/units/ao;	f	field_MovementType_hover	hover
+	f	Lcom/corrodinggames/rts/game/units/ao;	g	field_MovementType_overCliff	overCliff
+	f	Lcom/corrodinggames/rts/game/units/ao;	h	field_MovementType_overCliffWater	overCliffWater
+	m	(Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/ao;	a	method_MovementType_parseMovementTypeOrThrow	parseMovementTypeOrThrow
+c	com/corrodinggames/rts/gameFramework/k/l	rw/path/PathEngine	rustedwarfare/path/PathEngine
+	f	Lcom/corrodinggames/rts/gameFramework/k/o;	o	field_PathEngine_mainSolver	mainSolver
+	f	Z	p	field_PathEngine_isRunning	isRunning
+	f	Lcom/corrodinggames/rts/game/b/b;	q	field_PathEngine_map	map
+	f	I	r	field_PathEngine_mapChecksum	mapChecksum
+	f	S	s	field_PathEngine_mapWidth	mapWidth
+	f	S	t	field_PathEngine_mapHeight	mapHeight
+	f	Ljava/util/ArrayList;	u	field_PathEngine_movementCostMaps	movementCostMaps
+	f	[Lcom/corrodinggames/rts/gameFramework/k/i;	v	field_PathEngine_movementCostMapArray	movementCostMapArray
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	x	field_PathEngine_noneCosts	noneCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	y	field_PathEngine_landCosts	landCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	z	field_PathEngine_buildingCosts	buildingCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	A	field_PathEngine_waterCosts	waterCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	B	field_PathEngine_airCosts	airCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	C	field_PathEngine_hoverCosts	hoverCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	D	field_PathEngine_overCliffCosts	overCliffCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	E	field_PathEngine_overCliffWaterCosts	overCliffWaterCosts
+	f	Ljava/util/ArrayList;	H	field_PathEngine_extraSolvers	extraSolvers
+	f	Ljava/util/LinkedList;	I	field_PathEngine_pendingHighPriorityPaths	pendingHighPriorityPaths
+	f	Ljava/util/LinkedList;	J	field_PathEngine_pendingLowPriorityPaths	pendingLowPriorityPaths
+	m	(Lcom/corrodinggames/rts/game/units/ao;)Lcom/corrodinggames/rts/gameFramework/k/i;	a	method_PathEngine_getCostsForMovementType	getCostsForMovementType
+	m	(Lcom/corrodinggames/rts/game/units/ao;II)Z	a	method_PathEngine_isTileBlocked	isTileBlocked
+	m	(Lcom/corrodinggames/rts/game/units/ao;II)Z	b	method_PathEngine_isTileBlockedIgnoringBuildingCost	isTileBlockedIgnoringBuildingCost
+	m	(Lcom/corrodinggames/rts/gameFramework/k/i;II)Z	a	method_PathEngine_isCostMapTileBlocked	isCostMapTileBlocked
+	m	(Lcom/corrodinggames/rts/gameFramework/k/i;IIZ)Z	a	method_PathEngine_isCostMapTileBlockedWithOptions	isCostMapTileBlockedWithOptions
+	m	(Lcom/corrodinggames/rts/gameFramework/k/i;II)I	b	method_PathEngine_getTileTotalPathCost	getTileTotalPathCost
+	m	(Lcom/corrodinggames/rts/gameFramework/k/i;II)I	c	method_PathEngine_getTileClearanceCost	getTileClearanceCost
+	m	(Lcom/corrodinggames/rts/game/b/b;Z)V	a	method_PathEngine_setupMapCosts	setupMapCosts
+	m	()V	a	method_PathEngine_drawPathingOverlay	drawPathingOverlay
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	a	method_PathEngine_rebuildCostsAroundUnit	rebuildCostsAroundUnit
+	m	()V	b	method_PathEngine_startSolvers	startSolvers
+	m	()V	c	method_PathEngine_shutdownSolvers	shutdownSolvers
+	m	()V	d	method_PathEngine_resetSolvers	resetSolvers
+	m	(Lcom/corrodinggames/rts/gameFramework/k/i;Z)V	a	method_PathEngine_markCostMapDirty	markCostMapDirty
+	m	(Z)Lcom/corrodinggames/rts/gameFramework/k/k;	a	method_PathEngine_createPathRequest	createPathRequest
+	m	(Lcom/corrodinggames/rts/gameFramework/k/k;Z)V	a	method_PathEngine_queuePathRequest	queuePathRequest
+	m	(Lcom/corrodinggames/rts/gameFramework/k/k;ZZ)V	a	method_PathEngine_queuePathRequestInternal	queuePathRequestInternal
+	m	()Z	e	method_PathEngine_hasPendingPaths	hasPendingPaths
+	m	()Ljava/lang/String;	f	method_PathEngine_getQueueDebugString	getQueueDebugString
+	m	(Lcom/corrodinggames/rts/gameFramework/k/k;)V	a	method_PathEngine_onPathSolved	onPathSolved
+c	com/corrodinggames/rts/gameFramework/k/i	rw/path/MovementCostMap	rustedwarfare/path/MovementCostMap
+	f	Lcom/corrodinggames/rts/game/units/ao;	a	field_MovementCostMap_movementType	movementType
+	f	I	b	field_MovementCostMap_width	width
+	f	I	c	field_MovementCostMap_height	height
+	f	[B	d	field_MovementCostMap_tileCosts	tileCosts
+	f	[B	e	field_MovementCostMap_buildingCosts	buildingCosts
+	f	[B	f	field_MovementCostMap_objectCosts	objectCosts
+	f	[S	g	field_MovementCostMap_isolatedGroups	isolatedGroups
+	f	Ljava/util/HashMap;	h	field_MovementCostMap_isolatedGroupSizes	isolatedGroupSizes
+	f	I	i	field_MovementCostMap_isolatedGroupCount	isolatedGroupCount
+	f	[B	j	field_MovementCostMap_clearanceCosts	clearanceCosts
+	f	I	k	field_MovementCostMap_clearanceDirtyTileIndex	clearanceDirtyTileIndex
+	f	I	l	field_MovementCostMap_clearanceRebuildThrottle	clearanceRebuildThrottle
+	f	Z	m	field_MovementCostMap_clearanceRebuildSkippedWarning	clearanceRebuildSkippedWarning
+	f	Landroid/graphics/Point;	n	field_MovementCostMap_scratchPoint	scratchPoint
+	f	Z	o	field_MovementCostMap_costsDirty	costsDirty
+	f	I	p	field_MovementCostMap_lastRefreshFrame	lastRefreshFrame
+	m	(Lcom/corrodinggames/rts/gameFramework/k/l;Lcom/corrodinggames/rts/game/units/ao;II)V	<init>	method_MovementCostMap_ctor	<init>
+	m	()V	a	method_MovementCostMap_rebuildAllCosts	rebuildAllCosts
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	a	method_MovementCostMap_rebuildClearanceCosts	rebuildClearanceCosts
+	m	()V	e	method_MovementCostMap_rebuildIsolatedGroups	rebuildIsolatedGroups
+	m	()V	b	method_MovementCostMap_rebuildBaseTileAndBuildingCosts	rebuildBaseTileAndBuildingCosts
+	m	()V	d	method_MovementCostMap_rebuildTileCosts	rebuildTileCosts
+	m	(Lcom/corrodinggames/rts/game/b/b;)I	a	method_MovementCostMap_computeMapChecksum	computeMapChecksum
+	m	(Lcom/corrodinggames/rts/game/b/b;SS[B)V	a	method_MovementCostMap_floodFillIsolatedGroup	floodFillIsolatedGroup
+	m	(Lcom/corrodinggames/rts/game/b/b;SS)B	a	method_MovementCostMap_getRawTileCostFromMap	getRawTileCostFromMap
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	c	method_MovementCostMap_rebuildForUnit	rebuildForUnit
+	m	(Z)V	a	method_MovementCostMap_setDirty	setDirty
+c	com/corrodinggames/rts/gameFramework/k/k	rw/path/PathRequest	rustedwarfare/path/PathRequest
+	f	Lcom/corrodinggames/rts/gameFramework/k/l;	a	field_PathRequest_pathEngine	pathEngine
+	f	I	e	field_PathRequest_requestId	requestId
+	f	I	f	field_PathRequest_nextRequestId	nextRequestId
+	f	I	g	field_PathRequest_createdFrame	createdFrame
+	f	S	h	field_PathRequest_startTileX	startTileX
+	f	S	i	field_PathRequest_startTileY	startTileY
+	f	Ljava/lang/Float;	j	field_PathRequest_targetRadiusOverride	targetRadiusOverride
+	f	Z	k	field_PathRequest_lowPriority	lowPriority
+	f	S	l	field_PathRequest_endTileX	endTileX
+	f	S	m	field_PathRequest_endTileY	endTileY
+	f	S	n	field_PathRequest_endRadius	endRadius
+	f	Lcom/corrodinggames/rts/game/units/ao;	o	field_PathRequest_movementType	movementType
+	f	Z	p	field_PathRequest_isQueued	isQueued
+	f	I	q	field_PathRequest_solveFrame	solveFrame
+	f	Z	r	field_PathRequest_failed	failed
+	f	F	s	field_PathRequest_elapsedSolveTime	elapsedSolveTime
+	f	F	t	field_PathRequest_allowedDelay	allowedDelay
+	f	Z	u	field_PathRequest_returnPathInMultiplayer	returnPathInMultiplayer
+	f	Ljava/util/LinkedList;	x	field_PathRequest_pathNodes	pathNodes
+	f	[B	y	field_PathRequest_tileCosts	tileCosts
+	f	[B	z	field_PathRequest_buildingCosts	buildingCosts
+	f	[B	A	field_PathRequest_objectCosts	objectCosts
+	f	[S	B	field_PathRequest_isolatedGroups	isolatedGroups
+	f	[B	C	field_PathRequest_clearanceCosts	clearanceCosts
+	m	(Lcom/corrodinggames/rts/gameFramework/k/l;Z)V	<init>	method_PathRequest_ctor	<init>
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_PathRequest_serializePath	serializePath
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_PathRequest_deserializePath	deserializePath
+	m	()V	e	method_PathRequest_linkMovementCosts	linkMovementCosts
+	m	()V	f	method_PathRequest_unlinkMovementCosts	unlinkMovementCosts
+	m	(Lcom/corrodinggames/rts/game/units/ao;SSLjava/lang/Float;Z)V	a	method_PathRequest_setStart	setStart
+	m	(SSS)V	a	method_PathRequest_setEnd	setEnd
+	m	()Z	b	method_PathRequest_isImmediate	isImmediate
+	m	(Lcom/corrodinggames/rts/gameFramework/k/k;)Z	a	method_PathRequest_isSameRequest	isSameRequest
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/gameFramework/k/c;	a	method_PathRequest_getUnitTargetAdapter	getUnitTargetAdapter
+	m	()Ljava/util/LinkedList;	a	method_PathRequest_getPathNodes	getPathNodes
+	m	()Z	c	method_PathRequest_hasPath	hasPath
+	m	(Ljava/util/LinkedList;)V	a	method_PathRequest_setPathNodes	setPathNodes
+	m	()V	g	method_PathRequest_drawDebugEndpoint	drawDebugEndpoint
+	m	()V	h	method_PathRequest_drawDebugPath	drawDebugPath
+c	com/corrodinggames/rts/gameFramework/k/o	rw/path/PathSolver	rustedwarfare/path/PathSolver
+	f	Lcom/corrodinggames/rts/gameFramework/k/l;	C	field_PathSolver_pathEngine	pathEngine
+	f	Lcom/corrodinggames/rts/gameFramework/k/k;	D	field_PathSolver_currentRequest	currentRequest
+	f	[B	b	field_PathSolver_tileCosts	tileCosts
+	f	[B	c	field_PathSolver_buildingCosts	buildingCosts
+	f	[B	d	field_PathSolver_objectCosts	objectCosts
+	f	[S	e	field_PathSolver_isolatedGroups	isolatedGroups
+	f	[B	f	field_PathSolver_clearanceCosts	clearanceCosts
+	f	Lcom/corrodinggames/rts/gameFramework/k/i;	n	field_PathSolver_movementCostMap	movementCostMap
+	f	Lcom/corrodinggames/rts/gameFramework/k/m;	o	field_PathSolver_openListForward	openListForward
+	f	Lcom/corrodinggames/rts/gameFramework/k/m;	p	field_PathSolver_openListReverse	openListReverse
+	f	Lcom/corrodinggames/rts/gameFramework/k/p;	q	field_PathSolver_scratchNodeForward	scratchNodeForward
+	f	Lcom/corrodinggames/rts/gameFramework/k/p;	r	field_PathSolver_scratchNodeReverse	scratchNodeReverse
+	f	Z	s	field_PathSolver_running	running
+	f	Ljava/lang/Thread;	w	field_PathSolver_thread	thread
+	f	J	y	field_PathSolver_lastSolveStartTime	lastSolveStartTime
+	f	J	z	field_PathSolver_lastSolveEndTime	lastSolveEndTime
+	m	(Lcom/corrodinggames/rts/gameFramework/k/l;)V	<init>	method_PathSolver_ctor	<init>
+	m	(Lcom/corrodinggames/rts/gameFramework/k/k;)V	a	method_PathSolver_setupNewPath	setupNewPath
+	m	()V	a	method_PathSolver_startThread	startThread
+	m	()V	run	method_PathSolver_run	run
+	m	()V	b	method_PathSolver_requestStop	requestStop
+	m	()V	c	method_PathSolver_waitForPath	waitForPath
+	m	(Lcom/corrodinggames/rts/game/b/b;)V	a	method_PathSolver_onMapChanged	onMapChanged
+	m	()V	d	method_PathSolver_clearMapData	clearMapData
+	m	(II)I	a	method_PathSolver_getTileIndex	getTileIndex
+	m	(Lcom/corrodinggames/rts/game/units/ao;Lcom/corrodinggames/rts/gameFramework/k/k;)V	a	method_PathSolver_linkToPathRequest	linkToPathRequest
+	m	(Lcom/corrodinggames/rts/game/units/ao;SSLjava/lang/Float;)V	a	method_PathSolver_findPath	findPath
+	m	(SSS)V	a	method_PathSolver_setEndNode	setEndNode
+	m	()Ljava/util/LinkedList;	e	method_PathSolver_buildResultPath	buildResultPath
+	m	(BSS)Ljava/util/LinkedList;	a	method_PathSolver_tracePathFromNode	tracePathFromNode
+	m	(Ljava/util/LinkedList;)Ljava/util/LinkedList;	a	method_PathSolver_smoothPath	smoothPath
+	m	()V	f	method_PathSolver_solveCurrentRequest	solveCurrentRequest
+	m	()V	g	method_PathSolver_notifyPathFinished	notifyPathFinished
+c	com/corrodinggames/rts/gameFramework/k/p	rw/path/PathNode	rustedwarfare/path/PathNode
+	f	S	a	field_PathNode_x	x
+	f	S	b	field_PathNode_y	y
+	m	()V	<init>	method_PathNode_ctor	<init>
+	m	(SS)V	<init>	method_PathNode_ctorXY	<init>
+	m	(SS)Lcom/corrodinggames/rts/gameFramework/k/p;	a	method_PathNode_set	set
+	m	(Lcom/corrodinggames/rts/gameFramework/k/p;)Lcom/corrodinggames/rts/gameFramework/k/p;	a	method_PathNode_copyFrom	copyFrom
+	m	(Lcom/corrodinggames/rts/gameFramework/k/n;)Lcom/corrodinggames/rts/gameFramework/k/p;	a	method_PathNode_copyFromOpenNode	copyFromOpenNode
+c	com/corrodinggames/rts/gameFramework/k/n	rw/path/PathOpenListNode	rustedwarfare/path/PathOpenListNode
+	f	S	a	field_PathOpenListNode_x	x
+	f	S	b	field_PathOpenListNode_y	y
+	f	I	c	field_PathOpenListNode_score	score
+	m	(SS)V	a	method_PathOpenListNode_set	set
+	m	(III)V	a	method_PathOpenListNode_computeScore	computeScore
+	m	(Lcom/corrodinggames/rts/gameFramework/k/n;)I	a	method_PathOpenListNode_compareToNode	compareToNode
+c	com/corrodinggames/rts/gameFramework/k/m	rw/path/PathOpenList	rustedwarfare/path/PathOpenList
+	f	I	a	field_PathOpenList_targetX	targetX
+	f	I	b	field_PathOpenList_targetY	targetY
+	f	I	c	field_PathOpenList_allocatedNodeFallbackCount	allocatedNodeFallbackCount
+	f	Lcom/corrodinggames/rts/gameFramework/k/a;	d	field_PathOpenList_nodePool	nodePool
+	f	Lcom/corrodinggames/rts/gameFramework/k/e;	e	field_PathOpenList_heap	heap
+	m	()Lcom/corrodinggames/rts/gameFramework/k/n;	a	method_PathOpenList_obtainNode	obtainNode
+	m	(Lcom/corrodinggames/rts/gameFramework/k/n;)V	a	method_PathOpenList_recycleNode	recycleNode
+	m	()V	b	method_PathOpenList_reset	reset
+	m	(II)V	a	method_PathOpenList_setTarget	setTarget
+	m	(ISS)V	a	method_PathOpenList_addNode	addNode
+	m	()Lcom/corrodinggames/rts/gameFramework/k/n;	c	method_PathOpenList_pollNode	pollNode
+c	com/corrodinggames/rts/gameFramework/k/e	rw/path/PathOpenBinaryHeap	rustedwarfare/path/PathOpenBinaryHeap
+c	com/corrodinggames/rts/gameFramework/k/j	rw/path/PathOpenQueue	rustedwarfare/path/PathOpenQueue
+c	com/corrodinggames/rts/gameFramework/k/a	rw/path/PathOpenNodeArrayList	rustedwarfare/path/PathOpenNodeArrayList
+c	com/corrodinggames/rts/gameFramework/k/b	rw/path/PathOpenNodeArrayList$Iterator	rustedwarfare/path/PathOpenNodeArrayList$Iterator
+c	com/corrodinggames/rts/game/units/aq	rw/unit/path/MovementPathingUtils	rustedwarfare/unit/path/MovementPathingUtils
+	m	(Lcom/corrodinggames/rts/game/units/ao;IIIIIII)Landroid/graphics/Point;	a	method_MovementPathingUtils_findFirstBlockedTileOnLine	findFirstBlockedTileOnLine
+	m	(Lcom/corrodinggames/rts/game/units/ao;FFFFIII)Z	a	method_MovementPathingUtils_isPathLineClearAfterCostRefresh	isPathLineClearAfterCostRefresh
+	m	(Lcom/corrodinggames/rts/game/units/ao;FFFFIII)Z	b	method_MovementPathingUtils_isPathLineClear	isPathLineClear
+	m	(Lcom/corrodinggames/rts/game/units/ao;FFFFIIZ)Landroid/graphics/PointF;	a	method_MovementPathingUtils_getTileEdgeCollisionPoint	getTileEdgeCollisionPoint
+	m	(Lcom/corrodinggames/rts/game/units/y;Lcom/corrodinggames/rts/game/units/am;)Z	a	method_MovementPathingUtils_canIssueTargetedWaypoint	canIssueTargetedWaypoint
+	m	(Lcom/corrodinggames/rts/game/units/y;Lcom/corrodinggames/rts/game/units/am;)Z	b	method_MovementPathingUtils_canIssueStrictTargetedWaypoint	canIssueStrictTargetedWaypoint
+c	com/corrodinggames/rts/gameFramework/utility/y	rw/util/UnitUtils	rustedwarfare/util/UnitUtils
+	m	(FFLcom/corrodinggames/rts/game/units/ao;)Z	a	method_UnitUtils_isWorldPointBlockedForMovement	isWorldPointBlockedForMovement
+	m	(FFLcom/corrodinggames/rts/game/units/ao;)S	b	method_UnitUtils_getWorldPointIsolatedGroup	getWorldPointIsolatedGroup
+	m	(FFLcom/corrodinggames/rts/game/units/ao;)I	c	method_UnitUtils_getWorldPointIsolatedGroupSize	getWorldPointIsolatedGroupSize
+	m	(FFFFLcom/corrodinggames/rts/game/units/ao;)Z	a	method_UnitUtils_isPathPossibleBetweenWorldPoints	isPathPossibleBetweenWorldPoints
+	m	(Lcom/corrodinggames/rts/game/units/am;FF)Z	b	method_UnitUtils_canUnitPathToWorldPoint	canUnitPathToWorldPoint
+	m	(Lcom/corrodinggames/rts/game/units/am;FF)Z	a	method_UnitUtils_isWorldPointBlockedForUnit	isWorldPointBlockedForUnit
+c	com/corrodinggames/rts/gameFramework/k/c	rw/path/PathTargetAdapter	rustedwarfare/path/PathTargetAdapter
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/af;	a	method_PathTargetAdapter_getStartTarget	getStartTarget
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/af;	b	method_PathTargetAdapter_getEndTarget	getEndTarget
