@@ -1,0 +1,4 @@
+owner_official,official_name,descriptor,reason
+com/corrodinggames/rts/game/units/custom/bn,ap,I,Only constructor default -1 and copyFrom evidence found; no key-level putfield or runtime getfield in inspected classes.
+com/corrodinggames/rts/game/units/custom/bn,az,I,Only copyFrom evidence found; no key-level putfield or runtime getfield in inspected classes.
+com/corrodinggames/rts/game/units/custom/bn,aJ,Lcom/corrodinggames/rts/game/units/custom/h;,Only copyFrom evidence found; descriptor suggests tag set but no parser/runtime use found; left unmapped to avoid false named.

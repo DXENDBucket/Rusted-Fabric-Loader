@@ -737,6 +737,29 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	m	(F)V	b	method_f_b_updateAreaDamage	updateAreaDamage
 	m	(Lcom/corrodinggames/rts/game/units/am;FF)V	b	method_f_b_tryApplyAreaDamageToUnit	tryApplyAreaDamageToUnit
 	m	()F	e	method_f_e_getLifeProgressRatio	getLifeProgressRatio
+	f	F	r	field_Projectile_targetSpeed	targetSpeed
+	f	F	s	field_Projectile_targetSpeedAcceleration	targetSpeedAcceleration
+	f	F	u	field_Projectile_initialUnguidedSpeedX	initialUnguidedSpeedX
+	f	F	v	field_Projectile_initialUnguidedSpeedY	initialUnguidedSpeedY
+	f	F	w	field_Projectile_initialUnguidedSpeedHeight	initialUnguidedSpeedHeight
+	f	F	x	field_Projectile_drawSize	drawSize
+	f	Z	A	field_Projectile_instant	instant
+	f	Z	B	field_Projectile_laserEffect	laserEffect
+	f	Z	M	field_Projectile_lightingEffect	lightingEffect
+	f	F	W	field_Projectile_areaExpandTime	areaExpandTime
+	f	S	P	field_Projectile_frame	frame
+	f	S	Q	field_Projectile_shadowFrame	shadowFrame
+	f	S	R	field_Projectile_drawType	drawType
+	f	Z	S	field_Projectile_invisible	invisible
+	f	I	ar	field_Projectile_color	color
+	f	Z	aG	field_Projectile_autoTargetingOnDeadTarget	autoTargetingOnDeadTarget
+	f	Z	aH	field_Projectile_ballistic	ballistic
+	f	F	aI	field_Projectile_ballisticDelayMoveHeight	ballisticDelayMoveHeight
+	f	F	aJ	field_Projectile_ballisticHeight	ballisticHeight
+	f	Z	aQ	field_Projectile_largeHitEffect	largeHitEffect
+	f	Z	aR	field_Projectile_hitSound	hitSound
+	f	I	aD	field_Projectile_spawnRecursionDepth	spawnRecursionDepth
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	aE	field_Projectile_tags	tags
 c	com/corrodinggames/rts/game/g	rustedwarfare/game/BaseProjectileTemplate	rustedwarfare/game/BaseProjectileTemplate
 	f	Z	A	field_g_A_invisible	invisible
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	B	field_g_B_image	image
@@ -853,6 +876,7 @@ c	com/corrodinggames/rts/game/g	rustedwarfare/game/BaseProjectileTemplate	rusted
 	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/custom/z;	a	method_g_a_getChangedExplodeEffectForUnit	getChangedExplodeEffectForUnit
 	m	(Lcom/corrodinggames/rts/game/units/am;FZ)F	a	method_g_a_applyDamageModifiers	applyDamageModifiers
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)Lcom/corrodinggames/rts/game/g;	a	method_g_a_readProjectileTemplateLink	readProjectileTemplateLink
+	m	()V	<init>	method_BaseProjectileTemplate_ctor	<init>
 c	com/corrodinggames/rts/game/h	rw/game/ProjectileDamageModifier	rustedwarfare/game/ProjectileDamageModifier
 	f	Lcom/corrodinggames/rts/game/units/custom/h;	a	field_h_a_ifUnitWithTags	ifUnitWithTags
 	f	Lcom/corrodinggames/rts/game/units/custom/h;	b	field_h_b_ifUnitWithoutTags	ifUnitWithoutTags
@@ -862,6 +886,7 @@ c	com/corrodinggames/rts/game/h	rw/game/ProjectileDamageModifier	rustedwarfare/g
 	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	f	field_h_f_addResourcesAreaHit	addResourcesAreaHit
 	f	Lcom/corrodinggames/rts/game/units/custom/z;	g	field_h_g_changedExplodeEffect	changedExplodeEffect
 	m	(Lcom/corrodinggames/rts/game/units/am;)Z	a	method_h_a_matchesUnit	matchesUnit
+	m	()V	<init>	method_ProjectileDamageModifier_ctor	<init>
 c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/core/RustedWarfareGameEngine
 	f	Lcom/corrodinggames/rts/gameFramework/bf;	B	field_RustedWarfareGameEngine_currentLevelState	currentLevelState
 	f	Lcom/corrodinggames/rts/gameFramework/be;	C	field_RustedWarfareGameEngine_stateEngine	stateEngine
@@ -1688,18 +1713,18 @@ c	com/corrodinggames/rts/game/units/custom/a/e	rustedwarfare/custom/action/Custo
 	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	e	field_CustomActionAiUse_sameAsBuilding	sameAsBuilding
 	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	f	field_CustomActionAiUse_launch	launch
 	f	Lcom/corrodinggames/rts/game/units/custom/a/e;	g	field_CustomActionAiUse_launchAmmo	launchAmmo
-	f	[Lcom/corrodinggames/rts/game/units/custom/a/e;	h	field_e_$VALUES	$VALUES
 	m	()[Lcom/corrodinggames/rts/game/units/custom/a/e;	values	method_e_values	values
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/a/e;	valueOf	method_e_valueOf	valueOf
 	m	(Ljava/lang/String;I)V	<init>	method_e_<init>	<init>
+	f	[Lcom/corrodinggames/rts/game/units/custom/a/e;	h	field_e_$VALUES	$VALUES
 c	com/corrodinggames/rts/game/units/custom/a/f	rustedwarfare/custom/action/CustomActionType	rustedwarfare/custom/action/CustomActionType
 	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	a	field_CustomActionType_build	build
 	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	b	field_CustomActionType_convert	convert
 	f	Lcom/corrodinggames/rts/game/units/custom/a/f;	c	field_CustomActionType_none	none
-	f	[Lcom/corrodinggames/rts/game/units/custom/a/f;	d	field_f_$VALUES	$VALUES
 	m	()[Lcom/corrodinggames/rts/game/units/custom/a/f;	values	method_f_values	values
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/a/f;	valueOf	method_f_valueOf	valueOf
 	m	(Ljava/lang/String;I)V	<init>	method_f_<init>	<init>
+	f	[Lcom/corrodinggames/rts/game/units/custom/a/f;	d	field_f_$VALUES	$VALUES
 c	com/corrodinggames/rts/game/units/custom/a/g	rw/custom/action/CustomAction	rustedwarfare/custom/action/CustomAction
 	f	Lcom/corrodinggames/rts/game/units/custom/a/d;	a	field_CustomAction_config	config
 	f	Lcom/corrodinggames/rts/game/units/custom/v;	b	field_CustomAction_unitTypeReference	unitTypeReference
@@ -1978,11 +2003,11 @@ c	com/corrodinggames/rts/game/units/custom/ay	rw/custom/EffectTemplate	rustedwar
 	f	F	ySpeedAbsoluteRandom	field_ay_ySpeedAbsoluteRandom_ySpeedAbsoluteRandom	ySpeedAbsoluteRandom
 	f	F	ySpeedRelative	field_ay_ySpeedRelative_ySpeedRelative	ySpeedRelative
 	f	F	ySpeedRelativeRandom	field_ay_ySpeedRelativeRandom_ySpeedRelativeRandom	ySpeedRelativeRandom
-	f	Ljava/lang/String;	name	field_ay_name	name
 	m	(F)F	a	method_ay_randomSigned	randomSigned
 	m	(FF)F	a	method_ay_randomRange	randomRange
 	m	(FFFFLcom/corrodinggames/rts/gameFramework/w;IS)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_ay_spawnEffect	spawnEffect
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;)V	a	method_ay_parseFromConfig	parseFromConfig
+	f	Ljava/lang/String;	name	field_ay_name	name
 	m	(Lcom/corrodinggames/rts/game/units/custom/az;)V	<init>	method_ay_<init>	<init>
 	m	(Ljava/lang/String;)V	<init>	method_ay_<init>	<init>
 c	com/corrodinggames/rts/game/units/custom/b/a	rw/custom/runtime/CustomUnitBehavior	rustedwarfare/custom/runtime/CustomUnitBehavior
@@ -1999,6 +2024,17 @@ c	com/corrodinggames/rts/game/units/custom/b/a	rw/custom/runtime/CustomUnitBehav
 c	com/corrodinggames/rts/game/units/custom/b/b	rw/custom/runtime/AutoRepairBehavior	rustedwarfare/custom/runtime/AutoRepairBehavior
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_b_onLateUpdate	onLateUpdate
 c	com/corrodinggames/rts/game/units/custom/b/c	rw/custom/graphics/DecalBehavior	rustedwarfare/custom/graphics/DecalBehavior
+	m	(Lcom/corrodinggames/rts/game/units/custom/b/d;Lcom/corrodinggames/rts/game/units/custom/b/e;Lcom/corrodinggames/rts/gameFramework/m/e;I)Landroid/graphics/Rect;	a	method_DecalBehavior_getSourceRect	getSourceRect
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)V	a	method_c_onCreated	onCreated
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;FLcom/corrodinggames/rts/game/units/custom/b/f;Lcom/corrodinggames/rts/gameFramework/utility/m;)V	a	method_DecalBehavior_drawLayer	drawLayer
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;FLcom/corrodinggames/rts/game/units/custom/b/f;Lcom/corrodinggames/rts/gameFramework/utility/m;Landroid/graphics/PointF;)V	a	method_DecalBehavior_drawLayerAtPoint	drawLayerAtPoint
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_DecalBehavior_parseDecalSections	parseDecalSections
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/b/g;	a	method_DecalBehavior_createDecalReference	createDecalReference
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_c_onLateUpdate	onLateUpdate
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	c	method_c_onPostDraw	onPostDraw
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	d	method_c_onPreDraw	onPreDraw
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	e	method_c_onDraw	onDraw
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	f	method_c_onDrawShadowOrOverlay	onDrawShadowOrOverlay
 	f	Landroid/graphics/Paint;	a	field_c_a_sharedPaint	sharedPaint
 	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	b	field_c_b_sharedLinePaint	sharedLinePaint
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	c	field_c_c_shadowDecals	shadowDecals
@@ -2011,17 +2047,6 @@ c	com/corrodinggames/rts/game/units/custom/b/c	rw/custom/graphics/DecalBehavior	
 	f	Lcom/corrodinggames/rts/game/units/custom/b/g;	j	field_c_j_emptyDecalReference	emptyDecalReference
 	f	Landroid/graphics/Rect;	k	field_c_k_scratchSourceRect	scratchSourceRect
 	f	Landroid/graphics/RectF;	l	field_c_l_scratchDestRect	scratchDestRect
-	m	(Lcom/corrodinggames/rts/game/units/custom/b/d;Lcom/corrodinggames/rts/game/units/custom/b/e;Lcom/corrodinggames/rts/gameFramework/m/e;I)Landroid/graphics/Rect;	a	method_DecalBehavior_getSourceRect	getSourceRect
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;)V	a	method_c_onCreated	onCreated
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;FLcom/corrodinggames/rts/game/units/custom/b/f;Lcom/corrodinggames/rts/gameFramework/utility/m;)V	a	method_DecalBehavior_drawLayer	drawLayer
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;FLcom/corrodinggames/rts/game/units/custom/b/f;Lcom/corrodinggames/rts/gameFramework/utility/m;Landroid/graphics/PointF;)V	a	method_DecalBehavior_drawLayerAtPoint	drawLayerAtPoint
-	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_DecalBehavior_parseDecalSections	parseDecalSections
-	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/b/g;	a	method_DecalBehavior_createDecalReference	createDecalReference
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_c_onLateUpdate	onLateUpdate
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	c	method_c_onPostDraw	onPostDraw
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	d	method_c_onPreDraw	onPreDraw
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	e	method_c_onDraw	onDraw
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	f	method_c_onDrawShadowOrOverlay	onDrawShadowOrOverlay
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/b/d;	c	method_c_c_findDecalTemplateStrict	findDecalTemplateStrict
 	m	(Lcom/corrodinggames/rts/game/units/custom/b/d;Lcom/corrodinggames/rts/game/units/custom/b/e;Lcom/corrodinggames/rts/gameFramework/m/e;FF)Landroid/graphics/RectF;	a	method_c_a_getDecalDestinationRect	getDecalDestinationRect
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/b/d;	b	method_c_b_findDecalTemplate	findDecalTemplate
@@ -2118,6 +2143,11 @@ c	com/corrodinggames/rts/game/units/custom/b/j	rw/custom/runtime/RepelFromUnitsB
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_j_onLateUpdate	onLateUpdate
 c	com/corrodinggames/rts/game/units/custom/b/k	rw/custom/runtime/TurretProjectileBehavior	rustedwarfare/custom/runtime/TurretProjectileBehavior
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_k_onLateUpdate	onLateUpdate
+	f	Lcom/corrodinggames/rts/game/units/custom/b/a;	a	field_TurretProjectileBehavior_instance	instance
+	f	Landroid/graphics/PointF;	b	field_TurretProjectileBehavior_scratchTurretPoint	scratchTurretPoint
+	m	()V	<init>	method_TurretProjectileBehavior_ctor	<init>
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/bn;)V	a	method_TurretProjectileBehavior_tryInterceptProjectilesForTurret	tryInterceptProjectilesForTurret
+	m	(Lcom/corrodinggames/rts/game/f;)Z	a	method_TurretProjectileBehavior_hasExistingInterceptorForProjectile	hasExistingInterceptorForProjectile
 c	com/corrodinggames/rts/game/units/custom/b/l	rw/custom/runtime/RandomMovementBehavior	rustedwarfare/custom/runtime/RandomMovementBehavior
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_l_parseMovementRandomSection	parseMovementRandomSection
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;)V	a	method_l_parseEntry	parseEntry
@@ -2449,6 +2479,10 @@ c	com/corrodinggames/rts/game/units/custom/bn	rw/custom/TurretTemplate	rustedwar
 	f	I	w	field_bn_w_attachedToIndex	attachedToIndex
 	f	I	x	field_bn_x_linkedDelayWithTurretIndex	linkedDelayWithTurretIndex
 	f	Lcom/corrodinggames/rts/game/units/custom/bn;	y	field_bn_y_attachedTo	attachedTo
+	m	(Lcom/corrodinggames/rts/game/units/custom/bn;)V	a	method_bn_a_copyFrom	copyFrom
+	m	(Lcom/corrodinggames/rts/game/units/custom/bn;Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;)V	a	method_bn_a_parseFromConfig	parseFromConfig
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)I	a	method_bn_a_getProjectileIndexForUnit	getProjectileIndexForUnit
+	m	()V	<init>	method_bn_<init>	<init>
 	f	Z	l	field_bn_hasIdleDirReversing	hasIdleDirReversing
 	f	Lcom/corrodinggames/rts/game/units/custom/bn;	z	field_bn_slaveAttachedTurret	slaveAttachedTurret
 	f	Z	H	field_bn_hasTargetingRestrictions	hasTargetingRestrictions
@@ -2456,10 +2490,6 @@ c	com/corrodinggames/rts/game/units/custom/bn	rw/custom/TurretTemplate	rustedwar
 	f	F	ad	field_bn_resolvedLimitingRange	resolvedLimitingRange
 	f	F	ae	field_bn_limitingRangeSquared	limitingRangeSquared
 	f	F	ah	field_bn_limitingMinRangeSquared	limitingMinRangeSquared
-	m	(Lcom/corrodinggames/rts/game/units/custom/bn;)V	a	method_bn_a_copyFrom	copyFrom
-	m	(Lcom/corrodinggames/rts/game/units/custom/bn;Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;)V	a	method_bn_a_parseFromConfig	parseFromConfig
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;)I	a	method_bn_a_getProjectileIndexForUnit	getProjectileIndexForUnit
-	m	()V	<init>	method_bn_<init>	<init>
 c	com/corrodinggames/rts/game/units/custom/bo	rw/custom/CustomUnitConfigException	rustedwarfare/custom/CustomUnitConfigException
 c	com/corrodinggames/rts/game/units/custom/bp	rw/custom/spawn/SpawnUnitList	rustedwarfare/custom/spawn/SpawnUnitList
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_SpawnUnitList_entries	entries
@@ -4794,6 +4824,15 @@ c	com/corrodinggames/rts/gameFramework/d/g	rw/render/EffectImageStrip	rustedwarf
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	j	field_g_j_shadowImage	shadowImage
 	f	Z	k	field_g_singleFrame	singleFrame
 	m	()V	a	method_g_updateFrameGeometry	updateFrameGeometry
+	f	I	d	field_EffectImageStrip_frameXOffset	frameXOffset
+	f	I	e	field_EffectImageStrip_frameYOffset	frameYOffset
+	f	I	f	field_EffectImageStrip_frameStrideX	frameStrideX
+	f	I	g	field_EffectImageStrip_frameStrideY	frameStrideY
+	f	I	h	field_EffectImageStrip_framesPerRow	framesPerRow
+	f	Landroid/graphics/Rect;	l	field_EffectImageStrip_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/RectF;	m	field_EffectImageStrip_scratchDestRect	scratchDestRect
+	m	()V	<init>	method_EffectImageStrip_ctor	<init>
+	m	(IFFLandroid/graphics/Paint;)V	a	method_EffectImageStrip_drawFrame	drawFrame
 c	com/corrodinggames/rts/gameFramework/e	rw/command/Command	rustedwarfare/command/Command
 	f	Z	e	field_e_e_queuedCommand	queuedCommand
 	f	Z	g	field_e_g_applyActionToQueuedBuildItems	applyActionToQueuedBuildItems
@@ -5385,12 +5424,6 @@ c	com/corrodinggames/rts/gameFramework/i/b	rw/mod/ModInfo	rustedwarfare/mod/ModI
 	f	Ljava/lang/String;	u	field_0409_description	description
 	f	Ljava/lang/String;	v	field_0410_minVersion	minVersion
 	f	Z	y	field_0402_workshop	workshop
-	f	Ljava/lang/String;	d	field_b_folderName	folderName
-	f	Ljava/lang/String;	n	field_b_unpackedStoragePath	unpackedStoragePath
-	f	Ljava/lang/String;	o	field_b_modInfoPath	modInfoPath
-	f	Ljava/lang/String;	p	field_b_archiveOrRawPath	archiveOrRawPath
-	f	Ljava/lang/String;	t	field_b_fallbackTitle	fallbackTitle
-	f	Ljava/lang/String;	T	field_b_loadWarningExtra	loadWarningExtra
 	m	()Ljava/lang/String;	a	method_0400_getDisplayName	getDisplayName
 	m	(Ljava/lang/String;)V	a	method_0406_addLoadError	addLoadError
 	m	()Ljava/lang/String;	b	method_0401_getShortDisplayName25	getShortDisplayName25
@@ -5402,6 +5435,12 @@ c	com/corrodinggames/rts/gameFramework/i/b	rw/mod/ModInfo	rustedwarfare/mod/ModI
 	m	()Ljava/lang/String;	p	method_0408_getThumbnailPath	getThumbnailPath
 	m	()Ljava/util/ArrayList;	q	method_0409_getMusicTracks	getMusicTracks
 	m	()V	r	method_0410_refreshModInfo	refreshModInfo
+	f	Ljava/lang/String;	d	field_b_folderName	folderName
+	f	Ljava/lang/String;	n	field_b_unpackedStoragePath	unpackedStoragePath
+	f	Ljava/lang/String;	o	field_b_modInfoPath	modInfoPath
+	f	Ljava/lang/String;	p	field_b_archiveOrRawPath	archiveOrRawPath
+	f	Ljava/lang/String;	t	field_b_fallbackTitle	fallbackTitle
+	f	Ljava/lang/String;	T	field_b_loadWarningExtra	loadWarningExtra
 	m	()I	d	method_b_getStableSortId	getStableSortId
 	m	()Ljava/lang/String;	f	method_b_getDescriptionAndStorageSummary	getDescriptionAndStorageSummary
 	m	()Ljava/lang/String;	g	method_b_getNormalizedSourcePath	getNormalizedSourcePath
@@ -6198,6 +6237,7 @@ c	com/corrodinggames/rts/game/units/custom/x	rw/custom/ref/ProjectileTemplateRef
 	m	()V	a	method_ReferenceResolver_resolveReference	resolveReference
 	m	()V	b	method_ReferenceResolver_postResolveReference	postResolveReference
 	m	()Lcom/corrodinggames/rts/game/units/custom/bh;	f	method_ProjectileTemplateReference_getResolvedTemplate	getResolvedTemplate
+	m	()V	<init>	method_ProjectileTemplateReference_ctor	<init>
 c	com/corrodinggames/rts/game/units/custom/bi	rw/custom/spawn/ProjectileSpawnList	rustedwarfare/custom/spawn/ProjectileSpawnList
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_ProjectileSpawnList_entries	entries
 	f	Lcom/corrodinggames/rts/game/units/custom/bj;	b	field_ProjectileSpawnList_sharedSearchCallback	sharedSearchCallback
@@ -6225,9 +6265,17 @@ c	com/corrodinggames/rts/game/units/custom/bk	rw/custom/spawn/ProjectileSpawnEnt
 	f	I	n	field_ProjectileSpawnEntry_recursionLimit	recursionLimit
 	m	(Lcom/corrodinggames/rts/game/units/custom/x;)V	<init>	method_ProjectileSpawnEntry_init	<init>
 c	com/corrodinggames/rts/game/units/custom/bj	rw/custom/spawn/ProjectileSpawnSearchCallback	rustedwarfare/custom/spawn/ProjectileSpawnSearchCallback
-	f	Lcom/corrodinggames/rts/game/f;	a	field_ProjectileSpawnSearchCallback_sourceProjectile	sourceProjectile
+	f	Lcom/corrodinggames/rts/game/f;	a	field_ProjectileSpawnSearchCallback_sourceProjectile	spawnedProjectile
 	f	Lcom/corrodinggames/rts/game/units/custom/bk;	b	field_ProjectileSpawnSearchCallback_spawnEntry	spawnEntry
 	f	Lcom/corrodinggames/rts/game/units/am;	c	field_ProjectileSpawnSearchCallback_sourceUnit	sourceUnit
+	f	Lcom/corrodinggames/rts/game/f;	d	field_ProjectileSpawnSearchCallback_parentProjectile	parentProjectile
+	f	Lcom/corrodinggames/rts/game/units/am;	e	field_ProjectileSpawnSearchCallback_targetUnit	targetUnit
+	m	()V	<init>	method_ProjectileSpawnSearchCallback_init	<init>
+	m	(Lcom/corrodinggames/rts/game/units/y;F)V	setup	method_ProjectileSpawnSearchCallback_setup	setup
+	m	(Lcom/corrodinggames/rts/game/units/y;)I	excludeTeam	method_ProjectileSpawnSearchCallback_excludeTeam	excludeTeam
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/n;	onlyEnemiesOfTeam	method_ProjectileSpawnSearchCallback_onlyEnemiesOfTeam	onlyEnemiesOfTeam
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/n;	onlyTeam	method_ProjectileSpawnSearchCallback_onlyTeam	onlyTeam
+	m	(Lcom/corrodinggames/rts/game/units/y;FLcom/corrodinggames/rts/game/units/am;)V	callback	method_ProjectileSpawnSearchCallback_callback	callback
 c	com/corrodinggames/rts/game/units/custom/bf	rw/custom/placement/PlacementRuleSearchCallback	rustedwarfare/custom/placement/PlacementRuleSearchCallback
 	f	F	a	field_bf_a_searchX	searchX
 	f	F	b	field_bf_b_searchY	searchY

@@ -20,6 +20,12 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_action_projectile_added_rows_v0_29.csv";
     private static final String ACTION_PROJECTILE_KEY_BINDINGS_RESOURCE =
             "/rustedfabricapi/mapping/rw_action_projectile_effect_turret_key_field_binding_v0_29.csv";
+    private static final String ACTION_PROJECTILE_RUNTIME_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_action_projectile_runtime_added_rows_v0_30.csv";
+    private static final String ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_action_projectile_runtime_field_binding_v0_30.csv";
+    private static final String DEFERRED_AMBIGUOUS_TURRET_FIELDS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_deferred_ambiguous_turret_fields_v0_30.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -40,6 +46,18 @@ public final class MappingEvidenceDiagnostics {
         return Holder.ACTION_PROJECTILE_KEY_BINDINGS;
     }
 
+    public static List<MappingEvidenceRow> allActionProjectileRuntimeRows() {
+        return Holder.ACTION_PROJECTILE_RUNTIME_ROWS;
+    }
+
+    public static List<RuntimeFieldBindingRow> allActionProjectileRuntimeFieldBindings() {
+        return Holder.ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS;
+    }
+
+    public static List<DeferredMemberRow> allDeferredAmbiguousTurretFields() {
+        return Holder.DEFERRED_AMBIGUOUS_TURRET_FIELDS;
+    }
+
     public static List<MappingEvidenceRow> findLogicBooleanMembers(String text) {
         return findByText(Holder.LOGIC_BOOLEAN_MEMBERS, text);
     }
@@ -56,11 +74,41 @@ public final class MappingEvidenceDiagnostics {
         return findKeyFieldBindingsByText(Holder.ACTION_PROJECTILE_KEY_BINDINGS, text);
     }
 
+    public static List<MappingEvidenceRow> findActionProjectileRuntimeRows(String text) {
+        return findByText(Holder.ACTION_PROJECTILE_RUNTIME_ROWS, text);
+    }
+
+    public static List<RuntimeFieldBindingRow> findActionProjectileRuntimeFieldBindings(String text) {
+        return findRuntimeFieldBindingsByText(Holder.ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS, text);
+    }
+
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {
         String expected = normalize(category);
         List<MappingEvidenceRow> result = new ArrayList<MappingEvidenceRow>();
         for (MappingEvidenceRow row : Holder.PARSER_HELPERS) {
             if (normalize(row.category()).equals(expected)) {
+                result.add(row);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    private static List<RuntimeFieldBindingRow> findRuntimeFieldBindingsByText(List<RuntimeFieldBindingRow> rows,
+                                                                               String text) {
+        String needle = normalize(text);
+        if (needle.isEmpty()) {
+            return rows;
+        }
+
+        List<RuntimeFieldBindingRow> result = new ArrayList<RuntimeFieldBindingRow>();
+        for (RuntimeFieldBindingRow row : rows) {
+            if (normalize(row.domain()).contains(needle)
+                    || normalize(row.ownerOfficial()).contains(needle)
+                    || normalize(row.fieldOfficial()).contains(needle)
+                    || normalize(row.descriptor()).contains(needle)
+                    || normalize(row.fieldNamed()).contains(needle)
+                    || normalize(row.confidence()).contains(needle)
+                    || normalize(row.evidence()).contains(needle)) {
                 result.add(row);
             }
         }
@@ -74,6 +122,35 @@ public final class MappingEvidenceDiagnostics {
             if (category != null && !category.isEmpty() && !result.contains(category)) {
                 result.add(category);
             }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    private static List<RuntimeFieldBindingRow> loadRuntimeFieldBindingRows(String resource) {
+        List<Map<String, String>> rows = loadCsv(resource);
+        List<RuntimeFieldBindingRow> result = new ArrayList<RuntimeFieldBindingRow>();
+        for (Map<String, String> row : rows) {
+            result.add(new RuntimeFieldBindingRow(
+                    row.get("domain"),
+                    row.get("owner_official"),
+                    row.get("field_official"),
+                    row.get("descriptor"),
+                    row.get("field_named"),
+                    row.get("confidence"),
+                    row.get("evidence")));
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    private static List<DeferredMemberRow> loadDeferredMemberRows(String resource) {
+        List<Map<String, String>> rows = loadCsv(resource);
+        List<DeferredMemberRow> result = new ArrayList<DeferredMemberRow>();
+        for (Map<String, String> row : rows) {
+            result.add(new DeferredMemberRow(
+                    row.get("owner_official"),
+                    row.get("official_name"),
+                    row.get("descriptor"),
+                    row.get("reason")));
         }
         return Collections.unmodifiableList(result);
     }
@@ -233,6 +310,12 @@ public final class MappingEvidenceDiagnostics {
         private static final List<MappingEvidenceRow> ACTION_PROJECTILE_ROWS = loadRows(ACTION_PROJECTILE_ROWS_RESOURCE);
         private static final List<KeyFieldBindingRow> ACTION_PROJECTILE_KEY_BINDINGS =
                 loadKeyFieldBindingRows(ACTION_PROJECTILE_KEY_BINDINGS_RESOURCE);
+        private static final List<MappingEvidenceRow> ACTION_PROJECTILE_RUNTIME_ROWS =
+                loadRows(ACTION_PROJECTILE_RUNTIME_ROWS_RESOURCE);
+        private static final List<RuntimeFieldBindingRow> ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS =
+                loadRuntimeFieldBindingRows(ACTION_PROJECTILE_RUNTIME_FIELD_BINDINGS_RESOURCE);
+        private static final List<DeferredMemberRow> DEFERRED_AMBIGUOUS_TURRET_FIELDS =
+                loadDeferredMemberRows(DEFERRED_AMBIGUOUS_TURRET_FIELDS_RESOURCE);
     }
 
     public static final class MappingEvidenceRow {
@@ -365,6 +448,93 @@ public final class MappingEvidenceDiagnostics {
 
         public String evidence() {
             return evidence;
+        }
+
+        private static String nullToEmpty(String value) {
+            return value != null ? value : "";
+        }
+    }
+
+    public static final class RuntimeFieldBindingRow {
+        private final String domain;
+        private final String ownerOfficial;
+        private final String fieldOfficial;
+        private final String descriptor;
+        private final String fieldNamed;
+        private final String confidence;
+        private final String evidence;
+
+        private RuntimeFieldBindingRow(String domain, String ownerOfficial, String fieldOfficial,
+                                       String descriptor, String fieldNamed, String confidence, String evidence) {
+            this.domain = nullToEmpty(domain);
+            this.ownerOfficial = nullToEmpty(ownerOfficial);
+            this.fieldOfficial = nullToEmpty(fieldOfficial);
+            this.descriptor = nullToEmpty(descriptor);
+            this.fieldNamed = nullToEmpty(fieldNamed);
+            this.confidence = nullToEmpty(confidence);
+            this.evidence = nullToEmpty(evidence);
+        }
+
+        public String domain() {
+            return domain;
+        }
+
+        public String ownerOfficial() {
+            return ownerOfficial;
+        }
+
+        public String fieldOfficial() {
+            return fieldOfficial;
+        }
+
+        public String descriptor() {
+            return descriptor;
+        }
+
+        public String fieldNamed() {
+            return fieldNamed;
+        }
+
+        public String confidence() {
+            return confidence;
+        }
+
+        public String evidence() {
+            return evidence;
+        }
+
+        private static String nullToEmpty(String value) {
+            return value != null ? value : "";
+        }
+    }
+
+    public static final class DeferredMemberRow {
+        private final String ownerOfficial;
+        private final String officialName;
+        private final String descriptor;
+        private final String reason;
+
+        private DeferredMemberRow(String ownerOfficial, String officialName, String descriptor, String reason) {
+            this.ownerOfficial = nullToEmpty(ownerOfficial);
+            this.officialName = nullToEmpty(officialName);
+            this.descriptor = nullToEmpty(descriptor);
+            this.reason = nullToEmpty(reason);
+        }
+
+        public String ownerOfficial() {
+            return ownerOfficial;
+        }
+
+        public String officialName() {
+            return officialName;
+        }
+
+        public String descriptor() {
+            return descriptor;
+        }
+
+        public String reason() {
+            return reason;
         }
 
         private static String nullToEmpty(String value) {

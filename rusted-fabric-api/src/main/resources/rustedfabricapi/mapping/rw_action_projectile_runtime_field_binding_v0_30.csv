@@ -1,0 +1,37 @@
+domain,owner_official,field_official,descriptor,field_named,confidence,evidence
+ini-key-semantics projectile-spawn,com/corrodinggames/rts/game/units/custom/bj,a,Lcom/corrodinggames/rts/game/f;,spawnedProjectile,confirmed,bi.spawnEntry stores the newly spawned projectile into shared ProjectileSpawnSearchCallback.a before spatial query.
+ini-key-semantics projectile-spawn,com/corrodinggames/rts/game/units/custom/bj,c,Lcom/corrodinggames/rts/game/units/am;,sourceUnit,confirmed,bi.spawnEntry stores the projectile spawning source unit into callback.c.
+projectile-runtime,com/corrodinggames/rts/game/f,r,F,targetSpeed,high,CustomUnit.createProjectile copies CustomProjectileTemplate.au targetSpeed into Projectile.r.
+projectile-runtime,com/corrodinggames/rts/game/f,s,F,targetSpeedAcceleration,high,CustomUnit.createProjectile copies CustomProjectileTemplate.av targetSpeedAcceleration into Projectile.s.
+projectile-runtime,com/corrodinggames/rts/game/f,u,F,initialUnguidedSpeedX,high,CustomUnit.createProjectile copies template initialUnguidedSpeedX into Projectile.u.
+projectile-runtime,com/corrodinggames/rts/game/f,v,F,initialUnguidedSpeedY,high,CustomUnit.createProjectile copies template initialUnguidedSpeedY into Projectile.v.
+projectile-runtime,com/corrodinggames/rts/game/f,w,F,initialUnguidedSpeedHeight,high,CustomUnit.createProjectile copies template initialUnguidedSpeedHeight into Projectile.w.
+projectile-runtime,com/corrodinggames/rts/game/f,x,F,drawSize,high,CustomUnit.createProjectile copies CustomProjectileTemplate.drawSize into Projectile.x.
+projectile-runtime,com/corrodinggames/rts/game/f,A,Z,instant,high,CustomUnit.createProjectile copies template instant flag into Projectile.A.
+projectile-runtime,com/corrodinggames/rts/game/f,B,Z,laserEffect,high,CustomUnit.createProjectile copies template laserEffect into Projectile.B.
+projectile-runtime,com/corrodinggames/rts/game/f,M,Z,lightingEffect,high,CustomUnit.createProjectile copies template lightingEffect into Projectile.M.
+projectile-runtime,com/corrodinggames/rts/game/f,W,F,areaExpandTime,high,CustomUnit.createProjectile copies CustomProjectileTemplate.areaExpandTime into Projectile.W.
+projectile-runtime,com/corrodinggames/rts/game/f,P,S,frame,high,CustomUnit.createProjectile copies projectile frame into Projectile.P.
+projectile-runtime,com/corrodinggames/rts/game/f,Q,S,shadowFrame,high,CustomUnit.createProjectile copies projectile shadowFrame into Projectile.Q.
+projectile-runtime,com/corrodinggames/rts/game/f,R,S,drawType,high,CustomUnit.createProjectile copies projectile drawType into Projectile.R.
+projectile-runtime,com/corrodinggames/rts/game/f,S,Z,invisible,high,CustomUnit.createProjectile copies projectile invisible flag into Projectile.S.
+projectile-runtime,com/corrodinggames/rts/game/f,ar,I,color,high,CustomUnit.createProjectile copies projectile color into Projectile.ar.
+projectile-runtime,com/corrodinggames/rts/game/f,aG,Z,autoTargetingOnDeadTarget,medium-high,CustomUnit.createProjectile copies template autoTargetingOnDeadTarget into Projectile.aG.
+projectile-runtime,com/corrodinggames/rts/game/f,aH,Z,ballistic,high,CustomUnit.createProjectile copies template ballistic flag into Projectile.aH.
+projectile-runtime,com/corrodinggames/rts/game/f,aI,F,ballisticDelayMoveHeight,high,CustomUnit.createProjectile copies ballisticDelaymoveHeight into Projectile.aI.
+projectile-runtime,com/corrodinggames/rts/game/f,aJ,F,ballisticHeight,high,CustomUnit.createProjectile copies ballisticHeight into Projectile.aJ.
+projectile-runtime,com/corrodinggames/rts/game/f,aQ,Z,largeHitEffect,medium-high,CustomUnit.createProjectile copies template largeHitEffect into Projectile.aQ.
+projectile-runtime,com/corrodinggames/rts/game/f,aR,Z,hitSound,medium-high,CustomUnit.createProjectile copies CustomProjectileTemplate.hitSound into Projectile.aR.
+projectile-runtime,com/corrodinggames/rts/game/f,aD,I,spawnRecursionDepth,confirmed,ProjectileSpawnList.spawnAt writes recursionDepth argument into spawned Projectile.aD and checks it against ProjectileSpawnEntry.recursionLimit.
+projectile-runtime,com/corrodinggames/rts/game/f,aE,Lcom/corrodinggames/rts/game/units/custom/h;,tags,confirmed,CustomUnit.createProjectile copies CustomProjectileTemplate.tags into Projectile.aE; interceptor behavior matches projectile tags against turret intercept tags.
+turret-projectile-runtime,com/corrodinggames/rts/game/units/custom/b/k,a,Lcom/corrodinggames/rts/game/units/custom/b/a;,instance,confirmed,Static initializer creates singleton behavior instance.
+turret-projectile-runtime,com/corrodinggames/rts/game/units/custom/b/k,b,Landroid/graphics/PointF;,scratchTurretPoint,high,onLateUpdate reuses this PointF for turret muzzle/world point while checking laser defence and projectile interception.
+projectile-spawn-callback,com/corrodinggames/rts/game/units/custom/bj,d,Lcom/corrodinggames/rts/game/f;,parentProjectile,high,ProjectileSpawnList.spawnEntry stores the parent/source projectile argument into callback.d before spatial query.
+projectile-spawn-callback,com/corrodinggames/rts/game/units/custom/bj,e,Lcom/corrodinggames/rts/game/units/am;,targetUnit,high,ProjectileSpawnList.spawnEntry stores the target unit argument into callback.e before spatial query.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,d,I,frameXOffset,high,drawFrame computes source x = frameXOffset + frameIndex * frameStrideX.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,e,I,frameYOffset,high,drawFrame computes source y = frameYOffset + row * frameStrideY.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,f,I,frameStrideX,high,drawFrame multiplies frame column by frameStrideX.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,g,I,frameStrideY,high,drawFrame multiplies frame row by frameStrideY.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,h,I,framesPerRow,high,drawFrame divides frame index by this value to compute row.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,l,Landroid/graphics/Rect;,scratchSourceRect,confirmed,static scratch Rect used as source rect in drawFrame.
+effect-runtime,com/corrodinggames/rts/gameFramework/d/g,m,Landroid/graphics/RectF;,scratchDestRect,confirmed,static scratch RectF used as destination rect in drawFrame.
