@@ -5,6 +5,7 @@ import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -43,6 +44,10 @@ public final class RustedCustomUnitRegistry {
     private RustedCustomUnitRegistry() {
     }
 
+    public interface AssetProvider {
+        InputStream open(String path) throws IOException;
+    }
+
     public static Object registerIniUnit(String unitId, String iniText) {
         if (iniText == null) {
             throw new IllegalArgumentException("iniText must not be null");
@@ -61,8 +66,33 @@ public final class RustedCustomUnitRegistry {
         return registerIniUnit(unitId, iniStream, System.currentTimeMillis(), modInfo, resourceRoot, templateRoot);
     }
 
+    public static Object registerIniUnit(String virtualPath, byte[] iniBytes, Object modInfo, AssetProvider assetProvider) {
+        requireText(virtualPath, "virtualPath");
+        byte[] bytes = iniBytes;
+        if (bytes == null) {
+            if (assetProvider == null) {
+                throw new IllegalArgumentException("iniBytes or assetProvider must be provided");
+            }
+            bytes = readAsset(assetProvider, virtualPath);
+        }
+        String resourceRoot = directoryOf(virtualPath);
+        return registerIniUnit(virtualPath,
+                new ByteArrayInputStream(bytes),
+                System.currentTimeMillis(),
+                modInfo,
+                resourceRoot,
+                resourceRoot,
+                assetProvider);
+    }
+
     public static Object registerIniUnit(String unitId, InputStream iniStream, long sourceTimestamp,
                                          Object modInfo, String resourceRoot, String templateRoot) {
+        return registerIniUnit(unitId, iniStream, sourceTimestamp, modInfo, resourceRoot, templateRoot, null);
+    }
+
+    private static Object registerIniUnit(String unitId, InputStream iniStream, long sourceTimestamp,
+                                          Object modInfo, String resourceRoot, String templateRoot,
+                                          AssetProvider assetProvider) {
         requireText(unitId, "unitId");
         if (iniStream == null) {
             throw new IllegalArgumentException("iniStream must not be null");
@@ -72,7 +102,8 @@ public final class RustedCustomUnitRegistry {
         }
 
         RustedIniEvents.ParseStreamContext context = new RustedIniEvents.ParseStreamContext(
-                unitId, iniStream, sourceTimestamp, modInfo, null, nullToEmpty(resourceRoot), nullToEmpty(templateRoot));
+                unitId, iniStream, sourceTimestamp, modInfo, null, nullToEmpty(resourceRoot), nullToEmpty(templateRoot),
+                assetProvider);
         RustedIniEvents.BEFORE_PARSE_STREAM.invoker().beforeParseStream(context);
         if (context.cancelled()) {
             Object override = context.metadataOverride();
@@ -260,6 +291,30 @@ public final class RustedCustomUnitRegistry {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(label + " must not be empty");
         }
+    }
+
+    private static byte[] readAsset(AssetProvider assetProvider, String path) {
+        try {
+            InputStream inputStream = assetProvider.open(path);
+            if (inputStream == null) {
+                throw new IllegalArgumentException("assetProvider returned null for " + path);
+            }
+            try {
+                return inputStream.readAllBytes();
+            } finally {
+                inputStream.close();
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read INI asset " + path, e);
+        }
+    }
+
+    private static String directoryOf(String path) {
+        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        if (slash < 0) {
+            return "";
+        }
+        return path.substring(0, slash + 1).replace('\\', '/');
     }
 
     private static String nullToEmpty(String value) {

@@ -16,6 +16,7 @@ import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -97,6 +98,25 @@ final class ExampleEventProbes {
                 showEventProbeMessage(stage, "AfterStaticVariables",
                         "AfterStaticVariables metadata=" + describeObject(metadata),
                         metadata, 750L));
+
+        RustedIniEvents.AFTER_KEY_READ.register(context ->
+                showEventProbeMessage(stage, "AfterIniKeyRead."
+                                + safeText(context.section()) + "." + safeText(context.key()),
+                        "AfterIniKeyRead " + safeText(context.section()) + "." + safeText(context.key())
+                                + " type=" + safeText(context.valueType())
+                                + " raw=" + safeText(String.valueOf(context.rawValue())),
+                        context.unitConfig(), 1000L));
+
+        RustedIniEvents.BEFORE_UNUSED_KEY_CHECK.register(unitConfig ->
+                showEventProbeMessage(stage, "BeforeUnusedKeyCheck",
+                        "BeforeUnusedKeyCheck config=" + describeObject(unitConfig),
+                        unitConfig, 1000L));
+
+        RustedIniEvents.AFTER_UNUSED_KEY_CHECK.register(unitConfig ->
+                showEventProbeMessage(stage, "AfterUnusedKeyCheck",
+                        "AfterUnusedKeyCheck trace=" + RustedIniDiagnostics.isKeyReadTracingEnabled()
+                                + " config=" + describeObject(unitConfig),
+                        unitConfig, 1000L));
 
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
@@ -195,6 +215,16 @@ final class ExampleEventProbes {
                             + " result=" + describeObject(soundList),
                     soundList, 1500L);
             return soundList;
+        });
+
+        CustomAssetEvents.AFTER_PARSE_PROJECTILE_SPAWN_LIST.register((metadata, rawList, section, key, requireSingle, projectileSpawnList) -> {
+            showEventProbeMessage(stage, "AfterParseProjectileSpawnList",
+                    "AfterParseProjectileSpawnList " + safeText(section) + "." + safeText(key)
+                            + " single=" + requireSingle
+                            + " raw=" + safeText(rawList)
+                            + " result=" + describeObject(projectileSpawnList),
+                    projectileSpawnList, 1500L);
+            return projectileSpawnList;
         });
 
         GameLifecycleEvents.AFTER_FRAME_UPDATE.register((renderer, gameContainer, delta) ->

@@ -1,0 +1,26 @@
+section_context,context_type,official_entries,matched_entries,high_method_entries,official_only_entries,coverage_pct,high_confidence_pct
+[action_NAME] / [hiddenAction_NAME],ini_section,191,184,81,7,96.3,42.4
+[ai],ini_section,20,20,20,0,100.0,100.0
+[animation_NAME],ini_section,19,19,2,0,100.0,10.5
+[attachment_NAME],ini_section,30,30,27,0,100.0,90.0
+[attack],ini_section,24,24,24,0,100.0,100.0
+[canBuild_NAME],ini_section,15,15,14,0,100.0,93.3
+[core],ini_section,172,167,165,5,97.1,95.9
+[decal_name],ini_section,52,50,44,2,96.2,84.6
+[effect_NAME],ini_section,68,68,68,0,100.0,100.0
+[global_resource_NAME],ini_section,24,24,3,0,100.0,12.5
+[graphics],ini_section,67,63,63,4,94.0,94.0
+[leg_#] / [arm_#],ini_section,39,39,37,0,100.0,94.9
+[mod],ini_section,7,2,2,5,28.6,28.6
+[movement],ini_section,19,19,19,0,100.0,100.0
+[music],ini_section,7,1,0,6,14.3,0.0
+[placementRule_NAME],ini_section,13,13,0,0,100.0,0.0
+[projectile_NAME],ini_section,103,96,96,7,93.2,93.2
+[resource_NAME],ini_section,5,5,1,0,100.0,20.0
+[turret_NAME],ini_section,74,74,70,0,100.0,94.6
+spawnProjectiles:LIST,list_parameter,13,13,3,0,100.0,23.1
+spawnUnits:LIST,list_parameter,21,19,4,2,90.5,19.0
+LogicBoolean_,logic_boolean,142,116,72,26,81.7,50.7
+[comment_NAME],meta_section,1,0,0,1,0.0,0.0
+[template_NAME],meta_section,9,5,2,4,55.6,22.2
+"Prices/Resources lines - used by addResources, price, etc",other,10,10,0,0,100.0,0.0

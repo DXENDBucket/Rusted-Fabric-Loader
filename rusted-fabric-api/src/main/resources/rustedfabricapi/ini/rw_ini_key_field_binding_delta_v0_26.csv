@@ -1,0 +1,77 @@
+section_context,key,owner_official,field_official,descriptor,field_named,value_type,confidence,note
+[decal_name],onlyWhenSelectedByOwnPlayer,com/corrodinggames/rts/game/units/custom/b/d,c,Z,onlyWhenSelectedByOwnPlayer,,confirmed,key onlyWhenSelectedByOwnPlayer
+[decal_name],onlyWhenSelectedByEnemyPlayer,com/corrodinggames/rts/game/units/custom/b/d,d,Z,onlyWhenSelectedByEnemyPlayer,,confirmed,key onlyWhenSelectedByEnemyPlayer
+[decal_name],onlyWhenSelectedByAllyNotOwnPlayer,com/corrodinggames/rts/game/units/custom/b/d,e,Z,onlyWhenSelectedByAllyNotOwnPlayer,,confirmed,key onlyWhenSelectedByAllyNotOwnPlayer
+[decal_name],onlyWhenSelectedByAnyPlayer,com/corrodinggames/rts/game/units/custom/b/d,f,Z,onlyWhenSelectedByAnyPlayer,,confirmed,key onlyWhenSelectedByAnyPlayer
+[decal_name],includeParentsSelection,com/corrodinggames/rts/game/units/custom/b/d,g,Z,includeParentsSelection,,confirmed,key includeParentsSelection
+[decal_name],onlyTeam,com/corrodinggames/rts/game/units/custom/b/d,h,Lcom/corrodinggames/rts/game/q;,onlyTeam,,confirmed,key onlyTeam
+[decal_name],onlyPlayersWithUnitControl,com/corrodinggames/rts/game/units/custom/b/d,i,Z,onlyPlayersWithUnitControl,,confirmed,key onlyPlayersWithUnitControl
+[decal_name],onlyWithZoomLevelOrMore,com/corrodinggames/rts/game/units/custom/b/d,j,F,onlyWithZoomLevelOrMore,,confirmed,key onlyWithZoomLevelOrMore
+[decal_name],onlyWhileActive,com/corrodinggames/rts/game/units/custom/b/d,k,Z,onlyWhileActive,,confirmed,key onlyWhileActive
+[decal_name],onlyWhileAlive,com/corrodinggames/rts/game/units/custom/b/d,l,Z,onlyWhileAlive,,confirmed,key onlyWhileAlive
+[decal_name],onlyInPreview,com/corrodinggames/rts/game/units/custom/b/d,m,Z,onlyInPreview,,confirmed,key onlyInPreview
+[decal_name],onlyOnNonPreview,com/corrodinggames/rts/game/units/custom/b/d,n,Z,onlyOnNonPreview,,confirmed,key onlyOnNonPreview
+[decal_name],onlyOnBodyFrameOf,com/corrodinggames/rts/game/units/custom/b/d,o,I,onlyOnBodyFrameOf,,confirmed,key onlyOnBodyFrameOf
+[decal_name],imageScale,com/corrodinggames/rts/game/units/custom/b/d,p,F,imageScale,,confirmed,key imageScale
+[decal_name],imageScaleX,com/corrodinggames/rts/game/units/custom/b/d,r,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,imageScaleX,,confirmed,key imageScaleX
+[decal_name],imageScaleY,com/corrodinggames/rts/game/units/custom/b/d,s,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,imageScaleY,,confirmed,key imageScaleY
+[decal_name],image,com/corrodinggames/rts/game/units/custom/b/d,v,Lcom/corrodinggames/rts/game/units/custom/b/e;,imageFrame,,confirmed,key image
+[decal_name],imageStack,com/corrodinggames/rts/game/units/custom/b/d,w,[Lcom/corrodinggames/rts/game/units/custom/b/e;,imageStackFrames,,confirmed,key imageStack
+[decal_name],stack_hOffset,com/corrodinggames/rts/game/units/custom/b/d,x,F,stackHOffset,,confirmed,key stack_hOffset
+[decal_name],stack_frameOffset,com/corrodinggames/rts/game/units/custom/b/d,y,I,stackFrameOffset,,confirmed,key stack_frameOffset
+[decal_name],stack_drawInReverseOrder,com/corrodinggames/rts/game/units/custom/b/d,z,Z,stackDrawInReverseOrder,,confirmed,key stack_drawInReverseOrder / negative stack_hOffset default
+[decal_name],stack_indexStart,com/corrodinggames/rts/game/units/custom/b/d,A,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,stackIndexStart,,confirmed,key stack_indexStart
+[decal_name],stack_indexCount,com/corrodinggames/rts/game/units/custom/b/d,B,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,stackIndexCount,,confirmed,key stack_indexCount
+[decal_name],image_shadow,com/corrodinggames/rts/game/units/custom/b/d,C,Lcom/corrodinggames/rts/gameFramework/m/e;,shadowImage,,confirmed,key image_shadow
+[decal_name],shadowOffsetX,com/corrodinggames/rts/game/units/custom/b/d,D,F,shadowOffsetX,,confirmed,key shadowOffsetX
+[decal_name],shadowOffsetY,com/corrodinggames/rts/game/units/custom/b/d,E,F,shadowOffsetY,,confirmed,key shadowOffsetY
+[decal_name],isVisible,com/corrodinggames/rts/game/units/custom/b/d,F,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,isVisible,,confirmed,key isVisible
+[decal_name],layer,com/corrodinggames/rts/game/units/custom/b/d,G,Lcom/corrodinggames/rts/game/units/custom/b/f;,layer,,confirmed,key layer
+[decal_name],order,com/corrodinggames/rts/game/units/custom/b/d,H,F,order,,confirmed,key order
+[decal_name],total_frames,com/corrodinggames/rts/game/units/custom/b/d,J,I,totalFrames,,confirmed,key total_frames
+[decal_name],frame_width,com/corrodinggames/rts/game/units/custom/b/d,K,I,frameWidth,,confirmed,key frame_width
+[decal_name],frame_height,com/corrodinggames/rts/game/units/custom/b/d,L,I,frameHeight,,confirmed,key frame_height
+[decal_name],frame_verticalOrdering,com/corrodinggames/rts/game/units/custom/b/d,M,Z,frameVerticalOrdering,,confirmed,key frame_verticalOrdering
+[decal_name],frame,com/corrodinggames/rts/game/units/custom/b/d,N,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,frame,,confirmed,key frame
+[decal_name],addBodyFrameMultipliedBy,com/corrodinggames/rts/game/units/custom/b/d,O,I,addBodyFrameMultipliedBy,,confirmed,key addBodyFrameMultipliedBy
+[decal_name],color,com/corrodinggames/rts/game/units/custom/b/d,P,I,color,,confirmed,key color
+[decal_name],lineWidth,com/corrodinggames/rts/game/units/custom/b/d,Q,F,lineWidth,,confirmed,key lineWidth
+[decal_name],xOffsetRelative,com/corrodinggames/rts/game/units/custom/b/d,R,F,xOffsetRelative,,confirmed,key xOffsetRelative
+[decal_name],yOffsetRelative,com/corrodinggames/rts/game/units/custom/b/d,S,F,yOffsetRelative,,confirmed,key yOffsetRelative
+[decal_name],hOffset,com/corrodinggames/rts/game/units/custom/b/d,V,F,hOffset,,confirmed,key hOffset
+[decal_name],xOffsetAbsolute,com/corrodinggames/rts/game/units/custom/b/d,W,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,xOffsetAbsolute,,confirmed,key xOffsetAbsolute
+[decal_name],yOffsetAbsolute,com/corrodinggames/rts/game/units/custom/b/d,X,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,yOffsetAbsolute,,confirmed,key yOffsetAbsolute
+[decal_name],alwaysStartDirAtZero,com/corrodinggames/rts/game/units/custom/b/d,Y,Z,alwaysStartDirAtZero,,confirmed,key alwaysStartDirAtZero / typo alias alwayStartDirAtZero
+[decal_name],alwaysStartHeightAtZero,com/corrodinggames/rts/game/units/custom/b/d,Z,Z,alwaysStartHeightAtZero,,confirmed,key alwaysStartHeightAtZero
+[decal_name],dirOffset,com/corrodinggames/rts/game/units/custom/b/d,aa,F,dirOffset,,confirmed,key dirOffset
+[decal_name],pivotOffset,com/corrodinggames/rts/game/units/custom/b/d,ab,F,pivotOffset,,confirmed,key pivotOffset
+[decal_name],basePosition,com/corrodinggames/rts/game/units/custom/b/d,ac,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,basePosition,,confirmed,key basePosition
+[decal_name],drawLineTo,com/corrodinggames/rts/game/units/custom/b/d,ad,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,drawLineTo,,confirmed,key drawLineTo
+[decal_name],basePositionFromLegEnd,com/corrodinggames/rts/game/units/custom/b/d,ae,I,basePositionFromLegEnd,,confirmed,key basePositionFromLegEnd
+[decal_name],basePositionFromTurret,com/corrodinggames/rts/game/units/custom/b/d,ag,I,basePositionFromTurret,,confirmed,key basePositionFromTurret
+[decal_name],alpha,com/corrodinggames/rts/game/units/custom/b/d,ai,Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;,alpha,,confirmed,key alpha
+[placementRule_NAME],anyRuleInGroup,com/corrodinggames/rts/game/units/custom/bg,b,Lcom/corrodinggames/rts/game/units/custom/g;,anyRuleInGroup,,confirmed,key anyRuleInGroup
+[placementRule_NAME],searchTags,com/corrodinggames/rts/game/units/custom/bg,c,Lcom/corrodinggames/rts/game/units/custom/h;,searchTags,,confirmed,key searchTags
+[placementRule_NAME],searchTeam,com/corrodinggames/rts/game/units/custom/bg,d,Lcom/corrodinggames/rts/game/q;,searchTeam,,confirmed,key searchTeam
+[placementRule_NAME],searchDistance,com/corrodinggames/rts/game/units/custom/bg,e,F,searchDistance,,confirmed,key searchDistance
+[placementRule_NAME],searchOffsetX,com/corrodinggames/rts/game/units/custom/bg,g,F,searchOffsetX,,confirmed,key searchOffsetX
+[placementRule_NAME],searchOffsetY,com/corrodinggames/rts/game/units/custom/bg,h,F,searchOffsetY,,confirmed,key searchOffsetY
+[placementRule_NAME],excludeIncompleteBuildings,com/corrodinggames/rts/game/units/custom/bg,i,Z,excludeIncompleteBuildings,,confirmed,key excludeIncompleteBuildings
+[placementRule_NAME],excludeNonBuildings,com/corrodinggames/rts/game/units/custom/bg,j,Z,excludeNonBuildings,,confirmed,key excludeNonBuildings
+[placementRule_NAME],minCount,com/corrodinggames/rts/game/units/custom/bg,k,I,minCount,,confirmed,key minCount
+[placementRule_NAME],maxCount,com/corrodinggames/rts/game/units/custom/bg,l,I,maxCount,,confirmed,key maxCount
+[placementRule_NAME],aiSuggestionOnly,com/corrodinggames/rts/game/units/custom/bg,m,Z,aiSuggestionOnly,,confirmed,key aiSuggestionOnly
+[placementRule_NAME],blocksPlacement,com/corrodinggames/rts/game/units/custom/bg,n,Z,blocksPlacement,,confirmed,key blocksPlacement
+[placementRule_NAME],cannotPlaceMessage,com/corrodinggames/rts/game/units/custom/bg,o,Lcom/corrodinggames/rts/game/units/custom/bb;,cannotPlaceMessage,,confirmed,key cannotPlaceMessage
+[placementRule_NAME],checkEachTile,com/corrodinggames/rts/game/units/custom/bg,p,Z,checkEachTile,,confirmed,key checkEachTile
+[animation_NAME],x,com/corrodinggames/rts/game/units/custom/b,f,F,x,,high,animation event key x
+[animation_NAME],y,com/corrodinggames/rts/game/units/custom/b,g,F,y,,high,animation event key y
+[animation_NAME],name,com/corrodinggames/rts/game/units/custom/b,e,Lcom/corrodinggames/rts/game/units/custom/z;,effectList,,high,animation event effect list
+[animation_NAME],body_[time],com/corrodinggames/rts/game/units/custom/c,e,[Lcom/corrodinggames/rts/game/units/custom/a;,keyframes,,high,animation track keyframes
+[animation_NAME],effect_[time],com/corrodinggames/rts/game/units/custom/c,f,Z,isEventTrack,,high,event track marker
+[animation_NAME],KeyframeTimeScale,com/corrodinggames/rts/game/units/custom/c,a,Lcom/corrodinggames/rts/game/units/custom/d;,scaleKeyframeTimes,,high,method-level transform
+[core],tags,com/corrodinggames/rts/game/units/custom/g,d,Lcom/corrodinggames/rts/game/units/custom/h;,emptyTagList,,medium-high,tag list parsing uses UnitTag.parseTagList
+[placementRule_NAME],searchTags,com/corrodinggames/rts/game/units/custom/bg,c,Lcom/corrodinggames/rts/game/units/custom/h;,searchTags,,medium-high,placement search tags
+[placementRule_NAME],cannotPlaceMessage,com/corrodinggames/rts/game/units/custom/bg,o,Lcom/corrodinggames/rts/game/units/custom/bb;,cannotPlaceMessage,,medium-high,LocalizedStringData
+[core],displayText,com/corrodinggames/rts/game/units/custom/bb,b,[Lcom/corrodinggames/rts/game/units/custom/bc;,entries,,medium-high,localized string entries
+[core],displayDescription,com/corrodinggames/rts/game/units/custom/bb,b,[Lcom/corrodinggames/rts/game/units/custom/bc;,entries,,medium-high,localized string entries

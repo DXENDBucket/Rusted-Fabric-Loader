@@ -26,6 +26,10 @@ public final class JavaUnitAssetLoader {
             "rustedwarfare.custom.EffectList",
             "com.corrodinggames.rts.game.units.custom.z"
     };
+    private static final String[] PROJECTILE_SPAWN_LIST_CLASSES = {
+            "rustedwarfare.custom.spawn.ProjectileSpawnList",
+            "com.corrodinggames.rts.game.units.custom.bi"
+    };
 
     private JavaUnitAssetLoader() {
     }
@@ -59,6 +63,14 @@ public final class JavaUnitAssetLoader {
         return invokeStatic(findClass(SOUND_EFFECT_LIST_CLASSES),
                 new String[]{"parseSoundList", "a"},
                 metadata, soundList);
+    }
+
+    public static Object parseProjectileSpawnList(Object metadata, String rawList,
+                                                  String section, String key, boolean requireSingle) {
+        requireMetadata(metadata);
+        return invokeStatic(findClass(PROJECTILE_SPAWN_LIST_CLASSES),
+                new String[]{"parseStringWithMetadata", "a"},
+                metadata, rawList, section, key, Boolean.valueOf(requireSingle));
     }
 
     public static Object createEffectList(Object metadata, String rawEffectList, boolean resolve) {

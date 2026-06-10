@@ -52,6 +52,34 @@ public final class RustedIniEvents {
                 }
             });
 
+    public static final RustedFabricEvent<BeforeKeyRead> BEFORE_KEY_READ =
+            RustedFabricEvent.create(listeners -> context -> {
+                for (BeforeKeyRead listener : listeners) {
+                    listener.beforeKeyRead(context);
+                }
+            });
+
+    public static final RustedFabricEvent<AfterKeyRead> AFTER_KEY_READ =
+            RustedFabricEvent.create(listeners -> context -> {
+                for (AfterKeyRead listener : listeners) {
+                    listener.afterKeyRead(context);
+                }
+            });
+
+    public static final RustedFabricEvent<BeforeUnusedKeyCheck> BEFORE_UNUSED_KEY_CHECK =
+            RustedFabricEvent.create(listeners -> unitConfig -> {
+                for (BeforeUnusedKeyCheck listener : listeners) {
+                    listener.beforeUnusedKeyCheck(unitConfig);
+                }
+            });
+
+    public static final RustedFabricEvent<AfterUnusedKeyCheck> AFTER_UNUSED_KEY_CHECK =
+            RustedFabricEvent.create(listeners -> unitConfig -> {
+                for (AfterUnusedKeyCheck listener : listeners) {
+                    listener.afterUnusedKeyCheck(unitConfig);
+                }
+            });
+
     @FunctionalInterface
     public interface BeforeParseStream {
         void beforeParseStream(ParseStreamContext context);
@@ -82,6 +110,26 @@ public final class RustedIniEvents {
         void afterStaticVariables(Object metadata, Object unitConfig);
     }
 
+    @FunctionalInterface
+    public interface BeforeKeyRead {
+        void beforeKeyRead(KeyReadContext context);
+    }
+
+    @FunctionalInterface
+    public interface AfterKeyRead {
+        void afterKeyRead(KeyReadContext context);
+    }
+
+    @FunctionalInterface
+    public interface BeforeUnusedKeyCheck {
+        void beforeUnusedKeyCheck(Object unitConfig);
+    }
+
+    @FunctionalInterface
+    public interface AfterUnusedKeyCheck {
+        void afterUnusedKeyCheck(Object unitConfig);
+    }
+
     public static final class ParseStreamContext {
         private String unitId;
         private InputStream inputStream;
@@ -90,11 +138,18 @@ public final class RustedIniEvents {
         private Object namedInputStream;
         private String resourceRoot;
         private String templateRoot;
+        private Object assetProvider;
         private boolean cancelled;
         private Object metadataOverride;
 
         public ParseStreamContext(String unitId, InputStream inputStream, long sourceTimestamp,
                                   Object modInfo, Object namedInputStream, String resourceRoot, String templateRoot) {
+            this(unitId, inputStream, sourceTimestamp, modInfo, namedInputStream, resourceRoot, templateRoot, null);
+        }
+
+        public ParseStreamContext(String unitId, InputStream inputStream, long sourceTimestamp,
+                                  Object modInfo, Object namedInputStream, String resourceRoot, String templateRoot,
+                                  Object assetProvider) {
             this.unitId = unitId;
             this.inputStream = inputStream;
             this.sourceTimestamp = sourceTimestamp;
@@ -102,6 +157,7 @@ public final class RustedIniEvents {
             this.namedInputStream = namedInputStream;
             this.resourceRoot = resourceRoot;
             this.templateRoot = templateRoot;
+            this.assetProvider = assetProvider;
         }
 
         public String unitId() {
@@ -160,6 +216,14 @@ public final class RustedIniEvents {
             this.templateRoot = templateRoot;
         }
 
+        public Object assetProvider() {
+            return assetProvider;
+        }
+
+        public void assetProvider(Object assetProvider) {
+            this.assetProvider = assetProvider;
+        }
+
         public boolean cancelled() {
             return cancelled;
         }
@@ -171,6 +235,65 @@ public final class RustedIniEvents {
         public void cancelWith(Object metadataOverride) {
             this.cancelled = true;
             this.metadataOverride = metadataOverride;
+        }
+    }
+
+    public static final class KeyReadContext {
+        private final Object unitConfig;
+        private final String section;
+        private final String key;
+        private final String valueType;
+        private final String sourceMethod;
+        private final boolean required;
+        private Object rawValue;
+        private boolean rawValueOverrideSet;
+
+        public KeyReadContext(Object unitConfig, String section, String key, String valueType,
+                              String sourceMethod, boolean required, Object rawValue) {
+            this.unitConfig = unitConfig;
+            this.section = section;
+            this.key = key;
+            this.valueType = valueType;
+            this.sourceMethod = sourceMethod;
+            this.required = required;
+            this.rawValue = rawValue;
+        }
+
+        public Object unitConfig() {
+            return unitConfig;
+        }
+
+        public String section() {
+            return section;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public String valueType() {
+            return valueType;
+        }
+
+        public String sourceMethod() {
+            return sourceMethod;
+        }
+
+        public boolean required() {
+            return required;
+        }
+
+        public Object rawValue() {
+            return rawValue;
+        }
+
+        public boolean rawValueOverrideSet() {
+            return rawValueOverrideSet;
+        }
+
+        public void rawValue(Object rawValue) {
+            this.rawValue = rawValue;
+            this.rawValueOverrideSet = true;
         }
     }
 }

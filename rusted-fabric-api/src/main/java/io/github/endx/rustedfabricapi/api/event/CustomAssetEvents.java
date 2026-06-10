@@ -74,6 +74,24 @@ public final class CustomAssetEvents {
                 return result;
             });
 
+    public static final RustedFabricEvent<BeforeParseProjectileSpawnList> BEFORE_PARSE_PROJECTILE_SPAWN_LIST =
+            RustedFabricEvent.create(listeners -> (metadata, rawList, section, key, requireSingle) -> {
+                boolean cancelled = false;
+                for (BeforeParseProjectileSpawnList listener : listeners) {
+                    cancelled |= listener.beforeParseProjectileSpawnList(metadata, rawList, section, key, requireSingle);
+                }
+                return cancelled;
+            });
+
+    public static final RustedFabricEvent<AfterParseProjectileSpawnList> AFTER_PARSE_PROJECTILE_SPAWN_LIST =
+            RustedFabricEvent.create(listeners -> (metadata, rawList, section, key, requireSingle, projectileSpawnList) -> {
+                Object result = projectileSpawnList;
+                for (AfterParseProjectileSpawnList listener : listeners) {
+                    result = listener.afterParseProjectileSpawnList(metadata, rawList, section, key, requireSingle, result);
+                }
+                return result;
+            });
+
     @FunctionalInterface
     public interface BeforeLoadImage {
         boolean beforeLoadImage(String path, String basePath, boolean smooth, Object metadata, String section, String key);
@@ -112,5 +130,15 @@ public final class CustomAssetEvents {
     @FunctionalInterface
     public interface AfterParseSoundList {
         Object afterParseSoundList(Object metadata, String rawSoundList, Object soundList);
+    }
+
+    @FunctionalInterface
+    public interface BeforeParseProjectileSpawnList {
+        boolean beforeParseProjectileSpawnList(Object metadata, String rawList, String section, String key, boolean requireSingle);
+    }
+
+    @FunctionalInterface
+    public interface AfterParseProjectileSpawnList {
+        Object afterParseProjectileSpawnList(Object metadata, String rawList, String section, String key, boolean requireSingle, Object projectileSpawnList);
     }
 }

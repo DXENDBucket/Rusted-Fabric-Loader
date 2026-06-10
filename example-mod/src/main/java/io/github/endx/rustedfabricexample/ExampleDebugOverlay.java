@@ -5,10 +5,10 @@ import android.graphics.Paint$Style;
 import android.graphics.Rect;
 import io.github.endx.rustedfabricapi.api.RustedCustomUnitRegistry;
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 import rustedwarfare.core.GameEngine;
 import rustedwarfare.render.GraphicsEngine;
 
-import java.io.ByteArrayInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -275,9 +275,18 @@ final class ExampleDebugOverlay {
     static void drawSlickDebugActionButtons(Object graphics, SlickInputState input,
                                                     int left, int top, int width)
             throws ReflectiveOperationException {
+        int gap = 6;
+        int cellWidth = (width - gap) / 2;
         String label = JAVA_DEBUG_UNIT_REGISTERED.get() ? "Java unit registered" : "Register Java unit";
-        if (drawSlickButton(graphics, input, left, top, width, 24, label)) {
+        if (drawSlickButton(graphics, input, left, top, cellWidth, 24, label)) {
             registerJavaDebugUnitFromPanel();
+        }
+
+        boolean tracing = RustedIniDiagnostics.isKeyReadTracingEnabled();
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top, cellWidth, 24,
+                (tracing ? "[x] " : "[ ] ") + "INI trace")) {
+            RustedIniDiagnostics.setKeyReadTracingEnabled(!tracing);
+            enqueueOverlayMessage("debug", "INI key trace " + (!tracing ? "enabled" : "disabled"), graphics);
         }
     }
 
@@ -306,11 +315,9 @@ final class ExampleDebugOverlay {
 
             Object metadata = RustedCustomUnitRegistry.registerIniUnit(
                     unitConfigPath,
-                    new ByteArrayInputStream(ini.getBytes(StandardCharsets.UTF_8)),
-                    Files.size(iniPath),
+                    ini.getBytes(StandardCharsets.UTF_8),
                     null,
-                    unitRoot,
-                    unitRoot);
+                    assetPath -> Files.newInputStream(gameDir.resolve(assetPath.replace('/', java.io.File.separatorChar))));
             String result = RustedCustomUnitRegistry.commitPendingCustomUnits(false);
             enqueueOverlayMessage("debug",
                     "Registered Java unit metadata=" + describeObject(metadata)
