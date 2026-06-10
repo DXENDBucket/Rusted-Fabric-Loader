@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -84,14 +85,30 @@ public abstract class CustomUnitRuntimeNamedMixin {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_TRANSPORT_UNLOAD.invoker().afterCustomUnitTransportUnload(this, transportedUnit);
     }
 
+    @Inject(method = "onKilled()V", at = @At("HEAD"), cancellable = true, require = 1)
+    private void rustedfabricapi$beforeCustomUnitKilled(CallbackInfo ci) {
+        if (CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.invoker().beforeCustomUnitKilled(this)) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "onKilled()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterCustomUnitKilled(CallbackInfo ci) {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_KILLED.invoker().afterCustomUnitKilled(this);
+        CustomUnitLifecycleEvents.AFTER_CUSTOM_UNIT_KILLED.invoker().afterCustomUnitKilled(this);
+    }
+
+    @Inject(method = "removeFromGame()V", at = @At("HEAD"), cancellable = true, require = 1)
+    private void rustedfabricapi$beforeCustomUnitRemoved(CallbackInfo ci) {
+        if (CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.invoker().beforeCustomUnitRemoved(this)) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "removeFromGame()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterCustomUnitRemoved(CallbackInfo ci) {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_REMOVED.invoker().afterCustomUnitRemoved(this);
+        CustomUnitLifecycleEvents.AFTER_CUSTOM_UNIT_REMOVED.invoker().afterCustomUnitRemoved(this);
     }
 
     @Inject(method = "completeBuildQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)V", at = @At("RETURN"), require = 1)

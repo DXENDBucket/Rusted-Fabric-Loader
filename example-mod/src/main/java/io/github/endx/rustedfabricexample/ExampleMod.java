@@ -4,7 +4,10 @@ import android.graphics.Paint;
 import android.graphics.Paint$Style;
 import android.graphics.Rect;
 import io.github.endx.rustedfabricapi.api.event.CommandEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomAssetEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitRenderEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
@@ -190,6 +193,54 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
         CustomUnitEvents.AFTER_CUSTOM_UNIT_LINK_GRAPH_BUILT.register(() ->
                 showEventProbeMessage(stage, "AfterCustomUnitLinkGraphBuilt", null));
 
+        CustomAssetEvents.BEFORE_LOAD_IMAGE.register((path, basePath, smooth, metadata, section, key) -> {
+            showEventProbeMessage(stage, "BeforeLoadImage",
+                    "BeforeLoadImage key=" + safeText(section) + "." + safeText(key)
+                            + " path=" + compactPath(path)
+                            + " smooth=" + smooth,
+                    metadata, 1000L);
+            return false;
+        });
+
+        CustomAssetEvents.AFTER_LOAD_IMAGE.register((path, basePath, smooth, metadata, section, key, image) -> {
+            showEventProbeMessage(stage, "AfterLoadImage",
+                    "AfterLoadImage key=" + safeText(section) + "." + safeText(key)
+                            + " image=" + describeObject(image),
+                    image, 1000L);
+            return image;
+        });
+
+        CustomAssetEvents.AFTER_CREATE_TEAM_COLOR_IMAGES.register((metadata, sourceImage, teamColoringMode, images) -> {
+            showEventProbeMessage(stage, "AfterCreateTeamColorImages",
+                    "AfterCreateTeamColorImages mode=" + describeObject(teamColoringMode)
+                            + " images=" + describeObject(images),
+                    metadata, 1500L);
+            return images;
+        });
+
+        CustomAssetEvents.BEFORE_LOAD_SOUND.register((basePath, soundPath, metadata) -> {
+            showEventProbeMessage(stage, "BeforeLoadSound",
+                    "BeforeLoadSound path=" + compactPath(soundPath),
+                    metadata, 1000L);
+            return false;
+        });
+
+        CustomAssetEvents.AFTER_LOAD_SOUND.register((basePath, soundPath, metadata, sound) -> {
+            showEventProbeMessage(stage, "AfterLoadSound",
+                    "AfterLoadSound path=" + compactPath(soundPath)
+                            + " sound=" + describeObject(sound),
+                    sound, 1000L);
+            return sound;
+        });
+
+        CustomAssetEvents.AFTER_PARSE_SOUND_LIST.register((metadata, rawSoundList, soundList) -> {
+            showEventProbeMessage(stage, "AfterParseSoundList",
+                    "AfterParseSoundList raw=" + safeText(rawSoundList)
+                            + " result=" + describeObject(soundList),
+                    soundList, 1500L);
+            return soundList;
+        });
+
         GameLifecycleEvents.AFTER_FRAME_UPDATE.register((renderer, gameContainer, delta) ->
                 showEventProbeMessage(stage, "AfterFrameUpdate",
                         "AfterFrameUpdate delta=" + delta
@@ -215,6 +266,81 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
                 showEventProbeMessage(stage, "AfterUnitUnregister",
                         "AfterUnitUnregister unit=" + describeObject(unit),
                         unit, 1000L));
+
+        CustomUnitLifecycleEvents.BEFORE_RUNTIME_UNIT_CREATE.register(metadata ->
+                showEventProbeMessage(stage, "BeforeRuntimeUnitCreate",
+                        "BeforeRuntimeUnitCreate metadata=" + describeObject(metadata),
+                        metadata, 750L));
+
+        CustomUnitLifecycleEvents.AFTER_RUNTIME_UNIT_CREATE.register((metadata, unit) -> {
+            showEventProbeMessage(stage, "AfterRuntimeUnitCreate",
+                    "AfterRuntimeUnitCreate unit=" + describeObject(unit)
+                            + " metadata=" + describeObject(metadata),
+                    unit, 750L);
+            return unit;
+        });
+
+        CustomUnitLifecycleEvents.AFTER_RUNTIME_UNIT_CREATE_WITH_FLAG.register((metadata, createFlag, unit) -> {
+            showEventProbeMessage(stage, "AfterRuntimeUnitCreateWithFlag",
+                    "AfterRuntimeUnitCreateWithFlag flag=" + createFlag
+                            + " unit=" + describeObject(unit),
+                    unit, 750L);
+            return unit;
+        });
+
+        CustomUnitLifecycleEvents.BEFORE_UNIT_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
+                showEventProbeMessage(stage, "BeforeUnitMetadataApply",
+                        "BeforeUnitMetadataApply conversion=" + conversion
+                                + " initial=" + initial
+                                + " old=" + describeObject(oldMetadata)
+                                + " new=" + describeObject(newMetadata),
+                        unit, 750L));
+
+        CustomUnitLifecycleEvents.AFTER_UNIT_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
+                showEventProbeMessage(stage, "AfterUnitMetadataApply",
+                        "AfterUnitMetadataApply conversion=" + conversion
+                                + " initial=" + initial
+                                + " unit=" + describeObject(unit),
+                        unit, 750L));
+
+        CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.register(unit -> {
+            showEventProbeMessage(stage, "BeforeCustomUnitKilled",
+                    "BeforeCustomUnitKilled unit=" + describeObject(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.register(unit -> {
+            showEventProbeMessage(stage, "BeforeCustomUnitRemoved",
+                    "BeforeCustomUnitRemoved unit=" + describeObject(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_BODY_IMAGE.register((unit, image) -> {
+            showEventProbeMessage(stage, "AfterGetBodyImage",
+                    "AfterGetBodyImage unit=" + describeObject(unit)
+                            + " image=" + describeObject(image),
+                    unit, 4000L);
+            return image;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_TURRET_IMAGE.register((unit, turretIndex, image) -> {
+            showEventProbeMessage(stage, "AfterGetTurretImage",
+                    "AfterGetTurretImage turret=" + turretIndex
+                            + " image=" + describeObject(image),
+                    unit, 4000L);
+            return image;
+        });
+
+        CustomUnitRenderEvents.AFTER_TURRET_WORLD_TRANSFORM.register((unit, turretIndex, includeHeight, transform) -> {
+            showEventProbeMessage(stage, "AfterTurretWorldTransform",
+                    "AfterTurretWorldTransform turret=" + turretIndex
+                            + " includeHeight=" + includeHeight
+                            + " transform=" + describeObject(transform),
+                    unit, 4000L);
+            return transform;
+        });
 
         SelectionEvents.BEFORE_UNIT_SELECT.register((interfaceEngine, unit, append) -> {
             showEventProbeMessage(stage, "BeforeUnitSelect",
