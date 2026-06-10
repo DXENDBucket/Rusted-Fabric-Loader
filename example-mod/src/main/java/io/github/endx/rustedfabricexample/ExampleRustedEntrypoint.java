@@ -11,11 +11,12 @@ public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
                 + ", androidRuntime=" + ctx.androidRuntime()
                 + ", gameDir=" + ctx.gameDir()
                 + ", gameJar=" + ctx.gameJar());
+        ExampleMod.rememberGameDir(ctx.gameDir());
         ExampleMod.logNamedGameTypes(ctx.entrypointKey());
         ExampleMod.startVisibleSettingsTweaks(ctx.entrypointKey());
         ExampleMod.startMainMenuPopup(ctx.entrypointKey());
-        ExampleMod.registerMapEntryMessage(ctx.entrypointKey());
-        ExampleMod.registerEventProbeMessages(ctx.entrypointKey());
+        ExampleEventProbes.registerMapEntryMessage(ctx.entrypointKey());
+        ExampleEventProbes.registerEventProbeMessages(ctx.entrypointKey());
         ExampleMod.registerOverlayRenderer(ctx.entrypointKey());
     }
 }

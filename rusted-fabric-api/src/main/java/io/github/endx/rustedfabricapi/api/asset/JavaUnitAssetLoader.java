@@ -1,5 +1,7 @@
 package io.github.endx.rustedfabricapi.api.asset;
 
+import io.github.endx.rustedfabricapi.api.RustedCustomUnitRegistry;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -203,30 +205,15 @@ public final class JavaUnitAssetLoader {
     }
 
     public static void registerPendingCustomUnitType(Object metadata) {
-        requireMetadata(metadata);
-        Object pending = getStaticFieldValue(findClass(CUSTOM_UNIT_METADATA_CLASSES),
-                new String[]{"pendingCustomUnitTypes", "c"});
-        if (!(pending instanceof List)) {
-            throw new IllegalStateException("CustomUnitMetadata.pendingCustomUnitTypes is not a List");
-        }
-
-        @SuppressWarnings("unchecked")
-        List<Object> list = (List<Object>) pending;
-        if (!list.contains(metadata)) {
-            list.add(metadata);
-        }
+        RustedCustomUnitRegistry.registerPendingCustomUnitType(metadata);
     }
 
     public static String enableAllLoadedCustomUnitTypes(boolean includeDisabledMods) {
-        Object result = invokeStatic(findClass(CUSTOM_UNIT_LOADER_CLASSES),
-                new String[]{"enableAllLoadedCustomUnitTypes", "b"},
-                includeDisabledMods);
-        return result != null ? result.toString() : null;
+        return RustedCustomUnitRegistry.commitPendingCustomUnits(includeDisabledMods);
     }
 
     public static void rebuildCustomUnitLookupAndActionLinks() {
-        invokeStatic(findClass(CUSTOM_UNIT_LOADER_CLASSES),
-                new String[]{"rebuildCustomUnitLookupAndActionLinks", "g"});
+        RustedCustomUnitRegistry.rebuildCustomUnitLookupAndActionLinks();
     }
 
     public static List<String> validateAssetContract(Object metadata) {

@@ -1,0 +1,862 @@
+package io.github.endx.rustedfabricexample;
+
+import io.github.endx.rustedfabricapi.api.event.CommandEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomAssetEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitRenderEvents;
+import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
+import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
+import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
+import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
+import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
+import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
+import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
+import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static io.github.endx.rustedfabricexample.ExampleDebugOverlay.*;
+
+final class ExampleEventProbes {
+    private static final AtomicBoolean MAP_ENTRY_MESSAGE_REGISTERED = new AtomicBoolean();
+    private static final AtomicBoolean EVENT_PROBE_MESSAGES_REGISTERED = new AtomicBoolean();
+
+    private ExampleEventProbes() {
+    }
+
+    static void registerMapEntryMessage(String stage) {
+        ExampleDebugOverlay.registerRenderer(stage);
+
+        if (!MAP_ENTRY_MESSAGE_REGISTERED.compareAndSet(false, true)) {
+            return;
+        }
+
+        GameLifecycleEvents.AFTER_MAP_SETUP.register((minimap, map, fogEnabled) -> showMapEntryMessage(stage, map));
+        ExampleMod.log("registered map entry message hook from " + stage);
+    }
+
+    static void registerEventProbeMessages(String stage) {
+        ExampleDebugOverlay.registerRenderer(stage);
+
+        if (!EVENT_PROBE_MESSAGES_REGISTERED.compareAndSet(false, true)) {
+            return;
+        }
+
+        CustomUnitEvents.BEFORE_NATIVE_CUSTOM_UNIT_LOAD.register(() ->
+                showEventProbeMessage(stage, "BeforeNativeCustomUnitLoad", null));
+
+        CustomUnitEvents.AFTER_NATIVE_CUSTOM_UNIT_PARSE_BEFORE_ENABLE.register(() ->
+                showEventProbeMessage(stage, "AfterNativeCustomUnitParseBeforeEnable", null));
+
+        CustomUnitEvents.BEFORE_CUSTOM_UNIT_REGISTRY_REBUILD.register(includeDisabledMods ->
+                showEventProbeMessage(stage, "BeforeCustomUnitRegistryRebuild includeDisabled=" + includeDisabledMods, null));
+
+        CustomUnitEvents.AFTER_CUSTOM_UNIT_OVERRIDE_AND_REPLACE.register(() ->
+                showEventProbeMessage(stage, "AfterCustomUnitOverrideAndReplace", null));
+
+        CustomUnitEvents.AFTER_CUSTOM_UNIT_LINK_GRAPH_BUILT.register(() ->
+                showEventProbeMessage(stage, "AfterCustomUnitLinkGraphBuilt", null));
+
+        RustedIniEvents.BEFORE_PARSE_STREAM.register(context ->
+                showEventProbeMessage(stage, "BeforeParseStream",
+                        "BeforeParseStream unit=" + safeText(context.unitId())
+                                + " root=" + safeText(context.resourceRoot()),
+                        context.modInfo(), 750L));
+
+        RustedIniEvents.AFTER_PARSE_UNIT_CONFIG.register((unitConfig, inputStream) ->
+                showEventProbeMessage(stage, "AfterParseUnitConfig",
+                        "AfterParseUnitConfig config=" + describeObject(unitConfig),
+                        unitConfig, 750L));
+
+        RustedIniEvents.BEFORE_COPY_FROM.register((metadata, targetConfig, sourceConfig, copyFromPath, recursionDepth) -> {
+            showEventProbeMessage(stage, "BeforeCopyFrom",
+                    "BeforeCopyFrom depth=" + recursionDepth
+                            + " path=" + safeText(copyFromPath),
+                    metadata, 750L);
+            return false;
+        });
+
+        RustedIniEvents.AFTER_COPY_FROM.register((metadata, targetConfig, sourceConfig, copyFromPath, recursionDepth) ->
+                showEventProbeMessage(stage, "AfterCopyFrom",
+                        "AfterCopyFrom depth=" + recursionDepth
+                                + " path=" + safeText(copyFromPath),
+                        metadata, 750L));
+
+        RustedIniEvents.BEFORE_STATIC_VARIABLES.register((metadata, unitConfig) -> {
+            showEventProbeMessage(stage, "BeforeStaticVariables",
+                    "BeforeStaticVariables metadata=" + describeObject(metadata),
+                    metadata, 750L);
+            return false;
+        });
+
+        RustedIniEvents.AFTER_STATIC_VARIABLES.register((metadata, unitConfig) ->
+                showEventProbeMessage(stage, "AfterStaticVariables",
+                        "AfterStaticVariables metadata=" + describeObject(metadata),
+                        metadata, 750L));
+
+        RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
+            showEventProbeMessage(stage, "AfterMetadataParsed",
+                    "AfterMetadataParsed unit=" + safeText(context.unitId())
+                            + " metadata=" + describeObject(metadata),
+                    metadata, 750L);
+            return metadata;
+        });
+
+        RustedCustomUnitRegistryEvents.BEFORE_PENDING_REGISTER.register((metadata, pendingSnapshot) -> {
+            showEventProbeMessage(stage, "BeforePendingRegister",
+                    "BeforePendingRegister pending=" + pendingSnapshot.size()
+                            + " metadata=" + describeObject(metadata),
+                    metadata, 750L);
+            return metadata;
+        });
+
+        RustedCustomUnitRegistryEvents.AFTER_PENDING_REGISTER.register((metadata, pendingSize) ->
+                showEventProbeMessage(stage, "AfterPendingRegister",
+                        "AfterPendingRegister pending=" + pendingSize
+                                + " metadata=" + describeObject(metadata),
+                        metadata, 750L));
+
+        RustedCustomUnitRegistryEvents.BEFORE_COMMIT.register((pendingSnapshot, includeDisabledMods) -> {
+            showEventProbeMessage(stage, "BeforeCustomUnitCommit",
+                    "BeforeCustomUnitCommit pending=" + pendingSnapshot.size()
+                            + " includeDisabled=" + includeDisabledMods,
+                    null, 750L);
+            return false;
+        });
+
+        RustedCustomUnitRegistryEvents.AFTER_COMMIT.register((activeSnapshot, result, replacementMap) ->
+                showEventProbeMessage(stage, "AfterCustomUnitCommit",
+                        "AfterCustomUnitCommit active=" + activeSnapshot.size()
+                                + " replacements=" + replacementMap.size()
+                                + " result=" + safeText(result),
+                        null, 750L));
+
+        RustedCustomUnitRegistryEvents.AFTER_REBUILD_LINKS.register((activeSnapshot, replacementMap) ->
+                showEventProbeMessage(stage, "AfterRebuildCustomUnitLinks",
+                        "AfterRebuildCustomUnitLinks active=" + activeSnapshot.size()
+                                + " replacements=" + replacementMap.size(),
+                        null, 750L));
+
+        RustedCustomUnitRegistryEvents.AFTER_VALIDATE_LINKS.register((strict, currentResult) -> {
+            showEventProbeMessage(stage, "AfterValidateCustomUnitLinks",
+                    "AfterValidateCustomUnitLinks strict=" + strict
+                            + " result=" + currentResult,
+                    null, 750L);
+            return currentResult;
+        });
+
+        CustomAssetEvents.BEFORE_LOAD_IMAGE.register((path, basePath, smooth, metadata, section, key) -> {
+            showEventProbeMessage(stage, "BeforeLoadImage",
+                    "BeforeLoadImage key=" + safeText(section) + "." + safeText(key)
+                            + " path=" + compactPath(path)
+                            + " smooth=" + smooth,
+                    metadata, 1000L);
+            return false;
+        });
+
+        CustomAssetEvents.AFTER_LOAD_IMAGE.register((path, basePath, smooth, metadata, section, key, image) -> {
+            showEventProbeMessage(stage, "AfterLoadImage",
+                    "AfterLoadImage key=" + safeText(section) + "." + safeText(key)
+                            + " image=" + describeObject(image),
+                    image, 1000L);
+            return image;
+        });
+
+        CustomAssetEvents.AFTER_CREATE_TEAM_COLOR_IMAGES.register((metadata, sourceImage, teamColoringMode, images) -> {
+            showEventProbeMessage(stage, "AfterCreateTeamColorImages",
+                    "AfterCreateTeamColorImages mode=" + describeObject(teamColoringMode)
+                            + " images=" + describeObject(images),
+                    metadata, 1500L);
+            return images;
+        });
+
+        CustomAssetEvents.BEFORE_LOAD_SOUND.register((basePath, soundPath, metadata) -> {
+            showEventProbeMessage(stage, "BeforeLoadSound",
+                    "BeforeLoadSound path=" + compactPath(soundPath),
+                    metadata, 1000L);
+            return false;
+        });
+
+        CustomAssetEvents.AFTER_LOAD_SOUND.register((basePath, soundPath, metadata, sound) -> {
+            showEventProbeMessage(stage, "AfterLoadSound",
+                    "AfterLoadSound path=" + compactPath(soundPath)
+                            + " sound=" + describeObject(sound),
+                    sound, 1000L);
+            return sound;
+        });
+
+        CustomAssetEvents.AFTER_PARSE_SOUND_LIST.register((metadata, rawSoundList, soundList) -> {
+            showEventProbeMessage(stage, "AfterParseSoundList",
+                    "AfterParseSoundList raw=" + safeText(rawSoundList)
+                            + " result=" + describeObject(soundList),
+                    soundList, 1500L);
+            return soundList;
+        });
+
+        GameLifecycleEvents.AFTER_FRAME_UPDATE.register((renderer, gameContainer, delta) ->
+                showEventProbeMessage(stage, "AfterFrameUpdate",
+                        "AfterFrameUpdate delta=" + delta
+                                + " renderer=" + describeObject(renderer),
+                        renderer, 5000L));
+
+        UnitLifecycleEvents.BEFORE_UNIT_REGISTER.register(unit ->
+                showEventProbeMessage(stage, "BeforeUnitRegister",
+                        "BeforeUnitRegister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        UnitLifecycleEvents.AFTER_UNIT_REGISTER.register(unit ->
+                showEventProbeMessage(stage, "AfterUnitRegister",
+                        "AfterUnitRegister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        UnitLifecycleEvents.BEFORE_UNIT_UNREGISTER.register(unit ->
+                showEventProbeMessage(stage, "BeforeUnitUnregister",
+                        "BeforeUnitUnregister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        UnitLifecycleEvents.AFTER_UNIT_UNREGISTER.register(unit ->
+                showEventProbeMessage(stage, "AfterUnitUnregister",
+                        "AfterUnitUnregister unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        CustomUnitLifecycleEvents.BEFORE_RUNTIME_UNIT_CREATE.register(metadata ->
+                showEventProbeMessage(stage, "BeforeRuntimeUnitCreate",
+                        "BeforeRuntimeUnitCreate metadata=" + describeObject(metadata),
+                        metadata, 750L));
+
+        CustomUnitLifecycleEvents.AFTER_RUNTIME_UNIT_CREATE.register((metadata, unit) -> {
+            showEventProbeMessage(stage, "AfterRuntimeUnitCreate",
+                    "AfterRuntimeUnitCreate unit=" + describeObject(unit)
+                            + " metadata=" + describeObject(metadata),
+                    unit, 750L);
+            return unit;
+        });
+
+        CustomUnitLifecycleEvents.AFTER_RUNTIME_UNIT_CREATE_WITH_FLAG.register((metadata, createFlag, unit) -> {
+            showEventProbeMessage(stage, "AfterRuntimeUnitCreateWithFlag",
+                    "AfterRuntimeUnitCreateWithFlag flag=" + createFlag
+                            + " unit=" + describeObject(unit),
+                    unit, 750L);
+            return unit;
+        });
+
+        CustomUnitLifecycleEvents.BEFORE_UNIT_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
+                showEventProbeMessage(stage, "BeforeUnitMetadataApply",
+                        "BeforeUnitMetadataApply conversion=" + conversion
+                                + " initial=" + initial
+                                + " old=" + describeObject(oldMetadata)
+                                + " new=" + describeObject(newMetadata),
+                        unit, 750L));
+
+        CustomUnitLifecycleEvents.AFTER_UNIT_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
+                showEventProbeMessage(stage, "AfterUnitMetadataApply",
+                        "AfterUnitMetadataApply conversion=" + conversion
+                                + " initial=" + initial
+                                + " unit=" + describeObject(unit),
+                        unit, 750L));
+
+        CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.register(unit -> {
+            showEventProbeMessage(stage, "BeforeCustomUnitKilled",
+                    "BeforeCustomUnitKilled unit=" + describeObject(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.register(unit -> {
+            showEventProbeMessage(stage, "BeforeCustomUnitRemoved",
+                    "BeforeCustomUnitRemoved unit=" + describeObject(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_BODY_IMAGE.register((unit, image) -> {
+            showEventProbeMessage(stage, "AfterGetBodyImage",
+                    "AfterGetBodyImage unit=" + describeObject(unit)
+                            + " image=" + describeObject(image),
+                    unit, 4000L);
+            return image;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_TURRET_IMAGE.register((unit, turretIndex, image) -> {
+            showEventProbeMessage(stage, "AfterGetTurretImage",
+                    "AfterGetTurretImage turret=" + turretIndex
+                            + " image=" + describeObject(image),
+                    unit, 4000L);
+            return isDebugRenderPartEnabled(DebugRenderPart.TURRET_IMAGE) ? image : null;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_SHIELD_IMAGE.register((unit, image) -> {
+            showEventProbeMessage(stage, "AfterGetShieldImage",
+                    "AfterGetShieldImage image=" + describeObject(image),
+                    unit, 4000L);
+            return isDebugRenderPartEnabled(DebugRenderPart.SHIELD_IMAGE) ? image : null;
+        });
+
+        CustomUnitRenderEvents.BEFORE_DRAW_BACK_IMAGE.register((unit, renderDelta) -> {
+            if (!isDebugRenderPartEnabled(DebugRenderPart.BACK_IMAGE)) {
+                showEventProbeMessage(stage, "BeforeDrawBackImage",
+                        "BeforeDrawBackImage cancelled by Java Debug",
+                        unit, 1000L);
+                return true;
+            }
+            return false;
+        });
+
+        CustomUnitRenderEvents.AFTER_TURRET_WORLD_TRANSFORM.register((unit, turretIndex, includeHeight, transform) -> {
+            showEventProbeMessage(stage, "AfterTurretWorldTransform",
+                    "AfterTurretWorldTransform turret=" + turretIndex
+                            + " includeHeight=" + includeHeight
+                            + " transform=" + describeObject(transform),
+                    unit, 4000L);
+            return transform;
+        });
+
+        SelectionEvents.BEFORE_UNIT_SELECT.register((interfaceEngine, unit, append) -> {
+            showEventProbeMessage(stage, "BeforeUnitSelect",
+                    "BeforeUnitSelect append=" + append
+                            + " unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_UNIT_SELECT.register((interfaceEngine, unit, append) ->
+                showEventProbeMessage(stage, "AfterUnitSelect",
+                        "AfterUnitSelect append=" + append
+                                + " unit=" + describeObject(unit),
+                        unit, 300L));
+
+        SelectionEvents.BEFORE_UNIT_ADDED_TO_SELECTION.register((interfaceEngine, unit) -> {
+            showEventProbeMessage(stage, "BeforeUnitAddedToSelection",
+                    "BeforeUnitAddedToSelection unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_UNIT_ADDED_TO_SELECTION.register((interfaceEngine, unit, result) ->
+                showEventProbeMessage(stage, "AfterUnitAddedToSelection",
+                        "AfterUnitAddedToSelection result=" + result
+                                + " unit=" + describeObject(unit),
+                        unit, 300L));
+
+        SelectionEvents.BEFORE_UNIT_DESELECT.register((interfaceEngine, unit) -> {
+            showEventProbeMessage(stage, "BeforeUnitDeselect",
+                    "BeforeUnitDeselect unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_UNIT_DESELECT.register((interfaceEngine, unit) ->
+                showEventProbeMessage(stage, "AfterUnitDeselect",
+                        "AfterUnitDeselect unit=" + describeObject(unit),
+                        unit, 300L));
+
+        SelectionEvents.BEFORE_SELECTION_CLEAR.register(interfaceEngine -> {
+            showEventProbeMessage(stage, "BeforeSelectionClear",
+                    "BeforeSelectionClear interface=" + describeObject(interfaceEngine),
+                    interfaceEngine, 300L);
+            return false;
+        });
+
+        SelectionEvents.AFTER_SELECTION_CLEAR.register(interfaceEngine ->
+                showEventProbeMessage(stage, "AfterSelectionClear",
+                        "AfterSelectionClear interface=" + describeObject(interfaceEngine),
+                        interfaceEngine, 300L));
+
+        CommandEvents.BEFORE_COMMAND_ISSUE.register(command -> {
+            showEventProbeMessage(stage, "BeforeCommandIssue",
+                    "BeforeCommandIssue command=" + describeObject(command),
+                    command, 500L);
+            return false;
+        });
+
+        CommandEvents.AFTER_COMMAND_ISSUE.register(command ->
+                showEventProbeMessage(stage, "AfterCommandIssue",
+                        "AfterCommandIssue command=" + describeObject(command),
+                        command, 500L));
+
+        CustomUnitRuntimeEvents.BEFORE_CUSTOM_ACTION_EXECUTE.register((unit, action, targetPoint, targetUnit, recursionDepth) -> {
+            showEventProbeMessage(stage, "BeforeCustomActionExecute",
+                    "BeforeCustomActionExecute depth=" + recursionDepth
+                            + " unit=" + describeObject(unit)
+                            + " action=" + describeObject(action)
+                            + " target=" + describeObject(targetUnit),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_ACTION_EXECUTE.register((unit, action, targetPoint, targetUnit, recursionDepth, result) ->
+                showEventProbeMessage(stage, "AfterCustomActionExecute",
+                        "AfterCustomActionExecute result=" + result
+                                + " depth=" + recursionDepth
+                                + " unit=" + describeObject(unit)
+                                + " action=" + describeObject(action),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.BEFORE_CUSTOM_ACTION_EFFECT_EXECUTE.register((effect, unit, action, targetPoint, targetUnit, recursionDepth) -> {
+            showEventProbeMessage(stage, "BeforeCustomActionEffectExecute",
+                    "BeforeCustomActionEffectExecute depth=" + recursionDepth
+                            + " effect=" + describeObject(effect)
+                            + " unit=" + describeObject(unit)
+                            + " action=" + describeObject(action),
+                    effect, 750L);
+            return false;
+        });
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_ACTION_EFFECT_EXECUTE.register((effect, unit, action, targetPoint, targetUnit, recursionDepth, result) ->
+                showEventProbeMessage(stage, "AfterCustomActionEffectExecute",
+                        "AfterCustomActionEffectExecute result=" + result
+                                + " depth=" + recursionDepth
+                                + " effect=" + describeObject(effect)
+                                + " unit=" + describeObject(unit),
+                        effect, 750L));
+
+        CustomUnitRuntimeEvents.BEFORE_CUSTOM_UNIT_CONVERT.register((unit, action, targetPoint, targetUnit, recursionDepth) -> {
+            showEventProbeMessage(stage, "BeforeCustomUnitConvert",
+                    "BeforeCustomUnitConvert depth=" + recursionDepth
+                            + " unit=" + describeObject(unit)
+                            + " action=" + describeObject(action)
+                            + " target=" + describeObject(targetUnit),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_CONVERT.register((unit, action, targetPoint, targetUnit, recursionDepth) ->
+                showEventProbeMessage(stage, "AfterCustomUnitConvert",
+                        "AfterCustomUnitConvert depth=" + recursionDepth
+                                + " unit=" + describeObject(unit)
+                                + " action=" + describeObject(action),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.BEFORE_TURRET_FIRE_AT_TARGET.register((unit, targetUnit, turretIndex) -> {
+            showEventProbeMessage(stage, "BeforeTurretFireAtTarget",
+                    "BeforeTurretFireAtTarget turret=" + turretIndex
+                            + " unit=" + describeObject(unit)
+                            + " target=" + describeObject(targetUnit),
+                    unit, 500L);
+            return false;
+        });
+
+        CustomUnitRuntimeEvents.AFTER_PROJECTILE_CREATED_FROM_TEMPLATE.register((projectile, targetUnit, turretIndex, template, x, y, height, direction) ->
+                showEventProbeMessage(stage, "AfterProjectileCreatedFromTemplate",
+                        "AfterProjectileCreatedFromTemplate turret=" + turretIndex
+                                + " pos=" + formatPoint(x, y)
+                                + " h=" + formatFloat(height)
+                                + " dir=" + formatFloat(direction),
+                        projectile, 500L));
+
+        CustomUnitRuntimeEvents.AFTER_PROJECTILE_TEMPLATE_APPLIED.register((projectile, targetUnit, turretIndex, template, x, y, height, direction) ->
+                showEventProbeMessage(stage, "AfterProjectileTemplateApplied",
+                        "AfterProjectileTemplateApplied turret=" + turretIndex
+                                + " pos=" + formatPoint(x, y)
+                                + " h=" + formatFloat(height)
+                                + " dir=" + formatFloat(direction)
+                                + " template=" + describeObject(template),
+                        projectile, 500L));
+
+        CustomUnitRuntimeEvents.BEFORE_FIRE_PROJECTILE_AT_GROUND.register((unit, targetUnit, x, y, turretIndex, template, projectileCount) -> {
+            showEventProbeMessage(stage, "BeforeFireProjectileAtGround",
+                    "BeforeFireProjectileAtGround turret=" + turretIndex
+                            + " count=" + projectileCount
+                            + " pos=" + formatPoint(x, y)
+                            + " unit=" + describeObject(unit),
+                    unit, 500L);
+            return false;
+        });
+
+        CustomUnitRuntimeEvents.BEFORE_RESOURCE_COST_PAID.register((resourceAmount, unit, operation) -> {
+            showEventProbeMessage(stage, "BeforeResourceCostPaid",
+                    "BeforeResourceCostPaid op=" + safeText(operation)
+                            + " unit=" + describeObject(unit)
+                            + " amount=" + describeObject(resourceAmount),
+                    unit, 750L);
+            return false;
+        });
+
+        CustomUnitRuntimeEvents.AFTER_MUTABLE_STATS_APPLIED.register((writerElement, unit) ->
+                showEventProbeMessage(stage, "AfterMutableStatsApplied",
+                        "AfterMutableStatsApplied writer=" + describeObject(writerElement)
+                                + " unit=" + describeObject(unit),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_TRANSPORT_LOAD.register((unit, transportedUnit) ->
+                showEventProbeMessage(stage, "AfterCustomUnitTransportLoad",
+                        "AfterCustomUnitTransportLoad unit=" + describeObject(unit)
+                                + " loaded=" + describeObject(transportedUnit),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_TRANSPORT_UNLOAD.register((unit, transportedUnit) ->
+                showEventProbeMessage(stage, "AfterCustomUnitTransportUnload",
+                        "AfterCustomUnitTransportUnload unit=" + describeObject(unit)
+                                + " unloaded=" + describeObject(transportedUnit),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_KILLED.register(unit ->
+                showEventProbeMessage(stage, "AfterCustomUnitKilled",
+                        "AfterCustomUnitKilled unit=" + describeObject(unit),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_REMOVED.register(unit ->
+                showEventProbeMessage(stage, "AfterCustomUnitRemoved",
+                        "AfterCustomUnitRemoved unit=" + describeObject(unit),
+                        unit, 750L));
+
+        CustomUnitRuntimeEvents.AFTER_BUILD_QUEUE_ITEM_COMPLETE.register((unit, queueItem) ->
+                showEventProbeMessage(stage, "AfterBuildQueueItemComplete",
+                        "AfterBuildQueueItemComplete unit=" + describeObject(unit)
+                                + " item=" + describeObject(queueItem),
+                        unit, 750L));
+
+        MapDiscoveryEvents.BEFORE_EXTRA_MAPS_FOR_PATH.register((modManager, originalMaps, mapPath) -> {
+            showEventProbeMessage(stage, "BeforeExtraMapsForPath",
+                    "BeforeExtraMapsForPath " + formatMapPath(mapPath)
+                            + " original=" + countArray(originalMaps),
+                    modManager, 750L);
+            return false;
+        });
+
+        MapDiscoveryEvents.AFTER_EXTRA_MAPS_FOR_PATH.register((modManager, originalMaps, mapPath, currentResult) -> {
+            showEventProbeMessage(stage, "AfterExtraMapsForPath",
+                    "AfterExtraMapsForPath " + formatMapPath(mapPath)
+                            + " result=" + countArray(currentResult),
+                    modManager, 750L);
+            return currentResult;
+        });
+
+        MapDiscoveryEvents.BEFORE_MAP_LIST_DIRECTORY_SCAN.register((path, includeDirectories) -> {
+            showEventProbeMessage(stage, "BeforeMapListDirectoryScan",
+                    "BeforeMapListDirectoryScan path=" + compactPath(path)
+                            + " includeDirs=" + includeDirectories,
+                    null, 750L);
+            return false;
+        });
+
+        MapDiscoveryEvents.AFTER_MAP_LIST_DIRECTORY_SCAN.register((path, includeDirectories, currentResult) -> {
+            showEventProbeMessage(stage, "AfterMapListDirectoryScan",
+                    "AfterMapListDirectoryScan path=" + compactPath(path)
+                            + " includeDirs=" + includeDirectories
+                            + " result=" + countArray(currentResult),
+                    null, 750L);
+            return currentResult;
+        });
+
+        MapDiscoveryEvents.AFTER_EXTRA_MAP_RECORD_ADDED.register((modManager, originalPath, modInfo, extraMapRecord) ->
+                showEventProbeMessage(stage, "AfterExtraMapRecordAdded",
+                        "AfterExtraMapRecordAdded path=" + compactPath(originalPath)
+                                + " mod=" + describeObject(modInfo)
+                                + " record=" + describeObject(extraMapRecord),
+                        extraMapRecord, 750L));
+
+        MapDiscoveryEvents.AFTER_MULTIPLAYER_MAP_DROPDOWN_BUILT.register((multiplayerScript, rootElement, mapsElementId, typeElementId, rawMaps) ->
+                showEventProbeMessage(stage, "AfterMultiplayerMapDropdownBuilt",
+                        "AfterMultiplayerMapDropdownBuilt mapsId=" + safeText(mapsElementId)
+                                + " typeId=" + safeText(typeElementId)
+                                + " maps=" + countArray(rawMaps),
+                        multiplayerScript, 750L));
+
+        MapDiscoveryEvents.BEFORE_MAP_START_FROM_ANDROID_UI.register((mapPath, customMap, playerCount, aiDifficulty, fog, revealedMap) -> {
+            showEventProbeMessage(stage, "BeforeMapStartFromAndroidUi",
+                    "BeforeMapStartFromAndroidUi " + formatMapPath(mapPath)
+                            + " players=" + playerCount
+                            + " ai=" + aiDifficulty
+                            + " fog=" + fog
+                            + " revealed=" + revealedMap
+                            + " custom=" + customMap,
+                    null, 500L);
+            return false;
+        });
+
+        MapDiscoveryEvents.BEFORE_NETWORK_MAP_PATH_RESOLVE.register((networkEngine, gameSetup, mapPath, mapType) -> {
+            showEventProbeMessage(stage, "BeforeNetworkMapPathResolve",
+                    "BeforeNetworkMapPathResolve " + formatMapPath(mapPath)
+                            + " type=" + describeObject(mapType),
+                    networkEngine, 750L);
+            return null;
+        });
+
+        MapMissionEvents.BEFORE_CURRENT_MAP_LOAD.register((gameEngine, optionA, optionB, mode) -> {
+            showEventProbeMessage(stage, "BeforeCurrentMapLoad",
+                    "BeforeCurrentMapLoad optionA=" + optionA
+                            + " optionB=" + optionB
+                            + " mode=" + describeObject(mode),
+                    gameEngine, 500L);
+            return false;
+        });
+
+        MapMissionEvents.BEFORE_MAP_STREAM_OPEN.register(mapPath -> {
+            showEventProbeMessage(stage, "BeforeMapStreamOpen",
+                    "BeforeMapStreamOpen " + formatMapPath(mapPath),
+                    null, 500L);
+            return false;
+        });
+
+        MapMissionEvents.AFTER_MAP_OBJECT_GROUPS_LOADED.register(mapEngine ->
+                showEventProbeMessage(stage, "AfterMapObjectGroupsLoaded",
+                        "AfterMapObjectGroupsLoaded mapEngine=" + describeObject(mapEngine),
+                        mapEngine, 500L));
+
+        MapMissionEvents.BEFORE_MISSION_TRIGGERS_PARSE.register((missionEngine, mapObject) -> {
+            showEventProbeMessage(stage, "BeforeMissionTriggersParse",
+                    "BeforeMissionTriggersParse mission=" + describeObject(missionEngine)
+                            + " object=" + describeObject(mapObject),
+                    mapObject, 500L);
+            return false;
+        });
+
+        MapMissionEvents.AFTER_MISSION_TRIGGERS_LINKED.register((missionEngine, trigger) ->
+                showEventProbeMessage(stage, "AfterMissionTriggersLinked",
+                        "AfterMissionTriggersLinked mission=" + describeObject(missionEngine)
+                                + " trigger=" + describeObject(trigger),
+                        trigger, 500L));
+
+        MapMissionEvents.AFTER_CURRENT_MAP_STARTED.register((gameEngine, optionA, optionB, mode) ->
+                showEventProbeMessage(stage, "AfterCurrentMapStarted",
+                        "AfterCurrentMapStarted optionA=" + optionA
+                                + " optionB=" + optionB
+                                + " mode=" + describeObject(mode),
+                        gameEngine, 500L));
+
+        MapMissionEvents.BEFORE_TMX_DOCUMENT_PARSE.register((mapEngine, inputStream, newGame) -> {
+            showEventProbeMessage(stage, "BeforeTmxDocumentParse",
+                    "BeforeTmxDocumentParse newGame=" + newGame
+                            + " mapEngine=" + describeObject(mapEngine),
+                    mapEngine, 500L);
+            return false;
+        });
+
+        MapMissionEvents.AFTER_MAP_ATTRIBUTES_READ.register((mapEngine, inputStream, newGame) ->
+                showEventProbeMessage(stage, "AfterMapAttributesRead",
+                        "AfterMapAttributesRead newGame=" + newGame
+                                + " mapEngine=" + describeObject(mapEngine),
+                        mapEngine, 500L));
+
+        MapMissionEvents.AFTER_TILESETS_LOADED.register((mapEngine, inputStream, newGame) ->
+                showEventProbeMessage(stage, "AfterTilesetsLoaded",
+                        "AfterTilesetsLoaded newGame=" + newGame
+                                + " mapEngine=" + describeObject(mapEngine),
+                        mapEngine, 500L));
+
+        MapMissionEvents.AFTER_MAP_LAYERS_LOADED.register((mapEngine, inputStream, newGame) ->
+                showEventProbeMessage(stage, "AfterMapLayersLoaded",
+                        "AfterMapLayersLoaded newGame=" + newGame
+                                + " mapEngine=" + describeObject(mapEngine),
+                        mapEngine, 500L));
+
+        MapMissionEvents.AFTER_CURRENT_MAP_LOADED_BEFORE_STARTING_UNITS.register((gameEngine, mapEngine, optionA, optionB, mode) ->
+                showEventProbeMessage(stage, "AfterCurrentMapLoadedBeforeStartingUnits",
+                        "AfterCurrentMapLoadedBeforeStartingUnits optionA=" + optionA
+                                + " optionB=" + optionB
+                                + " mode=" + describeObject(mode),
+                        mapEngine, 500L));
+
+        MapSpawnEvents.BEFORE_MAP_OBJECT_SPAWN_UNIT.register((mapObject, mapEngine, objectGroup, properties, unitName, customUnitName, teamName) -> {
+            showEventProbeMessage(stage, "BeforeMapObjectSpawnUnit",
+                    "BeforeMapObjectSpawnUnit unit=" + safeText(unitName)
+                            + " custom=" + safeText(customUnitName)
+                            + " team=" + safeText(teamName)
+                            + " props=" + countProperties(properties),
+                    mapObject, 500L);
+            return false;
+        });
+
+        MapSpawnEvents.MAP_OBJECT_CUSTOM_UNIT_RESOLVE.register((mapObject, mapEngine, objectGroup, customUnitName, currentMetadata) -> {
+            showEventProbeMessage(stage, "MapObjectCustomUnitResolve",
+                    "MapObjectCustomUnitResolve custom=" + safeText(customUnitName)
+                            + " current=" + describeObject(currentMetadata),
+                    mapObject, 500L);
+            return currentMetadata;
+        });
+
+        MapSpawnEvents.AFTER_MAP_OBJECT_SPAWN_UNIT.register((mapObject, mapEngine, objectGroup, unit, properties) ->
+                showEventProbeMessage(stage, "AfterMapObjectSpawnUnit",
+                        "AfterMapObjectSpawnUnit unit=" + describeObject(unit)
+                                + " props=" + countProperties(properties),
+                        unit, 500L));
+
+        MapSpawnEvents.BEFORE_TILE_PROPERTY_SPAWN_UNIT.register((tileset, properties, propertyName, propertyValue) -> {
+            showEventProbeMessage(stage, "BeforeTilePropertySpawnUnit",
+                    "BeforeTilePropertySpawnUnit " + safeText(propertyName)
+                            + "=" + safeText(propertyValue)
+                            + " props=" + countProperties(properties),
+                    tileset, 500L);
+            return false;
+        });
+
+        MapSpawnEvents.AFTER_TILE_PROPERTY_SPAWN_UNIT.register((tileset, properties, propertyName, propertyValue) ->
+                showEventProbeMessage(stage, "AfterTilePropertySpawnUnit",
+                        "AfterTilePropertySpawnUnit " + safeText(propertyName)
+                                + "=" + safeText(propertyValue)
+                                + " props=" + countProperties(properties),
+                        tileset, 500L));
+
+        MapSpawnEvents.BEFORE_STARTING_UNIT_SPAWN.register((unitType, x, y, direction, height, team) -> {
+            showEventProbeMessage(stage, "BeforeStartingUnitSpawn",
+                    "BeforeStartingUnitSpawn type=" + describeObject(unitType)
+                            + " pos=" + formatPoint(x, y)
+                            + " dir=" + formatFloat(direction)
+                            + " h=" + formatFloat(height)
+                            + " team=" + describeObject(team),
+                    unitType, 500L);
+            return false;
+        });
+
+        MapSpawnEvents.AFTER_STARTING_UNIT_SPAWN.register((unitType, x, y, direction, height, team, result) -> {
+            showEventProbeMessage(stage, "AfterStartingUnitSpawn",
+                    "AfterStartingUnitSpawn result=" + result
+                            + " type=" + describeObject(unitType)
+                            + " pos=" + formatPoint(x, y)
+                            + " team=" + describeObject(team),
+                    unitType, 500L);
+            return result;
+        });
+
+        ResourceRuntimeEvents.AFTER_RESOURCE_AMOUNT_SUBTRACT.register((resourceAmount, unit, scale, scaled, operation) ->
+                showEventProbeMessage(stage, "AfterResourceAmountSubtract",
+                        "AfterResourceAmountSubtract op=" + safeText(operation)
+                                + " scale=" + formatDouble(scale)
+                                + " scaled=" + scaled
+                                + " unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        ResourceRuntimeEvents.AFTER_RESOURCE_AMOUNT_ADD.register((resourceAmount, unit, scale, scaled, operation) ->
+                showEventProbeMessage(stage, "AfterResourceAmountAdd",
+                        "AfterResourceAmountAdd op=" + safeText(operation)
+                                + " scale=" + formatDouble(scale)
+                                + " scaled=" + scaled
+                                + " unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        ResourceRuntimeEvents.AFTER_TAKE_RESOURCES_COLLECT.register((effect, unit, action, targetPoint, targetUnit, recursionDepth, result) ->
+                showEventProbeMessage(stage, "AfterTakeResourcesCollect",
+                        "AfterTakeResourcesCollect result=" + result
+                                + " depth=" + recursionDepth
+                                + " unit=" + describeObject(unit)
+                                + " target=" + describeObject(targetUnit),
+                        unit, 1000L));
+
+        ResourceRuntimeEvents.AFTER_RESOURCE_CONVERSION.register((effect, unit, action, targetPoint, targetUnit, recursionDepth, result) ->
+                showEventProbeMessage(stage, "AfterResourceConversion",
+                        "AfterResourceConversion result=" + result
+                                + " depth=" + recursionDepth
+                                + " unit=" + describeObject(unit)
+                                + " target=" + describeObject(targetUnit),
+                        unit, 1000L));
+
+        ResourceRuntimeEvents.RESOURCE_AVAILABILITY_CHECK.register((resourceAmount, unit, scale, scaled, operation, currentResult) -> {
+            showEventProbeMessage(stage, "ResourceAvailabilityCheck",
+                    "ResourceAvailabilityCheck result=" + currentResult
+                            + " op=" + safeText(operation)
+                            + " scale=" + formatDouble(scale)
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return currentResult;
+        });
+
+        ResourceRuntimeEvents.AFTER_RESOURCE_RESERVE.register((resourceAmount, unit, lagHiding, operation, result) ->
+                showEventProbeMessage(stage, "AfterResourceReserve",
+                        "AfterResourceReserve result=" + result
+                                + " op=" + safeText(operation)
+                                + " lagHiding=" + lagHiding
+                                + " unit=" + describeObject(unit),
+                        unit, 1000L));
+
+        SaveSyncEvents.BEFORE_SAVE_GAME_TO_FILE.register((gameSaver, saveName, autoSave) -> {
+            showEventProbeMessage(stage, "BeforeSaveGameToFile",
+                    "BeforeSaveGameToFile name=" + safeText(saveName)
+                            + " auto=" + autoSave,
+                    gameSaver, 500L);
+            return false;
+        });
+
+        SaveSyncEvents.BEFORE_WRITE_SAVE_STREAM.register((gameSaver, outputStream) -> {
+            showEventProbeMessage(stage, "BeforeWriteSaveStream",
+                    "BeforeWriteSaveStream saver=" + describeObject(gameSaver)
+                            + " out=" + describeObject(outputStream),
+                    gameSaver, 500L);
+            return false;
+        });
+
+        SaveSyncEvents.AFTER_WRITE_SAVE_STREAM.register((gameSaver, outputStream) ->
+                showEventProbeMessage(stage, "AfterWriteSaveStream",
+                        "AfterWriteSaveStream saver=" + describeObject(gameSaver)
+                                + " out=" + describeObject(outputStream),
+                        gameSaver, 500L));
+
+        SaveSyncEvents.BEFORE_READ_SAVE_STREAM.register((gameSaver, inputStream, optionA, optionB, optionC) -> {
+            showEventProbeMessage(stage, "BeforeReadSaveStream",
+                    "BeforeReadSaveStream optionA=" + optionA
+                            + " optionB=" + optionB
+                            + " optionC=" + optionC,
+                    gameSaver, 500L);
+            return false;
+        });
+
+        SaveSyncEvents.AFTER_READ_SAVE_STREAM.register((gameSaver, inputStream, optionA, optionB, optionC, result) ->
+                showEventProbeMessage(stage, "AfterReadSaveStream",
+                        "AfterReadSaveStream result=" + result
+                                + " optionA=" + optionA
+                                + " optionB=" + optionB
+                                + " optionC=" + optionC,
+                        gameSaver, 500L));
+
+        SaveSyncEvents.BEFORE_NETWORK_RESYNC_SAVE.register((networkEngine, connection, saveBytes, optionA, optionB, reloadCreatedSave, operation) -> {
+            showEventProbeMessage(stage, "BeforeNetworkResyncSave",
+                    "BeforeNetworkResyncSave bytes=" + countBytes(saveBytes)
+                            + " reload=" + reloadCreatedSave
+                            + " op=" + safeText(operation),
+                    networkEngine, 1000L);
+            return false;
+        });
+
+        SaveSyncEvents.AFTER_NETWORK_RESYNC_PACKET_CREATED.register((networkEngine, connection, packet, saveBytes, optionA, optionB, reloadCreatedSave, operation) ->
+                showEventProbeMessage(stage, "AfterNetworkResyncPacketCreated",
+                        "AfterNetworkResyncPacketCreated bytes=" + countBytes(saveBytes)
+                                + " packet=" + describeObject(packet)
+                                + " op=" + safeText(operation),
+                        networkEngine, 1000L));
+
+        SaveSyncEvents.BEFORE_REPLAY_RECORD_COMMAND.register((replayEngine, command, frame) -> {
+            showEventProbeMessage(stage, "BeforeReplayRecordCommand",
+                    "BeforeReplayRecordCommand frame=" + frame
+                            + " command=" + describeObject(command),
+                    replayEngine, 1000L);
+            return false;
+        });
+
+        SaveSyncEvents.BEFORE_REPLAY_PLAYBACK_BLOCK.register(replayEngine -> {
+            showEventProbeMessage(stage, "BeforeReplayPlaybackBlock",
+                    "BeforeReplayPlaybackBlock replay=" + describeObject(replayEngine),
+                    replayEngine, 1000L);
+            return false;
+        });
+
+        SaveSyncEvents.BEFORE_CHECKSUM_SEND.register((networkEngine, packet, checksum, delta) -> {
+            showEventProbeMessage(stage, "BeforeChecksumSend",
+                    "BeforeChecksumSend delta=" + formatFloat(delta)
+                            + " packet=" + describeObject(packet)
+                            + " checksum=" + describeObject(checksum),
+                    networkEngine, 1000L);
+            return false;
+        });
+
+        SaveSyncEvents.BEFORE_GAME_OBJECT_SERIALIZE.register((gameObject, outputStream) -> {
+            showEventProbeMessage(stage, "BeforeGameObjectSerialize",
+                    "BeforeGameObjectSerialize object=" + describeObject(gameObject)
+                            + " out=" + describeObject(outputStream),
+                    gameObject, 250L);
+            return false;
+        });
+
+        SaveSyncEvents.AFTER_GAME_OBJECT_DESERIALIZE.register((gameObject, inputStream) ->
+                showEventProbeMessage(stage, "AfterGameObjectDeserialize",
+                        "AfterGameObjectDeserialize object=" + describeObject(gameObject)
+                                + " in=" + describeObject(inputStream),
+                        gameObject, 250L));
+
+        ExampleMod.log("registered event probe messages from " + stage);
+    }
+
+}

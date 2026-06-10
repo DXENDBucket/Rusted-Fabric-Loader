@@ -6,12 +6,14 @@
   "mixins": [
     "AndroidMapStartNamedMixin",
     "CommandIssueNamedMixin",
+    "ConfigVariableProcessorNamedMixin",
     "CurrentMapLifecycleNamedMixin",
     "CustomActionEffectRuntimeNamedMixin",
     "CustomAssetLoaderNamedMixin",
     "CustomUnitAssetNamedMixin",
     "CustomUnitLifecycleNamedMixin",
     "CustomUnitLoaderNamedMixin",
+    "CustomUnitLoaderIniRegistrationNamedMixin",
     "CustomUnitMetadataLifecycleNamedMixin",
     "CustomUnitRenderNamedMixin",
     "CustomUnitRuntimeNamedMixin",
@@ -39,7 +41,8 @@
     "StartingUnitSpawnNamedMixin",
     "TakeResourcesCollectNamedMixin",
     "TeamUnitLifecycleNamedMixin",
-    "TilePropertySpawnNamedMixin"
+    "TilePropertySpawnNamedMixin",
+    "UnitConfigIniNamedMixin"
   ],
   "injectors": {
     "defaultRequire": 0

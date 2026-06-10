@@ -42,7 +42,7 @@ Use `installToGameDir` to build and install the loader artifacts into an existin
 ```bat
 set "JAVA_HOME=C:\Program Files\Java\jdk-21"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
-gradlew.bat installToGameDir -PgameDir="C:\Users\57991\Desktop\Rusted Warfare"
+gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare"
 ```
 
 The task creates or updates:
@@ -57,7 +57,7 @@ run-rusted-fabric.bat
 By default it also builds and installs the official-runtime example mod. To avoid building or updating the example mod during install, run:
 
 ```bat
-gradlew.bat installToGameDir -PgameDir="C:\Users\57991\Desktop\Rusted Warfare" -PinstallExampleMod=false
+gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampleMod=false
 ```
 
 This does not delete existing files in `javamods`.
