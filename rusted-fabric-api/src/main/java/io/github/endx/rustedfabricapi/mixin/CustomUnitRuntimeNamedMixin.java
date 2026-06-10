@@ -26,7 +26,7 @@ public abstract class CustomUnitRuntimeNamedMixin {
             method = "executeCustomAction(Lrustedwarfare/unit/action/UnitAction;Landroid/graphics/PointF;Lrustedwarfare/unit/Unit;I)Z",
             at = @At(
                     value = "INVOKE",
-                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadata(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/MutableStatAccessor;)V"
+                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/stats/MutableStatAccessor;)V"
             ),
             cancellable = true,
             require = 1
@@ -41,7 +41,7 @@ public abstract class CustomUnitRuntimeNamedMixin {
             method = "executeCustomAction(Lrustedwarfare/unit/action/UnitAction;Landroid/graphics/PointF;Lrustedwarfare/unit/Unit;I)Z",
             at = @At(
                     value = "INVOKE",
-                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadata(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/MutableStatAccessor;)V",
+                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/stats/MutableStatAccessor;)V",
                     shift = At.Shift.AFTER
             ),
             require = 1

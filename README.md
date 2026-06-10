@@ -121,6 +121,14 @@ Use the same `-PmappingsTiny=...` value when remapping a mod that was compiled w
 
 Mapping coverage is still partial: only classes, methods, and fields present in `mappings.tiny` receive named identifiers. Unmapped game symbols remain in their original names.
 
+Mixin classes should be authored against the named development jar. `RemapJar` remaps both bytecode references and mixin metadata strings in annotations such as `@Mixin(targets)`, `@Inject(method)`, `@Redirect(method)`, and nested `@At(target)` values. The Rusted Fabric API is installed as a remapped official-runtime jar by `installToGameDir`, so its mixin config only lists `*NamedMixin` classes.
+
+To build the API runtime jar directly:
+
+```bat
+gradlew.bat :rusted-fabric-api:remapJarToOfficial
+```
+
 ## Example Mod
 The `example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
 

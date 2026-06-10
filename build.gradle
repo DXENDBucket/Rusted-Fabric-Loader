@@ -168,7 +168,7 @@ def installExampleModEnabled = {
 tasks.register('installToGameDir') {
     group = 'rusted fabric'
     description = 'Installs Fabric runtime jars, the GameProvider, API jar, optional example mod, and the launch script into a Rusted Warfare game directory. Use -PgameDir=... [-PinstallExampleMod=false].'
-    dependsOn 'jar', 'copyFabricRuntime', ':rusted-fabric-api:jar'
+    dependsOn 'jar', 'copyFabricRuntime', ':rusted-fabric-api:remapJarToOfficial'
 
     if (installExampleModEnabled()) {
         dependsOn ':example-mod:remapJarToOfficial'
@@ -210,8 +210,9 @@ tasks.register('installToGameDir') {
             into providerDir
         }
 
+        def apiRemapTask = project(':rusted-fabric-api').tasks.named('remapJarToOfficial').get()
         copy {
-            from project(':rusted-fabric-api').tasks.named('jar').get().archiveFile.get().asFile
+            from apiRemapTask.outputs.files.singleFile
             into javaModsDir
         }
 
