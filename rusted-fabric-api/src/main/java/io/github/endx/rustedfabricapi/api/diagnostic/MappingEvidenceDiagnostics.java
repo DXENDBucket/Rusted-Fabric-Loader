@@ -16,6 +16,10 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_logicboolean_member_expansion_v0_27.csv";
     private static final String PARSER_HELPER_RESOURCE =
             "/rustedfabricapi/mapping/rw_parser_helper_mapping_delta_v0_27.csv";
+    private static final String ACTION_PROJECTILE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_action_projectile_added_rows_v0_29.csv";
+    private static final String ACTION_PROJECTILE_KEY_BINDINGS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_action_projectile_effect_turret_key_field_binding_v0_29.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -28,12 +32,28 @@ public final class MappingEvidenceDiagnostics {
         return Holder.PARSER_HELPERS;
     }
 
+    public static List<MappingEvidenceRow> allActionProjectileRows() {
+        return Holder.ACTION_PROJECTILE_ROWS;
+    }
+
+    public static List<KeyFieldBindingRow> allActionProjectileKeyFieldBindings() {
+        return Holder.ACTION_PROJECTILE_KEY_BINDINGS;
+    }
+
     public static List<MappingEvidenceRow> findLogicBooleanMembers(String text) {
         return findByText(Holder.LOGIC_BOOLEAN_MEMBERS, text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpers(String text) {
         return findByText(Holder.PARSER_HELPERS, text);
+    }
+
+    public static List<MappingEvidenceRow> findActionProjectileRows(String text) {
+        return findByText(Holder.ACTION_PROJECTILE_ROWS, text);
+    }
+
+    public static List<KeyFieldBindingRow> findActionProjectileKeyFieldBindings(String text) {
+        return findKeyFieldBindingsByText(Holder.ACTION_PROJECTILE_KEY_BINDINGS, text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {
@@ -67,10 +87,36 @@ public final class MappingEvidenceDiagnostics {
         List<MappingEvidenceRow> result = new ArrayList<MappingEvidenceRow>();
         for (MappingEvidenceRow row : rows) {
             if (normalize(row.ownerOfficial()).contains(needle)
+                    || normalize(row.descriptor()).contains(needle)
+                    || normalize(row.source()).contains(needle)
                     || normalize(row.namedName()).contains(needle)
                     || normalize(row.officialName()).contains(needle)
+                    || normalize(row.intermediaryName()).contains(needle)
                     || normalize(row.category()).contains(needle)
+                    || normalize(row.evidence()).contains(needle)
                     || normalize(row.notes()).contains(needle)) {
+                result.add(row);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    private static List<KeyFieldBindingRow> findKeyFieldBindingsByText(List<KeyFieldBindingRow> rows, String text) {
+        String needle = normalize(text);
+        if (needle.isEmpty()) {
+            return rows;
+        }
+
+        List<KeyFieldBindingRow> result = new ArrayList<KeyFieldBindingRow>();
+        for (KeyFieldBindingRow row : rows) {
+            if (normalize(row.domain()).contains(needle)
+                    || normalize(row.iniKey()).contains(needle)
+                    || normalize(row.ownerOfficial()).contains(needle)
+                    || normalize(row.fieldOfficial()).contains(needle)
+                    || normalize(row.descriptor()).contains(needle)
+                    || normalize(row.fieldNamed()).contains(needle)
+                    || normalize(row.mappingSource()).contains(needle)
+                    || normalize(row.evidence()).contains(needle)) {
                 result.add(row);
             }
         }
@@ -93,6 +139,23 @@ public final class MappingEvidenceDiagnostics {
                     row.get("confidence"),
                     row.get("evidence"),
                     row.get("notes")));
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    private static List<KeyFieldBindingRow> loadKeyFieldBindingRows(String resource) {
+        List<Map<String, String>> rows = loadCsv(resource);
+        List<KeyFieldBindingRow> result = new ArrayList<KeyFieldBindingRow>();
+        for (Map<String, String> row : rows) {
+            result.add(new KeyFieldBindingRow(
+                    row.get("domain"),
+                    row.get("ini_key"),
+                    row.get("owner_official"),
+                    row.get("field_official"),
+                    row.get("descriptor"),
+                    row.get("field_named"),
+                    row.get("mapping_source"),
+                    row.get("evidence")));
         }
         return Collections.unmodifiableList(result);
     }
@@ -167,6 +230,9 @@ public final class MappingEvidenceDiagnostics {
     private static final class Holder {
         private static final List<MappingEvidenceRow> LOGIC_BOOLEAN_MEMBERS = loadRows(LOGIC_BOOLEAN_RESOURCE);
         private static final List<MappingEvidenceRow> PARSER_HELPERS = loadRows(PARSER_HELPER_RESOURCE);
+        private static final List<MappingEvidenceRow> ACTION_PROJECTILE_ROWS = loadRows(ACTION_PROJECTILE_ROWS_RESOURCE);
+        private static final List<KeyFieldBindingRow> ACTION_PROJECTILE_KEY_BINDINGS =
+                loadKeyFieldBindingRows(ACTION_PROJECTILE_KEY_BINDINGS_RESOURCE);
     }
 
     public static final class MappingEvidenceRow {
@@ -240,6 +306,65 @@ public final class MappingEvidenceDiagnostics {
 
         public String notes() {
             return notes;
+        }
+
+        private static String nullToEmpty(String value) {
+            return value != null ? value : "";
+        }
+    }
+
+    public static final class KeyFieldBindingRow {
+        private final String domain;
+        private final String iniKey;
+        private final String ownerOfficial;
+        private final String fieldOfficial;
+        private final String descriptor;
+        private final String fieldNamed;
+        private final String mappingSource;
+        private final String evidence;
+
+        private KeyFieldBindingRow(String domain, String iniKey, String ownerOfficial, String fieldOfficial,
+                                   String descriptor, String fieldNamed, String mappingSource, String evidence) {
+            this.domain = nullToEmpty(domain);
+            this.iniKey = nullToEmpty(iniKey);
+            this.ownerOfficial = nullToEmpty(ownerOfficial);
+            this.fieldOfficial = nullToEmpty(fieldOfficial);
+            this.descriptor = nullToEmpty(descriptor);
+            this.fieldNamed = nullToEmpty(fieldNamed);
+            this.mappingSource = nullToEmpty(mappingSource);
+            this.evidence = nullToEmpty(evidence);
+        }
+
+        public String domain() {
+            return domain;
+        }
+
+        public String iniKey() {
+            return iniKey;
+        }
+
+        public String ownerOfficial() {
+            return ownerOfficial;
+        }
+
+        public String fieldOfficial() {
+            return fieldOfficial;
+        }
+
+        public String descriptor() {
+            return descriptor;
+        }
+
+        public String fieldNamed() {
+            return fieldNamed;
+        }
+
+        public String mappingSource() {
+            return mappingSource;
+        }
+
+        public String evidence() {
+            return evidence;
         }
 
         private static String nullToEmpty(String value) {

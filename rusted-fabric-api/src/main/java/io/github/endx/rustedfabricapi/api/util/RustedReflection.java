@@ -60,6 +60,16 @@ public final class RustedReflection {
         }
     }
 
+    public static void setFieldValue(Object owner, String[] fieldNames, Object value) {
+        requireNonNull(owner, "owner");
+        Field field = findField(owner.getClass(), fieldNames);
+        try {
+            field.set(owner, value);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Could not set field " + field.getName(), e);
+        }
+    }
+
     public static String getStringField(Object owner, String[] fieldNames) {
         Object value = getFieldValue(owner, fieldNames);
         return value != null ? value.toString() : null;
@@ -68,6 +78,16 @@ public final class RustedReflection {
     public static int getIntField(Object owner, String[] fieldNames) {
         Object value = getFieldValue(owner, fieldNames);
         return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    public static float getFloatField(Object owner, String[] fieldNames) {
+        Object value = getFieldValue(owner, fieldNames);
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    public static boolean getBooleanField(Object owner, String[] fieldNames) {
+        Object value = getFieldValue(owner, fieldNames);
+        return Boolean.TRUE.equals(value);
     }
 
     public static List<Object> snapshotIterable(Object value) {
