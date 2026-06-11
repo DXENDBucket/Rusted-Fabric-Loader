@@ -1,0 +1,8 @@
+stage,owner,member,mapped_name,semantics
+1_per_frame,OrderableUnit,k(float),updateActiveOrder,"dispatches active UnitOrder by UnitOrderType, tracks activeOrderElapsedTime, and invokes combat + path following"
+2_order_dispatch,OrderableUnit,a/b/c/d/e/f/g/h/i private handlers,update*Order,"converts UnitOrder into movement target, attack target, build/repair/load/touch/action side effects"
+3_combat_targeting,OrderableUnit,"b(GameEngine,float)",updateCombatTargetingAndTurrets,"refreshes attackTarget, per-turret targets, aim readiness and fire attempts"
+4_path_following,OrderableUnit,"a(GameEngine,float,UnitOrder,WaypointUpdateState)",updatePathFollowingAndSteering,"applies solved PathRequest, consumes active path points, updates formation follower path"
+5_steering,OrderableUnit,"a(float,WaypointUpdateState,UnitOrder,boolean)",updateMovementSteeringToTarget,turn/speed/acceleration/deceleration/repath logic toward current move target/path point
+6_tile_collision,OrderableUnit,"a(float,GameEngine,float,float)",resolveTileCollisionForMovement,checks movement type cost map and clamps movement when crossing blocked tiles
+7_turret_fire,OrderableUnit,"a(float,Unit,int)",tryFireTurretAtTarget,warmup/reload/range gate before invoking abstract fire hook and resetting turret reload timers

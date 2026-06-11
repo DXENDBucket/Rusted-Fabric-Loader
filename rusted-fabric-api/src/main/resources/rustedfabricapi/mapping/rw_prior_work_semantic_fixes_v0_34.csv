@@ -1,0 +1,2 @@
+owner_official,kind,official_name,descriptor,old_named_name,new_named_name,reason,evidence
+com/corrodinggames/rts/game/units/z,method,a,()Lcom/corrodinggames/rts/game/units/z;,copy,reset,"javap shows method nulls sourceUnit/createdUnit/action and sets queued=false before returning this; it is a reset/clear method, not a copy method.","z_javap: method a() puts null into fields a,b,d and false into c, then returns this."

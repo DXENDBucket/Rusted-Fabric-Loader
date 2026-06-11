@@ -143,7 +143,7 @@ public final class WaypointDiagnostics {
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         putIntField(result, unit, "waypointCount", new String[]{"waypointCount", "f"});
         putArrayLengthField(result, unit, "waypointQueueLength", new String[]{"waypointQueue", "g"});
-        Object attackMode = RustedReflection.getFieldValue(unit, new String[]{"P"});
+        Object attackMode = RustedReflection.getFieldValue(unit, new String[]{"attackMode", "P"});
         result.put("attackMode", attackMode);
         result.put("attackModeName", canonicalAliasName(UNIT_ATTACK_MODE_CLASSES, ATTACK_MODE_ALIASES, attackMode));
         result.put("hasNoWaypoints", Boolean.valueOf(waypointsSnapshot(unit).isEmpty()));

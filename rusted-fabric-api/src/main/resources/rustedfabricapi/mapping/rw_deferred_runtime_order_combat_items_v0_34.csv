@@ -1,0 +1,5 @@
+item,owner_official,kind,official_name,descriptor,reason
+OrderableUnit.a(float) public per-frame update,com/corrodinggames/rts/game/units/y,method,a,(F)V,"Clearly calls superclass update and movement bookkeeping, but a(F)V exists across many Unit subclasses. Leave unmapped until hierarchy-wide update mapping is done to avoid partial override-family churn."
+"OrderableUnit.a(am,int) abstract fire hook",com/corrodinggames/rts/game/units/y,method,a,(Lcom/corrodinggames/rts/game/units/am;I)V,"tryFireTurretAtTarget invokes it as the actual fire hook. It is abstract and widely overridden, so leave for a later hierarchy-wide combat-fire pass."
+TurretRuntimeState.h/i/k/l,com/corrodinggames/rts/game/units/ap,field,,,"Present in reset(float), but runtime evidence was not strong enough this round for stable names."
+OrderableUnit.n movement target index,com/corrodinggames/rts/game/units/y,field,n,I,"Serialized in pathing block and written with move targets, but exact target/turret/path index role needs more evidence."
