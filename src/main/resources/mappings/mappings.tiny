@@ -760,6 +760,43 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	m	(F)V	b	method_f_b_updateAreaDamage	updateAreaDamage
 	m	(Lcom/corrodinggames/rts/game/units/am;FF)V	b	method_f_b_tryApplyAreaDamageToUnit	tryApplyAreaDamageToUnit
 	m	()F	e	method_f_e_getLifeProgressRatio	getLifeProgressRatio
+	f	Lcom/corrodinggames/rts/game/f;	bm	field_Projectile_scratchDamageMultiplierProjectile	scratchDamageMultiplierProjectile
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_Projectile_projectilesImage	projectilesImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	c	field_Projectile_projectiles2Image	projectiles2Image
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	d	field_Projectile_largeProjectilesImage	largeProjectilesImage
+	f	Landroid/graphics/Rect;	e	field_Projectile_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/RectF;	f	field_Projectile_scratchDestRect	scratchDestRect
+	f	I	aq	field_Projectile_defaultColor	defaultColor
+	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	ba	field_Projectile_defaultPaint	defaultPaint
+	f	Landroid/graphics/Paint;	bb	field_Projectile_mutableColorPaint	mutableColorPaint
+	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	bj	field_Projectile_cachedTintedPaint	cachedTintedPaint
+	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	bk	field_Projectile_lastGlobalTintedPaint	lastGlobalTintedPaint
+	f	I	bl	field_Projectile_lastGlobalTintColor	lastGlobalTintColor
+	f	F	y	field_Projectile_heightOffset	heightOffset
+	f	Z	z	field_Projectile_drawShadow	drawShadow
+	f	F	J	field_Projectile_ageTimer	ageTimer
+	f	F	I	field_Projectile_sweepPhaseSeed	sweepPhaseSeed
+	f	F	K	field_Projectile_targetOffsetX	targetOffsetX
+	f	F	L	field_Projectile_targetOffsetY	targetOffsetY
+	f	F	az	field_Projectile_direction	direction
+	f	F	aT	field_Projectile_drawAngle	drawAngle
+	f	Z	aU	field_Projectile_drawAngleInitialized	drawAngleInitialized
+	f	F	aF	field_Projectile_retargetingInFlightTimer	retargetingInFlightTimer
+	f	Z	aM	field_Projectile_builtInTrailEffect	builtInTrailEffect
+	f	F	aN	field_Projectile_trailEffectTimer	trailEffectTimer
+	f	Lcom/corrodinggames/rts/gameFramework/w;	au	field_Projectile_moveWithParentObject	moveWithParentObject
+	f	I	av	field_Projectile_moveWithParentTurretIndex	moveWithParentTurretIndex
+	f	F	aw	field_Projectile_lastMoveWithParentX	lastMoveWithParentX
+	f	F	ax	field_Projectile_lastMoveWithParentY	lastMoveWithParentY
+	f	F	ay	field_Projectile_lastMoveWithParentHeight	lastMoveWithParentHeight
+	f	Z	V	field_Projectile_areaDamageExpansionComplete	areaDamageExpansionComplete
+	f	F	X	field_Projectile_areaExpandTimeOriginal	areaExpandTimeOriginal
+	f	Z	aS	field_Projectile_removalRequested	removalRequested
+	m	(Z)V	<init>	method_Projectile_init_boolean	<init>
+	m	()V	c	method_Projectile_loadBuiltInProjectileImages	loadBuiltInProjectileImages
+	m	()V	d	method_Projectile_requestRemoval	requestRemoval
+	m	()Landroid/graphics/Paint;	f	method_Projectile_getDrawPaint	getDrawPaint
+	m	(I)Lcom/corrodinggames/rts/gameFramework/m/ag;	a	method_Projectile_getTintedDrawPaint	getTintedDrawPaint
 c	com/corrodinggames/rts/game/g	rustedwarfare/game/BaseProjectileTemplate	rustedwarfare/game/BaseProjectileTemplate
 	f	Z	A	field_g_A_invisible	invisible
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	B	field_g_B_image	image
@@ -1159,6 +1196,12 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_am_h_getMovementType	getMovementType
 	m	(F)V	h	method_Unit_setDirection	setDirection
 	m	()V	n	method_Unit_onMapSpawned	onMapSpawned
+	f	I	bs	field_Unit_lastDamagedFrame	lastDamagedFrame
+	f	Lcom/corrodinggames/rts/game/units/am;	bt	field_Unit_lastDamagedBy	lastDamagedBy
+	f	J	bW	field_Unit_deathFrame	deathFrame
+	m	(F)Lcom/corrodinggames/rts/game/units/am;	q	method_Unit_getRecentDamager	getRecentDamager
+	m	()V	ch	method_Unit_checkDeathState	checkDeathState
+	m	()V	bu	method_Unit_onKilled	onKilled
 c	com/corrodinggames/rts/game/units/ao	rw/unit/MovementType	rustedwarfare/unit/MovementType
 	f	Lcom/corrodinggames/rts/game/units/ao;	a	field_MovementType_none	none
 	f	Lcom/corrodinggames/rts/game/units/ao;	b	field_MovementType_land	land
@@ -3348,6 +3391,8 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(I)F	t	method_CustomUnit_getTurretWarmupShootDelayTransfer	getTurretWarmupShootDelayTransfer
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	v	method_CustomUnit_getZoomedOutIconImage	getZoomedOutIconImage
 	m	(I)I	v	method_CustomUnit_getLinkedDelayTurretIndex	getLinkedDelayTurretIndex
+	m	()V	ch	method_CustomUnit_checkDeathState	checkDeathState
+	m	(I)Z	u	method_CustomUnit_isTurretAimedAtTarget	isTurretAimedAtTarget
 c	com/corrodinggames/rts/game/units/custom/k	rw/custom/logic/LogicEventContext	rustedwarfare/custom/logic/LogicEventContext
 	f	Lcom/corrodinggames/rts/game/units/custom/ae;	a	field_LogicEventContext_eventAction	eventAction
 	f	Lcom/corrodinggames/rts/game/units/custom/j;	b	field_LogicEventContext_sourceCustomUnit	sourceCustomUnit
@@ -5072,6 +5117,7 @@ c	com/corrodinggames/rts/game/units/d/a/a	rw/unit/building/internal/Obf_d_a_a	ru
 	m	(I)F	g	method_Obf_d_a_a_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
 	m	(I)Z	r	method_Obf_d_a_a_canTurretFire	canTurretFire
 	m	(I)I	v	method_Obf_d_a_a_getLinkedDelayTurretIndex	getLinkedDelayTurretIndex
+	m	(I)Z	u	method_BuildingInternalObf_d_a_a_isTurretAimedAtTarget	isTurretAimedAtTarget
 c	com/corrodinggames/rts/game/units/d/a/b	rw/unit/building/internal/Obf_d_a_b	rustedwarfare/unit/building/internal/Obf_d_a_b
 	m	(I)Landroid/graphics/PointF;	E	method_Obf_d_a_b_getTurretMuzzlePoint	getTurretMuzzlePoint
 	m	(I)Landroid/graphics/PointF;	G	method_Obf_d_a_b_getTurretWorldPoint	getTurretWorldPoint
@@ -5142,6 +5188,7 @@ c	com/corrodinggames/rts/game/units/e/d	rw/unit/land/internal/Obf_e_d	rustedwarf
 	m	(I)F	b	method_Obf_e_d_getTurretFireDelay	getTurretFireDelay
 	m	(I)F	e	method_Obf_e_d_getTurretWarmupTime	getTurretWarmupTime
 	m	(I)F	g	method_Obf_e_d_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
+	m	(ILcom/corrodinggames/rts/game/units/am;ZZ)Z	a	method_LandInternalObf_e_d_canTurretAttackTarget	canTurretAttackTarget
 c	com/corrodinggames/rts/game/units/e/e	rw/unit/land/internal/Obf_e_e	rustedwarfare/unit/land/internal/Obf_e_e
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_e_e_fireTurretAtTarget	fireTurretAtTarget
 	m	(I)F	b	method_Obf_e_e_getTurretFireDelay	getTurretFireDelay
@@ -5387,6 +5434,8 @@ c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/O
 	m	(I)F	t	method_OrderableUnit_getTurretWarmupShootDelayTransfer	getTurretWarmupShootDelayTransfer
 	m	(I)Z	u	method_y_isTurretAimedAtTarget	isTurretAimedAtTarget
 	m	(I)I	v	method_OrderableUnit_getLinkedDelayTurretIndex	getLinkedDelayTurretIndex
+	m	()V	bu	method_OrderableUnit_onKilled	onKilled
+	m	(ILcom/corrodinggames/rts/game/units/am;ZZ)Z	a	method_OrderableUnit_canTurretAttackTarget	canTurretAttackTarget
 c	com/corrodinggames/rts/game/units/z	rw/unit/action/ActionExecutionResult	rustedwarfare/unit/action/ActionExecutionResult
 	f	Lcom/corrodinggames/rts/game/units/am;	a	field_z_a_sourceUnit	sourceUnit
 	f	Lcom/corrodinggames/rts/game/units/am;	b	field_z_b_createdUnit	createdUnit
@@ -7199,3 +7248,15 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	m	(Lorg/newdawn/slick/GameContainer;Lorg/newdawn/slick/Graphics;)V	render	method_1007_render	render
 	m	(Lorg/newdawn/slick/GameContainer;I)V	update	method_1005_update	update
 c	com/corrodinggames/rts/java/v	rw/input/DesktopControllerInput	rustedwarfare/input/DesktopControllerInput
+c	com/corrodinggames/rts/game/units/d/a/c	rw/unit/building/internal/Obf_d_a_c	rustedwarfare/unit/building/internal/Obf_d_a_c
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_BuildingInternalObf_d_a_c_fireTurretAtTarget	fireTurretAtTarget
+c	com/corrodinggames/rts/game/units/d/a/d	rw/unit/building/internal/Obf_d_a_d	rustedwarfare/unit/building/internal/Obf_d_a_d
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_BuildingInternalObf_d_a_d_fireTurretAtTarget	fireTurretAtTarget
+c	com/corrodinggames/rts/game/units/d/a/e	rw/unit/building/internal/Obf_d_a_e	rustedwarfare/unit/building/internal/Obf_d_a_e
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_BuildingInternalObf_d_a_e_fireTurretAtTarget	fireTurretAtTarget
+c	com/corrodinggames/rts/game/units/d/a/f	rw/unit/building/internal/Obf_d_a_f	rustedwarfare/unit/building/internal/Obf_d_a_f
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_BuildingInternalObf_d_a_f_fireTurretAtTarget	fireTurretAtTarget
+c	com/corrodinggames/rts/game/units/d/a/g	rw/unit/building/internal/Obf_d_a_g	rustedwarfare/unit/building/internal/Obf_d_a_g
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_BuildingInternalObf_d_a_g_fireTurretAtTarget	fireTurretAtTarget
+c	com/corrodinggames/rts/game/units/d/a/h	rw/unit/building/internal/Obf_d_a_h	rustedwarfare/unit/building/internal/Obf_d_a_h
+	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_BuildingInternalObf_d_a_h_fireTurretAtTarget	fireTurretAtTarget

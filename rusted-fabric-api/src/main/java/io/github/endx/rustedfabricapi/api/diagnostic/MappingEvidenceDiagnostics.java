@@ -28,6 +28,22 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_deferred_ambiguous_turret_fields_v0_30.csv";
     private static final String RUNTIME_PATHING_ROWS_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_pathing_added_rows_v0_31.csv";
+    private static final String RUNTIME_FORMATION_TARGET_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_formation_target_added_rows_v0_33.csv";
+    private static final String AUDIT_HOTFIX_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_audit_hotfix_rows_v0_33.csv";
+    private static final String RUNTIME_ORDER_UPDATE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_order_update_added_rows_v0_34.csv";
+    private static final String PRIOR_WORK_SEMANTIC_FIXES_RESOURCE =
+            "/rustedfabricapi/mapping/rw_prior_work_semantic_fixes_v0_34.csv";
+    private static final String RUNTIME_FIRE_FAMILY_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_fire_family_added_updated_rows_v0_35.csv";
+    private static final String RUNTIME_FIRE_FAMILY_OVERRIDE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_fire_family_override_rows_v0_35.csv";
+    private static final String RUNTIME_PROJECTILE_DAMAGE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_projectile_damage_added_updated_rows_v0_36.csv";
+    private static final String PRIOR_WORK_RUNTIME_FAMILY_FIXES_RESOURCE =
+            "/rustedfabricapi/mapping/rw_prior_work_runtime_family_fixes_v0_36.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -64,6 +80,51 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_PATHING_ROWS;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeFormationTargetRows() {
+        return Holder.RUNTIME_FORMATION_TARGET_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allAuditHotfixRows() {
+        return Holder.AUDIT_HOTFIX_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeOrderUpdateRows() {
+        return Holder.RUNTIME_ORDER_UPDATE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allPriorWorkSemanticFixes() {
+        return Holder.PRIOR_WORK_SEMANTIC_FIXES;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeFireFamilyRows() {
+        return Holder.RUNTIME_FIRE_FAMILY_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeFireFamilyOverrideRows() {
+        return Holder.RUNTIME_FIRE_FAMILY_OVERRIDE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeProjectileDamageRows() {
+        return Holder.RUNTIME_PROJECTILE_DAMAGE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allPriorWorkRuntimeFamilyFixes() {
+        return Holder.PRIOR_WORK_RUNTIME_FAMILY_FIXES;
+    }
+
+    public static List<String> evidenceResourceIds() {
+        return Holder.EVIDENCE_RESOURCE_IDS;
+    }
+
+    public static Map<String, List<MappingEvidenceRow>> allEvidenceRowsByResource() {
+        return Holder.EVIDENCE_ROWS_BY_ID;
+    }
+
+    public static List<MappingEvidenceRow> allEvidenceRows(String resourceId) {
+        List<MappingEvidenceRow> rows = Holder.EVIDENCE_ROWS_BY_ID.get(normalizeResourceId(resourceId));
+        return rows != null ? rows : Collections.<MappingEvidenceRow>emptyList();
+    }
+
     public static List<MappingEvidenceRow> findLogicBooleanMembers(String text) {
         return findByText(Holder.LOGIC_BOOLEAN_MEMBERS, text);
     }
@@ -90,6 +151,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimePathingRows(String text) {
         return findByText(Holder.RUNTIME_PATHING_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeProjectileDamageRows(String text) {
+        return findByText(Holder.RUNTIME_PROJECTILE_DAMAGE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
+        return findByText(allEvidenceRows(resourceId), text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {
@@ -215,19 +284,47 @@ public final class MappingEvidenceDiagnostics {
         List<MappingEvidenceRow> result = new ArrayList<MappingEvidenceRow>();
         for (Map<String, String> row : rows) {
             result.add(new MappingEvidenceRow(
-                    row.get("kind"),
-                    row.get("owner_official"),
-                    row.get("descriptor"),
-                    row.get("official_name"),
-                    row.get("intermediary_name"),
-                    row.get("named_name"),
-                    row.get("source"),
-                    row.get("category"),
-                    row.get("confidence"),
-                    row.get("evidence"),
-                    row.get("notes")));
+                    first(row, "kind"),
+                    first(row, "owner_official", "owner"),
+                    first(row, "descriptor"),
+                    first(row, "official_name", "member"),
+                    first(row, "intermediary_name", "new_intermediary", "old_intermediary"),
+                    first(row, "named_name", "new_named_name", "new_named", "named_name", "mapped_name"),
+                    first(row, "source", "mapping_source"),
+                    first(row, "category", "runtime_stage", "stage"),
+                    first(row, "confidence"),
+                    first(row, "evidence", "semantics"),
+                    first(row, "notes", "reason")));
         }
         return Collections.unmodifiableList(result);
+    }
+
+    private static Map<String, List<MappingEvidenceRow>> createEvidenceRowsById() {
+        Map<String, List<MappingEvidenceRow>> result = new LinkedHashMap<String, List<MappingEvidenceRow>>();
+        result.put("logic_boolean_members", Holder.LOGIC_BOOLEAN_MEMBERS);
+        result.put("parser_helpers", Holder.PARSER_HELPERS);
+        result.put("action_projectile_rows", Holder.ACTION_PROJECTILE_ROWS);
+        result.put("action_projectile_runtime_rows", Holder.ACTION_PROJECTILE_RUNTIME_ROWS);
+        result.put("runtime_pathing_rows", Holder.RUNTIME_PATHING_ROWS);
+        result.put("runtime_formation_target_rows", Holder.RUNTIME_FORMATION_TARGET_ROWS);
+        result.put("audit_hotfix_rows", Holder.AUDIT_HOTFIX_ROWS);
+        result.put("runtime_order_update_rows", Holder.RUNTIME_ORDER_UPDATE_ROWS);
+        result.put("prior_work_semantic_fixes", Holder.PRIOR_WORK_SEMANTIC_FIXES);
+        result.put("runtime_fire_family_rows", Holder.RUNTIME_FIRE_FAMILY_ROWS);
+        result.put("runtime_fire_family_override_rows", Holder.RUNTIME_FIRE_FAMILY_OVERRIDE_ROWS);
+        result.put("runtime_projectile_damage_rows", Holder.RUNTIME_PROJECTILE_DAMAGE_ROWS);
+        result.put("prior_work_runtime_family_fixes", Holder.PRIOR_WORK_RUNTIME_FAMILY_FIXES);
+        return Collections.unmodifiableMap(result);
+    }
+
+    private static String first(Map<String, String> row, String... keys) {
+        for (String key : keys) {
+            String value = row.get(key);
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+        return "";
     }
 
     private static List<KeyFieldBindingRow> loadKeyFieldBindingRows(String resource) {
@@ -314,6 +411,10 @@ public final class MappingEvidenceDiagnostics {
         return value != null ? value.trim().toLowerCase(java.util.Locale.ROOT) : "";
     }
 
+    private static String normalizeResourceId(String value) {
+        return normalize(value).replace('-', '_');
+    }
+
     private static final class Holder {
         private static final List<MappingEvidenceRow> LOGIC_BOOLEAN_MEMBERS = loadRows(LOGIC_BOOLEAN_RESOURCE);
         private static final List<MappingEvidenceRow> PARSER_HELPERS = loadRows(PARSER_HELPER_RESOURCE);
@@ -328,6 +429,26 @@ public final class MappingEvidenceDiagnostics {
                 loadDeferredMemberRows(DEFERRED_AMBIGUOUS_TURRET_FIELDS_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_PATHING_ROWS =
                 loadRows(RUNTIME_PATHING_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_FORMATION_TARGET_ROWS =
+                loadRows(RUNTIME_FORMATION_TARGET_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> AUDIT_HOTFIX_ROWS =
+                loadRows(AUDIT_HOTFIX_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_ORDER_UPDATE_ROWS =
+                loadRows(RUNTIME_ORDER_UPDATE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> PRIOR_WORK_SEMANTIC_FIXES =
+                loadRows(PRIOR_WORK_SEMANTIC_FIXES_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_FIRE_FAMILY_ROWS =
+                loadRows(RUNTIME_FIRE_FAMILY_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_FIRE_FAMILY_OVERRIDE_ROWS =
+                loadRows(RUNTIME_FIRE_FAMILY_OVERRIDE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_PROJECTILE_DAMAGE_ROWS =
+                loadRows(RUNTIME_PROJECTILE_DAMAGE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> PRIOR_WORK_RUNTIME_FAMILY_FIXES =
+                loadRows(PRIOR_WORK_RUNTIME_FAMILY_FIXES_RESOURCE);
+        private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
+                createEvidenceRowsById();
+        private static final List<String> EVIDENCE_RESOURCE_IDS =
+                Collections.unmodifiableList(new ArrayList<String>(EVIDENCE_ROWS_BY_ID.keySet()));
     }
 
     public static final class MappingEvidenceRow {

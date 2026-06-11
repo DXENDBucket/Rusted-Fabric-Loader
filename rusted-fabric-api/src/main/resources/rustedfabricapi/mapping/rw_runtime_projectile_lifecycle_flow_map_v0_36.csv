@@ -1,0 +1,7 @@
+step,runtime_stage,owner,mapped_members,semantics
+1,turret fire,OrderableUnit / CustomUnit descendants,"fireTurretAtTarget, canTurretAttackTarget, isTurretAimedAtTarget",turret family decides whether target can be fired at and whether aim/warmup is ready
+2,projectile creation,Projectile,"createProjectile*, setSourceAndPosition, sourceUnit, sourceTurretIndex, direction","unit fire pipeline allocates Projectile, sets source, target, movement direction and template-derived fields"
+3,projectile lifecycle update,Projectile,"update, ageTimer, remainingLife, delayedStartTimer, retargetingInFlightTimer","per-frame projectile logic advances timers, target offsets, direction, trail effects and hit checks"
+4,projectile movement/parent coupling,Projectile,"moveWithParentObject, moveWithParentTurretIndex, lastMoveWithParentX/Y/Height, targetOffsetX/Y",moveWithParent projectiles are shifted by parent/turret motion; target offsets and sweep/wobble adjust steering target
+5,projectile impact / area pass,Projectile,"explodeAndRemove, updateAreaDamage, tryApplyAreaDamageToUnit, areaDamageExpansionComplete, areaExpandTimeOriginal",direct/area damage and expansion passes resolve hit effects and unit damage applications
+6,unit damage/death,Unit / OrderableUnit / CustomUnit,"applyProjectileDamage, applyDamage, lastDamagedFrame, lastDamagedBy, getRecentDamager, checkDeathState, onKilled","damage modifies HP/shield, records recent damager, checks death state, then runs onKilled family"

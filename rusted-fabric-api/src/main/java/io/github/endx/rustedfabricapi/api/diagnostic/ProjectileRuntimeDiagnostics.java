@@ -58,17 +58,34 @@ public final class ProjectileRuntimeDiagnostics {
         putFloatField(result, projectile, "initialUnguidedSpeedY", new String[]{"initialUnguidedSpeedY", "v"});
         putFloatField(result, projectile, "initialUnguidedSpeedHeight", new String[]{"initialUnguidedSpeedHeight", "w"});
         putFloatField(result, projectile, "drawSize", new String[]{"drawSize", "x"});
+        putFloatField(result, projectile, "heightOffset", new String[]{"heightOffset", "y"});
+        putBooleanField(result, projectile, "drawShadow", new String[]{"drawShadow", "z"});
         putBooleanField(result, projectile, "instant", new String[]{"instant", "A"});
         putBooleanField(result, projectile, "laserEffect", new String[]{"laserEffect", "B"});
+        putFloatField(result, projectile, "sweepPhaseSeed", new String[]{"sweepPhaseSeed", "I"});
+        putFloatField(result, projectile, "ageTimer", new String[]{"ageTimer", "J"});
+        putFloatField(result, projectile, "targetOffsetX", new String[]{"targetOffsetX", "K"});
+        putFloatField(result, projectile, "targetOffsetY", new String[]{"targetOffsetY", "L"});
         putBooleanField(result, projectile, "lightingEffect", new String[]{"lightingEffect", "M"});
         putField(result, projectile, "frame", new String[]{"frame", "P"});
         putField(result, projectile, "shadowFrame", new String[]{"shadowFrame", "Q"});
         putField(result, projectile, "drawType", new String[]{"drawType", "R"});
         putBooleanField(result, projectile, "invisible", new String[]{"invisible", "S"});
         putFloatField(result, projectile, "directDamage", new String[]{"directDamage", "U"});
+        putBooleanField(result, projectile, "areaDamageExpansionComplete",
+                new String[]{"areaDamageExpansionComplete", "V"});
         putFloatField(result, projectile, "areaExpandTime", new String[]{"areaExpandTime", "W"});
+        putFloatField(result, projectile, "areaExpandTimeOriginal", new String[]{"areaExpandTimeOriginal", "X"});
         putFloatField(result, projectile, "areaDamage", new String[]{"areaDamage", "Y"});
         putFloatField(result, projectile, "areaRadius", new String[]{"areaRadius", "Z"});
+        putField(result, projectile, "moveWithParentObject", new String[]{"moveWithParentObject", "au"});
+        putIntField(result, projectile, "moveWithParentTurretIndex", new String[]{"moveWithParentTurretIndex", "av"});
+        putFloatField(result, projectile, "lastMoveWithParentX", new String[]{"lastMoveWithParentX", "aw"});
+        putFloatField(result, projectile, "lastMoveWithParentY", new String[]{"lastMoveWithParentY", "ax"});
+        putFloatField(result, projectile, "lastMoveWithParentHeight", new String[]{"lastMoveWithParentHeight", "ay"});
+        putFloatField(result, projectile, "direction", new String[]{"direction", "az"});
+        putFloatField(result, projectile, "retargetingInFlightTimer",
+                new String[]{"retargetingInFlightTimer", "aF"});
         putField(result, projectile, "color", new String[]{"color", "ar"});
         putIntField(result, projectile, "spawnRecursionDepth", new String[]{"spawnRecursionDepth", "aD"});
         putField(result, projectile, "tags", new String[]{"tags", "aE"});
@@ -78,9 +95,48 @@ public final class ProjectileRuntimeDiagnostics {
         putFloatField(result, projectile, "ballisticDelayMoveHeight",
                 new String[]{"ballisticDelayMoveHeight", "aI"});
         putFloatField(result, projectile, "ballisticHeight", new String[]{"ballisticHeight", "aJ"});
+        putBooleanField(result, projectile, "builtInTrailEffect", new String[]{"builtInTrailEffect", "aM"});
+        putFloatField(result, projectile, "trailEffectTimer", new String[]{"trailEffectTimer", "aN"});
         putBooleanField(result, projectile, "largeHitEffect", new String[]{"largeHitEffect", "aQ"});
         putBooleanField(result, projectile, "hitSound", new String[]{"hitSound", "aR"});
+        putBooleanField(result, projectile, "removalRequested", new String[]{"removalRequested", "aS"});
+        putFloatField(result, projectile, "drawAngle", new String[]{"drawAngle", "aT"});
+        putBooleanField(result, projectile, "drawAngleInitialized", new String[]{"drawAngleInitialized", "aU"});
+        putField(result, projectile, "cachedTintedPaint", new String[]{"cachedTintedPaint", "bj"});
         return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeProjectileRenderStatics() {
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putStaticProjectileField(result, "projectilesImage", new String[]{"projectilesImage", "b"});
+        putStaticProjectileField(result, "projectiles2Image", new String[]{"projectiles2Image", "c"});
+        putStaticProjectileField(result, "largeProjectilesImage", new String[]{"largeProjectilesImage", "d"});
+        putStaticProjectileField(result, "scratchSourceRect", new String[]{"scratchSourceRect", "e"});
+        putStaticProjectileField(result, "scratchDestRect", new String[]{"scratchDestRect", "f"});
+        putStaticProjectileField(result, "defaultColor", new String[]{"defaultColor", "aq"});
+        putStaticProjectileField(result, "defaultPaint", new String[]{"defaultPaint", "ba"});
+        putStaticProjectileField(result, "mutableColorPaint", new String[]{"mutableColorPaint", "bb"});
+        putStaticProjectileField(result, "lastGlobalTintedPaint", new String[]{"lastGlobalTintedPaint", "bk"});
+        putStaticProjectileField(result, "lastGlobalTintColor", new String[]{"lastGlobalTintColor", "bl"});
+        putStaticProjectileField(result, "scratchDamageMultiplierProjectile",
+                new String[]{"scratchDamageMultiplierProjectile", "bm"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Object getDrawPaint(Object projectile) {
+        requireProjectile(projectile);
+        return RustedReflection.invokeInstance(projectile, new String[]{"getDrawPaint", "f"});
+    }
+
+    public static Object getTintedDrawPaint(Object projectile, int tintColor) {
+        requireProjectile(projectile);
+        return RustedReflection.invokeInstance(projectile, new String[]{"getTintedDrawPaint", "a"},
+                Integer.valueOf(tintColor));
+    }
+
+    public static void requestRemoval(Object projectile) {
+        requireProjectile(projectile);
+        RustedReflection.invokeInstance(projectile, new String[]{"requestRemoval", "d"});
     }
 
     public static boolean hasExistingInterceptorForProjectile(Object projectile) {
@@ -185,6 +241,10 @@ public final class ProjectileRuntimeDiagnostics {
 
     private static void putField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
         result.put(key, RustedReflection.getFieldValue(owner, fieldNames));
+    }
+
+    private static void putStaticProjectileField(Map<String, Object> result, String key, String[] fieldNames) {
+        result.put(key, RustedReflection.getStaticFieldValue(PROJECTILE_CLASSES, fieldNames));
     }
 
     private static void putIntField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
