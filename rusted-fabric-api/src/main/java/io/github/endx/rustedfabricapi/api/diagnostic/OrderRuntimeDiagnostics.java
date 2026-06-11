@@ -156,6 +156,8 @@ public final class OrderRuntimeDiagnostics {
         putFloatField(result, turretState, "reloadTimer", new String[]{"reloadTimer", "e"});
         putFloatField(result, turretState, "warmupTimer", new String[]{"warmupTimer", "f"});
         putBooleanField(result, turretState, "aimReady", new String[]{"aimReady", "g"});
+        putFloatField(result, turretState, "shotSpreadOffsetX", new String[]{"shotSpreadOffsetX", "h"});
+        putFloatField(result, turretState, "shotSpreadOffsetY", new String[]{"shotSpreadOffsetY", "i"});
         putField(result, turretState, "target", new String[]{"target", "j"});
         putBooleanField(result, turretState, "alternateFireSide", new String[]{"alternateFireSide", "m"});
         putOptional(result, "aimLockClear", new Supplier<Object>() {
@@ -212,6 +214,190 @@ public final class OrderRuntimeDiagnostics {
         requireOrderableUnit(unit);
         return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
                 new String[]{"isTurretAimedAtTarget", "u"}, Integer.valueOf(turretIndex)));
+    }
+
+    public static Map<String, Object> describeTurretFireAccessors(final Object unit, final int turretIndex) {
+        requireOrderableUnit(unit);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("turretIndex", Integer.valueOf(turretIndex));
+        putOptional(result, "fireDelay", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretFireDelay(unit, turretIndex));
+            }
+        });
+        putOptional(result, "warmupTime", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretWarmupTime(unit, turretIndex));
+            }
+        });
+        putOptional(result, "warmupNoReset", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Boolean.valueOf(isTurretWarmupNoReset(unit, turretIndex));
+            }
+        });
+        putOptional(result, "warmupShootDelayTransfer", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretWarmupShootDelayTransfer(unit, turretIndex));
+            }
+        });
+        putOptional(result, "canFire", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Boolean.valueOf(canTurretFire(unit, turretIndex));
+            }
+        });
+        putOptional(result, "linkedDelayTurretIndex", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Integer.valueOf(getLinkedDelayTurretIndex(unit, turretIndex));
+            }
+        });
+        putOptional(result, "projectileDirectDamage", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretProjectileDirectDamage(unit, turretIndex));
+            }
+        });
+        putOptional(result, "barrelForwardOffset", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretBarrelForwardOffset(unit, turretIndex));
+            }
+        });
+        putOptional(result, "muzzlePoint3D", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return getTurretMuzzlePoint3D(unit, turretIndex);
+            }
+        });
+        putOptional(result, "muzzlePoint", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return getTurretMuzzlePoint(unit, turretIndex);
+            }
+        });
+        putOptional(result, "basePoint3D", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return getTurretBasePoint3D(unit, turretIndex);
+            }
+        });
+        putOptional(result, "worldPoint", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return getTurretWorldPoint(unit, turretIndex);
+            }
+        });
+        putOptional(result, "recoilOffset", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretRecoilOffset(unit, turretIndex));
+            }
+        });
+        putOptional(result, "recoilOutTime", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretRecoilOutTime(unit, turretIndex));
+            }
+        });
+        putOptional(result, "recoilReturnTime", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretRecoilReturnTime(unit, turretIndex));
+            }
+        });
+        putOptional(result, "shotSpreadOffset", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return getTurretShotSpreadOffset(unit, turretIndex);
+            }
+        });
+        putOptional(result, "aimOffsetSpread", new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return Float.valueOf(getTurretAimOffsetSpread(unit, turretIndex));
+            }
+        });
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static float getTurretFireDelay(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretFireDelay", "b"}, turretIndex);
+    }
+
+    public static float getTurretWarmupTime(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretWarmupTime", "e"}, turretIndex);
+    }
+
+    public static boolean isTurretWarmupNoReset(Object unit, int turretIndex) {
+        requireOrderableUnit(unit);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"isTurretWarmupNoReset", "s"}, Integer.valueOf(turretIndex)));
+    }
+
+    public static float getTurretWarmupShootDelayTransfer(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretWarmupShootDelayTransfer", "t"}, turretIndex);
+    }
+
+    public static boolean canTurretFire(Object unit, int turretIndex) {
+        requireOrderableUnit(unit);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"canTurretFire", "r"}, Integer.valueOf(turretIndex)));
+    }
+
+    public static int getLinkedDelayTurretIndex(Object unit, int turretIndex) {
+        requireOrderableUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getLinkedDelayTurretIndex", "v"},
+                Integer.valueOf(turretIndex));
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
+    public static float getTurretProjectileDirectDamage(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretProjectileDirectDamage", "q"}, turretIndex);
+    }
+
+    public static float getTurretBarrelForwardOffset(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretBarrelForwardOffset", "g"}, turretIndex);
+    }
+
+    public static Object getTurretMuzzlePoint3D(Object unit, int turretIndex) {
+        return invokeTurretObject(unit, new String[]{"getTurretMuzzlePoint3D", "D"}, turretIndex);
+    }
+
+    public static Object getTurretMuzzlePoint(Object unit, int turretIndex) {
+        return invokeTurretObject(unit, new String[]{"getTurretMuzzlePoint", "E"}, turretIndex);
+    }
+
+    public static Object getTurretBasePoint3D(Object unit, int turretIndex) {
+        return invokeTurretObject(unit, new String[]{"getTurretBasePoint3D", "F"}, turretIndex);
+    }
+
+    public static Object getTurretWorldPoint(Object unit, int turretIndex) {
+        return invokeTurretObject(unit, new String[]{"getTurretWorldPoint", "G"}, turretIndex);
+    }
+
+    public static float getTurretRecoilOffset(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretRecoilOffset", "H"}, turretIndex);
+    }
+
+    public static float getTurretRecoilOutTime(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretRecoilOutTime", "I"}, turretIndex);
+    }
+
+    public static float getTurretRecoilReturnTime(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretRecoilReturnTime", "J"}, turretIndex);
+    }
+
+    public static Object getTurretShotSpreadOffset(Object unit, int turretIndex) {
+        return invokeTurretObject(unit, new String[]{"getTurretShotSpreadOffset", "K"}, turretIndex);
+    }
+
+    public static float getTurretAimOffsetSpread(Object unit, int turretIndex) {
+        return invokeFloat(unit, new String[]{"getTurretAimOffsetSpread", "L"}, turretIndex);
     }
 
     public static boolean isTargetWithinAttackRange(Object unit, Object target) {
@@ -326,6 +512,17 @@ public final class OrderRuntimeDiagnostics {
             result.add(Array.get(value, i));
         }
         return result;
+    }
+
+    private static float invokeFloat(Object unit, String[] methodNames, int turretIndex) {
+        requireOrderableUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, methodNames, Integer.valueOf(turretIndex));
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    private static Object invokeTurretObject(Object unit, String[] methodNames, int turretIndex) {
+        requireOrderableUnit(unit);
+        return RustedReflection.invokeInstance(unit, methodNames, Integer.valueOf(turretIndex));
     }
 
     private static String canonicalAliasName(String[] classNames, EnumAlias[] aliases, Object value) {

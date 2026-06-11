@@ -1,0 +1,198 @@
+owner_official,official_name,descriptor,named_name,confidence,notes
+com/corrodinggames/rts/game/units/b/a,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/b/c,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/b/d,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/b/e,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/b/f,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/c/a,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/custom/j,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/a/a,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/a/b,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/c,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/e,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/g,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/i,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/p,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/q,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/d/r,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/a,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/b,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/c,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/d,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/e,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/f,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/g,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/i,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/k,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/l,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/m,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/n,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/e/o,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/g,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/h,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/h/a,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/h/b,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/h/c,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/h/d,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/h/e,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/x,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/y,a,(Lcom/corrodinggames/rts/game/units/am;I)V,fireTurretAtTarget,high,Abstract fire hook invoked by tryFireTurretAtTarget after reload/warmup gates; full OrderableUnit override family propagated to avoid partial named override breakage.
+com/corrodinggames/rts/game/units/custom/j,b,(Lcom/corrodinggames/rts/game/units/am;I)V,triggerTurretWarmupStartEffect,high,Called when warmup progress starts from zero; CustomUnit implementation plays TurretTemplate.warmupStartEffect.
+com/corrodinggames/rts/game/units/y,b,(Lcom/corrodinggames/rts/game/units/am;I)V,triggerTurretWarmupStartEffect,high,Called when warmup progress starts from zero; CustomUnit implementation plays TurretTemplate.warmupStartEffect.
+com/corrodinggames/rts/game/units/custom/j,a,(Lcom/corrodinggames/rts/game/units/am;FI)V,spawnAttackerMuzzleDustEffect,medium-high,Existing y mapping propagated to CustomUnit override; periodic attacker/muzzle-side firing visual hook.
+com/corrodinggames/rts/game/units/y,a,(Lcom/corrodinggames/rts/game/units/am;FI)V,spawnAttackerMuzzleDustEffect,medium-high,Existing y mapping propagated to CustomUnit override; periodic attacker/muzzle-side firing visual hook.
+com/corrodinggames/rts/game/units/custom/j,b,(Lcom/corrodinggames/rts/game/units/am;FI)V,spawnTargetImpactDustEffect,medium-high,Existing y mapping propagated to CustomUnit override; periodic target-side firing visual hook.
+com/corrodinggames/rts/game/units/y,b,(Lcom/corrodinggames/rts/game/units/am;FI)V,spawnTargetImpactDustEffect,medium-high,Existing y mapping propagated to CustomUnit override; periodic target-side firing visual hook.
+com/corrodinggames/rts/game/units/b/a,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/b/c,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/b/d,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/b/e,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/b/f,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/c/a,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/custom/j,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/d/a/a,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/d/a/b,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/d/e,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/d/g,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/d/i,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/d/r,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/a,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/b,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/c,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/d,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/e,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/f,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/g,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/i,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/k,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/l,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/m,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/n,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/e/o,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/g,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/h,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/h/a,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/h/b,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/h/c,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/h/d,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/h/e,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/x,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/y,b,(I)F,getTurretFireDelay,high,Returns base shoot delay/reload duration; CustomUnit uses TurretTemplate.delay scaled by mutable unit stats.
+com/corrodinggames/rts/game/units/b/c,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/custom/j,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/d/a/a,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/e/b,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/e/c,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/e/d,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/e/k,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/e/l,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/g,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/h,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/h/a,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/h/b,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/h/e,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/x,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/y,e,(I)F,getTurretWarmupTime,high,Returns warmup duration; CustomUnit uses TurretTemplate.warmup.
+com/corrodinggames/rts/game/units/custom/j,s,(I)Z,isTurretWarmupNoReset,high,Returns warmupNoReset flag; used by tryFireTurretAtTarget to accumulate warmup independently from reload.
+com/corrodinggames/rts/game/units/y,s,(I)Z,isTurretWarmupNoReset,high,Returns warmupNoReset flag; used by tryFireTurretAtTarget to accumulate warmup independently from reload.
+com/corrodinggames/rts/game/units/custom/j,t,(I)F,getTurretWarmupShootDelayTransfer,high,Returns warmupShootDelayTransfer-derived reload adjustment after warmup completes.
+com/corrodinggames/rts/game/units/y,t,(I)F,getTurretWarmupShootDelayTransfer,high,Returns warmupShootDelayTransfer-derived reload adjustment after warmup completes.
+com/corrodinggames/rts/game/units/custom/j,r,(I)Z,canTurretFire,high,Boolean per-turret fire enabled check; CustomUnit returns TurretTemplate.canAttack.
+com/corrodinggames/rts/game/units/d/a/a,r,(I)Z,canTurretFire,high,Boolean per-turret fire enabled check; CustomUnit returns TurretTemplate.canAttack.
+com/corrodinggames/rts/game/units/y,r,(I)Z,canTurretFire,high,Boolean per-turret fire enabled check; CustomUnit returns TurretTemplate.canAttack.
+com/corrodinggames/rts/game/units/custom/j,v,(I)I,getLinkedDelayTurretIndex,high,Returns linkedDelayWithTurretIndex; tryFireTurretAtTarget copies linked turret angle/reload state.
+com/corrodinggames/rts/game/units/d/a/a,v,(I)I,getLinkedDelayTurretIndex,high,Returns linkedDelayWithTurretIndex; tryFireTurretAtTarget copies linked turret angle/reload state.
+com/corrodinggames/rts/game/units/y,v,(I)I,getLinkedDelayTurretIndex,high,Returns linkedDelayWithTurretIndex; tryFireTurretAtTarget copies linked turret angle/reload state.
+com/corrodinggames/rts/game/units/b/c,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/b/e,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/custom/j,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/d/a/b,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/d/e,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/e/c,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/e/e,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/e/f,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/e/g,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/e/k,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/h/a,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/h/c,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/h/d,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/h/e,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/y,q,(I)F,getTurretProjectileDirectDamage,high,Returns projectile direct damage for turret; vanilla implementations assign it into Projectile.directDamage.
+com/corrodinggames/rts/game/units/b/a,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/b/d,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/b/e,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/b/f,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/c/a,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/custom/j,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/d/a/a,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/d/a/b,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/d/c,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/d/p,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/d/q,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/a,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/b,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/c,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/d,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/e,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/f,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/g,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/k,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/l,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/m,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/n,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/e/o,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/g,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/h,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/h/a,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/h/b,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/x,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/y,g,(I)F,getTurretBarrelForwardOffset,high,Returns forward barrel/muzzle offset; CustomUnit returns TurretTemplate.barrelY.
+com/corrodinggames/rts/game/units/custom/j,D,(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;,getTurretMuzzlePoint3D,high,Returns muzzle world point with height; CustomUnit applies barrel offsets and barrelHeight.
+com/corrodinggames/rts/game/units/y,D,(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;,getTurretMuzzlePoint3D,high,Returns muzzle world point with height; CustomUnit applies barrel offsets and barrelHeight.
+com/corrodinggames/rts/game/units/b/d,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/b/e,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/custom/j,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/d/a/a,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/d/a/b,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/d/c,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/d/p,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/d/q,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/d/r,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/h/d,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/y,E,(I)Landroid/graphics/PointF;,getTurretMuzzlePoint,high,2D wrapper around getTurretMuzzlePoint3D; used by projectile creation and warmup effects.
+com/corrodinggames/rts/game/units/custom/j,F,(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;,getTurretBasePoint3D,high,Returns turret base/world point with height before muzzle/barrel forward offset.
+com/corrodinggames/rts/game/units/y,F,(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;,getTurretBasePoint3D,high,Returns turret base/world point with height before muzzle/barrel forward offset.
+com/corrodinggames/rts/game/units/b/c,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/custom/j,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/d/a/b,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/e/c,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/e/d,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/h/a,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/h/b,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/y,G,(I)Landroid/graphics/PointF;,getTurretWorldPoint,high,Existing CustomUnit name propagated to full override family; base turret/world point for rendering and muzzle calculations.
+com/corrodinggames/rts/game/units/custom/j,H,(I)F,getTurretRecoilOffset,high,Returns recoilOffset; CustomUnit reads TurretTemplate.recoilOffset.
+com/corrodinggames/rts/game/units/d/a/b,H,(I)F,getTurretRecoilOffset,high,Returns recoilOffset; CustomUnit reads TurretTemplate.recoilOffset.
+com/corrodinggames/rts/game/units/e/d,H,(I)F,getTurretRecoilOffset,high,Returns recoilOffset; CustomUnit reads TurretTemplate.recoilOffset.
+com/corrodinggames/rts/game/units/e/f,H,(I)F,getTurretRecoilOffset,high,Returns recoilOffset; CustomUnit reads TurretTemplate.recoilOffset.
+com/corrodinggames/rts/game/units/h/a,H,(I)F,getTurretRecoilOffset,high,Returns recoilOffset; CustomUnit reads TurretTemplate.recoilOffset.
+com/corrodinggames/rts/game/units/y,H,(I)F,getTurretRecoilOffset,high,Returns recoilOffset; CustomUnit reads TurretTemplate.recoilOffset.
+com/corrodinggames/rts/game/units/custom/j,I,(I)F,getTurretRecoilOutTime,high,Returns recoilOutTime; CustomUnit reads TurretTemplate.recoilOutTime.
+com/corrodinggames/rts/game/units/e/d,I,(I)F,getTurretRecoilOutTime,high,Returns recoilOutTime; CustomUnit reads TurretTemplate.recoilOutTime.
+com/corrodinggames/rts/game/units/e/f,I,(I)F,getTurretRecoilOutTime,high,Returns recoilOutTime; CustomUnit reads TurretTemplate.recoilOutTime.
+com/corrodinggames/rts/game/units/h/a,I,(I)F,getTurretRecoilOutTime,high,Returns recoilOutTime; CustomUnit reads TurretTemplate.recoilOutTime.
+com/corrodinggames/rts/game/units/y,I,(I)F,getTurretRecoilOutTime,high,Returns recoilOutTime; CustomUnit reads TurretTemplate.recoilOutTime.
+com/corrodinggames/rts/game/units/custom/j,J,(I)F,getTurretRecoilReturnTime,high,Returns recoilReturnTime; CustomUnit reads TurretTemplate.recoilReturnTime.
+com/corrodinggames/rts/game/units/e/d,J,(I)F,getTurretRecoilReturnTime,high,Returns recoilReturnTime; CustomUnit reads TurretTemplate.recoilReturnTime.
+com/corrodinggames/rts/game/units/e/f,J,(I)F,getTurretRecoilReturnTime,high,Returns recoilReturnTime; CustomUnit reads TurretTemplate.recoilReturnTime.
+com/corrodinggames/rts/game/units/h/a,J,(I)F,getTurretRecoilReturnTime,high,Returns recoilReturnTime; CustomUnit reads TurretTemplate.recoilReturnTime.
+com/corrodinggames/rts/game/units/y,J,(I)F,getTurretRecoilReturnTime,high,Returns recoilReturnTime; CustomUnit reads TurretTemplate.recoilReturnTime.
+com/corrodinggames/rts/game/units/custom/j,L,(I)F,getTurretAimOffsetSpread,high,Returns aimOffsetSpread; used by randomizeTurretShotSpreadOffset after firing.
+com/corrodinggames/rts/game/units/e/c,L,(I)F,getTurretAimOffsetSpread,high,Returns aimOffsetSpread; used by randomizeTurretShotSpreadOffset after firing.
+com/corrodinggames/rts/game/units/y,L,(I)F,getTurretAimOffsetSpread,high,Returns aimOffsetSpread; used by randomizeTurretShotSpreadOffset after firing.
+com/corrodinggames/rts/game/units/custom/j,K,(I)Landroid/graphics/PointF;,getTurretShotSpreadOffset,medium-high,Returns per-turret shot/beam offset derived from TurretRuntimeState spread offsets; CustomUnit can add beam/laser locked projectile offset.
+com/corrodinggames/rts/game/units/e/c,K,(I)Landroid/graphics/PointF;,getTurretShotSpreadOffset,medium-high,Returns per-turret shot/beam offset derived from TurretRuntimeState spread offsets; CustomUnit can add beam/laser locked projectile offset.
+com/corrodinggames/rts/game/units/y,K,(I)Landroid/graphics/PointF;,getTurretShotSpreadOffset,medium-high,Returns per-turret shot/beam offset derived from TurretRuntimeState spread offsets; CustomUnit can add beam/laser locked projectile offset.
+com/corrodinggames/rts/game/units/d/a/b,M,(I)V,randomizeTurretShotSpreadOffset,medium-high,Called after fireTurretAtTarget; randomizes TurretRuntimeState shot spread offset using getTurretAimOffsetSpread.
+com/corrodinggames/rts/game/units/y,M,(I)V,randomizeTurretShotSpreadOffset,medium-high,Called after fireTurretAtTarget; randomizes TurretRuntimeState shot spread offset using getTurretAimOffsetSpread.
