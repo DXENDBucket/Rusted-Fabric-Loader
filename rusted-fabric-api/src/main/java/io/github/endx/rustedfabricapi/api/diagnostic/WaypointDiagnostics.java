@@ -51,10 +51,6 @@ public final class WaypointDiagnostics {
             "rustedwarfare.formation.FormationManager",
             "com.corrodinggames.rts.gameFramework.aa"
     };
-    private static final String[] SHARED_PATH_CACHE_ENTRY_CLASSES = {
-            "rustedwarfare.path.SharedPathCacheEntry",
-            "com.corrodinggames.rts.gameFramework.d"
-    };
     private static final String[] ACTION_EXECUTION_RESULT_CLASSES = {
             "rustedwarfare.unit.action.ActionExecutionResult",
             "com.corrodinggames.rts.game.units.z"
@@ -196,6 +192,27 @@ public final class WaypointDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Map<String, Object> describeOrderableUnitFormation(Object unit) {
+        requireOrderableUnit(unit);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putIntField(result, unit, "formationGroupId", new String[]{"formationGroupId", "ac"});
+        putField(result, unit, "formationLeader", new String[]{"formationLeader", "ad"});
+        putBooleanField(result, unit, "isFormationLeader", new String[]{"isFormationLeader", "ae"});
+        putBooleanField(result, unit, "keepFormationHeading", new String[]{"keepFormationHeading", "af"});
+        putIntField(result, unit, "formationFollowerCount", new String[]{"formationFollowerCount", "ag"});
+        putNumberField(result, unit, "formationGroupSize", new String[]{"formationGroupSize", "ah"});
+        putFloatField(result, unit, "formationDistanceScratch", new String[]{"formationDistanceScratch", "ai"});
+        putBooleanField(result, unit, "hasAssignedFormationOffset",
+                new String[]{"hasAssignedFormationOffset", "aj"});
+        putFloatField(result, unit, "formationOffsetX", new String[]{"formationOffsetX", "ak"});
+        putFloatField(result, unit, "formationOffsetY", new String[]{"formationOffsetY", "al"});
+        putFloatField(result, unit, "formationMovementAngle", new String[]{"formationMovementAngle", "am"});
+        putIntField(result, unit, "lastFormationUpdateFrame", new String[]{"lastFormationUpdateFrame", "an"});
+        putFloatField(result, unit, "formationSlotDistance", new String[]{"formationSlotDistance", "ao"});
+        putBooleanField(result, unit, "formationCandidateMarked", new String[]{"formationCandidateMarked", "ap"});
+        return Collections.unmodifiableMap(result);
+    }
+
     public static List<Object> activePathPointsSnapshot(Object unit) {
         requireOrderableUnit(unit);
         int count = Math.max(0, RustedReflection.getIntField(unit, new String[]{"activePathPointCount", "aw"}));
@@ -289,9 +306,9 @@ public final class WaypointDiagnostics {
         putFloatField(result, group, "centerX", new String[]{"centerX", "c"});
         putFloatField(result, group, "centerY", new String[]{"centerY", "d"});
         putIntField(result, group, "groupId", new String[]{"groupId", "e"});
-        putBooleanField(result, group, "hasSharedPaths", new String[]{"hasSharedPaths", "f"});
-        putCollectionField(result, "sharedPathCacheEntries",
-                RustedReflection.getFieldValue(group, new String[]{"sharedPathCacheEntries", "g"}));
+        putBooleanField(result, group, "queueByPlayer", new String[]{"queueByPlayer", "f"});
+        putCollectionField(result, "sharedFormationWorkList",
+                RustedReflection.getFieldValue(group, new String[]{"sharedFormationWorkList", "g"}));
         putField(result, group, "formationManager", new String[]{"formationManager", "h"});
         return Collections.unmodifiableMap(result);
     }
@@ -302,26 +319,10 @@ public final class WaypointDiagnostics {
                 RustedReflection.getFieldValue(group, new String[]{"members", "a"})));
     }
 
-    public static List<Object> sharedPathCacheEntriesSnapshot(Object group) {
+    public static List<Object> sharedFormationWorkListSnapshot(Object group) {
         requireFormationGroup(group);
         return Collections.unmodifiableList(RustedReflection.snapshotIterable(
-                RustedReflection.getFieldValue(group, new String[]{"sharedPathCacheEntries", "g"})));
-    }
-
-    public static Map<String, Object> describeSharedPathCacheEntry(Object entry) {
-        requireSharedPathCacheEntry(entry);
-        Map<String, Object> result = new LinkedHashMap<String, Object>();
-        putField(result, entry, "pathRequest", new String[]{"pathRequest", "a"});
-        putField(result, entry, "createdTime", new String[]{"createdTime", "b"});
-        putFloatField(result, entry, "startWorldX", new String[]{"startWorldX", "c"});
-        putFloatField(result, entry, "startWorldY", new String[]{"startWorldY", "d"});
-        putFloatField(result, entry, "targetWorldX", new String[]{"targetWorldX", "e"});
-        putFloatField(result, entry, "targetWorldY", new String[]{"targetWorldY", "f"});
-        putIntField(result, entry, "createdFrame", new String[]{"createdFrame", "g"});
-        Object movementType = RustedReflection.getFieldValue(entry, new String[]{"movementType", "h"});
-        result.put("movementType", movementType);
-        result.put("movementTypeName", PathingDiagnostics.canonicalMovementTypeName(movementType));
-        return Collections.unmodifiableMap(result);
+                RustedReflection.getFieldValue(group, new String[]{"sharedFormationWorkList", "g"})));
     }
 
     public static Map<String, Object> describeActionExecutionResult(Object resultObject) {
@@ -421,10 +422,6 @@ public final class WaypointDiagnostics {
 
     private static void requireFormationGroup(Object group) {
         requireAny(group, FORMATION_GROUP_CLASSES, "FormationGroup");
-    }
-
-    private static void requireSharedPathCacheEntry(Object entry) {
-        requireAny(entry, SHARED_PATH_CACHE_ENTRY_CLASSES, "SharedPathCacheEntry");
     }
 
     private static void requireActionExecutionResult(Object result) {
