@@ -1,0 +1,8 @@
+step,stage,owner,member,semantics
+1,damage entry,Projectile/Unit,Projectile.applyProjectileDamage -> Unit.applyDamage,"Projectile hit/area logic forwards attacker, damage amount and projectile mutators into Unit.applyDamage."
+2,damage immunity,Unit descendants,isDamageImmune(),"Special units, attachment-protected custom units, or canNotBeDamaged metadata can force incoming damage to zero."
+3,hp mutation,Unit,applyDamage,Damage path updates hp/shield/resource side effects and stores lastDamagedFrame/lastDamagedBy before death check.
+4,death gate,Unit/CustomUnit,checkDeathState,"When hp reaches zero, normal units enter killAndHandleDeathEffects; CustomUnit can disable zero-hp death."
+5,death sequence,Unit descendants,killAndHandleDeathEffects,"Runs onKilled, handleDeathEffects, optional removeFromGame, then postDeathCleanup."
+6,death effects/wreck,Unit descendants,handleDeathEffects,"Spawns vanilla/custom death effects, wreck image, falling corpse, nuke-on-death, unitsSpawnedOnDeath, fireOnDeath and soundOnDeath."
+7,visual helpers,OrderableUnit,spawnDeathEffect / spawnDeathSmokeParticles / createDeathScorchMark,Common vanilla helper layer for UnitDeathEffectType explosion/smoke/scorch/debris effects.

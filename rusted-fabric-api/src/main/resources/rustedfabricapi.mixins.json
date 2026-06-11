@@ -43,6 +43,7 @@
     "TakeResourcesCollectNamedMixin",
     "TeamUnitLifecycleNamedMixin",
     "TilePropertySpawnNamedMixin",
+    "UnitDamageRuntimeNamedMixin",
     "UnitConfigIniNamedMixin"
   ],
   "injectors": {

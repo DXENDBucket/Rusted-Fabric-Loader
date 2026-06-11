@@ -43,6 +43,7 @@ final class ExampleDebugOverlay {
     private static final Map<DebugProbeGroup, Boolean> DEBUG_PROBE_GROUPS = new EnumMap<>(DebugProbeGroup.class);
     private static final Map<DebugRenderPart, Boolean> DEBUG_RENDER_PARTS = new EnumMap<>(DebugRenderPart.class);
     private static volatile boolean debugPanelOpen;
+    private static volatile boolean invincibleUnitsEnabled;
     private static Paint overlayFillPaint;
     private static Paint overlayBorderPaint;
     private static Paint overlayTextPaint;
@@ -190,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 1;
+        int actionRows = 2;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -287,6 +288,14 @@ final class ExampleDebugOverlay {
                 (tracing ? "[x] " : "[ ] ") + "INI trace")) {
             RustedIniDiagnostics.setKeyReadTracingEnabled(!tracing);
             enqueueOverlayMessage("debug", "INI key trace " + (!tracing ? "enabled" : "disabled"), graphics);
+        }
+
+        if (drawSlickButton(graphics, input, left, top + 28, cellWidth, 24,
+                (invincibleUnitsEnabled ? "[x] " : "[ ] ") + "Invincible units")) {
+            invincibleUnitsEnabled = !invincibleUnitsEnabled;
+            enqueueOverlayMessage("debug",
+                    "Invincible units " + (invincibleUnitsEnabled ? "enabled" : "disabled"),
+                    graphics);
         }
     }
 
@@ -394,6 +403,10 @@ final class ExampleDebugOverlay {
         synchronized (DEBUG_PANEL_LOCK) {
             DEBUG_RENDER_PARTS.put(part, Boolean.valueOf(enabled));
         }
+    }
+
+    static boolean isInvincibleUnitsEnabled() {
+        return invincibleUnitsEnabled;
     }
 
     static void logDebugPanelDrawFailure(Throwable t) {

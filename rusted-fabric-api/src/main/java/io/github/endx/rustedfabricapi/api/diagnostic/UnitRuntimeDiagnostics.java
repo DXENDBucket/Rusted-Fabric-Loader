@@ -11,6 +11,10 @@ public final class UnitRuntimeDiagnostics {
             "rustedwarfare.unit.Unit",
             "com.corrodinggames.rts.game.units.am"
     };
+    private static final String[] ORDERABLE_UNIT_CLASSES = {
+            "rustedwarfare.unit.OrderableUnit",
+            "com.corrodinggames.rts.game.units.y"
+    };
 
     private UnitRuntimeDiagnostics() {
     }
@@ -30,6 +34,8 @@ public final class UnitRuntimeDiagnostics {
         putIntField(result, unit, "lastDamagedFrame", new String[]{"lastDamagedFrame", "bs"});
         putField(result, unit, "lastDamagedBy", new String[]{"lastDamagedBy", "bt"});
         putLongField(result, unit, "deathFrame", new String[]{"deathFrame", "bW"});
+        result.put("damageImmune", Boolean.valueOf(isDamageImmune(unit)));
+        result.put("fixedRotation", Boolean.valueOf(isFixedRotation(unit)));
         return Collections.unmodifiableMap(result);
     }
 
@@ -44,12 +50,37 @@ public final class UnitRuntimeDiagnostics {
         RustedReflection.invokeInstance(unit, new String[]{"checkDeathState", "ch"});
     }
 
+    public static boolean isDamageImmune(Object unit) {
+        requireUnit(unit);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit, new String[]{"isDamageImmune", "J"}));
+    }
+
+    public static boolean isFixedRotation(Object unit) {
+        requireUnit(unit);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit, new String[]{"isFixedRotation", "bI"}));
+    }
+
+    public static int getDeathSmokeParticleCount(Object unit) {
+        requireOrderableUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getDeathSmokeParticleCount", "bp"});
+        return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
     private static void requireUnit(Object unit) {
         if (unit == null) {
             throw new IllegalArgumentException("Unit must not be null");
         }
         if (!RustedReflection.isAnyClass(unit.getClass(), UNIT_CLASSES)) {
             throw new IllegalArgumentException("Expected Unit, got " + unit.getClass().getName());
+        }
+    }
+
+    private static void requireOrderableUnit(Object unit) {
+        if (unit == null) {
+            throw new IllegalArgumentException("OrderableUnit must not be null");
+        }
+        if (!RustedReflection.isAnyClass(unit.getClass(), ORDERABLE_UNIT_CLASSES)) {
+            throw new IllegalArgumentException("Expected OrderableUnit, got " + unit.getClass().getName());
         }
     }
 

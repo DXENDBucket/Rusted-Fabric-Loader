@@ -15,6 +15,7 @@ import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
+import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 
@@ -252,6 +253,52 @@ final class ExampleEventProbes {
                 showEventProbeMessage(stage, "AfterUnitUnregister",
                         "AfterUnitUnregister unit=" + describeObject(unit),
                         unit, 1000L));
+
+        UnitDamageEvents.BEFORE_UNIT_APPLY_DAMAGE.register((unit, attacker, amount, projectile) -> {
+            boolean blocked = isInvincibleUnitsEnabled();
+            showEventProbeMessage(stage, "BeforeUnitApplyDamage",
+                    "BeforeUnitApplyDamage amount=" + formatFloat(amount)
+                            + (blocked ? " blocked" : "")
+                            + " unit=" + describeObject(unit)
+                            + " attacker=" + describeObject(attacker),
+                    unit, 300L);
+            return blocked;
+        });
+
+        UnitDamageEvents.AFTER_UNIT_APPLY_DAMAGE.register((unit, attacker, amount, projectile, appliedAmount) ->
+                showEventProbeMessage(stage, "AfterUnitApplyDamage",
+                        "AfterUnitApplyDamage amount=" + formatFloat(amount)
+                                + " applied=" + formatFloat(appliedAmount)
+                                + " unit=" + describeObject(unit),
+                        unit, 300L));
+
+        UnitDamageEvents.MODIFY_UNIT_DAMAGE_IMMUNITY.register((unit, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyUnitDamageImmunity",
+                    "ModifyUnitDamageImmunity current=" + currentResult
+                            + " unit=" + describeObject(unit),
+                    unit, 500L);
+            return null;
+        });
+
+        UnitDamageEvents.BEFORE_UNIT_DEATH_SEQUENCE.register(unit -> {
+            showEventProbeMessage(stage, "BeforeUnitDeathSequence",
+                    "BeforeUnitDeathSequence unit=" + describeObject(unit),
+                    unit, 300L);
+            return false;
+        });
+
+        UnitDamageEvents.AFTER_UNIT_DEATH_SEQUENCE.register(unit ->
+                showEventProbeMessage(stage, "AfterUnitDeathSequence",
+                        "AfterUnitDeathSequence unit=" + describeObject(unit),
+                        unit, 300L));
+
+        UnitDamageEvents.MODIFY_UNIT_DEATH_EFFECTS_RESULT.register((unit, currentKeepObject) -> {
+            showEventProbeMessage(stage, "ModifyUnitDeathEffectsResult",
+                    "ModifyUnitDeathEffectsResult keep=" + currentKeepObject
+                            + " unit=" + describeObject(unit),
+                    unit, 300L);
+            return null;
+        });
 
         CustomUnitLifecycleEvents.BEFORE_RUNTIME_UNIT_CREATE.register(metadata ->
                 showEventProbeMessage(stage, "BeforeRuntimeUnitCreate",

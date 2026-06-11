@@ -44,6 +44,12 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_projectile_damage_added_updated_rows_v0_36.csv";
     private static final String PRIOR_WORK_RUNTIME_FAMILY_FIXES_RESOURCE =
             "/rustedfabricapi/mapping/rw_prior_work_runtime_family_fixes_v0_36.csv";
+    private static final String RUNTIME_DAMAGE_DEATH_FAMILY_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_damage_death_family_added_updated_rows_v0_37.csv";
+    private static final String RUNTIME_DAMAGE_DEATH_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_damage_death_flow_map_v0_37.csv";
+    private static final String RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_damage_death_family_coverage_v0_37.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -112,6 +118,18 @@ public final class MappingEvidenceDiagnostics {
         return Holder.PRIOR_WORK_RUNTIME_FAMILY_FIXES;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeDamageDeathFamilyRows() {
+        return Holder.RUNTIME_DAMAGE_DEATH_FAMILY_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeDamageDeathFlowMap() {
+        return Holder.RUNTIME_DAMAGE_DEATH_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeDamageDeathFamilyCoverage() {
+        return Holder.RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -155,6 +173,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeProjectileDamageRows(String text) {
         return findByText(Holder.RUNTIME_PROJECTILE_DAMAGE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeDamageDeathFamilyRows(String text) {
+        return findByText(Holder.RUNTIME_DAMAGE_DEATH_FAMILY_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -291,7 +313,7 @@ public final class MappingEvidenceDiagnostics {
                     first(row, "intermediary_name", "new_intermediary", "old_intermediary"),
                     first(row, "named_name", "new_named_name", "new_named", "named_name", "mapped_name"),
                     first(row, "source", "mapping_source"),
-                    first(row, "category", "runtime_stage", "stage"),
+                    first(row, "category", "runtime_stage", "stage", "family_named"),
                     first(row, "confidence"),
                     first(row, "evidence", "semantics"),
                     first(row, "notes", "reason")));
@@ -314,6 +336,9 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_fire_family_override_rows", Holder.RUNTIME_FIRE_FAMILY_OVERRIDE_ROWS);
         result.put("runtime_projectile_damage_rows", Holder.RUNTIME_PROJECTILE_DAMAGE_ROWS);
         result.put("prior_work_runtime_family_fixes", Holder.PRIOR_WORK_RUNTIME_FAMILY_FIXES);
+        result.put("runtime_damage_death_family_rows", Holder.RUNTIME_DAMAGE_DEATH_FAMILY_ROWS);
+        result.put("runtime_damage_death_flow_map", Holder.RUNTIME_DAMAGE_DEATH_FLOW_MAP);
+        result.put("runtime_damage_death_family_coverage", Holder.RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE);
         return Collections.unmodifiableMap(result);
     }
 
@@ -445,6 +470,12 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_PROJECTILE_DAMAGE_ROWS_RESOURCE);
         private static final List<MappingEvidenceRow> PRIOR_WORK_RUNTIME_FAMILY_FIXES =
                 loadRows(PRIOR_WORK_RUNTIME_FAMILY_FIXES_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_DAMAGE_DEATH_FAMILY_ROWS =
+                loadRows(RUNTIME_DAMAGE_DEATH_FAMILY_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_DAMAGE_DEATH_FLOW_MAP =
+                loadRows(RUNTIME_DAMAGE_DEATH_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE =
+                loadRows(RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =
