@@ -1,0 +1,3 @@
+kind,owner_official,descriptor,official_name,intermediary_name,named_name,source,category,confidence,evidence,notes
+method,com/corrodinggames/rts/game/n,()I,w,method_n_w_getNonBuildingUnitCountIncludingQueued,getNonBuildingUnitCountIncludingQueued,v0.43,team-resource-runtime,confirmed,returns TeamStats.b; validator string unitCountExcludingBuildingsIncludingQueued,semantic hotfix: v0.42 named this getLiveUnitCount
+method,com/corrodinggames/rts/game/n,()I,x,method_n_x_getMaxUnitCount,getMaxUnitCount,v0.43,team-resource-runtime,confirmed,returns TeamStats.a; validator string unitsMax,semantic hotfix: v0.42 named this getQueuedUnitCount

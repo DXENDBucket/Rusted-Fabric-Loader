@@ -1,0 +1,4 @@
+kind,owner_official,official_name,descriptor,old_named,new_named,reason
+field,com/corrodinggames/rts/gameFramework/e,e,Z,queuedCommand,appendToExistingOrders,selected hotfix retained from command/team-stats branch
+method,com/corrodinggames/rts/game/n,w,()I,getLiveUnitCount,getNonBuildingUnitCountIncludingQueued,selected hotfix retained from command/team-stats branch
+method,com/corrodinggames/rts/game/n,x,()I,getQueuedUnitCount,getMaxUnitCount,selected hotfix retained from command/team-stats branch

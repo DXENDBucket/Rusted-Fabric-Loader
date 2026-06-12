@@ -1,0 +1,7 @@
+stage,owner,member,semantics
+1,CommandController,createCommandForTeam/createBareCommand,Create Command object and attach command controller/team context.
+2,Command,set*Order / setAttackModeOverride / setBuildQueueRallyPoint,Fill command payload fields from UI/network/replay request.
+3,Command,freezeSelectedUnitsForSerialization,Convert selected Unit references to selectedUnitIds for serialization/replay.
+4,Command,captureSharedPathCacheForCommand,Stage shared-path entries for grouped move/attack-move commands.
+5,Command,issueCommand,Resolve selected units and route command into UnitOrder/action/build-queue/runtime systems.
+6,OrderableUnit / BuildQueueHost,appendWaypoint / setBuildQueueRallyPoint / action execution,Runtime order/action side effects on selected units.

@@ -90,6 +90,22 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_resource_economy_flow_map_v0_43.csv";
     private static final String RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_resource_economy_family_coverage_v0_43.csv";
+    private static final String RUNTIME_COMMAND_ISSUE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_command_issue_merged_added_rows_v0_44.csv";
+    private static final String RUNTIME_COMMAND_ISSUE_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_command_issue_merged_updated_rows_v0_44.csv";
+    private static final String RUNTIME_COMMAND_ISSUE_EVIDENCE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_command_issue_evidence_rows_v0_44.csv";
+    private static final String RUNTIME_COMMAND_ISSUE_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_command_issue_flow_map_v0_44.csv";
+    private static final String RUNTIME_COMMAND_ISSUE_SKIPPED_BRANCH_ROLLBACKS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_command_issue_skipped_branch_rollbacks_v0_44.csv";
+    private static final String RUNTIME_TEAM_STATS_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_team_stats_added_updated_rows_v0_43.csv";
+    private static final String RUNTIME_TEAM_STATS_HOTFIX_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_team_stats_hotfix_rows_v0_43.csv";
+    private static final String RUNTIME_TEAM_STATS_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_team_stats_flow_map_v0_43.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -250,6 +266,38 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeCommandIssueRows() {
+        return Holder.RUNTIME_COMMAND_ISSUE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeCommandIssueUpdatedRows() {
+        return Holder.RUNTIME_COMMAND_ISSUE_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeCommandIssueEvidenceRows() {
+        return Holder.RUNTIME_COMMAND_ISSUE_EVIDENCE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeCommandIssueFlowMap() {
+        return Holder.RUNTIME_COMMAND_ISSUE_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeCommandIssueSkippedBranchRollbacks() {
+        return Holder.RUNTIME_COMMAND_ISSUE_SKIPPED_BRANCH_ROLLBACKS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeTeamStatsRows() {
+        return Holder.RUNTIME_TEAM_STATS_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeTeamStatsHotfixRows() {
+        return Holder.RUNTIME_TEAM_STATS_HOTFIX_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeTeamStatsFlowMap() {
+        return Holder.RUNTIME_TEAM_STATS_FLOW_MAP;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -329,6 +377,22 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeResourceEconomyUpdatedRows(String text) {
         return findByText(Holder.RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeCommandIssueRows(String text) {
+        return findByText(Holder.RUNTIME_COMMAND_ISSUE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeCommandIssueUpdatedRows(String text) {
+        return findByText(Holder.RUNTIME_COMMAND_ISSUE_UPDATED_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeTeamStatsRows(String text) {
+        return findByText(Holder.RUNTIME_TEAM_STATS_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeTeamStatsHotfixRows(String text) {
+        return findByText(Holder.RUNTIME_TEAM_STATS_HOTFIX_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -511,6 +575,14 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_resource_economy_updated_rows", Holder.RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS);
         result.put("runtime_resource_economy_flow_map", Holder.RUNTIME_RESOURCE_ECONOMY_FLOW_MAP);
         result.put("runtime_resource_economy_family_coverage", Holder.RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE);
+        result.put("runtime_command_issue_rows", Holder.RUNTIME_COMMAND_ISSUE_ROWS);
+        result.put("runtime_command_issue_updated_rows", Holder.RUNTIME_COMMAND_ISSUE_UPDATED_ROWS);
+        result.put("runtime_command_issue_evidence_rows", Holder.RUNTIME_COMMAND_ISSUE_EVIDENCE_ROWS);
+        result.put("runtime_command_issue_flow_map", Holder.RUNTIME_COMMAND_ISSUE_FLOW_MAP);
+        result.put("runtime_command_issue_skipped_branch_rollbacks", Holder.RUNTIME_COMMAND_ISSUE_SKIPPED_BRANCH_ROLLBACKS);
+        result.put("runtime_team_stats_rows", Holder.RUNTIME_TEAM_STATS_ROWS);
+        result.put("runtime_team_stats_hotfix_rows", Holder.RUNTIME_TEAM_STATS_HOTFIX_ROWS);
+        result.put("runtime_team_stats_flow_map", Holder.RUNTIME_TEAM_STATS_FLOW_MAP);
         return Collections.unmodifiableMap(result);
     }
 
@@ -688,6 +760,22 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_RESOURCE_ECONOMY_FLOW_MAP_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE =
                 loadRows(RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_COMMAND_ISSUE_ROWS =
+                loadRows(RUNTIME_COMMAND_ISSUE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_COMMAND_ISSUE_UPDATED_ROWS =
+                loadRows(RUNTIME_COMMAND_ISSUE_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_COMMAND_ISSUE_EVIDENCE_ROWS =
+                loadRows(RUNTIME_COMMAND_ISSUE_EVIDENCE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_COMMAND_ISSUE_FLOW_MAP =
+                loadRows(RUNTIME_COMMAND_ISSUE_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_COMMAND_ISSUE_SKIPPED_BRANCH_ROLLBACKS =
+                loadRows(RUNTIME_COMMAND_ISSUE_SKIPPED_BRANCH_ROLLBACKS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_TEAM_STATS_ROWS =
+                loadRows(RUNTIME_TEAM_STATS_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_TEAM_STATS_HOTFIX_ROWS =
+                loadRows(RUNTIME_TEAM_STATS_HOTFIX_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_TEAM_STATS_FLOW_MAP =
+                loadRows(RUNTIME_TEAM_STATS_FLOW_MAP_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

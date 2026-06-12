@@ -1,0 +1,7 @@
+step,stage,owner,member,semantics
+1,unit register/unregister,Team,registerUnit / unregisterUnit,mark statsDirty and update team ownership bookkeeping
+2,stats rebuild,Team,refreshCachedTeamStats -> rebuildTeamStatsSnapshot,scan live units and build TeamStats cache
+3,unit counts,TeamStats,completedUnitCount / incompleteUnitCount / queuedUnitCount,fast queries for population/unit limits and UI
+4,tag counts,TeamStats -> UnitTagStats,getOrCreateTagStats,cache completed/incomplete/queued counts per custom tag
+5,income/resource cache,TeamStats,incomeRate / customIncomeRate / streamingRatePositive / streamingRateNegative,"derived from active units, build queues, repair/reclaim resource deltas"
+6,validation,Team,validateCachedTeamStats,rebuilds independent snapshot and reports stale cache mismatches

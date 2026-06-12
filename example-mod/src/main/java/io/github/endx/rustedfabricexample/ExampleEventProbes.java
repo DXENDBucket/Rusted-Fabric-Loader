@@ -21,6 +21,7 @@ import io.github.endx.rustedfabricapi.api.event.TransportEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.UnitRuntimeDiagnostics;
@@ -587,14 +588,14 @@ final class ExampleEventProbes {
 
         CommandEvents.BEFORE_COMMAND_ISSUE.register(command -> {
             showEventProbeMessage(stage, "BeforeCommandIssue",
-                    "BeforeCommandIssue command=" + describeObject(command),
+                    "BeforeCommandIssue " + describeCommand(command),
                     command, 500L);
             return false;
         });
 
         CommandEvents.AFTER_COMMAND_ISSUE.register(command ->
                 showEventProbeMessage(stage, "AfterCommandIssue",
-                        "AfterCommandIssue command=" + describeObject(command),
+                        "AfterCommandIssue " + describeCommand(command),
                         command, 500L));
 
         CustomUnitRuntimeEvents.BEFORE_CUSTOM_ACTION_EXECUTE.register((unit, action, targetPoint, targetUnit, recursionDepth) -> {
@@ -1374,6 +1375,39 @@ final class ExampleEventProbes {
         } catch (RuntimeException e) {
             return "<unavailable>";
         }
+    }
+
+    private static String describeCommand(Object command) {
+        if (command == null) {
+            return "command=null";
+        }
+        try {
+            Map<String, Object> details = CommandDiagnostics.describeCommand(command);
+            return "command=" + describeObject(command)
+                    + " team=" + describeObject(details.get("team"))
+                    + " selected=" + details.get("selectedUnitReferenceCount")
+                    + " append=" + details.get("appendToExistingOrders")
+                    + " clear=" + details.get("clearExistingOrdersBeforeIssue")
+                    + " replaceMove=" + details.get("replaceMatchingMoveWaypoint")
+                    + " system=" + details.get("hasSystemCommand")
+                    + " code=" + details.get("systemActionCode")
+                    + " paths=" + countCollection(details.get("sharedPathCacheEntries"));
+        } catch (RuntimeException e) {
+            return "command=" + describeObject(command);
+        }
+    }
+
+    private static int countCollection(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        if (value instanceof java.util.Collection<?>) {
+            return ((java.util.Collection<?>) value).size();
+        }
+        if (value.getClass().isArray()) {
+            return java.lang.reflect.Array.getLength(value);
+        }
+        return 1;
     }
 
     private static String describeRepairMetadata(Object metadata) {
