@@ -1,0 +1,7 @@
+stage,owner,member,resource_object,notes
+action/build/repair/reclaim price request,UnitAction / BuildQueue / OrderableUnit,getPrice / getStreamingCost / getBuildQueueResourceDelta,ResourceAmount,"ResourceAmount stores built-in credits/energy/hp/shield/ammo, flags, and custom StoredResourceSet."
+resource display formatting,ResourceAmount / StoredResourceSet / ResourceType,formatResourceAmountList / appendFormattedResourceSet / formatAmountWithDisplayName,FormattedTextBuilder,"Formats costs, missing resource names, and resource display strings with digit grouping and icons."
+global resource access,ResourceType,getAmount / setAmount / addAmount,Team.globalResources,Global custom resources route through Team.getGlobalResources; credits route through Team.credits.
+local resource access,ResourceType,getAmount / setAmount / addAmount,Unit.storedResources,Local resources route through the unit StoredResourceSet.
+resource shortage diagnostics,StoredResourceSet,getMissingResourcesForUnit / formatMissingResourceNames,StoredResourceSet deficit set,Used for UI/action lock diagnostics when a unit or team lacks custom resources.
+team tag/resource state,Team,setTeamTags / addTeamTags / removeTeamTags / getGlobalResourceAmount,teamTags/globalResources,"Team tag and global resource state used by LogicBoolean, action availability and resource economy."

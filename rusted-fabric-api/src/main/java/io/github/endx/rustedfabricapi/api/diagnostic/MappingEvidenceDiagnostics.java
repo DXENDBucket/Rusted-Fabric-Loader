@@ -82,6 +82,14 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_action_command_flow_map_v0_42.csv";
     private static final String RUNTIME_ACTION_COMMAND_FAMILY_COVERAGE_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_action_command_family_coverage_v0_42.csv";
+    private static final String RUNTIME_RESOURCE_ECONOMY_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_resource_economy_added_rows_v0_43.csv";
+    private static final String RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_resource_economy_updated_rows_v0_43.csv";
+    private static final String RUNTIME_RESOURCE_ECONOMY_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_resource_economy_flow_map_v0_43.csv";
+    private static final String RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_resource_economy_family_coverage_v0_43.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -226,6 +234,22 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_ACTION_COMMAND_FAMILY_COVERAGE;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeResourceEconomyRows() {
+        return Holder.RUNTIME_RESOURCE_ECONOMY_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeResourceEconomyUpdatedRows() {
+        return Holder.RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeResourceEconomyFlowMap() {
+        return Holder.RUNTIME_RESOURCE_ECONOMY_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeResourceEconomyFamilyCoverage() {
+        return Holder.RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -297,6 +321,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeActionCommandRows(String text) {
         return findByText(Holder.RUNTIME_ACTION_COMMAND_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeResourceEconomyRows(String text) {
+        return findByText(Holder.RUNTIME_RESOURCE_ECONOMY_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeResourceEconomyUpdatedRows(String text) {
+        return findByText(Holder.RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -426,12 +458,12 @@ public final class MappingEvidenceDiagnostics {
         List<MappingEvidenceRow> result = new ArrayList<MappingEvidenceRow>();
         for (Map<String, String> row : rows) {
             result.add(new MappingEvidenceRow(
-                    first(row, "kind"),
-                    first(row, "owner_official", "owner"),
-                    first(row, "descriptor"),
-                    first(row, "official_name", "member", "target"),
-                    first(row, "intermediary_name", "new_intermediary", "old_intermediary"),
-                    first(row, "named_name", "new_named_name", "new_named", "named_name", "mapped_name"),
+                    first(row, "kind", "new_kind", "old_kind", "change"),
+                    first(row, "owner_official", "new_owner_official", "old_owner_official", "owner"),
+                    first(row, "descriptor", "new_descriptor", "old_descriptor"),
+                    first(row, "official_name", "new_official_name", "old_official_name", "member", "target"),
+                    first(row, "intermediary_name", "new_intermediary", "old_intermediary", "old_intermediary_name"),
+                    first(row, "named_name", "new_named_name", "new_named", "mapped_name", "old_named_name"),
                     first(row, "source", "mapping_source"),
                     first(row, "category", "runtime_stage", "stage", "family_named", "phase", "family"),
                     first(row, "confidence"),
@@ -475,6 +507,10 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_action_command_rows", Holder.RUNTIME_ACTION_COMMAND_ROWS);
         result.put("runtime_action_command_flow_map", Holder.RUNTIME_ACTION_COMMAND_FLOW_MAP);
         result.put("runtime_action_command_family_coverage", Holder.RUNTIME_ACTION_COMMAND_FAMILY_COVERAGE);
+        result.put("runtime_resource_economy_rows", Holder.RUNTIME_RESOURCE_ECONOMY_ROWS);
+        result.put("runtime_resource_economy_updated_rows", Holder.RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS);
+        result.put("runtime_resource_economy_flow_map", Holder.RUNTIME_RESOURCE_ECONOMY_FLOW_MAP);
+        result.put("runtime_resource_economy_family_coverage", Holder.RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE);
         return Collections.unmodifiableMap(result);
     }
 
@@ -644,6 +680,14 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_ACTION_COMMAND_FLOW_MAP_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_ACTION_COMMAND_FAMILY_COVERAGE =
                 loadRows(RUNTIME_ACTION_COMMAND_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_RESOURCE_ECONOMY_ROWS =
+                loadRows(RUNTIME_RESOURCE_ECONOMY_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS =
+                loadRows(RUNTIME_RESOURCE_ECONOMY_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_RESOURCE_ECONOMY_FLOW_MAP =
+                loadRows(RUNTIME_RESOURCE_ECONOMY_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE =
+                loadRows(RUNTIME_RESOURCE_ECONOMY_FAMILY_COVERAGE_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

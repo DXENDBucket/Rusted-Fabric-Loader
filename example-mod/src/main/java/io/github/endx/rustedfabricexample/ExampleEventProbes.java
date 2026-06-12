@@ -22,6 +22,7 @@ import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.UnitRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 
@@ -1205,6 +1206,7 @@ final class ExampleEventProbes {
                         "AfterResourceAmountSubtract op=" + safeText(operation)
                                 + " scale=" + formatDouble(scale)
                                 + " scaled=" + scaled
+                                + " amount=" + describeResourceAmount(resourceAmount)
                                 + " unit=" + describeObject(unit),
                         unit, 1000L));
 
@@ -1213,6 +1215,7 @@ final class ExampleEventProbes {
                         "AfterResourceAmountAdd op=" + safeText(operation)
                                 + " scale=" + formatDouble(scale)
                                 + " scaled=" + scaled
+                                + " amount=" + describeResourceAmount(resourceAmount)
                                 + " unit=" + describeObject(unit),
                         unit, 1000L));
 
@@ -1237,6 +1240,7 @@ final class ExampleEventProbes {
                     "ResourceAvailabilityCheck result=" + currentResult
                             + " op=" + safeText(operation)
                             + " scale=" + formatDouble(scale)
+                            + " amount=" + describeResourceAmount(resourceAmount)
                             + " unit=" + describeObject(unit),
                     unit, 1500L);
             return currentResult;
@@ -1247,6 +1251,7 @@ final class ExampleEventProbes {
                         "AfterResourceReserve result=" + result
                                 + " op=" + safeText(operation)
                                 + " lagHiding=" + lagHiding
+                                + " amount=" + describeResourceAmount(resourceAmount)
                                 + " unit=" + describeObject(unit),
                         unit, 1000L));
 
@@ -1406,6 +1411,24 @@ final class ExampleEventProbes {
                     + "}";
         } catch (RuntimeException e) {
             return "<unavailable>";
+        }
+    }
+
+    private static String describeResourceAmount(Object resourceAmount) {
+        if (resourceAmount == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = ResourceEconomyDiagnostics.describeResourceAmount(resourceAmount);
+            return "{credits=" + details.get("credits")
+                    + ", energy=" + details.get("energy")
+                    + ", hp=" + details.get("hp")
+                    + ", shield=" + details.get("shield")
+                    + ", ammo=" + details.get("ammo")
+                    + ", custom=" + describeObject(details.get("customResources"))
+                    + "}";
+        } catch (RuntimeException e) {
+            return describeObject(resourceAmount);
         }
     }
 
