@@ -1848,6 +1848,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	F	cv	field_am_cv_maxHp	maxHp
 	f	F	cx	field_am_cx_shield	shield
 	f	[Lcom/corrodinggames/rts/game/units/an;	dF	field_am_perTeamVisibilityStates	perTeamVisibilityStates
+	f	Lcom/corrodinggames/rts/game/units/custom/c/c;	dI	field_Unit_unitConnectionManager	unitConnectionManager
 	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	dJ	field_am_activeResourceDelta	activeResourceDelta
 	f	I	dl	field_am_spatialCellX	spatialCellX
 	f	I	dm	field_am_spatialCellY	spatialCellY
@@ -1892,6 +1893,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()V	dc	method_Unit_startFalling	startFalling
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	de	method_am_getRuntimeTags	getRuntimeTags
 	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	df	method_Unit_df_getDisplayResources	getDisplayResources
+	m	()Lcom/corrodinggames/rts/game/units/custom/c/c;	dg	method_Unit_getUnitConnectionManager	getUnitConnectionManager
 	m	()Lcom/corrodinggames/rts/game/units/custom/b/n;	dn	method_Unit_getAttachmentSlot	getAttachmentSlot
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	dq	method_am_getActiveResourceDelta	getActiveResourceDelta
 	m	()Lcom/corrodinggames/rts/game/units/am;	dr	method_Unit_getContainingUnit	getContainingUnit
@@ -3710,9 +3712,20 @@ c	com/corrodinggames/rts/game/units/custom/c	rw/custom/animation/AnimationTrack	
 	m	()V	b	method_c_b_markAsEventTrack	markAsEventTrack
 	m	(F)F	b	method_c_b_interpolate	interpolate
 	m	()V	c	method_c_c_finalizeTrack	finalizeTrack
-c	com/corrodinggames/rts/game/units/custom/c/c	rw/custom/runtime/CustomUnitRuntimeLinkManager	rustedwarfare/custom/runtime/CustomUnitRuntimeLinkManager
-	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_game_units_custom_c_c_deserializeForUnit	deserializeForUnit
-	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_game_units_custom_c_c_serialize	serialize
+c	com/corrodinggames/rts/game/units/custom/c/c	rw/custom/connection/UnitConnectionManager	rustedwarfare/custom/connection/UnitConnectionManager
+	f	Landroid/graphics/Rect;	a	field_UnitConnectionManager_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/RectF;	b	field_UnitConnectionManager_scratchDestRect	scratchDestRect
+	f	Landroid/graphics/Paint;	c	field_UnitConnectionManager_tintedLinePaint	tintedLinePaint
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	d	field_UnitConnectionManager_connectionGroups	connectionGroups
+	f	Landroid/graphics/Paint;	e	field_UnitConnectionManager_debugConnectionPaint	debugConnectionPaint
+	f	Lcom/corrodinggames/rts/game/units/custom/c/f;	f	field_UnitConnectionManager_sharedTargetSearchCallback	sharedTargetSearchCallback
+	m	()V	<init>	method_UnitConnectionManager_init	<init>
+	m	(FLcom/corrodinggames/rts/game/units/am;)V	a	method_UnitConnectionManager_drawConnections	drawConnections
+	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_UnitConnectionManager_deserializeForUnit	deserializeForUnit
+	m	(Lcom/corrodinggames/rts/game/units/custom/c/a;)I	a	method_UnitConnectionManager_countConnections	countConnections
+	m	(Lcom/corrodinggames/rts/game/units/custom/c/a;Z)Lcom/corrodinggames/rts/game/units/custom/c/e;	a	method_UnitConnectionManager_getOrCreateConnectionGroup	getOrCreateConnectionGroup
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;)V	a	method_UnitConnectionManager_relinkDefinitions	relinkDefinitions
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_UnitConnectionManager_serialize	serialize
 c	com/corrodinggames/rts/game/units/custom/d	rw/custom/animation/AnimationKeyframeProperty	rustedwarfare/custom/animation/AnimationKeyframeProperty
 	f	Lcom/corrodinggames/rts/game/units/custom/d;	a	field_d_a_FRAME	FRAME
 	f	Lcom/corrodinggames/rts/game/units/custom/d;	b	field_d_b_SCALE	SCALE
@@ -4460,6 +4473,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	Lcom/corrodinggames/rts/game/units/custom/bn;	dF	field_l_dF_setMainTurretAs	setMainTurretAs
 	f	F	dH	field_l_dH_whenBeingBuiltMakeTransparentTill	whenBeingBuiltMakeTransparentTill
 	f	Lcom/corrodinggames/rts/game/units/custom/m;	dI	field_CustomUnitMetadata_bodyDirectionalFrameSelector	bodyDirectionalFrameSelector
+	f	F	dJ	field_CustomUnitMetadata_minTurretRangeGuideRange	minTurretRangeGuideRange
 	f	Ljava/lang/Boolean;	dK	field_l_dK_showRangeUIGuide	showRangeUIGuide
 	f	Z	dL	field_l_dL_turretRotateWithBody	turretRotateWithBody
 	f	F	dM	field_l_dM_shootDelay	shootDelay
@@ -4602,6 +4616,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	j	field_CustomUnitMetadata_resourceDefinitions	resourceDefinitions
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	k	field_CustomUnitMetadata_watchedFiles	watchedFiles
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	l	field_CustomUnitMetadata_connectionDefinitions	connectionDefinitions
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	o	field_CustomUnitMetadata_turretRangeGuideMarkers	turretRangeGuideMarkers
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	p	field_l_p_unitTypeReferences	unitTypeReferences
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableMapping;	r	field_CustomUnitMetadata_definedMemoryVariables	definedMemoryVariables
 	f	Z	s	field_l_s_teamColorsOnTurret	teamColorsOnTurret
@@ -4622,6 +4637,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	m	(Lcom/corrodinggames/rts/game/units/custom/b/a;)V	a	method_CustomUnitMetadata_addLifecycleBehavior	addLifecycleBehavior
 	m	(Lcom/corrodinggames/rts/game/units/custom/d/b;)V	a	method_markUsesCreditResources	markUsesCreditResources
 	m	(Lcom/corrodinggames/rts/game/units/custom/e/a;)Lcom/corrodinggames/rts/game/units/custom/e/d;	a	method_CustomUnitMetadata_getResourceDefinition	getResourceDefinition
+	m	(Lcom/corrodinggames/rts/game/units/custom/g;)Lcom/corrodinggames/rts/game/units/custom/c/a;	a	method_CustomUnitMetadata_findConnectionDefinitionByTag	findConnectionDefinitionByTag
 	m	(Lcom/corrodinggames/rts/game/units/custom/n;)Lcom/corrodinggames/rts/game/units/custom/f;	a	method_CustomUnitMetadata_getAnimationByTrigger	getAnimationByTrigger
 	m	(Lcom/corrodinggames/rts/game/units/custom/n;Lcom/corrodinggames/rts/game/units/custom/f;Z)Lcom/corrodinggames/rts/game/units/custom/f;	a	method_CustomUnitMetadata_resolveAnimationForTrigger	resolveAnimationForTrigger
 	m	(Lcom/corrodinggames/rts/game/units/custom/t;)V	a	method_CustomUnitMetadata_addPostLoadCallback	addPostLoadCallback
@@ -4659,6 +4675,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/b/n;	i	method_CustomUnitMetadata_getAttachmentSlotByName	getAttachmentSlotByName
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/e/a;	j	method_CustomUnitMetadata_getResourceTypeByNameOrBuiltin	getResourceTypeByNameOrBuiltin
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/e/a;	k	method_CustomUnitMetadata_getLocalResourceTypeByName	getLocalResourceTypeByName
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/c/a;	l	method_CustomUnitMetadata_getConnectionDefinitionByName	getConnectionDefinitionByName
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/as;	m	method_0805_findReplacementByUnitName	findReplacementByUnitName
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/l;	n	method_0804_findByNameOrAlias	findByNameOrAlias
 	m	()Lcom/corrodinggames/rts/game/units/ao;	o	method_l_o_getMovementType	getMovementType
@@ -9134,3 +9151,40 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	m	(Lorg/newdawn/slick/GameContainer;Lorg/newdawn/slick/Graphics;)V	render	method_1007_render	render
 	m	(Lorg/newdawn/slick/GameContainer;I)V	update	method_1005_update	update
 c	com/corrodinggames/rts/java/v	rw/input/DesktopControllerInput	rustedwarfare/input/DesktopControllerInput
+c	com/corrodinggames/rts/game/units/custom/c/b	rw/custom/connection/ConnectionDefinitionBase	rustedwarfare/custom/connection/ConnectionDefinitionBase
+	f	Lcom/corrodinggames/rts/game/units/custom/g;	g	field_ConnectionDefinitionBase_nameTag	nameTag
+	m	()V	<init>	method_ConnectionDefinitionBase_init	<init>
+c	com/corrodinggames/rts/game/units/custom/c/a	rw/custom/connection/ConnectionDefinition	rustedwarfare/custom/connection/ConnectionDefinition
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	a	field_ConnectionDefinition_targetTags	targetTags
+	f	Z	b	field_ConnectionDefinition_includeAllies	includeAllies
+	f	Z	c	field_ConnectionDefinition_includeEnemies	includeEnemies
+	f	I	d	field_ConnectionDefinition_maxConnections	maxConnections
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	e	field_ConnectionDefinition_linkImage	linkImage
+	f	Landroid/graphics/Paint;	f	field_ConnectionDefinition_linkLinePaint	linkLinePaint
+	m	()V	<init>	method_ConnectionDefinition_init	<init>
+c	com/corrodinggames/rts/game/units/custom/c/d	rw/custom/connection/ConnectionInstance	rustedwarfare/custom/connection/ConnectionInstance
+	f	Lcom/corrodinggames/rts/game/units/am;	a	field_ConnectionInstance_targetUnit	targetUnit
+	f	Z	b	field_ConnectionInstance_savedFlag	savedFlag
+	f	Z	c	field_ConnectionInstance_drawEnabled	drawEnabled
+	f	F	d	field_ConnectionInstance_tintPulse	tintPulse
+	m	()V	<init>	method_ConnectionInstance_init	<init>
+c	com/corrodinggames/rts/game/units/custom/c/e	rw/custom/connection/ConnectionGroup	rustedwarfare/custom/connection/ConnectionGroup
+	f	Lcom/corrodinggames/rts/game/units/custom/c/a;	a	field_ConnectionGroup_definition	definition
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	b	field_ConnectionGroup_connections	connections
+	m	(Lcom/corrodinggames/rts/game/units/custom/c/a;)V	<init>	method_ConnectionGroup_init	<init>
+	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/custom/c/d;	a	method_ConnectionGroup_findConnectionToUnit	findConnectionToUnit
+c	com/corrodinggames/rts/game/units/custom/c/f	rw/custom/connection/ConnectionTargetSearchCallback	rustedwarfare/custom/connection/ConnectionTargetSearchCallback
+	f	Lcom/corrodinggames/rts/game/units/custom/c/c;	a	field_ConnectionTargetSearchCallback_manager	manager
+	f	Lcom/corrodinggames/rts/game/units/custom/c/a;	b	field_ConnectionTargetSearchCallback_definition	definition
+	f	Lcom/corrodinggames/rts/game/units/am;	c	field_ConnectionTargetSearchCallback_nearestTarget	nearestTarget
+	f	F	d	field_ConnectionTargetSearchCallback_nearestDistanceSquared	nearestDistanceSquared
+	m	()V	<init>	method_ConnectionTargetSearchCallback_init	<init>
+	m	(Lcom/corrodinggames/rts/game/units/y;FLcom/corrodinggames/rts/game/units/am;)V	callback	method_ConnectionTargetSearchCallback_callback	callback
+	m	(Lcom/corrodinggames/rts/game/units/y;)I	excludeTeam	method_ConnectionTargetSearchCallback_excludeTeam	excludeTeam
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/n;	onlyEnemiesOfTeam	method_ConnectionTargetSearchCallback_onlyEnemiesOfTeam	onlyEnemiesOfTeam
+	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/n;	onlyTeam	method_ConnectionTargetSearchCallback_onlyTeam	onlyTeam
+	m	(Lcom/corrodinggames/rts/game/units/y;F)V	setup	method_ConnectionTargetSearchCallback_setup	setup
+c	com/corrodinggames/rts/game/units/custom/y	rw/custom/turret/TurretRangeGuideMarker	rustedwarfare/custom/turret/TurretRangeGuideMarker
+	f	F	a	field_TurretRangeGuideMarker_range	range
+	m	()V	<init>	method_TurretRangeGuideMarker_init	<init>
+c	com/corrodinggames/rts/game/units/custom/l$1	rw/custom/internal/CustomUnitMetadataAnonymous1	rustedwarfare/custom/internal/CustomUnitMetadataAnonymous1
