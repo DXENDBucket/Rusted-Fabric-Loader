@@ -1,6 +1,8 @@
 package io.github.endx.rustedfabricapi.api.diagnostic;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 
 public final class MappingEvidenceDiagnostics {
+    private static final String DEVELOPMENT_EVIDENCE_DIRECTORY = "report/mapping-evidence";
+    private static final String MAPPING_EVIDENCE_MANIFEST_RESOURCE =
+            "/rustedfabricapi/mapping/mapping-evidence-manifest.csv";
+
     private static final String LOGIC_BOOLEAN_RESOURCE =
             "/rustedfabricapi/mapping/rw_logicboolean_member_expansion_v0_27.csv";
     private static final String PARSER_HELPER_RESOURCE =
@@ -166,6 +172,22 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_mission_trigger_semantic_hotfix_rows_v0_55.csv";
     private static final String MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS_RESOURCE =
             "/rustedfabricapi/mapping/rw_mission_trigger_type_anonymous_rows_v0_55.csv";
+    private static final String RENDER_CANVAS_COMMAND_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_canvas_command_added_rows_v0_56.csv";
+    private static final String RENDER_CANVAS_COMMAND_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_canvas_command_updated_rows_v0_56.csv";
+    private static final String RENDER_CANVAS_COMMAND_SKIPPED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_canvas_command_skipped_rows_v0_56.csv";
+    private static final String RENDER_CANVAS_COMMAND_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_canvas_command_flow_map_v0_56.csv";
+    private static final String RENDER_CANVAS_COMMAND_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_canvas_command_family_coverage_v0_56.csv";
+    private static final String CANVAS_OPERATION_ENUM_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_canvas_operation_enum_rows_v0_56.csv";
+    private static final String CANVAS_DRAWTARGET_COMMAND_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_canvas_drawtarget_command_rows_v0_56.csv";
+    private static final String SHADER_PROGRAM_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_shader_program_rows_v0_56.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -478,6 +500,42 @@ public final class MappingEvidenceDiagnostics {
         return Holder.MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS;
     }
 
+    public static List<EvidenceManifestRow> allEvidenceManifestRows() {
+        return Holder.EVIDENCE_MANIFEST_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderCanvasCommandRows() {
+        return Holder.RENDER_CANVAS_COMMAND_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderCanvasCommandUpdatedRows() {
+        return Holder.RENDER_CANVAS_COMMAND_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderCanvasCommandSkippedRows() {
+        return Holder.RENDER_CANVAS_COMMAND_SKIPPED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderCanvasCommandFlowMap() {
+        return Holder.RENDER_CANVAS_COMMAND_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRenderCanvasCommandFamilyCoverage() {
+        return Holder.RENDER_CANVAS_COMMAND_FAMILY_COVERAGE;
+    }
+
+    public static List<MappingEvidenceRow> allCanvasOperationEnumRows() {
+        return Holder.CANVAS_OPERATION_ENUM_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allCanvasDrawTargetCommandRows() {
+        return Holder.CANVAS_DRAWTARGET_COMMAND_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allShaderProgramRows() {
+        return Holder.SHADER_PROGRAM_ROWS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -653,6 +711,22 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findMissionTriggerTypeAnonymousRows(String text) {
         return findByText(Holder.MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRenderCanvasCommandRows(String text) {
+        return findByText(Holder.RENDER_CANVAS_COMMAND_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findCanvasOperationEnumRows(String text) {
+        return findByText(Holder.CANVAS_OPERATION_ENUM_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findCanvasDrawTargetCommandRows(String text) {
+        return findByText(Holder.CANVAS_DRAWTARGET_COMMAND_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findShaderProgramRows(String text) {
+        return findByText(Holder.SHADER_PROGRAM_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -876,6 +950,14 @@ public final class MappingEvidenceDiagnostics {
         result.put("mission_trigger_map_script_flow_map", Holder.MISSION_TRIGGER_MAP_SCRIPT_FLOW_MAP);
         result.put("mission_trigger_semantic_hotfix_rows", Holder.MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS);
         result.put("mission_trigger_type_anonymous_rows", Holder.MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS);
+        result.put("render_canvas_command_rows", Holder.RENDER_CANVAS_COMMAND_ROWS);
+        result.put("render_canvas_command_updated_rows", Holder.RENDER_CANVAS_COMMAND_UPDATED_ROWS);
+        result.put("render_canvas_command_skipped_rows", Holder.RENDER_CANVAS_COMMAND_SKIPPED_ROWS);
+        result.put("render_canvas_command_flow_map", Holder.RENDER_CANVAS_COMMAND_FLOW_MAP);
+        result.put("render_canvas_command_family_coverage", Holder.RENDER_CANVAS_COMMAND_FAMILY_COVERAGE);
+        result.put("canvas_operation_enum_rows", Holder.CANVAS_OPERATION_ENUM_ROWS);
+        result.put("canvas_drawtarget_command_rows", Holder.CANVAS_DRAWTARGET_COMMAND_ROWS);
+        result.put("shader_program_rows", Holder.SHADER_PROGRAM_ROWS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -906,13 +988,26 @@ public final class MappingEvidenceDiagnostics {
         return Collections.unmodifiableList(result);
     }
 
-    private static List<Map<String, String>> loadCsv(String resource) {
-        InputStream inputStream = MappingEvidenceDiagnostics.class.getResourceAsStream(resource);
-        if (inputStream == null) {
-            return Collections.emptyList();
+    private static List<EvidenceManifestRow> loadEvidenceManifestRows(String resource) {
+        List<Map<String, String>> rows = loadCsv(resource);
+        List<EvidenceManifestRow> result = new ArrayList<EvidenceManifestRow>();
+        for (Map<String, String> row : rows) {
+            result.add(new EvidenceManifestRow(
+                    row.get("resource_id"),
+                    row.get("file_name"),
+                    row.get("version"),
+                    row.get("category")));
         }
+        return Collections.unmodifiableList(result);
+    }
 
+    private static List<Map<String, String>> loadCsv(String resource) {
         try {
+            InputStream inputStream = openEvidenceStream(resource);
+            if (inputStream == null) {
+                return Collections.emptyList();
+            }
+
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             try {
                 String headerLine = reader.readLine();
@@ -937,6 +1032,24 @@ public final class MappingEvidenceDiagnostics {
         } catch (IOException e) {
             throw new IllegalStateException("Could not load mapping evidence resource " + resource, e);
         }
+    }
+
+    private static InputStream openEvidenceStream(String resource) throws IOException {
+        InputStream inputStream = MappingEvidenceDiagnostics.class.getResourceAsStream(resource);
+        if (inputStream != null) {
+            return inputStream;
+        }
+
+        File developmentFile = new File(DEVELOPMENT_EVIDENCE_DIRECTORY, fileName(resource));
+        if (developmentFile.isFile()) {
+            return new FileInputStream(developmentFile);
+        }
+        return null;
+    }
+
+    private static String fileName(String resource) {
+        int slash = resource.lastIndexOf('/');
+        return slash >= 0 ? resource.substring(slash + 1) : resource;
     }
 
     private static List<String> parseCsvLine(String line) {
@@ -978,6 +1091,8 @@ public final class MappingEvidenceDiagnostics {
     }
 
     private static final class Holder {
+        private static final List<EvidenceManifestRow> EVIDENCE_MANIFEST_ROWS =
+                loadEvidenceManifestRows(MAPPING_EVIDENCE_MANIFEST_RESOURCE);
         private static final List<MappingEvidenceRow> LOGIC_BOOLEAN_MEMBERS = loadRows(LOGIC_BOOLEAN_RESOURCE);
         private static final List<MappingEvidenceRow> PARSER_HELPERS = loadRows(PARSER_HELPER_RESOURCE);
         private static final List<MappingEvidenceRow> ACTION_PROJECTILE_ROWS = loadRows(ACTION_PROJECTILE_ROWS_RESOURCE);
@@ -1129,6 +1244,22 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS_RESOURCE);
         private static final List<MappingEvidenceRow> MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS =
                 loadRows(MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_CANVAS_COMMAND_ROWS =
+                loadRows(RENDER_CANVAS_COMMAND_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_CANVAS_COMMAND_UPDATED_ROWS =
+                loadRows(RENDER_CANVAS_COMMAND_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_CANVAS_COMMAND_SKIPPED_ROWS =
+                loadRows(RENDER_CANVAS_COMMAND_SKIPPED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_CANVAS_COMMAND_FLOW_MAP =
+                loadRows(RENDER_CANVAS_COMMAND_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_CANVAS_COMMAND_FAMILY_COVERAGE =
+                loadRows(RENDER_CANVAS_COMMAND_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> CANVAS_OPERATION_ENUM_ROWS =
+                loadRows(CANVAS_OPERATION_ENUM_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> CANVAS_DRAWTARGET_COMMAND_ROWS =
+                loadRows(CANVAS_DRAWTARGET_COMMAND_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> SHADER_PROGRAM_ROWS =
+                loadRows(SHADER_PROGRAM_ROWS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =
@@ -1210,6 +1341,36 @@ public final class MappingEvidenceDiagnostics {
 
         private static String nullToEmpty(String value) {
             return value != null ? value : "";
+        }
+    }
+
+    public static final class EvidenceManifestRow {
+        private final String resourceId;
+        private final String fileName;
+        private final String version;
+        private final String category;
+
+        private EvidenceManifestRow(String resourceId, String fileName, String version, String category) {
+            this.resourceId = resourceId != null ? resourceId : "";
+            this.fileName = fileName != null ? fileName : "";
+            this.version = version != null ? version : "";
+            this.category = category != null ? category : "";
+        }
+
+        public String resourceId() {
+            return resourceId;
+        }
+
+        public String fileName() {
+            return fileName;
+        }
+
+        public String version() {
+            return version;
+        }
+
+        public String category() {
+            return category;
         }
     }
 

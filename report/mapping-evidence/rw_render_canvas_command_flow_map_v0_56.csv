@@ -1,0 +1,7 @@
+stage,owner,member,description
+draw call,CanvasDrawTarget,drawImage/drawText/drawRect/etc,Immediate target executes drawing or queued target records operation.
+record,QueuedCanvasDrawTarget,recordCommand0/2/4/8,Allocates QueuedCanvasCommand slot and stores operation/arguments.
+copy mutable args,ReusableDrawObjectPool,copyRect/copyRectF/copyPaint,Copies mutable Rect/RectF/Paint values before queuing.
+command data,QueuedCanvasCommand,"operation,args,floatArg0..3",Stores operation token and compact argument payload.
+shader setup,ShaderProgram,setUniform* / getOrCreateParameter,Stores dirty shader parameters and textures.
+shader compile,GraphicsEngine,compileShader,Compiles/applies shader backend through GraphicsEngine.

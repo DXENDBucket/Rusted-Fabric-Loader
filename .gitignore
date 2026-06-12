@@ -45,5 +45,7 @@ bin/
 /libs/game-lib.jar
 
 ### Reports ###
-/report/
+/report/*
+!/report/mapping-evidence/
+!/report/mapping-evidence/**
 /documents/
