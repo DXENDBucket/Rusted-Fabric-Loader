@@ -1,0 +1,13 @@
+family,official_name,descriptor,implementors_with_method,mapped_to_expected,partial_missing_or_mismatch
+completeBuildQueueItem,a,(Lcom/corrodinggames/rts/game/units/d/j;)V,15,15,0
+triggerWhenBuildingAction,b,(Lcom/corrodinggames/rts/game/units/d/j;)V,3,3,0
+canRefundBuildQueueItem,c,(Lcom/corrodinggames/rts/game/units/d/j;)Z,3,3,0
+countQueuedUnitType,h,(Lcom/corrodinggames/rts/game/units/as;)I,3,3,0
+countQueuedItems,f,(Z)I,3,3,0
+countQueuedActionId,a,(Lcom/corrodinggames/rts/game/units/a/c;Z)I,3,3,0
+isBuildQueueEmpty,dy,()Z,3,3,0
+setBuildQueueRallyPoint,a,(Landroid/graphics/PointF;)V,3,3,0
+forceBuildQueueProgressComplete,dz,()V,3,3,0
+getCurrentBuildQueueItem,dw,()Lcom/corrodinggames/rts/game/units/d/j;,3,3,0
+getBuildQueueItems,dx,()Lcom/corrodinggames/rts/gameFramework/utility/m;,3,3,0
+isBuildQueueLimitExceeded,dA,()Z,3,3,0

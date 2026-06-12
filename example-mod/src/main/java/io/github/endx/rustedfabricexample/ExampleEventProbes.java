@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.event.CommandEvents;
+import io.github.endx.rustedfabricapi.api.event.BuildQueueEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomAssetEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
@@ -17,8 +18,10 @@ import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.github.endx.rustedfabricexample.ExampleDebugOverlay.*;
@@ -581,11 +584,54 @@ final class ExampleEventProbes {
                         "AfterCustomUnitRemoved unit=" + describeObject(unit),
                         unit, 750L));
 
-        CustomUnitRuntimeEvents.AFTER_BUILD_QUEUE_ITEM_COMPLETE.register((unit, queueItem) ->
-                showEventProbeMessage(stage, "AfterBuildQueueItemComplete",
-                        "AfterBuildQueueItemComplete unit=" + describeObject(unit)
-                                + " item=" + describeObject(queueItem),
+        BuildQueueEvents.BEFORE_QUEUE_ACTION_APPLY.register((queue, action, front, targetPoint, targetUnit) -> {
+            showEventProbeMessage(stage, "BeforeQueueActionApply",
+                    "BeforeQueueActionApply action=" + describeObject(action)
+                            + " front=" + front
+                            + " target=" + describeObject(targetUnit),
+                    queue, 750L);
+            return false;
+        });
+
+        BuildQueueEvents.AFTER_QUEUE_ACTION_APPLY.register((queue, action, front, targetPoint, targetUnit, queueItem) ->
+                showEventProbeMessage(stage, "AfterQueueActionApply",
+                        "AfterQueueActionApply item=" + describeBuildQueueItem(queueItem)
+                                + " front=" + front
+                                + " target=" + describeObject(targetUnit),
+                        queue, 750L));
+
+        BuildQueueEvents.AFTER_QUEUE_ITEM_ACTIVATE.register((queue, queueItem) ->
+                showEventProbeMessage(stage, "AfterQueueItemActivate",
+                        "AfterQueueItemActivate item=" + describeBuildQueueItem(queueItem),
+                        queue, 750L));
+
+        BuildQueueEvents.AFTER_QUEUE_ITEM_COMPLETE.register((queue, queueItem, spacing, useRallyPoint, spawnYOffset, producedUnit) ->
+                showEventProbeMessage(stage, "AfterQueueItemComplete",
+                        "AfterQueueItemComplete item=" + describeBuildQueueItem(queueItem)
+                                + " produced=" + describeObject(producedUnit)
+                                + " rally=" + useRallyPoint,
+                        producedUnit != null ? producedUnit : queue, 750L));
+
+        BuildQueueEvents.AFTER_NEWLY_PRODUCED_UNIT_POSITIONED.register((queue, unit, spacing, useRallyPoint) ->
+                showEventProbeMessage(stage, "AfterNewlyProducedUnitPositioned",
+                        "AfterNewlyProducedUnitPositioned unit=" + describeObject(unit)
+                                + " spacing=" + formatFloat(spacing)
+                                + " rally=" + useRallyPoint,
                         unit, 750L));
+
+        BuildQueueEvents.AFTER_HOST_BUILD_QUEUE_ITEM_COMPLETE.register((host, queueItem) ->
+                showEventProbeMessage(stage, "AfterHostBuildQueueItemComplete",
+                        "AfterHostBuildQueueItemComplete host=" + describeObject(host)
+                                + " item=" + describeBuildQueueItem(queueItem),
+                        host, 750L));
+
+        BuildQueueEvents.MODIFY_HOST_BUILD_QUEUE_ITEM_REFUNDABLE.register((host, queueItem, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyHostBuildQueueItemRefundable",
+                    "ModifyHostBuildQueueItemRefundable result=" + currentResult
+                            + " item=" + describeBuildQueueItem(queueItem),
+                    host, 1000L);
+            return Boolean.valueOf(currentResult);
+        });
 
         MapDiscoveryEvents.BEFORE_EXTRA_MAPS_FOR_PATH.register((modManager, originalMaps, mapPath) -> {
             showEventProbeMessage(stage, "BeforeExtraMapsForPath",
@@ -934,6 +980,23 @@ final class ExampleEventProbes {
                         gameObject, 250L));
 
         ExampleMod.log("registered event probe messages from " + stage);
+    }
+
+    private static String describeBuildQueueItem(Object queueItem) {
+        if (queueItem == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = BuildQueueDiagnostics.describeBuildQueueItem(queueItem);
+            return describeObject(queueItem)
+                    + "{qty=" + details.get("quantity")
+                    + ", action=" + describeObject(details.get("actionId"))
+                    + ", unitType=" + describeObject(details.get("producedUnitType"))
+                    + ", high=" + details.get("highPriority")
+                    + "}";
+        } catch (RuntimeException e) {
+            return describeObject(queueItem);
+        }
     }
 
 }

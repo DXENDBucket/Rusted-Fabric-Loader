@@ -1,0 +1,7 @@
+stage,owner,member,input,output,notes
+queue action,BuildQueue,applyQueueActionWithTarget / enqueueQueueableActionWithTarget,"UnitAction, queue front flag, optional point/unit target",BuildQueueItem in active/staged queue,"captures actionId, priceResources, streamingCostResources, producedUnitType, target point/unit"
+reserve resources,BuildQueueItem / ResourceAmount,priceResources try/reserve/subtract/refund paths,queued action price,resources reserved or queue item rejected/refunded,priceResources are handled at enqueue/cancel while streamingCostResources are paid over time
+update current item,BuildQueue,update(float),"delta, host build speed, active queue item","buildProgress, streamedResourcesPaidFraction",drains streaming resources before increasing/continuing progress
+complete item,BuildQueueHost,completeBuildQueueItem,completed BuildQueueItem,unit placed or action completion effects,CustomUnit and production building base implement this hook differently
+spawn/place produced unit,BuildQueue,completeQueueItem / createUnitFromQueueType / positionNewlyProducedUnit,"producedUnitType, rally point, completion offsets",new Unit registered and positioned,used by production buildings and custom unit build queues
+cancel/refund,BuildQueue,removeQueuedAction / clearQueueAndRefund / refundQueueItem,action id or clear flag,queue item removed and priceResources refunded when allowed,BuildQueueHost.canRefundBuildQueueItem controls refund/cancel eligibility

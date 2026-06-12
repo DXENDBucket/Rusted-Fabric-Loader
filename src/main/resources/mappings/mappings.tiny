@@ -3380,7 +3380,9 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(FZ)V	a	method_CustomUnit_drawStatusOverlayLayer	drawStatusOverlayLayer
 	m	(ILcom/corrodinggames/rts/game/units/am;ZZ)Z	a	method_CustomUnit_canTurretAttackTarget	canTurretAttackTarget
 	m	(IZ)Lcom/corrodinggames/rts/gameFramework/utility/ai;	a	method_CustomUnit_getTurretWorldTransform	getTurretWorldTransform
+	m	(Landroid/graphics/PointF;)V	a	method_CustomUnit_setBuildQueueRallyPoint	setBuildQueueRallyPoint
 	m	(Lcom/corrodinggames/rts/game/f;Lcom/corrodinggames/rts/game/units/am;ILcom/corrodinggames/rts/game/units/custom/bh;FFFF)V	a	method_CustomUnit_applyProjectileTemplateToProjectile	applyProjectileTemplateToProjectile
+	m	(Lcom/corrodinggames/rts/game/units/a/c;Z)I	a	method_CustomUnit_countQueuedActionId	countQueuedActionId
 	m	(Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;I)Z	a	method_CustomUnit_executeCustomAction	executeCustomAction
 	m	(Lcom/corrodinggames/rts/game/units/a/s;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;II)Z	a	method_CustomUnit_executeActionWithContext	executeActionWithContext
 	m	(Lcom/corrodinggames/rts/game/units/a/s;Z)V	a	method_CustomUnit_queueActionNoTarget	queueActionNoTarget
@@ -3426,6 +3428,7 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	()V	bv	method_custom_j_killAndHandleDeathEffects	killAndHandleDeathEffects
 	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	bz	method_j_bz_getTransportedUnits	getTransportedUnits
 	m	(F)Z	c	method_CustomUnit_drawMainLayer	drawMainLayer
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)Z	c	method_CustomUnit_canRefundBuildQueueItem	canRefundBuildQueueItem
 	m	()F	cD	method_CustomUnit_getBodyImageScale	getBodyImageScale
 	m	()Landroid/graphics/RectF;	cF	method_CustomUnit_getImageDestinationRect	getImageDestinationRect
 	m	()V	ch	method_CustomUnit_checkDeathState	checkDeathState
@@ -3434,21 +3437,28 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(I)Lcom/corrodinggames/rts/gameFramework/m/e;	d	method_CustomUnit_getTurretImage	getTurretImage
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_j_d_canTransportUnit	canTransportUnit
 	m	(Z)F	d	method_CustomUnit_getBodyOrShadowDrawRotation	getBodyOrShadowDrawRotation
+	m	()Z	dA	method_CustomUnit_isBuildQueueLimitExceeded	isBuildQueueLimitExceeded
 	m	()V	dB	method_CustomUnit_markAttachmentsFalling	markAttachmentsFalling
 	m	()V	dD	method_CustomUnit_clearQueuedCustomEvents	clearQueuedCustomEvents
 	m	()Z	dH	method_custom_j_isProtectedByAttachmentSlot	isProtectedByAttachmentSlot
 	m	()V	dc	method_CustomUnit_startFalling	startFalling
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	de	method_CustomUnit_getRuntimeTags	getRuntimeTags
 	m	()Lcom/corrodinggames/rts/game/units/custom/l;	dt	method_j_dt_getUnitMetadata	getUnitMetadata
+	m	()Lcom/corrodinggames/rts/game/units/d/j;	dw	method_CustomUnit_getCurrentBuildQueueItem	getCurrentBuildQueueItem
+	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	dx	method_CustomUnit_getBuildQueueItems	getBuildQueueItems
+	m	()Z	dy	method_CustomUnit_isBuildQueueEmpty	isBuildQueueEmpty
+	m	()V	dz	method_CustomUnit_forceBuildQueueProgressComplete	forceBuildQueueProgressComplete
 	m	()Z	e	method_custom_j_handleDeathEffects	handleDeathEffects
 	m	(F)V	e	method_CustomUnit_drawHighlightLayer	drawHighlightLayer
 	m	(I)F	e	method_CustomUnit_getTurretWarmupTime	getTurretWarmupTime
 	m	(Lcom/corrodinggames/rts/game/units/am;)V	e	method_CustomUnit_removeUnitFromTransport	removeUnitFromTransport
 	m	()[Landroid/graphics/PointF;	e_	method_CustomUnit_getTurretEndPointTargets	getTurretEndPointTargets
 	m	(F)Z	f	method_CustomUnit_drawZoomedOutIconLayer	drawZoomedOutIconLayer
+	m	(Z)I	f	method_CustomUnit_countQueuedItems	countQueuedItems
 	m	()V	f_	method_CustomUnit_refreshBaseDrawFlag	refreshBaseDrawFlag
 	m	(I)F	g	method_CustomUnit_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_j_h_getMovementType	getMovementType
+	m	(Lcom/corrodinggames/rts/game/units/as;)I	h	method_CustomUnit_countQueuedUnitType	countQueuedUnitType
 	m	(Z)V	j	method_CustomUnit_resetRuntimeTagsFromMetadata	resetRuntimeTagsFromMetadata
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	k	method_CustomUnit_getShadowImage	getShadowImage
 	m	(F)V	p	method_CustomUnit_drawPostOverlayLayer	drawPostOverlayLayer
@@ -5178,9 +5188,11 @@ c	com/corrodinggames/rts/game/units/custom/z	rw/custom/EffectList	rustedwarfare/
 	m	()V	c	method_z_resolveEffectReferences	resolveEffectReferences
 c	com/corrodinggames/rts/game/units/d/a	rw/internal/game/units/d/a	rustedwarfare/internal/game/units/d/a
 	m	(F)V	a	method_a_update	update
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 c	com/corrodinggames/rts/game/units/d/a/a	rw/unit/building/internal/Obf_d_a_a	rustedwarfare/unit/building/internal/Obf_d_a_a
 	m	(I)Landroid/graphics/PointF;	E	method_Obf_d_a_a_getTurretMuzzlePoint	getTurretMuzzlePoint
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_a_a_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	(I)F	b	method_Obf_d_a_a_getTurretFireDelay	getTurretFireDelay
 	m	(I)F	e	method_Obf_d_a_a_getTurretWarmupTime	getTurretWarmupTime
 	m	(I)F	g	method_Obf_d_a_a_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
@@ -5195,6 +5207,7 @@ c	com/corrodinggames/rts/game/units/d/a/b	rw/unit/building/internal/Obf_d_a_b	ru
 	m	(I)V	M	method_Obf_d_a_b_randomizeTurretShotSpreadOffset	randomizeTurretShotSpreadOffset
 	m	(F)V	a	method_Obf_d_a_b_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_a_b_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	(I)F	b	method_Obf_d_a_b_getTurretFireDelay	getTurretFireDelay
 	m	(F)Z	c	method_Obf_d_a_b_drawMainLayer	drawMainLayer
 	m	(F)V	e	method_Obf_d_a_b_drawHighlightLayer	drawHighlightLayer
@@ -5218,6 +5231,7 @@ c	com/corrodinggames/rts/game/units/d/c	rw/unit/building/internal/Obf_d_c	rusted
 	m	(F)V	a	method_Obf_d_c_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;FLcom/corrodinggames/rts/game/f;)F	a	method_d_c_applyDamage	applyDamage
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_c_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	(Lcom/corrodinggames/rts/gameFramework/l;)Z	a	method_Obf_d_c_isVisibleInCamera	isVisibleInCamera
 	m	(F)Z	c	method_Obf_d_c_drawMainLayer	drawMainLayer
 	m	(F)V	e	method_Obf_d_c_drawHighlightLayer	drawHighlightLayer
@@ -5238,26 +5252,114 @@ c	com/corrodinggames/rts/game/units/d/e	rw/unit/building/internal/Obf_d_e	rusted
 	m	()I	bp	method_d_e_getDeathSmokeParticleCount	getDeathSmokeParticleCount
 	m	(F)V	e	method_Obf_d_e_drawHighlightLayer	drawHighlightLayer
 	m	(I)F	q	method_Obf_d_e_getTurretProjectileDirectDamage	getTurretProjectileDirectDamage
+c	com/corrodinggames/rts/game/units/d/f	rw/unit/building/internal/f	rustedwarfare/unit/building/internal/Obf_d_f
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 c	com/corrodinggames/rts/game/units/d/g	rw/unit/building/internal/Obf_d_g	rustedwarfare/unit/building/internal/Obf_d_g
 	m	(F)V	a	method_Obf_d_g_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_g_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	(I)F	b	method_Obf_d_g_getTurretFireDelay	getTurretFireDelay
 	m	()I	bp	method_d_g_getDeathSmokeParticleCount	getDeathSmokeParticleCount
 	m	(F)Z	c	method_Obf_d_g_drawMainLayer	drawMainLayer
 c	com/corrodinggames/rts/game/units/d/h	rw/unit/building/internal/Obf_d_h	rustedwarfare/unit/building/internal/Obf_d_h
 	m	(F)V	a	method_Obf_d_h_update	update
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	()I	bp	method_d_h_getDeathSmokeParticleCount	getDeathSmokeParticleCount
-c	com/corrodinggames/rts/game/units/d/i	rw/unit/building/internal/Obf_d_i	rustedwarfare/unit/building/internal/Obf_d_i
+c	com/corrodinggames/rts/game/units/d/i	rw/unit/building/ProductionBuildingUnitBase	rustedwarfare/unit/building/ProductionBuildingUnitBase
+	f	Lcom/corrodinggames/rts/game/units/d/k;	z	field_ProductionBuildingUnitBase_buildQueue	buildQueue
 	m	(F)V	a	method_Obf_d_i_update	update
+	m	(Landroid/graphics/PointF;)V	a	method_ProductionBuildingUnitBase_setBuildQueueRallyPoint	setBuildQueueRallyPoint
+	m	(Lcom/corrodinggames/rts/game/units/a/c;Z)I	a	method_ProductionBuildingUnitBase_countQueuedActionId	countQueuedActionId
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_i_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_ProductionBuildingUnitBase_completeBuildQueueItem	completeBuildQueueItem
 	m	(I)F	b	method_Obf_d_i_getTurretFireDelay	getTurretFireDelay
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	b	method_ProductionBuildingUnitBase_triggerWhenBuildingAction	triggerWhenBuildingAction
 	m	()V	bv	method_d_i_killAndHandleDeathEffects	killAndHandleDeathEffects
 	m	(F)Z	c	method_Obf_d_i_drawMainLayer	drawMainLayer
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)Z	c	method_ProductionBuildingUnitBase_canRefundBuildQueueItem	canRefundBuildQueueItem
+	m	()Z	dA	method_ProductionBuildingUnitBase_isBuildQueueLimitExceeded	isBuildQueueLimitExceeded
+	m	()Lcom/corrodinggames/rts/game/units/d/k;	du	method_ProductionBuildingUnitBase_createBuildQueue	createBuildQueue
+	m	()I	dv	method_ProductionBuildingUnitBase_getProducedUnitSpawnYOffset	getProducedUnitSpawnYOffset
+	m	()Lcom/corrodinggames/rts/game/units/d/j;	dw	method_ProductionBuildingUnitBase_getCurrentBuildQueueItem	getCurrentBuildQueueItem
+	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	dx	method_ProductionBuildingUnitBase_getBuildQueueItems	getBuildQueueItems
+	m	()Z	dy	method_ProductionBuildingUnitBase_isBuildQueueEmpty	isBuildQueueEmpty
+	m	()V	dz	method_ProductionBuildingUnitBase_forceBuildQueueProgressComplete	forceBuildQueueProgressComplete
+	m	(Z)I	f	method_ProductionBuildingUnitBase_countQueuedItems	countQueuedItems
+	m	(Lcom/corrodinggames/rts/game/units/as;)I	h	method_ProductionBuildingUnitBase_countQueuedUnitType	countQueuedUnitType
 c	com/corrodinggames/rts/game/units/d/j	rustedwarfare/unit/build/BuildQueueItem	rustedwarfare/unit/build/BuildQueueItem
+	f	I	a	field_BuildQueueItem_quantity	quantity
+	f	F	b	field_BuildQueueItem_buildSpeedMultiplier	buildSpeedMultiplier
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	c	field_BuildQueueItem_priceResources	priceResources
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	d	field_BuildQueueItem_streamingCostResources	streamingCostResources
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	e	field_BuildQueueItem_queueTags	queueTags
+	f	Z	f	field_BuildQueueItem_producesUnit	producesUnit
+	f	Lcom/corrodinggames/rts/game/units/as;	g	field_BuildQueueItem_producedUnitType	producedUnitType
+	f	Landroid/graphics/PointF;	h	field_BuildQueueItem_queuedRallyPoint	queuedRallyPoint
+	f	Lcom/corrodinggames/rts/game/units/am;	i	field_BuildQueueItem_queuedTargetUnit	queuedTargetUnit
+	f	Lcom/corrodinggames/rts/game/units/a/c;	j	field_BuildQueueItem_actionId	actionId
+	f	Z	k	field_BuildQueueItem_stagedCancellation	stagedCancellation
+	f	Z	l	field_BuildQueueItem_highPriority	highPriority
+	f	F	m	field_BuildQueueItem_activationProgressMarker	activationProgressMarker
+	f	D	n	field_BuildQueueItem_streamedResourcesPaidFraction	streamedResourcesPaidFraction
+	m	()V	<init>	method_BuildQueueItem_init	<init>
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_BuildQueueItem_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_BuildQueueItem_deserialize	deserialize
+c	com/corrodinggames/rts/game/units/d/k	rw/unit/build/BuildQueue	rustedwarfare/unit/build/BuildQueue
+	f	Lcom/corrodinggames/rts/game/units/y;	a	field_BuildQueue_hostUnit	hostUnit
+	f	Landroid/graphics/PointF;	b	field_BuildQueue_rallyPoint	rallyPoint
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	c	field_BuildQueue_activeQueueItems	activeQueueItems
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	d	field_BuildQueue_stagedQueueChanges	stagedQueueChanges
+	f	F	e	field_BuildQueue_buildProgress	buildProgress
+	f	Lcom/corrodinggames/rts/game/units/d/j;	f	field_BuildQueue_currentQueueItem	currentQueueItem
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	<init>	method_BuildQueue_init	<init>
+	m	()Z	a	method_BuildQueue_isEmpty	isEmpty
+	m	(F)V	a	method_BuildQueue_update	update
+	m	(Lcom/corrodinggames/rts/game/units/a/c;Z)I	a	method_BuildQueue_countQueuedActionId	countQueuedActionId
+	m	(Lcom/corrodinggames/rts/game/units/a/c;ZZ)I	a	method_BuildQueue_countQueuedActionIdInternal	countQueuedActionIdInternal
+	m	(Lcom/corrodinggames/rts/game/units/a/s;)V	a	method_BuildQueue_clearStagedAction	clearStagedAction
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Z)V	a	method_BuildQueue_applyQueueActionNoTarget	applyQueueActionNoTarget
+	m	(Lcom/corrodinggames/rts/game/units/a/s;ZLandroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/d/j;	a	method_BuildQueue_applyQueueActionWithTarget	applyQueueActionWithTarget
+	m	(Lcom/corrodinggames/rts/game/units/a/w;Z)Lcom/corrodinggames/rts/game/units/d/j;	a	method_BuildQueue_enqueueQueueableAction	enqueueQueueableAction
+	m	(Lcom/corrodinggames/rts/game/units/a/w;ZLandroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/d/j;	a	method_BuildQueue_enqueueQueueableActionWithTarget	enqueueQueueableActionWithTarget
+	m	(Lcom/corrodinggames/rts/game/units/am;FZ)V	a	method_BuildQueue_positionNewlyProducedUnit	positionNewlyProducedUnit
+	m	(Lcom/corrodinggames/rts/game/units/as;)I	a	method_BuildQueue_countQueuedUnitType	countQueuedUnitType
+	m	(Lcom/corrodinggames/rts/game/units/as;FZF)Lcom/corrodinggames/rts/game/units/am;	a	method_BuildQueue_createUnitFromQueueType	createUnitFromQueueType
+	m	(Lcom/corrodinggames/rts/game/units/custom/g;)I	a	method_BuildQueue_countQueuedItemsWithTag	countQueuedItemsWithTag
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueue_setCurrentQueueItem	setCurrentQueueItem
+	m	(Lcom/corrodinggames/rts/game/units/d/j;FZF)Lcom/corrodinggames/rts/game/units/am;	a	method_BuildQueue_completeQueueItem	completeQueueItem
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_BuildQueue_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_BuildQueue_deserialize	deserialize
+	m	(Z)V	a	method_BuildQueue_clearQueueAndRefund	clearQueueAndRefund
+	m	()Lcom/corrodinggames/rts/game/units/d/j;	b	method_BuildQueue_getCurrentQueueItem	getCurrentQueueItem
+	m	(Lcom/corrodinggames/rts/game/units/a/w;Z)Lcom/corrodinggames/rts/game/units/d/j;	b	method_BuildQueue_removeQueuedAction	removeQueuedAction
+	m	(Lcom/corrodinggames/rts/game/units/as;)Lcom/corrodinggames/rts/game/units/a/s;	b	method_BuildQueue_findQueueActionForUnitType	findQueueActionForUnitType
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	b	method_BuildQueue_refundQueueItem	refundQueueItem
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	c	method_BuildQueue_getCurrentStreamingResourceCost	getCurrentStreamingResourceCost
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	c	method_BuildQueue_onQueueItemRemoved	onQueueItemRemoved
+	m	()Lcom/corrodinggames/rts/game/units/a/s;	d	method_BuildQueue_getCurrentAction	getCurrentAction
+	m	()V	e	method_BuildQueue_removeInvalidQueueItems	removeInvalidQueueItems
+	m	()Ljava/util/List;	f	method_BuildQueue_getQueueItems	getQueueItems
+	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	g	method_BuildQueue_getMutableQueueItems	getMutableQueueItems
+c	com/corrodinggames/rts/game/units/d/l	rw/unit/build/BuildQueueHost	rustedwarfare/unit/build/BuildQueueHost
+	m	(Landroid/graphics/PointF;)V	a	method_BuildQueueHost_setBuildQueueRallyPoint	setBuildQueueRallyPoint
+	m	(Lcom/corrodinggames/rts/game/units/a/c;Z)I	a	method_BuildQueueHost_countQueuedActionId	countQueuedActionId
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHost_completeBuildQueueItem	completeBuildQueueItem
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	b	method_BuildQueueHost_triggerWhenBuildingAction	triggerWhenBuildingAction
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)Z	c	method_BuildQueueHost_canRefundBuildQueueItem	canRefundBuildQueueItem
+	m	()Z	dA	method_BuildQueueHost_isBuildQueueLimitExceeded	isBuildQueueLimitExceeded
+	m	()Lcom/corrodinggames/rts/game/units/d/j;	dw	method_BuildQueueHost_getCurrentBuildQueueItem	getCurrentBuildQueueItem
+	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	dx	method_BuildQueueHost_getBuildQueueItems	getBuildQueueItems
+	m	()Z	dy	method_BuildQueueHost_isBuildQueueEmpty	isBuildQueueEmpty
+	m	()V	dz	method_BuildQueueHost_forceBuildQueueProgressComplete	forceBuildQueueProgressComplete
+	m	(Z)I	f	method_BuildQueueHost_countQueuedItems	countQueuedItems
+	m	(Lcom/corrodinggames/rts/game/units/as;)I	h	method_BuildQueueHost_countQueuedUnitType	countQueuedUnitType
+c	com/corrodinggames/rts/game/units/d/m	rw/unit/building/internal/m	rustedwarfare/unit/building/internal/Obf_d_m
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 c	com/corrodinggames/rts/game/units/d/p	rw/unit/building/internal/Obf_d_p	rustedwarfare/unit/building/internal/Obf_d_p
 	m	(I)Landroid/graphics/PointF;	E	method_Obf_d_p_getTurretMuzzlePoint	getTurretMuzzlePoint
 	m	(F)V	a	method_Obf_d_p_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_p_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	(F)Z	c	method_Obf_d_p_drawMainLayer	drawMainLayer
 	m	(F)V	e	method_Obf_d_p_drawHighlightLayer	drawHighlightLayer
 	m	(I)F	g	method_Obf_d_p_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
@@ -5266,6 +5368,7 @@ c	com/corrodinggames/rts/game/units/d/q	rw/unit/building/internal/Obf_d_q	rusted
 	m	(I)Landroid/graphics/PointF;	E	method_Obf_d_q_getTurretMuzzlePoint	getTurretMuzzlePoint
 	m	(F)V	a	method_Obf_d_q_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_q_fireTurretAtTarget	fireTurretAtTarget
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	()I	bp	method_d_q_getDeathSmokeParticleCount	getDeathSmokeParticleCount
 	m	(F)Z	c	method_Obf_d_q_drawMainLayer	drawMainLayer
 	m	(F)V	e	method_Obf_d_q_drawHighlightLayer	drawHighlightLayer
@@ -5279,8 +5382,11 @@ c	com/corrodinggames/rts/game/units/d/r	rw/unit/building/internal/Obf_d_r	rusted
 	m	(I)F	b	method_Obf_d_r_getTurretFireDelay	getTurretFireDelay
 	m	(F)Z	c	method_Obf_d_r_drawMainLayer	drawMainLayer
 	m	(F)V	e	method_Obf_d_r_drawHighlightLayer	drawHighlightLayer
+c	com/corrodinggames/rts/game/units/d/t	rw/unit/building/internal/t	rustedwarfare/unit/building/internal/Obf_d_t
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 c	com/corrodinggames/rts/game/units/d/v	rw/internal/game/units/d/v	rustedwarfare/internal/game/units/d/v
 	m	(F)V	a	method_v_update	update
+	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 c	com/corrodinggames/rts/game/units/e	rw/unit/resource/CrystalResourceUnit	rustedwarfare/unit/resource/CrystalResourceUnit
 	m	(F)V	a	method_CrystalResourceUnit_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_CrystalResourceUnit_fireTurretAtTarget	fireTurretAtTarget
