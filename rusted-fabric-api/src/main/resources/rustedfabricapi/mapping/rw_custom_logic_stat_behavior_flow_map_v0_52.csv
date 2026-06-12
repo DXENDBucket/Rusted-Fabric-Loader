@@ -1,0 +1,7 @@
+phase,from,to,notes
+LogicBoolean geometry,INI / LogicBoolean parser,LogicNumberFunction operands,distance/direction/min/max/length now expose operand fields
+UnitReference marker,UnitReference expression,placeholder marker unit,offset and createMarker x/y expressions named
+Mutable stat writer parse,MutableStatWriterFactory.createWriterElement,MutableStatCachedWriterElement,"parses =/+=/-=, resolves MutableStatAccessor, stores value expression/operator"
+Mutable stat writer apply,MutableStatCachedWriterElement.writeToUnit,MutableStatAccessor.applyOperatorFromLogicBoolean,applies set/add/subtract to runtime or metadata stat
+Movement random,movement_random parser section,RandomMovementBehavior.onLateUpdate,enabled/speed/maxSpeed/awayFromEdge now named
+Movement repel,movement_repelFromUnits parser section,RepelFromUnitsBehavior.onLateUpdate,enabled/speed/maxSpeed/tag/team filters now named

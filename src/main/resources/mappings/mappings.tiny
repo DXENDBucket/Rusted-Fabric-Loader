@@ -2959,19 +2959,25 @@ c	com/corrodinggames/rts/game/units/custom/as$12	rw/custom/stats/MutableStatAcce
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_12_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_12_a_writeMetadataValue	writeMetadataValue
 c	com/corrodinggames/rts/game/units/custom/as$13	rw/custom/stats/MutableStatAccessor$MaxEnergyRuntime	rustedwarfare/custom/stats/MutableStatAccessor$MaxEnergyRuntime
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_MutableStatAccessor_MaxEnergyRuntime_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_MutableStatAccessor_MaxEnergyRuntime_writeRuntime	writeRuntime
 c	com/corrodinggames/rts/game/units/custom/as$14	rw/custom/stats/MutableStatAccessor$MaxHp	rustedwarfare/custom/stats/MutableStatAccessor$MaxHp
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_14_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_14_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
 c	com/corrodinggames/rts/game/units/custom/as$15	rw/custom/stats/MutableStatAccessor$MaxHpRuntime	rustedwarfare/custom/stats/MutableStatAccessor$MaxHpRuntime
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_MutableStatAccessor_MaxHpRuntime_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_MutableStatAccessor_MaxHpRuntime_writeRuntime	writeRuntime
 c	com/corrodinggames/rts/game/units/custom/as$16	rw/custom/stats/MutableStatAccessor$MaxShield	rustedwarfare/custom/stats/MutableStatAccessor$MaxShield
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_16_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_16_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
 c	com/corrodinggames/rts/game/units/custom/as$17	rw/custom/stats/MutableStatAccessor$MaxShieldRuntime	rustedwarfare/custom/stats/MutableStatAccessor$MaxShieldRuntime
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_MutableStatAccessor_MaxShieldRuntime_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_MutableStatAccessor_MaxShieldRuntime_writeRuntime	writeRuntime
 c	com/corrodinggames/rts/game/units/custom/as$18	rw/custom/stats/MutableStatAccessor$ShieldRegen	rustedwarfare/custom/stats/MutableStatAccessor$ShieldRegen
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_18_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_18_a_writeMetadataValue	writeMetadataValue
@@ -3011,15 +3017,28 @@ c	com/corrodinggames/rts/game/units/custom/at	rw/custom/stats/MutableStatAccesso
 	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	a	method_MutableStatAccessor_getReturnType	getReturnType
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MutableStatAccessor_read	read
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$Operator;)V	a	method_MutableStatAccessor_applyOperatorFromLogicBoolean	applyOperatorFromLogicBoolean
 	m	()Z	b	method_MutableStatAccessor_isRuntimeField	isRuntimeField
 c	com/corrodinggames/rts/game/units/custom/au	rustedwarfare/custom/stats/MutableStatWriterFactory	rustedwarfare/custom/stats/MutableStatWriterFactory
+	f	Lcom/corrodinggames/rts/game/units/custom/l;	a	field_MutableStatWriterFactory_metadata	metadata
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$WriterElement;	createWriterElement	method_MutableStatWriterFactory_createWriterElement	createWriterElement
 c	com/corrodinggames/rts/game/units/custom/av	rustedwarfare/custom/stats/MutableStatCachedWriterElement	rustedwarfare/custom/stats/MutableStatCachedWriterElement
 	f	Lcom/corrodinggames/rts/game/units/custom/at;	a	field_MutableStatCachedWriterElement_statAccessor	statAccessor
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	b	field_MutableStatCachedWriterElement_valueExpression	valueExpression
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$Operator;	c	field_MutableStatCachedWriterElement_operator	operator
 	m	(Lcom/corrodinggames/rts/game/units/y;)V	writeToUnit	method_MutableStatCachedWriterElement_writeToUnit	writeToUnit
 c	com/corrodinggames/rts/game/units/custom/aw	rustedwarfare/custom/stats/MetadataMutableStatAccessor	rustedwarfare/custom/stats/MetadataMutableStatAccessor
+	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MetadataMutableStatAccessor_readMetadataValue	readMetadataValue
+	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_MetadataMutableStatAccessor_writeMetadataValue	writeMetadataValue
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MetadataMutableStatAccessor_write	write
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MetadataMutableStatAccessor_read	read
+	m	()Z	b	method_MetadataMutableStatAccessor_isRuntimeField	isRuntimeField
 c	com/corrodinggames/rts/game/units/custom/ax	rustedwarfare/custom/stats/RuntimeMutableStatAccessor	rustedwarfare/custom/stats/RuntimeMutableStatAccessor
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_RuntimeMutableStatAccessor_readRuntime	readRuntime
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_RuntimeMutableStatAccessor_write	write
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_RuntimeMutableStatAccessor_read	read
+	m	()Z	b	method_RuntimeMutableStatAccessor_isRuntimeField	isRuntimeField
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_RuntimeMutableStatAccessor_writeRuntime	writeRuntime
 c	com/corrodinggames/rts/game/units/custom/ay	rw/custom/EffectTemplate	rustedwarfare/custom/EffectTemplate
 	f	F	alpha	field_ay_alpha_alpha	alpha
 	f	Lcom/corrodinggames/rts/game/units/custom/z;	alsoEmitEffects	field_ay_alsoEmitEffects_alsoEmitEffects	alsoEmitEffects
@@ -3250,6 +3269,11 @@ c	com/corrodinggames/rts/game/units/custom/b/h	rw/custom/runtime/LegAnimationBeh
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_h_onLateUpdate	onLateUpdate
 c	com/corrodinggames/rts/game/units/custom/b/i	rw/custom/runtime/LegRuntimeState	rustedwarfare/custom/runtime/LegRuntimeState
 c	com/corrodinggames/rts/game/units/custom/b/j	rw/custom/runtime/RepelFromUnitsBehavior	rustedwarfare/custom/runtime/RepelFromUnitsBehavior
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	field_RepelFromUnitsBehavior_enabledCondition	enabledCondition
+	f	F	b	field_RepelFromUnitsBehavior_speed	speed
+	f	F	c	field_RepelFromUnitsBehavior_maxSpeed	maxSpeed
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	d	field_RepelFromUnitsBehavior_otherUnitHasTags	otherUnitHasTags
+	f	Z	e	field_RepelFromUnitsBehavior_onlySameTeam	onlySameTeam
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_j_parseMovementRepelFromUnitsSection	parseMovementRepelFromUnitsSection
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;)V	a	method_j_parseEntry	parseEntry
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_j_onLateUpdate	onLateUpdate
@@ -3261,6 +3285,10 @@ c	com/corrodinggames/rts/game/units/custom/b/k	rw/custom/runtime/TurretProjectil
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/bn;)V	a	method_TurretProjectileBehavior_tryInterceptProjectilesForTurret	tryInterceptProjectilesForTurret
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_k_onLateUpdate	onLateUpdate
 c	com/corrodinggames/rts/game/units/custom/b/l	rw/custom/runtime/RandomMovementBehavior	rustedwarfare/custom/runtime/RandomMovementBehavior
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	field_RandomMovementBehavior_enabledCondition	enabledCondition
+	f	F	b	field_RandomMovementBehavior_speed	speed
+	f	F	c	field_RandomMovementBehavior_maxSpeed	maxSpeed
+	f	I	d	field_RandomMovementBehavior_awayFromEdge	awayFromEdge
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_l_parseMovementRandomSection	parseMovementRandomSection
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;)V	a	method_l_parseEntry	parseEntry
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_l_onLateUpdate	onLateUpdate
@@ -4977,11 +5005,13 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctio
 	f	I	flagId	field_LogicBooleanGameFunctions$HasFlagBoolean_flagId	flagId
 	f	I	flagMask	field_LogicBooleanGameFunctions$HasFlagBoolean_flagMask	flagMask
 	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	getMatchFailReasonForPlayer	method_LogicBooleanGameFunctions$HasFlagBoolean_getMatchFailReasonForPlayer	getMatchFailReasonForPlayer
+	m	(I)V	id	method_LogicBooleanGameFunctions_HasFlagBoolean_setFlagId	setFlagId
 	m	(II)Z	isFlagSet	method_LogicBooleanGameFunctions$HasFlagBoolean_isFlagSet	isFlagSet
 	m	(Lcom/corrodinggames/rts/game/units/y;)Z	read	method_LogicBooleanGameFunctions$HasFlagBoolean_read	read
 	m	(II)B	setFlag	method_LogicBooleanGameFunctions$HasFlagBoolean_setFlag	setFlag
 	m	(II)B	unsetFlag	method_LogicBooleanGameFunctions$HasFlagBoolean_unsetFlag	unsetFlag
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanGameFunctions$HasFlagDynamicBoolean	rw/custom/logic/LogicBooleanGameFunctions$HasFlagDynamicBoolean	rustedwarfare/custom/logic/LogicBooleanGameFunctions$HasFlagDynamicBoolean
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	id	field_LogicBooleanGameFunctions_HasFlagDynamicBoolean_flagIdExpression	flagIdExpression
 	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	getMatchFailReasonForPlayer	method_LogicBooleanGameFunctions$HasFlagDynamicBoolean_getMatchFailReasonForPlayer	getMatchFailReasonForPlayer
 	m	(Lcom/corrodinggames/rts/game/units/y;)Z	read	method_LogicBooleanGameFunctions$HasFlagDynamicBoolean_read	read
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	validateAndOptimize	method_LogicBooleanGameFunctions$HasFlagDynamicBoolean_validateAndOptimize	validateAndOptimize
@@ -5395,6 +5425,8 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$Cre
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	dir	field_LogicNumberFunction$CreateMarker_dir	dir
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	height	field_LogicNumberFunction$CreateMarker_height	height
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	teamId	field_LogicNumberFunction$CreateMarker_teamId	teamId
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x	field_LogicNumberFunction_CreateMarker_xExpression	xExpression
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y	field_LogicNumberFunction_CreateMarker_yExpression	yExpression
 	m	()Ljava/lang/String;	getClassDebugName	method_LogicNumberFunction$CreateMarker_getClassDebugName	getClassDebugName
 	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getSingleRaw	method_LogicNumberFunction$CreateMarker_getSingleRaw	getSingleRaw
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)V	validate	method_LogicNumberFunction$CreateMarker_validate	validate
@@ -5408,6 +5440,10 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$Fun
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	validateAndOptimize	method_LogicNumberFunction$FunctionCos_validateAndOptimize	validateAndOptimize
 	m	(I)V	validateNumberOfArguments	method_LogicNumberFunction$FunctionCos_validateNumberOfArguments	validateNumberOfArguments
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDirection	rw/custom/logic/LogicNumberFunction$FunctionDirection	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDirection
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x1	field_LogicNumberFunction_FunctionDirection_x1	x1
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x2	field_LogicNumberFunction_FunctionDirection_x2	x2
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y1	field_LogicNumberFunction_FunctionDirection_y1	y1
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y2	field_LogicNumberFunction_FunctionDirection_y2	y2
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionDirection_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionDirection_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDirectionBetween	rw/custom/logic/LogicNumberFunction$FunctionDirectionBetween	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDirectionBetween
@@ -5416,6 +5452,10 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$Fun
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionDirectionBetween_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionDirectionBetween_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistance	rw/custom/logic/LogicNumberFunction$FunctionDistance	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistance
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x1	field_LogicNumberFunction_FunctionDistance_x1	x1
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x2	field_LogicNumberFunction_FunctionDistance_x2	x2
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y1	field_LogicNumberFunction_FunctionDistance_y1	y1
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y2	field_LogicNumberFunction_FunctionDistance_y2	y2
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionDistance_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionDistance_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistanceBetween	rw/custom/logic/LogicNumberFunction$FunctionDistanceBetween	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistanceBetween
@@ -5429,6 +5469,10 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$Fun
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionDistanceBetweenSquared_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionDistanceBetweenSquared_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionDistanceSquared	rw/custom/logic/LogicNumberFunction$FunctionDistanceSquared	rustedwarfare/custom/logic/LogicNumberFunction$FunctionDistanceSquared
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x1	field_LogicNumberFunction_FunctionDistanceSquared_x1	x1
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x2	field_LogicNumberFunction_FunctionDistanceSquared_x2	x2
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y1	field_LogicNumberFunction_FunctionDistanceSquared_y1	y1
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y2	field_LogicNumberFunction_FunctionDistanceSquared_y2	y2
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionDistanceSquared_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionDistanceSquared_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionInt	rw/custom/logic/LogicNumberFunction$FunctionInt	rustedwarfare/custom/logic/LogicNumberFunction$FunctionInt
@@ -5441,12 +5485,17 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$Fun
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	validateAndOptimize	method_LogicNumberFunction$FunctionInt_validateAndOptimize	validateAndOptimize
 	m	(I)V	validateNumberOfArguments	method_LogicNumberFunction$FunctionInt_validateNumberOfArguments	validateNumberOfArguments
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionLength	rw/custom/logic/LogicNumberFunction$FunctionLength	rustedwarfare/custom/logic/LogicNumberFunction$FunctionLength
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	field_LogicNumberFunction_FunctionLength_stringExpression	stringExpression
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionLength_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionLength_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionMax	rw/custom/logic/LogicNumberFunction$FunctionMax	rustedwarfare/custom/logic/LogicNumberFunction$FunctionMax
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	field_LogicNumberFunction_FunctionMax_firstOperand	firstOperand
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	b	field_LogicNumberFunction_FunctionMax_secondOperand	secondOperand
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionMax_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionMax_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionMin	rw/custom/logic/LogicNumberFunction$FunctionMin	rustedwarfare/custom/logic/LogicNumberFunction$FunctionMin
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	field_LogicNumberFunction_FunctionMin_firstOperand	firstOperand
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	b	field_LogicNumberFunction_FunctionMin_secondOperand	secondOperand
 	m	()Ljava/lang/String;	getName	method_LogicNumberFunction$FunctionMin_getName	getName
 	m	(Lcom/corrodinggames/rts/game/units/y;)F	readNumber	method_LogicNumberFunction$FunctionMin_readNumber	readNumber
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/LogicNumberFunction$FunctionRnd	rw/custom/logic/LogicNumberFunction$FunctionRnd	rustedwarfare/custom/logic/LogicNumberFunction$FunctionRnd
@@ -5627,17 +5676,23 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetAsMark
 	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getSingleRaw	method_UnitReference$GetAsMarker_getSingleRaw	getSingleRaw
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetOffsetAbsolute	rw/custom/logic/UnitReference$GetOffsetAbsolute	rustedwarfare/custom/logic/UnitReference$GetOffsetAbsolute
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	height	field_UnitReference$GetOffsetAbsolute_height	height
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x	field_UnitReference_GetOffsetAbsolute_xOffsetExpression	xOffsetExpression
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y	field_UnitReference_GetOffsetAbsolute_yOffsetExpression	yOffsetExpression
 	m	()Ljava/lang/String;	getClassDebugName	method_UnitReference$GetOffsetAbsolute_getClassDebugName	getClassDebugName
 	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getSingleRaw	method_UnitReference$GetOffsetAbsolute_getSingleRaw	getSingleRaw
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetOffsetRelative	rw/custom/logic/UnitReference$GetOffsetRelative	rustedwarfare/custom/logic/UnitReference$GetOffsetRelative
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	dirOffset	field_UnitReference$GetOffsetRelative_dirOffset	dirOffset
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	height	field_UnitReference$GetOffsetRelative_height	height
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	x	field_UnitReference_GetOffsetRelative_xOffsetExpression	xOffsetExpression
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	y	field_UnitReference_GetOffsetRelative_yOffsetExpression	yOffsetExpression
 	m	()Ljava/lang/String;	getClassDebugName	method_UnitReference$GetOffsetRelative_getClassDebugName	getClassDebugName
 	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getSingleRaw	method_UnitReference$GetOffsetRelative_getSingleRaw	getSingleRaw
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader$LogicBooleanContext;Z)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	validateAndOptimize	method_UnitReference$GetOffsetRelative_validateAndOptimize	validateAndOptimize
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$GetOffsetRelativeStatic	rw/custom/logic/UnitReference$GetOffsetRelativeStatic	rustedwarfare/custom/logic/UnitReference$GetOffsetRelativeStatic
 	f	F	dirOffset	field_UnitReference$GetOffsetRelativeStatic_dirOffset	dirOffset
 	f	F	height	field_UnitReference$GetOffsetRelativeStatic_height	height
+	f	F	x	field_UnitReference_GetOffsetRelativeStatic_xOffset	xOffset
+	f	F	y	field_UnitReference_GetOffsetRelativeStatic_yOffset	yOffset
 	m	()Ljava/lang/String;	getClassDebugName	method_UnitReference$GetOffsetRelativeStatic_getClassDebugName	getClassDebugName
 	m	(Lcom/corrodinggames/rts/game/units/y;)Lcom/corrodinggames/rts/game/units/am;	getSingleRaw	method_UnitReference$GetOffsetRelativeStatic_getSingleRaw	getSingleRaw
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/UnitReference$LastDamagedByUnitReference	rw/custom/logic/UnitReference$LastDamagedByUnitReference	rustedwarfare/custom/logic/UnitReference$LastDamagedByUnitReference
@@ -5933,6 +5988,7 @@ c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableM
 	m	()Z	hasArrays	method_VariableScope$VariableMapping_hasArrays	hasArrays
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName	rw/custom/logic/VariableScope$VariableName	rustedwarfare/custom/logic/VariableScope$VariableName
 	f	Ljava/util/HashMap;	existingVariableName	field_VariableScope$VariableName_existingVariableName	existingVariableName
+	f	Ljava/lang/String;	id	field_VariableScope_VariableName_id	id
 	m	(Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;)Ljava/lang/String;	access$000	method_VariableScope$VariableName_access_000	access$000
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;	get	method_VariableScope$VariableName_get	get
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$VariableName;	getExistingOrNull	method_VariableScope$VariableName_getExistingOrNull	getExistingOrNull

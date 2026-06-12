@@ -124,6 +124,18 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_replay_checksum_flow_map_v0_47.csv";
     private static final String NETWORK_CHECKSUM_BUCKET_EVIDENCE_RESOURCE =
             "/rustedfabricapi/mapping/rw_network_checksum_bucket_evidence_v0_47.csv";
+    private static final String CUSTOM_LOGIC_STAT_BEHAVIOR_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_custom_logic_stat_behavior_added_rows_v0_52.csv";
+    private static final String CUSTOM_LOGIC_STAT_BEHAVIOR_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_custom_logic_stat_behavior_flow_map_v0_52.csv";
+    private static final String CUSTOM_LOGIC_STAT_BEHAVIOR_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_custom_logic_stat_behavior_coverage_v0_52.csv";
+    private static final String CUSTOM_LOGIC_GEOMETRY_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_custom_logic_geometry_rows_v0_52.csv";
+    private static final String CUSTOM_MUTABLE_STAT_WRITER_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_custom_mutable_stat_writer_rows_v0_52.csv";
+    private static final String CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_custom_movement_micro_behavior_rows_v0_52.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -352,6 +364,30 @@ public final class MappingEvidenceDiagnostics {
         return Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE;
     }
 
+    public static List<MappingEvidenceRow> allCustomLogicStatBehaviorRows() {
+        return Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allCustomLogicStatBehaviorFlowMap() {
+        return Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allCustomLogicStatBehaviorCoverage() {
+        return Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_COVERAGE;
+    }
+
+    public static List<MappingEvidenceRow> allCustomLogicGeometryRows() {
+        return Holder.CUSTOM_LOGIC_GEOMETRY_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allCustomMutableStatWriterRows() {
+        return Holder.CUSTOM_MUTABLE_STAT_WRITER_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allCustomMovementMicroBehaviorRows() {
+        return Holder.CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -467,6 +503,22 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findNetworkChecksumBucketEvidence(String text) {
         return findByText(Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE, text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomLogicStatBehaviorRows(String text) {
+        return findByText(Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomLogicGeometryRows(String text) {
+        return findByText(Holder.CUSTOM_LOGIC_GEOMETRY_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomMutableStatWriterRows(String text) {
+        return findByText(Holder.CUSTOM_MUTABLE_STAT_WRITER_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomMovementMicroBehaviorRows(String text) {
+        return findByText(Holder.CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -669,6 +721,12 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_replay_checksum_updated_rows", Holder.RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS);
         result.put("runtime_replay_checksum_flow_map", Holder.RUNTIME_REPLAY_CHECKSUM_FLOW_MAP);
         result.put("network_checksum_bucket_evidence", Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE);
+        result.put("custom_logic_stat_behavior_rows", Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_ROWS);
+        result.put("custom_logic_stat_behavior_flow_map", Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_FLOW_MAP);
+        result.put("custom_logic_stat_behavior_coverage", Holder.CUSTOM_LOGIC_STAT_BEHAVIOR_COVERAGE);
+        result.put("custom_logic_geometry_rows", Holder.CUSTOM_LOGIC_GEOMETRY_ROWS);
+        result.put("custom_mutable_stat_writer_rows", Holder.CUSTOM_MUTABLE_STAT_WRITER_ROWS);
+        result.put("custom_movement_micro_behavior_rows", Holder.CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -880,6 +938,18 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_REPLAY_CHECKSUM_FLOW_MAP_RESOURCE);
         private static final List<MappingEvidenceRow> NETWORK_CHECKSUM_BUCKET_EVIDENCE =
                 loadRows(NETWORK_CHECKSUM_BUCKET_EVIDENCE_RESOURCE);
+        private static final List<MappingEvidenceRow> CUSTOM_LOGIC_STAT_BEHAVIOR_ROWS =
+                loadRows(CUSTOM_LOGIC_STAT_BEHAVIOR_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> CUSTOM_LOGIC_STAT_BEHAVIOR_FLOW_MAP =
+                loadRows(CUSTOM_LOGIC_STAT_BEHAVIOR_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> CUSTOM_LOGIC_STAT_BEHAVIOR_COVERAGE =
+                loadRows(CUSTOM_LOGIC_STAT_BEHAVIOR_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> CUSTOM_LOGIC_GEOMETRY_ROWS =
+                loadRows(CUSTOM_LOGIC_GEOMETRY_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> CUSTOM_MUTABLE_STAT_WRITER_ROWS =
+                loadRows(CUSTOM_MUTABLE_STAT_WRITER_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS =
+                loadRows(CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =
