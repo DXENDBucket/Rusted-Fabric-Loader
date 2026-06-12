@@ -36,6 +36,8 @@ public final class UnitRuntimeDiagnostics {
         putLongField(result, unit, "deathFrame", new String[]{"deathFrame", "bW"});
         result.put("damageImmune", Boolean.valueOf(isDamageImmune(unit)));
         result.put("fixedRotation", Boolean.valueOf(isFixedRotation(unit)));
+        result.put("movementType", getMovementType(unit));
+        result.put("zoomedOutIconImage", getZoomedOutIconImage(unit));
         return Collections.unmodifiableMap(result);
     }
 
@@ -58,6 +60,16 @@ public final class UnitRuntimeDiagnostics {
     public static boolean isFixedRotation(Object unit) {
         requireUnit(unit);
         return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit, new String[]{"isFixedRotation", "bI"}));
+    }
+
+    public static Object getMovementType(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getMovementType", "h"});
+    }
+
+    public static Object getZoomedOutIconImage(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getZoomedOutIconImage", "v"});
     }
 
     public static int getDeathSmokeParticleCount(Object unit) {

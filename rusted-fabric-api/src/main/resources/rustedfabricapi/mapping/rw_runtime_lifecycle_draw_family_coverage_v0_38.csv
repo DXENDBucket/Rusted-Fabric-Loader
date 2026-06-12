@@ -1,0 +1,9 @@
+family,official_name,descriptor,actual_override_methods,mapped_with_expected_name,remaining_issues,evidence
+update,a,(F)V,55,55,0,GameObjectManager update loop calls GameObject.a(float) for every active GameObject; existing Projectile/CustomUnit semantics were update.
+drawMainLayer,c,(F)Z,38,38,0,GameObjectManager render loop calls GameObject.c(float) as the main world draw pass; boolean return controls whether the object was drawn/handled.
+drawZoomedOutIconLayer,f,(F)Z,6,6,0,Render loop calls f(float) before c(float) when zoomed-out/icon pass is active; Unit base implementation draws getZoomedOutIconImage().
+drawPreMainLayer,d,(F)V,8,8,0,"Render loop invokes d(float) before main draw; CustomUnit implementation draws back image / underlay, so family name must be generic."
+drawHighlightLayer,e,(F)V,21,21,0,Render loop invokes e(float) for selected/highlighted/top-layer units; Unit implementation draws selection/highlight rings.
+drawStatusOverlayLayer,a,(FZ)V,13,13,0,"Render loop invokes a(float,boolean) after world draw with low/high zoom flag; Unit implementation draws hp/status/order overlays."
+drawPostOverlayLayer,p,(F)V,3,3,0,Render loop invokes p(float) after drawStatusOverlayLayer; CustomUnit uses it for render behavior overlay callbacks.
+isVisibleInCamera,a,(Lcom/corrodinggames/rts/gameFramework/l;)Z,8,8,0,Visibility/camera predicate family; Projectile was previously mapped and GameObject base returns true.

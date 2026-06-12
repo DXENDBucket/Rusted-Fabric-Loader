@@ -49,26 +49,26 @@ public abstract class CustomUnitRenderNamedMixin {
         cir.setReturnValue(CustomUnitRenderEvents.AFTER_IMAGE_DESTINATION_RECT.invoker().afterImageDestinationRect(this, cir.getReturnValue()));
     }
 
-    @Inject(method = "drawBackImageAndUnderlay(F)V", at = @At("HEAD"), cancellable = true, require = 1)
+    @Inject(method = "drawPreMainLayer(F)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeDrawBackImage(float renderDelta, CallbackInfo ci) {
         if (CustomUnitRenderEvents.BEFORE_DRAW_BACK_IMAGE.invoker().beforeDrawBackImage(this, renderDelta)) {
             ci.cancel();
         }
     }
 
-    @Inject(method = "drawBackImageAndUnderlay(F)V", at = @At("RETURN"), require = 1)
+    @Inject(method = "drawPreMainLayer(F)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterDrawBackImage(float renderDelta, CallbackInfo ci) {
         CustomUnitRenderEvents.AFTER_DRAW_BACK_IMAGE.invoker().afterDrawBackImage(this, renderDelta);
     }
 
-    @Inject(method = "drawRenderBehaviorOverlayPhase(F)V", at = @At("HEAD"), cancellable = true, require = 1)
+    @Inject(method = "drawPostOverlayLayer(F)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeDrawOverlay(float renderDelta, CallbackInfo ci) {
         if (CustomUnitRenderEvents.BEFORE_DRAW_OVERLAY.invoker().beforeDrawOverlay(this, renderDelta)) {
             ci.cancel();
         }
     }
 
-    @Inject(method = "drawRenderBehaviorOverlayPhase(F)V", at = @At("RETURN"), require = 1)
+    @Inject(method = "drawPostOverlayLayer(F)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterDrawOverlay(float renderDelta, CallbackInfo ci) {
         CustomUnitRenderEvents.AFTER_DRAW_OVERLAY.invoker().afterDrawOverlay(this, renderDelta);
     }

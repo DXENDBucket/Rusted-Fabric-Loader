@@ -50,6 +50,12 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_damage_death_flow_map_v0_37.csv";
     private static final String RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_damage_death_family_coverage_v0_37.csv";
+    private static final String RUNTIME_LIFECYCLE_DRAW_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_lifecycle_draw_added_updated_rows_v0_38.csv";
+    private static final String RUNTIME_LIFECYCLE_DRAW_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_lifecycle_draw_flow_map_v0_38.csv";
+    private static final String RUNTIME_LIFECYCLE_DRAW_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_lifecycle_draw_family_coverage_v0_38.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -130,6 +136,18 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeLifecycleDrawRows() {
+        return Holder.RUNTIME_LIFECYCLE_DRAW_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeLifecycleDrawFlowMap() {
+        return Holder.RUNTIME_LIFECYCLE_DRAW_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeLifecycleDrawFamilyCoverage() {
+        return Holder.RUNTIME_LIFECYCLE_DRAW_FAMILY_COVERAGE;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -177,6 +195,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeDamageDeathFamilyRows(String text) {
         return findByText(Holder.RUNTIME_DAMAGE_DEATH_FAMILY_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeLifecycleDrawRows(String text) {
+        return findByText(Holder.RUNTIME_LIFECYCLE_DRAW_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -309,13 +331,13 @@ public final class MappingEvidenceDiagnostics {
                     first(row, "kind"),
                     first(row, "owner_official", "owner"),
                     first(row, "descriptor"),
-                    first(row, "official_name", "member"),
+                    first(row, "official_name", "member", "target"),
                     first(row, "intermediary_name", "new_intermediary", "old_intermediary"),
                     first(row, "named_name", "new_named_name", "new_named", "named_name", "mapped_name"),
                     first(row, "source", "mapping_source"),
-                    first(row, "category", "runtime_stage", "stage", "family_named"),
+                    first(row, "category", "runtime_stage", "stage", "family_named", "phase", "family"),
                     first(row, "confidence"),
-                    first(row, "evidence", "semantics"),
+                    first(row, "evidence", "semantics", "contract"),
                     first(row, "notes", "reason")));
         }
         return Collections.unmodifiableList(result);
@@ -339,6 +361,9 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_damage_death_family_rows", Holder.RUNTIME_DAMAGE_DEATH_FAMILY_ROWS);
         result.put("runtime_damage_death_flow_map", Holder.RUNTIME_DAMAGE_DEATH_FLOW_MAP);
         result.put("runtime_damage_death_family_coverage", Holder.RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE);
+        result.put("runtime_lifecycle_draw_rows", Holder.RUNTIME_LIFECYCLE_DRAW_ROWS);
+        result.put("runtime_lifecycle_draw_flow_map", Holder.RUNTIME_LIFECYCLE_DRAW_FLOW_MAP);
+        result.put("runtime_lifecycle_draw_family_coverage", Holder.RUNTIME_LIFECYCLE_DRAW_FAMILY_COVERAGE);
         return Collections.unmodifiableMap(result);
     }
 
@@ -476,6 +501,12 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_DAMAGE_DEATH_FLOW_MAP_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE =
                 loadRows(RUNTIME_DAMAGE_DEATH_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_LIFECYCLE_DRAW_ROWS =
+                loadRows(RUNTIME_LIFECYCLE_DRAW_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_LIFECYCLE_DRAW_FLOW_MAP =
+                loadRows(RUNTIME_LIFECYCLE_DRAW_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_LIFECYCLE_DRAW_FAMILY_COVERAGE =
+                loadRows(RUNTIME_LIFECYCLE_DRAW_FAMILY_COVERAGE_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

@@ -1,0 +1,8 @@
+phase,caller,target,contract
+update,RustedWarfareGameEngine.updateAllGameObjects,GameObject.update(float),advance runtime simulation
+draw-pre,RustedWarfareGameEngine.drawAllGameObjects,GameObject.drawPreMainLayer(float),pre-main/underlay render phase
+draw-main-icon,RustedWarfareGameEngine.drawAllGameObjects,GameObject.drawZoomedOutIconLayer(float),low zoom icon draw; false falls back to main draw
+draw-main,RustedWarfareGameEngine.drawAllGameObjects,GameObject.drawMainLayer(float),primary world draw layer
+draw-highlight,RustedWarfareGameEngine.drawAllGameObjects,GameObject.drawHighlightLayer(float),selection/highlight/top layer pass
+draw-status,RustedWarfareGameEngine.drawAllGameObjects,"GameObject.drawStatusOverlayLayer(float, boolean)",hp/status/order overlay
+draw-post-overlay,RustedWarfareGameEngine.drawAllGameObjects,GameObject.drawPostOverlayLayer(float),custom render behavior callbacks and post status overlay
