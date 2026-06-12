@@ -1,0 +1,56 @@
+action,kind,owner_official,official_name,descriptor,named_name,evidence,confidence
+added,class,com/corrodinggames/rts/gameFramework/d/e,,,rustedwarfare/render/effect/EffectInstance,pooled effect object created/reset/updated/drawn by EffectEngine; target of EffectTemplate.spawnEffect,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ay,Lcom/corrodinggames/rts/gameFramework/d/c;,engine,constructor stores owning EffectEngine,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,a,Lcom/corrodinggames/rts/game/units/custom/ay;,effectTemplate,EffectTemplate.spawnEffect stores template on custom effect instance,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,b,Lcom/corrodinggames/rts/gameFramework/w;,attachedObject,attachment helper stores parent GameObject; update/draw add parent eo/ep/eq,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,e,Z,showInFog,EffectTemplate.showInFog written to field e,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,o,Z,active,EffectEngine scans for inactive when false; deactivate clears it,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,p,Z,forceDraw,EffectEngine.createEffectAndMarkForDraw sets this flag,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/e,q,Lcom/corrodinggames/rts/gameFramework/d/h;,priority,EffectTemplate.priority and EffectEngine priority gate,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,r,Z,fadeOut,EffectTemplate.fadeOut written to field r; built-in effects set it for fade,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,s,Z,fadeIn,EffectTemplate.fadeInTime>0 sets field s,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,t,F,fadeInTime,EffectTemplate.fadeInTime written to field t,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,u,Z,atmospheric,EffectTemplate.atmospheric written to field u,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,v,Z,physics,EffectTemplate.physics written to field v,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,w,F,physicsGravity,EffectTemplate.physicsGravity written to field w,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,x,I,color,EffectTemplate.color written to field x and used to build LightingColorFilter,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,A,S,spawnDepth,EffectTemplate recursion depth stored here and checked before alsoEmitEffectsOnDeath/trail,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,B,Landroid/graphics/LightingColorFilter;,lightingColorFilter,EffectTemplate.cachedLightingColorFilter written to field B,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,E,F,alpha,EffectTemplate.alpha written to field E,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,F,F,scaleTo,EffectTemplate.scaleTo written to field F,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,G,F,scaleFrom,EffectTemplate.scaleFrom written to field G,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,I,F,worldX,EffectTemplate spawn x offset writes field I; update adds velocityX,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,J,F,worldY,EffectTemplate spawn y offset writes field J; update adds velocityY,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,K,F,height,EffectTemplate hOffset writes field K; update adds velocityHeight,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,P,F,velocityX,EffectTemplate xSpeedAbsolute/relative writes field P; update adds to worldX,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,Q,F,velocityY,EffectTemplate ySpeedAbsolute/relative writes field Q; update adds to worldY,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,R,F,velocityHeight,EffectTemplate hSpeed writes field R; update adds to height,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,U,F,delayTimer,EffectTemplate.delayedStartTimer writes field U and update waits while U>0,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,V,F,lifeRemaining,EffectTemplate.life writes field V and update decrements it,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,W,F,lifeMax,initialized from V and used as original life for fade/scale calculations,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/e,X,F,trailEffectTimer,update increments X and compares against EffectTemplate.trailEffectRate,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,Y,F,direction,EffectTemplate dirOffset/start direction written to field Y,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,Z,F,angularVelocity,EffectTemplate.dirSpeed writes field Z; update adds to direction,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ae,Z,animateFrames,set when animateFrameStart != animateFrameEnd,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,af,I,animateFrameStart,EffectTemplate.animateFrameStart written to field af,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ag,I,animateFrameEnd,EffectTemplate.animateFrameEnd written to field ag,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ah,Z,animateFramePingPong,EffectTemplate.animateFramePingPong written to field ah,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ai,Z,animateFrameLooping,EffectTemplate.animateFrameLooping written to field ai,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,aj,F,animateFrameSpeed,EffectTemplate.animateFrameSpeed written to field aj,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ak,F,currentFrameFloat,update increments/decrements ak and casts to frameIndex,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,al,Z,animateFrameReverse,ping-pong update toggles al when reaching endpoints,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ap,I,frameIndex,EffectTemplate.frameIndex writes field ap and draw selects source frame,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,aq,I,imageStripIndex,EffectTemplate.stripIndex writes field aq; draw indexes EffectEngine.builtInImageStrips,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ar,S,drawLayer,EffectTemplate.drawLayer written to field ar and EffectEngine draws by layer,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,as,Z,shadow,EffectTemplate.shadow written to field as,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,at,Lcom/corrodinggames/rts/gameFramework/m/ag;,drawPaint,constructor creates reusable Paint for effect draw,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ax,[Lcom/corrodinggames/rts/gameFramework/m/ag;,alphaPaintCache,static cached paint array used by getAlphaPaint,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,<init>,(Lcom/corrodinggames/rts/gameFramework/d/c;)V,<init>,constructor stores engine and default template/priority/paint,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,()Lcom/corrodinggames/rts/gameFramework/m/ag;,newEffectPaint,static helper creates default effect Paint,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(F)Lcom/corrodinggames/rts/gameFramework/m/ag;,getAlphaPaint,indexes static alphaPaintCache by normalized alpha,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,b,()V,deactivateAndEmitDeathEffects,"clears active flag, decrements active count, emits alsoEmitEffectsOnDeath if allowed",high
+added,method,com/corrodinggames/rts/gameFramework/d/e,c,()V,reset,resets pooled EffectInstance to default values,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(Lcom/corrodinggames/rts/gameFramework/d/e;)V,copyFrom,copies effect instance runtime fields from another instance,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,b,(F)V,update,"updates delay/life, animation, physics, velocity, trail effects",high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(ILcom/corrodinggames/rts/gameFramework/d/g;Landroid/graphics/Rect;)V,setSourceRectForFrame,computes image strip source rect for a frame index,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(Lcom/corrodinggames/rts/gameFramework/l;Z)Z,draw,"draws effect instance, optionally height-shadow pass",high

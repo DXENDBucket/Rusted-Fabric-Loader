@@ -1,0 +1,24 @@
+action,kind,owner_official,official_name,descriptor,named_name,evidence,confidence
+added,class,com/corrodinggames/rts/gameFramework/d/d,,,rustedwarfare/render/effect/BuiltInEffectKind,javap enum constants: custom/smoke/teleport/hitGround/playerLand/playerJump/gemCollect/keyDoorOpen/blood,high
+added,class,com/corrodinggames/rts/gameFramework/d/h,,,rustedwarfare/render/effect/EffectPriority,javap enum constants: verylow/low/high/veryhigh/critical; EffectEngine uses per-priority budgets,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,a,Lcom/corrodinggames/rts/gameFramework/d/h;,verylow,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,b,Lcom/corrodinggames/rts/gameFramework/d/h;,low,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,c,Lcom/corrodinggames/rts/gameFramework/d/h;,high,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,d,Lcom/corrodinggames/rts/gameFramework/d/h;,veryhigh,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,e,Lcom/corrodinggames/rts/gameFramework/d/h;,critical,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,f,[Lcom/corrodinggames/rts/gameFramework/d/h;,$VALUES,compiler enum values array,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/h,values,()[Lcom/corrodinggames/rts/gameFramework/d/h;,values,compiler enum values method,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/h,valueOf,(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/d/h;,valueOf,compiler enum valueOf method,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/h,a,(Lcom/corrodinggames/rts/gameFramework/d/h;)Z,isAtLeast,used by EffectEngine slot search to filter reusable effects by minimum priority,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,a,Lcom/corrodinggames/rts/gameFramework/d/d;,custom,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,b,Lcom/corrodinggames/rts/gameFramework/d/d;,smoke,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,c,Lcom/corrodinggames/rts/gameFramework/d/d;,teleport,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,d,Lcom/corrodinggames/rts/gameFramework/d/d;,hitGround,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,e,Lcom/corrodinggames/rts/gameFramework/d/d;,playerLand,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,f,Lcom/corrodinggames/rts/gameFramework/d/d;,playerJump,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,g,Lcom/corrodinggames/rts/gameFramework/d/d;,gemCollect,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,h,Lcom/corrodinggames/rts/gameFramework/d/d;,keyDoorOpen,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,i,Lcom/corrodinggames/rts/gameFramework/d/d;,blood,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,j,[Lcom/corrodinggames/rts/gameFramework/d/d;,$VALUES,compiler enum values array,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/d,values,()[Lcom/corrodinggames/rts/gameFramework/d/d;,values,compiler enum values method,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/d,valueOf,(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/d/d;,valueOf,compiler enum valueOf method,confirmed

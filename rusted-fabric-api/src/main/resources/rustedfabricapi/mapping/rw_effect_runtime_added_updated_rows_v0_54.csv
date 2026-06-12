@@ -1,0 +1,130 @@
+action,kind,owner_official,official_name,descriptor,named_name,evidence,confidence
+added,class,com/corrodinggames/rts/gameFramework/d/b,,,rustedwarfare/render/effect/NoiseCloudOverlay,"javap references SettingsEngine.renderClouds, R$drawable.noise, scrolling offsets, and tiled draw call",high
+added,class,com/corrodinggames/rts/gameFramework/d/c,,,rustedwarfare/render/effect/EffectEngine,GameEngine.bR owner; allocates EffectInstance pool; loads effects/effects2/projectiles/effects3 strips,high
+added,class,com/corrodinggames/rts/gameFramework/d/d,,,rustedwarfare/render/effect/BuiltInEffectKind,javap enum constants: custom/smoke/teleport/hitGround/playerLand/playerJump/gemCollect/keyDoorOpen/blood,high
+added,class,com/corrodinggames/rts/gameFramework/d/e,,,rustedwarfare/render/effect/EffectInstance,pooled effect object created/reset/updated/drawn by EffectEngine; target of EffectTemplate.spawnEffect,high
+added,class,com/corrodinggames/rts/gameFramework/d/h,,,rustedwarfare/render/effect/EffectPriority,javap enum constants: verylow/low/high/veryhigh/critical; EffectEngine uses per-priority budgets,high
+updated,class,com/corrodinggames/rts/gameFramework/d/f,,,rustedwarfare/render/effect/ResourcePoolSmokeEffect,EffectTemplate builtInEffect resourcePoolSmoke calls d/f factory methods and sets resource color/life,medium-high
+added,field,com/corrodinggames/rts/gameFramework/l,bR,Lcom/corrodinggames/rts/gameFramework/d/c;,effectEngine,EffectTemplate.spawnEffect reads GameEngine.bR and invokes EffectEngine creation methods,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,a,Lcom/corrodinggames/rts/gameFramework/d/h;,verylow,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,b,Lcom/corrodinggames/rts/gameFramework/d/h;,low,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,c,Lcom/corrodinggames/rts/gameFramework/d/h;,high,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,d,Lcom/corrodinggames/rts/gameFramework/d/h;,veryhigh,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,e,Lcom/corrodinggames/rts/gameFramework/d/h;,critical,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/h,f,[Lcom/corrodinggames/rts/gameFramework/d/h;,$VALUES,compiler enum values array,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/h,values,()[Lcom/corrodinggames/rts/gameFramework/d/h;,values,compiler enum values method,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/h,valueOf,(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/d/h;,valueOf,compiler enum valueOf method,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/h,a,(Lcom/corrodinggames/rts/gameFramework/d/h;)Z,isAtLeast,used by EffectEngine slot search to filter reusable effects by minimum priority,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,a,Lcom/corrodinggames/rts/gameFramework/d/d;,custom,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,b,Lcom/corrodinggames/rts/gameFramework/d/d;,smoke,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,c,Lcom/corrodinggames/rts/gameFramework/d/d;,teleport,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,d,Lcom/corrodinggames/rts/gameFramework/d/d;,hitGround,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,e,Lcom/corrodinggames/rts/gameFramework/d/d;,playerLand,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,f,Lcom/corrodinggames/rts/gameFramework/d/d;,playerJump,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,g,Lcom/corrodinggames/rts/gameFramework/d/d;,gemCollect,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,h,Lcom/corrodinggames/rts/gameFramework/d/d;,keyDoorOpen,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,i,Lcom/corrodinggames/rts/gameFramework/d/d;,blood,javap <clinit> enum string order,high
+added,field,com/corrodinggames/rts/gameFramework/d/d,j,[Lcom/corrodinggames/rts/gameFramework/d/d;,$VALUES,compiler enum values array,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/d,values,()[Lcom/corrodinggames/rts/gameFramework/d/d;,values,compiler enum values method,confirmed
+added,method,com/corrodinggames/rts/gameFramework/d/d,valueOf,(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/d/d;,valueOf,compiler enum valueOf method,confirmed
+added,field,com/corrodinggames/rts/gameFramework/d/b,a,Z,loaded,constructor/reset and loadNoiseTexture set flag,high
+added,field,com/corrodinggames/rts/gameFramework/d/b,b,Lcom/corrodinggames/rts/gameFramework/m/e;,noiseImage,loadNoiseTexture loads R$drawable.noise,high
+added,field,com/corrodinggames/rts/gameFramework/d/b,c,Landroid/graphics/Paint;,paint,drawNoiseCloudOverlay configures black alpha paint,high
+added,field,com/corrodinggames/rts/gameFramework/d/b,d,Landroid/graphics/RectF;,screenRect,drawNoiseCloudOverlay sets rect from camera dimensions,high
+added,field,com/corrodinggames/rts/gameFramework/d/b,e,F,scrollX,update increments by 0.2*delta and wraps by image width,high
+added,field,com/corrodinggames/rts/gameFramework/d/b,f,F,scrollY,update increments by 0.07*delta and wraps by image height,high
+added,method,com/corrodinggames/rts/gameFramework/d/b,a,()Z,isEnabled,returns SettingsEngine.renderClouds,high
+added,method,com/corrodinggames/rts/gameFramework/d/b,b,()V,loadNoiseTexture,loads R$drawable.noise and marks loaded,high
+added,method,com/corrodinggames/rts/gameFramework/d/b,a,(F)V,update,updates scroll offsets when renderClouds enabled,high
+added,method,com/corrodinggames/rts/gameFramework/d/b,b,(F)V,draw,draws tiled noise overlay through GraphicsEngine,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,a,I,activeEffectCount,decremented by EffectInstance.deactivate; removeAll sanity checks active count,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,b,I,maxVeryLowEffects,constructor default 80; budget checked for verylow priority,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,c,I,maxLowEffects,constructor default 100; budget checked for low priority,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,d,I,maxHighEffects,constructor default 110; budget checked for high priority,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,e,I,maxVeryHighEffects,constructor default 120; budget checked for veryhigh priority,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,f,[Lcom/corrodinggames/rts/gameFramework/d/e;,effectPool,static pooled EffectInstance array,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,g,I,highestUsedEffectIndex,tracks first unused tail of effectPool,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,h,Z,effectPoolDirty,set when active effect count changes,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,k,Lcom/corrodinggames/rts/gameFramework/m/ae;,displacementShader,loadBuiltInEffectImages logs Loading displacement shader and loads post_displacement.frag,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,l,Lcom/corrodinggames/rts/gameFramework/m/e;,effectsImage,built-in image sheet loaded from effects,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,m,Lcom/corrodinggames/rts/gameFramework/m/e;,effects2Image,built-in image sheet loaded from effects2,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,n,Landroid/graphics/RectF;,scratchDestRectF,static draw scratch RectF,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,o,Landroid/graphics/Rect;,scratchSourceRect,static draw scratch Rect,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,p,Landroid/graphics/Rect;,scratchDestRect,static draw scratch Rect,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,q,Landroid/graphics/Paint;,defaultEffectPaint,static draw Paint,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,r,Landroid/graphics/Paint;,shadowEffectPaint,static draw Paint,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,s,[Lcom/corrodinggames/rts/gameFramework/d/g;,builtInImageStrips,array populated from effects/effects2/projectiles/effects3 image strips,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,t,Lcom/corrodinggames/rts/gameFramework/d/h;,nextEffectPriorityOverride,setNextEffectPriority stores value consumed by next createEffect,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,u,Z,requireNextEffectOnscreen,requireNextEffectOnscreen makes next create fail outside onscreen rect,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,v,Z,allowNextEffectOffscreen,allowNextEffectOffscreen bypasses outer camera/fog offscreen restrictions,high
+added,field,com/corrodinggames/rts/gameFramework/d/c,w,Landroid/graphics/Paint;,scratchPaint,constructor creates reusable Paint,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(Lcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;,allocateEffect,checks priority budgets and finds inactive/reusable EffectInstance slot,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(ZLcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;,findReusableEffect,private helper scans effectPool for inactive or lower-priority reusable effect,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,b,(Lcom/corrodinggames/rts/gameFramework/d/h;)V,setNextEffectPriority,stores one-shot nextEffectPriorityOverride,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,()V,requireNextEffectOnscreen,sets one-shot flag checked by createEffect against camera rect,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,b,()V,allowNextEffectOffscreen,sets one-shot flag allowing createEffect offscreen,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(FFFLcom/corrodinggames/rts/gameFramework/d/d;ZLcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;,createEffectAndMarkForDraw,wrapper around createEffect that sets EffectInstance.forceDraw flag,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,b,(FFFLcom/corrodinggames/rts/gameFramework/d/d;ZLcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;,createEffect,"central effect factory: applies priority/offscreen/fog gates, allocates EffectInstance, initializes built-in kind defaults",high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(Landroid/content/Context;)V,loadBuiltInEffectImages,loads effect image sheets and displacement shader,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(Ljava/lang/String;)I,getBuiltInImageStripIndex,resolves built-in image strip by name while loading effect sheets,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(F)V,update,updates active EffectInstance pool,high
+added,method,com/corrodinggames/rts/gameFramework/d/c,a,(Z)V,removeAll,deactivates all active effects and resets highestUsedEffectIndex,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ay,Lcom/corrodinggames/rts/gameFramework/d/c;,engine,constructor stores owning EffectEngine,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,a,Lcom/corrodinggames/rts/game/units/custom/ay;,effectTemplate,EffectTemplate.spawnEffect stores template on custom effect instance,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,b,Lcom/corrodinggames/rts/gameFramework/w;,attachedObject,attachment helper stores parent GameObject; update/draw add parent eo/ep/eq,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,e,Z,showInFog,EffectTemplate.showInFog written to field e,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,o,Z,active,EffectEngine scans for inactive when false; deactivate clears it,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,p,Z,forceDraw,EffectEngine.createEffectAndMarkForDraw sets this flag,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/e,q,Lcom/corrodinggames/rts/gameFramework/d/h;,priority,EffectTemplate.priority and EffectEngine priority gate,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,r,Z,fadeOut,EffectTemplate.fadeOut written to field r; built-in effects set it for fade,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,s,Z,fadeIn,EffectTemplate.fadeInTime>0 sets field s,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,t,F,fadeInTime,EffectTemplate.fadeInTime written to field t,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,u,Z,atmospheric,EffectTemplate.atmospheric written to field u,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,v,Z,physics,EffectTemplate.physics written to field v,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,w,F,physicsGravity,EffectTemplate.physicsGravity written to field w,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,x,I,color,EffectTemplate.color written to field x and used to build LightingColorFilter,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,A,S,spawnDepth,EffectTemplate recursion depth stored here and checked before alsoEmitEffectsOnDeath/trail,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,B,Landroid/graphics/LightingColorFilter;,lightingColorFilter,EffectTemplate.cachedLightingColorFilter written to field B,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,E,F,alpha,EffectTemplate.alpha written to field E,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,F,F,scaleTo,EffectTemplate.scaleTo written to field F,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,G,F,scaleFrom,EffectTemplate.scaleFrom written to field G,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,I,F,worldX,EffectTemplate spawn x offset writes field I; update adds velocityX,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,J,F,worldY,EffectTemplate spawn y offset writes field J; update adds velocityY,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,K,F,height,EffectTemplate hOffset writes field K; update adds velocityHeight,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,P,F,velocityX,EffectTemplate xSpeedAbsolute/relative writes field P; update adds to worldX,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,Q,F,velocityY,EffectTemplate ySpeedAbsolute/relative writes field Q; update adds to worldY,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,R,F,velocityHeight,EffectTemplate hSpeed writes field R; update adds to height,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,U,F,delayTimer,EffectTemplate.delayedStartTimer writes field U and update waits while U>0,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,V,F,lifeRemaining,EffectTemplate.life writes field V and update decrements it,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,W,F,lifeMax,initialized from V and used as original life for fade/scale calculations,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/e,X,F,trailEffectTimer,update increments X and compares against EffectTemplate.trailEffectRate,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,Y,F,direction,EffectTemplate dirOffset/start direction written to field Y,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,Z,F,angularVelocity,EffectTemplate.dirSpeed writes field Z; update adds to direction,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ae,Z,animateFrames,set when animateFrameStart != animateFrameEnd,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,af,I,animateFrameStart,EffectTemplate.animateFrameStart written to field af,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ag,I,animateFrameEnd,EffectTemplate.animateFrameEnd written to field ag,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ah,Z,animateFramePingPong,EffectTemplate.animateFramePingPong written to field ah,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ai,Z,animateFrameLooping,EffectTemplate.animateFrameLooping written to field ai,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,aj,F,animateFrameSpeed,EffectTemplate.animateFrameSpeed written to field aj,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ak,F,currentFrameFloat,update increments/decrements ak and casts to frameIndex,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,al,Z,animateFrameReverse,ping-pong update toggles al when reaching endpoints,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ap,I,frameIndex,EffectTemplate.frameIndex writes field ap and draw selects source frame,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,aq,I,imageStripIndex,EffectTemplate.stripIndex writes field aq; draw indexes EffectEngine.builtInImageStrips,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ar,S,drawLayer,EffectTemplate.drawLayer written to field ar and EffectEngine draws by layer,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,as,Z,shadow,EffectTemplate.shadow written to field as,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,at,Lcom/corrodinggames/rts/gameFramework/m/ag;,drawPaint,constructor creates reusable Paint for effect draw,high
+added,field,com/corrodinggames/rts/gameFramework/d/e,ax,[Lcom/corrodinggames/rts/gameFramework/m/ag;,alphaPaintCache,static cached paint array used by getAlphaPaint,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,<init>,(Lcom/corrodinggames/rts/gameFramework/d/c;)V,<init>,constructor stores engine and default template/priority/paint,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,()Lcom/corrodinggames/rts/gameFramework/m/ag;,newEffectPaint,static helper creates default effect Paint,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(F)Lcom/corrodinggames/rts/gameFramework/m/ag;,getAlphaPaint,indexes static alphaPaintCache by normalized alpha,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,b,()V,deactivateAndEmitDeathEffects,"clears active flag, decrements active count, emits alsoEmitEffectsOnDeath if allowed",high
+added,method,com/corrodinggames/rts/gameFramework/d/e,c,()V,reset,resets pooled EffectInstance to default values,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(Lcom/corrodinggames/rts/gameFramework/d/e;)V,copyFrom,copies effect instance runtime fields from another instance,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,b,(F)V,update,"updates delay/life, animation, physics, velocity, trail effects",high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(ILcom/corrodinggames/rts/gameFramework/d/g;Landroid/graphics/Rect;)V,setSourceRectForFrame,computes image strip source rect for a frame index,high
+added,method,com/corrodinggames/rts/gameFramework/d/e,a,(Lcom/corrodinggames/rts/gameFramework/l;Z)Z,draw,"draws effect instance, optionally height-shadow pass",high
+added,field,com/corrodinggames/rts/gameFramework/d/f,a,F,life,resourcePoolSmoke built-in sets field a to lifetime 500f,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/f,j,I,color,EffectTemplate resourcePoolSmoke sets color field j,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/f,s,Lcom/corrodinggames/rts/gameFramework/d/h;,priority,field type EffectPriority and factories use effect priority,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/f,i,Lcom/corrodinggames/rts/gameFramework/d/e;,effectInstance,holds linked EffectInstance used for visual smoke,medium-high
+added,field,com/corrodinggames/rts/gameFramework/d/f,x,Lcom/corrodinggames/rts/gameFramework/d/c;,engine,constructor stores owning EffectEngine,medium-high

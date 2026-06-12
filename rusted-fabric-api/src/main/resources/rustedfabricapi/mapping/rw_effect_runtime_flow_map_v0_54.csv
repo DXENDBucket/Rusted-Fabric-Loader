@@ -1,0 +1,8 @@
+stage,owner,members,semantics
+EffectTemplate.spawnEffect,custom/ay,spawnEffect,"applies spawn chance / terrain / fog gates, selects built-in effect or creates custom EffectInstance"
+GameEngine.effectEngine,gameFramework/l.bR,effectEngine,"central runtime effect engine used by custom templates, projectiles, death effects and map-render effects"
+EffectEngine.createEffect,gameFramework/d/c,"createEffect, allocateEffect, findReusableEffect","applies priority/offscreen/fog gates, reuses pooled EffectInstance, initializes position/layer/kind"
+EffectInstance runtime,gameFramework/d/e,"update, draw, deactivateAndEmitDeathEffects",ticks delay/life/animation/physics/trails; renders chosen image strip; emits death/trail effects
+EffectPriority,gameFramework/d/h,verylow..critical,priority budget and replacement order for pooled effects
+BuiltInEffectKind,gameFramework/d/d,custom/smoke/teleport/hitGround/...,internal built-in effect presets used by EffectEngine.createEffect
+NoiseCloudOverlay,gameFramework/d/b,update/draw,uses SettingsEngine.renderClouds and noise drawable to draw scrolling cloud overlay

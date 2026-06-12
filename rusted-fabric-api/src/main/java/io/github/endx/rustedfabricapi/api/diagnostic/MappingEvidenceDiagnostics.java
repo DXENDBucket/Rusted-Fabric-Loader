@@ -146,6 +146,26 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_map_terrain_tileset_branch_skipped_rows_v0_53.csv";
     private static final String TILE_ATLAS_RENDER_CACHE_ROWS_RESOURCE =
             "/rustedfabricapi/mapping/rw_tileatlas_render_cache_rows_v0_53.csv";
+    private static final String EFFECT_RUNTIME_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_effect_runtime_added_updated_rows_v0_54.csv";
+    private static final String EFFECT_ENGINE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_effect_engine_rows_v0_54.csv";
+    private static final String EFFECT_INSTANCE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_effect_instance_rows_v0_54.csv";
+    private static final String EFFECT_ENUM_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_effect_enum_rows_v0_54.csv";
+    private static final String EFFECT_RUNTIME_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_effect_runtime_flow_map_v0_54.csv";
+    private static final String MISSION_TRIGGER_MAP_SCRIPT_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_mission_trigger_map_script_added_rows_v0_55.csv";
+    private static final String MISSION_TRIGGER_MAP_SCRIPT_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_mission_trigger_map_script_updated_rows_v0_55.csv";
+    private static final String MISSION_TRIGGER_MAP_SCRIPT_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_mission_trigger_map_script_flow_map_v0_55.csv";
+    private static final String MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_mission_trigger_semantic_hotfix_rows_v0_55.csv";
+    private static final String MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_mission_trigger_type_anonymous_rows_v0_55.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -418,6 +438,46 @@ public final class MappingEvidenceDiagnostics {
         return Holder.TILE_ATLAS_RENDER_CACHE_ROWS;
     }
 
+    public static List<MappingEvidenceRow> allEffectRuntimeRows() {
+        return Holder.EFFECT_RUNTIME_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allEffectEngineRows() {
+        return Holder.EFFECT_ENGINE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allEffectInstanceRows() {
+        return Holder.EFFECT_INSTANCE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allEffectEnumRows() {
+        return Holder.EFFECT_ENUM_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allEffectRuntimeFlowMap() {
+        return Holder.EFFECT_RUNTIME_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allMissionTriggerMapScriptRows() {
+        return Holder.MISSION_TRIGGER_MAP_SCRIPT_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allMissionTriggerMapScriptUpdatedRows() {
+        return Holder.MISSION_TRIGGER_MAP_SCRIPT_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allMissionTriggerMapScriptFlowMap() {
+        return Holder.MISSION_TRIGGER_MAP_SCRIPT_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allMissionTriggerSemanticHotfixRows() {
+        return Holder.MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allMissionTriggerTypeAnonymousRows() {
+        return Holder.MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -561,6 +621,38 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findTileAtlasRenderCacheRows(String text) {
         return findByText(Holder.TILE_ATLAS_RENDER_CACHE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findEffectRuntimeRows(String text) {
+        return findByText(Holder.EFFECT_RUNTIME_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findEffectEngineRows(String text) {
+        return findByText(Holder.EFFECT_ENGINE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findEffectInstanceRows(String text) {
+        return findByText(Holder.EFFECT_INSTANCE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findEffectEnumRows(String text) {
+        return findByText(Holder.EFFECT_ENUM_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findMissionTriggerMapScriptRows(String text) {
+        return findByText(Holder.MISSION_TRIGGER_MAP_SCRIPT_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findMissionTriggerMapScriptUpdatedRows(String text) {
+        return findByText(Holder.MISSION_TRIGGER_MAP_SCRIPT_UPDATED_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findMissionTriggerSemanticHotfixRows(String text) {
+        return findByText(Holder.MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findMissionTriggerTypeAnonymousRows(String text) {
+        return findByText(Holder.MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -774,6 +866,16 @@ public final class MappingEvidenceDiagnostics {
         result.put("map_terrain_tileset_flow_map", Holder.MAP_TERRAIN_TILESET_FLOW_MAP);
         result.put("map_terrain_tileset_branch_skipped_rows", Holder.MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS);
         result.put("tile_atlas_render_cache_rows", Holder.TILE_ATLAS_RENDER_CACHE_ROWS);
+        result.put("effect_runtime_rows", Holder.EFFECT_RUNTIME_ROWS);
+        result.put("effect_engine_rows", Holder.EFFECT_ENGINE_ROWS);
+        result.put("effect_instance_rows", Holder.EFFECT_INSTANCE_ROWS);
+        result.put("effect_enum_rows", Holder.EFFECT_ENUM_ROWS);
+        result.put("effect_runtime_flow_map", Holder.EFFECT_RUNTIME_FLOW_MAP);
+        result.put("mission_trigger_map_script_rows", Holder.MISSION_TRIGGER_MAP_SCRIPT_ROWS);
+        result.put("mission_trigger_map_script_updated_rows", Holder.MISSION_TRIGGER_MAP_SCRIPT_UPDATED_ROWS);
+        result.put("mission_trigger_map_script_flow_map", Holder.MISSION_TRIGGER_MAP_SCRIPT_FLOW_MAP);
+        result.put("mission_trigger_semantic_hotfix_rows", Holder.MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS);
+        result.put("mission_trigger_type_anonymous_rows", Holder.MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -1007,6 +1109,26 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS_RESOURCE);
         private static final List<MappingEvidenceRow> TILE_ATLAS_RENDER_CACHE_ROWS =
                 loadRows(TILE_ATLAS_RENDER_CACHE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> EFFECT_RUNTIME_ROWS =
+                loadRows(EFFECT_RUNTIME_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> EFFECT_ENGINE_ROWS =
+                loadRows(EFFECT_ENGINE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> EFFECT_INSTANCE_ROWS =
+                loadRows(EFFECT_INSTANCE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> EFFECT_ENUM_ROWS =
+                loadRows(EFFECT_ENUM_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> EFFECT_RUNTIME_FLOW_MAP =
+                loadRows(EFFECT_RUNTIME_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> MISSION_TRIGGER_MAP_SCRIPT_ROWS =
+                loadRows(MISSION_TRIGGER_MAP_SCRIPT_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> MISSION_TRIGGER_MAP_SCRIPT_UPDATED_ROWS =
+                loadRows(MISSION_TRIGGER_MAP_SCRIPT_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> MISSION_TRIGGER_MAP_SCRIPT_FLOW_MAP =
+                loadRows(MISSION_TRIGGER_MAP_SCRIPT_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS =
+                loadRows(MISSION_TRIGGER_SEMANTIC_HOTFIX_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS =
+                loadRows(MISSION_TRIGGER_TYPE_ANONYMOUS_ROWS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

@@ -1,0 +1,6 @@
+stage,owner,member,meaning
+parse,MissionTriggerParser,parse mission trigger object,reads TMX object properties into MissionTrigger
+type,MissionTriggerType,fromTypeName / getTypeName,maps textual trigger/event type to enum constant
+condition,UnitDetectCondition,parse/test,counts units in trigger area using filters
+runtime,MissionEngine,trigger activation loop,checks delay/warmup/repeat/reset and activates event
+map-export,MapEngine,exportMapWithUnitObjects,writes live units into TMX UnitObjects objectgroup
