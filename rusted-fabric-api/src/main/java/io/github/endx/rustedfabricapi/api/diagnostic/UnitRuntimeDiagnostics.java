@@ -34,10 +34,15 @@ public final class UnitRuntimeDiagnostics {
         putIntField(result, unit, "lastDamagedFrame", new String[]{"lastDamagedFrame", "bs"});
         putField(result, unit, "lastDamagedBy", new String[]{"lastDamagedBy", "bt"});
         putLongField(result, unit, "deathFrame", new String[]{"deathFrame", "bW"});
+        putField(result, unit, "activeResourceDelta", new String[]{"activeResourceDelta", "dJ"});
         result.put("damageImmune", Boolean.valueOf(isDamageImmune(unit)));
         result.put("fixedRotation", Boolean.valueOf(isFixedRotation(unit)));
         result.put("movementType", getMovementType(unit));
         result.put("zoomedOutIconImage", getZoomedOutIconImage(unit));
+        result.put("baseReclaimPrice", getBaseReclaimPrice(unit));
+        result.put("reclaimPriceOverride", getReclaimPriceOverride(unit));
+        result.put("similarResourcesHaveTag", getSimilarResourcesHaveTag(unit));
+        result.put("runtimeTags", getRuntimeTags(unit));
         return Collections.unmodifiableMap(result);
     }
 
@@ -70,6 +75,99 @@ public final class UnitRuntimeDiagnostics {
     public static Object getZoomedOutIconImage(Object unit) {
         requireUnit(unit);
         return RustedReflection.invokeInstance(unit, new String[]{"getZoomedOutIconImage", "v"});
+    }
+
+    public static Object getBaseReclaimPrice(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getBaseReclaimPrice", "cM"});
+    }
+
+    public static Object getReclaimPriceOverride(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getReclaimPriceOverride", "cN"});
+    }
+
+    public static void setConstructionProgress(Object unit, float progress) {
+        requireUnit(unit);
+        RustedReflection.invokeInstance(unit, new String[]{"setConstructionProgress", "r"}, Float.valueOf(progress));
+    }
+
+    public static Object getSimilarResourcesHaveTag(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getSimilarResourcesHaveTag", "cR"});
+    }
+
+    public static Object getRuntimeTags(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getRuntimeTags", "de"});
+    }
+
+    public static void refreshActiveResourceDelta(Object unit) {
+        requireUnit(unit);
+        RustedReflection.invokeInstance(unit, new String[]{"refreshActiveResourceDelta", "bC"});
+    }
+
+    public static Object getActiveResourceDelta(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getActiveResourceDelta", "dq"});
+    }
+
+    public static boolean canRepairTarget(Object unit, Object target) {
+        requireOrderableUnit(unit);
+        requireUnit(target);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"canRepairTarget", "a"},
+                target));
+    }
+
+    public static boolean canReclaimUnitTarget(Object unit, Object target) {
+        requireOrderableUnit(unit);
+        requireUnit(target);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"canReclaimUnitTarget", "l"},
+                target));
+    }
+
+    public static float getBuildProgressSpeedForTarget(Object unit, Object target) {
+        requireOrderableUnit(unit);
+        requireUnit(target);
+        Object value = RustedReflection.invokeInstance(unit,
+                new String[]{"getBuildProgressSpeedForTarget", "a_"},
+                target);
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    public static float getUnbuildSpeedForTarget(Object unit, Object target) {
+        requireOrderableUnit(unit);
+        requireUnit(target);
+        Object value = RustedReflection.invokeInstance(unit,
+                new String[]{"getUnbuildSpeedForTarget", "f"},
+                target);
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    public static Object getBuildPriceForTarget(Object unit, Object target) {
+        requireOrderableUnit(unit);
+        requireUnit(target);
+        return RustedReflection.invokeInstance(unit, new String[]{"getBuildPriceForTarget", "g"}, target);
+    }
+
+    public static Object getBuildQueueResourceDelta(Object unit) {
+        requireOrderableUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getBuildQueueResourceDelta", "bD"});
+    }
+
+    public static Object getRepairReclaimResourceDelta(Object unit) {
+        requireOrderableUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getRepairReclaimResourceDelta", "bE"});
+    }
+
+    public static Object findNearestReclaimResourceTarget(Object searcher, float x, float y, float range,
+                                                          Object requiredTags) {
+        requireOrderableUnit(searcher);
+        return RustedReflection.invokeStatic(ORDERABLE_UNIT_CLASSES,
+                new String[]{"findNearestReclaimResourceTarget", "a"},
+                searcher, Float.valueOf(x), Float.valueOf(y), Float.valueOf(range), requiredTags);
     }
 
     public static int getDeathSmokeParticleCount(Object unit) {

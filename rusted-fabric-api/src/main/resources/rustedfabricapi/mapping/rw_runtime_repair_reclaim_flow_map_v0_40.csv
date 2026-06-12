@@ -1,0 +1,8 @@
+stage,component,official_member,mapped_name,semantics
+1,UnitOrder / OrderableUnit.updateRepairReclaimOrder,"y.i(float,au,ad)",updateRepairReclaimOrder,"Consumes active repair/reclaim order and validates target state, range, tags and availability."
+2,target validation,"y.a(Unit), y.l(Unit), custom.j.a/l",canRepairTarget / canReclaimUnitTarget,Checks repair/reclaim legality; CustomUnit adds canRepairUnitsOnlyWithTags / canReclaimUnitsOnlyWithTags filters.
+3,resource-chain search,"y.a(y,FFFTags)",findNearestReclaimResourceTarget,"When reclaiming resources, finds a nearby similar target using target.getSimilarResourcesHaveTag and NearestUnitSearchCallback."
+4,construction progress,"y.a_(Unit), Unit.r(float)",getBuildProgressSpeedForTarget / setConstructionProgress,Streams build progress into target.cm and handles team index notification when completion state crosses 1.0.
+5,unbuild / reclaim progress,"y.f(Unit), custom.j.f(Unit)",getUnbuildSpeedForTarget,Reduces construction progress or advances reclaim payout for unfinished targets.
+6,price selection,"y.g(Unit), Unit.cM/cN",getBuildPriceForTarget / getBaseReclaimPrice / getReclaimPriceOverride,"Selects construction price or reclaim price, including CustomUnit reclaimPrice override."
+7,active resource delta cache,"Unit.dJ, Unit.dq, Unit.bC/y.bC, y.bD/y.bE",activeResourceDelta / getActiveResourceDelta / refreshActiveResourceDelta,Combines build queue resource delta and repair/reclaim resource delta for UI/team/resource systems.

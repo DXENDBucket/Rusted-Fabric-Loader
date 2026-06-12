@@ -5,8 +5,10 @@
   "compatibilityLevel": "JAVA_13",
   "mixins": [
     "AndroidMapStartNamedMixin",
+    "ActiveResourceDeltaNamedMixin",
     "BuildQueueHostNamedMixin",
     "BuildQueueNamedMixin",
+    "BuildQueueResourceDeltaNamedMixin",
     "CommandIssueNamedMixin",
     "ConfigVariableProcessorNamedMixin",
     "CurrentMapLifecycleNamedMixin",
@@ -17,6 +19,7 @@
     "CustomUnitLoaderNamedMixin",
     "CustomUnitLoaderIniRegistrationNamedMixin",
     "CustomUnitMetadataLifecycleNamedMixin",
+    "CustomUnitReclaimPriceNamedMixin",
     "CustomUnitRenderNamedMixin",
     "CustomUnitRuntimeNamedMixin",
     "GameObjectSerializationNamedMixin",
@@ -34,7 +37,10 @@
     "MutableStatRuntimeNamedMixin",
     "NetworkMapPathNamedMixin",
     "NetworkSyncRuntimeNamedMixin",
+    "OrderableRepairReclaimNamedMixin",
     "ProjectileSpawnListAssetNamedMixin",
+    "ReclaimTargetNamedMixin",
+    "RepairReclaimTargetNamedMixin",
     "ReplayRuntimeNamedMixin",
     "ResourceConversionNamedMixin",
     "ResourceAmountRuntimeNamedMixin",
@@ -46,6 +52,8 @@
     "TeamUnitLifecycleNamedMixin",
     "TilePropertySpawnNamedMixin",
     "UnitDamageRuntimeNamedMixin",
+    "UnitReclaimPriceNamedMixin",
+    "UnitRepairReclaimNamedMixin",
     "UnitConfigIniNamedMixin"
   ],
   "injectors": {

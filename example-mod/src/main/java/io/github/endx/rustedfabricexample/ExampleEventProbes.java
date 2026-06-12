@@ -11,6 +11,7 @@ import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
+import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
@@ -19,6 +20,8 @@ import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.UnitRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 
 import java.util.Map;
@@ -125,7 +128,8 @@ final class ExampleEventProbes {
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
                     "AfterMetadataParsed unit=" + safeText(context.unitId())
-                            + " metadata=" + describeObject(metadata),
+                            + " metadata=" + describeObject(metadata)
+                            + " repair=" + describeRepairMetadata(metadata),
                     metadata, 750L);
             return metadata;
         });
@@ -301,6 +305,138 @@ final class ExampleEventProbes {
                             + " unit=" + describeObject(unit),
                     unit, 300L);
             return null;
+        });
+
+        RepairReclaimEvents.BEFORE_REPAIR_RECLAIM_ORDER_UPDATE.register((unit, delta, waypoint, waypointState) -> {
+            showEventProbeMessage(stage, "BeforeRepairReclaimOrderUpdate",
+                    "BeforeRepairReclaimOrderUpdate delta=" + formatFloat(delta)
+                            + " unit=" + describeObject(unit)
+                            + " waypoint=" + describeObject(waypoint)
+                            + " state=" + describeObject(waypointState),
+                    unit, 500L);
+            return false;
+        });
+
+        RepairReclaimEvents.AFTER_REPAIR_RECLAIM_ORDER_UPDATE.register((unit, delta, waypoint, waypointState) ->
+                showEventProbeMessage(stage, "AfterRepairReclaimOrderUpdate",
+                        "AfterRepairReclaimOrderUpdate delta=" + formatFloat(delta)
+                                + " unit=" + describeObject(unit)
+                                + " activeDelta=" + describeActiveResourceDelta(unit),
+                        unit, 500L));
+
+        RepairReclaimEvents.MODIFY_CAN_REPAIR_TARGET.register((unit, target, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyCanRepairTarget",
+                    "ModifyCanRepairTarget result=" + currentResult
+                            + " unit=" + describeObject(unit)
+                            + " target=" + describeObject(target),
+                    unit, 750L);
+            return null;
+        });
+
+        RepairReclaimEvents.MODIFY_CAN_RECLAIM_UNIT_TARGET.register((unit, target, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyCanReclaimUnitTarget",
+                    "ModifyCanReclaimUnitTarget result=" + currentResult
+                            + " unit=" + describeObject(unit)
+                            + " target=" + describeObject(target),
+                    unit, 750L);
+            return null;
+        });
+
+        RepairReclaimEvents.MODIFY_BUILD_PROGRESS_SPEED.register((unit, target, currentSpeed) -> {
+            showEventProbeMessage(stage, "ModifyBuildProgressSpeed",
+                    "ModifyBuildProgressSpeed speed=" + formatFloat(currentSpeed)
+                            + " unit=" + describeObject(unit)
+                            + " target=" + describeObject(target),
+                    unit, 750L);
+            return null;
+        });
+
+        RepairReclaimEvents.MODIFY_UNBUILD_SPEED.register((unit, target, currentSpeed) -> {
+            showEventProbeMessage(stage, "ModifyUnbuildSpeed",
+                    "ModifyUnbuildSpeed speed=" + formatFloat(currentSpeed)
+                            + " unit=" + describeObject(unit)
+                            + " target=" + describeObject(target),
+                    unit, 750L);
+            return null;
+        });
+
+        RepairReclaimEvents.MODIFY_BUILD_PRICE_FOR_TARGET.register((unit, target, currentPrice) -> {
+            showEventProbeMessage(stage, "ModifyBuildPriceForTarget",
+                    "ModifyBuildPriceForTarget price=" + describeObject(currentPrice)
+                            + " unit=" + describeObject(unit)
+                            + " target=" + describeObject(target),
+                    unit, 1000L);
+            return currentPrice;
+        });
+
+        RepairReclaimEvents.MODIFY_BASE_RECLAIM_PRICE.register((unit, currentPrice) -> {
+            showEventProbeMessage(stage, "ModifyBaseReclaimPrice",
+                    "ModifyBaseReclaimPrice price=" + describeObject(currentPrice)
+                            + " unit=" + describeObject(unit),
+                    unit, 1000L);
+            return currentPrice;
+        });
+
+        RepairReclaimEvents.MODIFY_RECLAIM_PRICE_OVERRIDE.register((unit, currentPrice) -> {
+            showEventProbeMessage(stage, "ModifyReclaimPriceOverride",
+                    "ModifyReclaimPriceOverride price=" + describeObject(currentPrice)
+                            + " unit=" + describeObject(unit),
+                    unit, 1000L);
+            return currentPrice;
+        });
+
+        RepairReclaimEvents.MODIFY_SIMILAR_RESOURCES_TAG.register((unit, currentTags) -> {
+            showEventProbeMessage(stage, "ModifySimilarResourcesTag",
+                    "ModifySimilarResourcesTag tags=" + describeObject(currentTags)
+                            + " unit=" + describeObject(unit),
+                    unit, 1000L);
+            return currentTags;
+        });
+
+        RepairReclaimEvents.BEFORE_CONSTRUCTION_PROGRESS_SET.register((unit, progress) -> {
+            showEventProbeMessage(stage, "BeforeConstructionProgressSet",
+                    "BeforeConstructionProgressSet progress=" + formatFloat(progress)
+                            + " unit=" + describeObject(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        RepairReclaimEvents.AFTER_CONSTRUCTION_PROGRESS_SET.register((unit, progress) ->
+                showEventProbeMessage(stage, "AfterConstructionProgressSet",
+                        "AfterConstructionProgressSet progress=" + formatFloat(progress)
+                                + " unit=" + describeObject(unit),
+                        unit, 750L));
+
+        RepairReclaimEvents.AFTER_ACTIVE_RESOURCE_DELTA_REFRESH.register(unit ->
+                showEventProbeMessage(stage, "AfterActiveResourceDeltaRefresh",
+                        "AfterActiveResourceDeltaRefresh unit=" + describeObject(unit)
+                                + " activeDelta=" + describeActiveResourceDelta(unit),
+                        unit, 1000L));
+
+        RepairReclaimEvents.MODIFY_BUILD_QUEUE_RESOURCE_DELTA.register((unit, currentDelta) -> {
+            showEventProbeMessage(stage, "ModifyBuildQueueResourceDelta",
+                    "ModifyBuildQueueResourceDelta delta=" + describeObject(currentDelta)
+                            + " unit=" + describeObject(unit),
+                    unit, 1000L);
+            return currentDelta;
+        });
+
+        RepairReclaimEvents.MODIFY_REPAIR_RECLAIM_RESOURCE_DELTA.register((unit, currentDelta) -> {
+            showEventProbeMessage(stage, "ModifyRepairReclaimResourceDelta",
+                    "ModifyRepairReclaimResourceDelta delta=" + describeObject(currentDelta)
+                            + " unit=" + describeObject(unit),
+                    unit, 1000L);
+            return currentDelta;
+        });
+
+        RepairReclaimEvents.MODIFY_NEAREST_RECLAIM_RESOURCE_TARGET.register((searcher, x, y, range, requiredTags, currentTarget) -> {
+            showEventProbeMessage(stage, "ModifyNearestReclaimResourceTarget",
+                    "ModifyNearestReclaimResourceTarget range=" + formatFloat(range)
+                            + " pos=" + formatPoint(x, y)
+                            + " tags=" + describeObject(requiredTags)
+                            + " target=" + describeObject(currentTarget),
+                    searcher, 1000L);
+            return currentTarget;
         });
 
         CustomUnitLifecycleEvents.BEFORE_RUNTIME_UNIT_CREATE.register(metadata ->
@@ -996,6 +1132,27 @@ final class ExampleEventProbes {
                     + "}";
         } catch (RuntimeException e) {
             return describeObject(queueItem);
+        }
+    }
+
+    private static String describeActiveResourceDelta(Object unit) {
+        try {
+            return describeObject(UnitRuntimeDiagnostics.getActiveResourceDelta(unit));
+        } catch (RuntimeException e) {
+            return "<unavailable>";
+        }
+    }
+
+    private static String describeRepairMetadata(Object metadata) {
+        try {
+            Map<String, Object> details = CustomUnitDiagnostics.describeCustomUnitMetadata(metadata);
+            return "{nano=" + details.get("nanoUnbuildSpeed")
+                    + ", reclaim=" + describeObject(details.get("reclaimPrice"))
+                    + ", repairTags=" + describeObject(details.get("canRepairUnitsOnlyWithTags"))
+                    + ", reclaimTags=" + describeObject(details.get("canReclaimUnitsOnlyWithTags"))
+                    + "}";
+        } catch (RuntimeException e) {
+            return "<unavailable>";
         }
     }
 

@@ -342,7 +342,7 @@ final class ExampleDebugOverlay {
 
     static DebugProbeGroup classifyDebugProbeGroup(String key) {
         String text = key != null ? key : "";
-        if (containsAny(text, "Resource", "TakeResources")) {
+        if (containsAny(text, "Resource", "TakeResources", "Repair", "Reclaim", "Unbuild")) {
             return DebugProbeGroup.RESOURCE;
         }
         if (containsAny(text, "Save", "Replay", "Checksum", "Serialize", "Deserialize", "WriteSave", "ReadSave", "NetworkResync")) {

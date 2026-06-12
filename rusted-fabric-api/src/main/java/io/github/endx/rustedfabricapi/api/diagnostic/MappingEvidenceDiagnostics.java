@@ -62,6 +62,12 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_build_queue_flow_map_v0_39.csv";
     private static final String RUNTIME_BUILD_QUEUE_FAMILY_COVERAGE_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_build_queue_family_coverage_v0_39.csv";
+    private static final String RUNTIME_REPAIR_RECLAIM_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_repair_reclaim_added_updated_rows_v0_40.csv";
+    private static final String RUNTIME_REPAIR_RECLAIM_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_repair_reclaim_flow_map_v0_40.csv";
+    private static final String RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_repair_reclaim_family_coverage_v0_40.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -166,6 +172,18 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_BUILD_QUEUE_FAMILY_COVERAGE;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeRepairReclaimRows() {
+        return Holder.RUNTIME_REPAIR_RECLAIM_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeRepairReclaimFlowMap() {
+        return Holder.RUNTIME_REPAIR_RECLAIM_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeRepairReclaimFamilyCoverage() {
+        return Holder.RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -221,6 +239,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeBuildQueueRows(String text) {
         return findByText(Holder.RUNTIME_BUILD_QUEUE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeRepairReclaimRows(String text) {
+        return findByText(Holder.RUNTIME_REPAIR_RECLAIM_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -389,6 +411,9 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_build_queue_rows", Holder.RUNTIME_BUILD_QUEUE_ROWS);
         result.put("runtime_build_queue_flow_map", Holder.RUNTIME_BUILD_QUEUE_FLOW_MAP);
         result.put("runtime_build_queue_family_coverage", Holder.RUNTIME_BUILD_QUEUE_FAMILY_COVERAGE);
+        result.put("runtime_repair_reclaim_rows", Holder.RUNTIME_REPAIR_RECLAIM_ROWS);
+        result.put("runtime_repair_reclaim_flow_map", Holder.RUNTIME_REPAIR_RECLAIM_FLOW_MAP);
+        result.put("runtime_repair_reclaim_family_coverage", Holder.RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE);
         return Collections.unmodifiableMap(result);
     }
 
@@ -538,6 +563,12 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_BUILD_QUEUE_FLOW_MAP_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_BUILD_QUEUE_FAMILY_COVERAGE =
                 loadRows(RUNTIME_BUILD_QUEUE_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_REPAIR_RECLAIM_ROWS =
+                loadRows(RUNTIME_REPAIR_RECLAIM_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_REPAIR_RECLAIM_FLOW_MAP =
+                loadRows(RUNTIME_REPAIR_RECLAIM_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE =
+                loadRows(RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

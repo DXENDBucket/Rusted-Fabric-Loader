@@ -28,6 +28,10 @@ public final class CustomUnitDiagnostics {
             "rustedwarfare.custom.CustomProjectileTemplate",
             "com.corrodinggames.rts.game.units.custom.bh"
     };
+    private static final String[] CUSTOM_UNIT_METADATA_CLASSES = {
+            "rustedwarfare.custom.CustomUnitMetadata",
+            "com.corrodinggames.rts.game.units.custom.l"
+    };
     private static final String[] EFFECT_TEMPLATE_CLASSES = {
             "rustedwarfare.custom.EffectTemplate",
             "com.corrodinggames.rts.game.units.custom.ay"
@@ -58,6 +62,24 @@ public final class CustomUnitDiagnostics {
     };
 
     private CustomUnitDiagnostics() {
+    }
+
+    public static Map<String, Object> describeCustomUnitMetadata(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putFloatField(result, metadata, "nanoUnbuildSpeed", new String[]{"nanoUnbuildSpeed", "be"});
+        putField(result, metadata, "reclaimPrice", new String[]{"reclaimPrice", "ci"});
+        putBooleanField(result, metadata, "canReclaimResources", new String[]{"canReclaimResources", "fk"});
+        putIntField(result, metadata, "canReclaimResourcesNextSearchRange",
+                new String[]{"canReclaimResourcesNextSearchRange", "fm"});
+        putField(result, metadata, "canReclaimResourcesOnlyWithTags",
+                new String[]{"canReclaimResourcesOnlyWithTags", "fl"});
+        putField(result, metadata, "canReclaimUnitsOnlyWithTags",
+                new String[]{"canReclaimUnitsOnlyWithTags", "fn"});
+        putField(result, metadata, "canRepairUnitsOnlyWithTags",
+                new String[]{"canRepairUnitsOnlyWithTags", "fo"});
+        putField(result, metadata, "similarResourcesHaveTag", new String[]{"similarResourcesHaveTag", "cH"});
+        return Collections.unmodifiableMap(result);
     }
 
     public static List<Object> builtInEffectTypes() {
@@ -462,6 +484,10 @@ public final class CustomUnitDiagnostics {
 
     private static void requireCustomProjectileTemplate(Object projectileTemplate) {
         requireAny(projectileTemplate, CUSTOM_PROJECTILE_TEMPLATE_CLASSES, "CustomProjectileTemplate");
+    }
+
+    private static void requireCustomUnitMetadata(Object metadata) {
+        requireAny(metadata, CUSTOM_UNIT_METADATA_CLASSES, "CustomUnitMetadata");
     }
 
     private static void requireEffectTemplate(Object effectTemplate) {

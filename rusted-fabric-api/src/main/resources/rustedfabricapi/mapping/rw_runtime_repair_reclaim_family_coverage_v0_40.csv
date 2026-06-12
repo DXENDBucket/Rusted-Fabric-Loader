@@ -1,0 +1,15 @@
+family,expected_count,mapped_count,missing_count,owners
+a_(Lcom/corrodinggames/rts/game/units/am;)F->getBuildProgressSpeedForTarget,1,1,0,com/corrodinggames/rts/game/units/y
+f(Lcom/corrodinggames/rts/game/units/am;)F->getUnbuildSpeedForTarget,2,2,0,com/corrodinggames/rts/game/units/y com/corrodinggames/rts/game/units/custom/j
+g(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/custom/d/b;->getBuildPriceForTarget,1,1,0,com/corrodinggames/rts/game/units/y
+a(Lcom/corrodinggames/rts/game/units/am;)Z->canRepairTarget,7,7,0,com/corrodinggames/rts/game/units/custom/j com/corrodinggames/rts/game/units/d/r com/corrodinggames/rts/game/units/e/b com/corrodinggames/rts/game/units/g com/corrodinggames/rts/game/units/h com/corrodinggames/rts/game/units/h/b com/corrodinggames/rts/game/units/y
+l(Lcom/corrodinggames/rts/game/units/am;)Z->canReclaimUnitTarget,2,2,0,com/corrodinggames/rts/game/units/y com/corrodinggames/rts/game/units/custom/j
+cM()Lcom/corrodinggames/rts/game/units/custom/d/b;->getBaseReclaimPrice,1,1,0,com/corrodinggames/rts/game/units/am
+cN()Lcom/corrodinggames/rts/game/units/custom/d/b;->getReclaimPriceOverride,2,2,0,com/corrodinggames/rts/game/units/am com/corrodinggames/rts/game/units/custom/j
+r(F)V->setConstructionProgress,1,1,0,com/corrodinggames/rts/game/units/am
+cR()Lcom/corrodinggames/rts/game/units/custom/h;->getSimilarResourcesHaveTag,2,2,0,com/corrodinggames/rts/game/units/am com/corrodinggames/rts/game/units/custom/j
+de()Lcom/corrodinggames/rts/game/units/custom/h;->getRuntimeTags,2,2,0,com/corrodinggames/rts/game/units/am com/corrodinggames/rts/game/units/custom/j
+bC()V->refreshActiveResourceDelta,2,2,0,com/corrodinggames/rts/game/units/am com/corrodinggames/rts/game/units/y
+bD()Lcom/corrodinggames/rts/game/units/custom/d/b;->getBuildQueueResourceDelta,3,3,0,com/corrodinggames/rts/game/units/y com/corrodinggames/rts/game/units/d/i com/corrodinggames/rts/game/units/custom/j
+bE()Lcom/corrodinggames/rts/game/units/custom/d/b;->getRepairReclaimResourceDelta,1,1,0,com/corrodinggames/rts/game/units/y
+dq()Lcom/corrodinggames/rts/game/units/custom/d/b;->getActiveResourceDelta,1,1,0,com/corrodinggames/rts/game/units/am
