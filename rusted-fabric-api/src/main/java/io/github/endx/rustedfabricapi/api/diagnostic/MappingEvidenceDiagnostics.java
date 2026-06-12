@@ -116,6 +116,14 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_branch_update_review_v0_46.csv";
     private static final String RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_skipped_branch_rollbacks_v0_46.csv";
+    private static final String RUNTIME_REPLAY_CHECKSUM_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_replay_checksum_added_rows_v0_47.csv";
+    private static final String RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_replay_checksum_updated_rows_v0_47.csv";
+    private static final String RUNTIME_REPLAY_CHECKSUM_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_replay_checksum_flow_map_v0_47.csv";
+    private static final String NETWORK_CHECKSUM_BUCKET_EVIDENCE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_network_checksum_bucket_evidence_v0_47.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -328,6 +336,22 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeReplayChecksumRows() {
+        return Holder.RUNTIME_REPLAY_CHECKSUM_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeReplayChecksumUpdatedRows() {
+        return Holder.RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeReplayChecksumFlowMap() {
+        return Holder.RUNTIME_REPLAY_CHECKSUM_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allNetworkChecksumBucketEvidence() {
+        return Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -431,6 +455,18 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeVisibilitySpatialUpdatedRows(String text) {
         return findByText(Holder.RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeReplayChecksumRows(String text) {
+        return findByText(Holder.RUNTIME_REPLAY_CHECKSUM_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeReplayChecksumUpdatedRows(String text) {
+        return findByText(Holder.RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findNetworkChecksumBucketEvidence(String text) {
+        return findByText(Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -564,13 +600,14 @@ public final class MappingEvidenceDiagnostics {
                     first(row, "owner_official", "new_owner_official", "old_owner_official", "owner"),
                     first(row, "descriptor", "new_descriptor", "old_descriptor"),
                     first(row, "official_name", "new_official_name", "old_official_name", "member", "target"),
-                    first(row, "intermediary_name", "new_intermediary", "old_intermediary", "old_intermediary_name"),
-                    first(row, "named_name", "new_named_name", "new_named", "mapped_name", "old_named_name"),
-                    first(row, "source", "mapping_source"),
+                    first(row, "new_intermediary", "new_intermediary_name", "intermediary_name",
+                            "old_intermediary", "old_intermediary_name"),
+                    first(row, "new_named_name", "new_named", "named_name", "mapped_name", "old_named_name"),
+                    first(row, "new_source", "source", "mapping_source"),
                     first(row, "category", "runtime_stage", "stage", "family_named", "phase", "family"),
                     first(row, "confidence"),
-                    first(row, "evidence", "semantics", "contract"),
-                    first(row, "notes", "reason")));
+                    first(row, "new_evidence", "evidence", "semantics", "contract", "effect"),
+                    first(row, "new_notes", "notes", "reason")));
         }
         return Collections.unmodifiableList(result);
     }
@@ -628,6 +665,10 @@ public final class MappingEvidenceDiagnostics {
                 Holder.RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW);
         result.put("runtime_visibility_spatial_skipped_branch_rollbacks",
                 Holder.RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS);
+        result.put("runtime_replay_checksum_rows", Holder.RUNTIME_REPLAY_CHECKSUM_ROWS);
+        result.put("runtime_replay_checksum_updated_rows", Holder.RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS);
+        result.put("runtime_replay_checksum_flow_map", Holder.RUNTIME_REPLAY_CHECKSUM_FLOW_MAP);
+        result.put("network_checksum_bucket_evidence", Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE);
         return Collections.unmodifiableMap(result);
     }
 
@@ -831,6 +872,14 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS =
                 loadRows(RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_REPLAY_CHECKSUM_ROWS =
+                loadRows(RUNTIME_REPLAY_CHECKSUM_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS =
+                loadRows(RUNTIME_REPLAY_CHECKSUM_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_REPLAY_CHECKSUM_FLOW_MAP =
+                loadRows(RUNTIME_REPLAY_CHECKSUM_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> NETWORK_CHECKSUM_BUCKET_EVIDENCE =
+                loadRows(NETWORK_CHECKSUM_BUCKET_EVIDENCE_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

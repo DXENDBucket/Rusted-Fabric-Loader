@@ -1,0 +1,9 @@
+step,owner,member,effect
+record command,ReplayEngine,"recordCommand(Command,int)",Queues ReplayRecordEntry.command and increments recordedCommandCount in writer thread.
+periodic quick checksum,ReplayEngine,calculateQuickUnitChecksum,Sums unit position/hp/id and records cs block after every few commands.
+detailed checksum,ReplayEngine,recordDetailedChecksumNow,Calls NetworkChecksum.calculateChecksum and records entry bytes as wait/es.
+writer command block,ReplayWriterThread,run,Writes rc frame + serialized Command block.
+writer checksum block,ReplayWriterThread,run,Writes cs frame + checksum long.
+writer resync block,ReplayWriterThread,run,Writes wait then resync block with metadata and save bytes.
+playback read,ReplayEngine,readNextReplayBlock,"Reads tagged block, creates ReplayRecordEntry, and sets currentEntry."
+playback issue,ReplayEngine,updateReplayPlayback,Issues command when game frame reaches entry.frame and increments issuedReplayCommandCount.
