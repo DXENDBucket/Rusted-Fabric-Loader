@@ -1,0 +1,9 @@
+stage,system,owner,member,semantics
+1,command issue,CommandController / Command,issueCommand / sharedPathCacheEntries,Commands resolve selected units and may carry shared-path hints from the command layer.
+2,spatial index,GameEngine,unitSpatialIndex,Runtime unit search callbacks now have a named spatial grid entry point.
+3,spatial index,UnitSpatialIndex,updateUnitSpatialIndex,Moves Unit allUnits into UnitSpatialCell / UnitBucket structures keyed by position and team bucket.
+4,spatial search,UnitSpatialIndex,forEachUnitInRadius / forEachUnitInRect,"Target search, passive attack, repair/reclaim, LogicBoolean counts, placement checks and callbacks consume indexed unit buckets."
+5,fog map,Team,fogOfWarMap,Per-team fog byte grid stores exploration/current-visibility states and is serialized as fog-of-war state.
+6,map visibility,MapEngine,revealMapArea / updateLineOfSightFog,Line-of-sight updates reveal fog areas and refresh smooth-fog caches.
+7,unit visibility,Unit,perTeamVisibilityStates / updateVisibilityStateForTeam,Unit snapshots visibility per team and determines whether it is hidden by fog.
+8,fog ghost,FogGhost,update / draw,Remembered unit ghost is updated/drawn when a unit disappears into fog.

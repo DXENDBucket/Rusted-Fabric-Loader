@@ -41,7 +41,7 @@ public final class UnitRuntimeDiagnostics {
         putField(result, unit, "attachmentSlot", new String[]{"attachmentSlot", "cP"});
         putField(result, unit, "activeResourceDelta", new String[]{"activeResourceDelta", "dJ"});
         result.put("damageImmune", Boolean.valueOf(isDamageImmune(unit)));
-        result.put("fixedRotation", Boolean.valueOf(isFixedRotation(unit)));
+        result.put("building", Boolean.valueOf(isBuilding(unit)));
         result.put("movementType", getMovementType(unit));
         result.put("zoomedOutIconImage", getZoomedOutIconImage(unit));
         result.put("containingUnit", getContainingUnit(unit));
@@ -73,9 +73,18 @@ public final class UnitRuntimeDiagnostics {
         return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit, new String[]{"isDamageImmune", "J"}));
     }
 
-    public static boolean isFixedRotation(Object unit) {
+    public static boolean isBuilding(Object unit) {
         requireUnit(unit);
-        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit, new String[]{"isFixedRotation", "bI"}));
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"isBuilding", "isFixedRotation", "bI"}));
+    }
+
+    /**
+     * @deprecated v0.46 corrected Unit.bI semantics to {@link #isBuilding(Object)}.
+     */
+    @Deprecated
+    public static boolean isFixedRotation(Object unit) {
+        return isBuilding(unit);
     }
 
     public static Object getMovementType(Object unit) {

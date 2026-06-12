@@ -106,6 +106,16 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_team_stats_hotfix_rows_v0_43.csv";
     private static final String RUNTIME_TEAM_STATS_FLOW_MAP_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_team_stats_flow_map_v0_43.csv";
+    private static final String RUNTIME_VISIBILITY_SPATIAL_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_merge_added_rows_v0_46.csv";
+    private static final String RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_merge_updated_rows_v0_46.csv";
+    private static final String RUNTIME_VISIBILITY_SPATIAL_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_flow_map_v0_46.csv";
+    private static final String RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_branch_update_review_v0_46.csv";
+    private static final String RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_visibility_spatial_skipped_branch_rollbacks_v0_46.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -298,6 +308,26 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_TEAM_STATS_FLOW_MAP;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeVisibilitySpatialRows() {
+        return Holder.RUNTIME_VISIBILITY_SPATIAL_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeVisibilitySpatialUpdatedRows() {
+        return Holder.RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeVisibilitySpatialFlowMap() {
+        return Holder.RUNTIME_VISIBILITY_SPATIAL_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeVisibilitySpatialBranchUpdateReview() {
+        return Holder.RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeVisibilitySpatialSkippedBranchRollbacks() {
+        return Holder.RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -393,6 +423,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeTeamStatsHotfixRows(String text) {
         return findByText(Holder.RUNTIME_TEAM_STATS_HOTFIX_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeVisibilitySpatialRows(String text) {
+        return findByText(Holder.RUNTIME_VISIBILITY_SPATIAL_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeVisibilitySpatialUpdatedRows(String text) {
+        return findByText(Holder.RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -583,6 +621,13 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_team_stats_rows", Holder.RUNTIME_TEAM_STATS_ROWS);
         result.put("runtime_team_stats_hotfix_rows", Holder.RUNTIME_TEAM_STATS_HOTFIX_ROWS);
         result.put("runtime_team_stats_flow_map", Holder.RUNTIME_TEAM_STATS_FLOW_MAP);
+        result.put("runtime_visibility_spatial_rows", Holder.RUNTIME_VISIBILITY_SPATIAL_ROWS);
+        result.put("runtime_visibility_spatial_updated_rows", Holder.RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS);
+        result.put("runtime_visibility_spatial_flow_map", Holder.RUNTIME_VISIBILITY_SPATIAL_FLOW_MAP);
+        result.put("runtime_visibility_spatial_branch_update_review",
+                Holder.RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW);
+        result.put("runtime_visibility_spatial_skipped_branch_rollbacks",
+                Holder.RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -776,6 +821,16 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_TEAM_STATS_HOTFIX_ROWS_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_TEAM_STATS_FLOW_MAP =
                 loadRows(RUNTIME_TEAM_STATS_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_VISIBILITY_SPATIAL_ROWS =
+                loadRows(RUNTIME_VISIBILITY_SPATIAL_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS =
+                loadRows(RUNTIME_VISIBILITY_SPATIAL_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_VISIBILITY_SPATIAL_FLOW_MAP =
+                loadRows(RUNTIME_VISIBILITY_SPATIAL_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW =
+                loadRows(RUNTIME_VISIBILITY_SPATIAL_BRANCH_UPDATE_REVIEW_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS =
+                loadRows(RUNTIME_VISIBILITY_SPATIAL_SKIPPED_BRANCH_ROLLBACKS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =
