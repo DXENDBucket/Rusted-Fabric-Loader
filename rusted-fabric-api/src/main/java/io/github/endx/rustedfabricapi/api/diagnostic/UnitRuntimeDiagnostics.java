@@ -34,11 +34,22 @@ public final class UnitRuntimeDiagnostics {
         putIntField(result, unit, "lastDamagedFrame", new String[]{"lastDamagedFrame", "bs"});
         putField(result, unit, "lastDamagedBy", new String[]{"lastDamagedBy", "bt"});
         putLongField(result, unit, "deathFrame", new String[]{"deathFrame", "bW"});
+        putField(result, unit, "recentlyUnloadedFrom", new String[]{"recentlyUnloadedFrom", "bR"});
+        putFloatField(result, unit, "recentlyUnloadedTimer", new String[]{"recentlyUnloadedTimer", "bS"});
+        putField(result, unit, "transportingUnit", new String[]{"transportingUnit", "cN"});
+        putField(result, unit, "attachmentParentUnit", new String[]{"attachmentParentUnit", "cO"});
+        putField(result, unit, "attachmentSlot", new String[]{"attachmentSlot", "cP"});
         putField(result, unit, "activeResourceDelta", new String[]{"activeResourceDelta", "dJ"});
         result.put("damageImmune", Boolean.valueOf(isDamageImmune(unit)));
         result.put("fixedRotation", Boolean.valueOf(isFixedRotation(unit)));
         result.put("movementType", getMovementType(unit));
         result.put("zoomedOutIconImage", getZoomedOutIconImage(unit));
+        result.put("containingUnit", getContainingUnit(unit));
+        result.put("runtimeAttachmentSlot", getAttachmentSlot(unit));
+        result.put("transportSlotsNeeded", Integer.valueOf(getTransportSlotsNeeded(unit)));
+        result.put("transportBarUsedSlots", Integer.valueOf(getTransportBarUsedSlots(unit)));
+        result.put("transportBarMaxSlots", Integer.valueOf(getTransportBarMaxSlots(unit)));
+        result.put("hasTransportCapacity", Boolean.valueOf(hasTransportCapacity(unit)));
         result.put("baseReclaimPrice", getBaseReclaimPrice(unit));
         result.put("reclaimPriceOverride", getReclaimPriceOverride(unit));
         result.put("similarResourcesHaveTag", getSimilarResourcesHaveTag(unit));
@@ -75,6 +86,102 @@ public final class UnitRuntimeDiagnostics {
     public static Object getZoomedOutIconImage(Object unit) {
         requireUnit(unit);
         return RustedReflection.invokeInstance(unit, new String[]{"getZoomedOutIconImage", "v"});
+    }
+
+    public static Object getTransportingUnit(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.getFieldValue(unit, new String[]{"transportingUnit", "cN"});
+    }
+
+    public static Object getAttachmentParentUnit(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.getFieldValue(unit, new String[]{"attachmentParentUnit", "cO"});
+    }
+
+    public static Object getAttachmentSlotField(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.getFieldValue(unit, new String[]{"attachmentSlot", "cP"});
+    }
+
+    public static Object getRecentlyUnloadedFrom(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.getFieldValue(unit, new String[]{"recentlyUnloadedFrom", "bR"});
+    }
+
+    public static float getRecentlyUnloadedTimer(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.getFloatField(unit, new String[]{"recentlyUnloadedTimer", "bS"});
+    }
+
+    public static Object getAttachmentSlot(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getAttachmentSlot", "dn"});
+    }
+
+    public static Object getContainingUnit(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getContainingUnit", "dr"});
+    }
+
+    public static boolean canTransportUnitIgnoringCurrentContainer(Object carrier, Object candidate,
+                                                                   boolean allowPartial) {
+        requireUnit(carrier);
+        requireUnit(candidate);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(carrier,
+                new String[]{"canTransportUnitIgnoringCurrentContainer", "c"},
+                candidate, Boolean.valueOf(allowPartial)));
+    }
+
+    public static boolean canTransportUnit(Object carrier, Object candidate, boolean allowPartial) {
+        requireUnit(carrier);
+        requireUnit(candidate);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(carrier,
+                new String[]{"canTransportUnit", "d"},
+                candidate, Boolean.valueOf(allowPartial)));
+    }
+
+    public static boolean tryAddUnitToTransport(Object carrier, Object candidate, boolean allowPartial) {
+        requireUnit(carrier);
+        requireUnit(candidate);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(carrier,
+                new String[]{"tryAddUnitToTransport", "e"},
+                candidate, Boolean.valueOf(allowPartial)));
+    }
+
+    public static boolean hasTransportCapacity(Object unit) {
+        requireUnit(unit);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"hasTransportCapacity", "cr"}));
+    }
+
+    public static int getTransportSlotsNeeded(Object unit) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getTransportSlotsNeeded", "cw"});
+        return value instanceof Number ? ((Number) value).intValue() : 1;
+    }
+
+    public static int getTransportBarUsedSlots(Object unit) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getTransportBarUsedSlots", "bY"});
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
+    public static int getTransportBarMaxSlots(Object unit) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getTransportBarMaxSlots", "bZ"});
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
+    public static int getTransportedUnitCount(Object unit) {
+        requireOrderableUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getTransportedUnitCount", "bB"});
+        return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    public static boolean isTransportUnloading(Object unit) {
+        requireOrderableUnit(unit);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"isTransportUnloading", "bA"}));
     }
 
     public static Object getBaseReclaimPrice(Object unit) {

@@ -32,6 +32,10 @@ public final class CustomUnitDiagnostics {
             "rustedwarfare.custom.CustomUnitMetadata",
             "com.corrodinggames.rts.game.units.custom.l"
     };
+    private static final String[] ATTACHMENT_SLOT_CLASSES = {
+            "rustedwarfare.custom.attachment.AttachmentSlot",
+            "com.corrodinggames.rts.game.units.custom.b.n"
+    };
     private static final String[] EFFECT_TEMPLATE_CLASSES = {
             "rustedwarfare.custom.EffectTemplate",
             "com.corrodinggames.rts.game.units.custom.ay"
@@ -79,6 +83,90 @@ public final class CustomUnitDiagnostics {
         putField(result, metadata, "canRepairUnitsOnlyWithTags",
                 new String[]{"canRepairUnitsOnlyWithTags", "fo"});
         putField(result, metadata, "similarResourcesHaveTag", new String[]{"similarResourcesHaveTag", "cH"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeTransportMetadata(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putIntField(result, metadata, "maxTransportingUnits", new String[]{"maxTransportingUnits", "eM"});
+        putFloatField(result, metadata, "transportUnitsUnloadDelayBetweenEachUnit",
+                new String[]{"transportUnitsUnloadDelayBetweenEachUnit", "eN"});
+        putBooleanField(result, metadata, "transportUnitsEachUnitAlwaysUsesSingleSlot",
+                new String[]{"transportUnitsEachUnitAlwaysUsesSingleSlot", "eO"});
+        putField(result, metadata, "transportUnitsRequireTag", new String[]{"transportUnitsRequireTag", "eP"});
+        putField(result, metadata, "transportUnitsRequireMovementTypes",
+                new String[]{"transportUnitsRequireMovementTypes", "eQ"});
+        putBooleanField(result, metadata, "transportUnitsBlockAirAndWaterUnits",
+                new String[]{"transportUnitsBlockAirAndWaterUnits", "eR"});
+        putBooleanField(result, metadata, "transportUnitsBlockOtherTransports",
+                new String[]{"transportUnitsBlockOtherTransports", "eS"});
+        putBooleanField(result, metadata, "transportUnitsAddUnloadOption",
+                new String[]{"transportUnitsAddUnloadOption", "eT"});
+        putField(result, metadata, "transportUnitsKeepBuiltUnits",
+                new String[]{"transportUnitsKeepBuiltUnits", "eU"});
+        putField(result, metadata, "transportUnitsKillOnDeath",
+                new String[]{"transportUnitsKillOnDeath", "eV"});
+        putField(result, metadata, "transportUnitsKeepWaypoints",
+                new String[]{"transportUnitsKeepWaypoints", "eW"});
+        putBooleanField(result, metadata, "transportUnitsOnTeamChangeKeepCurrentTeam",
+                new String[]{"transportUnitsOnTeamChangeKeepCurrentTeam", "eX"});
+        putFloatField(result, metadata, "transportUnitsHealBy", new String[]{"transportUnitsHealBy", "eY"});
+        putIntField(result, metadata, "transportSlotsNeeded", new String[]{"transportSlotsNeeded", "eZ"});
+        putField(result, metadata, "transportUnitsCanUnloadUnitsCondition",
+                new String[]{"transportUnitsCanUnloadUnitsCondition", "fc"});
+        putField(result, metadata, "transportUnitsCanUnloadUnitsRelaxedCondition",
+                new String[]{"transportUnitsCanUnloadUnitsRelaxedCondition", "fd"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static List<Object> attachmentSlots(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(metadata, new String[]{"attachmentSlots", "aA"})));
+    }
+
+    public static Object getAttachmentSlotByName(Object metadata, String name) {
+        requireCustomUnitMetadata(metadata);
+        requireText(name, "name");
+        return RustedReflection.invokeInstance(metadata, new String[]{"getAttachmentSlotByName", "i"}, name);
+    }
+
+    public static Map<String, Object> describeAttachmentSlot(Object attachmentSlot) {
+        requireAttachmentSlot(attachmentSlot);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putIntField(result, attachmentSlot, "index", new String[]{"index", "a"});
+        putField(result, attachmentSlot, "name", new String[]{"name", "b"});
+        putFloatField(result, attachmentSlot, "x", new String[]{"x", "c"});
+        putFloatField(result, attachmentSlot, "y", new String[]{"y", "d"});
+        putFloatField(result, attachmentSlot, "height", new String[]{"height", "e"});
+        putBooleanField(result, attachmentSlot, "setDrawLayerOnTop", new String[]{"setDrawLayerOnTop", "A"});
+        putBooleanField(result, attachmentSlot, "setDrawLayerOnBottom", new String[]{"setDrawLayerOnBottom", "B"});
+        putBooleanField(result, attachmentSlot, "reservedAttachmentFlagC",
+                new String[]{"reservedAttachmentFlagC", "C"});
+        putBooleanField(result, attachmentSlot, "addTransportedUnits", new String[]{"addTransportedUnits", "D"});
+        putBooleanField(result, attachmentSlot, "unloadInCurrentPosition",
+                new String[]{"unloadInCurrentPosition", "E"});
+        putBooleanField(result, attachmentSlot, "smoothlyBlendPositionWhenExistingUnitAdded",
+                new String[]{"smoothlyBlendPositionWhenExistingUnitAdded", "F"});
+        putFloatField(result, attachmentSlot, "smoothlyBlendPositionBlendTime",
+                new String[]{"smoothlyBlendPositionBlendTime", "G"});
+        putBooleanField(result, attachmentSlot, "deattachIfWantingToMove",
+                new String[]{"deattachIfWantingToMove", "H"});
+        putBooleanField(result, attachmentSlot, "hidden", new String[]{"hidden", "I"});
+        putBooleanField(result, attachmentSlot, "prioritizeParentsMainTarget",
+                new String[]{"prioritizeParentsMainTarget", "J"});
+        putBooleanField(result, attachmentSlot, "onlyAttackParentsMainTarget",
+                new String[]{"onlyAttackParentsMainTarget", "K"});
+        putBooleanField(result, attachmentSlot, "alwaysAllowedToAttackParentsMainTarget",
+                new String[]{"alwaysAllowedToAttackParentsMainTarget", "L"});
+        putBooleanField(result, attachmentSlot, "canAttack", new String[]{"canAttack", "M"});
+        putField(result, attachmentSlot, "showAllActionsFrom", new String[]{"showAllActionsFrom", "N"});
+        putBooleanField(result, attachmentSlot, "keepWaypointsNeedingMovement",
+                new String[]{"keepWaypointsNeedingMovement", "O"});
+        putBooleanField(result, attachmentSlot, "canBeAttackedAndDamaged",
+                new String[]{"canBeAttackedAndDamaged", "l"});
+        putBooleanField(result, attachmentSlot, "isVisible", new String[]{"isVisible", "o"});
         return Collections.unmodifiableMap(result);
     }
 
@@ -488,6 +576,10 @@ public final class CustomUnitDiagnostics {
 
     private static void requireCustomUnitMetadata(Object metadata) {
         requireAny(metadata, CUSTOM_UNIT_METADATA_CLASSES, "CustomUnitMetadata");
+    }
+
+    private static void requireAttachmentSlot(Object attachmentSlot) {
+        requireAny(attachmentSlot, ATTACHMENT_SLOT_CLASSES, "AttachmentSlot");
     }
 
     private static void requireEffectTemplate(Object effectTemplate) {

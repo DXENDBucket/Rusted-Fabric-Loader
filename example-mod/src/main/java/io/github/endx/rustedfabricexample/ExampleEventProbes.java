@@ -17,6 +17,7 @@ import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
+import io.github.endx.rustedfabricapi.api.event.TransportEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
@@ -129,7 +130,8 @@ final class ExampleEventProbes {
             showEventProbeMessage(stage, "AfterMetadataParsed",
                     "AfterMetadataParsed unit=" + safeText(context.unitId())
                             + " metadata=" + describeObject(metadata)
-                            + " repair=" + describeRepairMetadata(metadata),
+                            + " repair=" + describeRepairMetadata(metadata)
+                            + " transport=" + describeTransportMetadata(metadata),
                     metadata, 750L);
             return metadata;
         });
@@ -710,6 +712,232 @@ final class ExampleEventProbes {
                                 + " unloaded=" + describeObject(transportedUnit),
                         unit, 750L));
 
+        TransportEvents.MODIFY_CAN_TRANSPORT_UNIT.register((carrier, candidate, allowPartial, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyCanTransportUnit",
+                    "ModifyCanTransportUnit result=" + currentResult
+                            + " partial=" + allowPartial
+                            + " carrier=" + describeObject(carrier)
+                            + " candidate=" + describeObject(candidate),
+                    carrier, 1000L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_CAN_TRANSPORT_UNIT_IGNORING_CURRENT_CONTAINER.register((carrier, candidate, allowPartial, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyCanTransportUnitIgnoringCurrentContainer",
+                    "ModifyCanTransportUnitIgnoringCurrentContainer result=" + currentResult
+                            + " partial=" + allowPartial
+                            + " carrier=" + describeObject(carrier)
+                            + " candidate=" + describeObject(candidate),
+                    carrier, 1000L);
+            return null;
+        });
+
+        TransportEvents.BEFORE_TRY_ADD_UNIT_TO_TRANSPORT.register((carrier, candidate, allowPartial) -> {
+            showEventProbeMessage(stage, "BeforeTryAddUnitToTransport",
+                    "BeforeTryAddUnitToTransport partial=" + allowPartial
+                            + " carrier=" + describeObject(carrier)
+                            + " candidate=" + describeObject(candidate)
+                            + " state=" + describeTransportState(carrier),
+                    carrier, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_TRY_ADD_UNIT_TO_TRANSPORT.register((carrier, candidate, allowPartial, result) ->
+                showEventProbeMessage(stage, "AfterTryAddUnitToTransport",
+                        "AfterTryAddUnitToTransport result=" + result
+                                + " partial=" + allowPartial
+                                + " carrier=" + describeObject(carrier)
+                                + " candidate=" + describeObject(candidate)
+                                + " state=" + describeTransportState(carrier),
+                        carrier, 750L));
+
+        TransportEvents.BEFORE_ADD_UNIT_TO_TRANSPORT.register((carrier, transportedUnit) -> {
+            showEventProbeMessage(stage, "BeforeAddUnitToTransport",
+                    "BeforeAddUnitToTransport carrier=" + describeObject(carrier)
+                            + " unit=" + describeObject(transportedUnit)
+                            + " state=" + describeTransportState(carrier),
+                    carrier, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_ADD_UNIT_TO_TRANSPORT.register((carrier, transportedUnit) ->
+                showEventProbeMessage(stage, "AfterAddUnitToTransport",
+                        "AfterAddUnitToTransport carrier=" + describeObject(carrier)
+                                + " unit=" + describeObject(transportedUnit)
+                                + " state=" + describeTransportState(carrier),
+                        carrier, 750L));
+
+        TransportEvents.BEFORE_REMOVE_UNIT_FROM_TRANSPORT.register((carrier, transportedUnit) -> {
+            showEventProbeMessage(stage, "BeforeRemoveUnitFromTransport",
+                    "BeforeRemoveUnitFromTransport carrier=" + describeObject(carrier)
+                            + " unit=" + describeObject(transportedUnit),
+                    carrier, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_REMOVE_UNIT_FROM_TRANSPORT.register((carrier, transportedUnit) ->
+                showEventProbeMessage(stage, "AfterRemoveUnitFromTransport",
+                        "AfterRemoveUnitFromTransport carrier=" + describeObject(carrier)
+                                + " unit=" + describeObject(transportedUnit)
+                                + " state=" + describeTransportState(carrier),
+                        carrier, 750L));
+
+        TransportEvents.MODIFY_HAS_TRANSPORT_CAPACITY.register((unit, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyHasTransportCapacity",
+                    "ModifyHasTransportCapacity result=" + currentResult
+                            + " unit=" + describeObject(unit)
+                            + " state=" + describeTransportState(unit),
+                    unit, 1500L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_TRANSPORT_SLOTS_NEEDED.register((unit, currentSlots) -> {
+            showEventProbeMessage(stage, "ModifyTransportSlotsNeeded",
+                    "ModifyTransportSlotsNeeded slots=" + currentSlots
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_TRANSPORT_BAR_USED_SLOTS.register((unit, currentSlots) -> {
+            showEventProbeMessage(stage, "ModifyTransportBarUsedSlots",
+                    "ModifyTransportBarUsedSlots slots=" + currentSlots
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_TRANSPORT_BAR_MAX_SLOTS.register((unit, currentSlots) -> {
+            showEventProbeMessage(stage, "ModifyTransportBarMaxSlots",
+                    "ModifyTransportBarMaxSlots slots=" + currentSlots
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_TRANSPORTED_UNIT_COUNT.register((unit, currentCount) -> {
+            showEventProbeMessage(stage, "ModifyTransportedUnitCount",
+                    "ModifyTransportedUnitCount count=" + currentCount
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_TRANSPORT_UNLOADING.register((unit, currentResult) -> {
+            showEventProbeMessage(stage, "ModifyTransportUnloading",
+                    "ModifyTransportUnloading result=" + currentResult
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return null;
+        });
+
+        TransportEvents.MODIFY_CONTAINING_UNIT.register((unit, currentContainer) -> {
+            showEventProbeMessage(stage, "ModifyContainingUnit",
+                    "ModifyContainingUnit container=" + describeObject(currentContainer)
+                            + " unit=" + describeObject(unit),
+                    unit, 1500L);
+            return currentContainer;
+        });
+
+        TransportEvents.MODIFY_ATTACHMENT_SLOT.register((unit, currentSlot) -> {
+            showEventProbeMessage(stage, "ModifyAttachmentSlot",
+                    "ModifyAttachmentSlot slot=" + describeObject(currentSlot)
+                            + " details=" + describeAttachmentSlot(currentSlot),
+                    unit, 1500L);
+            return currentSlot;
+        });
+
+        TransportEvents.BEFORE_START_TRANSPORT_UNLOADING.register(unit -> {
+            showEventProbeMessage(stage, "BeforeStartTransportUnloading",
+                    "BeforeStartTransportUnloading unit=" + describeObject(unit)
+                            + " state=" + describeTransportState(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_START_TRANSPORT_UNLOADING.register(unit ->
+                showEventProbeMessage(stage, "AfterStartTransportUnloading",
+                        "AfterStartTransportUnloading unit=" + describeObject(unit)
+                                + " state=" + describeTransportState(unit),
+                        unit, 750L));
+
+        TransportEvents.BEFORE_STOP_TRANSPORT_UNLOADING.register(unit -> {
+            showEventProbeMessage(stage, "BeforeStopTransportUnloading",
+                    "BeforeStopTransportUnloading unit=" + describeObject(unit)
+                            + " state=" + describeTransportState(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_STOP_TRANSPORT_UNLOADING.register(unit ->
+                showEventProbeMessage(stage, "AfterStopTransportUnloading",
+                        "AfterStopTransportUnloading unit=" + describeObject(unit)
+                                + " state=" + describeTransportState(unit),
+                        unit, 750L));
+
+        TransportEvents.BEFORE_UNLOAD_NEXT_TRANSPORTED_UNIT.register((unit, forced) -> {
+            showEventProbeMessage(stage, "BeforeUnloadNextTransportedUnit",
+                    "BeforeUnloadNextTransportedUnit forced=" + forced
+                            + " unit=" + describeObject(unit)
+                            + " state=" + describeTransportState(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_UNLOAD_NEXT_TRANSPORTED_UNIT.register((unit, forced, result) ->
+                showEventProbeMessage(stage, "AfterUnloadNextTransportedUnit",
+                        "AfterUnloadNextTransportedUnit result=" + result
+                                + " forced=" + forced
+                                + " unit=" + describeObject(unit)
+                                + " state=" + describeTransportState(unit),
+                        unit, 750L));
+
+        TransportEvents.BEFORE_UNLOAD_SPECIFIC_TRANSPORTED_UNIT.register((unit, transportedUnit, optionA, optionB) -> {
+            showEventProbeMessage(stage, "BeforeUnloadSpecificTransportedUnit",
+                    "BeforeUnloadSpecificTransportedUnit unit=" + describeObject(unit)
+                            + " cargo=" + describeObject(transportedUnit)
+                            + " options=" + optionA + "/" + optionB,
+                    unit, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_UNLOAD_SPECIFIC_TRANSPORTED_UNIT.register((unit, transportedUnit, optionA, optionB, result) ->
+                showEventProbeMessage(stage, "AfterUnloadSpecificTransportedUnit",
+                        "AfterUnloadSpecificTransportedUnit result=" + result
+                                + " unit=" + describeObject(unit)
+                                + " cargo=" + describeObject(transportedUnit),
+                        unit, 750L));
+
+        TransportEvents.BEFORE_RELEASE_ALL_TRANSPORTED_UNITS.register((unit, killUnits) -> {
+            showEventProbeMessage(stage, "BeforeReleaseAllTransportedUnits",
+                    "BeforeReleaseAllTransportedUnits kill=" + killUnits
+                            + " unit=" + describeObject(unit)
+                            + " state=" + describeTransportState(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_RELEASE_ALL_TRANSPORTED_UNITS.register((unit, killUnits) ->
+                showEventProbeMessage(stage, "AfterReleaseAllTransportedUnits",
+                        "AfterReleaseAllTransportedUnits kill=" + killUnits
+                                + " unit=" + describeObject(unit)
+                                + " state=" + describeTransportState(unit),
+                        unit, 750L));
+
+        TransportEvents.BEFORE_TRANSPORT_DEATH_CARGO_CLEANUP.register(unit -> {
+            showEventProbeMessage(stage, "BeforeTransportDeathCargoCleanup",
+                    "BeforeTransportDeathCargoCleanup unit=" + describeObject(unit)
+                            + " state=" + describeTransportState(unit),
+                    unit, 750L);
+            return false;
+        });
+
+        TransportEvents.AFTER_TRANSPORT_DEATH_CARGO_CLEANUP.register(unit ->
+                showEventProbeMessage(stage, "AfterTransportDeathCargoCleanup",
+                        "AfterTransportDeathCargoCleanup unit=" + describeObject(unit)
+                                + " state=" + describeTransportState(unit),
+                        unit, 750L));
+
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_KILLED.register(unit ->
                 showEventProbeMessage(stage, "AfterCustomUnitKilled",
                         "AfterCustomUnitKilled unit=" + describeObject(unit),
@@ -1153,6 +1381,47 @@ final class ExampleEventProbes {
                     + "}";
         } catch (RuntimeException e) {
             return "<unavailable>";
+        }
+    }
+
+    private static String describeTransportMetadata(Object metadata) {
+        try {
+            Map<String, Object> details = CustomUnitDiagnostics.describeTransportMetadata(metadata);
+            return "{max=" + details.get("maxTransportingUnits")
+                    + ", slots=" + details.get("transportSlotsNeeded")
+                    + ", addUnload=" + details.get("transportUnitsAddUnloadOption")
+                    + ", kill=" + describeObject(details.get("transportUnitsKillOnDeath"))
+                    + "}";
+        } catch (RuntimeException e) {
+            return "<unavailable>";
+        }
+    }
+
+    private static String describeTransportState(Object unit) {
+        try {
+            return "{count=" + UnitRuntimeDiagnostics.getTransportedUnitCount(unit)
+                    + ", unloading=" + UnitRuntimeDiagnostics.isTransportUnloading(unit)
+                    + ", bar=" + UnitRuntimeDiagnostics.getTransportBarUsedSlots(unit)
+                    + "/" + UnitRuntimeDiagnostics.getTransportBarMaxSlots(unit)
+                    + "}";
+        } catch (RuntimeException e) {
+            return "<unavailable>";
+        }
+    }
+
+    private static String describeAttachmentSlot(Object attachmentSlot) {
+        if (attachmentSlot == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = CustomUnitDiagnostics.describeAttachmentSlot(attachmentSlot);
+            return "{name=" + safeText(String.valueOf(details.get("name")))
+                    + ", addCargo=" + details.get("addTransportedUnits")
+                    + ", unloadHere=" + details.get("unloadInCurrentPosition")
+                    + ", hidden=" + details.get("hidden")
+                    + "}";
+        } catch (RuntimeException e) {
+            return describeObject(attachmentSlot);
         }
     }
 

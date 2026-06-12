@@ -68,6 +68,14 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_runtime_repair_reclaim_flow_map_v0_40.csv";
     private static final String RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE_RESOURCE =
             "/rustedfabricapi/mapping/rw_runtime_repair_reclaim_family_coverage_v0_40.csv";
+    private static final String RUNTIME_TRANSPORT_ATTACHMENT_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_transport_attachment_added_updated_rows_v0_41.csv";
+    private static final String RUNTIME_TRANSPORT_ATTACHMENT_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_transport_attachment_flow_map_v0_41.csv";
+    private static final String RUNTIME_TRANSPORT_ATTACHMENT_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_runtime_transport_attachment_family_coverage_v0_41.csv";
+    private static final String ATTACHMENT_SLOT_SEMANTIC_HOTFIX_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_attachment_slot_semantic_hotfix_rows_v0_41.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -184,6 +192,22 @@ public final class MappingEvidenceDiagnostics {
         return Holder.RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE;
     }
 
+    public static List<MappingEvidenceRow> allRuntimeTransportAttachmentRows() {
+        return Holder.RUNTIME_TRANSPORT_ATTACHMENT_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeTransportAttachmentFlowMap() {
+        return Holder.RUNTIME_TRANSPORT_ATTACHMENT_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRuntimeTransportAttachmentFamilyCoverage() {
+        return Holder.RUNTIME_TRANSPORT_ATTACHMENT_FAMILY_COVERAGE;
+    }
+
+    public static List<MappingEvidenceRow> allAttachmentSlotSemanticHotfixRows() {
+        return Holder.ATTACHMENT_SLOT_SEMANTIC_HOTFIX_ROWS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -243,6 +267,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRuntimeRepairReclaimRows(String text) {
         return findByText(Holder.RUNTIME_REPAIR_RECLAIM_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findRuntimeTransportAttachmentRows(String text) {
+        return findByText(Holder.RUNTIME_TRANSPORT_ATTACHMENT_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findAttachmentSlotSemanticHotfixRows(String text) {
+        return findByText(Holder.ATTACHMENT_SLOT_SEMANTIC_HOTFIX_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -414,6 +446,10 @@ public final class MappingEvidenceDiagnostics {
         result.put("runtime_repair_reclaim_rows", Holder.RUNTIME_REPAIR_RECLAIM_ROWS);
         result.put("runtime_repair_reclaim_flow_map", Holder.RUNTIME_REPAIR_RECLAIM_FLOW_MAP);
         result.put("runtime_repair_reclaim_family_coverage", Holder.RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE);
+        result.put("runtime_transport_attachment_rows", Holder.RUNTIME_TRANSPORT_ATTACHMENT_ROWS);
+        result.put("runtime_transport_attachment_flow_map", Holder.RUNTIME_TRANSPORT_ATTACHMENT_FLOW_MAP);
+        result.put("runtime_transport_attachment_family_coverage", Holder.RUNTIME_TRANSPORT_ATTACHMENT_FAMILY_COVERAGE);
+        result.put("attachment_slot_semantic_hotfix_rows", Holder.ATTACHMENT_SLOT_SEMANTIC_HOTFIX_ROWS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -569,6 +605,14 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(RUNTIME_REPAIR_RECLAIM_FLOW_MAP_RESOURCE);
         private static final List<MappingEvidenceRow> RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE =
                 loadRows(RUNTIME_REPAIR_RECLAIM_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_TRANSPORT_ATTACHMENT_ROWS =
+                loadRows(RUNTIME_TRANSPORT_ATTACHMENT_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_TRANSPORT_ATTACHMENT_FLOW_MAP =
+                loadRows(RUNTIME_TRANSPORT_ATTACHMENT_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RUNTIME_TRANSPORT_ATTACHMENT_FAMILY_COVERAGE =
+                loadRows(RUNTIME_TRANSPORT_ATTACHMENT_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> ATTACHMENT_SLOT_SEMANTIC_HOTFIX_ROWS =
+                loadRows(ATTACHMENT_SLOT_SEMANTIC_HOTFIX_ROWS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =
