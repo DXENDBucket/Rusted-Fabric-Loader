@@ -1,0 +1,9 @@
+step,owner,method_or_field,mapped_name,notes
+1,UnitAction,b()/a(),getText/getDescription,action display text and tooltip source
+2,UnitAction,"b(Unit,boolean)",getDisplayQueueCount,UI/queue count for current unit
+3,UnitAction,B()/r_(),getPrice/getStreamingCost,resource cost connection to build/queue systems
+4,UnitAction,"a(Unit,boolean)",isActiveAndQueueAllowed,availability and queue gating
+5,QueueableUnitAction,e(),getActionCommandType,queue/build/place/repair/reclaim command category
+6,BuildQueue,enqueueQueueableAction*,enqueue action into production queue,v0.39 chain
+7,OrderableUnit,updateActiveOrder,execute active UnitOrder,v0.34 chain
+8,CustomAction,effect list execution,run configured action effects,covered by custom action/effect mappings
