@@ -913,13 +913,65 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	m	()F	j	method_MapEngine_getMapHeightPixels	getMapHeightPixels
 	m	()V	k	method_MapEngine_updateFogAllTeams	updateFogAllTeams
 	m	()V	l	method_MapEngine_rebuildFogBuffers	rebuildFogBuffers
+	f	Ljava/util/concurrent/locks/ReentrantLock;	e	field_b_mapLoadLock	mapLoadLock
+	f	Z	f	field_b_skipMapLoadLocking	skipMapLoadLocking
+	f	Lcom/corrodinggames/rts/game/b/h;	l	field_b_fullScaleTileAtlas	fullScaleTileAtlas
+	f	Lcom/corrodinggames/rts/game/b/h;	m	field_b_halfScaleTileAtlas	halfScaleTileAtlas
+	f	I	as	field_b_nextRegisteredTileId	nextRegisteredTileId
+	m	()V	a	method_b_acquireMapLoadLock	acquireMapLoadLock
+	m	()V	b	method_b_releaseMapLoadLock	releaseMapLoadLock
+	m	(ILcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_b_drawSmoothFogAtlasTile	drawSmoothFogAtlasTile
+	m	(ILandroid/graphics/Rect;)V	a	method_b_getSmoothFogAtlasSourceRect	getSmoothFogAtlasSourceRect
+	m	(Lcom/corrodinggames/rts/game/b/g;II)Lcom/corrodinggames/rts/game/b/g;	a	method_b_resolveTileVariantForPosition	resolveTileVariantForPosition
+	m	(Landroid/graphics/Point;)Landroid/graphics/PointF;	a	method_b_getWorldPointForTilePoint	getWorldPointForTilePoint
+	m	(Landroid/graphics/RectF;)V	a	method_b_scaleRectForLargeTileMode	scaleRectForLargeTileMode
+	m	(FF)V	b	method_b_setTempTileAndWorldPositionFromWorld	setTempTileAndWorldPositionFromWorld
+	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/b/c	rw/map/MapTileRenderCache	rustedwarfare/map/MapTileRenderCache
 	f	I	a	field_MapTileRenderCache_cacheSize	cacheSize
 	m	()V	a	method_MapTileRenderCache_initialize	initialize
 	m	(II)Lcom/corrodinggames/rts/game/b/d;	a	method_MapTileRenderCache_getRegion	getRegion
 	m	(IIZ)V	a	method_MapTileRenderCache_markTileDirty	markTileDirty
 	m	()V	b	method_MapTileRenderCache_dispose	dispose
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_MapTileRenderCache_bufferImage	bufferImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	c	field_MapTileRenderCache_bufferCanvas	bufferCanvas
+	f	[[Lcom/corrodinggames/rts/game/b/d;	d	field_MapTileRenderCache_regions	regions
+	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	e	field_MapTileRenderCache_drawPaint	drawPaint
+	f	I	f	field_MapTileRenderCache_originWorldX	originWorldX
+	f	I	g	field_MapTileRenderCache_originWorldY	originWorldY
+	f	I	i	field_MapTileRenderCache_regionPixelSize	regionPixelSize
+	f	I	k	field_MapTileRenderCache_regionStride	regionStride
+	f	F	l	field_MapTileRenderCache_inverseRegionPixelSize	inverseRegionPixelSize
+	f	F	m	field_MapTileRenderCache_scale	scale
+	f	Landroid/graphics/Rect;	o	field_MapTileRenderCache_scratchRect	scratchRect
+	m	()V	<init>	<init>	<init>
+	m	(I)V	a	method_MapTileRenderCache_scrollRegionsY	scrollRegionsY
+	m	(I)V	b	method_MapTileRenderCache_scrollRegionsX	scrollRegionsX
+	m	()V	c	method_MapTileRenderCache_markAllRegionsDirty	markAllRegionsDirty
+	m	(IIIIZ)V	a	method_MapTileRenderCache_markWorldRectDirty	markWorldRectDirty
+	m	(Lcom/corrodinggames/rts/game/l;)V	a	method_MapTileRenderCache_drawCacheForMapObject	drawCacheForMapObject
+	m	()F	g	method_MapTileRenderCache_getCurrentRenderScale	getCurrentRenderScale
+	m	(F)V	a	method_MapTileRenderCache_draw	draw
 c	com/corrodinggames/rts/game/b/d	rw/map/MapTileRenderCacheRegion	rustedwarfare/map/MapTileRenderCacheRegion
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	a	field_MapTileRenderCacheRegion_canvas	canvas
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	d	field_MapTileRenderCacheRegion_bufferImage	bufferImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	e	field_MapTileRenderCacheRegion_fadeOutImage	fadeOutImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	f	field_MapTileRenderCacheRegion_fadeOutCanvas	fadeOutCanvas
+	f	Landroid/graphics/Paint;	h	field_MapTileRenderCacheRegion_paint	paint
+	f	I	i	field_MapTileRenderCacheRegion_gridX	gridX
+	f	I	j	field_MapTileRenderCacheRegion_gridY	gridY
+	f	Z	k	field_MapTileRenderCacheRegion_dirty	dirty
+	f	Z	l	field_MapTileRenderCacheRegion_fadeDirty	fadeDirty
+	f	Landroid/graphics/Rect;	o	field_MapTileRenderCacheRegion_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/Rect;	p	field_MapTileRenderCacheRegion_scratchDestRect	scratchDestRect
+	f	Landroid/graphics/RectF;	q	field_MapTileRenderCacheRegion_scratchDestRectF	scratchDestRectF
+	f	Landroid/graphics/Rect;	r	field_MapTileRenderCacheRegion_worldRectScratch	worldRectScratch
+	f	Lcom/corrodinggames/rts/game/b/c;	s	field_MapTileRenderCacheRegion_ownerCache	ownerCache
+	m	()V	a	method_MapTileRenderCacheRegion_allocateFadeOutImage	allocateFadeOutImage
+	m	()Landroid/graphics/Rect;	b	method_MapTileRenderCacheRegion_getWorldRect	getWorldRect
+	m	(Lcom/corrodinggames/rts/game/b/c;II)V	<init>	<init>	<init>
+	m	()I	c	method_MapTileRenderCacheRegion_getWorldX	getWorldX
+	m	()I	d	method_MapTileRenderCacheRegion_getWorldY	getWorldY
 c	com/corrodinggames/rts/game/b/e	rw/map/MapLayer	rustedwarfare/map/MapLayer
 	f	Lcom/corrodinggames/rts/game/b/b;	i	field_MapLayer_map	map
 	f	I	j	field_MapLayer_layerIndex	layerIndex
@@ -942,6 +994,12 @@ c	com/corrodinggames/rts/game/b/e	rw/map/MapLayer	rustedwarfare/map/MapLayer
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/io/InputStream;	a	method_MapLayer_decodeLayerData	decodeLayerData
 	m	([C)[B	a	method_MapLayer_decodeBase64	decodeBase64
 	m	()V	b	method_MapLayer_disposeLayerCache	disposeLayerCache
+	f	[B	x	field_e_base64DecodeLookup	base64DecodeLookup
+	f	Landroid/graphics/Rect;	t	field_e_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/Rect;	u	field_e_scratchDestRect	scratchDestRect
+	f	Landroid/graphics/RectF;	v	field_e_scratchDestRectF	scratchDestRectF
+	m	(Lcom/corrodinggames/rts/game/b/b;Ljava/lang/String;II)V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/b/b;Lorg/w3c/dom/Element;)V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/b/f	rw/map/MapLoadException	rustedwarfare/map/MapLoadException
 c	com/corrodinggames/rts/game/b/g	rw/map/MapTile	rustedwarfare/map/MapTile
 	f	Lcom/corrodinggames/rts/game/b/j;	a	field_MapTile_tileset	tileset
@@ -956,7 +1014,42 @@ c	com/corrodinggames/rts/game/b/g	rw/map/MapTile	rustedwarfare/map/MapTile
 	m	(Lcom/corrodinggames/rts/game/b/g;Lcom/corrodinggames/rts/game/b/g;)Z	a	method_MapTile_sameTileAndVariant	sameTileAndVariant
 	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/RectF;FLandroid/graphics/Paint;)V	a	method_MapTile_draw	draw
 	m	(Ljava/lang/String;)V	a	method_MapTile_logTileWarning	logTileWarning
+	f	Z	e	field_g_isWater	isWater
+	f	Z	f	field_g_isWaterBridge	isWaterBridge
+	f	Z	g	field_g_isLava	isLava
+	f	Z	h	field_g_isCliff	isCliff
+	f	Z	k	field_g_isLargeCliffOrTreeBlocker	isLargeCliffOrTreeBlocker
+	f	Z	l	field_g_blocksBuildings	blocksBuildings
+	f	Landroid/graphics/Rect;	n	field_g_scratchSourceRect	scratchSourceRect
+	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/b/h	rw/map/TileAtlas	rustedwarfare/map/TileAtlas
+	f	I	a	field_TileAtlas_tileCount	tileCount
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_TileAtlas_atlasImage	atlasImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	c	field_TileAtlas_atlasCanvas	atlasCanvas
+	f	Landroid/graphics/Paint;	d	field_TileAtlas_drawPaint	drawPaint
+	f	I	e	field_TileAtlas_tileWidth	tileWidth
+	f	I	f	field_TileAtlas_tileHeight	tileHeight
+	f	I	g	field_TileAtlas_slotWidth	slotWidth
+	f	I	h	field_TileAtlas_slotHeight	slotHeight
+	f	F	i	field_TileAtlas_scale	scale
+	f	Z	j	field_TileAtlas_alphaAtlasMode	alphaAtlasMode
+	f	Lcom/corrodinggames/rts/game/b/h;	k	field_TileAtlas_alphaTileAtlas	alphaTileAtlas
+	f	Landroid/graphics/Rect;	l	field_TileAtlas_tileSourceRectScratch	tileSourceRectScratch
+	f	Landroid/graphics/Rect;	m	field_TileAtlas_paddingSourceRectScratch	paddingSourceRectScratch
+	f	Landroid/graphics/Rect;	n	field_TileAtlas_paddingDestRectScratch	paddingDestRectScratch
+	f	Landroid/graphics/Rect;	o	field_TileAtlas_cachedTileSourceRect	cachedTileSourceRect
+	f	I	p	field_TileAtlas_cachedTileSourceRectIndex	cachedTileSourceRectIndex
+	m	(FZ)V	<init>	<init>	<init>
+	m	()V	a	method_TileAtlas_initializeAtlas	initializeAtlas
+	m	()V	b	method_TileAtlas_clearAtlas	clearAtlas
+	m	(Lcom/corrodinggames/rts/game/b/j;I)I	a	method_TileAtlas_addTileToAtlas	addTileToAtlas
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;)Z	a	method_TileAtlas_hasImageAlpha	hasImageAlpha
+	m	()V	c	method_TileAtlas_flushAtlasCanvas	flushAtlasCanvas
+	m	(ILcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;)V	a	method_TileAtlas_drawTileIntoAtlas	drawTileIntoAtlas
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_TileAtlas_drawImageWithPadding	drawImageWithPadding
+	m	(I)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_TileAtlas_getAtlasImageForTileIndex	getAtlasImageForTileIndex
+	m	(I)Landroid/graphics/Rect;	b	method_TileAtlas_getTileSourceRectCached	getTileSourceRectCached
+	m	(ILandroid/graphics/Rect;)V	a	method_TileAtlas_getTileSourceRect	getTileSourceRect
 c	com/corrodinggames/rts/game/b/i	rw/map/MapObjectGroup	rustedwarfare/map/MapObjectGroup
 	f	I	a	field_MapObjectGroup_index	index
 	f	Ljava/lang/String;	b	field_MapObjectGroup_name	name
@@ -988,7 +1081,7 @@ c	com/corrodinggames/rts/game/b/j	rw/map/Tileset	rustedwarfare/map/Tileset
 	m	(Lcom/corrodinggames/rts/game/b/b;Ljava/lang/String;)Lorg/w3c/dom/Element;	a	method_Tileset_loadExternalTilesetElement	loadExternalTilesetElement
 	m	(Lcom/corrodinggames/rts/game/b/b;Lorg/w3c/dom/Element;)Ljava/lang/String;	a	method_Tileset_parseTilesetElement	parseTilesetElement
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_Tileset_loadTilesetImage	loadTilesetImage
-	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_Tileset_resolveRelativePath	resolveRelativePath
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_j_getOrRegisterEmbeddedTilesetImageKey	getOrRegisterEmbeddedTilesetImageKey
 	m	(Lorg/w3c/dom/Element;)V	a	method_Tileset_parseTileProperties	parseTileProperties
 	m	(I)Landroid/graphics/Rect;	b	method_Tileset_getTileSourceRectCached	getTileSourceRectCached
 	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Integer;	b	method_Tileset_getTilePropertyInt	getTilePropertyInt
@@ -996,7 +1089,27 @@ c	com/corrodinggames/rts/game/b/j	rw/map/Tileset	rustedwarfare/map/Tileset
 	m	(I)V	c	method_Tileset_setLastGid	setLastGid
 	m	()V	d	method_Tileset_disposeTilesetImage	disposeTilesetImage
 	m	(I)Z	d	method_Tileset_containsGid	containsGid
-c	com/corrodinggames/rts/game/b/k	rw/map/TilesetImageLoadTask	rustedwarfare/map/TilesetImageLoadTask
+	f	Z	p	field_j_usedInMap	usedInMap
+	f	Z	q	field_j_usedOnItemsLayer	usedOnItemsLayer
+	f	Z	r	field_j_usedOnNonGroundLayer	usedOnNonGroundLayer
+	f	Z	s	field_j_hasUnitTileProperties	hasUnitTileProperties
+	f	Ljava/lang/String;	t	field_j_embeddedImagePrefix	embeddedImagePrefix
+	f	Ljava/util/ArrayList;	u	field_j_tilesetImageCacheEntries	tilesetImageCacheEntries
+	f	Landroid/graphics/Rect;	v	field_j_cachedSourceRect	cachedSourceRect
+	f	I	w	field_j_cachedSourceRectTileIndex	cachedSourceRectTileIndex
+	m	()V	a	method_j_markAllTilesetImagesUnused	markAllTilesetImagesUnused
+	m	()V	b	method_j_disposeUnusedTilesetImages	disposeUnusedTilesetImages
+	m	(Lcom/corrodinggames/rts/game/b/b;Ljava/lang/String;I)V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/b/b;Lorg/w3c/dom/Element;)V	<init>	<init>	<init>
+c	com/corrodinggames/rts/game/b/k	rw/map/TilesetImageCacheEntry	rustedwarfare/map/TilesetImageCacheEntry
+	f	I	a	field_k_nextEmbeddedImageId	nextEmbeddedImageId
+	f	Z	b	field_k_markedInUse	markedInUse
+	f	Ljava/lang/String;	c	field_k_basePathPrefix	basePathPrefix
+	f	Ljava/lang/String;	d	field_k_imageKey	imageKey
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	e	field_k_image	image
+	f	Ljava/lang/String;	f	field_k_embeddedBase64Data	embeddedBase64Data
+	f	Ljava/lang/String;	g	field_k_debugSourceName	debugSourceName
+	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game/Projectile
 	f	Z	A	field_Projectile_instant	instant
 	f	Z	B	field_Projectile_laserEffect	laserEffect
@@ -9244,3 +9357,11 @@ c	com/corrodinggames/rts/game/units/custom/y	rw/custom/turret/TurretRangeGuideMa
 	f	F	a	field_TurretRangeGuideMarker_range	range
 	m	()V	<init>	method_TurretRangeGuideMarker_init	<init>
 c	com/corrodinggames/rts/game/units/custom/l$1	rw/custom/internal/CustomUnitMetadataAnonymous1	rustedwarfare/custom/internal/CustomUnitMetadataAnonymous1
+c	com/corrodinggames/rts/game/b/b$1	rw/map/MapXmlEmptyEntityResolver1	rustedwarfare/map/MapXmlEmptyEntityResolver1
+	f	Lcom/corrodinggames/rts/game/b/b;	a	field_b_1_map	map
+	m	(Lcom/corrodinggames/rts/game/b/b;)V	<init>	<init>	<init>
+	m	(Ljava/lang/String;Ljava/lang/String;)Lorg/xml/sax/InputSource;	resolveEntity	method_b_1_resolveEntity	resolveEntity
+c	com/corrodinggames/rts/game/b/b$2	rw/map/MapXmlEmptyEntityResolver2	rustedwarfare/map/MapXmlEmptyEntityResolver2
+	f	Lcom/corrodinggames/rts/game/b/b;	a	field_b_2_map	map
+	m	(Lcom/corrodinggames/rts/game/b/b;)V	<init>	<init>	<init>
+	m	(Ljava/lang/String;Ljava/lang/String;)Lorg/xml/sax/InputSource;	resolveEntity	method_b_2_resolveEntity	resolveEntity

@@ -1,0 +1,3 @@
+kind,owner_official,official_name,descriptor,old_intermediary,old_named,new_intermediary,new_named,reason
+class,com/corrodinggames/rts/game/b/k,,,rw/map/TilesetImageLoadTask,rustedwarfare/map/TilesetImageLoadTask,rw/map/TilesetImageCacheEntry,rustedwarfare/map/TilesetImageCacheEntry,accepted sibling map/tileset semantic correction
+method,com/corrodinggames/rts/game/b/j,a,(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;,method_Tileset_resolveRelativePath,resolveRelativePath,method_j_getOrRegisterEmbeddedTilesetImageKey,getOrRegisterEmbeddedTilesetImageKey,accepted sibling map/tileset semantic correction

@@ -136,6 +136,16 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_custom_mutable_stat_writer_rows_v0_52.csv";
     private static final String CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS_RESOURCE =
             "/rustedfabricapi/mapping/rw_custom_movement_micro_behavior_rows_v0_52.csv";
+    private static final String MAP_TERRAIN_TILESET_MERGE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_map_terrain_tileset_merge_added_rows_v0_53.csv";
+    private static final String MAP_TERRAIN_TILESET_MERGE_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_map_terrain_tileset_merge_updated_rows_v0_53.csv";
+    private static final String MAP_TERRAIN_TILESET_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_map_terrain_tileset_flow_map_v0_53.csv";
+    private static final String MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_map_terrain_tileset_branch_skipped_rows_v0_53.csv";
+    private static final String TILE_ATLAS_RENDER_CACHE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_tileatlas_render_cache_rows_v0_53.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -388,6 +398,26 @@ public final class MappingEvidenceDiagnostics {
         return Holder.CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS;
     }
 
+    public static List<MappingEvidenceRow> allMapTerrainTilesetMergeRows() {
+        return Holder.MAP_TERRAIN_TILESET_MERGE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allMapTerrainTilesetMergeUpdatedRows() {
+        return Holder.MAP_TERRAIN_TILESET_MERGE_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allMapTerrainTilesetFlowMap() {
+        return Holder.MAP_TERRAIN_TILESET_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allMapTerrainTilesetBranchSkippedRows() {
+        return Holder.MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allTileAtlasRenderCacheRows() {
+        return Holder.TILE_ATLAS_RENDER_CACHE_ROWS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -519,6 +549,18 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findCustomMovementMicroBehaviorRows(String text) {
         return findByText(Holder.CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findMapTerrainTilesetMergeRows(String text) {
+        return findByText(Holder.MAP_TERRAIN_TILESET_MERGE_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findMapTerrainTilesetMergeUpdatedRows(String text) {
+        return findByText(Holder.MAP_TERRAIN_TILESET_MERGE_UPDATED_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findTileAtlasRenderCacheRows(String text) {
+        return findByText(Holder.TILE_ATLAS_RENDER_CACHE_ROWS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -727,6 +769,11 @@ public final class MappingEvidenceDiagnostics {
         result.put("custom_logic_geometry_rows", Holder.CUSTOM_LOGIC_GEOMETRY_ROWS);
         result.put("custom_mutable_stat_writer_rows", Holder.CUSTOM_MUTABLE_STAT_WRITER_ROWS);
         result.put("custom_movement_micro_behavior_rows", Holder.CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS);
+        result.put("map_terrain_tileset_merge_rows", Holder.MAP_TERRAIN_TILESET_MERGE_ROWS);
+        result.put("map_terrain_tileset_merge_updated_rows", Holder.MAP_TERRAIN_TILESET_MERGE_UPDATED_ROWS);
+        result.put("map_terrain_tileset_flow_map", Holder.MAP_TERRAIN_TILESET_FLOW_MAP);
+        result.put("map_terrain_tileset_branch_skipped_rows", Holder.MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS);
+        result.put("tile_atlas_render_cache_rows", Holder.TILE_ATLAS_RENDER_CACHE_ROWS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -950,6 +997,16 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(CUSTOM_MUTABLE_STAT_WRITER_ROWS_RESOURCE);
         private static final List<MappingEvidenceRow> CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS =
                 loadRows(CUSTOM_MOVEMENT_MICRO_BEHAVIOR_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> MAP_TERRAIN_TILESET_MERGE_ROWS =
+                loadRows(MAP_TERRAIN_TILESET_MERGE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> MAP_TERRAIN_TILESET_MERGE_UPDATED_ROWS =
+                loadRows(MAP_TERRAIN_TILESET_MERGE_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> MAP_TERRAIN_TILESET_FLOW_MAP =
+                loadRows(MAP_TERRAIN_TILESET_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS =
+                loadRows(MAP_TERRAIN_TILESET_BRANCH_SKIPPED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> TILE_ATLAS_RENDER_CACHE_ROWS =
+                loadRows(TILE_ATLAS_RENDER_CACHE_ROWS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

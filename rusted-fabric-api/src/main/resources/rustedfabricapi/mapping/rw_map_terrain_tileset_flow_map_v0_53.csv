@@ -1,0 +1,9 @@
+stage,owner,member,description
+TMX/XML map load,MapEngine,loadMapFromStream / parse tilesets/layers,"MapEngine opens TMX/XML, installs empty EntityResolver, parses tilesets, layers and tile properties."
+tileset image cache,Tileset,getOrRegisterEmbeddedTilesetImageKey / loadTilesetImage,Embedded base64 images are deduplicated into TilesetImageCacheEntry and loaded by generated [EMBED] keys.
+tile creation,MapTile,createTile,TMX tile properties set water/cliff/lava/block-building flags and optional tile variants.
+tile registration,MapEngine,registerTile / getRegisteredTile,MapTile instances are assigned short registered ids for layer tile arrays.
+atlas packing,TileAtlas,addTileToAtlas,Tileset source rects are scanned for alpha and packed into full-scale or alpha TileAtlas images with padded edges.
+layer draw,MapLayer,drawLayerRegion,Layer tiles resolve registered MapTile objects and draw via TileAtlas source rects / direct image fallback.
+render cache,MapTileRenderCache,markWorldRectDirty / draw,Dirty world-space regions are mapped to cache regions and redrawn/shifted as camera scale and origin change.
+path/fog consumers,MovementCostMap / MapEngine fog,terrain flags / smooth fog atlas,Terrain flags feed movement cost maps; MapEngine smooth fog atlas uses tile atlas style source rect helpers.
