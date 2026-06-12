@@ -563,6 +563,13 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	f	Lcom/corrodinggames/rts/game/b/e;	x	field_MapEngine_pathingOverrideLayer	pathingOverrideLayer
 	f	Lcom/corrodinggames/rts/game/b/e;	y	field_MapEngine_itemsLayer	itemsLayer
 	f	Ljava/util/ArrayList;	z	field_MapEngine_layers	layers
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	K	field_b_smoothFogAtlasImage	smoothFogAtlasImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	L	field_b_smoothFogAtlasCanvas	smoothFogAtlasCanvas
+	f	[[B	M	field_b_smoothFogCacheA	smoothFogCacheA
+	f	[[B	N	field_b_smoothFogCacheB	smoothFogCacheB
+	f	Landroid/graphics/Rect;	O	field_b_scratchFogSourceRect	scratchFogSourceRect
+	f	Z	H	field_b_softFogSettingsInitialized	softFogSettingsInitialized
+	f	Z	I	field_b_softFogFadingEnabled	softFogFadingEnabled
 	m	(F)F	a	method_MapEngine_worldToTileX	worldToTileX
 	m	(FFILcom/corrodinggames/rts/game/n;Z)V	a	method_MapEngine_revealMapArea	revealMapArea
 	m	(I)Lcom/corrodinggames/rts/game/b/j;	a	method_MapEngine_getTilesetForGid	getTilesetForGid
@@ -596,13 +603,6 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	m	()F	j	method_MapEngine_getMapHeightPixels	getMapHeightPixels
 	m	()V	k	method_MapEngine_updateFogAllTeams	updateFogAllTeams
 	m	()V	l	method_MapEngine_rebuildFogBuffers	rebuildFogBuffers
-	f	Lcom/corrodinggames/rts/gameFramework/m/e;	K	field_b_smoothFogAtlasImage	smoothFogAtlasImage
-	f	Lcom/corrodinggames/rts/gameFramework/m/y;	L	field_b_smoothFogAtlasCanvas	smoothFogAtlasCanvas
-	f	[[B	M	field_b_smoothFogCacheA	smoothFogCacheA
-	f	[[B	N	field_b_smoothFogCacheB	smoothFogCacheB
-	f	Landroid/graphics/Rect;	O	field_b_scratchFogSourceRect	scratchFogSourceRect
-	f	Z	H	field_b_softFogSettingsInitialized	softFogSettingsInitialized
-	f	Z	I	field_b_softFogFadingEnabled	softFogFadingEnabled
 	m	()V	c	method_b_loadSmoothFogAssets	loadSmoothFogAssets
 	m	()V	d	method_b_initializeSoftFogSettings	initializeSoftFogSettings
 	m	(IILcom/corrodinggames/rts/game/n;)Z	a	method_b_isTileCurrentlyVisibleToTeam	isTileCurrentlyVisibleToTeam
@@ -960,6 +960,15 @@ c	com/corrodinggames/rts/game/l	rw/internal/game/l	rustedwarfare/internal/game/l
 	m	(F)Z	f	method_l_drawZoomedOutIconLayer	drawZoomedOutIconLayer
 c	com/corrodinggames/rts/game/n	rw/game/Team	rustedwarfare/game/Team
 	f	D	o	field_n_o_credits	credits
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	ak	field_n_teamTags	teamTags
+	f	Lcom/corrodinggames/rts/game/units/custom/e/f;	al	field_n_globalResources	globalResources
+	f	Lcom/corrodinggames/rts/game/units/custom/e/c;	am	field_n_resourceShortageCollector	resourceShortageCollector
+	f	Lcom/corrodinggames/rts/game/s;	T	field_n_T_stats	stats
+	f	Z	S	field_n_S_statsDirty	statsDirty
+	f	I	ad	field_n_ad_statsValidationFailureCount	statsValidationFailureCount
+	f	I	L	field_n_fogMapWidth	fogMapWidth
+	f	I	M	field_n_fogMapHeight	fogMapHeight
+	f	[[B	N	field_n_fogOfWarMap	fogOfWarMap
 	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	V	method_n_V_getGlobalResources	getGlobalResources
 	m	()V	W	method_Team_debugUnitCountByType	debugUnitCountByType
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_Team_serialize	serialize
@@ -981,17 +990,11 @@ c	com/corrodinggames/rts/game/n	rw/game/Team	rustedwarfare/game/Team
 	m	()I	s	method_Team_getTotalUnitCountIncludingQueued	getTotalUnitCountIncludingQueued
 	m	()I	w	method_n_w_getNonBuildingUnitCountIncludingQueued	getNonBuildingUnitCountIncludingQueued
 	m	()I	x	method_n_x_getMaxUnitCount	getMaxUnitCount
-	f	Lcom/corrodinggames/rts/game/units/custom/h;	ak	field_n_teamTags	teamTags
-	f	Lcom/corrodinggames/rts/game/units/custom/e/f;	al	field_n_globalResources	globalResources
-	f	Lcom/corrodinggames/rts/game/units/custom/e/c;	am	field_n_resourceShortageCollector	resourceShortageCollector
 	m	(Lcom/corrodinggames/rts/game/units/custom/h;)V	a	method_n_setTeamTags	setTeamTags
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	U	method_n_getTeamTags	getTeamTags
 	m	(Lcom/corrodinggames/rts/game/units/custom/h;)V	b	method_n_addTeamTags	addTeamTags
 	m	(Lcom/corrodinggames/rts/game/units/custom/h;)V	c	method_n_removeTeamTags	removeTeamTags
 	m	(Lcom/corrodinggames/rts/game/units/custom/e/a;)D	c	method_n_getGlobalResourceAmount	getGlobalResourceAmount
-	f	Lcom/corrodinggames/rts/game/s;	T	field_n_T_stats	stats
-	f	Z	S	field_n_S_statsDirty	statsDirty
-	f	I	ad	field_n_ad_statsValidationFailureCount	statsValidationFailureCount
 	m	(Lcom/corrodinggames/rts/game/units/custom/g;ZZ)I	a	method_n_a_getUnitCountWithTagAndOptions	getUnitCountWithTagAndOptions
 	m	(Lcom/corrodinggames/rts/game/units/custom/g;ZZ)I	b	method_n_b_getEnemyUnitCountWithTagAndOptions	getEnemyUnitCountWithTagAndOptions
 	m	(Lcom/corrodinggames/rts/game/units/custom/g;ZZ)I	c	method_n_c_getAllyNotOwnUnitCountWithTagAndOptions	getAllyNotOwnUnitCountWithTagAndOptions
@@ -1005,9 +1008,6 @@ c	com/corrodinggames/rts/game/n	rw/game/Team	rustedwarfare/game/Team
 	m	(Lcom/corrodinggames/rts/game/q;Lcom/corrodinggames/rts/game/n;)Z	a	method_n_a_matchesTeamRelation	matchesTeamRelation
 	m	(Lcom/corrodinggames/rts/game/n;)Z	c	method_n_c_isEnemy	isEnemy
 	m	(Lcom/corrodinggames/rts/game/n;)Z	d	method_n_d_isAlly	isAlly
-	f	I	L	field_n_fogMapWidth	fogMapWidth
-	f	I	M	field_n_fogMapHeight	fogMapHeight
-	f	[[B	N	field_n_fogOfWarMap	fogOfWarMap
 	m	()V	a	method_n_clearFogOfWar	clearFogOfWar
 c	com/corrodinggames/rts/game/q	rw/game/TeamRelation	rustedwarfare/game/TeamRelation
 	f	Lcom/corrodinggames/rts/game/q;	a	field_q_a_OWN	OWN
@@ -1304,6 +1304,17 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	F	cu	field_am_cu_hp	hp
 	f	F	cv	field_am_cv_maxHp	maxHp
 	f	F	cx	field_am_cx_shield	shield
+	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	dJ	field_am_activeResourceDelta	activeResourceDelta
+	f	Lcom/corrodinggames/rts/game/units/am;	cN	field_Unit_transportingUnit	transportingUnit
+	f	Lcom/corrodinggames/rts/game/units/y;	cO	field_Unit_attachmentParentUnit	attachmentParentUnit
+	f	Lcom/corrodinggames/rts/game/units/custom/b/n;	cP	field_Unit_attachmentSlot	attachmentSlot
+	f	Lcom/corrodinggames/rts/game/units/am;	bR	field_Unit_recentlyUnloadedFrom	recentlyUnloadedFrom
+	f	F	bS	field_Unit_recentlyUnloadedTimer	recentlyUnloadedTimer
+	f	Lcom/corrodinggames/rts/gameFramework/utility/u;	bE	field_am_allUnits	allUnits
+	f	I	dl	field_am_spatialCellX	spatialCellX
+	f	I	dm	field_am_spatialCellY	spatialCellY
+	f	I	dn	field_am_spatialTeamBucketId	spatialTeamBucketId
+	f	[Lcom/corrodinggames/rts/game/units/an;	dF	field_am_perTeamVisibilityStates	perTeamVisibilityStates
 	m	()Z	J	method_am_isDamageImmune	isDamageImmune
 	m	(I)V	P	method_Unit_changeTeamById	changeTeamById
 	m	()V	a	method_Unit_removeFromGame	removeFromGame
@@ -1345,14 +1356,8 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	(F)V	r	method_am_setConstructionProgress	setConstructionProgress
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	cR	method_am_getSimilarResourcesHaveTag	getSimilarResourcesHaveTag
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	de	method_am_getRuntimeTags	getRuntimeTags
-	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	dJ	field_am_activeResourceDelta	activeResourceDelta
 	m	()V	bC	method_am_refreshActiveResourceDelta	refreshActiveResourceDelta
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	dq	method_am_getActiveResourceDelta	getActiveResourceDelta
-	f	Lcom/corrodinggames/rts/game/units/am;	cN	field_Unit_transportingUnit	transportingUnit
-	f	Lcom/corrodinggames/rts/game/units/y;	cO	field_Unit_attachmentParentUnit	attachmentParentUnit
-	f	Lcom/corrodinggames/rts/game/units/custom/b/n;	cP	field_Unit_attachmentSlot	attachmentSlot
-	f	Lcom/corrodinggames/rts/game/units/am;	bR	field_Unit_recentlyUnloadedFrom	recentlyUnloadedFrom
-	f	F	bS	field_Unit_recentlyUnloadedTimer	recentlyUnloadedTimer
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	c	method_Unit_canTransportUnitIgnoringCurrentContainer	canTransportUnitIgnoringCurrentContainer
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_Unit_canTransportUnit	canTransportUnit
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	e	method_Unit_tryAddUnitToTransport	tryAddUnitToTransport
@@ -1362,11 +1367,6 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()I	cw	method_Unit_getTransportSlotsNeeded	getTransportSlotsNeeded
 	m	()Lcom/corrodinggames/rts/game/units/custom/b/n;	dn	method_Unit_getAttachmentSlot	getAttachmentSlot
 	m	()Lcom/corrodinggames/rts/game/units/am;	dr	method_Unit_getContainingUnit	getContainingUnit
-	f	Lcom/corrodinggames/rts/gameFramework/utility/u;	bE	field_am_allUnits	allUnits
-	f	I	dl	field_am_spatialCellX	spatialCellX
-	f	I	dm	field_am_spatialCellY	spatialCellY
-	f	I	dn	field_am_spatialTeamBucketId	spatialTeamBucketId
-	f	[Lcom/corrodinggames/rts/game/units/an;	dF	field_am_perTeamVisibilityStates	perTeamVisibilityStates
 	m	(Lcom/corrodinggames/rts/game/n;)Z	d	method_am_isHiddenByFogForTeam	isHiddenByFogForTeam
 	m	(Lcom/corrodinggames/rts/game/n;)V	g	method_am_updateVisibilityStateForTeam	updateVisibilityStateForTeam
 	m	()V	cX	method_am_updateFogGhostForLocalPlayer	updateFogGhostForLocalPlayer
@@ -1746,15 +1746,15 @@ c	com/corrodinggames/rts/game/units/b/c	rw/unit/air/AmphibiousJetUnit	rustedwarf
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_c_h_getMovementType	getMovementType
 	m	(I)F	q	method_AmphibiousJetUnit_getTurretProjectileDirectDamage	getTurretProjectileDirectDamage
 c	com/corrodinggames/rts/game/units/b/d	rw/unit/air/internal/Obf_b_d	rustedwarfare/unit/air/internal/Obf_b_d
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	o	field_Obf_b_d_transportedUnits	transportedUnits
+	f	F	f	field_Obf_b_d_transportUnloadTimer	transportUnloadTimer
+	f	Z	g	field_Obf_b_d_transportUnloading	transportUnloading
 	m	(I)Landroid/graphics/PointF;	E	method_Obf_b_d_getTurretMuzzlePoint	getTurretMuzzlePoint
 	m	(F)V	a	method_Obf_b_d_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_b_d_fireTurretAtTarget	fireTurretAtTarget
 	m	(I)F	b	method_Obf_b_d_getTurretFireDelay	getTurretFireDelay
 	m	()Z	e	method_b_d_handleDeathEffects	handleDeathEffects
 	m	(I)F	g	method_Obf_b_d_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
-	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	o	field_Obf_b_d_transportedUnits	transportedUnits
-	f	F	f	field_Obf_b_d_transportUnloadTimer	transportUnloadTimer
-	f	Z	g	field_Obf_b_d_transportUnloading	transportUnloading
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_Obf_b_d_canTransportUnit	canTransportUnit
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	e	method_Obf_b_d_tryAddUnitToTransport	tryAddUnitToTransport
 	m	()Z	cr	method_Obf_b_d_hasTransportCapacity	hasTransportCapacity
@@ -3573,6 +3573,8 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	x	field_0900_metadata	unitMetadata
 	f	Lcom/corrodinggames/rts/game/units/custom/as;	y	field_j_y_mutableStats	mutableStats
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	z	field_0901_previousMetadata	revertMetadata
+	f	F	m	field_CustomUnit_transportUnloadTimer	transportUnloadTimer
+	f	Z	n	field_CustomUnit_transportUnloading	transportUnloading
 	m	(ZLcom/corrodinggames/rts/game/units/custom/l;)V	<init>	method_CustomUnit_init	<init>
 	m	(Lcom/corrodinggames/rts/game/units/am;)V	C	method_CustomUnit_addUnitToTransport	addUnitToTransport
 	m	(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;	D	method_CustomUnit_getTurretMuzzlePoint3D	getTurretMuzzlePoint3D
@@ -3693,8 +3695,6 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	cN	method_j_getReclaimPriceOverride	getReclaimPriceOverride
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	cR	method_j_getSimilarResourcesHaveTag	getSimilarResourcesHaveTag
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	bD	method_j_getBuildQueueResourceDelta	getBuildQueueResourceDelta
-	f	F	m	field_CustomUnit_transportUnloadTimer	transportUnloadTimer
-	f	Z	n	field_CustomUnit_transportUnloading	transportUnloading
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	e	method_CustomUnit_tryAddUnitToTransport	tryAddUnitToTransport
 	m	()Z	cr	method_CustomUnit_hasTransportCapacity	hasTransportCapacity
 	m	()I	bY	method_CustomUnit_getTransportBarUsedSlots	getTransportBarUsedSlots
@@ -4024,6 +4024,18 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	Z	x	field_l_x_showTransportBar	showTransportBar
 	f	Z	y	field_l_y_showShieldBar	showShieldBar
 	f	Z	z	field_l_z_showQueueBar	showQueueBar
+	f	F	be	field_l_nanoUnbuildSpeed	nanoUnbuildSpeed
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	fl	field_l_canReclaimResourcesOnlyWithTags	canReclaimResourcesOnlyWithTags
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	fn	field_l_canReclaimUnitsOnlyWithTags	canReclaimUnitsOnlyWithTags
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	fo	field_l_canRepairUnitsOnlyWithTags	canRepairUnitsOnlyWithTags
+	f	Lcom/corrodinggames/rts/game/units/custom/h;	cH	field_l_similarResourcesHaveTag	similarResourcesHaveTag
+	f	Z	eR	field_CustomUnitMetadata_transportUnitsBlockAirAndWaterUnits	transportUnitsBlockAirAndWaterUnits
+	f	Z	eT	field_CustomUnitMetadata_transportUnitsAddUnloadOption	transportUnitsAddUnloadOption
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	eU	field_CustomUnitMetadata_transportUnitsKeepBuiltUnits	transportUnitsKeepBuiltUnits
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	eV	field_CustomUnitMetadata_transportUnitsKillOnDeath	transportUnitsKillOnDeath
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	eW	field_CustomUnitMetadata_transportUnitsKeepWaypoints	transportUnitsKeepWaypoints
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	fc	field_CustomUnitMetadata_transportUnitsCanUnloadUnitsCondition	transportUnitsCanUnloadUnitsCondition
+	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	fd	field_CustomUnitMetadata_transportUnitsCanUnloadUnitsRelaxedCondition	transportUnitsCanUnloadUnitsRelaxedCondition
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	B	method_getStreamingCost	getStreamingCost
 	m	()F	D	method_getBuildSpeed	getBuildSpeed
 	m	()Ljava/lang/String;	E	method_0808_listAllCustomUnitNames	listAllCustomUnitNames
@@ -4082,18 +4094,6 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	m	()Ljava/lang/String;	t	method_0803_getStableUnitId	getStableUnitId
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	u	method_getBuildPrice	getBuildPrice
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	z	method_l_getBuildIconImage	getBuildIconImage
-	f	F	be	field_l_nanoUnbuildSpeed	nanoUnbuildSpeed
-	f	Lcom/corrodinggames/rts/game/units/custom/h;	fl	field_l_canReclaimResourcesOnlyWithTags	canReclaimResourcesOnlyWithTags
-	f	Lcom/corrodinggames/rts/game/units/custom/h;	fn	field_l_canReclaimUnitsOnlyWithTags	canReclaimUnitsOnlyWithTags
-	f	Lcom/corrodinggames/rts/game/units/custom/h;	fo	field_l_canRepairUnitsOnlyWithTags	canRepairUnitsOnlyWithTags
-	f	Lcom/corrodinggames/rts/game/units/custom/h;	cH	field_l_similarResourcesHaveTag	similarResourcesHaveTag
-	f	Z	eR	field_CustomUnitMetadata_transportUnitsBlockAirAndWaterUnits	transportUnitsBlockAirAndWaterUnits
-	f	Z	eT	field_CustomUnitMetadata_transportUnitsAddUnloadOption	transportUnitsAddUnloadOption
-	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	eU	field_CustomUnitMetadata_transportUnitsKeepBuiltUnits	transportUnitsKeepBuiltUnits
-	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	eV	field_CustomUnitMetadata_transportUnitsKillOnDeath	transportUnitsKillOnDeath
-	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	eW	field_CustomUnitMetadata_transportUnitsKeepWaypoints	transportUnitsKeepWaypoints
-	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	fc	field_CustomUnitMetadata_transportUnitsCanUnloadUnitsCondition	transportUnitsCanUnloadUnitsCondition
-	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	fd	field_CustomUnitMetadata_transportUnitsCanUnloadUnitsRelaxedCondition	transportUnitsCanUnloadUnitsRelaxedCondition
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/BooleanParseException	rw/custom/logic/BooleanParseException	rustedwarfare/custom/logic/BooleanParseException
 	f	J	serialVersionUID	field_BooleanParseException_serialVersionUID	serialVersionUID
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/CompareJoinerBoolean	rw/custom/logic/CompareJoinerBoolean	rustedwarfare/custom/logic/CompareJoinerBoolean
@@ -5519,6 +5519,7 @@ c	com/corrodinggames/rts/game/units/d/h	rw/unit/building/internal/Obf_d_h	rusted
 	m	(Lcom/corrodinggames/rts/game/units/d/j;)V	a	method_BuildQueueHostImpl_completeBuildQueueItem	completeBuildQueueItem
 	m	()I	V	method_h_getTechLevel	getTechLevel
 c	com/corrodinggames/rts/game/units/d/i	rw/unit/building/ProductionBuildingUnitBase	rustedwarfare/unit/building/ProductionBuildingUnitBase
+	f	Lcom/corrodinggames/rts/game/units/d/k;	z	field_ProductionBuildingUnitBase_buildQueue	buildQueue
 	m	(F)V	a	method_Obf_d_i_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_d_i_fireTurretAtTarget	fireTurretAtTarget
 	m	(I)F	b	method_Obf_d_i_getTurretFireDelay	getTurretFireDelay
@@ -5536,7 +5537,6 @@ c	com/corrodinggames/rts/game/units/d/i	rw/unit/building/ProductionBuildingUnitB
 	m	()Lcom/corrodinggames/rts/game/units/d/j;	dw	method_ProductionBuildingUnitBase_getCurrentBuildQueueItem	getCurrentBuildQueueItem
 	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	dx	method_ProductionBuildingUnitBase_getBuildQueueItems	getBuildQueueItems
 	m	()Z	dA	method_ProductionBuildingUnitBase_isBuildQueueLimitExceeded	isBuildQueueLimitExceeded
-	f	Lcom/corrodinggames/rts/game/units/d/k;	z	field_ProductionBuildingUnitBase_buildQueue	buildQueue
 	m	()Lcom/corrodinggames/rts/game/units/d/k;	du	method_ProductionBuildingUnitBase_createBuildQueue	createBuildQueue
 	m	()I	dv	method_ProductionBuildingUnitBase_getProducedUnitSpawnYOffset	getProducedUnitSpawnYOffset
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	bD	method_i_getBuildQueueResourceDelta	getBuildQueueResourceDelta
@@ -5678,13 +5678,13 @@ c	com/corrodinggames/rts/game/units/e/h	rw/unit/land/HoverUnitBase	rustedwarfare
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_h_h_getMovementType	getMovementType
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	v	method_HoverUnitBase_getZoomedOutIconImage	getZoomedOutIconImage
 c	com/corrodinggames/rts/game/units/e/i	rw/unit/land/internal/Obf_e_i	rustedwarfare/unit/land/internal/Obf_e_i
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	h	field_Obf_e_i_transportedUnits	transportedUnits
+	f	F	f	field_Obf_e_i_transportUnloadTimer	transportUnloadTimer
+	f	Z	g	field_Obf_e_i_transportUnloading	transportUnloading
 	m	(F)V	a	method_Obf_e_i_update	update
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_Obf_e_i_fireTurretAtTarget	fireTurretAtTarget
 	m	(I)F	b	method_Obf_e_i_getTurretFireDelay	getTurretFireDelay
 	m	()Z	e	method_e_i_handleDeathEffects	handleDeathEffects
-	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	h	field_Obf_e_i_transportedUnits	transportedUnits
-	f	F	f	field_Obf_e_i_transportUnloadTimer	transportUnloadTimer
-	f	Z	g	field_Obf_e_i_transportUnloading	transportUnloading
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_Obf_e_i_canTransportUnit	canTransportUnit
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	e	method_Obf_e_i_tryAddUnitToTransport	tryAddUnitToTransport
 	m	()Z	cr	method_Obf_e_i_hasTransportCapacity	hasTransportCapacity
@@ -6111,6 +6111,13 @@ c	com/corrodinggames/rts/gameFramework/ba	rw/replay/ReplayEngine	rustedwarfare/r
 	f	Z	n	field_ReplayEngine_replaying	replaying
 	f	Lcom/corrodinggames/rts/gameFramework/bd;	w	field_ReplayEngine_currentEntry	currentEntry
 	f	Lcom/corrodinggames/rts/gameFramework/bd;	x	field_ReplayEngine_nextEntry	nextEntry
+	f	Z	P	field_ba_active	active
+	f	Z	u	field_ba_playbackMode	playbackMode
+	f	I	A	field_ba_recordedCommandCount	recordedCommandCount
+	f	I	B	field_ba_recordedResyncCount	recordedResyncCount
+	f	I	z	field_ba_issuedReplayCommandCount	issuedReplayCommandCount
+	f	I	q	field_ba_replaySaveVersion	replaySaveVersion
+	f	Ljava/lang/String;	r	field_ba_replayVersionString	replayVersionString
 	m	()V	a	method_ReplayEngine_reset	reset
 	m	(F)V	a	method_ReplayEngine_updateReplayPlayback	updateReplayPlayback
 	m	(ILjava/lang/String;Ljava/lang/String;I)V	a	method_ReplayEngine_recordChatMessage	recordChatMessage
@@ -6126,35 +6133,43 @@ c	com/corrodinggames/rts/gameFramework/ba	rw/replay/ReplayEngine	rustedwarfare/r
 	m	([BIIIFF)V	a	method_ReplayEngine_recordResyncSaveBytes	recordResyncSaveBytes
 	m	()V	b	method_ReplayEngine_stop	stop
 	m	(Ljava/lang/String;)V	b	method_ReplayEngine_warn	warn
-	m	()V	c	method_ReplayEngine_flushReplayWriter	flushReplayWriter
+	m	()V	c	method_ReplayEngine_flushReplayWriter	recordTracingChecksumIfEnabled
 	m	(Ljava/lang/String;)Z	c	method_ReplayEngine_loadReplayByName	loadReplayByName
-	m	()V	d	method_ReplayEngine_stopRecording	stopRecording
+	m	()V	d	method_ReplayEngine_stopRecording	recordDetailedChecksumNow
 	m	(Ljava/lang/String;)V	d	method_ReplayEngine_startSavingReplay	startSavingReplay
 	m	()V	e	method_ReplayEngine_closeReplayStreams	closeReplayStreams
 	m	(Ljava/lang/String;)V	e	method_ReplayEngine_deleteReplay	deleteReplay
-	m	()J	f	method_ReplayEngine_getReplayLength	getReplayLength
+	m	()J	f	method_ReplayEngine_getReplayLength	calculateQuickUnitChecksum
 	m	()V	g	method_ReplayEngine_markReplayDesynced	markReplayDesynced
 	m	()Z	h	method_ReplayEngine_readNextReplayBlock	readNextReplayBlock
-	m	()Z	i	method_ReplayEngine_isRecording	isRecording
+	m	()Z	i	method_ReplayEngine_isRecording	isActive
 	m	()Z	j	method_ReplayEngine_isReplaying	isReplaying
-	m	()Z	k	method_ReplayEngine_isActive	isActive
+	m	()Z	k	method_ReplayEngine_isActive	isRecording
 c	com/corrodinggames/rts/gameFramework/bb	rw/replay/ReplayWriterThread	rustedwarfare/replay/ReplayWriterThread
 	f	Z	a	field_ReplayWriterThread_running	running
 	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	i	field_ReplayWriterThread_queue	queue
 	f	J	j	field_ReplayWriterThread_lastFlushTime	lastFlushTime
 	f	Lcom/corrodinggames/rts/gameFramework/ba;	k	field_ReplayWriterThread_replayEngine	replayEngine
+	f	I	b	field_bb_stoppedFrame	stoppedFrame
+	f	I	c	field_bb_stoppedGameTime	stoppedGameTime
+	f	I	d	field_bb_commandCountAtStop	commandCountAtStop
+	f	I	e	field_bb_resyncCountAtStop	resyncCountAtStop
+	f	I	f	field_bb_lastQueuedFrame	lastQueuedFrame
+	f	I	g	field_bb_lastWrittenCommandFrame	lastWrittenCommandFrame
+	f	Z	h	field_bb_finishedWriting	finishedWriting
 	m	()V	a	method_ReplayWriterThread_stopAndFlush	stopAndFlush
 	m	(Lcom/corrodinggames/rts/gameFramework/bd;)V	a	method_ReplayWriterThread_enqueue	enqueue
 	m	()V	run	method_ReplayWriterThread_run	run
+	m	()V	b	method_bb_waitForQueueSignal	waitForQueueSignal
 c	com/corrodinggames/rts/gameFramework/bc	rw/replay/ReplayChatMessage	rustedwarfare/replay/ReplayChatMessage
 	f	I	a	field_ReplayChatMessage_frame	frame
 	f	Ljava/lang/String;	b	field_ReplayChatMessage_sender	sender
 	f	Ljava/lang/String;	c	field_ReplayChatMessage_message	message
 c	com/corrodinggames/rts/gameFramework/bd	rw/replay/ReplayRecordEntry	rustedwarfare/replay/ReplayRecordEntry
 	f	I	a	field_ReplayRecordEntry_frame	frame
-	f	Z	b	field_ReplayRecordEntry_isChecksum	isChecksum
+	f	Z	b	field_ReplayRecordEntry_isChecksum	waitMarker
 	f	Ljava/lang/Long;	c	field_ReplayRecordEntry_checksum	checksum
-	f	[B	d	field_ReplayRecordEntry_checksumDetails	checksumDetails
+	f	[B	d	field_ReplayRecordEntry_checksumDetails	extendedChecksumBytes
 	f	Lcom/corrodinggames/rts/gameFramework/e;	e	field_ReplayRecordEntry_command	command
 	f	[B	f	field_ReplayRecordEntry_resyncSaveBytes	resyncSaveBytes
 	f	Lcom/corrodinggames/rts/gameFramework/bc;	g	field_ReplayRecordEntry_chatMessage	chatMessage
@@ -6213,13 +6228,13 @@ c	com/corrodinggames/rts/gameFramework/bq	rw/game/SaveableGameEntity	rustedwarfa
 c	com/corrodinggames/rts/gameFramework/c	rw/command/CommandController	rustedwarfare/command/CommandController
 	f	Ljava/util/ArrayList;	b	field_c_b_localCommands	localCommands
 	f	Ljava/util/ArrayList;	d	field_c_d_serverQueuedCommands	serverQueuedCommands
+	f	Z	a	field_c_traceCommandSource	traceCommandSource
+	f	I	e	field_c_rateLimitedWarningCount	rateLimitedWarningCount
 	m	(Lcom/corrodinggames/rts/game/n;)Lcom/corrodinggames/rts/gameFramework/e;	a	method_c_a_createCommandForTeamAlias	createCommandForTeamAlias
 	m	(Lcom/corrodinggames/rts/game/n;)Lcom/corrodinggames/rts/gameFramework/e;	b	method_c_b_createCommandForTeam	createCommandForTeam
 	m	()V	c	method_c_c_processPendingCommands	processPendingCommands
 	m	()V	d	method_c_d_processLocalCommands	processLocalCommands
 	m	()V	e	method_c_e_processServerQueuedCommands	processServerQueuedCommands
-	f	Z	a	field_c_traceCommandSource	traceCommandSource
-	f	I	e	field_c_rateLimitedWarningCount	rateLimitedWarningCount
 	m	()V	<init>	<init>	<init>
 	m	(Ljava/lang/String;)V	a	method_c_logCommandWarningRateLimited	logCommandWarningRateLimited
 	m	()V	a	method_c_clearCommandQueues	clearCommandQueues
@@ -6270,21 +6285,6 @@ c	com/corrodinggames/rts/gameFramework/e	rw/command/Command	rustedwarfare/comman
 	f	Lcom/corrodinggames/rts/game/units/am;	m	field_e_m_actionTargetUnit	actionTargetUnit
 	f	Lcom/corrodinggames/rts/game/n;	p	field_e_p_commandTeamOverride	commandTeamOverride
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	v	field_e_v_selectedOrderableUnits	selectedOrderableUnits
-	m	(FF)V	a	method_e_a_setMoveOrder	setMoveOrder
-	m	(FFLcom/corrodinggames/rts/game/units/as;I)V	a	method_e_a_setBuildOrder	setBuildOrder
-	m	(Lcom/corrodinggames/rts/game/units/a/c;)V	a	method_e_a_setActionId	setActionId
-	m	(Lcom/corrodinggames/rts/game/units/a/c;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)V	a	method_e_a_setActionTarget	setActionTarget
-	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_e_a_setAttackTargetOrder	setAttackTargetOrder
-	m	(Lcom/corrodinggames/rts/game/units/y;)V	a	method_e_a_addUnit	addUnit
-	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_Command_serialize	serialize
-	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_Command_deserialize	deserialize
-	m	(Ljava/util/AbstractList;)V	a	method_e_a_addUnits	addUnits
-	m	(FF)V	b	method_e_b_setAttackMoveOrder	setAttackMoveOrder
-	m	(Lcom/corrodinggames/rts/game/units/am;)V	b	method_e_b_setRepairTargetOrder	setRepairTargetOrder
-	m	()V	i	method_e_i_resolveSelectedUnitsById	resolveSelectedUnitsById
-	m	()V	j	method_e_j_applyQueuedActionToUnits	applyQueuedActionToUnits
-	m	()V	k	method_e_k_issueCommand	issueCommand
-	m	()Z	l	method_e_l_prepareAndCheckOnServer	prepareAndCheckOnServer
 	f	Z	a	field_e_allowExecutionDuringReplay	allowExecutionDuringReplay
 	f	Ljava/lang/String;	b	field_e_sourceStackTrace	sourceStackTrace
 	f	I	c	field_e_scheduledFrame	scheduledFrame
@@ -6303,6 +6303,21 @@ c	com/corrodinggames/rts/gameFramework/e	rw/command/Command	rustedwarfare/comman
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	w	field_e_sharedPathCacheEntries	sharedPathCacheEntries
 	f	Z	x	field_e_sharedPathCachePrepared	sharedPathCachePrepared
 	f	Lcom/corrodinggames/rts/gameFramework/c;	y	field_e_commandController	commandController
+	m	(FF)V	a	method_e_a_setMoveOrder	setMoveOrder
+	m	(FFLcom/corrodinggames/rts/game/units/as;I)V	a	method_e_a_setBuildOrder	setBuildOrder
+	m	(Lcom/corrodinggames/rts/game/units/a/c;)V	a	method_e_a_setActionId	setActionId
+	m	(Lcom/corrodinggames/rts/game/units/a/c;Landroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)V	a	method_e_a_setActionTarget	setActionTarget
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_e_a_setAttackTargetOrder	setAttackTargetOrder
+	m	(Lcom/corrodinggames/rts/game/units/y;)V	a	method_e_a_addUnit	addUnit
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_Command_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_Command_deserialize	deserialize
+	m	(Ljava/util/AbstractList;)V	a	method_e_a_addUnits	addUnits
+	m	(FF)V	b	method_e_b_setAttackMoveOrder	setAttackMoveOrder
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	b	method_e_b_setRepairTargetOrder	setRepairTargetOrder
+	m	()V	i	method_e_i_resolveSelectedUnitsById	resolveSelectedUnitsById
+	m	()V	j	method_e_j_applyQueuedActionToUnits	applyQueuedActionToUnits
+	m	()V	k	method_e_k_issueCommand	issueCommand
+	m	()Z	l	method_e_l_prepareAndCheckOnServer	prepareAndCheckOnServer
 	m	(Lcom/corrodinggames/rts/gameFramework/c;)V	<init>	<init>	<init>
 	m	()Z	a	method_e_areSharedPathCacheEntriesResolved	areSharedPathCacheEntriesResolved
 	m	()V	b	method_e_captureSharedPathCacheForCommand	captureSharedPathCacheForCommand
@@ -6977,27 +6992,27 @@ c	com/corrodinggames/rts/gameFramework/j/ai$3	rw/network/MapType$SavedGame	ruste
 c	com/corrodinggames/rts/gameFramework/j/ak	rw/network/NetworkChecksum	rustedwarfare/network/NetworkChecksum
 	f	J	a	field_NetworkChecksum_totalChecksum	totalChecksum
 	f	Ljava/util/ArrayList;	b	field_NetworkChecksum_entries	entries
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	c	field_NetworkChecksum_unitChecksum	unitChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	d	field_NetworkChecksum_unitPosChecksum	unitPosChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	e	field_NetworkChecksum_unitDirChecksum	unitDirChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	f	field_NetworkChecksum_unitHpChecksum	unitHpChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	g	field_NetworkChecksum_unitIdChecksum	unitIdChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	h	field_NetworkChecksum_waypointChecksum	waypointChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	i	field_NetworkChecksum_waypointPosChecksum	waypointPosChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	j	field_NetworkChecksum_teamCreditsChecksum	teamCreditsChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	c	field_NetworkChecksum_unitChecksum	unitPositionChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	d	field_NetworkChecksum_unitPosChecksum	unitDirectionChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	e	field_NetworkChecksum_unitDirChecksum	unitHpChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	f	field_NetworkChecksum_unitHpChecksum	unitIdChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	g	field_NetworkChecksum_unitIdChecksum	waypointsChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	h	field_NetworkChecksum_waypointChecksum	waypointPositionChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	i	field_NetworkChecksum_waypointPosChecksum	teamCreditsChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	j	field_NetworkChecksum_teamCreditsChecksum	unitPathsChecksum
 	f	Lcom/corrodinggames/rts/gameFramework/j/al;	k	field_NetworkChecksum_unitCountChecksum	unitCountChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	l	field_NetworkChecksum_customUnitChecksum	customUnitChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	m	field_NetworkChecksum_mapChecksum	mapChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	n	field_NetworkChecksum_commandChecksum	commandChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	o	field_NetworkChecksum_randomChecksum	randomChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	p	field_NetworkChecksum_pathChecksum	pathChecksum
-	f	Lcom/corrodinggames/rts/gameFramework/j/al;	q	field_NetworkChecksum_miscChecksum	miscChecksum
-	m	()V	a	method_NetworkChecksum_reset	reset
-	m	()V	b	method_NetworkChecksum_finalizeChecksum	finalizeChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	l	field_NetworkChecksum_customUnitChecksum	teamInfoChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	m	field_NetworkChecksum_mapChecksum	team1CreditsChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	n	field_NetworkChecksum_commandChecksum	team2CreditsChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	o	field_NetworkChecksum_randomChecksum	team3CreditsChecksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	p	field_NetworkChecksum_pathChecksum	commandCenter2Checksum
+	f	Lcom/corrodinggames/rts/gameFramework/j/al;	q	field_NetworkChecksum_miscChecksum	commandCenter3Checksum
+	m	()V	a	method_NetworkChecksum_reset	resetEntryValues
+	m	()V	b	method_NetworkChecksum_finalizeChecksum	calculateChecksum
 c	com/corrodinggames/rts/gameFramework/j/al	rw/network/NetworkChecksumEntry	rustedwarfare/network/NetworkChecksumEntry
 	f	Ljava/lang/String;	a	field_NetworkChecksumEntry_name	name
 	f	J	b	field_NetworkChecksumEntry_value	value
-	f	Z	c	field_NetworkChecksumEntry_enabled	enabled
+	f	Z	c	field_NetworkChecksumEntry_enabled	includedInTotal
 	f	Lcom/corrodinggames/rts/gameFramework/j/ak;	d	field_NetworkChecksumEntry_owner	owner
 c	com/corrodinggames/rts/gameFramework/j/as	rw/io/GameOutputStream	rustedwarfare/io/GameOutputStream
 	f	Ljava/io/DataOutputStream;	a	field_GameOutputStream_rootDataOutput	rootDataOutput
@@ -7379,6 +7394,7 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	f	Ljava/lang/String;	dl	field_GameEngine_currentMapPath	currentMapPath
 	f	Lcom/corrodinggames/rts/gameFramework/j/k;	dm	field_GameEngine_currentMapInputStream	currentMapInputStream
 	f	Ljava/lang/String;	dz	field_0133_buildNumber	buildNumber
+	f	Lcom/corrodinggames/rts/game/units/f/c;	cc	field_l_unitSpatialIndex	unitSpatialIndex
 	m	()Lcom/corrodinggames/rts/gameFramework/l;	B	method_0100_getInstance	getInstance
 	m	(Landroid/content/Context;Lcom/corrodinggames/rts/gameFramework/n;)Lcom/corrodinggames/rts/gameFramework/l;	a	method_0110_createGameEngine	createGameEngine
 	m	()Ljava/lang/String;	ak	method_GameEngine_getCurrentMapPath	getCurrentMapPath
@@ -7388,7 +7404,6 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	m	(Ljava/lang/String;)V	b	method_0113_debugLog	debugLog
 	m	(Ljava/lang/String;)V	e	method_0112_log	log
 	m	(Ljava/lang/String;Ljava/lang/String;)V	f	method_GameEngine_addMessage	addMessage
-	f	Lcom/corrodinggames/rts/game/units/f/c;	cc	field_l_unitSpatialIndex	unitSpatialIndex
 c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/client/render/GameImage
 	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	a	field_e_teamColorCachePureGreen	teamColorCachePureGreen
 	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_e_teamColorCacheHueAdd	teamColorCacheHueAdd
