@@ -191,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 4;
+        int actionRows = 5;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -322,6 +322,16 @@ final class ExampleDebugOverlay {
                 "Input snapshot")) {
             ExampleDiagnosticActions.showInputSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left, top + 112, cellWidth, 24,
+                "Network snapshot")) {
+            ExampleDiagnosticActions.showNetworkSnapshot("debug");
+        }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 112, cellWidth, 24,
+                "Steam snapshot")) {
+            ExampleDiagnosticActions.showSteamSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {
@@ -381,6 +391,10 @@ final class ExampleDebugOverlay {
         }
         if (containsAny(text, "Input", "KeyBinding", "Keycode", "KeyInput", "ControllerInput")) {
             return DebugProbeGroup.INPUT;
+        }
+        if (containsAny(text, "Network", "Steam", "Lobby", "ServerList", "MasterServer", "PasswordPrompt",
+                "ForwardedSocket", "ForwardedPacket")) {
+            return DebugProbeGroup.NETWORK;
         }
         if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList",
                 "NativeCustomUnit", "CustomUnitRegistry", "CustomUnitOverride", "CustomUnitLink",
@@ -942,7 +956,8 @@ final class ExampleDebugOverlay {
         RESOURCE("Resource"),
         SAVE("Save"),
         AUDIO("Audio"),
-        INPUT("Input");
+        INPUT("Input"),
+        NETWORK("Network");
 
         final String label;
 

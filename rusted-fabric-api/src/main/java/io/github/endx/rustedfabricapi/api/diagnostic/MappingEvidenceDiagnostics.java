@@ -678,6 +678,18 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("input_keybinding_flow_map_v0_62");
     }
 
+    public static List<MappingEvidenceRow> allInputActionNamingHotfixRows() {
+        return allEvidenceRows("input_action_naming_hotfix_added_rows_v0_63_1");
+    }
+
+    public static List<MappingEvidenceRow> allInputActionNamingHotfixUpdatedRows() {
+        return allEvidenceRows("input_action_naming_hotfix_updated_rows_v0_63_1");
+    }
+
+    public static List<MappingEvidenceRow> allInputActionDisplayGroupResidueRows() {
+        return allEvidenceRows("current_action_display_group_residue_v0_63_1");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -793,6 +805,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findNetworkChecksumBucketEvidence(String text) {
         return findByText(Holder.NETWORK_CHECKSUM_BUCKET_EVIDENCE, text);
+    }
+
+    public static List<MappingEvidenceRow> findInputActionNamingHotfixRows(String text) {
+        return findByText(allInputActionNamingHotfixRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findInputActionNamingHotfixUpdatedRows(String text) {
+        return findByText(allInputActionNamingHotfixUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findCustomLogicStatBehaviorRows(String text) {

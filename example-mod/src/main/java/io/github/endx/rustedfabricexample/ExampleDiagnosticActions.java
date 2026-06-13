@@ -4,10 +4,12 @@ import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.MappingEvidenceDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
 
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,7 @@ final class ExampleDiagnosticActions {
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
+                            + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
                     null);
         } catch (Throwable t) {
@@ -145,6 +148,8 @@ final class ExampleDiagnosticActions {
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
                     "Input evidence rows=" + MappingEvidenceDiagnostics.allInputKeybindingRows().size()
                             + " updated=" + MappingEvidenceDiagnostics.allInputKeybindingUpdatedRows().size()
+                            + " actionHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
+                            + " residue=" + MappingEvidenceDiagnostics.allInputActionDisplayGroupResidueRows().size()
                             + " bridge slick=" + bridge.get("slickToAndroidCodesSize")
                             + " android=" + bridge.get("androidCodesByNameSize")
                             + " ENTER=" + bridge.get("enterAndroidCode"),
@@ -183,6 +188,110 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("Input snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showNetworkSnapshot(String stage) {
+        try {
+            Object networkEngine = NetworkRuntimeDiagnostics.currentNetworkEngine();
+            if (networkEngine == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Network engine unavailable from current GameEngine", null);
+                return;
+            }
+
+            Map<String, Object> network = NetworkRuntimeDiagnostics.describeNetworkEngine(networkEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network server=" + network.get("isServer")
+                            + " protocol=" + network.get("networkProtocolVersion")
+                            + " conns=" + network.get("connectionCount")
+                            + " servers=" + network.get("serverListSize")
+                            + " port=" + network.get("serverPort")
+                            + " map=" + ExampleDebugOverlay.compactPath(String.valueOf(network.get("resolvedNetworkMapPath"))),
+                    networkEngine);
+
+            Object gameSetup = network.get("gameSetup");
+            if (gameSetup != null && NetworkRuntimeDiagnostics.isGameSetup(gameSetup)) {
+                Map<String, Object> setup = NetworkRuntimeDiagnostics.describeGameSetup(gameSetup);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Game setup map=" + ExampleDebugOverlay.compactPath(String.valueOf(setup.get("mapPath")))
+                                + " type=" + ExampleDebugOverlay.safeText(String.valueOf(setup.get("mapTypeName")))
+                                + " credits=" + setup.get("startingCredits")
+                                + " fog=" + setup.get("fogMode")
+                                + " seed=" + setup.get("randomSeed"),
+                        gameSetup);
+            }
+
+            List<Object> connections = NetworkRuntimeDiagnostics.currentConnections();
+            if (!connections.isEmpty()) {
+                Object connection = connections.get(0);
+                if (NetworkRuntimeDiagnostics.isNetworkConnection(connection)) {
+                    Map<String, Object> details = NetworkRuntimeDiagnostics.describeNetworkConnection(connection);
+                    ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                            "First connection id=" + details.get("connectionId")
+                                    + " name=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("displayName")))
+                                    + " validated=" + details.get("validated")
+                                    + " desyncs=" + details.get("desyncCount"),
+                            connection);
+                }
+            }
+
+            List<Object> servers = NetworkRuntimeDiagnostics.currentServerList();
+            if (!servers.isEmpty()) {
+                Object server = servers.get(0);
+                if (NetworkRuntimeDiagnostics.isGameServerInfo(server)) {
+                    Map<String, Object> details = NetworkRuntimeDiagnostics.describeGameServerInfo(server);
+                    ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                            "First listed server map=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("mapName")))
+                                    + " players=" + details.get("playerCount") + "/" + details.get("maxPlayerCount")
+                                    + " mode=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("gameMode")))
+                                    + " lan=" + details.get("isLan"),
+                            server);
+                }
+            }
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Network snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showSteamSnapshot(String stage) {
+        try {
+            Object steamEngine = SteamRuntimeDiagnostics.currentSteamEngine();
+            if (steamEngine == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Steam engine unavailable", null);
+                return;
+            }
+
+            Map<String, Object> steam = SteamRuntimeDiagnostics.describeSteamEngine(steamEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Steam enabled=" + steam.get("steamEnabled")
+                            + " disabled=" + steam.get("steamDisabled")
+                            + " initialized=" + steam.get("initialized")
+                            + " sockets=" + steam.get("activeSteamSocketsSize")
+                            + " lobbyHost=" + steam.get("isLobbyHost")
+                            + " persona=" + ExampleDebugOverlay.safeText(String.valueOf(steam.get("personaName"))),
+                    steamEngine);
+
+            Object workshopManager = SteamRuntimeDiagnostics.currentWorkshopManager();
+            if (workshopManager != null && SteamRuntimeDiagnostics.isSteamWorkshopManager(workshopManager)) {
+                Map<String, Object> workshop = SteamRuntimeDiagnostics.describeWorkshopManager(workshopManager);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Workshop manager ugc=" + workshop.get("hasSteamUGC")
+                                + " callback=" + workshop.get("hasUgcCallback")
+                                + " class=" + ExampleDebugOverlay.describeObject(workshopManager),
+                        workshopManager);
+            }
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Steam snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Steam snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 

@@ -1700,9 +1700,11 @@ c	com/corrodinggames/rts/game/units/a/p	rw/unit/action/internal/Obf_a_p	rustedwa
 c	com/corrodinggames/rts/game/units/a/q	rw/unit/action/internal/Obf_a_q	rustedwarfare/unit/action/internal/Obf_a_q
 	m	()Ljava/lang/String;	a	method_Obf_a_q_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_q_getText	getText
+	m	()Lcom/corrodinggames/rts/gameFramework/ad;	M	method_Obf_a_q_getInputAction	getInputAction
 c	com/corrodinggames/rts/game/units/a/r	rw/unit/action/internal/Obf_a_r	rustedwarfare/unit/action/internal/Obf_a_r
 	m	()Ljava/lang/String;	a	method_Obf_a_r_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_r_getText	getText
+	m	()Lcom/corrodinggames/rts/gameFramework/ad;	M	method_Obf_a_r_getInputAction	getInputAction
 c	com/corrodinggames/rts/game/units/a/s	rustedwarfare/unit/action/UnitAction	rustedwarfare/unit/action/UnitAction
 	f	Lcom/corrodinggames/rts/game/units/a/c;	a	field_s_a_actionId	actionId
 	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	b	field_s_b_cachedCreditPrice	cachedCreditPrice
@@ -1767,6 +1769,7 @@ c	com/corrodinggames/rts/game/units/a/s	rustedwarfare/unit/action/UnitAction	rus
 	m	(Lcom/corrodinggames/rts/game/units/am;)Ljava/lang/String;	w	method_s_w_getTextForTooltip	getTextForTooltip
 	m	()Lcom/corrodinggames/rts/game/units/as;	y	method_s_y_getGuiBuildUnitType	getGuiBuildUnitType
 	m	()Lcom/corrodinggames/rts/game/units/a/c;	z	method_s_z_getActionIdForSerialization	getActionIdForSerialization
+	m	()Lcom/corrodinggames/rts/gameFramework/ad;	M	method_UnitAction_getInputAction	getInputAction
 c	com/corrodinggames/rts/game/units/a/t	rustedwarfare/unit/action/ActionDisplayType	rustedwarfare/unit/action/ActionDisplayType
 	f	Lcom/corrodinggames/rts/game/units/a/t;	a	field_ActionDisplayType_none	none
 	f	Lcom/corrodinggames/rts/game/units/a/t;	b	field_ActionDisplayType_rally	rally
@@ -8842,7 +8845,7 @@ c	com/corrodinggames/rts/gameFramework/f/a	rw/ui/CommandInterface	rustedwarfare/
 	m	(IIILjava/lang/String;Ljava/lang/String;Landroid/graphics/Paint;F)V	a	method_a_a_drawCommandTextLine	drawCommandTextLine
 	m	(Lcom/corrodinggames/rts/game/n;)Ljava/lang/String;	a	method_a_a_buildTeamTooltipText	buildTeamTooltipText
 	m	(Lcom/corrodinggames/rts/game/units/a/s;)Z	a	method_a_a_isExpandedActionButton	isExpandedActionButton
-	m	(Lcom/corrodinggames/rts/game/units/a/s;ILjava/util/ArrayList;)Lcom/corrodinggames/rts/gameFramework/ad;	a	method_a_a_buildActionDisplayGroup	buildActionDisplayGroup
+	m	(Lcom/corrodinggames/rts/game/units/a/s;ILjava/util/ArrayList;)Lcom/corrodinggames/rts/gameFramework/ad;	a	method_CommandInterface_resolveInputActionForUnitAction	resolveInputActionForUnitAction
 	m	(Lcom/corrodinggames/rts/game/units/a/s;Ljava/util/ArrayList;)Z	a	method_a_a_isActionPresentInSelectedUnits	isActionPresentInSelectedUnits
 	m	(Lcom/corrodinggames/rts/game/units/a/s;Z)Ljava/lang/String;	a	method_a_a_buildActionDescriptionText	buildActionDescriptionText
 	m	(Lcom/corrodinggames/rts/game/units/am;Ljava/util/ArrayList;)Ljava/util/ArrayList;	a	method_a_a_appendActionsForUnit	appendActionsForUnit
@@ -9506,6 +9509,18 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Lcom/corrodinggames/rts/gameFramework/j/ak;	am	field_NetworkEngine_networkChecksum	networkChecksum
 	f	Lcom/corrodinggames/rts/gameFramework/j/ah;	ay	field_NetworkEngine_gameSetup	gameSetup
 	f	Ljava/lang/String;	az	field_NetworkEngine_resolvedNetworkMapPath	resolvedNetworkMapPath
+	f	Lcom/corrodinggames/rts/gameFramework/j/ac;	d	field_ad_callbacks	callbacks
+	f	I	e	field_ad_networkProtocolVersion	networkProtocolVersion
+	f	I	m	field_ad_serverPort	serverPort
+	f	Ljava/lang/String;	n	field_ad_joinPassword	joinPassword
+	f	I	t	field_ad_udpDiscoveryPort	udpDiscoveryPort
+	f	Ljava/lang/String;	y	field_ad_localPlayerName	localPlayerName
+	f	Z	C	field_ad_isServer	isServer
+	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	aM	field_ad_connections	connections
+	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	bi	field_ad_serverList	serverList
+	f	Ljava/lang/String;	bw	field_ad_ownServerId	ownServerId
+	f	Lcom/corrodinggames/rts/gameFramework/j/ae;	bE	field_ad_defaultPasswordPrompt	defaultPasswordPrompt
+	f	Lcom/corrodinggames/rts/gameFramework/j/an;	bF	field_ad_activeConnectThread	activeConnectThread
 	m	(FLjava/lang/String;)V	a	method_NetworkEngine_setCurrentStepRate	setCurrentStepRate
 	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	a	method_NetworkEngine_applyGameSetup	applyGameSetup
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_serialize	serialize
@@ -9527,6 +9542,11 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	()V	v	method_NetworkEngine_queueQuickResyncCommand	queueQuickResyncCommand
 	m	()V	w	method_NetworkEngine_applyQuickResyncSave	applyQuickResyncSave
 	m	()V	x	method_NetworkEngine_assertClientSyncStatus	assertClientSyncStatus
+	m	(Lcom/corrodinggames/rts/gameFramework/j/g;)V	a	method_ad_addLanServerInfo	addLanServerInfo
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ad_showPasswordPrompt	showPasswordPrompt
+	m	(Ljava/lang/String;ZLjava/lang/Runnable;)Lcom/corrodinggames/rts/gameFramework/j/an;	a	method_ad_startConnectSocketThread	startConnectSocketThread
+	m	(Ljava/lang/String;Z)Ljava/net/Socket;	b	method_ad_connectToServerSocket	connectToServerSocket
+	m	(Ljava/net/Socket;)Z	a	method_ad_connectToSocket	connectToSocket
 c	com/corrodinggames/rts/gameFramework/j/ah	rw/network/GameSetup	rustedwarfare/network/GameSetup
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	a	field_GameSetup_mapType	mapType
 	f	Ljava/lang/String;	b	field_GameSetup_mapPath	mapPath
@@ -11427,3 +11447,341 @@ c	com/corrodinggames/rts/java/v	rw/input/DesktopInputDeviceProvider	rustedwarfar
 	m	(IIZ)Z	a	method_DesktopInputDeviceProvider_isKeyPressedWithModifiers	isKeyPressedWithModifiers
 	m	(II)F	b	method_DesktopInputDeviceProvider_getControllerAxisValue	getControllerAxisValue
 	m	(II)Ljava/lang/String;	c	method_DesktopInputDeviceProvider_getKeyDisplayName	getKeyDisplayName
+c	com/corrodinggames/rts/gameFramework/o/a	rw/steam/SteamEngine	rustedwarfare/steam/SteamEngine
+	f	Lcom/corrodinggames/rts/gameFramework/o/a;	a	field_a_instance	instance
+	m	()Lcom/corrodinggames/rts/gameFramework/o/a;	a	method_a_getInstance	getInstance
+	m	()V	b	method_a_init	init
+	m	(F)V	a	method_a_update	update
+	m	()Ljava/lang/String;	c	method_a_getPersonaName	getPersonaName
+	m	()V	d	method_a_disableSteam	disableSteam
+	m	()Z	e	method_a_isSteamEnabled	isSteamEnabled
+	m	()Z	f	method_a_isSteamDisabled	isSteamDisabled
+	m	()V	g	method_a_showInviteDialog	showInviteDialog
+	m	()V	h	method_a_alertNotEnabled	alertNotEnabled
+	m	()V	i	method_a_createLobby	createLobby
+	m	()V	j	method_a_stopLobby	stopLobby
+	m	()V	k	method_a_refreshWorkshopItemDetails	refreshWorkshopItemDetails
+	m	()V	l	method_a_loadWorkshopMods	loadWorkshopMods
+	m	()V	m	method_a_showWorkshop	showWorkshop
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	a	method_a_showWorkshopMod	showWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	b	method_a_publishWorkshopMod	publishWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;ZLjava/lang/String;)V	a	method_a_uploadWorkshopMod	uploadWorkshopMod
+c	com/corrodinggames/rts/java/c/b	rw/steam/JavaSteamEngine	rustedwarfare/steam/JavaSteamEngine
+	f	Lcom/corrodinggames/rts/java/c/d;	b	field_b_friendsCallback	friendsCallback
+	f	Lcom/codedisaster/steamworks/SteamFriends;	c	field_b_steamFriends	steamFriends
+	f	Lcom/codedisaster/steamworks/SteamMatchmaking;	d	field_b_steamMatchmaking	steamMatchmaking
+	f	Lcom/corrodinggames/rts/java/c/e;	e	field_b_matchmakingCallback	matchmakingCallback
+	f	Lcom/corrodinggames/rts/java/c/f;	f	field_b_networkingCallback	networkingCallback
+	f	Lcom/corrodinggames/rts/java/c/g;	g	field_b_workshopManager	workshopManager
+	f	Lcom/codedisaster/steamworks/SteamNetworking;	h	field_b_steamNetworking	steamNetworking
+	f	Lcom/corrodinggames/rts/java/c/c;	i	field_b_utilsCallback	utilsCallback
+	f	Lcom/codedisaster/steamworks/SteamUtils;	j	field_b_steamUtils	steamUtils
+	f	Z	k	field_b_initialized	initialized
+	f	Ljava/util/HashMap;	l	field_b_activeSteamSockets	activeSteamSockets
+	f	Ljava/nio/ByteBuffer;	m	field_b_p2pReadBuffer	p2pReadBuffer
+	f	Lcom/codedisaster/steamworks/SteamID;	n	field_b_activeLobby	activeLobby
+	f	Z	o	field_b_isLobbyHost	isLobbyHost
+	f	Lcom/codedisaster/steamworks/SteamID;	p	field_b_lobbyOwnerSteamId	lobbyOwnerSteamId
+	m	()Lcom/corrodinggames/rts/java/c/g;	n	method_b_getWorkshopManager	getWorkshopManager
+	m	()V	b	method_b_init	init
+	m	(F)V	a	method_b_update	update
+	m	()V	d	method_b_disableSteam	disableSteam
+	m	()Ljava/lang/String;	c	method_b_getPersonaName	getPersonaName
+	m	()Z	f	method_b_isSteamDisabled	isSteamDisabled
+	m	(Ljava/lang/String;)V	a	method_b_logSteamInfo	logSteamInfo
+	m	(Ljava/lang/String;)V	b	method_b_logSteamWarning	logSteamWarning
+	m	()V	i	method_b_createLobby	createLobby
+	m	(Lcom/codedisaster/steamworks/SteamID;)V	a	method_b_setActiveLobby	setActiveLobby
+	m	(Lcom/codedisaster/steamworks/SteamID;)Lcom/corrodinggames/rts/gameFramework/j/c;	b	method_b_addPeer	addPeer
+	m	(Lcom/codedisaster/steamworks/SteamID;)V	c	method_b_connectToSteamPeer	connectToSteamPeer
+	m	()V	j	method_b_stopLobby	stopLobby
+	m	()V	g	method_b_showInviteDialog	showInviteDialog
+	m	()V	k	method_b_refreshWorkshopItemDetails	refreshWorkshopItemDetails
+	m	()V	l	method_b_loadWorkshopMods	loadWorkshopMods
+	m	()V	m	method_b_showWorkshop	showWorkshop
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	a	method_b_showWorkshopMod	showWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	b	method_b_publishWorkshopMod	publishWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;ZLjava/lang/String;)V	a	method_b_uploadWorkshopMod	uploadWorkshopMod
+c	com/corrodinggames/rts/java/c/a	rw/steam/SteamLobbyInviteJoinAction	rustedwarfare/steam/SteamLobbyInviteJoinAction
+	f	Lcom/corrodinggames/rts/java/c/b;	a	field_a_steamEngine	steamEngine
+	f	Ljava/lang/String;	b	field_a_inviterName	inviterName
+	f	Lcom/codedisaster/steamworks/SteamID;	c	field_a_inviterSteamId	inviterSteamId
+	f	Lcom/codedisaster/steamworks/SteamID;	d	field_a_lobbySteamId	lobbySteamId
+	f	J	e	field_a_inviteGameId	inviteGameId
+	f	Ljava/lang/Thread;	f	field_a_popupThread	popupThread
+	m	()V	a	method_a_showInvitePopup	showInvitePopup
+c	com/corrodinggames/rts/java/c/a$1	rw/steam/SteamLobbyInvitePopupRunnable	rustedwarfare/steam/SteamLobbyInvitePopupRunnable
+	f	Lcom/corrodinggames/rts/java/c/a;	a	field_a_1_joinAction	joinAction
+c	com/corrodinggames/rts/java/c/b$1	rw/steam/JavaSteamEngine$ConnectToLobbyRunnable	rustedwarfare/steam/JavaSteamEngine$ConnectToLobbyRunnable
+	f	Lcom/codedisaster/steamworks/SteamID;	a	field_b_1_targetLobbySteamId	targetLobbySteamId
+	f	Lcom/corrodinggames/rts/java/c/b;	b	field_b_1_steamEngine	steamEngine
+c	com/corrodinggames/rts/java/c/c	rw/steam/SteamUtilsCallbackHandler	rustedwarfare/steam/SteamUtilsCallbackHandler
+	f	Lcom/corrodinggames/rts/java/c/b;	a	field_c_steamEngine	steamEngine
+c	com/corrodinggames/rts/java/c/d	rw/steam/SteamFriendsCallbackHandler	rustedwarfare/steam/SteamFriendsCallbackHandler
+	f	Lcom/corrodinggames/rts/java/c/b;	a	field_d_steamEngine	steamEngine
+c	com/corrodinggames/rts/java/c/e	rw/steam/SteamMatchmakingCallbackHandler	rustedwarfare/steam/SteamMatchmakingCallbackHandler
+	f	Lcom/corrodinggames/rts/java/c/b;	a	field_e_steamEngine	steamEngine
+c	com/corrodinggames/rts/java/c/f	rw/steam/SteamNetworkingCallbackHandler	rustedwarfare/steam/SteamNetworkingCallbackHandler
+	f	Lcom/corrodinggames/rts/java/c/b;	a	field_f_steamEngine	steamEngine
+c	com/corrodinggames/rts/java/c/g	rw/steam/SteamWorkshopManager	rustedwarfare/steam/SteamWorkshopManager
+	f	Lcom/corrodinggames/rts/java/c/b;	b	field_g_steamEngine	steamEngine
+	f	Lcom/codedisaster/steamworks/SteamUGCCallback;	c	field_g_ugcCallback	ugcCallback
+	f	Lcom/codedisaster/steamworks/SteamUGC;	d	field_g_steamUGC	steamUGC
+	m	(Lcom/codedisaster/steamworks/SteamUGC;)V	a	method_g_setSteamUGC	setSteamUGC
+	m	()Lcom/codedisaster/steamworks/SteamUGCCallback;	a	method_g_getCallback	getCallback
+	m	()V	b	method_g_showWorkshop	showWorkshop
+	m	()V	c	method_g_refreshWorkshopItemDetails	refreshWorkshopItemDetails
+	m	()V	d	method_g_loadWorkshopMods	loadWorkshopMods
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	c	method_g_showWorkshopMod	showWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	b	method_g_publishWorkshopMod	publishWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;ZLjava/lang/String;)V	a	method_g_uploadWorkshopMod	uploadWorkshopMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)Z	a	method_g_validateModForWorkshopPublish	validateModForWorkshopPublish
+c	com/corrodinggames/rts/java/c/h	rw/steam/SteamWorkshopItemInfo	rustedwarfare/steam/SteamWorkshopItemInfo
+	f	Lcom/codedisaster/steamworks/SteamPublishedFileID;	a	field_h_publishedFileId	publishedFileId
+	f	J	b	field_h_lastRequestTimeMillis	lastRequestTimeMillis
+	f	Z	c	field_h_detailsLoaded	detailsLoaded
+	f	Ljava/lang/String;	d	field_h_title	title
+c	com/corrodinggames/rts/java/c/i	rw/steam/SteamWorkshopDownloadRequest	rustedwarfare/steam/SteamWorkshopDownloadRequest
+	f	Lcom/codedisaster/steamworks/SteamPublishedFileID;	a	field_i_publishedFileId	publishedFileId
+	f	Ljava/lang/Runnable;	b	field_i_completionCallback	completionCallback
+	m	(Lcom/codedisaster/steamworks/SteamResult;)V	a	method_i_onDownloadResult	onDownloadResult
+c	com/corrodinggames/rts/java/c/j	rw/steam/SteamUGCCallbackHandler	rustedwarfare/steam/SteamUGCCallbackHandler
+	f	Lcom/corrodinggames/rts/java/c/g;	a	field_j_workshopManager	workshopManager
+	m	(Ljava/lang/String;Lcom/codedisaster/steamworks/SteamResult;)V	a	method_j_logWorkshopResult	logWorkshopResult
+c	com/corrodinggames/rts/java/c/k	rw/steam/SteamSocket	rustedwarfare/steam/SteamSocket
+	f	Lcom/corrodinggames/rts/java/c/b;	a	field_k_steamEngine	steamEngine
+	f	Z	b	field_k_closed	closed
+	f	Lcom/corrodinggames/rts/java/c/l;	c	field_k_inputStream	inputStream
+	f	Lcom/corrodinggames/rts/java/c/m;	d	field_k_outputStream	outputStream
+	f	Lcom/codedisaster/steamworks/SteamID;	e	field_k_remoteSteamId	remoteSteamId
+c	com/corrodinggames/rts/java/c/l	rw/steam/SteamSocketInputStream	rustedwarfare/steam/SteamSocketInputStream
+	f	Ljava/util/concurrent/LinkedBlockingDeque;	a	field_l_queuedPackets	queuedPackets
+	f	Z	b	field_l_firstPacket	firstPacket
+	f	[B	c	field_l_singleByteBuffer	singleByteBuffer
+	f	Lcom/corrodinggames/rts/java/c/k;	d	field_l_steamSocket	steamSocket
+	m	([B)V	a	method_l_queuePacketBytes	queuePacketBytes
+c	com/corrodinggames/rts/java/c/m	rw/steam/SteamSocketOutputStream	rustedwarfare/steam/SteamSocketOutputStream
+	f	Z	a	field_m_firstPacket	firstPacket
+	f	Lcom/corrodinggames/rts/java/c/k;	b	field_m_steamSocket	steamSocket
+c	com/corrodinggames/rts/gameFramework/j/ac	rw/network/NetworkCallbacks	rustedwarfare/network/NetworkCallbacks
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ac_onPasswordPrompt	onPasswordPrompt
+	m	()V	b	method_ac_enqueueStartGameEvent	enqueueStartGameEvent
+c	com/corrodinggames/rts/gameFramework/j/ae	rw/network/PasswordPrompt	rustedwarfare/network/PasswordPrompt
+	f	Ljava/lang/String;	b	field_ae_promptMessage	promptMessage
+	f	I	c	field_ae_targetConnectionId	targetConnectionId
+	f	Z	d	field_ae_replyToRemoteConnection	replyToRemoteConnection
+	m	(Ljava/lang/String;)V	a	method_ae_submitPassword	submitPassword
+	m	()V	a	method_ae_cancelPasswordPrompt	cancelPasswordPrompt
+c	com/corrodinggames/rts/gameFramework/j/ad$1	rw/network/BlockingPasswordPrompt	rustedwarfare/network/BlockingPasswordPrompt
+	f	Ljava/lang/Object;	a	field_ad_1_monitorLock	monitorLock
+	m	(Ljava/lang/String;)V	a	method_ad_1_submitPassword	submitPassword
+	m	()V	a	method_ad_1_cancelPasswordPrompt	cancelPasswordPrompt
+c	com/corrodinggames/rts/gameFramework/j/ad$7	rw/network/ShowPasswordPromptRunnable	rustedwarfare/network/ShowPasswordPromptRunnable
+	f	Lcom/corrodinggames/rts/gameFramework/j/ae;	a	field_ad_7_passwordPrompt	passwordPrompt
+c	com/corrodinggames/rts/gameFramework/j/af	rw/network/LanServerDiscoverySocket	rustedwarfare/network/LanServerDiscoverySocket
+	f	Z	a	field_af_active	active
+	f	Ljava/net/DatagramSocket;	b	field_af_datagramSocket	datagramSocket
+	f	Ljava/util/Timer;	c	field_af_pingTimer	pingTimer
+	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	d	field_af_networkEngine	networkEngine
+	m	()V	a	method_af_sendPing	sendPing
+	m	()V	b	method_af_shutdown	shutdown
+c	com/corrodinggames/rts/gameFramework/j/af$1	rw/network/LanServerDiscoveryPingTask	rustedwarfare/network/LanServerDiscoveryPingTask
+	f	Lcom/corrodinggames/rts/gameFramework/j/af;	a	field_af_1_discoverySocket	discoverySocket
+c	com/corrodinggames/rts/gameFramework/j/ag	rw/network/ConnectionCancelledException	rustedwarfare/network/ConnectionCancelledException
+c	com/corrodinggames/rts/gameFramework/j/an	rw/network/ConnectSocketToServerRunnable	rustedwarfare/network/ConnectSocketToServerRunnable
+	f	Ljava/lang/String;	a	field_an_connectString	connectString
+	f	Z	b	field_an_forceTcp	forceTcp
+	f	Z	c	field_an_connecting	connecting
+	f	Ljava/lang/Thread;	d	field_an_thread	thread
+	f	Ljava/lang/String;	e	field_an_errorMessage	errorMessage
+	f	Ljava/lang/Runnable;	f	field_an_completionCallback	completionCallback
+	f	Ljava/net/Socket;	g	field_an_socket	socket
+	f	Z	h	field_an_cancelRequested	cancelRequested
+	m	()Z	a	method_an_cancel	cancel
+	m	()V	b	method_an_start	start
+c	com/corrodinggames/rts/gameFramework/j/ao	rw/network/ServerSocketWorker	rustedwarfare/network/ServerSocketWorker
+	f	Z	b	field_ao_dosProtectionEnabled	dosProtectionEnabled
+	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	r	field_ao_networkEngine	networkEngine
+	f	Z	c	field_ao_active	active
+	f	Ljava/net/ServerSocket;	d	field_ao_serverSocket	serverSocket
+	f	I	e	field_ao_port	port
+	f	Z	f	field_ao_udpMode	udpMode
+	f	J	g	field_ao_lastDosWindowResetTime	lastDosWindowResetTime
+	f	Ljava/lang/Object;	j	field_ao_socketLock	socketLock
+	f	Ljava/util/ArrayList;	k	field_ao_connectionAttemptRecords	connectionAttemptRecords
+	f	Ljava/lang/Object;	l	field_ao_connectionAttemptLock	connectionAttemptLock
+	f	I	m	field_ao_uniqueAttemptCount	uniqueAttemptCount
+	f	I	n	field_ao_totalAttemptCount	totalAttemptCount
+	f	Z	o	field_ao_loggedGlobalConnectionLockdown	loggedGlobalConnectionLockdown
+	f	Z	p	field_ao_loggedTooManyUniqueAttempts	loggedTooManyUniqueAttempts
+	f	Z	q	field_ao_loggedTooManySameIpConnections	loggedTooManySameIpConnections
+	m	(Ljava/net/InetAddress;Z)Z	a	method_ao_isIpAllowed	isIpAllowed
+	m	()V	a	method_ao_recreateServerSocket	recreateServerSocket
+	m	(Z)V	a	method_ao_startServerSocket	startServerSocket
+	m	()V	b	method_ao_shutdown	shutdown
+c	com/corrodinggames/rts/gameFramework/j/ao$1	rw/network/ServerSocketWorker$UdpAddressFilter	rustedwarfare/network/ServerSocketWorker$UdpAddressFilter
+	f	Lcom/corrodinggames/rts/gameFramework/j/ao;	a	field_ao_1_serverSocketWorker	serverSocketWorker
+	m	(Ljava/net/SocketAddress;)Z	a	method_ao_1_isSocketAddressAllowed	isSocketAddressAllowed
+c	com/corrodinggames/rts/gameFramework/j/ap	rw/network/ConnectionAttemptRecord	rustedwarfare/network/ConnectionAttemptRecord
+	f	Ljava/net/InetAddress;	a	field_ap_address	address
+	f	I	b	field_ap_attemptCount	attemptCount
+	f	Z	c	field_ap_loggedTooManyAttempts	loggedTooManyAttempts
+	f	Z	d	field_ap_loggedExcessiveAttempts	loggedExcessiveAttempts
+	f	Lcom/corrodinggames/rts/gameFramework/j/ao;	e	field_ap_serverSocketWorker	serverSocketWorker
+c	com/corrodinggames/rts/gameFramework/j/h	rw/network/ForwardedSocket	rustedwarfare/network/ForwardedSocket
+	f	Lcom/corrodinggames/rts/gameFramework/j/c;	a	field_h_parentConnection	parentConnection
+	f	I	b	field_h_forwardedConnectionId	forwardedConnectionId
+	f	Z	c	field_h_closed	closed
+	f	Lcom/corrodinggames/rts/gameFramework/j/i;	d	field_h_inputStream	inputStream
+	f	Lcom/corrodinggames/rts/gameFramework/j/j;	e	field_h_outputStream	outputStream
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_h_sendForwardedPacket	sendForwardedPacket
+c	com/corrodinggames/rts/gameFramework/j/i	rw/network/ForwardedSocketInputStream	rustedwarfare/network/ForwardedSocketInputStream
+	f	Ljava/util/concurrent/LinkedBlockingDeque;	a	field_i_queuedPackets	queuedPackets
+	f	Z	b	field_i_firstPacket	firstPacket
+	f	[B	c	field_i_singleByteBuffer	singleByteBuffer
+	f	Lcom/corrodinggames/rts/gameFramework/j/h;	d	field_i_forwardedSocket	forwardedSocket
+	m	([B)V	a	method_i_queuePacketBytes	queuePacketBytes
+c	com/corrodinggames/rts/gameFramework/j/j	rw/network/ForwardedSocketOutputStream	rustedwarfare/network/ForwardedSocketOutputStream
+	f	Z	a	field_j_firstPacket	firstPacket
+	f	Lcom/corrodinggames/rts/gameFramework/j/h;	b	field_j_forwardedSocket	forwardedSocket
+c	com/corrodinggames/rts/gameFramework/j/ay	rw/network/ForwardedPacket	rustedwarfare/network/ForwardedPacket
+	f	Lcom/corrodinggames/rts/gameFramework/j/au;	f	field_ay_wrappedPacket	wrappedPacket
+	f	I	g	field_ay_forwardedConnectionId	forwardedConnectionId
+c	com/corrodinggames/rts/gameFramework/j/g	rw/network/GameServerInfo	rustedwarfare/network/GameServerInfo
+	f	Z	a	field_g_isLan	isLan
+	f	Ljava/lang/String;	b	field_g_serverId	serverId
+	f	Ljava/lang/String;	c	field_g_privateIp	privateIp
+	f	Ljava/lang/String;	d	field_g_publicIp	publicIp
+	f	Ljava/lang/String;	e	field_g_directUrl	directUrl
+	f	Ljava/lang/String;	f	field_g_directUrlSourceLine	directUrlSourceLine
+	f	I	g	field_g_port	port
+	f	Z	h	field_g_portOpen	portOpen
+	f	Ljava/lang/String;	j	field_g_gameVersionCodeText	gameVersionCodeText
+	f	Ljava/lang/String;	k	field_g_gameVersionDisplay	gameVersionDisplay
+	f	I	l	field_g_gameVersionCode	gameVersionCode
+	f	Z	m	field_g_passwordRequired	passwordRequired
+	f	Ljava/lang/String;	n	field_g_createdBy	createdBy
+	f	J	o	field_g_lastSeenTimeMillis	lastSeenTimeMillis
+	f	I	p	field_g_serverListRequestId	serverListRequestId
+	f	Ljava/lang/String;	q	field_g_mapName	mapName
+	f	Ljava/lang/String;	r	field_g_gameMode	gameMode
+	f	Ljava/lang/String;	s	field_g_gameStatus	gameStatus
+	f	Ljava/lang/String;	t	field_g_playerCountText	playerCountText
+	f	Ljava/lang/String;	u	field_g_maxPlayerCountText	maxPlayerCountText
+	f	I	v	field_g_playerCount	playerCount
+	f	I	w	field_g_maxPlayerCount	maxPlayerCount
+	f	Z	x	field_g_supportsVersionPlus	supportsVersionPlus
+	f	Z	y	field_g_isDedicatedServer	isDedicatedServer
+	f	Ljava/lang/String;	z	field_g_modsNeeded	modsNeeded
+	f	I	A	field_g_connectionRelayId	connectionRelayId
+	m	()Z	a	method_g_isOwnServer	isOwnServer
+	m	()Ljava/lang/String;	b	method_g_getDisplayDetails	getDisplayDetails
+	m	()Ljava/lang/String;	c	method_g_getDirectUrl	getDirectUrl
+	m	()Z	d	method_g_hasDirectUrl	hasDirectUrl
+	m	()Ljava/lang/String;	e	method_g_getConnectionString	getConnectionString
+	m	()Ljava/lang/String;	f	method_g_getPublicAddress	getPublicAddress
+	m	()Z	g	method_g_isCompatibleVersion	isCompatibleVersion
+c	com/corrodinggames/rts/gameFramework/j/r	rw/network/MasterServerHttpClientProvider	rustedwarfare/network/MasterServerHttpClientProvider
+	f	Ljava/util/concurrent/locks/ReentrantLock;	a	field_r_httpClientLock	httpClientLock
+	m	()Lorg/apache/http/client/HttpClient;	a	method_r_newAndroidHttpClient	newAndroidHttpClient
+	m	()Lorg/apache/http/client/HttpClient;	b	method_r_newDefaultHttpClient	newDefaultHttpClient
+	m	(IZ)Lorg/apache/http/client/HttpClient;	a	method_r_newHttpClient	newHttpClient
+	m	(Lorg/apache/http/client/HttpClient;)V	a	method_r_releaseHttpClient	releaseHttpClient
+c	com/corrodinggames/rts/gameFramework/j/n	rw/network/MasterServerClient	rustedwarfare/network/MasterServerClient
+	f	Z	a	field_n_debugRequests	debugRequests
+	f	Z	b	field_n_debugVerbose	debugVerbose
+	f	[Ljava/lang/String;	c	field_n_masterServerUrls	masterServerUrls
+	f	Lcom/corrodinggames/rts/gameFramework/j/r;	d	field_n_httpClientProvider	httpClientProvider
+	f	I	e	field_n_nextServerListRequestId	nextServerListRequestId
+	f	Ljava/lang/Object;	f	field_n_serverListLock	serverListLock
+	f	Ljava/lang/String;	g	field_n_lastBadMasterServerResponse	lastBadMasterServerResponse
+	m	(Ljava/lang/String;)V	a	method_n_debugLog	debugLog
+	m	(Ljava/util/List;ZLcom/corrodinggames/rts/gameFramework/j/s;)V	a	method_n_startParallelRequests	startParallelRequests
+	m	(Ljava/util/List;ZLcom/corrodinggames/rts/gameFramework/j/s;[Ljava/lang/String;)V	a	method_n_startParallelRequests	startParallelRequests
+	m	(Ljava/util/List;Ljava/lang/String;)Ljava/lang/String;	a	method_n_getParamValue	getParamValue
+	m	(Ljava/util/List;)Ljava/io/BufferedReader;	a	method_n_doRequest	doRequest
+	m	(Ljava/util/List;I)Ljava/io/BufferedReader;	a	method_n_doRequestWithTimeout	doRequestWithTimeout
+	m	(Ljava/util/List;Z[Ljava/lang/String;IZ)Ljava/io/BufferedReader;	a	method_n_doParallelRequest	doParallelRequest
+	m	(Ljava/util/List;Ljava/lang/String;Z)Lcom/corrodinggames/rts/gameFramework/j/t;	a	method_n_doSingleRequest	doSingleRequest
+	m	([B)Ljava/lang/String;	a	method_n_readFirstLine	readFirstLine
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/j/g;	b	method_n_findServerById	findServerById
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/j/g;	c	method_n_findOrCreateServerById	findOrCreateServerById
+	m	(Ljava/lang/Runnable;)V	a	method_n_startLoadFromMasterServer	startLoadFromMasterServer
+	m	(II)V	a	method_n_removeStaleServers	removeStaleServers
+	m	()V	a	method_n_startGetOwnInfoFromMasterServer	startGetOwnInfoFromMasterServer
+	m	(Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V	a	method_n_addParam	addParam
+	m	(Ljava/util/List;)V	b	method_n_addOwnServerInfoParams	addOwnServerInfoParams
+	m	()V	b	method_n_startCreateOnMasterServer	startCreateOnMasterServer
+	m	()V	c	method_n_startUpdateOnMasterServer	startUpdateOnMasterServer
+	m	()V	d	method_n_startRemoveOnMasterServer	startRemoveOnMasterServer
+	m	(Ljava/lang/String;Ljava/lang/String;)V	a	method_n_startErrorReport	startErrorReport
+	m	(I)Ljava/lang/String;	a	method_n_getServerIdChecksumToken	getServerIdChecksumToken
+	m	(Lcom/corrodinggames/rts/gameFramework/j/w;Ljava/lang/String;ILjava/lang/String;)V	a	method_n_startGetGameServerInfoFromMasterServer	startGetGameServerInfoFromMasterServer
+c	com/corrodinggames/rts/gameFramework/j/n$1	rw/network/MasterServerSingleRequestCallable	rustedwarfare/network/MasterServerSingleRequestCallable
+	f	Ljava/lang/String;	a	field_n_1_masterServerUrl	masterServerUrl
+	f	Ljava/util/List;	b	field_n_1_params	params
+	f	Z	c	field_n_1_usePost	usePost
+	f	Z	d	field_n_1_strictMode	strictMode
+	m	()Lcom/corrodinggames/rts/gameFramework/j/t;	a	method_n_1_callSingleRequest	callSingleRequest
+c	com/corrodinggames/rts/gameFramework/j/s	rw/network/MasterServerResponseHandler	rustedwarfare/network/MasterServerResponseHandler
+	f	Ljava/lang/String;	d	field_s_errorMessage	errorMessage
+	f	Z	e	field_s_hadError	hadError
+	f	I	f	field_s_remainingRequests	remainingRequests
+	m	(Ljava/io/BufferedReader;ILjava/lang/String;)V	a	method_s_handleResponse	handleResponse
+	m	()V	a	method_s_onComplete	onComplete
+c	com/corrodinggames/rts/gameFramework/j/t	rw/network/MasterServerRequestResult	rustedwarfare/network/MasterServerRequestResult
+	f	Ljava/io/BufferedReader;	a	field_t_reader	reader
+	f	Z	b	field_t_hasValidHeader	hasValidHeader
+	f	Z	c	field_t_hasFailedHeader	hasFailedHeader
+c	com/corrodinggames/rts/gameFramework/j/u	rw/network/MasterServerSingleRequestRunnable	rustedwarfare/network/MasterServerSingleRequestRunnable
+	f	I	a	field_u_requestIndex	requestIndex
+	f	Ljava/util/List;	b	field_u_params	params
+	f	Lcom/corrodinggames/rts/gameFramework/j/s;	c	field_u_handler	handler
+	f	Ljava/lang/String;	d	field_u_masterServerUrl	masterServerUrl
+	f	Z	e	field_u_usePost	usePost
+c	com/corrodinggames/rts/gameFramework/j/q	rw/network/MasterServerListRunnable	rustedwarfare/network/MasterServerListRunnable
+	f	Ljava/lang/Runnable;	a	field_q_completionCallback	completionCallback
+c	com/corrodinggames/rts/gameFramework/j/q$1	rw/network/MasterServerListResponseHandler	rustedwarfare/network/MasterServerListResponseHandler
+	f	I	a	field_q_1_requestGeneration	requestGeneration
+	f	Lcom/corrodinggames/rts/gameFramework/l;	b	field_q_1_gameEngine	gameEngine
+	f	Lcom/corrodinggames/rts/gameFramework/j/q;	c	field_q_1_parentRunnable	parentRunnable
+	m	(Ljava/io/BufferedReader;ILjava/lang/String;)V	a	method_q_1_handleResponse	handleResponse
+	m	()V	a	method_q_1_onComplete	onComplete
+c	com/corrodinggames/rts/gameFramework/j/p	rw/network/MasterServerGetOwnInfoRunnable	rustedwarfare/network/MasterServerGetOwnInfoRunnable
+c	com/corrodinggames/rts/gameFramework/j/y	rw/network/MasterServerCreateRunnable	rustedwarfare/network/MasterServerCreateRunnable
+c	com/corrodinggames/rts/gameFramework/j/z	rw/network/MasterServerRemoveRunnable	rustedwarfare/network/MasterServerRemoveRunnable
+c	com/corrodinggames/rts/gameFramework/j/aa	rw/network/MasterServerUpdateRunnable	rustedwarfare/network/MasterServerUpdateRunnable
+c	com/corrodinggames/rts/gameFramework/j/v	rw/network/MasterServerErrorReportRunnable	rustedwarfare/network/MasterServerErrorReportRunnable
+	f	Ljava/lang/String;	a	field_v_errorMessage	errorMessage
+	f	Ljava/lang/String;	b	field_v_errorStacktrace	errorStacktrace
+c	com/corrodinggames/rts/gameFramework/j/ab	rw/network/MasterServerGetGameServerInfoRunnable	rustedwarfare/network/MasterServerGetGameServerInfoRunnable
+	f	Lcom/corrodinggames/rts/gameFramework/j/w;	a	field_ab_callback	callback
+	f	Ljava/lang/String;	b	field_ab_gameId	gameId
+	f	I	c	field_ab_relayId	relayId
+	f	Ljava/lang/String;	d	field_ab_password	password
+c	com/corrodinggames/rts/gameFramework/j/w	rw/network/MasterServerConnectionInfoCallback	rustedwarfare/network/MasterServerConnectionInfoCallback
+	f	Ljava/lang/String;	a	field_w_connectAddress	connectAddress
+	f	Ljava/lang/String;	b	field_w_errorMessage	errorMessage
+	f	Lcom/corrodinggames/rts/gameFramework/j/x;	c	field_w_errorType	errorType
+	m	(Ljava/lang/String;)V	a	method_w_onSuccess	onSuccess
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/x;Ljava/lang/Exception;)V	a	method_w_onError	onError
+c	com/corrodinggames/rts/gameFramework/j/ad$2	rw/network/BlockingMasterServerConnectionInfoCallback	rustedwarfare/network/BlockingMasterServerConnectionInfoCallback
+	f	Ljava/lang/Object;	d	field_ad_2_monitorLock	monitorLock
+	m	(Ljava/lang/String;)V	a	method_ad_2_onSuccess	onSuccess
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/x;Ljava/lang/Exception;)V	a	method_ad_2_onError	onError
+c	com/corrodinggames/rts/gameFramework/j/x	rw/network/MasterServerConnectionInfoError	rustedwarfare/network/MasterServerConnectionInfoError
+	f	Lcom/corrodinggames/rts/gameFramework/j/x;	a	field_x_wrongPassword	wrongPassword
+	f	Lcom/corrodinggames/rts/gameFramework/j/x;	b	field_x_unknown	unknown
+	f	[Lcom/corrodinggames/rts/gameFramework/j/x;	c	field_x_VALUES	VALUES
+c	com/corrodinggames/rts/gameFramework/j/am	rw/network/TeamLayout	rustedwarfare/network/TeamLayout
+	f	Lcom/corrodinggames/rts/gameFramework/j/am;	a	field_am_layout2Sides	layout2Sides
+	f	Lcom/corrodinggames/rts/gameFramework/j/am;	b	field_am_layout3Sides	layout3Sides
+	f	Lcom/corrodinggames/rts/gameFramework/j/am;	c	field_am_layoutFfa	layoutFfa
+	f	Lcom/corrodinggames/rts/gameFramework/j/am;	d	field_am_layoutSpectators	layoutSpectators
+	f	[Lcom/corrodinggames/rts/gameFramework/j/am;	e	field_am_VALUES	VALUES
+c	com/corrodinggames/rts/gameFramework/j/aj	rw/network/NetworkBanEntry	rustedwarfare/network/NetworkBanEntry
+	f	Ljava/lang/String;	a	field_aj_playerId	playerId
+	f	J	b	field_aj_expiresAtMillis	expiresAtMillis
+	f	Ljava/lang/String;	c	field_aj_reason	reason
+	m	()Ljava/lang/String;	a	method_aj_getReasonText	getReasonText
+	m	()F	b	method_aj_getSecondsRemaining	getSecondsRemaining

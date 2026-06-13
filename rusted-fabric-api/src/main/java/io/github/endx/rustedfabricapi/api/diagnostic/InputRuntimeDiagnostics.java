@@ -49,6 +49,10 @@ public final class InputRuntimeDiagnostics {
             "rustedwarfare.input.SlickToAndroidKeycodes",
             "com.corrodinggames.rts.gameFramework.utility.SlickToAndroidKeycodes"
     };
+    private static final String[] UNIT_ACTION_CLASSES = {
+            "rustedwarfare.unit.action.UnitAction",
+            "com.corrodinggames.rts.game.units.a.s"
+    };
 
     private InputRuntimeDiagnostics() {
     }
@@ -122,6 +126,10 @@ public final class InputRuntimeDiagnostics {
 
     public static boolean isUnboundInputBinding(Object value) {
         return isAny(value, UNBOUND_INPUT_BINDING_CLASSES);
+    }
+
+    public static boolean isUnitAction(Object value) {
+        return isAny(value, UNIT_ACTION_CLASSES);
     }
 
     public static Map<String, Object> describeCurrentInputBindingRegistry() {
@@ -218,6 +226,35 @@ public final class InputRuntimeDiagnostics {
     public static boolean isActionCategory(Object action) {
         requireAny(action, INPUT_ACTION_CLASSES, "InputAction");
         return Boolean.TRUE.equals(RustedReflection.invokeInstance(action, new String[]{"isCategory", "d"}));
+    }
+
+    public static Object getInputActionForUnitAction(Object unitAction) {
+        requireAny(unitAction, UNIT_ACTION_CLASSES, "UnitAction");
+        return RustedReflection.invokeInstance(unitAction, new String[]{"getInputAction", "M"});
+    }
+
+    public static Map<String, Object> describeUnitActionInputBridge(Object unitAction) {
+        requireAny(unitAction, UNIT_ACTION_CLASSES, "UnitAction");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", unitAction.getClass().getName());
+        result.put("description", invokeStringOrEmpty(unitAction, new String[]{"getDescription", "a"}));
+        result.put("text", invokeStringOrEmpty(unitAction, new String[]{"getText", "b"}));
+        result.put("displayTextWithCount", invokeStringOrEmpty(unitAction,
+                new String[]{"getDisplayTextWithCount", "d"}));
+        result.put("actionCommandType", RustedReflection.invokeInstance(unitAction,
+                new String[]{"getActionCommandType", "e"}));
+        result.put("displayType", RustedReflection.invokeInstance(unitAction,
+                new String[]{"getDisplayType", "f"}));
+        Object inputAction = getInputActionForUnitAction(unitAction);
+        result.put("inputAction", inputAction);
+        result.put("hasExplicitInputAction", Boolean.valueOf(inputAction != null && isInputAction(inputAction)));
+        if (inputAction != null && isInputAction(inputAction)) {
+            Map<String, Object> inputActionDetails = describeInputAction(inputAction);
+            result.put("inputActionDisplayName", inputActionDetails.get("displayName"));
+            result.put("inputActionConfigKey", inputActionDetails.get("configKey"));
+            result.put("inputActionPrimaryBindingDisplay", inputActionDetails.get("primaryBindingDisplay"));
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     public static Map<String, Object> describeInputBinding(Object binding) {
