@@ -710,6 +710,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("librocket_ui_script_surface_partial_coverage_after_v0_64");
     }
 
+    public static List<MappingEvidenceRow> allNetworkHandshakeSyncRows() {
+        return allEvidenceRows("network_handshake_sync_added_rows_v0_65");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkHandshakeSyncUpdatedRows() {
+        return allEvidenceRows("network_handshake_sync_updated_rows_v0_65");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkHandshakeSyncFlowMap() {
+        return allEvidenceRows("network_handshake_sync_flow_map_v0_65");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkHandshakeSyncSkippedRows() {
+        return allEvidenceRows("network_handshake_sync_skipped_rows_v0_65");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkHandshakeSyncCoreCoverageRows() {
+        return allEvidenceRows("network_handshake_sync_core_coverage_after_v0_65");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -953,6 +973,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findInputKeybindingRows(String text) {
         return findByText(allInputKeybindingRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findNetworkHandshakeSyncRows(String text) {
+        return findByText(allNetworkHandshakeSyncRows(), text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {

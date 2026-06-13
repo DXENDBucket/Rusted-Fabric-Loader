@@ -1,0 +1,9 @@
+packet,direction,method,meaning
+160,client -> server,NetworkEngine.sendPreRegisterInfoRequest,pre-register info request; package/protocol/platform/name/locale/misc
+161,server -> client,NetworkEngine.sendPreRegisterInfo,server pre-register/challenge; version/serverId/challenge/extra seed
+110,client -> server,NetworkEngine.sendRegisterConnection,"register connection; password hash, unit checksum, integrity responses"
+106,server -> client,NetworkEngine.sendServerInfo,server info response for browser/join setup
+113,server -> client,NetworkEngine.sendIncorrectPassword,password required or incorrect
+150,server -> client,NetworkEngine.sendKick,kick/disconnect reason
+108,server/client ping,NetworkPingerTask.run,ping timestamp packet and latency refresh
+115,server -> client,NetworkEngine.sendUpdatePlayer,team/player/game-setup update

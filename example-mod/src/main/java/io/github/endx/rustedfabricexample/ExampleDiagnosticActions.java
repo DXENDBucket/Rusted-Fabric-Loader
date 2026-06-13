@@ -76,6 +76,7 @@ final class ExampleDiagnosticActions {
                             + " fsRows=" + MappingEvidenceDiagnostics.allFileSystemBackendRows().size()
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
+                            + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
@@ -289,12 +290,33 @@ final class ExampleDiagnosticActions {
             Map<String, Object> network = NetworkRuntimeDiagnostics.describeNetworkEngine(networkEngine);
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
                     "Network server=" + network.get("isServer")
+                            + " started=" + network.get("networkingStarted")
+                            + " single=" + network.get("singlePlayerServer")
                             + " protocol=" + network.get("networkProtocolVersion")
                             + " conns=" + network.get("connectionCount")
+                            + " incoming=" + network.get("incomingPacketCount")
                             + " servers=" + network.get("serverListSize")
                             + " port=" + network.get("serverPort")
                             + " map=" + ExampleDebugOverlay.compactPath(String.valueOf(network.get("resolvedNetworkMapPath"))),
                     networkEngine);
+
+            Object pingerTask = network.get("networkPingerTask");
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network handshake sentRegister=" + network.get("sentRegisterConnection")
+                            + " remoteId=" + ExampleDebugOverlay.safeText(String.valueOf(network.get("remoteServerId")))
+                            + " challenge=" + network.get("serverChallengeNonce")
+                            + " nextConn=" + network.get("nextConnectionId")
+                            + " local=" + ExampleDebugOverlay.describeObject(network.get("localConnection"))
+                            + " pinger=" + ExampleDebugOverlay.describeObject(pingerTask),
+                    pingerTask != null ? pingerTask : networkEngine);
+
+            if (pingerTask != null && NetworkRuntimeDiagnostics.isNetworkPingerTask(pingerTask)) {
+                Map<String, Object> pinger = NetworkRuntimeDiagnostics.describeNetworkPingerTask(pingerTask);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Pinger sendThisTick=" + pinger.get("sendPingThisTick")
+                                + " lastRunMs=" + pinger.get("lastRunTimeMillis"),
+                        pingerTask);
+            }
 
             Object gameSetup = network.get("gameSetup");
             if (gameSetup != null && NetworkRuntimeDiagnostics.isGameSetup(gameSetup)) {
@@ -304,6 +326,8 @@ final class ExampleDiagnosticActions {
                                 + " type=" + ExampleDebugOverlay.safeText(String.valueOf(setup.get("mapTypeName")))
                                 + " credits=" + setup.get("startingCredits")
                                 + " fog=" + setup.get("fogMode")
+                                + " spectators=" + setup.get("allowSpectators")
+                                + " locked=" + setup.get("lockedRoom")
                                 + " seed=" + setup.get("randomSeed"),
                         gameSetup);
             }
@@ -317,6 +341,11 @@ final class ExampleDiagnosticActions {
                             "First connection id=" + details.get("connectionId")
                                     + " name=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("displayName")))
                                     + " validated=" + details.get("validated")
+                                    + " open=" + details.get("open")
+                                    + " queue=" + details.get("sendQueueSize")
+                                    + " ping=" + details.get("lastPingMillis")
+                                    + " nonce=" + details.get("challengeNonce")
+                                    + " netVer=" + details.get("clientNetworkVersion")
                                     + " desyncs=" + details.get("desyncCount"),
                             connection);
                 }

@@ -40,6 +40,7 @@
     "ModManagerMapDiscoveryNamedMixin",
     "MultiplayerMapDropdownNamedMixin",
     "MutableStatRuntimeNamedMixin",
+    "NetworkHandshakeNamedMixin",
     "NetworkMapPathNamedMixin",
     "NetworkSyncRuntimeNamedMixin",
     "OrderableRepairReclaimNamedMixin",

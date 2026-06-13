@@ -1,0 +1,4 @@
+owner,official,reason
+com/corrodinggames/rts/gameFramework/j/aq,*,anti-cheat/integrity helper has obfuscated arithmetic/string protocol; defer until dedicated integrity pass
+com/corrodinggames/rts/gameFramework/j/ad,deep packet switch cases 118/120/122/140/141/170/172/173/174/175/176/178,packet meaning exists but state-machine naming would be speculative without a focused sync pass
+com/corrodinggames/rts/gameFramework/j/ah,"j,k,m,n",serialized GameSetup booleans are real but their gameplay names are not directly printed; leave unmapped

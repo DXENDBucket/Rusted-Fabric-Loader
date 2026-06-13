@@ -13,6 +13,7 @@ import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
+import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
 import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
@@ -153,6 +154,50 @@ final class ExampleEventProbes {
                 showEventProbeMessage(stage, "AfterUiDocumentShown",
                         "AfterUiDocumentShown doc=" + describeObject(document),
                         document, 1000L));
+
+        NetworkHandshakeEvents.BEFORE_SEND_PRE_REGISTER_INFO_REQUEST.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendPreRegisterInfoRequest", networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_PRE_REGISTER_INFO_REQUEST.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "AfterSendPreRegisterInfoRequest", networkEngine, connection));
+
+        NetworkHandshakeEvents.BEFORE_SEND_PRE_REGISTER_INFO.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendPreRegisterInfo", networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_PRE_REGISTER_INFO.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "AfterSendPreRegisterInfo", networkEngine, connection));
+
+        NetworkHandshakeEvents.BEFORE_SEND_REGISTER_CONNECTION.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendRegisterConnection", networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_REGISTER_CONNECTION.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "AfterSendRegisterConnection", networkEngine, connection));
+
+        NetworkHandshakeEvents.BEFORE_SEND_SERVER_INFO.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendServerInfo", networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_SERVER_INFO.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "AfterSendServerInfo", networkEngine, connection));
+
+        NetworkHandshakeEvents.BEFORE_SEND_INCORRECT_PASSWORD.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendIncorrectPassword", networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_INCORRECT_PASSWORD.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "AfterSendIncorrectPassword", networkEngine, connection));
+
+        NetworkHandshakeEvents.BEFORE_SEND_KICK.register((networkEngine, connection, reason) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendKick",
+                        "reason=" + safeText(reason), networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_KICK.register((networkEngine, connection, reason) ->
+                showNetworkHandshakeProbe(stage, "AfterSendKick",
+                        "reason=" + safeText(reason), networkEngine, connection));
+
+        NetworkHandshakeEvents.BEFORE_SEND_UPDATE_PLAYER.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "BeforeSendUpdatePlayer", networkEngine, connection));
+
+        NetworkHandshakeEvents.AFTER_SEND_UPDATE_PLAYER.register((networkEngine, connection) ->
+                showNetworkHandshakeProbe(stage, "AfterSendUpdatePlayer", networkEngine, connection));
 
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
@@ -1754,6 +1799,42 @@ final class ExampleEventProbes {
         } catch (RuntimeException ignored) {
         }
         return "prompt=" + describeObject(passwordPrompt);
+    }
+
+    private static void showNetworkHandshakeProbe(String stage, String key,
+                                                  Object networkEngine, Object connection) {
+        showNetworkHandshakeProbe(stage, key, "", networkEngine, connection);
+    }
+
+    private static void showNetworkHandshakeProbe(String stage, String key, String extra,
+                                                  Object networkEngine, Object connection) {
+        String message = "NetworkHandshake." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " " + describeNetworkConnection(connection);
+        showEventProbeMessage(stage, "NetworkHandshake." + key, message,
+                connection != null ? connection : networkEngine, 1000L);
+    }
+
+    private static String describeNetworkConnection(Object connection) {
+        if (connection == null) {
+            return "conn=null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isNetworkConnection(connection)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describeNetworkConnection(connection);
+                return "conn=" + describeObject(connection)
+                        + "{id=" + details.get("connectionId")
+                        + ", playerId=" + details.get("playerId")
+                        + ", validated=" + details.get("validated")
+                        + ", open=" + details.get("open")
+                        + ", q=" + details.get("sendQueueSize")
+                        + ", ping=" + details.get("lastPingMillis")
+                        + ", nonce=" + details.get("challengeNonce")
+                        + ", addr=" + safeText(String.valueOf(details.get("addressDisplay"))) + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "conn=" + describeObject(connection);
     }
 
     private static String describeCommand(Object command) {
