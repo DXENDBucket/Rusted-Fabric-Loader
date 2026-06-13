@@ -1,0 +1,4 @@
+owner_official,kind,reason
+com/corrodinggames/rts/gameFramework/f/g,class,InterfaceEngine is large in-game HUD/command drawing surface; deferred to a dedicated HUD/UI pass to avoid low-confidence bulk field names.
+com/corrodinggames/rts/gameFramework/f/a,class,CommandInterface already received the v0.63.1 InputAction hotfix; remaining fields are mostly render layout state and better suited for a command-HUD pass.
+com/corrodinggames/librocket/a,field,Unused/no-op platform flags such as field d and method c() were not named without stronger evidence from another platform implementation.

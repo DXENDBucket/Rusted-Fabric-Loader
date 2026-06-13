@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricexample;
 import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.LibRocketUiDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.MappingEvidenceDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
@@ -77,6 +78,7 @@ final class ExampleDiagnosticActions {
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
+                            + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
                     null);
         } catch (Throwable t) {
@@ -188,6 +190,90 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("Input snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showUiSnapshot(String stage) {
+        try {
+            Object controller = LibRocketUiDiagnostics.currentUiController();
+            Object uiEngine = LibRocketUiDiagnostics.currentUiEngine();
+            Object scriptEngine = LibRocketUiDiagnostics.currentScriptEngine();
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "UI evidence rows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
+                            + " updated=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceUpdatedRows().size()
+                            + " skipped=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceSkippedRows().size()
+                            + " partial=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfacePartialCoverageRows().size(),
+                    controller != null ? controller : uiEngine);
+
+            if (controller != null && LibRocketUiDiagnostics.isLibRocketUiController(controller)) {
+                Map<String, Object> details = LibRocketUiDiagnostics.describeUiController(controller);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "UI controller open=" + details.get("uiOpen")
+                                + " resume=" + details.get("resumeGameFlag")
+                                + " keyMods=" + details.get("keyModifierState")
+                                + " logLines=" + details.get("gameLogLineCount"),
+                        controller);
+            }
+
+            if (uiEngine != null && LibRocketUiDiagnostics.isLibRocketUiEngine(uiEngine)) {
+                Map<String, Object> details = LibRocketUiDiagnostics.describeUiEngine(uiEngine);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "UI engine base=" + ExampleDebugOverlay.compactPath(String.valueOf(details.get("guiBasePath")))
+                                + " insideEvent=" + details.get("insideEvent")
+                                + " scissor=" + details.get("scissorEnabled")
+                                + " noDoc=" + details.get("noDocumentOrPopupActive"),
+                        uiEngine);
+            }
+
+            if (scriptEngine != null && LibRocketUiDiagnostics.isScriptEngine(scriptEngine)) {
+                Map<String, Object> details = LibRocketUiDiagnostics.describeScriptEngine(scriptEngine);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "ScriptEngine globals=" + details.get("globalsSize")
+                                + " queued=" + details.get("queuedScriptsSize")
+                                + " running=" + details.get("runningScriptsSize")
+                                + " error=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("scriptErrorMessage"))),
+                        scriptEngine);
+            }
+
+            Object root = LibRocketUiDiagnostics.currentRootScript();
+            if (root != null && LibRocketUiDiagnostics.isRootScript(root)) {
+                Map<String, Object> details = LibRocketUiDiagnostics.describeRootScript(root);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Root doc=" + ExampleDebugOverlay.compactPath(String.valueOf(details.get("currentDocumentPath")))
+                                + " popup=" + ExampleDebugOverlay.compactPath(String.valueOf(details.get("currentPopupPath")))
+                                + " mods=" + details.get("modSupport")
+                                + " workshop=" + details.get("workshopSupport"),
+                        root);
+            }
+
+            Object multiplayer = LibRocketUiDiagnostics.currentMultiplayerScript();
+            if (multiplayer != null && LibRocketUiDiagnostics.isMultiplayerScript(multiplayer)) {
+                Map<String, Object> details = LibRocketUiDiagnostics.describeMultiplayerScript(multiplayer);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Multiplayer UI dropdown=" + details.get("currentDropdownRawArrayLength")
+                                + " useMapDropdown=" + details.get("useMapDropdown")
+                                + " lastPlayerTable=" + ExampleDebugOverlay.describeObject(details.get("lastPlayerTable")),
+                        multiplayer);
+            }
+
+            Object debug = LibRocketUiDiagnostics.currentDebugScript();
+            if (debug != null && LibRocketUiDiagnostics.isDebugScript(debug)) {
+                Map<String, Object> details = LibRocketUiDiagnostics.describeDebugScript(debug);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "DebugScript pid=" + details.get("currentPid")
+                                + " net=" + details.get("networkGameActive")
+                                + " players=" + details.get("humanPlayers")
+                                + " conns=" + details.get("playerConnections")
+                                + " desync=" + details.get("desyncErrors") + "/" + details.get("desyncPasses"),
+                        debug);
+            }
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "UI snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("UI snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 

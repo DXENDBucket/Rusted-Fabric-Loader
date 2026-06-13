@@ -20,12 +20,14 @@ import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
 import io.github.endx.rustedfabricapi.api.event.TransportEvents;
+import io.github.endx.rustedfabricapi.api.event.UiScriptEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.UnitRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
@@ -131,6 +133,26 @@ final class ExampleEventProbes {
                         "AfterUnusedKeyCheck trace=" + RustedIniDiagnostics.isKeyReadTracingEnabled()
                                 + " config=" + describeObject(unitConfig),
                         unitConfig, 1000L));
+
+        UiScriptEvents.BEFORE_PASSWORD_PROMPT_POPUP.register((controller, passwordPrompt) ->
+                showEventProbeMessage(stage, "BeforePasswordPromptPopup",
+                        "BeforePasswordPromptPopup " + describePasswordPrompt(passwordPrompt),
+                        passwordPrompt, 1000L));
+
+        UiScriptEvents.AFTER_PASSWORD_PROMPT_POPUP_QUEUED.register((controller, passwordPrompt) ->
+                showEventProbeMessage(stage, "AfterPasswordPromptPopupQueued",
+                        "AfterPasswordPromptPopupQueued " + describePasswordPrompt(passwordPrompt),
+                        passwordPrompt, 1000L));
+
+        UiScriptEvents.AFTER_UI_DOCUMENT_LOADED.register((uiEngine, document) ->
+                showEventProbeMessage(stage, "AfterUiDocumentLoaded",
+                        "AfterUiDocumentLoaded doc=" + describeObject(document),
+                        document, 1000L));
+
+        UiScriptEvents.AFTER_UI_DOCUMENT_SHOWN.register((uiEngine, document) ->
+                showEventProbeMessage(stage, "AfterUiDocumentShown",
+                        "AfterUiDocumentShown doc=" + describeObject(document),
+                        document, 1000L));
 
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
@@ -1714,6 +1736,24 @@ final class ExampleEventProbes {
         } catch (RuntimeException e) {
             return "<unavailable>";
         }
+    }
+
+    private static String describePasswordPrompt(Object passwordPrompt) {
+        if (passwordPrompt == null) {
+            return "prompt=null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isPasswordPrompt(passwordPrompt)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describePasswordPrompt(passwordPrompt);
+                return "prompt=" + describeObject(passwordPrompt)
+                        + " title=" + safeText(String.valueOf(details.get("customTitle")))
+                        + " message=" + safeText(String.valueOf(details.get("promptMessage")))
+                        + " positive=" + safeText(String.valueOf(details.get("positiveButtonText")))
+                        + " negative=" + safeText(String.valueOf(details.get("negativeButtonText")));
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "prompt=" + describeObject(passwordPrompt);
     }
 
     private static String describeCommand(Object command) {

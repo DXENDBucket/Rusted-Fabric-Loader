@@ -1,0 +1,10 @@
+surface,evidence,mapped_items
+LibRocketUiController.queuePasswordPromptPopup,PasswordPrompt -> Password Required/Server Question popup -> SubmitPasswordRunnable/CancelPasswordRunnable,"a.a(PasswordPrompt), a$2, a$2$1, a$2$2, PasswordPrompt.e/f/g"
+RootScript delayed/open/join/exit callbacks,Root delayedOpenNoHistory/joinServer/exit/backWarnIfOverlappingKeyBinding instantiate Root$1..$5,Root$1..Root$5
+RootScript server list refresh,refreshServerListRaw creates Root$6 and calls MasterServerClient/list refresh runnable which queues displayServerListRaw(...),Root$6
+RootScript save/replay popup buttons,loadGameEdit/loadReplayEdit create Share/Delete PopupButtons backed by Root$7..Root$10,Root$7..Root$10
+RootScript import file picker,importFilePopup creates Root$11 extending the file callback base and passes it to platform import API,Root$11.onFileSelected/onCancelled
+Mods/Multiplayer small UI callbacks,Mods constructor stores updateModsRunnable; Multiplayer.showPlayerConfig queues showPlayerConfigNow(teamIdString),"Mods$1, Multiplayer$1"
+DebugScript public API,Debug methods are public LibRocket script methods with descriptive bytecode names; v0.64 makes the whole debug console surface visible in tiny,"Debug fields and public methods, Debug$1"
+ScriptEngine main-script thread flag,ScriptEngine$1 extends ThreadLocal and initialValue returns Boolean.FALSE,ScriptEngine$1
+LibRocketUiEngine charset pass,Method logs loadCharsetIfNeededOnChildren and calls Element.loadCharsetIfNeededWithCurrentText on text-bearing tags,LibRocketUiEngine.loadCharsetIfNeededOnChildren

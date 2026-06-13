@@ -30,6 +30,8 @@
     "GameFileSystemMapDiscoveryNamedMixin",
     "InterfaceDrawNamedMixin",
     "InterfaceSelectionNamedMixin",
+    "LibRocketUiControllerNamedMixin",
+    "LibRocketUiEngineNamedMixin",
     "MapEngineLifecycleNamedMixin",
     "MapObjectSpawnNamedMixin",
     "MinimapSetupNamedMixin",

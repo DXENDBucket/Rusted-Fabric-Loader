@@ -690,6 +690,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("current_action_display_group_residue_v0_63_1");
     }
 
+    public static List<MappingEvidenceRow> allLibRocketUiScriptSurfaceRows() {
+        return allEvidenceRows("librocket_ui_script_surface_added_rows_v0_64");
+    }
+
+    public static List<MappingEvidenceRow> allLibRocketUiScriptSurfaceUpdatedRows() {
+        return allEvidenceRows("librocket_ui_script_surface_updated_rows_v0_64");
+    }
+
+    public static List<MappingEvidenceRow> allLibRocketUiScriptSurfaceFlowMap() {
+        return allEvidenceRows("librocket_ui_script_surface_flow_map_v0_64");
+    }
+
+    public static List<MappingEvidenceRow> allLibRocketUiScriptSurfaceSkippedRows() {
+        return allEvidenceRows("librocket_ui_script_surface_skipped_rows_v0_64");
+    }
+
+    public static List<MappingEvidenceRow> allLibRocketUiScriptSurfacePartialCoverageRows() {
+        return allEvidenceRows("librocket_ui_script_surface_partial_coverage_after_v0_64");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -813,6 +833,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findInputActionNamingHotfixUpdatedRows(String text) {
         return findByText(allInputActionNamingHotfixUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findLibRocketUiScriptSurfaceRows(String text) {
+        return findByText(allLibRocketUiScriptSurfaceRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findLibRocketUiScriptSurfaceUpdatedRows(String text) {
+        return findByText(allLibRocketUiScriptSurfaceUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findCustomLogicStatBehaviorRows(String text) {

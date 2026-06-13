@@ -45,6 +45,10 @@ public final class NetworkRuntimeDiagnostics {
             "rustedwarfare.network.MasterServerClient",
             "com.corrodinggames.rts.gameFramework.j.n"
     };
+    private static final String[] PASSWORD_PROMPT_CLASSES = {
+            "rustedwarfare.network.PasswordPrompt",
+            "com.corrodinggames.rts.gameFramework.j.ae"
+    };
 
     private NetworkRuntimeDiagnostics() {
     }
@@ -100,6 +104,10 @@ public final class NetworkRuntimeDiagnostics {
 
     public static boolean isMasterServerClient(Object value) {
         return isAny(value, MASTER_SERVER_CLIENT_CLASSES);
+    }
+
+    public static boolean isPasswordPrompt(Object value) {
+        return isAny(value, PASSWORD_PROMPT_CLASSES);
     }
 
     public static Map<String, Object> describeCurrentNetworkEngine() {
@@ -275,6 +283,27 @@ public final class NetworkRuntimeDiagnostics {
         putStringField(result, client, "lastBadMasterServerResponse",
                 new String[]{"lastBadMasterServerResponse", "g"});
         return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describePasswordPrompt(Object prompt) {
+        requireAny(prompt, PASSWORD_PROMPT_CLASSES, "PasswordPrompt");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", prompt.getClass().getName());
+        putStringField(result, prompt, "promptMessage", new String[]{"promptMessage", "b"});
+        putIntField(result, prompt, "targetConnectionId", new String[]{"targetConnectionId", "c"});
+        putBooleanField(result, prompt, "replyToRemoteConnection", new String[]{"replyToRemoteConnection", "d"});
+        putStringField(result, prompt, "customTitle", new String[]{"customTitle", "e"});
+        putStringField(result, prompt, "positiveButtonText", new String[]{"positiveButtonText", "f"});
+        putStringField(result, prompt, "negativeButtonText", new String[]{"negativeButtonText", "g"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static void setPasswordPromptLabels(Object prompt, String title,
+                                               String positiveButtonText, String negativeButtonText) {
+        requireAny(prompt, PASSWORD_PROMPT_CLASSES, "PasswordPrompt");
+        RustedReflection.setFieldValue(prompt, new String[]{"customTitle", "e"}, title);
+        RustedReflection.setFieldValue(prompt, new String[]{"positiveButtonText", "f"}, positiveButtonText);
+        RustedReflection.setFieldValue(prompt, new String[]{"negativeButtonText", "g"}, negativeButtonText);
     }
 
     private static Object firstFieldAssignableTo(Object owner, String[] classNames) {

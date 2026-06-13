@@ -191,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 5;
+        int actionRows = 6;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -332,6 +332,11 @@ final class ExampleDebugOverlay {
                 "Steam snapshot")) {
             ExampleDiagnosticActions.showSteamSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left, top + 140, cellWidth, 24,
+                "UI snapshot")) {
+            ExampleDiagnosticActions.showUiSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {
@@ -391,6 +396,10 @@ final class ExampleDebugOverlay {
         }
         if (containsAny(text, "Input", "KeyBinding", "Keycode", "KeyInput", "ControllerInput")) {
             return DebugProbeGroup.INPUT;
+        }
+        if (containsAny(text, "Ui", "UI", "LibRocket", "RootScript", "ScriptEngine", "DocumentLoaded",
+                "DocumentShown", "PasswordPromptPopup")) {
+            return DebugProbeGroup.UI;
         }
         if (containsAny(text, "Network", "Steam", "Lobby", "ServerList", "MasterServer", "PasswordPrompt",
                 "ForwardedSocket", "ForwardedPacket")) {
@@ -957,6 +966,7 @@ final class ExampleDebugOverlay {
         SAVE("Save"),
         AUDIO("Audio"),
         INPUT("Input"),
+        UI("UI"),
         NETWORK("Network");
 
         final String label;
