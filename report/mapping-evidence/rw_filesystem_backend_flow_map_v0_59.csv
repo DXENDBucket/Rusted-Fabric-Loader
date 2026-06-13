@@ -1,0 +1,7 @@
+stage,from,to,notes
+backend_select,GameFileSystem.initializeFileSystemBackend,GameFileSystem.createBackendForStorageType,select active FileSystemBackend based on SettingsEngine.storageType and platform capability flags
+path_display,GameFileSystem.toDisplayPath,FileSystemBackend.toDisplayPath,convert abstract MOD/SD/internal/external paths into user-facing display path
+path_resolve,GameFileSystem.resolveAbstractPath,FileSystemBackend.resolveAbstractPath,"resolve /SD/, assets, MOD|hash and storage tokens into concrete backend path"
+asset_open,GameFileSystem.openInputStream,FileSystemBackend.openInputStream,"open mapped reader, asset manager, SD path or native file stream"
+asset_cache,AssetCacheStore.openAssetCached,CachedInputStreamHandle.close,cache assets through .data/.meta sidecar files and close wrapped stream
+composite_route,CompositeFileSystemBackend.selectBackendForRead,primaryBackend/secondaryBackend,route paths by configured prefix to child backend

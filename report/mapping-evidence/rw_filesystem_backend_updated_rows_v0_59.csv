@@ -1,0 +1,3 @@
+kind,owner_official,descriptor,official_name,old_named,new_named,reason
+method,com/corrodinggames/rts/gameFramework/e/a,(Ljava/lang/String;)Ljava/lang/String;,e,toDisplayPath,resolveAbstractPath,filesystem backend semantic update
+method,com/corrodinggames/rts/gameFramework/e/c,(Ljava/lang/String;Z)[Ljava/lang/String;,b,listDirectory,listDirectory,filesystem backend semantic update

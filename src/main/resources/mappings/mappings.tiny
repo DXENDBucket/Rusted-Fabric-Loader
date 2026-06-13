@@ -874,6 +874,11 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	f	Lcom/corrodinggames/rts/game/b/e;	x	field_MapEngine_pathingOverrideLayer	pathingOverrideLayer
 	f	Lcom/corrodinggames/rts/game/b/e;	y	field_MapEngine_itemsLayer	itemsLayer
 	f	Ljava/util/ArrayList;	z	field_MapEngine_layers	layers
+	f	Ljava/util/concurrent/locks/ReentrantLock;	e	field_b_mapLoadLock	mapLoadLock
+	f	Z	f	field_b_skipMapLoadLocking	skipMapLoadLocking
+	f	Lcom/corrodinggames/rts/game/b/h;	l	field_b_fullScaleTileAtlas	fullScaleTileAtlas
+	f	Lcom/corrodinggames/rts/game/b/h;	m	field_b_halfScaleTileAtlas	halfScaleTileAtlas
+	f	I	as	field_b_nextRegisteredTileId	nextRegisteredTileId
 	m	(F)F	a	method_MapEngine_worldToTileX	worldToTileX
 	m	(FFILcom/corrodinggames/rts/game/n;Z)V	a	method_MapEngine_revealMapArea	revealMapArea
 	m	(FFLcom/corrodinggames/rts/game/n;)Z	a	method_b_isWorldPointCurrentlyVisibleToTeam	isWorldPointCurrentlyVisibleToTeam
@@ -914,11 +919,6 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	m	()F	j	method_MapEngine_getMapHeightPixels	getMapHeightPixels
 	m	()V	k	method_MapEngine_updateFogAllTeams	updateFogAllTeams
 	m	()V	l	method_MapEngine_rebuildFogBuffers	rebuildFogBuffers
-	f	Ljava/util/concurrent/locks/ReentrantLock;	e	field_b_mapLoadLock	mapLoadLock
-	f	Z	f	field_b_skipMapLoadLocking	skipMapLoadLocking
-	f	Lcom/corrodinggames/rts/game/b/h;	l	field_b_fullScaleTileAtlas	fullScaleTileAtlas
-	f	Lcom/corrodinggames/rts/game/b/h;	m	field_b_halfScaleTileAtlas	halfScaleTileAtlas
-	f	I	as	field_b_nextRegisteredTileId	nextRegisteredTileId
 	m	()V	a	method_b_acquireMapLoadLock	acquireMapLoadLock
 	m	()V	b	method_b_releaseMapLoadLock	releaseMapLoadLock
 	m	(ILcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_b_drawSmoothFogAtlasTile	drawSmoothFogAtlasTile
@@ -932,10 +932,6 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	m	(Ljava/io/InputStream;Ljava/io/OutputStream;)V	a	method_b_exportMapWithUnitObjects	exportMapWithUnitObjects
 c	com/corrodinggames/rts/game/b/c	rw/map/MapTileRenderCache	rustedwarfare/map/MapTileRenderCache
 	f	I	a	field_MapTileRenderCache_cacheSize	cacheSize
-	m	()V	a	method_MapTileRenderCache_initialize	initialize
-	m	(II)Lcom/corrodinggames/rts/game/b/d;	a	method_MapTileRenderCache_getRegion	getRegion
-	m	(IIZ)V	a	method_MapTileRenderCache_markTileDirty	markTileDirty
-	m	()V	b	method_MapTileRenderCache_dispose	dispose
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_MapTileRenderCache_bufferImage	bufferImage
 	f	Lcom/corrodinggames/rts/gameFramework/m/y;	c	field_MapTileRenderCache_bufferCanvas	bufferCanvas
 	f	[[Lcom/corrodinggames/rts/game/b/d;	d	field_MapTileRenderCache_regions	regions
@@ -947,6 +943,10 @@ c	com/corrodinggames/rts/game/b/c	rw/map/MapTileRenderCache	rustedwarfare/map/Ma
 	f	F	l	field_MapTileRenderCache_inverseRegionPixelSize	inverseRegionPixelSize
 	f	F	m	field_MapTileRenderCache_scale	scale
 	f	Landroid/graphics/Rect;	o	field_MapTileRenderCache_scratchRect	scratchRect
+	m	()V	a	method_MapTileRenderCache_initialize	initialize
+	m	(II)Lcom/corrodinggames/rts/game/b/d;	a	method_MapTileRenderCache_getRegion	getRegion
+	m	(IIZ)V	a	method_MapTileRenderCache_markTileDirty	markTileDirty
+	m	()V	b	method_MapTileRenderCache_dispose	dispose
 	m	()V	<init>	<init>	<init>
 	m	(I)V	a	method_MapTileRenderCache_scrollRegionsY	scrollRegionsY
 	m	(I)V	b	method_MapTileRenderCache_scrollRegionsX	scrollRegionsX
@@ -988,6 +988,10 @@ c	com/corrodinggames/rts/game/b/e	rw/map/MapLayer	rustedwarfare/map/MapLayer
 	f	Z	r	field_MapLayer_isGroundLayer	isGroundLayer
 	f	Z	s	field_MapLayer_isItemsLayer	isItemsLayer
 	f	Z	w	field_MapLayer_hasNonAtlasTiles	hasNonAtlasTiles
+	f	[B	x	field_e_base64DecodeLookup	base64DecodeLookup
+	f	Landroid/graphics/Rect;	t	field_e_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/Rect;	u	field_e_scratchDestRect	scratchDestRect
+	f	Landroid/graphics/RectF;	v	field_e_scratchDestRectF	scratchDestRectF
 	m	()[S	a	method_MapLayer_getTileIds	getTileIds
 	m	(II)Lcom/corrodinggames/rts/game/b/g;	a	method_MapLayer_getTile	getTile
 	m	(IILcom/corrodinggames/rts/game/b/g;Z)V	a	method_MapLayer_setTile	setTile
@@ -997,10 +1001,6 @@ c	com/corrodinggames/rts/game/b/e	rw/map/MapLayer	rustedwarfare/map/MapLayer
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/io/InputStream;	a	method_MapLayer_decodeLayerData	decodeLayerData
 	m	([C)[B	a	method_MapLayer_decodeBase64	decodeBase64
 	m	()V	b	method_MapLayer_disposeLayerCache	disposeLayerCache
-	f	[B	x	field_e_base64DecodeLookup	base64DecodeLookup
-	f	Landroid/graphics/Rect;	t	field_e_scratchSourceRect	scratchSourceRect
-	f	Landroid/graphics/Rect;	u	field_e_scratchDestRect	scratchDestRect
-	f	Landroid/graphics/RectF;	v	field_e_scratchDestRectF	scratchDestRectF
 	m	(Lcom/corrodinggames/rts/game/b/b;Ljava/lang/String;II)V	<init>	<init>	<init>
 	m	(Lcom/corrodinggames/rts/game/b/b;Lorg/w3c/dom/Element;)V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/b/f	rw/map/MapLoadException	rustedwarfare/map/MapLoadException
@@ -1014,11 +1014,6 @@ c	com/corrodinggames/rts/game/b/g	rw/map/MapTile	rustedwarfare/map/MapTile
 	f	Z	i	field_MapTile_isResourcePool	isResourcePool
 	f	B	j	field_MapTile_pathingCost	pathingCost
 	f	[Lcom/corrodinggames/rts/game/b/g;	m	field_MapTile_variants	variants
-	m	()Lcom/corrodinggames/rts/game/b/g;	a	method_MapTile_copy	copy
-	m	(Lcom/corrodinggames/rts/game/b/b;Lcom/corrodinggames/rts/game/b/e;Lcom/corrodinggames/rts/game/b/j;ISSZ)Lcom/corrodinggames/rts/game/b/g;	a	method_MapTile_createTile	createTile
-	m	(Lcom/corrodinggames/rts/game/b/g;Lcom/corrodinggames/rts/game/b/g;)Z	a	method_MapTile_sameTileAndVariant	sameTileAndVariant
-	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/RectF;FLandroid/graphics/Paint;)V	a	method_MapTile_draw	draw
-	m	(Ljava/lang/String;)V	a	method_MapTile_logTileWarning	logTileWarning
 	f	Z	e	field_g_isWater	isWater
 	f	Z	f	field_g_isWaterBridge	isWaterBridge
 	f	Z	g	field_g_isLava	isLava
@@ -1026,6 +1021,11 @@ c	com/corrodinggames/rts/game/b/g	rw/map/MapTile	rustedwarfare/map/MapTile
 	f	Z	k	field_g_isLargeCliffOrTreeBlocker	isLargeCliffOrTreeBlocker
 	f	Z	l	field_g_blocksBuildings	blocksBuildings
 	f	Landroid/graphics/Rect;	n	field_g_scratchSourceRect	scratchSourceRect
+	m	()Lcom/corrodinggames/rts/game/b/g;	a	method_MapTile_copy	copy
+	m	(Lcom/corrodinggames/rts/game/b/b;Lcom/corrodinggames/rts/game/b/e;Lcom/corrodinggames/rts/game/b/j;ISSZ)Lcom/corrodinggames/rts/game/b/g;	a	method_MapTile_createTile	createTile
+	m	(Lcom/corrodinggames/rts/game/b/g;Lcom/corrodinggames/rts/game/b/g;)Z	a	method_MapTile_sameTileAndVariant	sameTileAndVariant
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;Landroid/graphics/RectF;FLandroid/graphics/Paint;)V	a	method_MapTile_draw	draw
+	m	(Ljava/lang/String;)V	a	method_MapTile_logTileWarning	logTileWarning
 	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/b/h	rw/map/TileAtlas	rustedwarfare/map/TileAtlas
 	f	I	a	field_TileAtlas_tileCount	tileCount
@@ -1081,6 +1081,14 @@ c	com/corrodinggames/rts/game/b/j	rw/map/Tileset	rustedwarfare/map/Tileset
 	f	S	n	field_Tileset_tilesetIndex	tilesetIndex
 	f	Lcom/corrodinggames/rts/game/b/b;	o	field_Tileset_map	map
 	f	Ljava/util/HashMap;	x	field_Tileset_tilePropertiesByIndex	tilePropertiesByIndex
+	f	Z	p	field_j_usedInMap	usedInMap
+	f	Z	q	field_j_usedOnItemsLayer	usedOnItemsLayer
+	f	Z	r	field_j_usedOnNonGroundLayer	usedOnNonGroundLayer
+	f	Z	s	field_j_hasUnitTileProperties	hasUnitTileProperties
+	f	Ljava/lang/String;	t	field_j_embeddedImagePrefix	embeddedImagePrefix
+	f	Ljava/util/ArrayList;	u	field_j_tilesetImageCacheEntries	tilesetImageCacheEntries
+	f	Landroid/graphics/Rect;	v	field_j_cachedSourceRect	cachedSourceRect
+	f	I	w	field_j_cachedSourceRectTileIndex	cachedSourceRectTileIndex
 	m	(I)Ljava/util/Properties;	a	method_Tileset_getTileProperties	getTileProperties
 	m	(II)I	a	method_Tileset_getTileIndexForGrid	getTileIndexForGrid
 	m	(ILandroid/graphics/Rect;)V	a	method_Tileset_getTileSourceRect	getTileSourceRect
@@ -1095,14 +1103,6 @@ c	com/corrodinggames/rts/game/b/j	rw/map/Tileset	rustedwarfare/map/Tileset
 	m	(I)V	c	method_Tileset_setLastGid	setLastGid
 	m	()V	d	method_Tileset_disposeTilesetImage	disposeTilesetImage
 	m	(I)Z	d	method_Tileset_containsGid	containsGid
-	f	Z	p	field_j_usedInMap	usedInMap
-	f	Z	q	field_j_usedOnItemsLayer	usedOnItemsLayer
-	f	Z	r	field_j_usedOnNonGroundLayer	usedOnNonGroundLayer
-	f	Z	s	field_j_hasUnitTileProperties	hasUnitTileProperties
-	f	Ljava/lang/String;	t	field_j_embeddedImagePrefix	embeddedImagePrefix
-	f	Ljava/util/ArrayList;	u	field_j_tilesetImageCacheEntries	tilesetImageCacheEntries
-	f	Landroid/graphics/Rect;	v	field_j_cachedSourceRect	cachedSourceRect
-	f	I	w	field_j_cachedSourceRectTileIndex	cachedSourceRectTileIndex
 	m	()V	a	method_j_markAllTilesetImagesUnused	markAllTilesetImagesUnused
 	m	()V	b	method_j_disposeUnusedTilesetImages	disposeUnusedTilesetImages
 	m	(Lcom/corrodinggames/rts/game/b/b;Ljava/lang/String;I)V	<init>	<init>	<init>
@@ -7664,6 +7664,11 @@ c	com/corrodinggames/rts/gameFramework/d/a	rw/visibility/FogGhost	rustedwarfare/
 	m	(F)V	c	method_a_update	update
 	m	(F)V	d	method_a_draw	draw
 c	com/corrodinggames/rts/gameFramework/d/f	rw/render/effect/ResourcePoolSmokeEffect	rustedwarfare/render/effect/ResourcePoolSmokeEffect
+	f	F	a	field_ResourcePoolSmokeEffect_life	life
+	f	I	j	field_ResourcePoolSmokeEffect_color	color
+	f	Lcom/corrodinggames/rts/gameFramework/d/h;	s	field_ResourcePoolSmokeEffect_priority	priority
+	f	Lcom/corrodinggames/rts/gameFramework/d/e;	i	field_ResourcePoolSmokeEffect_effectInstance	effectInstance
+	f	Lcom/corrodinggames/rts/gameFramework/d/c;	x	field_ResourcePoolSmokeEffect_engine	engine
 	m	(F)V	a	method_f_update	update
 	m	(FZ)V	a	method_f_drawStatusOverlayLayer	drawStatusOverlayLayer
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_d_f_serialize	serialize
@@ -7673,11 +7678,6 @@ c	com/corrodinggames/rts/gameFramework/d/f	rw/render/effect/ResourcePoolSmokeEff
 	m	(F)V	d	method_f_drawPreMainLayer	drawPreMainLayer
 	m	(F)V	e	method_f_drawHighlightLayer	drawHighlightLayer
 	m	(F)Z	f	method_f_drawZoomedOutIconLayer	drawZoomedOutIconLayer
-	f	F	a	field_ResourcePoolSmokeEffect_life	life
-	f	I	j	field_ResourcePoolSmokeEffect_color	color
-	f	Lcom/corrodinggames/rts/gameFramework/d/h;	s	field_ResourcePoolSmokeEffect_priority	priority
-	f	Lcom/corrodinggames/rts/gameFramework/d/e;	i	field_ResourcePoolSmokeEffect_effectInstance	effectInstance
-	f	Lcom/corrodinggames/rts/gameFramework/d/c;	x	field_ResourcePoolSmokeEffect_engine	engine
 c	com/corrodinggames/rts/gameFramework/d/g	rw/render/EffectImageStrip	rustedwarfare/render/EffectImageStrip
 	f	Ljava/lang/String;	a	field_g_name	name
 	f	I	b	field_g_b_frameWidth	frameWidth
@@ -7760,8 +7760,11 @@ c	com/corrodinggames/rts/gameFramework/e	rw/command/Command	rustedwarfare/comman
 c	com/corrodinggames/rts/gameFramework/e/a	rw/io/GameFileSystem	rustedwarfare/io/GameFileSystem
 	f	Lcom/corrodinggames/rts/gameFramework/e/c;	a	field_GameFileSystem_defaultBackend	defaultBackend
 	f	Lcom/corrodinggames/rts/gameFramework/e/c;	b	field_GameFileSystem_activeBackend	activeBackend
+	f	Ljava/lang/Boolean;	c	field_a_cachedStorageCapabilityOverride	cachedStorageCapabilityOverride
+	f	Ljava/lang/String;	d	field_a_overriddenExternalPath	overriddenExternalPath
+	f	Ljava/lang/String;	e	field_a_storageSelectionWarning	storageSelectionWarning
 	m	(Ljava/lang/String;Z)[Ljava/lang/String;	a	method_GameFileSystem_listDirectoryFiltered	listDirectoryFiltered
-	m	(Ljava/lang/String;)Ljava/lang/String;	e	method_0204_toDisplayPath	toDisplayPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	e	method_a_resolveAbstractPath__Ljava_lang_String_Ljava_lang_String	resolveAbstractPath
 	m	(Ljava/lang/String;)Z	f	method_0202_isDirectory	isDirectory
 	m	(Ljava/lang/String;)[Ljava/lang/String;	h	method_0200_listDirectory	listDirectory
 	m	(Ljava/lang/String;)Z	i	method_GameFileSystem_exists	exists
@@ -7769,8 +7772,70 @@ c	com/corrodinggames/rts/gameFramework/e/a	rw/io/GameFileSystem	rustedwarfare/io
 	m	(Ljava/lang/String;)Ljava/lang/String;	n	method_GameFileSystem_getStorageDisplayName	getStorageDisplayName
 	m	(Ljava/lang/String;)Ljava/lang/String;	o	method_GameFileSystem_normalizePath	normalizePath
 	m	(Ljava/lang/String;)Ljava/lang/String;	p	method_0203_resolveAssetPath	resolveAssetPath
+	m	()Ljava/lang/String;	a	method_a_getInternalAppPath__Ljava_lang_String	getInternalAppPath
+	m	()V	b	method_a_initializeFileSystemBackend__V	initializeFileSystemBackend
+	m	(Ljava/lang/String;)Z	a	method_a_isAssetFile__Ljava_lang_String_Z	isAssetFile
+	m	(Z)Lcom/corrodinggames/rts/gameFramework/e/b;	a	method_a_getStorageBackendCapabilities__Z_Lcom_corrodinggames_rts_gameFramework_e_b	getStorageBackendCapabilities
+	m	(I)Lcom/corrodinggames/rts/gameFramework/e/c;	a	method_a_createBackendForStorageType__I_Lcom_corrodinggames_rts_gameFramework_e_c	createBackendForStorageType
+	m	()Ljava/lang/String;	c	method_a_consumePendingErrorMessage__Ljava_lang_String	consumePendingErrorMessage
+	m	(Ljava/lang/String;)V	b	method_a_setPendingErrorMessage__Ljava_lang_String_V	setPendingErrorMessage
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_a_findFileWithExtension__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String	findFileWithExtension
+	m	(Ljava/lang/String;)Z	c	method_a_isPathRootedOrSpecial__Ljava_lang_String_Z	isPathRootedOrSpecial
+	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_a_toDisplayPath__Ljava_lang_String_Ljava_lang_String	toDisplayPath
+	m	(Ljava/lang/String;)Z	g	method_a_isDirectoryStrict__Ljava_lang_String_Z	isDirectoryStrict
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	j	method_a_openAssetInputStream__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_utility_j	openAssetInputStream
+	m	(Ljava/io/File;)Lcom/corrodinggames/rts/gameFramework/utility/j;	a	method_a_openInputStreamFromFile__Ljava_io_File_Lcom_corrodinggames_rts_gameFramework_utility_j	openInputStreamFromFile
+	m	(Ljava/io/File;Z)Ljava/io/OutputStream;	a	method_a_openOutputStreamFromFile__Ljava_io_File_Z_Ljava_io_OutputStream	openOutputStreamFromFile
+	m	(Ljava/lang/String;Z)Ljava/io/OutputStream;	b	method_a_openOutputStream__Ljava_lang_String_Z_Ljava_io_OutputStream	openOutputStream
+	m	(Ljava/lang/String;)Z	l	method_a_createDirectories__Ljava_lang_String_Z	createDirectories
+	m	()Ljava/lang/String;	d	method_a_getExternalStoragePath__Ljava_lang_String	getExternalStoragePath
+	m	()Ljava/lang/String;	e	method_a_getDocumentsPath__Ljava_lang_String	getDocumentsPath
+	m	(Ljava/lang/String;)J	m	method_a_getLastModified__Ljava_lang_String_J	getLastModified
+	m	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/io/File;	a	method_a_createTempFile__Ljava_lang_String_Ljava_lang_String_Z_Ljava_io_File	createTempFile
+	m	(Ljava/io/File;Ljava/io/File;)Z	a	method_a_renameFile__Ljava_io_File_Ljava_io_File_Z	renameFile
+	m	(Ljava/io/File;Ljava/io/File;)Z	b	method_a_copyFile__Ljava_io_File_Ljava_io_File_Z	copyFile
+	m	(Ljava/io/File;)Z	b	method_a_deleteFile__Ljava_io_File_Z	deleteFile
+	m	()Z	f	method_a_supportsDirectPathAccess__Z	supportsDirectPathAccess
+	m	(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)Ljava/io/File;	a	method_a_getExternalFilesDirCompat__Landroid_content_Context_Ljava_lang_String_Ljava_lang_String_Ljava_io_File	getExternalFilesDirCompat
+	m	(Ljava/io/File;)V	c	method_a_ensureParentDirectoryExists__Ljava_io_File_V	ensureParentDirectoryExists
 c	com/corrodinggames/rts/gameFramework/e/c	rw/io/FileSystemBackend	rustedwarfare/io/FileSystemBackend
-	m	(Ljava/lang/String;Z)[Ljava/lang/String;	b	method_FileSystemBackend_listDirectory	listDirectory
+	f	Ljava/lang/String;	a	field_c_logPrefix	logPrefix
+	f	Z	b	field_c_verboseLogging	verboseLogging
+	f	Z	c	field_c_useAbstractPaths	useAbstractPaths
+	f	Z	d	field_c_allowDirectAccess	allowDirectAccess
+	f	Ljava/lang/String;	e	field_c_pendingErrorMessage	pendingErrorMessage
+	f	Ljava/lang/String;	f	field_c_cachedRootPath	cachedRootPath
+	m	(Ljava/lang/String;Z)[Ljava/lang/String;	b	method_c_listDirectory__Ljava_lang_String_Z_Ljava_lang_String	listDirectory
+	m	()V	<init>	method_c_<init>__V	<init>
+	m	()Ljava/lang/String;	a	method_c_consumePendingErrorMessage__Ljava_lang_String	consumePendingErrorMessage
+	m	(Ljava/lang/String;)V	a	method_c_setPendingErrorMessage__Ljava_lang_String_V	setPendingErrorMessage
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_c_findFileWithExtension__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String	findFileWithExtension
+	m	(Ljava/lang/String;)Z	b	method_c_isPathRootedOrSpecial__Ljava_lang_String_Z	isPathRootedOrSpecial
+	m	(Ljava/lang/String;)Z	c	method_c_isPathAllowed__Ljava_lang_String_Z	isPathAllowed
+	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_c_normalizeModPath__Ljava_lang_String_Ljava_lang_String	normalizeModPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	e	method_c_toDisplayPath__Ljava_lang_String_Ljava_lang_String	toDisplayPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	f	method_c_resolveAbstractPath__Ljava_lang_String_Ljava_lang_String	resolveAbstractPath
+	m	()Ljava/lang/String;	f	method_c_getCachedRootPath__Ljava_lang_String	getCachedRootPath
+	m	(Ljava/lang/String;Z)Z	a	method_c_isDirectory__Ljava_lang_String_Z_Z	isDirectory
+	m	(Ljava/lang/String;)Z	g	method_c_exists__Ljava_lang_String_Z	exists
+	m	(Ljava/lang/String;)Ljava/io/File;	h	method_c_toFile__Ljava_lang_String_Ljava_io_File	toFile
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	i	method_c_openAssetInputStream__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_utility_j	openAssetInputStream
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	j	method_c_openInputStream__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_utility_j	openInputStream
+	m	(Ljava/lang/String;Z)Ljava/io/OutputStream;	c	method_c_openOutputStream__Ljava_lang_String_Z_Ljava_io_OutputStream	openOutputStream
+	m	(Ljava/lang/String;)Z	k	method_c_createDirectories__Ljava_lang_String_Z	createDirectories
+	m	()Ljava/lang/String;	b	method_c_getExternalStoragePath__Ljava_lang_String	getExternalStoragePath
+	m	()Ljava/lang/String;	c	method_c_getDocumentsPath__Ljava_lang_String	getDocumentsPath
+	m	(Ljava/lang/String;)J	l	method_c_getLastModified__Ljava_lang_String_J	getLastModified
+	m	(Ljava/io/File;)V	a	method_c_ensureDirectoryExists__Ljava_io_File_V	ensureDirectoryExists
+	m	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/io/File;	a	method_c_createTempFile__Ljava_lang_String_Ljava_lang_String_Z_Ljava_io_File	createTempFile
+	m	()Ljava/lang/String;	d	method_c_getBackendName__Ljava_lang_String	getBackendName
+	m	(Ljava/lang/String;)Ljava/lang/String;	m	method_c_getStorageDisplayName__Ljava_lang_String_Ljava_lang_String	getStorageDisplayName
+	m	()Z	e	method_c_supportsDirectPathAccess__Z	supportsDirectPathAccess
+	m	(Ljava/lang/String;)Ljava/lang/String;	n	method_c_replaceStorageTokens__Ljava_lang_String_Ljava_lang_String	replaceStorageTokens
+	m	(Ljava/lang/String;)Ljava/lang/String;	o	method_c_normalizePath__Ljava_lang_String_Ljava_lang_String	normalizePath
+	m	(Ljava/io/File;)Z	b	method_c_deleteFile__Ljava_io_File_Z	deleteFile
+	m	(Ljava/io/File;Ljava/io/File;)Z	a	method_c_renameFile__Ljava_io_File_Ljava_io_File_Z	renameFile
+	m	(Ljava/lang/String;)Z	p	method_c_isAssetFile__Ljava_lang_String_Z	isAssetFile
 c	com/corrodinggames/rts/gameFramework/f/a	rw/ui/CommandInterface	rustedwarfare/ui/CommandInterface
 	f	Lcom/corrodinggames/rts/gameFramework/f/g;	a	field_a_a_interfaceEngine	interfaceEngine
 	f	Lcom/corrodinggames/rts/gameFramework/f/v;	aD	field_a_aD_inGameMenu	inGameMenu
@@ -8048,12 +8113,12 @@ c	com/corrodinggames/rts/gameFramework/f/ak	rw/ui/text/StyledTextLineBuilder	rus
 	m	(Lcom/corrodinggames/rts/gameFramework/f/af;)V	a	method_ak_a_addSegment	addSegment
 c	com/corrodinggames/rts/gameFramework/f/al	rw/ui/SelectedUnitFilter	rustedwarfare/ui/SelectedUnitFilter
 c	com/corrodinggames/rts/gameFramework/f/am	rw/ui/CommandQueueOverlay	rustedwarfare/ui/CommandQueueOverlay
-	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_f_am_serialize	serialize
-	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_f_am_deserialize	deserialize
 	f	Lcom/corrodinggames/rts/gameFramework/f/a;	i	field_am_commandInterface	commandInterface
 	f	Ljava/util/ArrayList;	a	field_am_trackedUnits	trackedUnits
 	f	J	c	field_am_lastCameraJumpTime	lastCameraJumpTime
 	f	Z	g	field_am_appendMode	appendMode
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_f_am_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_f_am_deserialize	deserialize
 	m	(Lcom/corrodinggames/rts/gameFramework/f/a;Z)V	<init>	method_am_<init>	<init>
 	m	()V	a	method_am_jumpCameraToRecentTrackedUnit	jumpCameraToRecentTrackedUnit
 	m	()V	b	method_am_clearTrackedUnits	clearTrackedUnits
@@ -8265,14 +8330,6 @@ c	com/corrodinggames/rts/gameFramework/f/n	rw/ui/MessageLine	rustedwarfare/ui/Me
 	m	()I	a	method_MessageLine_getAgeMillis	getAgeMillis
 	m	()Z	b	method_MessageLine_isVisible	isVisible
 c	com/corrodinggames/rts/gameFramework/f/o	rw/ui/Minimap	rustedwarfare/ui/Minimap
-	m	()V	a	method_Minimap_updateBounds	updateBounds
-	m	(F)V	a	method_Minimap_updateAndDraw	updateAndDraw
-	m	(Landroid/content/Context;)V	a	method_Minimap_initialize	initialize
-	m	(Lcom/corrodinggames/rts/game/b/b;Z)V	a	method_Minimap_setupForMap	setupForMap
-	m	()I	b	method_Minimap_getBottom	getBottom
-	m	(FF)Landroid/graphics/Point;	b	method_Minimap_worldToMinimapPoint	worldToMinimapPoint
-	m	()V	c	method_Minimap_releaseBuffers	releaseBuffers
-	m	(FF)Landroid/graphics/Point;	c	method_Minimap_screenToMapPoint	screenToMapPoint
 	f	F	a	field_o_screenX	screenX
 	f	F	b	field_o_screenY	screenY
 	f	F	c	field_o_width	width
@@ -8301,6 +8358,14 @@ c	com/corrodinggames/rts/gameFramework/f/o	rw/ui/Minimap	rustedwarfare/ui/Minima
 	f	Landroid/graphics/Point;	ad	field_o_scratchPoint	scratchPoint
 	f	Lcom/corrodinggames/rts/gameFramework/m/m;	ae	field_o_baseMapDrawCommand	baseMapDrawCommand
 	f	Ljava/util/ArrayList;	af	field_o_visibleUnitEntries	visibleUnitEntries
+	m	()V	a	method_Minimap_updateBounds	updateBounds
+	m	(F)V	a	method_Minimap_updateAndDraw	updateAndDraw
+	m	(Landroid/content/Context;)V	a	method_Minimap_initialize	initialize
+	m	(Lcom/corrodinggames/rts/game/b/b;Z)V	a	method_Minimap_setupForMap	setupForMap
+	m	()I	b	method_Minimap_getBottom	getBottom
+	m	(FF)Landroid/graphics/Point;	b	method_Minimap_worldToMinimapPoint	worldToMinimapPoint
+	m	()V	c	method_Minimap_releaseBuffers	releaseBuffers
+	m	(FF)Landroid/graphics/Point;	c	method_Minimap_screenToMapPoint	screenToMapPoint
 	m	()V	<init>	method_o_<init>	<init>
 	m	(IIFLcom/corrodinggames/rts/game/units/am;)V	a	method_o_addUnitScanPulse	addUnitScanPulse
 	m	()F	d	method_o_getTargetMinimapSize	getTargetMinimapSize
@@ -8914,6 +8979,7 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	f	Ljava/lang/String;	dl	field_GameEngine_currentMapPath	currentMapPath
 	f	Lcom/corrodinggames/rts/gameFramework/j/k;	dm	field_GameEngine_currentMapInputStream	currentMapInputStream
 	f	Ljava/lang/String;	dz	field_0133_buildNumber	buildNumber
+	f	Lcom/corrodinggames/rts/gameFramework/d/c;	bR	field_GameEngine_effectEngine	effectEngine
 	m	()Lcom/corrodinggames/rts/gameFramework/l;	B	method_0100_getInstance	getInstance
 	m	(Landroid/content/Context;Lcom/corrodinggames/rts/gameFramework/n;)Lcom/corrodinggames/rts/gameFramework/l;	a	method_0110_createGameEngine	createGameEngine
 	m	()Ljava/lang/String;	ak	method_GameEngine_getCurrentMapPath	getCurrentMapPath
@@ -8923,7 +8989,6 @@ c	com/corrodinggames/rts/gameFramework/l	rw/core/GameEngine	rustedwarfare/core/G
 	m	(Ljava/lang/String;)V	b	method_0113_debugLog	debugLog
 	m	(Ljava/lang/String;)V	e	method_0112_log	log
 	m	(Ljava/lang/String;Ljava/lang/String;)V	f	method_GameEngine_addMessage	addMessage
-	f	Lcom/corrodinggames/rts/gameFramework/d/c;	bR	field_GameEngine_effectEngine	effectEngine
 c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/client/render/GameImage
 	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	a	field_e_teamColorCachePureGreen	teamColorCachePureGreen
 	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_e_teamColorCacheHueAdd	teamColorCacheHueAdd
@@ -9003,6 +9068,18 @@ c	com/corrodinggames/rts/gameFramework/n/a	rw/mission/MissionTrigger	rustedwarfa
 	f	F	x	field_a_textOffsetY	textOffsetY
 	f	Lcom/corrodinggames/rts/game/n;	y	field_MissionTrigger_team	team
 	f	Lcom/corrodinggames/rts/game/units/custom/bb;	z	field_MissionTrigger_text	text
+	f	Z	h	field_a_allToActivate	allToActivate
+	f	Z	j	field_a_active	active
+	f	I	k	field_a_activationFrame	activationFrame
+	f	I	n	field_a_conditionStartFrame	conditionStartFrame
+	f	I	o	field_a_repeatCount	repeatCount
+	f	I	p	field_a_repeatDelay	repeatDelay
+	f	I	q	field_a_resetActivationAfter	resetActivationAfter
+	f	I	r	field_a_delay	delay
+	f	I	s	field_a_warmup	warmup
+	f	Z	u	field_a_pendingActivation	pendingActivation
+	f	Landroid/graphics/Paint;	B	field_a_textPaint	textPaint
+	f	Z	C	field_a_textStyleArrow	textStyleArrow
 	m	()Lcom/corrodinggames/rts/game/n;	a	method_MissionTrigger_getTeam	getTeam
 	m	(Lcom/corrodinggames/rts/game/units/am;)Z	a	method_MissionTrigger_containsUnit	containsUnit
 	m	(Lcom/corrodinggames/rts/gameFramework/n/a/a;)V	a	method_MissionTrigger_addCondition	addCondition
@@ -9027,18 +9104,6 @@ c	com/corrodinggames/rts/gameFramework/n/a	rw/mission/MissionTrigger	rustedwarfa
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/b/f;	f	method_MissionTrigger_mapException	mapException
 	m	(Ljava/lang/String;)V	g	method_MissionTrigger_warn	warn
 	m	(Ljava/lang/String;)V	h	method_MissionTrigger_info	info
-	f	Z	h	field_a_allToActivate	allToActivate
-	f	Z	j	field_a_active	active
-	f	I	k	field_a_activationFrame	activationFrame
-	f	I	n	field_a_conditionStartFrame	conditionStartFrame
-	f	I	o	field_a_repeatCount	repeatCount
-	f	I	p	field_a_repeatDelay	repeatDelay
-	f	I	q	field_a_resetActivationAfter	resetActivationAfter
-	f	I	r	field_a_delay	delay
-	f	I	s	field_a_warmup	warmup
-	f	Z	u	field_a_pendingActivation	pendingActivation
-	f	Landroid/graphics/Paint;	B	field_a_textPaint	textPaint
-	f	Z	C	field_a_textStyleArrow	textStyleArrow
 	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/gameFramework/n/a/a	rw/mission/condition/MissionTriggerCondition	rustedwarfare/mission/condition/MissionTriggerCondition
 	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Z	a	method_MissionTriggerCondition_isSatisfied	isSatisfied
@@ -9057,9 +9122,6 @@ c	com/corrodinggames/rts/gameFramework/n/a/c	rw/mission/condition/UnitDetectCond
 	f	Lcom/corrodinggames/rts/game/n;	c	field_UnitDetectCondition_team	team
 	f	Lcom/corrodinggames/rts/game/units/as;	d	field_UnitDetectCondition_unitType	unitType
 	f	Lcom/corrodinggames/rts/game/units/custom/g;	o	field_UnitDetectCondition_tags	tags
-	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Z	b	method_UnitDetectCondition_test	test
-	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Lcom/corrodinggames/rts/gameFramework/n/a/c;	d	method_UnitDetectCondition_parse	parse
-	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Z	e	method_UnitDetectCondition_matchesTriggerArea	matchesTriggerArea
 	f	Z	e	field_c_onlyBuildings	onlyBuildings
 	f	Z	f	field_c_onlyIdle	onlyIdle
 	f	Z	g	field_c_onlyMainBuildings	onlyMainBuildings
@@ -9071,6 +9133,9 @@ c	com/corrodinggames/rts/gameFramework/n/a/c	rw/mission/condition/UnitDetectCond
 	f	Z	m	field_c_onlyAttackAir	onlyAttackAir
 	f	Z	n	field_c_onlyIfEmpty	onlyIfEmpty
 	f	Z	p	field_c_includeIncomplete	includeIncomplete
+	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Z	b	method_UnitDetectCondition_test	test
+	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Lcom/corrodinggames/rts/gameFramework/n/a/c;	d	method_UnitDetectCondition_parse	parse
+	m	(Lcom/corrodinggames/rts/gameFramework/n/a;)Z	e	method_UnitDetectCondition_matchesTriggerArea	matchesTriggerArea
 	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/gameFramework/n/b	rw/mission/MissionTriggerConditionSet	rustedwarfare/mission/MissionTriggerConditionSet
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_MissionTriggerConditionSet_conditions	conditions
@@ -9687,6 +9752,8 @@ c	com/corrodinggames/rts/gameFramework/m/l	rw/render/CanvasDrawTarget	rustedwarf
 	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_l_leaveLock__Ljava_util_concurrent_locks_Lock_V	leaveLock
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)Z	a	method_l_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_Z	compileShader
 c	com/corrodinggames/rts/gameFramework/m/j	rw/render/AndroidCanvasDrawTarget	rustedwarfare/render/AndroidCanvasDrawTarget
+	f	Landroid/graphics/Canvas;	a	field_j_canvas	canvas
+	f	Z	b	field_j_recordingEnabled	recordingEnabled
 	m	(Landroid/graphics/Rect;)V	a	method_j_clipRect__Landroid_graphics_Rect_V	clipRect
 	m	(Landroid/graphics/RectF;)V	a	method_j_clipRect__Landroid_graphics_RectF_V	clipRect
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_j_drawImage__Lcom_corrodinggames_rts_gameFramework_m_e_FFLandroid_graphics_Paint_V	drawImage
@@ -9712,9 +9779,14 @@ c	com/corrodinggames/rts/gameFramework/m/j	rw/render/AndroidCanvasDrawTarget	rus
 	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_j_enterLock__Ljava_util_concurrent_locks_Lock_V	enterLock
 	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_j_leaveLock__Ljava_util_concurrent_locks_Lock_V	leaveLock
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)Z	a	method_j_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_Z	compileShader
-	f	Landroid/graphics/Canvas;	a	field_j_canvas	canvas
-	f	Z	b	field_j_recordingEnabled	recordingEnabled
 c	com/corrodinggames/rts/gameFramework/m/k	rw/render/GlCanvasDrawTarget	rustedwarfare/render/GlCanvasDrawTarget
+	f	Lcom/corrodinggames/rts/gameFramework/b/f;	a	field_k_glCanvas	glCanvas
+	f	Lcom/corrodinggames/rts/gameFramework/b/n;	b	field_k_glRenderer	glRenderer
+	f	Lcom/corrodinggames/rts/gameFramework/b/v;	c	field_k_scratchGlPaint	scratchGlPaint
+	f	Landroid/graphics/Rect;	e	field_k_scratchSrcRect	scratchSrcRect
+	f	Landroid/graphics/RectF;	f	field_k_scratchDstRectF	scratchDstRectF
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	n	field_k_currentBitmapImage	currentBitmapImage
+	f	Z	o	field_k_recordingEnabled	recordingEnabled
 	m	(Landroid/graphics/Rect;)V	a	method_k_clipRect__Landroid_graphics_Rect_V	clipRect
 	m	(Landroid/graphics/RectF;)V	a	method_k_clipRect__Landroid_graphics_RectF_V	clipRect
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_k_drawImage__Lcom_corrodinggames_rts_gameFramework_m_e_FFLandroid_graphics_Paint_V	drawImage
@@ -9740,13 +9812,6 @@ c	com/corrodinggames/rts/gameFramework/m/k	rw/render/GlCanvasDrawTarget	rustedwa
 	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_k_enterLock__Ljava_util_concurrent_locks_Lock_V	enterLock
 	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_k_leaveLock__Ljava_util_concurrent_locks_Lock_V	leaveLock
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)Z	a	method_k_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_Z	compileShader
-	f	Lcom/corrodinggames/rts/gameFramework/b/f;	a	field_k_glCanvas	glCanvas
-	f	Lcom/corrodinggames/rts/gameFramework/b/n;	b	field_k_glRenderer	glRenderer
-	f	Lcom/corrodinggames/rts/gameFramework/b/v;	c	field_k_scratchGlPaint	scratchGlPaint
-	f	Landroid/graphics/Rect;	e	field_k_scratchSrcRect	scratchSrcRect
-	f	Landroid/graphics/RectF;	f	field_k_scratchDstRectF	scratchDstRectF
-	f	Lcom/corrodinggames/rts/gameFramework/m/e;	n	field_k_currentBitmapImage	currentBitmapImage
-	f	Z	o	field_k_recordingEnabled	recordingEnabled
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	b	method_k_bindImageTexture__Lcom_corrodinggames_rts_gameFramework_m_e_V	bindImageTexture
 	m	()V	d	method_k_flushGlState__V	flushGlState
 	m	(Landroid/graphics/Paint;)Lcom/corrodinggames/rts/gameFramework/b/v;	a	method_k_getGlPaintState__Landroid_graphics_Paint_Lcom_corrodinggames_rts_gameFramework_b	getGlPaintState
@@ -9754,6 +9819,7 @@ c	com/corrodinggames/rts/gameFramework/m/k	rw/render/GlCanvasDrawTarget	rustedwa
 	m	(I)[F	b	method_k_ensureFloatArrayCapacity__I_F	ensureFloatArrayCapacity
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V	b	method_k_drawImageGl__Lcom_corrodinggames_rts_gameFramework_m_e_Landroid_graphics_Rect_La	drawImageGl
 c	com/corrodinggames/rts/gameFramework/m/n	rw/render/NoOpCanvasDrawTarget	rustedwarfare/render/NoOpCanvasDrawTarget
+	f	Z	a	field_n_recordingEnabled	recordingEnabled
 	m	(Landroid/graphics/Rect;)V	a	method_n_clipRect__Landroid_graphics_Rect_V	clipRect
 	m	(Landroid/graphics/RectF;)V	a	method_n_clipRect__Landroid_graphics_RectF_V	clipRect
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_n_drawImage__Lcom_corrodinggames_rts_gameFramework_m_e_FFLandroid_graphics_Paint_V	drawImage
@@ -9779,7 +9845,6 @@ c	com/corrodinggames/rts/gameFramework/m/n	rw/render/NoOpCanvasDrawTarget	rusted
 	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_n_enterLock__Ljava_util_concurrent_locks_Lock_V	enterLock
 	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_n_leaveLock__Ljava_util_concurrent_locks_Lock_V	leaveLock
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)Z	a	method_n_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_Z	compileShader
-	f	Z	a	field_n_recordingEnabled	recordingEnabled
 c	com/corrodinggames/rts/gameFramework/m/u	rw/render/AbstractCanvasDrawTarget	rustedwarfare/render/AbstractCanvasDrawTarget
 c	com/corrodinggames/rts/gameFramework/m/o	rw/render/QueuedCanvasDrawTarget	rustedwarfare/render/QueuedCanvasDrawTarget
 	f	Lcom/corrodinggames/rts/gameFramework/m/l;	a	field_o_target	target
@@ -9976,3 +10041,454 @@ c	com/corrodinggames/rts/gameFramework/f/o$1	rw/ui/MinimapDrawCommand	rustedwarf
 	f	Lcom/corrodinggames/rts/gameFramework/f/o;	a	field_o_1_minimap	minimap
 	m	(Lcom/corrodinggames/rts/gameFramework/f/o;)V	<init>	method_o_1_<init>	<init>
 	m	(Lcom/corrodinggames/rts/gameFramework/m/y;)V	a	method_o_1_run__graphicsEngine_V	run
+c	com/corrodinggames/rts/gameFramework/b/h	rw/render/gl/ShaderSource	rustedwarfare/render/gl/ShaderSource
+	m	()Ljava/lang/String;	a	method_h_a_getVertexShaderSource	getVertexShaderSource
+	m	()Ljava/lang/String;	b	method_h_b_getFragmentShaderSource	getFragmentShaderSource
+c	com/corrodinggames/rts/gameFramework/b/a	rw/render/gl/ShapeShaderSource	rustedwarfare/render/gl/ShapeShaderSource
+	m	()Ljava/lang/String;	a	method_a_a_getVertexShaderSource	getVertexShaderSource
+	m	()Ljava/lang/String;	b	method_a_b_getFragmentShaderSource	getFragmentShaderSource
+c	com/corrodinggames/rts/gameFramework/b/g	rw/render/gl/CircleOutlineShaderSource	rustedwarfare/render/gl/CircleOutlineShaderSource
+	f	F	a	field_g_lineWidth	lineWidth
+	m	()Ljava/lang/String;	a	method_g_a_getVertexShaderSource	getVertexShaderSource
+	m	()Ljava/lang/String;	b	method_g_b_getFragmentShaderSource	getFragmentShaderSource
+	m	(F)V	a	method_g_a_setLineWidth	setLineWidth
+c	com/corrodinggames/rts/gameFramework/b/af	rw/render/gl/TextureShaderFilter	rustedwarfare/render/gl/TextureShaderFilter
+c	com/corrodinggames/rts/gameFramework/b/c	rw/render/gl/DefaultTextureShaderFilter	rustedwarfare/render/gl/DefaultTextureShaderFilter
+c	com/corrodinggames/rts/gameFramework/b/d	rw/render/gl/TextureVertexShaderSource	rustedwarfare/render/gl/TextureVertexShaderSource
+c	com/corrodinggames/rts/gameFramework/b/j	rw/render/gl/TextureReloadCallback	rustedwarfare/render/gl/TextureReloadCallback
+c	com/corrodinggames/rts/gameFramework/b/l	rw/render/gl/TextureCoordinateTransformer	rustedwarfare/render/gl/TextureCoordinateTransformer
+c	com/corrodinggames/rts/gameFramework/b/m	rw/render/gl/TextureShaderBinder	rustedwarfare/render/gl/TextureShaderBinder
+c	com/corrodinggames/rts/gameFramework/b/k	rw/render/gl/GlCanvas	rustedwarfare/render/gl/GlCanvas
+	m	()Lcom/corrodinggames/rts/gameFramework/b/u;	a	method_k_a_getTextureIdGenerator	getTextureIdGenerator
+	m	()V	b	method_k_b_save	save
+	m	()V	c	method_k_c_restore	restore
+	m	(FFFLcom/corrodinggames/rts/gameFramework/b/v;Lcom/corrodinggames/rts/gameFramework/b/h;)V	a	method_k_a_drawCircle	drawCircle
+	m	(FFFFLcom/corrodinggames/rts/gameFramework/b/v;Lcom/corrodinggames/rts/gameFramework/b/h;)V	a	method_k_a_drawLine	drawLine
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;IIIILcom/corrodinggames/rts/gameFramework/b/af;Lcom/corrodinggames/rts/gameFramework/b/l;)V	a	method_k_a_drawTextureRegion	drawTextureRegion
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)Z	a	method_k_a_deleteTexture	deleteTexture
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	b	method_k_b_bindTexture	bindTexture
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	c	method_k_c_pushRenderTarget	pushRenderTarget
+	m	()V	d	method_k_d_popRenderTarget	popRenderTarget
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	d	method_k_d_setTextureParameters	setTextureParameters
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;III)V	a	method_k_a_allocateTextureStorage	allocateTextureStorage
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;Landroid/graphics/Bitmap;I)V	a	method_k_a_uploadTextureImage	uploadTextureImage
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;IILandroid/graphics/Bitmap;II)V	a	method_k_a_uploadTextureSubImage	uploadTextureSubImage
+	m	(IIII)V	a	method_k_a_setScissorRect	setScissorRect
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_k_a_drawText	drawText
+	m	([FIILcom/corrodinggames/rts/gameFramework/b/v;Lcom/corrodinggames/rts/gameFramework/b/h;)V	a	method_k_a_drawLines	drawLines
+	m	()V	e	method_k_e_flushPendingBatches	flushPendingBatches
+	m	()V	f	method_k_f_finishBatches	finishBatches
+	m	(Landroid/graphics/Bitmap;)V	a	method_k_a_removeBitmapFromAtlas	removeBitmapFromAtlas
+c	com/corrodinggames/rts/gameFramework/b/n	rw/render/gl/Gles20Canvas	rustedwarfare/render/gl/Gles20Canvas
+	m	()Lcom/corrodinggames/rts/gameFramework/b/u;	a	method_n_a_getTextureIdGenerator	getTextureIdGenerator
+	m	()V	b	method_n_b_save	save
+	m	()V	c	method_n_c_restore	restore
+	m	(FFFLcom/corrodinggames/rts/gameFramework/b/v;Lcom/corrodinggames/rts/gameFramework/b/h;)V	a	method_n_a_drawCircle	drawCircle
+	m	(FFFFLcom/corrodinggames/rts/gameFramework/b/v;Lcom/corrodinggames/rts/gameFramework/b/h;)V	a	method_n_a_drawLine	drawLine
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;IIIILcom/corrodinggames/rts/gameFramework/b/af;Lcom/corrodinggames/rts/gameFramework/b/l;)V	a	method_n_a_drawTextureRegion	drawTextureRegion
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)Z	a	method_n_a_deleteTexture	deleteTexture
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	b	method_n_b_bindTexture	bindTexture
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	c	method_n_c_pushRenderTarget	pushRenderTarget
+	m	()V	d	method_n_d_popRenderTarget	popRenderTarget
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	d	method_n_d_setTextureParameters	setTextureParameters
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;III)V	a	method_n_a_allocateTextureStorage	allocateTextureStorage
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;Landroid/graphics/Bitmap;I)V	a	method_n_a_uploadTextureImage	uploadTextureImage
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;IILandroid/graphics/Bitmap;II)V	a	method_n_a_uploadTextureSubImage	uploadTextureSubImage
+	m	(IIII)V	a	method_n_a_setScissorRect	setScissorRect
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_n_a_drawText	drawText
+	m	([FIILcom/corrodinggames/rts/gameFramework/b/v;Lcom/corrodinggames/rts/gameFramework/b/h;)V	a	method_n_a_drawLines	drawLines
+	m	()V	e	method_n_e_flushPendingBatches	flushPendingBatches
+	m	()V	f	method_n_f_finishBatches	finishBatches
+	m	(Landroid/graphics/Bitmap;)V	a	method_n_a_removeBitmapFromAtlas	removeBitmapFromAtlas
+	m	(II)V	a	method_n_a_setViewportSize	setViewportSize
+	m	([F)V	a	method_n_a_clear	clear
+	m	(FF)V	a	method_n_a_translate	translate
+	m	(FFF)V	a	method_n_a_scale	scale
+	m	(F)V	a	method_n_a_rotate	rotate
+	m	()[F	i	method_n_i_getCurrentMatrix	getCurrentMatrix
+	m	()V	l	method_n_l_resetGlState	resetGlState
+	m	()V	m	method_n_m_beginTextureBatch	beginTextureBatch
+	m	()V	n	method_n_n_beginShapeBatch	beginShapeBatch
+	m	()V	o	method_n_o_flushTextureBatch	flushTextureBatch
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_n_a_setShaderProgram	setShaderProgram
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	b	method_n_b_forceShaderProgram	forceShaderProgram
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	c	method_n_c_applyShaderParameters	applyShaderParameters
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)Z	d	method_n_d_compileShaderProgram	compileShaderProgram
+	m	(I)V	a	method_n_a_useProgram	useProgram
+	m	()V	p	method_n_p_clearGlError	clearGlError
+	m	()V	q	method_n_q_checkGlError	checkGlError
+	m	()V	r	method_n_r_checkGlErrorStrict	checkGlErrorStrict
+c	com/corrodinggames/rts/gameFramework/b/b	rw/render/gl/BasicTexture	rustedwarfare/render/gl/BasicTexture
+	f	I	a	field_b_textureId	textureId
+	f	I	b	field_b_loadState	loadState
+	f	I	c	field_b_contentWidth	contentWidth
+	f	I	d	field_b_contentHeight	contentHeight
+	f	I	e	field_b_textureWidth	textureWidth
+	f	I	f	field_b_textureHeight	textureHeight
+	f	F	g	field_b_texelWidth	texelWidth
+	f	F	h	field_b_texelHeight	texelHeight
+	f	Z	l	field_b_hasBorder	hasBorder
+	f	Z	m	field_b_recycled	recycled
+	f	I	i	field_b_lastDrawFrame	lastDrawFrame
+	f	Z	j	field_b_opaqueHint	opaqueHint
+	f	Lcom/corrodinggames/rts/gameFramework/b/k;	k	field_b_ownerCanvas	ownerCanvas
+	f	Ljava/util/WeakHashMap;	n	field_b_liveTextureRegistry	liveTextureRegistry
+	f	Ljava/lang/ThreadLocal;	o	field_b_finalizerThreadLocal	finalizerThreadLocal
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	a	method_b_a_setOwnerCanvas	setOwnerCanvas
+	m	(II)V	a	method_b_a_setSize	setSize
+	m	(I)I	a	method_b_a_nextPowerOfTwo	nextPowerOfTwo
+	m	()I	a	method_b_a_getTextureId	getTextureId
+	m	()I	b	method_b_b_getContentWidth	getContentWidth
+	m	()I	c	method_b_c_getContentHeight	getContentHeight
+	m	()I	d	method_b_d_getTextureWidth	getTextureWidth
+	m	()I	e	method_b_e_getTextureHeight	getTextureHeight
+	m	()Z	f	method_b_f_hasBorder	hasBorder
+	m	(Z)V	a	method_b_a_setHasBorder	setHasBorder
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	b	method_b_b_prepare	prepare
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)Z	c	method_b_c_onBind	onBind
+	m	()I	g	method_b_g_getTarget	getTarget
+	m	(I)V	b	method_b_b_setTextureFilter	setTextureFilter
+	m	()I	h	method_b_h_getTextureFilter	getTextureFilter
+	m	()Z	i	method_b_i_isLoaded	isLoaded
+	m	()V	j	method_b_j_recycle	recycle
+	m	()V	k	method_b_k_freeResource	freeResource
+	m	(Landroid/graphics/RectF;)V	a	method_b_a_normalizeTextureRect	normalizeTextureRect
+	m	(Landroid/graphics/RectF;Landroid/graphics/RectF;)V	a	method_b_a_adjustDrawRectForTextureBounds	adjustDrawRectForTextureBounds
+c	com/corrodinggames/rts/gameFramework/b/ab	rw/render/gl/TextureResource	rustedwarfare/render/gl/TextureResource
+c	com/corrodinggames/rts/gameFramework/b/u	rw/render/gl/TextureIdGenerator	rustedwarfare/render/gl/TextureIdGenerator
+	m	()I	a	method_u_a_generateTextureId	generateTextureId
+c	com/corrodinggames/rts/gameFramework/b/t	rw/render/gl/Gles20TextureIdGenerator	rustedwarfare/render/gl/Gles20TextureIdGenerator
+	f	[I	a	field_t_scratchTextureIds	scratchTextureIds
+	m	()I	a	method_t_a_generateTextureId	generateTextureId
+c	com/corrodinggames/rts/gameFramework/b/v	rw/render/gl/GlPaint	rustedwarfare/render/gl/GlPaint
+	f	F	a	field_v_lineWidth	lineWidth
+	f	I	b	field_v_color	color
+	f	Landroid/graphics/Paint$Style;	c	field_v_style	style
+	m	(I)V	a	method_v_a_setColor	setColor
+	m	()I	a	method_v_a_getColor	getColor
+	m	(F)V	a	method_v_a_setLineWidth	setLineWidth
+	m	()F	b	method_v_b_getLineWidth	getLineWidth
+	m	(Landroid/graphics/Paint$Style;)V	a	method_v_a_setStyle	setStyle
+	m	()Landroid/graphics/Paint$Style;	c	method_v_c_getStyle	getStyle
+c	com/corrodinggames/rts/gameFramework/b/w	rw/render/gl/DeferredTextureDeleteQueue	rustedwarfare/render/gl/DeferredTextureDeleteQueue
+	f	[I	a	field_w_textureIds	textureIds
+	f	I	b	field_w_count	count
+	m	(I)V	a	method_w_a_queueDeleteTexture	queueDeleteTexture
+c	com/corrodinggames/rts/gameFramework/b/x	rw/render/gl/RawTexture	rustedwarfare/render/gl/RawTexture
+	f	Z	m	field_x_opaque	opaque
+	f	I	n	field_x_textureTarget	textureTarget
+	f	Z	l	field_x_contentValid	contentValid
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	b	method_x_b_prepare	prepare
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)Z	c	method_x_c_onBind	onBind
+	m	()I	g	method_x_g_getTarget	getTarget
+	m	(I)V	b	method_x_b_setTextureFilter	setTextureFilter
+	m	()I	h	method_x_h_getTextureFilter	getTextureFilter
+	m	()Z	k	method_x_k_isContentValid	isContentValid
+c	com/corrodinggames/rts/gameFramework/b/ah	rw/render/gl/UploadedTexture	rustedwarfare/render/gl/UploadedTexture
+	f	Landroid/graphics/Bitmap;	m	field_ah_bitmap	bitmap
+	f	I	n	field_ah_uploadFormat	uploadFormat
+	f	Ljava/util/HashMap;	l	field_ah_bitmapPool	bitmapPool
+	f	Lcom/corrodinggames/rts/gameFramework/b/ai;	o	field_ah_scratchPoolKey	scratchPoolKey
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	b	method_ah_b_prepare	prepare
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)Z	c	method_ah_c_onBind	onBind
+	m	()I	g	method_ah_g_getTarget	getTarget
+	m	(I)V	b	method_ah_b_setTextureFilter	setTextureFilter
+	m	()I	h	method_ah_h_getTextureFilter	getTextureFilter
+	m	()Landroid/graphics/Bitmap;	k	method_ah_k_getBitmap	getBitmap
+	m	(Landroid/graphics/Bitmap;)V	a	method_ah_a_onFreeBitmap	onFreeBitmap
+	m	()V	l	method_ah_l_invalidateContent	invalidateContent
+	m	()Z	m	method_ah_m_isContentValid	isContentValid
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	d	method_ah_d_uploadToCanvas	uploadToCanvas
+	m	()V	j	method_ah_j_recycle	recycle
+c	com/corrodinggames/rts/gameFramework/b/e	rw/render/gl/BitmapTexture	rustedwarfare/render/gl/BitmapTexture
+	f	Landroid/graphics/Bitmap;	l	field_e_sourceBitmap	sourceBitmap
+	m	()Landroid/graphics/Bitmap;	k	method_e_k_getBitmap	getBitmap
+	m	(Landroid/graphics/Bitmap;)V	a	method_e_a_onFreeBitmap	onFreeBitmap
+c	com/corrodinggames/rts/gameFramework/b/ad	rw/render/gl/BackingTexture	rustedwarfare/render/gl/BackingTexture
+	f	I	l	field_ad_textureFilter	textureFilter
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	b	method_ad_b_prepare	prepare
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)Z	c	method_ad_c_onBind	onBind
+	m	()I	g	method_ad_g_getTarget	getTarget
+	m	(I)V	b	method_ad_b_setTextureFilter	setTextureFilter
+	m	()I	h	method_ad_h_getTextureFilter	getTextureFilter
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;Landroid/graphics/Bitmap;II)V	a	method_ad_a_uploadSubImage	uploadSubImage
+c	com/corrodinggames/rts/gameFramework/b/ae	rw/render/gl/AtlasSubTexture	rustedwarfare/render/gl/AtlasSubTexture
+	f	Lcom/corrodinggames/rts/gameFramework/b/ad;	l	field_ae_backingTexture	backingTexture
+	f	F	m	field_ae_offsetU	offsetU
+	f	F	n	field_ae_offsetV	offsetV
+	f	I	o	field_ae_atlasX	atlasX
+	f	I	p	field_ae_atlasY	atlasY
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)V	b	method_ae_b_prepare	prepare
+	m	(Lcom/corrodinggames/rts/gameFramework/b/k;)Z	c	method_ae_c_onBind	onBind
+	m	()I	g	method_ae_g_getTarget	getTarget
+	m	(I)V	b	method_ae_b_setTextureFilter	setTextureFilter
+	m	()I	h	method_ae_h_getTextureFilter	getTextureFilter
+	m	(Landroid/graphics/RectF;)V	a	method_ae_a_normalizeTextureRect	normalizeTextureRect
+	m	(Landroid/graphics/RectF;Landroid/graphics/RectF;)V	a	method_ae_a_adjustDrawRectForTextureBounds	adjustDrawRectForTextureBounds
+c	com/corrodinggames/rts/gameFramework/b/ac	rw/render/gl/TextureAtlas	rustedwarfare/render/gl/TextureAtlas
+	f	Lcom/corrodinggames/rts/gameFramework/b/k;	a	field_ac_canvas	canvas
+	f	Lcom/corrodinggames/rts/gameFramework/b/ad;	b	field_ac_backingTexture	backingTexture
+	f	Landroid/graphics/Bitmap;	c	field_ac_emptyBitmap	emptyBitmap
+	f	Ljava/util/HashMap;	d	field_ac_bitmapToSubTexture	bitmapToSubTexture
+	f	Ljava/util/ArrayList;	e	field_ac_recentlyUsedBitmaps	recentlyUsedBitmaps
+	f	I	f	field_ac_entryCount	entryCount
+	f	Z	g	field_ac_full	full
+	f	Z	h	field_ac_trackRecentUse	trackRecentUse
+	f	I	i	field_ac_cursorX	cursorX
+	f	I	j	field_ac_cursorY	cursorY
+	f	I	k	field_ac_rowHeight	rowHeight
+	f	I	l	field_ac_padding	padding
+	m	(Landroid/graphics/Bitmap;)Lcom/corrodinggames/rts/gameFramework/b/b;	a	method_ac_a_getOrCreateSubTexture	getOrCreateSubTexture
+	m	(Landroid/graphics/Bitmap;)V	b	method_ac_b_removeBitmap	removeBitmap
+c	com/corrodinggames/rts/gameFramework/b/ag	rw/render/gl/TextureRectHelper	rustedwarfare/render/gl/TextureRectHelper
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;Landroid/graphics/RectF;)V	a	method_ag_a_setFullTextureRect	setFullTextureRect
+c	com/corrodinggames/rts/gameFramework/b/ai	rw/render/gl/BitmapPoolKey	rustedwarfare/render/gl/BitmapPoolKey
+c	com/corrodinggames/rts/gameFramework/b/f	rw/render/gl/GlRenderer	rustedwarfare/render/gl/GlRenderer
+	f	Lcom/corrodinggames/rts/gameFramework/b/k;	a	field_f_canvas	canvas
+	f	Ljava/util/Map;	b	field_f_bitmapTextureCache	bitmapTextureCache
+	f	Lcom/corrodinggames/rts/gameFramework/b/a;	c	field_f_shapeShaderSource	shapeShaderSource
+	f	Lcom/corrodinggames/rts/gameFramework/b/g;	d	field_f_circleShaderSource	circleShaderSource
+	f	Lcom/corrodinggames/rts/gameFramework/b/af;	e	field_f_defaultTextureFilter	defaultTextureFilter
+	m	(Lcom/corrodinggames/rts/gameFramework/b/b;)V	a	method_f_a_prepareTexture	prepareTexture
+	m	()V	a	method_f_a_reset	reset
+	m	()Lcom/corrodinggames/rts/gameFramework/b/k;	b	method_f_b_getCanvas	getCanvas
+	m	(Landroid/graphics/Bitmap;Lcom/corrodinggames/rts/gameFramework/m/e;Lcom/corrodinggames/rts/gameFramework/b/af;)Lcom/corrodinggames/rts/gameFramework/b/b;	a	method_f_a_getOrCreateTexture	getOrCreateTexture
+	m	(Landroid/graphics/Bitmap;)V	a	method_f_a_removeBitmapTexture	removeBitmapTexture
+	m	(Landroid/graphics/Bitmap;Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/b/b;	a	method_f_a_getOrCreateTexture	getOrCreateTexture
+	m	(FFFLcom/corrodinggames/rts/gameFramework/b/v;)V	a	method_f_a_drawCircle	drawCircle
+	m	(FFFFLcom/corrodinggames/rts/gameFramework/b/v;)V	a	method_f_a_drawLine	drawLine
+	m	()V	c	method_f_c_save	save
+	m	()V	d	method_f_d_restore	restore
+	m	()V	e	method_f_e_finishBatches	finishBatches
+	m	(IIII)V	a	method_f_a_setScissorRect	setScissorRect
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_f_a_drawText	drawText
+	m	([FIILcom/corrodinggames/rts/gameFramework/b/v;)V	a	method_f_a_drawLines	drawLines
+c	com/corrodinggames/rts/gameFramework/b/i	rw/render/gl/TextureCache	rustedwarfare/render/gl/TextureCache
+c	com/corrodinggames/rts/gameFramework/b/p	rw/render/gl/GlFontCacheEntry	rustedwarfare/render/gl/GlFontCacheEntry
+	f	I	a	field_p_fontSize	fontSize
+	f	Z	b	field_p_bold	bold
+	f	Lcom/corrodinggames/rts/gameFramework/b/a/b;	c	field_p_glText	glText
+	f	Lcom/corrodinggames/rts/gameFramework/b/n;	d	field_p_canvas	canvas
+c	com/corrodinggames/rts/gameFramework/b/r	rw/render/gl/ScissorState	rustedwarfare/render/gl/ScissorState
+	f	Landroid/graphics/RectF;	a	field_r_rect	rect
+	m	(Lcom/corrodinggames/rts/gameFramework/b/r;)V	a	method_r_a_copyFrom	copyFrom
+c	com/corrodinggames/rts/gameFramework/b/q	rw/render/gl/GlProgramParameter	rustedwarfare/render/gl/GlProgramParameter
+	f	I	a	field_q_location	location
+	f	Ljava/lang/String;	b	field_q_name	name
+	f	I	c	field_q_cachedProgramHandle	cachedProgramHandle
+	m	(I)V	a	method_q_a_loadHandle	loadHandle
+	m	([F)V	a	method_q_a_setMatrix4	setMatrix4
+c	com/corrodinggames/rts/gameFramework/b/o	rw/render/gl/GlAttributeParameter	rustedwarfare/render/gl/GlAttributeParameter
+	m	(I)V	a	method_o_a_loadHandle	loadHandle
+c	com/corrodinggames/rts/gameFramework/b/s	rw/render/gl/GlUniformParameter	rustedwarfare/render/gl/GlUniformParameter
+	m	(I)V	a	method_s_a_loadHandle	loadHandle
+c	com/corrodinggames/rts/gameFramework/b/z	rw/render/gl/TextureProgramHandles	rustedwarfare/render/gl/TextureProgramHandles
+	f	Lcom/corrodinggames/rts/gameFramework/b/o;	a	field_z_positionAttribute	positionAttribute
+	f	Lcom/corrodinggames/rts/gameFramework/b/o;	b	field_z_textureCoordinateAttribute	textureCoordinateAttribute
+	f	Lcom/corrodinggames/rts/gameFramework/b/o;	c	field_z_colorAttribute	colorAttribute
+	f	Lcom/corrodinggames/rts/gameFramework/b/s;	d	field_z_projectionUniform	projectionUniform
+	f	Lcom/corrodinggames/rts/gameFramework/b/s;	e	field_z_textureUniform	textureUniform
+	f	[Lcom/corrodinggames/rts/gameFramework/b/q;	f	field_z_allParameters	allParameters
+c	com/corrodinggames/rts/gameFramework/b/ak	rw/render/gl/ShapeProgramHandles	rustedwarfare/render/gl/ShapeProgramHandles
+	f	Lcom/corrodinggames/rts/gameFramework/b/o;	a	field_ak_positionAttribute	positionAttribute
+	f	Lcom/corrodinggames/rts/gameFramework/b/o;	b	field_ak_colorAttribute	colorAttribute
+	f	Lcom/corrodinggames/rts/gameFramework/b/s;	c	field_ak_projectionUniform	projectionUniform
+c	com/corrodinggames/rts/gameFramework/b/y	rw/render/gl/TextureDrawBatch	rustedwarfare/render/gl/TextureDrawBatch
+	f	Lcom/corrodinggames/rts/gameFramework/b/aa;	a	field_y_vertexBuffer	vertexBuffer
+	f	[F	b	field_y_vertices	vertices
+	f	I	c	field_y_vertexFloatCount	vertexFloatCount
+	f	I	d	field_y_vertexCount	vertexCount
+	f	Lcom/corrodinggames/rts/gameFramework/b/n;	f	field_y_canvas	canvas
+	f	Lcom/corrodinggames/rts/gameFramework/b/z;	j	field_y_shaderOrHandles	shaderOrHandles
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_y_a_begin	begin
+	m	()V	a	method_y_a_updateProjection	updateProjection
+	m	()V	b	method_y_b_flush	flush
+	m	()V	c	method_y_c_end	end
+	m	(I)V	a	method_y_a_setColor	setColor
+c	com/corrodinggames/rts/gameFramework/b/aa	rw/render/gl/TextureVertexBuffer	rustedwarfare/render/gl/TextureVertexBuffer
+	f	Ljava/nio/FloatBuffer;	a	field_aa_vertexFloatBuffer	vertexFloatBuffer
+	f	Ljava/nio/ShortBuffer;	b	field_aa_indexBuffer	indexBuffer
+	f	I	c	field_aa_indexBufferObjectId	indexBufferObjectId
+	f	I	d	field_aa_uploadedFloatCount	uploadedFloatCount
+	m	([FII)V	a	method_aa_a_setVertices	setVertices
+	m	()V	a	method_aa_a_enableAttributes	enableAttributes
+	m	()V	b	method_aa_b_uploadVertexBuffer	uploadVertexBuffer
+	m	(III)V	a	method_aa_a_draw	draw
+	m	()V	c	method_aa_c_unbindArrayBuffer	unbindArrayBuffer
+	m	()V	d	method_aa_d_bindIndexBuffer	bindIndexBuffer
+	m	()V	e	method_aa_e_disableAttributes	disableAttributes
+c	com/corrodinggames/rts/gameFramework/b/aj	rw/render/gl/ShapeDrawBatch	rustedwarfare/render/gl/ShapeDrawBatch
+	f	Lcom/corrodinggames/rts/gameFramework/b/al;	a	field_aj_vertexBuffer	vertexBuffer
+	f	[F	b	field_aj_vertices	vertices
+	f	I	c	field_aj_vertexFloatCount	vertexFloatCount
+	f	I	d	field_aj_vertexCount	vertexCount
+	f	Lcom/corrodinggames/rts/gameFramework/b/n;	f	field_aj_canvas	canvas
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	j	field_aj_shaderOrHandles	shaderOrHandles
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_aj_a_begin	begin
+	m	()V	a	method_aj_a_updateProjection	updateProjection
+	m	()V	b	method_aj_b_flush	flush
+	m	()V	c	method_aj_c_end	end
+	m	(I)V	a	method_aj_a_setColor	setColor
+c	com/corrodinggames/rts/gameFramework/b/al	rw/render/gl/ShapeVertexBuffer	rustedwarfare/render/gl/ShapeVertexBuffer
+	f	Ljava/nio/FloatBuffer;	a	field_al_vertexFloatBuffer	vertexFloatBuffer
+	f	Ljava/nio/ShortBuffer;	b	field_al_indexBuffer	indexBuffer
+	f	I	c	field_al_indexBufferObjectId	indexBufferObjectId
+	m	([FII)V	a	method_al_a_setVertices	setVertices
+	m	()V	a	method_al_a_enableAttributes	enableAttributes
+	m	()V	b	method_al_b_uploadVertexBuffer	uploadVertexBuffer
+	m	(III)V	a	method_al_a_draw	draw
+	m	()V	c	method_al_c_unbindArrayBuffer	unbindArrayBuffer
+	m	()V	d	method_al_d_bindIndexBuffer	bindIndexBuffer
+	m	()V	e	method_al_e_disableAttributes	disableAttributes
+c	com/corrodinggames/rts/gameFramework/b/a/a	rw/render/gl/GlTextAttribute	rustedwarfare/render/gl/GlTextAttribute
+	f	Lcom/corrodinggames/rts/gameFramework/b/a/a;	a	field_a_POSITION	POSITION
+	f	Lcom/corrodinggames/rts/gameFramework/b/a/a;	b	field_a_TEX_COORDINATE	TEX_COORDINATE
+	f	I	c	field_a_attributeIndex	attributeIndex
+	f	Ljava/lang/String;	d	field_a_glName	glName
+	f	[Lcom/corrodinggames/rts/gameFramework/b/a/a;	e	field_a_VALUES	VALUES
+	m	()I	a	method_a_a_getAttributeIndex	getAttributeIndex
+	m	()Ljava/lang/String;	b	method_a_b_getGlName	getGlName
+c	com/corrodinggames/rts/gameFramework/b/a/a/b	rw/render/gl/GlTextShaderProgram	rustedwarfare/render/gl/GlTextShaderProgram
+	f	I	a	field_b_programHandle	programHandle
+	f	I	b	field_b_vertexShaderHandle	vertexShaderHandle
+	f	I	c	field_b_fragmentShaderHandle	fragmentShaderHandle
+	f	Z	d	field_b_loaded	loaded
+	m	()V	a	method_b_a_loadDefault	loadDefault
+	m	(Ljava/lang/String;Ljava/lang/String;[Lcom/corrodinggames/rts/gameFramework/b/a/a;)V	a	method_b_a_compile	compile
+	m	()I	b	method_b_b_getProgramHandle	getProgramHandle
+c	com/corrodinggames/rts/gameFramework/b/a/a/a	rw/render/gl/GlTextAlphaShaderProgram	rustedwarfare/render/gl/GlTextAlphaShaderProgram
+	f	[Lcom/corrodinggames/rts/gameFramework/b/a/a;	a	field_a_ATTRIBUTES	ATTRIBUTES
+	m	()V	a	method_a_a_loadDefault	loadDefault
+c	com/corrodinggames/rts/gameFramework/b/a/b	rw/render/gl/GlText	rustedwarfare/render/gl/GlText
+	f	Landroid/content/res/AssetManager;	a	field_b_assetManager	assetManager
+	f	Lcom/corrodinggames/rts/gameFramework/b/a/d;	b	field_b_batch	batch
+	f	Landroid/graphics/Paint;	r	field_b_paint	paint
+	f	Ljava/util/ArrayList;	s	field_b_pages	pages
+	f	[[Lcom/corrodinggames/rts/gameFramework/b/a/c;	t	field_b_glyphPages	glyphPages
+	f	Z	u	field_b_loaded	loaded
+	f	Z	w	field_b_debug	debug
+	m	(C)Lcom/corrodinggames/rts/gameFramework/b/a/c;	a	method_b_a_getGlyph	getGlyph
+	m	(C)Lcom/corrodinggames/rts/gameFramework/b/a/c;	b	method_b_b_findGlyph	findGlyph
+	m	(CLcom/corrodinggames/rts/gameFramework/b/a/c;)V	a	method_b_a_putGlyph	putGlyph
+	m	(C)V	c	method_b_c_loadGlyph	loadGlyph
+	m	()V	a	method_b_a_loadAllQueuedGlyphs	loadAllQueuedGlyphs
+	m	()V	b	method_b_b_allocateNewPage	allocateNewPage
+	m	(Z)V	a	method_b_a_setUseMipMap	setUseMipMap
+	m	(I)V	a	method_b_a_setTextureFilter	setTextureFilter
+	m	(Landroid/graphics/Paint;III)Z	a	method_b_a_load	load
+	m	()V	d	method_b_d_beginTextBatch	beginTextBatch
+	m	(Ljava/lang/String;FFFFFF)V	a	method_b_a_drawText	drawText
+	m	(Ljava/lang/String;FFFF)V	a	method_b_a_drawText	drawText
+	m	(Ljava/lang/String;FFF)V	a	method_b_a_drawText	drawText
+	m	(Ljava/lang/String;FF)V	a	method_b_a_drawText	drawText
+	m	(Ljava/lang/String;)F	a	method_b_a_measureText	measureText
+	m	(Ljava/lang/String;)V	b	method_b_b_debugLog	debugLog
+c	com/corrodinggames/rts/gameFramework/b/a/c	rw/render/gl/GlTextGlyph	rustedwarfare/render/gl/GlTextGlyph
+	f	C	a	field_c_character	character
+	f	I	b	field_c_pageIndex	pageIndex
+	f	F	c	field_c_advance	advance
+	f	F	d	field_c_u1	u1
+	f	F	e	field_c_v1	v1
+	f	F	f	field_c_u2	u2
+	f	F	g	field_c_v2	v2
+c	com/corrodinggames/rts/gameFramework/b/a/d	rw/render/gl/GlTextBatch	rustedwarfare/render/gl/GlTextBatch
+	f	Lcom/corrodinggames/rts/gameFramework/b/a/b;	a	field_d_glText	glText
+	f	Lcom/corrodinggames/rts/gameFramework/b/a/g;	b	field_d_vertexBuffer	vertexBuffer
+	f	[F	c	field_d_vertices	vertices
+	m	([F)V	a	method_d_a_setProjectionMatrix	setProjectionMatrix
+	m	(Lcom/corrodinggames/rts/gameFramework/b/a/c;)V	a	method_d_a_drawGlyph	drawGlyph
+	m	()V	a	method_d_a_flush	flush
+	m	(FFFFLcom/corrodinggames/rts/gameFramework/b/a/c;)V	a	method_d_a_addGlyphQuad	addGlyphQuad
+c	com/corrodinggames/rts/gameFramework/b/a/e	rw/render/gl/GlTextPage	rustedwarfare/render/gl/GlTextPage
+	f	Landroid/graphics/Canvas;	c	field_e_canvas	canvas
+	f	Landroid/graphics/Bitmap;	d	field_e_bitmap	bitmap
+	f	I	l	field_e_pageIndex	pageIndex
+	m	()Z	a	method_e_a_hasRoom	hasRoom
+	m	()V	b	method_e_b_allocateBitmap	allocateBitmap
+	m	()V	c	method_e_c_uploadToTexture	uploadToTexture
+	m	(CLandroid/graphics/Paint;)Lcom/corrodinggames/rts/gameFramework/b/a/c;	a	method_e_a_addGlyph	addGlyph
+c	com/corrodinggames/rts/gameFramework/b/a/f	rw/render/gl/GlTextShaderUtil	rustedwarfare/render/gl/GlTextShaderUtil
+	m	(II[Lcom/corrodinggames/rts/gameFramework/b/a/a;)I	a	method_f_a_createProgram	createProgram
+	m	(ILjava/lang/String;)I	a	method_f_a_loadShader	loadShader
+c	com/corrodinggames/rts/gameFramework/b/a/g	rw/render/gl/GlTextVertexBuffer	rustedwarfare/render/gl/GlTextVertexBuffer
+	f	I	a	field_g_maxVertices	maxVertices
+	f	I	b	field_g_maxIndices	maxIndices
+	f	I	c	field_g_vertexStrideBytes	vertexStrideBytes
+	f	Ljava/nio/IntBuffer;	d	field_g_vertexBuffer	vertexBuffer
+	f	Ljava/nio/ShortBuffer;	e	field_g_indexBuffer	indexBuffer
+	f	I	f	field_g_vertexCount	vertexCount
+	f	I	g	field_g_indexCount	indexCount
+	m	([FII)V	a	method_g_a_setVertices	setVertices
+	m	([SII)V	a	method_g_a_setIndices	setIndices
+	m	()V	a	method_g_a_bind	bind
+	m	(III)V	a	method_g_a_draw	draw
+	m	()V	b	method_g_b_unbind	unbind
+c	com/corrodinggames/rts/gameFramework/b/ah$1	rw/render/gl/internal/Obf_ah_1	rustedwarfare/render/gl/internal/Obf_ah_1
+c	com/corrodinggames/rts/gameFramework/b/f$1	rw/render/gl/internal/Obf_f_1	rustedwarfare/render/gl/internal/Obf_f_1
+c	com/corrodinggames/rts/gameFramework/e/b	rw/io/StorageBackendCapabilities	rustedwarfare/io/StorageBackendCapabilities
+	f	Z	a	field_b_directExternalFileAccess	directExternalFileAccess
+	f	Z	b	field_b_newStorageFrameworkSupported	newStorageFrameworkSupported
+	f	Z	c	field_b_directFileAccessAvailable	directFileAccessAvailable
+	m	()V	<init>	method_b_<init>__V	<init>
+c	com/corrodinggames/rts/gameFramework/e/d	rw/io/RootedFileSystemBackend	rustedwarfare/io/RootedFileSystemBackend
+	f	Ljava/lang/String;	g	field_d_rootPath	rootPath
+	f	Ljava/lang/String;	h	field_d_storageName	storageName
+	f	Ljava/lang/String;	i	field_d_displayPrefix	displayPrefix
+	m	(Ljava/lang/String;Ljava/lang/String;)V	<init>	method_d_<init>__Ljava_lang_String_Ljava_lang_String_V	<init>
+	m	()Ljava/lang/String;	b	method_d_getExternalStoragePath__Ljava_lang_String	getExternalStoragePath
+	m	()Ljava/lang/String;	d	method_d_getBackendName__Ljava_lang_String	getBackendName
+	m	()Z	e	method_d_supportsDirectPathAccess__Z	supportsDirectPathAccess
+	m	(Ljava/lang/String;)Ljava/lang/String;	e	method_d_toDisplayPath__Ljava_lang_String_Ljava_lang_String	toDisplayPath
+c	com/corrodinggames/rts/gameFramework/e/e	rw/io/CompositeFileSystemBackend	rustedwarfare/io/CompositeFileSystemBackend
+	f	Lcom/corrodinggames/rts/gameFramework/e/c;	g	field_e_primaryBackend	primaryBackend
+	f	Lcom/corrodinggames/rts/gameFramework/e/c;	h	field_e_secondaryBackend	secondaryBackend
+	f	Ljava/lang/String;	i	field_e_primaryPathPrefix	primaryPathPrefix
+	f	Ljava/lang/String;	j	field_e_secondaryPathPrefix	secondaryPathPrefix
+	m	(Lcom/corrodinggames/rts/gameFramework/e/c;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/e/c;Ljava/lang/String;)V	<init>	method_e_<init>__Lcom_corrodinggames_rts_gameFramework_e_c_Ljava_lang_String_Lcom_corrodinggames_rts_gameFr	<init>
+	m	()Ljava/lang/String;	a	method_e_consumePendingErrorMessage__Ljava_lang_String	consumePendingErrorMessage
+	m	(Ljava/lang/String;)V	a	method_e_setPendingErrorMessage__Ljava_lang_String_V	setPendingErrorMessage
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_e_findFileWithExtension__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String	findFileWithExtension
+	m	(Ljava/lang/String;)Z	b	method_e_isPathRootedOrSpecial__Ljava_lang_String_Z	isPathRootedOrSpecial
+	m	(Ljava/lang/String;)Z	c	method_e_isPathAllowed__Ljava_lang_String_Z	isPathAllowed
+	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_e_normalizeModPath__Ljava_lang_String_Ljava_lang_String	normalizeModPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	f	method_e_resolveAbstractPath__Ljava_lang_String_Ljava_lang_String	resolveAbstractPath
+	m	(Ljava/lang/String;)Ljava/lang/String;	e	method_e_toDisplayPath__Ljava_lang_String_Ljava_lang_String	toDisplayPath
+	m	(Ljava/lang/String;Z)Z	a	method_e_isDirectory__Ljava_lang_String_Z_Z	isDirectory
+	m	(Ljava/lang/String;)Z	g	method_e_exists__Ljava_lang_String_Z	exists
+	m	(Ljava/lang/String;Z)[Ljava/lang/String;	b	method_e_listDirectory__Ljava_lang_String_Z_Ljava_lang_String	listDirectory
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	i	method_e_openAssetInputStream__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_utility_j	openAssetInputStream
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;	j	method_e_openInputStream__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_utility_j	openInputStream
+	m	()Ljava/lang/String;	b	method_e_getExternalStoragePath__Ljava_lang_String	getExternalStoragePath
+	m	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/io/File;	a	method_e_createTempFile__Ljava_lang_String_Ljava_lang_String_Z_Ljava_io_File	createTempFile
+	m	(Ljava/lang/String;)Ljava/lang/String;	m	method_e_getStorageDisplayName__Ljava_lang_String_Ljava_lang_String	getStorageDisplayName
+	m	()Ljava/lang/String;	d	method_e_getBackendName__Ljava_lang_String	getBackendName
+	m	()Z	e	method_e_supportsDirectPathAccess__Z	supportsDirectPathAccess
+	m	(Ljava/lang/String;)Ljava/lang/String;	o	method_e_normalizePath__Ljava_lang_String_Ljava_lang_String	normalizePath
+	m	(Ljava/lang/String;)Ljava/lang/String;	q	method_e_stripBackendPrefix__Ljava_lang_String_Ljava_lang_String	stripBackendPrefix
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/e/c;	r	method_e_selectBackendForRead__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_e_c	selectBackendForRead
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/e/c;	s	method_e_selectBackendForWrite__Ljava_lang_String_Lcom_corrodinggames_rts_gameFramework_e_c	selectBackendForWrite
+c	com/corrodinggames/rts/gameFramework/e/f	rw/io/NullFileSystemBackend	rustedwarfare/io/NullFileSystemBackend
+	m	()V	<init>	method_f_<init>__V	<init>
+	m	()Ljava/lang/String;	b	method_f_getExternalStoragePath__Ljava_lang_String	getExternalStoragePath
+	m	(Ljava/lang/String;Z)[Ljava/lang/String;	b	method_f_listDirectory__Ljava_lang_String_Z_Ljava_lang_String	listDirectory
+	m	()Z	e	method_f_supportsDirectPathAccess__Z	supportsDirectPathAccess
+	m	()Ljava/lang/String;	d	method_f_getBackendName__Ljava_lang_String	getBackendName
+c	com/corrodinggames/rts/gameFramework/e/g	rw/io/AssetCacheStore	rustedwarfare/io/AssetCacheStore
+	f	Z	a	field_g_enabled	enabled
+	m	(C)Ljava/lang/String;	a	method_g_encodePathChar__C_Ljava_lang_String	encodePathChar
+	m	(Ljava/lang/String;C)Ljava/lang/String;	a	method_g_replaceCharForCacheKey__Ljava_lang_String_C_Ljava_lang_String	replaceCharForCacheKey
+	m	(Ljava/lang/String;)Ljava/lang/String;	a	method_g_encodeCacheKey__Ljava_lang_String_Ljava_lang_String	encodeCacheKey
+	m	(Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/String;	a	method_g_getCacheFilePath__Ljava_lang_String_Ljava_lang_String_Z_Ljava_lang_String	getCacheFilePath
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z	a	method_g_writeCacheMetadata__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String_Z	writeCacheMetadata
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/io/InputStream;)Z	a	method_g_writeAssetCacheData__Ljava_lang_String_Ljava_lang_String_Ljava_io_InputStream_Z	writeAssetCacheData
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/io/FileInputStream;	a	method_g_openCacheFileInputStream__Ljava_lang_String_Ljava_lang_String_Ljava_io_FileInputStream	openCacheFileInputStream
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	b	method_g_getCacheMetadataPath__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String	getCacheMetadataPath
+	m	(Ljava/lang/String;Ljava/lang/String;)V	c	method_g_deleteCacheEntry__Ljava_lang_String_Ljava_lang_String_V	deleteCacheEntry
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/e/h;	b	method_g_openCachedInputStreamHandle__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String_Lcom_corrodinggames_rts_gameFramewor	openCachedInputStreamHandle
+	m	(Ljava/lang/String;Ljava/lang/String;)[Ljava/lang/String;	d	method_g_listCachedAssetDirectory__Ljava_lang_String_Ljava_lang_String_Ljava_lang_String	listCachedAssetDirectory
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/io/InputStream;	e	method_g_openAssetCached__Ljava_lang_String_Ljava_lang_String_Ljava_io_InputStream	openAssetCached
+	m	(Ljava/lang/String;Ljava/lang/String;)Z	f	method_g_isCachedAssetAvailable__Ljava_lang_String_Ljava_lang_String_Z	isCachedAssetAvailable
+c	com/corrodinggames/rts/gameFramework/e/h	rw/io/CachedInputStreamHandle	rustedwarfare/io/CachedInputStreamHandle
+	f	Ljava/io/InputStream;	a	field_h_inputStream	inputStream
+	m	(Ljava/io/InputStream;)V	<init>	method_h_<init>__Ljava_io_InputStream_V	<init>
+	m	()V	a	method_h_close__V	close

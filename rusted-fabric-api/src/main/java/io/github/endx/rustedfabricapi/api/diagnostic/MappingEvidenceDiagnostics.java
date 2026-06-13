@@ -196,6 +196,28 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_ui_minimap_command_family_coverage_v0_57.csv";
     private static final String UI_MINIMAP_COMMAND_BRANCH_CONFLICTS_RESOURCE =
             "/rustedfabricapi/mapping/rw_ui_minimap_command_branch_conflicts_v0_57.csv";
+    private static final String RENDER_GL_BACKEND_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_gl_backend_added_rows_v0_58.csv";
+    private static final String RENDER_GL_BACKEND_CANVAS_SHADER_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_gl_backend_canvas_shader_rows_v0_58.csv";
+    private static final String RENDER_GL_BACKEND_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_gl_backend_flow_map_v0_58.csv";
+    private static final String RENDER_GL_BACKEND_SKIPPED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_gl_backend_skipped_rows_v0_58.csv";
+    private static final String RENDER_GL_BACKEND_TEXTURE_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_gl_backend_texture_rows_v0_58.csv";
+    private static final String RENDER_GL_TEXT_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_render_gl_text_rows_v0_58.csv";
+    private static final String FILESYSTEM_BACKEND_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_filesystem_backend_added_rows_v0_59.csv";
+    private static final String FILESYSTEM_BACKEND_UPDATED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_filesystem_backend_updated_rows_v0_59.csv";
+    private static final String FILESYSTEM_BACKEND_SKIPPED_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_filesystem_backend_skipped_rows_v0_59.csv";
+    private static final String FILESYSTEM_BACKEND_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_filesystem_backend_flow_map_v0_59.csv";
+    private static final String FILESYSTEM_BACKEND_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_filesystem_backend_coverage_v0_59.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -558,6 +580,50 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> allUiMinimapCommandBranchConflicts() {
         return Holder.UI_MINIMAP_COMMAND_BRANCH_CONFLICTS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderGlBackendRows() {
+        return Holder.RENDER_GL_BACKEND_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderGlBackendCanvasShaderRows() {
+        return Holder.RENDER_GL_BACKEND_CANVAS_SHADER_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderGlBackendFlowMap() {
+        return Holder.RENDER_GL_BACKEND_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allRenderGlBackendSkippedRows() {
+        return Holder.RENDER_GL_BACKEND_SKIPPED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderGlBackendTextureRows() {
+        return Holder.RENDER_GL_BACKEND_TEXTURE_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allRenderGlTextRows() {
+        return Holder.RENDER_GL_TEXT_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allFileSystemBackendRows() {
+        return Holder.FILESYSTEM_BACKEND_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allFileSystemBackendUpdatedRows() {
+        return Holder.FILESYSTEM_BACKEND_UPDATED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allFileSystemBackendSkippedRows() {
+        return Holder.FILESYSTEM_BACKEND_SKIPPED_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allFileSystemBackendFlowMap() {
+        return Holder.FILESYSTEM_BACKEND_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allFileSystemBackendCoverage() {
+        return Holder.FILESYSTEM_BACKEND_COVERAGE;
     }
 
     public static List<String> evidenceResourceIds() {
@@ -994,6 +1060,28 @@ public final class MappingEvidenceDiagnostics {
         result.put("ui_minimap_command_flow_map", Holder.UI_MINIMAP_COMMAND_FLOW_MAP);
         result.put("ui_minimap_command_family_coverage", Holder.UI_MINIMAP_COMMAND_FAMILY_COVERAGE);
         result.put("ui_minimap_command_branch_conflicts", Holder.UI_MINIMAP_COMMAND_BRANCH_CONFLICTS);
+        result.put("render_gl_backend_rows", Holder.RENDER_GL_BACKEND_ROWS);
+        result.put("render_gl_backend_added_rows_v0_58", Holder.RENDER_GL_BACKEND_ROWS);
+        result.put("render_gl_backend_canvas_shader_rows", Holder.RENDER_GL_BACKEND_CANVAS_SHADER_ROWS);
+        result.put("render_gl_backend_canvas_shader_rows_v0_58", Holder.RENDER_GL_BACKEND_CANVAS_SHADER_ROWS);
+        result.put("render_gl_backend_flow_map", Holder.RENDER_GL_BACKEND_FLOW_MAP);
+        result.put("render_gl_backend_flow_map_v0_58", Holder.RENDER_GL_BACKEND_FLOW_MAP);
+        result.put("render_gl_backend_skipped_rows", Holder.RENDER_GL_BACKEND_SKIPPED_ROWS);
+        result.put("render_gl_backend_skipped_rows_v0_58", Holder.RENDER_GL_BACKEND_SKIPPED_ROWS);
+        result.put("render_gl_backend_texture_rows", Holder.RENDER_GL_BACKEND_TEXTURE_ROWS);
+        result.put("render_gl_backend_texture_rows_v0_58", Holder.RENDER_GL_BACKEND_TEXTURE_ROWS);
+        result.put("render_gl_text_rows", Holder.RENDER_GL_TEXT_ROWS);
+        result.put("render_gl_text_rows_v0_58", Holder.RENDER_GL_TEXT_ROWS);
+        result.put("filesystem_backend_rows", Holder.FILESYSTEM_BACKEND_ROWS);
+        result.put("filesystem_backend_added_rows_v0_59", Holder.FILESYSTEM_BACKEND_ROWS);
+        result.put("filesystem_backend_updated_rows", Holder.FILESYSTEM_BACKEND_UPDATED_ROWS);
+        result.put("filesystem_backend_updated_rows_v0_59", Holder.FILESYSTEM_BACKEND_UPDATED_ROWS);
+        result.put("filesystem_backend_skipped_rows", Holder.FILESYSTEM_BACKEND_SKIPPED_ROWS);
+        result.put("filesystem_backend_skipped_rows_v0_59", Holder.FILESYSTEM_BACKEND_SKIPPED_ROWS);
+        result.put("filesystem_backend_flow_map", Holder.FILESYSTEM_BACKEND_FLOW_MAP);
+        result.put("filesystem_backend_flow_map_v0_59", Holder.FILESYSTEM_BACKEND_FLOW_MAP);
+        result.put("filesystem_backend_coverage", Holder.FILESYSTEM_BACKEND_COVERAGE);
+        result.put("filesystem_backend_coverage_v0_59", Holder.FILESYSTEM_BACKEND_COVERAGE);
         return Collections.unmodifiableMap(result);
     }
 
@@ -1304,6 +1392,28 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(UI_MINIMAP_COMMAND_FAMILY_COVERAGE_RESOURCE);
         private static final List<MappingEvidenceRow> UI_MINIMAP_COMMAND_BRANCH_CONFLICTS =
                 loadRows(UI_MINIMAP_COMMAND_BRANCH_CONFLICTS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_GL_BACKEND_ROWS =
+                loadRows(RENDER_GL_BACKEND_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_GL_BACKEND_CANVAS_SHADER_ROWS =
+                loadRows(RENDER_GL_BACKEND_CANVAS_SHADER_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_GL_BACKEND_FLOW_MAP =
+                loadRows(RENDER_GL_BACKEND_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_GL_BACKEND_SKIPPED_ROWS =
+                loadRows(RENDER_GL_BACKEND_SKIPPED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_GL_BACKEND_TEXTURE_ROWS =
+                loadRows(RENDER_GL_BACKEND_TEXTURE_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> RENDER_GL_TEXT_ROWS =
+                loadRows(RENDER_GL_TEXT_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> FILESYSTEM_BACKEND_ROWS =
+                loadRows(FILESYSTEM_BACKEND_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> FILESYSTEM_BACKEND_UPDATED_ROWS =
+                loadRows(FILESYSTEM_BACKEND_UPDATED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> FILESYSTEM_BACKEND_SKIPPED_ROWS =
+                loadRows(FILESYSTEM_BACKEND_SKIPPED_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> FILESYSTEM_BACKEND_FLOW_MAP =
+                loadRows(FILESYSTEM_BACKEND_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> FILESYSTEM_BACKEND_COVERAGE =
+                loadRows(FILESYSTEM_BACKEND_COVERAGE_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

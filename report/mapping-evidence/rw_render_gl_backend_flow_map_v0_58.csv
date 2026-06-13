@@ -1,0 +1,8 @@
+stage,owner,member,next
+Canvas draw target,GlCanvasDrawTarget,drawImage/drawText/drawLine,GlRenderer / Gles20Canvas
+Texture cache,GlRenderer,getOrCreateTexture,BitmapTexture / TextureAtlas
+Texture upload,BasicTexture subclasses,prepare/onBind/uploadTextureImage,Gles20Canvas GLES20/GLUtils calls
+Texture batching,TextureDrawBatch,begin/flush/end,TextureVertexBuffer
+Shape batching,ShapeDrawBatch,begin/flush/end,ShapeVertexBuffer
+Shader handles,GlProgramParameter,loadHandle/setMatrix4,GLES20 uniforms/attributes
+Text renderer,GlText,drawText/measureText/loadGlyph,GlTextPage/GlTextBatch
