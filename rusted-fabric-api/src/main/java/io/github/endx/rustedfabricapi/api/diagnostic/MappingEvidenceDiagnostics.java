@@ -654,6 +654,18 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("audio_utility_rows_v0_60");
     }
 
+    public static List<MappingEvidenceRow> allAudioFamilyCompletionRows() {
+        return allEvidenceRows("audio_family_completion_added_rows_v0_61");
+    }
+
+    public static List<MappingEvidenceRow> allAudioFamilyCompletionUpdatedRows() {
+        return allEvidenceRows("audio_family_completion_updated_rows_v0_61");
+    }
+
+    public static List<MappingEvidenceRow> allAudioFamilyCompletionFlowMap() {
+        return allEvidenceRows("audio_family_completion_flow_map_v0_61");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -873,6 +885,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {
         return findByText(allAudioUtilityRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findAudioFamilyCompletionRows(String text) {
+        return findByText(allAudioFamilyCompletionRows(), text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {

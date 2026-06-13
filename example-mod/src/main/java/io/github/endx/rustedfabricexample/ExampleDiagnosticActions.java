@@ -91,14 +91,39 @@ final class ExampleDiagnosticActions {
                     "Audio evidence rows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " openalRows=" + MappingEvidenceDiagnostics.allAudioOpenAlRows().size()
                             + " bridgeRows=" + MappingEvidenceDiagnostics.allAudioFactoryBridgeRows().size()
+                            + " familyRows=" + MappingEvidenceDiagnostics.allAudioFamilyCompletionRows().size()
                             + " last=" + ExampleEventProbes.describeAudioObject(lastAudioObject),
                     lastAudioObject);
 
-            if (lastAudioObject != null && AudioRuntimeDiagnostics.isOpenALGameSound(lastAudioObject)) {
-                Map<String, Object> sound = AudioRuntimeDiagnostics.describeOpenALGameSound(lastAudioObject);
+            if (lastAudioObject != null && AudioRuntimeDiagnostics.isGameSound(lastAudioObject)) {
+                Map<String, Object> sound = AudioRuntimeDiagnostics.describeGameSound(lastAudioObject);
                 ExampleDebugOverlay.enqueueOverlayMessage(stage,
-                        "Audio gameSound bytes=" + sound.get("bytesUsed")
-                                + " backend=" + ExampleDebugOverlay.describeObject(sound.get("sound")),
+                        "Audio gameSound name=" + ExampleDebugOverlay.compactPath(String.valueOf(sound.get("name")))
+                                + " base=" + sound.get("baseVolume")
+                                + " bytes=" + sound.get("bytesUsed"),
+                        lastAudioObject);
+            }
+            if (lastAudioObject != null && AudioRuntimeDiagnostics.isSoundFactory(lastAudioObject)) {
+                Map<String, Object> factory = AudioRuntimeDiagnostics.describeSoundFactory(lastAudioObject);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Audio soundFactory loaded=" + factory.get("loadedSoundsSize")
+                                + " class=" + ExampleDebugOverlay.describeObject(lastAudioObject),
+                        lastAudioObject);
+            }
+            if (lastAudioObject != null && AudioRuntimeDiagnostics.isMusicFactory(lastAudioObject)) {
+                Map<String, Object> factory = AudioRuntimeDiagnostics.describeMusicFactory(lastAudioObject);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Audio musicFactory available=" + factory.get("available")
+                                + " threaded=" + factory.get("usesMusicThread")
+                                + " waitMs=" + factory.get("musicThreadWaitMillis"),
+                        lastAudioObject);
+            }
+            if (lastAudioObject != null && AudioRuntimeDiagnostics.isMusicController(lastAudioObject)) {
+                Map<String, Object> controller = AudioRuntimeDiagnostics.describeMusicController(lastAudioObject);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Audio controller track=" + ExampleDebugOverlay.compactPath(String.valueOf(controller.get("currentTrackPath")))
+                                + " canPlay=" + controller.get("canPlayMusic")
+                                + " fading=" + controller.get("crossFading"),
                         lastAudioObject);
             }
         } catch (Throwable t) {

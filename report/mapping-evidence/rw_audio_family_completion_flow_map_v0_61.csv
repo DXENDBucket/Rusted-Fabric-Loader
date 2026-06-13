@@ -1,0 +1,6 @@
+area,official_owner,named_owner,summary
+music-controller,com/corrodinggames/rts/gameFramework/am,rustedwarfare/audio/MusicController,"Owns MusicFactory, two MusicPlayer instances, track cache/history, category selection, explicit next-track requests, and crossfade volume updates."
+android-music,com/corrodinggames/rts/gameFramework/an/ao/ap,AndroidMusicFactory/AndroidMusicTrack/AndroidMusicPlayer,Completes MusicFactory/MusicTrack/MusicPlayer family on Android MediaPlayer backend.
+null-music,com/corrodinggames/rts/gameFramework/av/aw/ax,NullMusicFactory/NullMusicTrack/NullMusicPlayer,Completes no-op music fallback path for headless/null audio operation.
+music-category,com/corrodinggames/rts/gameFramework/at,MusicCategory,Enum categories starting/buildup/attacked load and filter tracks from music/<category> folders.
+sound-family,com/corrodinggames/rts/gameFramework/a/a/b/c/d/f/g/h/i,AndroidSoundFactory/AndroidSound/SoundPlayRequest/SoundQueueThread/NullSoundFactory/NullSound/SoundFactory/GameSound,"Propagates SoundFactory.startThreads, GameSound.play/getBytesUsed, and null fallback sound creation."

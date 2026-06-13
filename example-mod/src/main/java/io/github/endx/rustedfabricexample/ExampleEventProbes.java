@@ -1570,6 +1570,26 @@ final class ExampleEventProbes {
                         + "{bytes=" + details.get("bytesUsed")
                         + ", sound=" + describeObject(details.get("sound")) + "}";
             }
+            if (AudioRuntimeDiagnostics.isAndroidSound(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeAndroidSound(value);
+                return describeObject(value)
+                        + "{name=" + compactPath(String.valueOf(details.get("name")))
+                        + ", id=" + details.get("soundId")
+                        + ", queue=" + describeObject(details.get("queueFactory")) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isNullSound(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeNullSound(value);
+                return describeObject(value)
+                        + "{name=" + compactPath(String.valueOf(details.get("name")))
+                        + ", bytes=" + details.get("bytesUsed") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isGameSound(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeGameSound(value);
+                return describeObject(value)
+                        + "{name=" + compactPath(String.valueOf(details.get("name")))
+                        + ", base=" + details.get("baseVolume")
+                        + ", bytes=" + details.get("bytesUsed") + "}";
+            }
             if (AudioRuntimeDiagnostics.isOpenALSoundPlayTask(value)) {
                 Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALSoundPlayTask(value);
                 return describeObject(value)
@@ -1577,12 +1597,39 @@ final class ExampleEventProbes {
                         + ", pitch=" + details.get("pitch")
                         + ", loop=" + details.get("loop") + "}";
             }
+            if (AudioRuntimeDiagnostics.isSoundPlayRequest(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeSoundPlayRequest(value);
+                return describeObject(value)
+                        + "{vol=" + details.get("leftVolume") + "/" + details.get("rightVolume")
+                        + ", pitch=" + details.get("pitch")
+                        + ", sound=" + describeObject(details.get("sound")) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isSoundQueueThread(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeSoundQueueThread(value);
+                return describeObject(value)
+                        + "{factory=" + describeObject(details.get("soundFactory")) + "}";
+            }
             if (AudioRuntimeDiagnostics.isOpenALSoundFactory(value)) {
                 Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALSoundFactory(value);
                 return describeObject(value)
                         + "{pool=" + details.get("soundPoolSize")
                         + ", queue=" + details.get("playQueueSize")
                         + ", audio=" + describeObject(details.get("openALAudio")) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isAndroidSoundFactory(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeAndroidSoundFactory(value);
+                return describeObject(value)
+                        + "{pool=" + details.get("soundPoolSize")
+                        + ", queue=" + details.get("playQueueSize")
+                        + ", priority=" + details.get("nextSoundPriority") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isNullSoundFactory(value)) {
+                return describeObject(value) + "{nullSoundBackend}";
+            }
+            if (AudioRuntimeDiagnostics.isSoundFactory(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeSoundFactory(value);
+                return describeObject(value)
+                        + "{loaded=" + details.get("loadedSoundsSize") + "}";
             }
             if (AudioRuntimeDiagnostics.isOpenALAudio(value)) {
                 Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALAudio(value);
@@ -1605,6 +1652,14 @@ final class ExampleEventProbes {
                         + ", playing=" + details.get("isPlaying")
                         + ", pos=" + details.get("position") + "}";
             }
+            if (AudioRuntimeDiagnostics.isMusicController(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicController(value);
+                return describeObject(value)
+                        + "{track=" + compactPath(String.valueOf(details.get("currentTrackPath")))
+                        + ", canPlay=" + details.get("canPlayMusic")
+                        + ", fade=" + details.get("crossFading")
+                        + ", cache=" + details.get("musicTrackCacheSize") + "}";
+            }
             if (AudioRuntimeDiagnostics.isMusicTrack(value)) {
                 Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicTrack(value);
                 return describeObject(value)
@@ -1620,9 +1675,15 @@ final class ExampleEventProbes {
             if (AudioRuntimeDiagnostics.isMusicFactory(value)) {
                 Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicFactory(value);
                 return describeObject(value)
-                        + "{enabled=" + details.get("enabled")
-                        + ", available=" + details.get("available")
-                        + ", max=" + details.get("maxMusicVolumePercent") + "}";
+                        + "{threaded=" + details.get("usesMusicThread")
+                        + ", waitMs=" + details.get("musicThreadWaitMillis")
+                        + ", available=" + details.get("available") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isMusicCategory(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicCategory(value);
+                return describeObject(value)
+                        + "{folder=" + compactPath(String.valueOf(details.get("folderPath")))
+                        + ", tracks=" + details.get("trackNamesLength") + "}";
             }
         } catch (RuntimeException ignored) {
         }

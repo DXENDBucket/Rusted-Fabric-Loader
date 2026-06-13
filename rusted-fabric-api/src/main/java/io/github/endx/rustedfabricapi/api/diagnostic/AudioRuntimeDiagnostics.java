@@ -37,29 +37,93 @@ public final class AudioRuntimeDiagnostics {
             "rustedwarfare.audio.OpenALSoundPlayTask",
             "com.corrodinggames.rts.java.p"
     };
+    private static final String[] SOUND_FACTORY_CLASSES = {
+            "rustedwarfare.client.audio.SoundFactory",
+            "com.corrodinggames.rts.gameFramework.a.h"
+    };
+    private static final String[] ANDROID_SOUND_FACTORY_CLASSES = {
+            "rustedwarfare.client.audio.AndroidSoundFactory",
+            "com.corrodinggames.rts.gameFramework.a.a"
+    };
+    private static final String[] NULL_SOUND_FACTORY_CLASSES = {
+            "rustedwarfare.audio.NullSoundFactory",
+            "com.corrodinggames.rts.gameFramework.a.f"
+    };
+    private static final String[] GAME_SOUND_CLASSES = {
+            "rustedwarfare.client.audio.GameSound",
+            "com.corrodinggames.rts.gameFramework.a.i"
+    };
+    private static final String[] ANDROID_SOUND_CLASSES = {
+            "rustedwarfare.client.audio.AndroidSound",
+            "com.corrodinggames.rts.gameFramework.a.b"
+    };
+    private static final String[] NULL_SOUND_CLASSES = {
+            "rustedwarfare.audio.NullSound",
+            "com.corrodinggames.rts.gameFramework.a.g"
+    };
+    private static final String[] SOUND_PLAY_REQUEST_CLASSES = {
+            "rustedwarfare.client.audio.SoundPlayRequest",
+            "com.corrodinggames.rts.gameFramework.a.c"
+    };
+    private static final String[] SOUND_QUEUE_THREAD_CLASSES = {
+            "rustedwarfare.client.audio.SoundQueueThread",
+            "com.corrodinggames.rts.gameFramework.a.d"
+    };
+    private static final String[] MUSIC_CONTROLLER_CLASSES = {
+            "rustedwarfare.audio.MusicController",
+            "com.corrodinggames.rts.gameFramework.am"
+    };
     private static final String[] MUSIC_FACTORY_CLASSES = {
             "rustedwarfare.audio.MusicFactory",
             "com.corrodinggames.rts.gameFramework.aq"
+    };
+    private static final String[] ANDROID_MUSIC_FACTORY_CLASSES = {
+            "rustedwarfare.audio.AndroidMusicFactory",
+            "com.corrodinggames.rts.gameFramework.an"
     };
     private static final String[] OPENAL_MUSIC_FACTORY_CLASSES = {
             "rustedwarfare.audio.OpenALMusicFactory",
             "com.corrodinggames.rts.java.l"
     };
+    private static final String[] NULL_MUSIC_FACTORY_CLASSES = {
+            "rustedwarfare.audio.NullMusicFactory",
+            "com.corrodinggames.rts.gameFramework.av"
+    };
     private static final String[] MUSIC_TRACK_CLASSES = {
             "rustedwarfare.audio.MusicTrack",
             "com.corrodinggames.rts.gameFramework.ar"
+    };
+    private static final String[] ANDROID_MUSIC_TRACK_CLASSES = {
+            "rustedwarfare.audio.AndroidMusicTrack",
+            "com.corrodinggames.rts.gameFramework.ao"
     };
     private static final String[] OPENAL_MUSIC_TRACK_CLASSES = {
             "rustedwarfare.audio.OpenALMusicTrack",
             "com.corrodinggames.rts.java.m"
     };
+    private static final String[] NULL_MUSIC_TRACK_CLASSES = {
+            "rustedwarfare.audio.NullMusicTrack",
+            "com.corrodinggames.rts.gameFramework.aw"
+    };
     private static final String[] MUSIC_PLAYER_CLASSES = {
             "rustedwarfare.audio.MusicPlayer",
             "com.corrodinggames.rts.gameFramework.as"
     };
+    private static final String[] ANDROID_MUSIC_PLAYER_CLASSES = {
+            "rustedwarfare.audio.AndroidMusicPlayer",
+            "com.corrodinggames.rts.gameFramework.ap"
+    };
     private static final String[] OPENAL_MUSIC_PLAYER_CLASSES = {
             "rustedwarfare.audio.OpenALMusicPlayer",
             "com.corrodinggames.rts.java.n"
+    };
+    private static final String[] NULL_MUSIC_PLAYER_CLASSES = {
+            "rustedwarfare.audio.NullMusicPlayer",
+            "com.corrodinggames.rts.gameFramework.ax"
+    };
+    private static final String[] MUSIC_CATEGORY_CLASSES = {
+            "rustedwarfare.audio.MusicCategory",
+            "com.corrodinggames.rts.gameFramework.at"
     };
 
     private AudioRuntimeDiagnostics() {
@@ -93,28 +157,92 @@ public final class AudioRuntimeDiagnostics {
         return isAny(value, OPENAL_SOUND_PLAY_TASK_CLASSES);
     }
 
+    public static boolean isSoundFactory(Object value) {
+        return isAny(value, SOUND_FACTORY_CLASSES);
+    }
+
+    public static boolean isAndroidSoundFactory(Object value) {
+        return isAny(value, ANDROID_SOUND_FACTORY_CLASSES);
+    }
+
+    public static boolean isNullSoundFactory(Object value) {
+        return isAny(value, NULL_SOUND_FACTORY_CLASSES);
+    }
+
+    public static boolean isGameSound(Object value) {
+        return isAny(value, GAME_SOUND_CLASSES);
+    }
+
+    public static boolean isAndroidSound(Object value) {
+        return isAny(value, ANDROID_SOUND_CLASSES);
+    }
+
+    public static boolean isNullSound(Object value) {
+        return isAny(value, NULL_SOUND_CLASSES);
+    }
+
+    public static boolean isSoundPlayRequest(Object value) {
+        return isAny(value, SOUND_PLAY_REQUEST_CLASSES);
+    }
+
+    public static boolean isSoundQueueThread(Object value) {
+        return isAny(value, SOUND_QUEUE_THREAD_CLASSES);
+    }
+
+    public static boolean isMusicController(Object value) {
+        return isAny(value, MUSIC_CONTROLLER_CLASSES);
+    }
+
     public static boolean isMusicFactory(Object value) {
         return isAny(value, MUSIC_FACTORY_CLASSES);
+    }
+
+    public static boolean isAndroidMusicFactory(Object value) {
+        return isAny(value, ANDROID_MUSIC_FACTORY_CLASSES);
     }
 
     public static boolean isOpenALMusicFactory(Object value) {
         return isAny(value, OPENAL_MUSIC_FACTORY_CLASSES);
     }
 
+    public static boolean isNullMusicFactory(Object value) {
+        return isAny(value, NULL_MUSIC_FACTORY_CLASSES);
+    }
+
     public static boolean isMusicTrack(Object value) {
         return isAny(value, MUSIC_TRACK_CLASSES);
+    }
+
+    public static boolean isAndroidMusicTrack(Object value) {
+        return isAny(value, ANDROID_MUSIC_TRACK_CLASSES);
     }
 
     public static boolean isOpenALMusicTrack(Object value) {
         return isAny(value, OPENAL_MUSIC_TRACK_CLASSES);
     }
 
+    public static boolean isNullMusicTrack(Object value) {
+        return isAny(value, NULL_MUSIC_TRACK_CLASSES);
+    }
+
     public static boolean isMusicPlayer(Object value) {
         return isAny(value, MUSIC_PLAYER_CLASSES);
     }
 
+    public static boolean isAndroidMusicPlayer(Object value) {
+        return isAny(value, ANDROID_MUSIC_PLAYER_CLASSES);
+    }
+
     public static boolean isOpenALMusicPlayer(Object value) {
         return isAny(value, OPENAL_MUSIC_PLAYER_CLASSES);
+    }
+
+    public static boolean isNullMusicPlayer(Object value) {
+        return isAny(value, NULL_MUSIC_PLAYER_CLASSES);
+    }
+
+    public static boolean isMusicCategory(Object value) {
+        return isAny(value, MUSIC_CATEGORY_CLASSES);
     }
 
     public static Object newAudioFileHandle(String path) {
@@ -240,18 +368,188 @@ public final class AudioRuntimeDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Map<String, Object> describeSoundFactory(Object factory) {
+        requireAny(factory, SOUND_FACTORY_CLASSES, "SoundFactory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", factory.getClass().getName());
+        putField(result, factory, "loadedSounds", new String[]{"loadedSounds", "h"});
+        putCollectionSizeField(result, factory, "loadedSoundsSize", new String[]{"loadedSounds", "h"});
+        if (isAndroidSoundFactory(factory)) {
+            result.putAll(describeAndroidSoundFactory(factory));
+        } else if (isOpenALSoundFactory(factory)) {
+            result.putAll(describeOpenALSoundFactory(factory));
+        } else if (isNullSoundFactory(factory)) {
+            result.putAll(describeNullSoundFactory(factory));
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeAndroidSoundFactory(Object factory) {
+        requireAny(factory, ANDROID_SOUND_FACTORY_CLASSES, "AndroidSoundFactory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", factory.getClass().getName());
+        putField(result, factory, "playQueue", new String[]{"playQueue", "a"});
+        putCollectionSizeField(result, factory, "playQueueSize", new String[]{"playQueue", "a"});
+        putIntField(result, factory, "soundPoolSize", new String[]{"soundPoolSize", "b"});
+        putField(result, factory, "playTaskPool", new String[]{"playTaskPool", "c"});
+        putField(result, factory, "soundThread", new String[]{"soundThread", "d"});
+        putIntField(result, factory, "nextSoundPriority", new String[]{"nextSoundPriority", "e"});
+        putField(result, factory, "context", new String[]{"context", "f"});
+        putField(result, factory, "soundPool", new String[]{"soundPool", "g"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeNullSoundFactory(Object factory) {
+        requireAny(factory, NULL_SOUND_FACTORY_CLASSES, "NullSoundFactory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", factory.getClass().getName());
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeGameSound(Object gameSound) {
+        requireAny(gameSound, GAME_SOUND_CLASSES, "GameSound");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", gameSound.getClass().getName());
+        putFloatField(result, gameSound, "baseVolume", new String[]{"baseVolume", "d"});
+        putStringField(result, gameSound, "name", new String[]{"name", "e"});
+        putBooleanField(result, gameSound, "usedByCurrentMod", new String[]{"usedByCurrentMod", "f"});
+        putBooleanField(result, gameSound, "loadTouchedThisPass", new String[]{"loadTouchedThisPass", "g"});
+        result.put("bytesUsed", Integer.valueOf(invokeIntOrZero(gameSound, new String[]{"getBytesUsed", "a"})));
+        if (isAndroidSound(gameSound)) {
+            result.putAll(describeAndroidSound(gameSound));
+        } else if (isOpenALGameSound(gameSound)) {
+            result.putAll(describeOpenALGameSound(gameSound));
+        } else if (isNullSound(gameSound)) {
+            result.putAll(describeNullSound(gameSound));
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeAndroidSound(Object sound) {
+        requireAny(sound, ANDROID_SOUND_CLASSES, "AndroidSound");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", sound.getClass().getName());
+        putField(result, sound, "soundFactory", new String[]{"soundFactory", "a"});
+        putIntField(result, sound, "soundId", new String[]{"soundId", "b"});
+        putField(result, sound, "queueFactory", new String[]{"queueFactory", "c"});
+        putFloatField(result, sound, "baseVolume", new String[]{"baseVolume", "d"});
+        putStringField(result, sound, "name", new String[]{"name", "e"});
+        result.put("bytesUsed", Integer.valueOf(invokeIntOrZero(sound, new String[]{"getBytesUsed", "a"})));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeNullSound(Object sound) {
+        requireAny(sound, NULL_SOUND_CLASSES, "NullSound");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", sound.getClass().getName());
+        putFloatField(result, sound, "baseVolume", new String[]{"baseVolume", "d"});
+        putStringField(result, sound, "name", new String[]{"name", "e"});
+        result.put("bytesUsed", Integer.valueOf(invokeIntOrZero(sound, new String[]{"getBytesUsed", "a"})));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeSoundPlayRequest(Object request) {
+        requireAny(request, SOUND_PLAY_REQUEST_CLASSES, "SoundPlayRequest");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", request.getClass().getName());
+        putField(result, request, "sound", new String[]{"sound", "a"});
+        putFloatField(result, request, "leftVolume", new String[]{"leftVolume", "b"});
+        putFloatField(result, request, "rightVolume", new String[]{"rightVolume", "c"});
+        putIntField(result, request, "priority", new String[]{"priority", "d"});
+        putIntField(result, request, "loop", new String[]{"loop", "e"});
+        putFloatField(result, request, "pitch", new String[]{"pitch", "f"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeSoundQueueThread(Object thread) {
+        requireAny(thread, SOUND_QUEUE_THREAD_CLASSES, "SoundQueueThread");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", thread.getClass().getName());
+        putField(result, thread, "soundFactory", new String[]{"soundFactory", "a"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeMusicController(Object controller) {
+        requireAny(controller, MUSIC_CONTROLLER_CLASSES, "MusicController");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", controller.getClass().getName());
+        putField(result, controller, "musicFactory", new String[]{"musicFactory", "a"});
+        putFloatField(result, controller, "queuedDelta", new String[]{"queuedDelta", "d"});
+        putField(result, controller, "updateThread", new String[]{"updateThread", "e"});
+        putBooleanField(result, controller, "updatePending", new String[]{"updatePending", "f"});
+        putBooleanField(result, controller, "updateThreadReady", new String[]{"updateThreadReady", "g"});
+        putFloatField(result, controller, "lockupTimer", new String[]{"lockupTimer", "h"});
+        putIntField(result, controller, "lockupUpdateCount", new String[]{"lockupUpdateCount", "i"});
+        putBooleanField(result, controller, "lockupWarningShown", new String[]{"lockupWarningShown", "j"});
+        putField(result, controller, "currentPlayer", new String[]{"currentPlayer", "k"});
+        putBooleanField(result, controller, "currentPlayerActive", new String[]{"currentPlayerActive", "l"});
+        putStringField(result, controller, "currentTrackPath", new String[]{"currentTrackPath", "m"});
+        putBooleanField(result, controller, "currentTrackNoLoop", new String[]{"currentTrackNoLoop", "n"});
+        putBooleanField(result, controller, "volumeDirty", new String[]{"volumeDirty", "o"});
+        putFloatField(result, controller, "lastEffectiveVolume", new String[]{"lastEffectiveVolume", "p"});
+        putFloatField(result, controller, "trackTimer", new String[]{"trackTimer", "q"});
+        putFloatField(result, controller, "endedTrackCheckTimer", new String[]{"endedTrackCheckTimer", "r"});
+        putBooleanField(result, controller, "nextTrackRequested", new String[]{"nextTrackRequested", "s"});
+        putStringField(result, controller, "requestedTrackName", new String[]{"requestedTrackName", "t"});
+        putBooleanField(result, controller, "musicDisabled", new String[]{"musicDisabled", "u"});
+        putStringField(result, controller, "pendingNowPlayingMessage", new String[]{"pendingNowPlayingMessage", "v"});
+        putBooleanField(result, controller, "playStartingMusic", new String[]{"playStartingMusic", "x"});
+        putBooleanField(result, controller, "modMusicRefreshRequested", new String[]{"modMusicRefreshRequested", "y"});
+        putIntField(result, controller, "musicPlayFailureCount", new String[]{"musicPlayFailureCount", "z"});
+        putField(result, controller, "fadingPlayer", new String[]{"fadingPlayer", "A"});
+        putBooleanField(result, controller, "fadingPlayerActive", new String[]{"fadingPlayerActive", "B"});
+        putBooleanField(result, controller, "crossFadeActive", new String[]{"crossFadeActive", "C"});
+        putFloatField(result, controller, "crossFadeProgress", new String[]{"crossFadeProgress", "D"});
+        putBooleanField(result, controller, "slowFadeOut", new String[]{"slowFadeOut", "E"});
+        putBooleanField(result, controller, "fastFadeOut", new String[]{"fastFadeOut", "F"});
+        putField(result, controller, "recentTrackHistory", new String[]{"recentTrackHistory", "I"});
+        putCollectionSizeField(result, controller, "recentTrackHistorySize", new String[]{"recentTrackHistory", "I"});
+        putField(result, controller, "musicTrackCache", new String[]{"musicTrackCache", "J"});
+        putCollectionSizeField(result, controller, "musicTrackCacheSize", new String[]{"musicTrackCache", "J"});
+        putIntField(result, controller, "musicLoadErrorCount", new String[]{"musicLoadErrorCount", "K"});
+        putBooleanField(result, controller, "musicSystemCrashed", new String[]{"musicSystemCrashed", "L"});
+        putBooleanField(result, controller, "musicCrashWarningShown", new String[]{"musicCrashWarningShown", "M"});
+        putLongField(result, controller, "lastUpdateTimestamp", new String[]{"lastUpdateTimestamp", "N"});
+        result.put("effectiveMusicVolume", Float.valueOf(invokeFloatOrZero(controller,
+                new String[]{"getEffectiveMusicVolume", "a"})));
+        result.put("canPlayMusic", Boolean.valueOf(invokeBooleanOrFalse(controller,
+                new String[]{"canPlayMusic", "b"})));
+        result.put("crossFading", Boolean.valueOf(invokeBooleanOrFalse(controller,
+                new String[]{"isCrossFading", "j"})));
+        return Collections.unmodifiableMap(result);
+    }
+
     public static Map<String, Object> describeMusicFactory(Object factory) {
         requireAny(factory, MUSIC_FACTORY_CLASSES, "MusicFactory");
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("className", factory.getClass().getName());
         putField(result, factory, "musicController", new String[]{"musicController", "e"});
         result.put("available", Boolean.valueOf(invokeBooleanOrFalse(factory, new String[]{"isAvailable", "c"})));
-        result.put("enabled", Boolean.valueOf(invokeBooleanOrFalse(factory, new String[]{"isEnabled", "d"})));
-        result.put("maxMusicVolumePercent", Integer.valueOf(invokeIntOrZero(factory,
-                new String[]{"getMaxMusicVolumePercent", "e"})));
-        if (isOpenALMusicFactory(factory)) {
+        result.put("usesMusicThread", Boolean.valueOf(invokeBooleanOrFalse(factory,
+                new String[]{"usesMusicThread", "d"})));
+        result.put("musicThreadWaitMillis", Integer.valueOf(invokeIntOrZero(factory,
+                new String[]{"getMusicThreadWaitMillis", "e"})));
+        if (isAndroidMusicFactory(factory)) {
+            result.putAll(describeAndroidMusicFactory(factory));
+        } else if (isOpenALMusicFactory(factory)) {
             result.putAll(describeOpenALMusicFactory(factory));
+        } else if (isNullMusicFactory(factory)) {
+            result.putAll(describeNullMusicFactory(factory));
         }
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeAndroidMusicFactory(Object factory) {
+        requireAny(factory, ANDROID_MUSIC_FACTORY_CLASSES, "AndroidMusicFactory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", factory.getClass().getName());
+        putField(result, factory, "allMediaPlayers", new String[]{"allMediaPlayers", "a"});
+        putCollectionSizeField(result, factory, "allMediaPlayersSize", new String[]{"allMediaPlayers", "a"});
+        putField(result, factory, "availableMediaPlayers", new String[]{"availableMediaPlayers", "b"});
+        putCollectionSizeField(result, factory, "availableMediaPlayersSize", new String[]{"availableMediaPlayers", "b"});
+        putField(result, factory, "activeMusicPlayers", new String[]{"activeMusicPlayers", "c"});
+        putCollectionSizeField(result, factory, "activeMusicPlayersSize", new String[]{"activeMusicPlayers", "c"});
+        putBooleanField(result, factory, "loaded", new String[]{"loaded", "d"});
         return Collections.unmodifiableMap(result);
     }
 
@@ -263,10 +561,19 @@ public final class AudioRuntimeDiagnostics {
         putField(result, factory, "openALAudio", new String[]{"openALAudio", "b"});
         putBooleanField(result, factory, "musicThreadStarted", new String[]{"musicThreadStarted", "c"});
         result.put("available", Boolean.valueOf(invokeBooleanOrFalse(factory, new String[]{"isAvailable", "c"})));
-        result.put("enabled", Boolean.valueOf(invokeBooleanOrFalse(factory, new String[]{"isEnabled", "d"})));
-        result.put("maxMusicVolumePercent", Integer.valueOf(invokeIntOrZero(factory,
-                new String[]{"getMaxMusicVolumePercent", "e"})));
+        result.put("usesMusicThread", Boolean.valueOf(invokeBooleanOrFalse(factory,
+                new String[]{"usesMusicThread", "d"})));
+        result.put("musicThreadWaitMillis", Integer.valueOf(invokeIntOrZero(factory,
+                new String[]{"getMusicThreadWaitMillis", "e"})));
         result.put("audioLock", invokeOrNull(factory, new String[]{"getAudioLock", "f"}));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeNullMusicFactory(Object factory) {
+        requireAny(factory, NULL_MUSIC_FACTORY_CLASSES, "NullMusicFactory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", factory.getClass().getName());
+        putBooleanField(result, factory, "loaded", new String[]{"loaded", "a"});
         return Collections.unmodifiableMap(result);
     }
 
@@ -275,9 +582,13 @@ public final class AudioRuntimeDiagnostics {
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("className", track.getClass().getName());
         putStringField(result, track, "trackPath", new String[]{"trackPath", "b"});
-        if (isOpenALMusicTrack(track)) {
+        if (isAndroidMusicTrack(track)) {
+            putField(result, track, "musicFactory", new String[]{"musicFactory", "a"});
+        } else if (isOpenALMusicTrack(track)) {
             putField(result, track, "musicFactory", new String[]{"musicFactory", "a"});
             putField(result, track, "music", new String[]{"music", "c"});
+        } else if (isNullMusicTrack(track)) {
+            putField(result, track, "musicFactory", new String[]{"musicFactory", "a"});
         }
         return Collections.unmodifiableMap(result);
     }
@@ -287,14 +598,32 @@ public final class AudioRuntimeDiagnostics {
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("className", player.getClass().getName());
         result.put("playing", Boolean.valueOf(invokeBooleanOrFalse(player, new String[]{"isPlaying", "c"})));
-        if (isOpenALMusicPlayer(player)) {
+        if (isAndroidMusicPlayer(player)) {
+            putField(result, player, "mediaPlayer", new String[]{"mediaPlayer", "a"});
+            putField(result, player, "track", new String[]{"track", "b"});
+            putField(result, player, "musicFactory", new String[]{"musicFactory", "c"});
+        } else if (isOpenALMusicPlayer(player)) {
             putField(result, player, "track", new String[]{"track", "a"});
             putField(result, player, "musicFactory", new String[]{"musicFactory", "b"});
             putField(result, player, "music", new String[]{"music", "c"});
             putBooleanField(result, player, "playQueued", new String[]{"playQueued", "d"});
             putBooleanField(result, player, "loopQueued", new String[]{"loopQueued", "e"});
             putBooleanField(result, player, "hasStartedPlayback", new String[]{"hasStartedPlayback", "f"});
+        } else if (isNullMusicPlayer(player)) {
+            putField(result, player, "track", new String[]{"track", "a"});
+            putField(result, player, "musicFactory", new String[]{"musicFactory", "b"});
         }
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeMusicCategory(Object category) {
+        requireAny(category, MUSIC_CATEGORY_CLASSES, "MusicCategory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", category.getClass().getName());
+        result.put("name", String.valueOf(category));
+        putField(result, category, "trackNames", new String[]{"trackNames", "d"});
+        putArrayLengthField(result, category, "trackNamesLength", new String[]{"trackNames", "d"});
+        result.put("folderPath", invokeStringOrEmpty(category, new String[]{"getFolderPath", "d"}));
         return Collections.unmodifiableMap(result);
     }
 
