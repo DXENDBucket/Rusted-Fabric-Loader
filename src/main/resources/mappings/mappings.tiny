@@ -8050,6 +8050,16 @@ c	com/corrodinggames/rts/gameFramework/f/al	rw/ui/SelectedUnitFilter	rustedwarfa
 c	com/corrodinggames/rts/gameFramework/f/am	rw/ui/CommandQueueOverlay	rustedwarfare/ui/CommandQueueOverlay
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_f_am_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_f_am_deserialize	deserialize
+	f	Lcom/corrodinggames/rts/gameFramework/f/a;	i	field_am_commandInterface	commandInterface
+	f	Ljava/util/ArrayList;	a	field_am_trackedUnits	trackedUnits
+	f	J	c	field_am_lastCameraJumpTime	lastCameraJumpTime
+	f	Z	g	field_am_appendMode	appendMode
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a;Z)V	<init>	method_am_<init>	<init>
+	m	()V	a	method_am_jumpCameraToRecentTrackedUnit	jumpCameraToRecentTrackedUnit
+	m	()V	b	method_am_clearTrackedUnits	clearTrackedUnits
+	m	()V	c	method_am_collectSelectedUnits	collectSelectedUnits
+	m	()V	d	method_am_removeDeadTrackedUnits	removeDeadTrackedUnits
+	m	()V	e	method_am_refreshTrackedUnitReferencesById	refreshTrackedUnitReferencesById
 c	com/corrodinggames/rts/gameFramework/f/an	rw/ui/LagHidingResourceTracker	rustedwarfare/ui/LagHidingResourceTracker
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_LagHidingResourceTracker_snapshots	snapshots
 	m	()V	a	method_LagHidingResourceTracker_clear	clear
@@ -8263,16 +8273,94 @@ c	com/corrodinggames/rts/gameFramework/f/o	rw/ui/Minimap	rustedwarfare/ui/Minima
 	m	(FF)Landroid/graphics/Point;	b	method_Minimap_worldToMinimapPoint	worldToMinimapPoint
 	m	()V	c	method_Minimap_releaseBuffers	releaseBuffers
 	m	(FF)Landroid/graphics/Point;	c	method_Minimap_screenToMapPoint	screenToMapPoint
+	f	F	a	field_o_screenX	screenX
+	f	F	b	field_o_screenY	screenY
+	f	F	c	field_o_width	width
+	f	F	d	field_o_height	height
+	f	Z	e	field_o_mapImageReady	mapImageReady
+	f	Z	f	field_o_worldMappingReady	worldMappingReady
+	f	I	g	field_o_mapPixelWidth	mapPixelWidth
+	f	I	h	field_o_mapPixelHeight	mapPixelHeight
+	f	F	i	field_o_inverseMapPixelWidth	inverseMapPixelWidth
+	f	F	j	field_o_inverseMapPixelHeight	inverseMapPixelHeight
+	f	I	k	field_o_lastScreenX	lastScreenX
+	f	I	l	field_o_lastScreenY	lastScreenY
+	f	Z	m	field_o_rebuildPending	rebuildPending
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	F	field_o_baseMapImage	baseMapImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	G	field_o_baseMapCanvas	baseMapCanvas
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	H	field_o_scratchScaledMapImage	scratchScaledMapImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	I	field_o_scratchScaledMapCanvas	scratchScaledMapCanvas
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	J	field_o_compositedMapImage	compositedMapImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	K	field_o_compositedMapCanvas	compositedMapCanvas
+	f	F	L	field_o_positionRefreshTimer	positionRefreshTimer
+	f	Landroid/graphics/Rect;	V	field_o_scratchDestRect	scratchDestRect
+	f	Ljava/util/ArrayList;	Z	field_o_scanPulsePoints	scanPulsePoints
+	f	Ljava/util/ArrayList;	aa	field_o_markerPoints	markerPoints
+	f	Ljava/util/ArrayList;	ag	field_o_visibleTileEntries	visibleTileEntries
+	f	Landroid/graphics/Rect;	ab	field_o_scratchRect	scratchRect
+	f	Landroid/graphics/Point;	ad	field_o_scratchPoint	scratchPoint
+	f	Lcom/corrodinggames/rts/gameFramework/m/m;	ae	field_o_baseMapDrawCommand	baseMapDrawCommand
+	f	Ljava/util/ArrayList;	af	field_o_visibleUnitEntries	visibleUnitEntries
+	m	()V	<init>	method_o_<init>	<init>
+	m	(IIFLcom/corrodinggames/rts/game/units/am;)V	a	method_o_addUnitScanPulse	addUnitScanPulse
+	m	()F	d	method_o_getTargetMinimapSize	getTargetMinimapSize
+	m	()V	e	method_o_createImageBuffers	createImageBuffers
+	m	()V	f	method_o_updateSizeAndPosition	updateSizeAndPosition
+	m	()V	g	method_o_rebuildForCurrentMap	rebuildForCurrentMap
+	m	(FF)V	a	method_o_drawBaseMapLayer	drawBaseMapLayer
+	m	(IILcom/corrodinggames/rts/gameFramework/f/r;)V	a	method_o_addDrawMarker	addDrawMarker
+	m	()V	h	method_o_refreshCachedPositions	refreshCachedPositions
+	m	(F)F	b	method_o_worldXToMinimapDelta	worldXToMinimapDelta
+	m	(F)F	c	method_o_clampScreenX	clampScreenX
+	m	(F)F	d	method_o_clampScreenY	clampScreenY
+	m	(F)V	e	method_o_drawMinimap	drawMinimap
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_o_removeUnitFromMinimapCache	removeUnitFromMinimapCache
 c	com/corrodinggames/rts/gameFramework/f/p	rw/ui/MinimapDrawPoint	rustedwarfare/ui/MinimapDrawPoint
+	f	I	a	field_p_x	x
+	f	I	b	field_p_y	y
+	f	F	c	field_p_fadeAlpha	fadeAlpha
+	f	F	d	field_p_scale	scale
+	f	Lcom/corrodinggames/rts/gameFramework/f/r;	e	field_p_markerType	markerType
+	f	Lcom/corrodinggames/rts/gameFramework/f/o;	f	field_p_minimap	minimap
+	m	(Lcom/corrodinggames/rts/gameFramework/f/o;)V	<init>	method_p_<init>	<init>
 c	com/corrodinggames/rts/gameFramework/f/q	rw/ui/MinimapScanPoint	rustedwarfare/ui/MinimapScanPoint
+	f	Z	a	field_q_buildingPulse	buildingPulse
+	f	I	b	field_q_x	x
+	f	I	c	field_q_y	y
+	f	F	d	field_q_pulseTimer	pulseTimer
+	f	F	e	field_q_cooldownTimer	cooldownTimer
+	f	Lcom/corrodinggames/rts/gameFramework/f/o;	f	field_q_minimap	minimap
+	m	(Lcom/corrodinggames/rts/gameFramework/f/o;FIIZ)V	<init>	method_q_<init>	<init>
 c	com/corrodinggames/rts/gameFramework/f/r	rw/ui/MinimapMarkerType	rustedwarfare/ui/MinimapMarkerType
 	f	Lcom/corrodinggames/rts/gameFramework/f/r;	a	field_r_a_BASE	BASE
 	f	Lcom/corrodinggames/rts/gameFramework/f/r;	b	field_r_b_UNIT	UNIT
 	f	Lcom/corrodinggames/rts/gameFramework/f/r;	c	field_r_c_NUKE	NUKE
 	f	Lcom/corrodinggames/rts/gameFramework/f/r;	d	field_r_d_MESSAGE	MESSAGE
+	m	()[Lcom/corrodinggames/rts/gameFramework/f/r;	values	method_r_values	values
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/f/r;	valueOf	method_r_valueOf	valueOf
+	m	(Ljava/lang/String;I)V	<init>	method_r_<init>	<init>
 c	com/corrodinggames/rts/gameFramework/f/s	rw/ui/MinimapLineBatch	rustedwarfare/ui/MinimapLineBatch
+	f	[F	a	field_s_coordinates	coordinates
+	f	I	b	field_s_coordinateCount	coordinateCount
+	f	Landroid/graphics/Paint;	c	field_s_paint	paint
+	f	I	d	field_s_capacity	capacity
+	f	Z	e	field_s_drawAsRects	drawAsRects
+	f	Landroid/graphics/RectF;	f	field_s_scratchRectF	scratchRectF
+	m	(ILandroid/graphics/Paint;)V	<init>	method_s_<init>	<init>
+	m	(FF)V	a	method_s_addPoint	addPoint
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;)V	a	method_s_run__graphicsEngine_V	run
 c	com/corrodinggames/rts/gameFramework/f/t	rw/ui/MinimapTileEntry	rustedwarfare/ui/MinimapTileEntry
+	f	I	a	field_t_tileX	tileX
+	f	I	b	field_t_tileY	tileY
+	f	I	c	field_t_minimapX	minimapX
+	f	I	d	field_t_minimapY	minimapY
+	f	Z	e	field_t_visibleToLocalTeam	visibleToLocalTeam
+	f	Lcom/corrodinggames/rts/gameFramework/f/o;	f	field_t_minimap	minimap
+	m	(Lcom/corrodinggames/rts/gameFramework/f/o;II)V	<init>	method_t_<init>	<init>
 c	com/corrodinggames/rts/gameFramework/f/u	rw/ui/MinimapUnitEntry	rustedwarfare/ui/MinimapUnitEntry
+	f	Lcom/corrodinggames/rts/game/units/am;	a	field_u_unit	unit
+	f	Lcom/corrodinggames/rts/gameFramework/f/o;	b	field_u_minimap	minimap
+	m	(Lcom/corrodinggames/rts/gameFramework/f/o;)V	<init>	method_u_<init>	<init>
 c	com/corrodinggames/rts/gameFramework/f/v	rw/ui/SimpleMenu	rustedwarfare/ui/SimpleMenu
 	f	Ljava/util/ArrayList;	a	field_v_a_items	items
 c	com/corrodinggames/rts/gameFramework/f/w	rw/ui/SimpleMenuItem	rustedwarfare/ui/SimpleMenuItem
@@ -8285,6 +8373,9 @@ c	com/corrodinggames/rts/gameFramework/f/x	rw/ui/ResourceDisplayPlaceholderUnit	
 	m	(F)V	a	method_ResourceDisplayPlaceholderUnit_update	update
 	m	(Lcom/corrodinggames/rts/game/units/custom/e/f;)V	a	method_x_a_setDisplayResources	setDisplayResources
 	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	df	method_x_df_getDisplayResources	getDisplayResources
+	m	()V	<init>	method_x_<init>	<init>
+	m	()Lcom/corrodinggames/rts/game/units/ar;	b	method_x_getBuiltinUnitType	getBuiltinUnitType
+	m	()Lcom/corrodinggames/rts/game/units/as;	r	method_x_getUnitType	getUnitType
 c	com/corrodinggames/rts/gameFramework/f/y	rw/ui/stats/StatsChartRenderer	rustedwarfare/ui/stats/StatsChartRenderer
 	f	Landroid/graphics/Paint;	c	field_y_c_textPaint	textPaint
 	f	Landroid/graphics/Paint;	d	field_y_d_gridPaint	gridPaint
@@ -9828,6 +9919,7 @@ c	com/corrodinggames/rts/gameFramework/m/t	rw/render/QueuedCanvasCommandPool	rus
 	m	(Lcom/corrodinggames/rts/gameFramework/m/s;)Z	a	method_t_addCommandSlot__Lcom_corrodinggames_rts_gameFramework_m_s_Z	addCommandSlot
 c	com/corrodinggames/rts/gameFramework/m/m	rw/render/DrawTimeCallback	rustedwarfare/render/DrawTimeCallback
 	m	(Lcom/corrodinggames/rts/gameFramework/m/y;)V	a	method_m_run__Lcom_corrodinggames_rts_gameFramework_m_y_V	run
+	m	()V	<init>	method_m_<init>	<init>
 c	com/corrodinggames/rts/gameFramework/m/d	rw/render/ImageDrawMode	rustedwarfare/render/ImageDrawMode
 	f	Lcom/corrodinggames/rts/gameFramework/m/d;	a	field_d_normal	normal
 	f	Lcom/corrodinggames/rts/gameFramework/m/d;	b	field_d_rect	rect
@@ -9880,3 +9972,7 @@ c	com/corrodinggames/rts/gameFramework/m/af	rw/render/ShaderParameter	rustedwarf
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_af_setTexture__Lcom_corrodinggames_rts_gameFramework_m_e_V	setTexture
 	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	b	method_af_setTextureSecondary__Lcom_corrodinggames_rts_gameFramework_m_e_V	setTextureSecondary
 c	com/corrodinggames/rts/gameFramework/m/r	rw/render/DrawCommandMarker	rustedwarfare/render/DrawCommandMarker
+c	com/corrodinggames/rts/gameFramework/f/o$1	rw/ui/MinimapDrawCommand	rustedwarfare/ui/MinimapDrawCommand
+	f	Lcom/corrodinggames/rts/gameFramework/f/o;	a	field_o_1_minimap	minimap
+	m	(Lcom/corrodinggames/rts/gameFramework/f/o;)V	<init>	method_o_1_<init>	<init>
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;)V	a	method_o_1_run__graphicsEngine_V	run

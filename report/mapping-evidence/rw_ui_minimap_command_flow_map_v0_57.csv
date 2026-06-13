@@ -1,0 +1,6 @@
+step,stage,owner,member,description
+1,minimap rebuild,Minimap,rebuildForCurrentMap,Rebuilds minimap buffers/caches after map changes.
+2,buffer creation,Minimap,createImageBuffers,Allocates paired image/canvas buffers used for minimap rendering.
+3,position cache,Minimap,refreshCachedPositions,Refreshes tile/unit cached positions for minimap drawing.
+4,draw callback,DrawTimeCallback,run,Render backend invokes callback with GraphicsEngine/CanvasDrawTarget context.
+5,command overlay,CommandQueueOverlay,collectSelectedUnits,Collects selected/tracked units for overlay and command serialization context.

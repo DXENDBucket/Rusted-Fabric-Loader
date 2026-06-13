@@ -188,6 +188,14 @@ public final class MappingEvidenceDiagnostics {
             "/rustedfabricapi/mapping/rw_canvas_drawtarget_command_rows_v0_56.csv";
     private static final String SHADER_PROGRAM_ROWS_RESOURCE =
             "/rustedfabricapi/mapping/rw_shader_program_rows_v0_56.csv";
+    private static final String UI_MINIMAP_COMMAND_ROWS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_ui_minimap_command_merge_added_rows_v0_57.csv";
+    private static final String UI_MINIMAP_COMMAND_FLOW_MAP_RESOURCE =
+            "/rustedfabricapi/mapping/rw_ui_minimap_command_flow_map_v0_57.csv";
+    private static final String UI_MINIMAP_COMMAND_FAMILY_COVERAGE_RESOURCE =
+            "/rustedfabricapi/mapping/rw_ui_minimap_command_family_coverage_v0_57.csv";
+    private static final String UI_MINIMAP_COMMAND_BRANCH_CONFLICTS_RESOURCE =
+            "/rustedfabricapi/mapping/rw_ui_minimap_command_branch_conflicts_v0_57.csv";
 
     private MappingEvidenceDiagnostics() {
     }
@@ -536,6 +544,22 @@ public final class MappingEvidenceDiagnostics {
         return Holder.SHADER_PROGRAM_ROWS;
     }
 
+    public static List<MappingEvidenceRow> allUiMinimapCommandRows() {
+        return Holder.UI_MINIMAP_COMMAND_ROWS;
+    }
+
+    public static List<MappingEvidenceRow> allUiMinimapCommandFlowMap() {
+        return Holder.UI_MINIMAP_COMMAND_FLOW_MAP;
+    }
+
+    public static List<MappingEvidenceRow> allUiMinimapCommandFamilyCoverage() {
+        return Holder.UI_MINIMAP_COMMAND_FAMILY_COVERAGE;
+    }
+
+    public static List<MappingEvidenceRow> allUiMinimapCommandBranchConflicts() {
+        return Holder.UI_MINIMAP_COMMAND_BRANCH_CONFLICTS;
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -727,6 +751,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findShaderProgramRows(String text) {
         return findByText(Holder.SHADER_PROGRAM_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findUiMinimapCommandRows(String text) {
+        return findByText(Holder.UI_MINIMAP_COMMAND_ROWS, text);
+    }
+
+    public static List<MappingEvidenceRow> findUiMinimapCommandBranchConflicts(String text) {
+        return findByText(Holder.UI_MINIMAP_COMMAND_BRANCH_CONFLICTS, text);
     }
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
@@ -958,6 +990,10 @@ public final class MappingEvidenceDiagnostics {
         result.put("canvas_operation_enum_rows", Holder.CANVAS_OPERATION_ENUM_ROWS);
         result.put("canvas_drawtarget_command_rows", Holder.CANVAS_DRAWTARGET_COMMAND_ROWS);
         result.put("shader_program_rows", Holder.SHADER_PROGRAM_ROWS);
+        result.put("ui_minimap_command_rows", Holder.UI_MINIMAP_COMMAND_ROWS);
+        result.put("ui_minimap_command_flow_map", Holder.UI_MINIMAP_COMMAND_FLOW_MAP);
+        result.put("ui_minimap_command_family_coverage", Holder.UI_MINIMAP_COMMAND_FAMILY_COVERAGE);
+        result.put("ui_minimap_command_branch_conflicts", Holder.UI_MINIMAP_COMMAND_BRANCH_CONFLICTS);
         return Collections.unmodifiableMap(result);
     }
 
@@ -1260,6 +1296,14 @@ public final class MappingEvidenceDiagnostics {
                 loadRows(CANVAS_DRAWTARGET_COMMAND_ROWS_RESOURCE);
         private static final List<MappingEvidenceRow> SHADER_PROGRAM_ROWS =
                 loadRows(SHADER_PROGRAM_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> UI_MINIMAP_COMMAND_ROWS =
+                loadRows(UI_MINIMAP_COMMAND_ROWS_RESOURCE);
+        private static final List<MappingEvidenceRow> UI_MINIMAP_COMMAND_FLOW_MAP =
+                loadRows(UI_MINIMAP_COMMAND_FLOW_MAP_RESOURCE);
+        private static final List<MappingEvidenceRow> UI_MINIMAP_COMMAND_FAMILY_COVERAGE =
+                loadRows(UI_MINIMAP_COMMAND_FAMILY_COVERAGE_RESOURCE);
+        private static final List<MappingEvidenceRow> UI_MINIMAP_COMMAND_BRANCH_CONFLICTS =
+                loadRows(UI_MINIMAP_COMMAND_BRANCH_CONFLICTS_RESOURCE);
         private static final Map<String, List<MappingEvidenceRow>> EVIDENCE_ROWS_BY_ID =
                 createEvidenceRowsById();
         private static final List<String> EVIDENCE_RESOURCE_IDS =

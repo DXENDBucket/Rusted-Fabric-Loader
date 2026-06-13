@@ -1,0 +1,2 @@
+family,official_name,descriptor,expected_owners,mapped_owners,expected_count,missing_count,notes
+DrawTimeCallback.run,a,(Lcom/corrodinggames/rts/gameFramework/m/y;)V,com/corrodinggames/rts/gameFramework/m/m; com/corrodinggames/rts/gameFramework/f/o$1; com/corrodinggames/rts/gameFramework/f/s,3,3,0,Child UI minimap callbacks adjusted from sibling draw to parent run to preserve override family.
