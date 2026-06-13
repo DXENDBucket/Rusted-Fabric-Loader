@@ -637,6 +637,20 @@ final class ExampleEventProbes {
             return image;
         });
 
+        CustomUnitRenderEvents.AFTER_GET_ZOOMED_ICON_IMAGE.register((unit, image) -> {
+            showEventProbeMessage(stage, "AfterGetZoomedIconImage",
+                    "AfterGetZoomedIconImage image=" + describeObject(image),
+                    unit, 4000L);
+            return isDebugRenderPartEnabled(DebugRenderPart.ZOOM_ICON) ? image : null;
+        });
+
+        CustomUnitRenderEvents.AFTER_GET_SHADOW_IMAGE.register((unit, image) -> {
+            showEventProbeMessage(stage, "AfterGetShadowImage",
+                    "AfterGetShadowImage image=" + describeObject(image),
+                    unit, 4000L);
+            return isDebugRenderPartEnabled(DebugRenderPart.SHADOW_IMAGE) ? image : null;
+        });
+
         CustomUnitRenderEvents.AFTER_GET_TURRET_IMAGE.register((unit, turretIndex, image) -> {
             showEventProbeMessage(stage, "AfterGetTurretImage",
                     "AfterGetTurretImage turret=" + turretIndex
@@ -662,12 +676,52 @@ final class ExampleEventProbes {
             return false;
         });
 
+        CustomUnitRenderEvents.BEFORE_DRAW_OVERLAY.register((unit, renderDelta) -> {
+            if (!isDebugRenderPartEnabled(DebugRenderPart.OVERLAY_LAYER)) {
+                showEventProbeMessage(stage, "BeforeDrawOverlay",
+                        "BeforeDrawOverlay cancelled by Java Debug",
+                        unit, 1000L);
+                return true;
+            }
+            return false;
+        });
+
+        CustomUnitRenderEvents.BEFORE_FRAME_SOURCE_RECT.register((unit, forShadow) -> {
+            if (isDebugRenderPartEnabled(DebugRenderPart.FRAME_RECTS)) {
+                showEventProbeMessage(stage, "BeforeFrameSourceRect",
+                        "BeforeFrameSourceRect shadow=" + forShadow
+                                + " unit=" + describeObject(unit),
+                        unit, 4000L);
+            }
+        });
+
+        CustomUnitRenderEvents.AFTER_FRAME_SOURCE_RECT.register((unit, forShadow, rect) -> {
+            if (isDebugRenderPartEnabled(DebugRenderPart.FRAME_RECTS)) {
+                showEventProbeMessage(stage, "AfterFrameSourceRect",
+                        "AfterFrameSourceRect shadow=" + forShadow
+                                + " rect=" + describeObject(rect),
+                        unit, 4000L);
+            }
+            return rect;
+        });
+
+        CustomUnitRenderEvents.AFTER_IMAGE_DESTINATION_RECT.register((unit, rect) -> {
+            if (isDebugRenderPartEnabled(DebugRenderPart.FRAME_RECTS)) {
+                showEventProbeMessage(stage, "AfterImageDestinationRect",
+                        "AfterImageDestinationRect rect=" + describeObject(rect),
+                        unit, 4000L);
+            }
+            return rect;
+        });
+
         CustomUnitRenderEvents.AFTER_TURRET_WORLD_TRANSFORM.register((unit, turretIndex, includeHeight, transform) -> {
-            showEventProbeMessage(stage, "AfterTurretWorldTransform",
-                    "AfterTurretWorldTransform turret=" + turretIndex
-                            + " includeHeight=" + includeHeight
-                            + " transform=" + describeObject(transform),
-                    unit, 4000L);
+            if (isDebugRenderPartEnabled(DebugRenderPart.TURRET_TRANSFORM)) {
+                showEventProbeMessage(stage, "AfterTurretWorldTransform",
+                        "AfterTurretWorldTransform turret=" + turretIndex
+                                + " includeHeight=" + includeHeight
+                                + " transform=" + describeObject(transform),
+                        unit, 4000L);
+            }
             return transform;
         });
 

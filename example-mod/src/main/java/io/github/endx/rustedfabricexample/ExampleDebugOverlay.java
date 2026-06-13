@@ -944,8 +944,13 @@ final class ExampleDebugOverlay {
 
     enum DebugRenderPart {
         BACK_IMAGE("Back image"),
+        SHADOW_IMAGE("Shadow image"),
         TURRET_IMAGE("Turret image"),
-        SHIELD_IMAGE("Shield image");
+        SHIELD_IMAGE("Shield image"),
+        ZOOM_ICON("Zoom icon"),
+        OVERLAY_LAYER("Overlay layer"),
+        FRAME_RECTS("Frame rects"),
+        TURRET_TRANSFORM("Turret transform");
 
         final String label;
 

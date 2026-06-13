@@ -42,7 +42,6 @@ public final class SlickRuntimeDiagnostics {
         putBooleanField(result, slickGame, "loadingScreenDrawn", new String[]{"loadingScreenDrawn", "s"});
         putIntField(result, slickGame, "lastDeltaMs", new String[]{"lastDeltaMs", "t"});
         putBooleanField(result, slickGame, "mouseGrabbed", new String[]{"mouseGrabbed", "v"});
-        result.put("closeRequested", Boolean.valueOf(closeRequested(slickGame)));
         return Collections.unmodifiableMap(result);
     }
 
@@ -64,12 +63,6 @@ public final class SlickRuntimeDiagnostics {
     public static int lastDeltaMs(Object slickGame) {
         requireSlickGame(slickGame);
         return RustedReflection.getIntField(slickGame, new String[]{"lastDeltaMs", "t"});
-    }
-
-    public static boolean closeRequested(Object slickGame) {
-        requireSlickGame(slickGame);
-        Object value = RustedReflection.invokeInstance(slickGame, new String[]{"closeRequested"});
-        return Boolean.TRUE.equals(value);
     }
 
     private static void requireSlickGame(Object value) {
