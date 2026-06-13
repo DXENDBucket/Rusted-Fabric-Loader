@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.event.CommandEvents;
+import io.github.endx.rustedfabricapi.api.event.AudioRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.BuildQueueEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomAssetEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
@@ -21,6 +22,7 @@ import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
 import io.github.endx.rustedfabricapi.api.event.TransportEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
@@ -36,6 +38,7 @@ import static io.github.endx.rustedfabricexample.ExampleDebugOverlay.*;
 final class ExampleEventProbes {
     private static final AtomicBoolean MAP_ENTRY_MESSAGE_REGISTERED = new AtomicBoolean();
     private static final AtomicBoolean EVENT_PROBE_MESSAGES_REGISTERED = new AtomicBoolean();
+    private static volatile Object lastAudioObject;
 
     private ExampleEventProbes() {
     }
@@ -228,6 +231,112 @@ final class ExampleEventProbes {
                             + " result=" + describeObject(soundList),
                     soundList, 1500L);
             return soundList;
+        });
+
+        AudioRuntimeEvents.AFTER_LOAD_SOUND_FROM_STREAM.register((factory, name, inputStream, strict, sound) -> {
+            rememberAudioObject(sound != null ? sound : factory);
+            showEventProbeMessage(stage, "AfterLoadSoundFromStream",
+                    "AfterLoadSoundFromStream name=" + compactPath(name)
+                            + " strict=" + strict
+                            + " sound=" + describeAudioObject(sound),
+                    sound, 1000L);
+            return sound;
+        });
+
+        AudioRuntimeEvents.AFTER_LOAD_BUILTIN_SOUND.register((factory, resourceId, sound) -> {
+            rememberAudioObject(sound != null ? sound : factory);
+            showEventProbeMessage(stage, "AfterLoadBuiltinSound",
+                    "AfterLoadBuiltinSound id=" + resourceId
+                            + " sound=" + describeAudioObject(sound),
+                    sound, 1000L);
+            return sound;
+        });
+
+        AudioRuntimeEvents.AFTER_OPENAL_NEW_SOUND.register((audio, fileHandle, sound) -> {
+            rememberAudioObject(sound != null ? sound : audio);
+            showEventProbeMessage(stage, "AfterOpenALNewSound",
+                    "AfterOpenALNewSound file=" + describeAudioObject(fileHandle)
+                            + " sound=" + describeAudioObject(sound),
+                    sound, 1000L);
+            return sound;
+        });
+
+        AudioRuntimeEvents.AFTER_OPENAL_NEW_MUSIC.register((audio, fileHandle, music) -> {
+            rememberAudioObject(music != null ? music : audio);
+            showEventProbeMessage(stage, "AfterOpenALNewMusic",
+                    "AfterOpenALNewMusic file=" + describeAudioObject(fileHandle)
+                            + " music=" + describeAudioObject(music),
+                    music, 1000L);
+            return music;
+        });
+
+        AudioRuntimeEvents.BEFORE_GAME_SOUND_PLAY.register((gameSound, leftVolume, rightVolume, priority, loop, pitch) -> {
+            rememberAudioObject(gameSound);
+            showEventProbeMessage(stage, "BeforeGameSoundPlay",
+                    "BeforeGameSoundPlay vol=" + formatFloat(leftVolume) + "/" + formatFloat(rightVolume)
+                            + " pitch=" + formatFloat(pitch)
+                            + " loop=" + loop
+                            + " sound=" + describeAudioObject(gameSound),
+                    gameSound, 300L);
+            return false;
+        });
+
+        AudioRuntimeEvents.AFTER_GAME_SOUND_PLAY_NOW.register((gameSound, leftVolume, rightVolume, priority, loop, pitch) -> {
+            rememberAudioObject(gameSound);
+            showEventProbeMessage(stage, "AfterGameSoundPlayNow",
+                    "AfterGameSoundPlayNow vol=" + formatFloat(leftVolume) + "/" + formatFloat(rightVolume)
+                            + " pitch=" + formatFloat(pitch)
+                            + " loop=" + loop
+                            + " sound=" + describeAudioObject(gameSound),
+                    gameSound, 300L);
+        });
+
+        AudioRuntimeEvents.AFTER_SOUND_PLAY_TASK_RUN.register(playTask -> {
+            rememberAudioObject(playTask);
+            showEventProbeMessage(stage, "AfterSoundPlayTaskRun",
+                    "AfterSoundPlayTaskRun " + describeAudioObject(playTask),
+                    playTask, 300L);
+        });
+
+        AudioRuntimeEvents.AFTER_MUSIC_TRACK_LOAD.register((factory, path, track) -> {
+            rememberAudioObject(track != null ? track : factory);
+            showEventProbeMessage(stage, "AfterMusicTrackLoad",
+                    "AfterMusicTrackLoad path=" + compactPath(path)
+                            + " track=" + describeAudioObject(track),
+                    track, 1500L);
+            return track;
+        });
+
+        AudioRuntimeEvents.AFTER_NEW_MUSIC_PLAYER.register((factory, player) -> {
+            rememberAudioObject(player != null ? player : factory);
+            showEventProbeMessage(stage, "AfterNewMusicPlayer",
+                    "AfterNewMusicPlayer player=" + describeAudioObject(player),
+                    player, 1500L);
+            return player;
+        });
+
+        AudioRuntimeEvents.AFTER_MUSIC_PLAYER_SET_TRACK.register((player, track) -> {
+            rememberAudioObject(player);
+            showEventProbeMessage(stage, "AfterMusicPlayerSetTrack",
+                    "AfterMusicPlayerSetTrack player=" + describeAudioObject(player)
+                            + " track=" + describeAudioObject(track),
+                    player, 1000L);
+        });
+
+        AudioRuntimeEvents.AFTER_MUSIC_PLAYER_QUEUE_PLAY.register((player, loop) -> {
+            rememberAudioObject(player);
+            showEventProbeMessage(stage, "AfterMusicPlayerQueuePlay",
+                    "AfterMusicPlayerQueuePlay loop=" + loop
+                            + " player=" + describeAudioObject(player),
+                    player, 1000L);
+        });
+
+        AudioRuntimeEvents.AFTER_MUSIC_PLAYER_CONTROL.register((player, operation) -> {
+            rememberAudioObject(player);
+            showEventProbeMessage(stage, "AfterMusicPlayerControl." + safeText(operation),
+                    "AfterMusicPlayerControl op=" + safeText(operation)
+                            + " player=" + describeAudioObject(player),
+                    player, 1000L);
         });
 
         CustomAssetEvents.AFTER_PARSE_PROJECTILE_SPAWN_LIST.register((metadata, rawList, section, key, requireSingle, projectileSpawnList) -> {
@@ -1377,6 +1486,94 @@ final class ExampleEventProbes {
                         gameObject, 250L));
 
         ExampleMod.log("registered event probe messages from " + stage);
+    }
+
+    static Object lastAudioObject() {
+        return lastAudioObject;
+    }
+
+    static void rememberAudioObject(Object value) {
+        if (value != null) {
+            lastAudioObject = value;
+        }
+    }
+
+    static String describeAudioObject(Object value) {
+        if (value == null) {
+            return "null";
+        }
+
+        try {
+            if (AudioRuntimeDiagnostics.isAudioFileHandle(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeAudioFileHandle(value);
+                return describeObject(value)
+                        + "{ext=" + safeText(String.valueOf(details.get("extension")))
+                        + ", path=" + compactPath(String.valueOf(details.get("path"))) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isOpenALGameSound(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALGameSound(value);
+                return describeObject(value)
+                        + "{bytes=" + details.get("bytesUsed")
+                        + ", sound=" + describeObject(details.get("sound")) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isOpenALSoundPlayTask(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALSoundPlayTask(value);
+                return describeObject(value)
+                        + "{vol=" + details.get("leftVolume") + "/" + details.get("rightVolume")
+                        + ", pitch=" + details.get("pitch")
+                        + ", loop=" + details.get("loop") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isOpenALSoundFactory(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALSoundFactory(value);
+                return describeObject(value)
+                        + "{pool=" + details.get("soundPoolSize")
+                        + ", queue=" + details.get("playQueueSize")
+                        + ", audio=" + describeObject(details.get("openALAudio")) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isOpenALAudio(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALAudio(value);
+                return describeObject(value)
+                        + "{noDevice=" + details.get("noDevice")
+                        + ", idle=" + details.get("idleSourcesSize")
+                        + ", music=" + details.get("musicSize") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isOpenALSound(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALSound(value);
+                return describeObject(value)
+                        + "{buffer=" + details.get("bufferID")
+                        + ", bytes=" + details.get("bytesUsed")
+                        + ", duration=" + details.get("duration") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isOpenALMusic(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeOpenALMusic(value);
+                return describeObject(value)
+                        + "{source=" + details.get("sourceID")
+                        + ", playing=" + details.get("isPlaying")
+                        + ", pos=" + details.get("position") + "}";
+            }
+            if (AudioRuntimeDiagnostics.isMusicTrack(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicTrack(value);
+                return describeObject(value)
+                        + "{path=" + compactPath(String.valueOf(details.get("trackPath"))) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isMusicPlayer(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicPlayer(value);
+                return describeObject(value)
+                        + "{playing=" + details.get("playing")
+                        + ", queued=" + details.get("playQueued")
+                        + ", track=" + describeObject(details.get("track")) + "}";
+            }
+            if (AudioRuntimeDiagnostics.isMusicFactory(value)) {
+                Map<String, Object> details = AudioRuntimeDiagnostics.describeMusicFactory(value);
+                return describeObject(value)
+                        + "{enabled=" + details.get("enabled")
+                        + ", available=" + details.get("available")
+                        + ", max=" + details.get("maxMusicVolumePercent") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+
+        return describeObject(value);
     }
 
     private static String describeBuildQueueItem(Object queueItem) {

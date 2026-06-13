@@ -191,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 3;
+        int actionRows = 4;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -312,6 +312,11 @@ final class ExampleDebugOverlay {
                 "Evidence")) {
             ExampleDiagnosticActions.showEvidenceSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left, top + 84, cellWidth, 24,
+                "Audio snapshot")) {
+            ExampleDiagnosticActions.showAudioSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {
@@ -365,6 +370,9 @@ final class ExampleDebugOverlay {
         }
         if (containsAny(text, "Map", "Tmx", "Tileset", "Mission", "StartingUnitSpawn", "TileProperty", "ExtraMaps", "NetworkMap")) {
             return DebugProbeGroup.MAP;
+        }
+        if (containsAny(text, "Audio", "Sound", "Music", "OpenAL")) {
+            return DebugProbeGroup.AUDIO;
         }
         if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList",
                 "NativeCustomUnit", "CustomUnitRegistry", "CustomUnitOverride", "CustomUnitLink",
@@ -924,7 +932,8 @@ final class ExampleDebugOverlay {
         SELECTION("Selection"),
         MAP("Map"),
         RESOURCE("Resource"),
-        SAVE("Save");
+        SAVE("Save"),
+        AUDIO("Audio");
 
         final String label;
 

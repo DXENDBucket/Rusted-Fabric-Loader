@@ -7429,7 +7429,7 @@ c	com/corrodinggames/rts/gameFramework/a/e	rw/client/audio/SoundEngine	rustedwar
 c	com/corrodinggames/rts/gameFramework/a/f	rw/audio/NullSoundFactory	rustedwarfare/audio/NullSoundFactory
 c	com/corrodinggames/rts/gameFramework/a/g	rw/audio/NullSound	rustedwarfare/audio/NullSound
 c	com/corrodinggames/rts/gameFramework/a/h	rw/client/audio/SoundFactory	rustedwarfare/client/audio/SoundFactory
-	m	()V	a	method_h_shutdown	shutdown
+	m	()V	a	method_SoundFactory_startThreads	startThreads
 	m	(I)Lcom/corrodinggames/rts/gameFramework/a/i;	a	method_h_loadBuiltinSoundByResourceId	loadBuiltinSoundByResourceId
 	m	(Landroid/content/Context;)V	a	method_h_init	init
 	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/utility/j;Z)Lcom/corrodinggames/rts/gameFramework/a/i;	a	method_h_loadSoundFromStream	loadSoundFromStream
@@ -7478,6 +7478,10 @@ c	com/corrodinggames/rts/gameFramework/ad	rw/ui/ActionDisplayGroup	rustedwarfare
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/ad;	a	method_ad_a_addLabel	addLabel
 	m	()Ljava/lang/String;	c	method_ad_c_getDisplayLabel	getDisplayLabel
 c	com/corrodinggames/rts/gameFramework/av	rw/audio/NullMusicFactory	rustedwarfare/audio/NullMusicFactory
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/ar;	a	method_NullMusicFactory_loadMusicTrack	loadMusicTrack
+	m	()Lcom/corrodinggames/rts/gameFramework/as;	a	method_NullMusicFactory_newMusicPlayer	newMusicPlayer
+	m	(Lcom/corrodinggames/rts/gameFramework/am;)V	a	method_NullMusicFactory_setMusicController	setMusicController
+	m	()V	b	method_NullMusicFactory_shutdown	shutdown
 c	com/corrodinggames/rts/gameFramework/az	rw/game/RenderedGameObject	rustedwarfare/game/RenderedGameObject
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_RenderedGameObject_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_RenderedGameObject_deserialize	deserialize
@@ -9493,7 +9497,30 @@ c	com/corrodinggames/rts/java/j	rw/client/SlickDisplayThread	rustedwarfare/clien
 	m	()V	run	method_1200_run	run
 c	com/corrodinggames/rts/java/k	rw/net/DesktopHttpClientFactory	rustedwarfare/net/DesktopHttpClientFactory
 c	com/corrodinggames/rts/java/l	rw/audio/OpenALMusicFactory	rustedwarfare/audio/OpenALMusicFactory
+	f	Z	a	field_OpenALMusicFactory_shutdownRequested	shutdownRequested
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;	b	field_OpenALMusicFactory_openALAudio	openALAudio
+	f	Z	c	field_OpenALMusicFactory_musicThreadStarted	musicThreadStarted
+	m	(F)V	a	method_OpenALMusicFactory_update	update
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/ar;	a	method_OpenALMusicFactory_loadMusicTrack	loadMusicTrack
+	m	()Lcom/corrodinggames/rts/gameFramework/as;	a	method_OpenALMusicFactory_newMusicPlayer	newMusicPlayer
+	m	(Lcom/corrodinggames/rts/gameFramework/am;)V	a	method_OpenALMusicFactory_setMusicController	setMusicController
+	m	()V	b	method_OpenALMusicFactory_shutdown	shutdown
+	m	()Z	c	method_OpenALMusicFactory_isAvailable	isAvailable
+	m	()Z	d	method_OpenALMusicFactory_isEnabled	isEnabled
+	m	()I	e	method_OpenALMusicFactory_getMaxMusicVolumePercent	getMaxMusicVolumePercent
+	m	()Ljava/lang/Object;	f	method_OpenALMusicFactory_getAudioLock	getAudioLock
 c	com/corrodinggames/rts/java/o	rw/audio/OpenALSoundFactory	rustedwarfare/audio/OpenALSoundFactory
+	f	I	a	field_OpenALSoundFactory_soundPoolSize	soundPoolSize
+	f	Ljava/util/concurrent/LinkedBlockingQueue;	b	field_OpenALSoundFactory_playQueue	playQueue
+	f	Lcom/corrodinggames/rts/gameFramework/utility/ad;	c	field_OpenALSoundFactory_playTaskPool	playTaskPool
+	f	Lcom/corrodinggames/rts/java/r;	d	field_OpenALSoundFactory_soundThread	soundThread
+	f	Landroid/content/Context;	e	field_OpenALSoundFactory_context	context
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;	f	field_OpenALSoundFactory_openALAudio	openALAudio
+	m	()Ljava/lang/Object;	b	method_OpenALSoundFactory_getAudioLock	getAudioLock
+	m	(Landroid/content/Context;)V	a	method_OpenALSoundFactory_init	init
+	m	(I)Lcom/corrodinggames/rts/gameFramework/a/i;	a	method_OpenALSoundFactory_loadBuiltinSoundByResourceId	loadBuiltinSoundByResourceId
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/utility/j;Z)Lcom/corrodinggames/rts/gameFramework/a/i;	a	method_OpenALSoundFactory_loadSoundFromStream	loadSoundFromStream
+	m	()V	a	method_OpenALSoundFactory_startThreads	startThreads
 c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGame
 	f	Lorg/newdawn/slick/GameContainer;	a	field_1000_gameContainer	gameContainer
 	f	Lcom/corrodinggames/rts/java/Main;	b	field_1001_main	main
@@ -10492,3 +10519,545 @@ c	com/corrodinggames/rts/gameFramework/e/h	rw/io/CachedInputStreamHandle	rustedw
 	f	Ljava/io/InputStream;	a	field_h_inputStream	inputStream
 	m	(Ljava/io/InputStream;)V	<init>	method_h_<init>__Ljava_io_InputStream_V	<init>
 	m	()V	a	method_h_close__V	close
+c	com/corrodinggames/rts/java/audio/Audio	rw/audio/Audio	rustedwarfare/audio/Audio
+	m	(IZ)Lcom/corrodinggames/rts/java/audio/AudioDevice;	newAudioDevice	method_Audio_newAudioDevice	newAudioDevice
+	m	(IZ)Lcom/corrodinggames/rts/java/audio/AudioRecorder;	newAudioRecorder	method_Audio_newAudioRecorder	newAudioRecorder
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)Lcom/corrodinggames/rts/java/audio/Sound;	newSound	method_Audio_newSound	newSound
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)Lcom/corrodinggames/rts/java/audio/Music;	newMusic	method_Audio_newMusic	newMusic
+c	com/corrodinggames/rts/java/audio/AudioDevice	rw/audio/AudioDevice	rustedwarfare/audio/AudioDevice
+	m	()Z	isMono	method_AudioDevice_isMono	isMono
+	m	([SII)V	writeSamples	method_AudioDevice_writeSamples	writeSamples
+	m	([FII)V	writeSamples	method_AudioDevice_writeSamples	writeSamples
+	m	()I	getLatency	method_AudioDevice_getLatency	getLatency
+	m	()V	dispose	method_AudioDevice_dispose	dispose
+	m	(F)V	setVolume	method_AudioDevice_setVolume	setVolume
+c	com/corrodinggames/rts/java/audio/AudioRecorder	rw/audio/AudioRecorder	rustedwarfare/audio/AudioRecorder
+	m	([SII)V	read	method_AudioRecorder_read	read
+	m	()V	dispose	method_AudioRecorder_dispose	dispose
+c	com/corrodinggames/rts/java/audio/Music	rw/audio/Music	rustedwarfare/audio/Music
+	m	()V	play	method_Music_play	play
+	m	()V	pause	method_Music_pause	pause
+	m	()V	stop	method_Music_stop	stop
+	m	()Z	isPlaying	method_Music_isPlaying	isPlaying
+	m	(Z)V	setLooping	method_Music_setLooping	setLooping
+	m	()Z	isLooping	method_Music_isLooping	isLooping
+	m	(F)V	setVolume	method_Music_setVolume	setVolume
+	m	()F	getVolume	method_Music_getVolume	getVolume
+	m	(FF)V	setPan	method_Music_setPan	setPan
+	m	(F)V	setPosition	method_Music_setPosition	setPosition
+	m	()F	getPosition	method_Music_getPosition	getPosition
+	m	()V	dispose	method_Music_dispose	dispose
+	m	(Lcom/corrodinggames/rts/java/audio/Music$OnCompletionListener;)V	setOnCompletionListener	method_Music_setOnCompletionListener	setOnCompletionListener
+c	com/corrodinggames/rts/java/audio/Music$OnCompletionListener	rw/audio/MusicOnCompletionListener	rustedwarfare/audio/MusicOnCompletionListener
+	m	(Lcom/corrodinggames/rts/java/audio/Music;)V	onCompletion	method_MusicOnCompletionListener_onCompletion	onCompletion
+c	com/corrodinggames/rts/java/audio/Sound	rw/audio/Sound	rustedwarfare/audio/Sound
+	m	()J	play	method_Sound_play	play
+	m	(F)J	play	method_Sound_play	play
+	m	(FFF)J	play	method_Sound_play	play
+	m	()J	loop	method_Sound_loop	loop
+	m	(F)J	loop	method_Sound_loop	loop
+	m	(FFF)J	loop	method_Sound_loop	loop
+	m	()V	stop	method_Sound_stop	stop
+	m	()V	pause	method_Sound_pause	pause
+	m	()V	resume	method_Sound_resume	resume
+	m	()V	dispose	method_Sound_dispose	dispose
+	m	(J)V	stop	method_Sound_stop	stop
+	m	(J)V	pause	method_Sound_pause	pause
+	m	(J)V	resume	method_Sound_resume	resume
+	m	(JZ)V	setLooping	method_Sound_setLooping	setLooping
+	m	(JF)V	setPitch	method_Sound_setPitch	setPitch
+	m	(JF)V	setVolume	method_Sound_setVolume	setVolume
+	m	(JFF)V	setPan	method_Sound_setPan	setPan
+	m	()I	getBytesUsed	method_Sound_getBytesUsed	getBytesUsed
+c	com/corrodinggames/rts/java/audio/a/a	rw/audio/util/AudioFileHandle	rustedwarfare/audio/util/AudioFileHandle
+	f	Ljava/io/InputStream;	a	field_AudioFileHandle_inputStream	inputStream
+	f	Ljava/io/File;	b	field_AudioFileHandle_file	file
+	f	Ljava/lang/String;	c	field_AudioFileHandle_path	path
+	m	(Ljava/lang/String;)V	<init>	method_AudioFileHandle_<init>	<init>
+	m	(Ljava/io/InputStream;Ljava/lang/String;)V	<init>	method_AudioFileHandle_<init>	<init>
+	m	()Ljava/io/InputStream;	a	method_AudioFileHandle_read	read
+	m	()Ljava/lang/String;	b	method_AudioFileHandle_extension	extension
+c	com/corrodinggames/rts/java/audio/a/b	rw/audio/util/FloatArray	rustedwarfare/audio/util/FloatArray
+	f	[F	a	field_FloatArray_items	items
+	f	I	b	field_FloatArray_size	size
+	f	Z	c	field_FloatArray_ordered	ordered
+	m	()V	<init>	method_FloatArray_<init>	<init>
+	m	(I)V	<init>	method_FloatArray_<init>	<init>
+	m	(ZI)V	<init>	method_FloatArray_<init>	<init>
+	m	(F)V	a	method_FloatArray_add	add
+	m	(IF)V	a	method_FloatArray_set	set
+	m	(IF)V	b	method_FloatArray_insert	insert
+	m	()F	a	method_FloatArray_pop	pop
+	m	()F	b	method_FloatArray_peek	peek
+	m	()V	c	method_FloatArray_clear	clear
+	m	(I)[F	a	method_FloatArray_ensureCapacity	ensureCapacity
+c	com/corrodinggames/rts/java/audio/a/c	rw/audio/util/AudioRuntimeException	rustedwarfare/audio/util/AudioRuntimeException
+	m	(Ljava/lang/String;)V	<init>	method_AudioRuntimeException_<init>	<init>
+	m	(Ljava/lang/Throwable;)V	<init>	method_AudioRuntimeException_<init>	<init>
+	m	(Ljava/lang/String;Ljava/lang/Throwable;)V	<init>	method_AudioRuntimeException_<init>	<init>
+c	com/corrodinggames/rts/java/audio/a/d	rw/audio/util/IntArray	rustedwarfare/audio/util/IntArray
+	f	[I	a	field_IntArray_items	items
+	f	I	b	field_IntArray_size	size
+	f	Z	c	field_IntArray_ordered	ordered
+	m	()V	<init>	method_IntArray_<init>	<init>
+	m	(ZI)V	<init>	method_IntArray_<init>	<init>
+	m	(Lcom/corrodinggames/rts/java/audio/a/d;)V	<init>	method_IntArray_<init>	<init>
+	m	(I)V	a	method_IntArray_add	add
+	m	(I)I	b	method_IntArray_get	get
+	m	(I)I	c	method_IntArray_removeIndex	removeIndex
+	m	(I)[I	d	method_IntArray_ensureCapacity	ensureCapacity
+c	com/corrodinggames/rts/java/audio/a/e	rw/audio/util/IntObjectMap	rustedwarfare/audio/util/IntObjectMap
+	f	I	a	field_IntObjectMap_size	size
+	f	[I	b	field_IntObjectMap_keyTable	keyTable
+	f	[Ljava/lang/Object;	c	field_IntObjectMap_valueTable	valueTable
+	f	I	d	field_IntObjectMap_capacity	capacity
+	f	I	e	field_IntObjectMap_stashSize	stashSize
+	f	Ljava/lang/Object;	f	field_IntObjectMap_zeroValue	zeroValue
+	f	Z	g	field_IntObjectMap_hasZeroValue	hasZeroValue
+	f	F	h	field_IntObjectMap_loadFactor	loadFactor
+	f	I	i	field_IntObjectMap_hashShift	hashShift
+	f	I	j	field_IntObjectMap_mask	mask
+	f	I	k	field_IntObjectMap_threshold	threshold
+	f	I	l	field_IntObjectMap_stashCapacity	stashCapacity
+	f	I	m	field_IntObjectMap_pushIterations	pushIterations
+	m	()V	<init>	method_IntObjectMap_<init>	<init>
+	m	(IF)V	<init>	method_IntObjectMap_<init>	<init>
+	m	(ILjava/lang/Object;)Ljava/lang/Object;	a	method_IntObjectMap_put	put
+	m	(I)Ljava/lang/Object;	a	method_IntObjectMap_get	get
+	m	(I)Ljava/lang/Object;	b	method_IntObjectMap_remove	remove
+	m	()V	a	method_IntObjectMap_clear	clear
+	m	(I)Z	e	method_IntObjectMap_containsKey	containsKey
+	m	()Lcom/corrodinggames/rts/java/audio/a/f;	b	method_IntObjectMap_entries	entries
+c	com/corrodinggames/rts/java/audio/a/f	rw/audio/util/IntObjectMapEntries	rustedwarfare/audio/util/IntObjectMapEntries
+	f	Lcom/corrodinggames/rts/java/audio/a/g;	f	field_IntObjectMapEntries_entry	entry
+	m	()Lcom/corrodinggames/rts/java/audio/a/g;	a	method_IntObjectMapEntries_nextEntry	nextEntry
+	m	()V	b	method_IntObjectMapEntries_reset	reset
+	m	(Lcom/corrodinggames/rts/java/audio/a/e;)V	<init>	method_IntObjectMapEntries_<init>	<init>
+c	com/corrodinggames/rts/java/audio/a/g	rw/audio/util/IntObjectMapEntry	rustedwarfare/audio/util/IntObjectMapEntry
+	f	I	a	field_IntObjectMapEntry_key	key
+	f	Ljava/lang/Object;	b	field_IntObjectMapEntry_value	value
+	m	()V	<init>	method_IntObjectMapEntry_<init>	<init>
+c	com/corrodinggames/rts/java/audio/a/h	rw/audio/util/IntObjectMapIterator	rustedwarfare/audio/util/IntObjectMapIterator
+	f	Z	a	field_IntObjectMapIterator_valid	valid
+	f	Lcom/corrodinggames/rts/java/audio/a/e;	b	field_IntObjectMapIterator_map	map
+	f	I	c	field_IntObjectMapIterator_nextIndex	nextIndex
+	f	I	d	field_IntObjectMapIterator_currentIndex	currentIndex
+	f	Z	e	field_IntObjectMapIterator_hasNext	hasNext
+	m	(Lcom/corrodinggames/rts/java/audio/a/e;)V	<init>	method_IntObjectMapIterator_<init>	<init>
+	m	()V	b	method_IntObjectMapIterator_reset	reset
+	m	()V	c	method_IntObjectMapIterator_advanceToNextIndex	advanceToNextIndex
+	m	()V	remove	method_IntObjectMapIterator_remove	remove
+c	com/corrodinggames/rts/java/audio/a/i	rw/audio/util/LongObjectMap	rustedwarfare/audio/util/LongObjectMap
+	f	I	a	field_LongObjectMap_size	size
+	f	[J	b	field_LongObjectMap_keyTable	keyTable
+	f	[Ljava/lang/Object;	c	field_LongObjectMap_valueTable	valueTable
+	f	I	d	field_LongObjectMap_capacity	capacity
+	f	I	e	field_LongObjectMap_stashSize	stashSize
+	f	Ljava/lang/Object;	f	field_LongObjectMap_zeroValue	zeroValue
+	f	Z	g	field_LongObjectMap_hasZeroValue	hasZeroValue
+	f	F	h	field_LongObjectMap_loadFactor	loadFactor
+	f	I	i	field_LongObjectMap_hashShift	hashShift
+	f	I	j	field_LongObjectMap_mask	mask
+	f	I	k	field_LongObjectMap_threshold	threshold
+	f	I	l	field_LongObjectMap_stashCapacity	stashCapacity
+	f	I	m	field_LongObjectMap_pushIterations	pushIterations
+	m	()V	<init>	method_LongObjectMap_<init>	<init>
+	m	(IF)V	<init>	method_LongObjectMap_<init>	<init>
+	m	(JLjava/lang/Object;)Ljava/lang/Object;	a	method_LongObjectMap_put	put
+	m	(J)Ljava/lang/Object;	a	method_LongObjectMap_get	get
+	m	(J)Ljava/lang/Object;	b	method_LongObjectMap_remove	remove
+	m	()V	a	method_LongObjectMap_clear	clear
+	m	(J)Z	d	method_LongObjectMap_containsKey	containsKey
+	m	()Lcom/corrodinggames/rts/java/audio/a/j;	b	method_LongObjectMap_entries	entries
+c	com/corrodinggames/rts/java/audio/a/j	rw/audio/util/LongObjectMapEntries	rustedwarfare/audio/util/LongObjectMapEntries
+	f	Lcom/corrodinggames/rts/java/audio/a/k;	f	field_LongObjectMapEntries_entry	entry
+	m	()Lcom/corrodinggames/rts/java/audio/a/k;	a	method_LongObjectMapEntries_nextEntry	nextEntry
+	m	()V	b	method_LongObjectMapEntries_reset	reset
+	m	(Lcom/corrodinggames/rts/java/audio/a/i;)V	<init>	method_LongObjectMapEntries_<init>	<init>
+c	com/corrodinggames/rts/java/audio/a/k	rw/audio/util/LongObjectMapEntry	rustedwarfare/audio/util/LongObjectMapEntry
+	f	J	a	field_LongObjectMapEntry_key	key
+	f	Ljava/lang/Object;	b	field_LongObjectMapEntry_value	value
+	m	()V	<init>	method_LongObjectMapEntry_<init>	<init>
+c	com/corrodinggames/rts/java/audio/a/l	rw/audio/util/LongObjectMapIterator	rustedwarfare/audio/util/LongObjectMapIterator
+	f	Z	a	field_LongObjectMapIterator_valid	valid
+	f	Lcom/corrodinggames/rts/java/audio/a/i;	b	field_LongObjectMapIterator_map	map
+	f	I	c	field_LongObjectMapIterator_nextIndex	nextIndex
+	f	I	d	field_LongObjectMapIterator_currentIndex	currentIndex
+	f	Z	e	field_LongObjectMapIterator_hasNext	hasNext
+	m	(Lcom/corrodinggames/rts/java/audio/a/i;)V	<init>	method_LongObjectMapIterator_<init>	<init>
+	m	()V	b	method_LongObjectMapIterator_reset	reset
+	m	()V	c	method_LongObjectMapIterator_advanceToNextIndex	advanceToNextIndex
+	m	()V	remove	method_LongObjectMapIterator_remove	remove
+c	com/corrodinggames/rts/java/audio/a/m	rw/audio/util/AudioMathUtils	rustedwarfare/audio/util/AudioMathUtils
+	f	Ljava/util/Random;	a	field_AudioMathUtils_random	random
+	m	(F)F	a	method_AudioMathUtils_sin	sin
+	m	(F)F	b	method_AudioMathUtils_cos	cos
+	m	(I)I	a	method_AudioMathUtils_nextPowerOfTwo	nextPowerOfTwo
+	m	(I)I	b	method_AudioMathUtils_isPowerOfTwoAsInt	isPowerOfTwoAsInt
+	m	(FFF)F	a	method_AudioMathUtils_clamp	clamp
+c	com/corrodinggames/rts/java/audio/a/n	rw/audio/util/AudioSinTable	rustedwarfare/audio/util/AudioSinTable
+	f	[F	a	field_AudioSinTable_sinTable	sinTable
+c	com/corrodinggames/rts/java/audio/a/o	rw/audio/util/ObjectMap	rustedwarfare/audio/util/ObjectMap
+	f	I	a	field_ObjectMap_size	size
+	f	[Ljava/lang/Object;	b	field_ObjectMap_keyTable	keyTable
+	f	[Ljava/lang/Object;	c	field_ObjectMap_valueTable	valueTable
+	f	I	d	field_ObjectMap_capacity	capacity
+	f	I	e	field_ObjectMap_stashSize	stashSize
+	f	F	f	field_ObjectMap_loadFactor	loadFactor
+	f	I	g	field_ObjectMap_hashShift	hashShift
+	f	I	h	field_ObjectMap_mask	mask
+	f	I	i	field_ObjectMap_threshold	threshold
+	f	I	j	field_ObjectMap_stashCapacity	stashCapacity
+	f	I	k	field_ObjectMap_pushIterations	pushIterations
+	m	()V	<init>	method_ObjectMap_<init>	<init>
+	m	(IF)V	<init>	method_ObjectMap_<init>	<init>
+	m	(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;	a	method_ObjectMap_put	put
+	m	(Ljava/lang/Object;)Ljava/lang/Object;	a	method_ObjectMap_get	get
+	m	(Ljava/lang/Object;)Z	b	method_ObjectMap_containsKey	containsKey
+	m	()Lcom/corrodinggames/rts/java/audio/a/p;	a	method_ObjectMap_entries	entries
+	m	()Lcom/corrodinggames/rts/java/audio/a/p;	b	method_ObjectMap_entriesReuse	entriesReuse
+c	com/corrodinggames/rts/java/audio/a/p	rw/audio/util/ObjectMapEntries	rustedwarfare/audio/util/ObjectMapEntries
+	f	Lcom/corrodinggames/rts/java/audio/a/q;	a	field_ObjectMapEntries_entry	entry
+	m	(Lcom/corrodinggames/rts/java/audio/a/o;)V	<init>	method_ObjectMapEntries_<init>	<init>
+	m	()Lcom/corrodinggames/rts/java/audio/a/q;	a	method_ObjectMapEntries_nextEntry	nextEntry
+	m	()Lcom/corrodinggames/rts/java/audio/a/p;	b	method_ObjectMapEntries_iterator	iterator
+	m	()V	c	method_ObjectMapEntries_reset	reset
+c	com/corrodinggames/rts/java/audio/a/q	rw/audio/util/ObjectMapEntry	rustedwarfare/audio/util/ObjectMapEntry
+	f	Ljava/lang/Object;	a	field_ObjectMapEntry_key	key
+	f	Ljava/lang/Object;	b	field_ObjectMapEntry_value	value
+	m	()V	<init>	method_ObjectMapEntry_<init>	<init>
+c	com/corrodinggames/rts/java/audio/a/r	rw/audio/util/ObjectMapIterator	rustedwarfare/audio/util/ObjectMapIterator
+	f	Z	b	field_ObjectMapIterator_valid	valid
+	f	Lcom/corrodinggames/rts/java/audio/a/o;	c	field_ObjectMapIterator_map	map
+	f	I	d	field_ObjectMapIterator_nextIndex	nextIndex
+	f	I	e	field_ObjectMapIterator_currentIndex	currentIndex
+	f	Z	f	field_ObjectMapIterator_hasNext	hasNext
+	m	(Lcom/corrodinggames/rts/java/audio/a/o;)V	<init>	method_ObjectMapIterator_<init>	<init>
+	m	()V	c	method_ObjectMapIterator_reset	reset
+	m	()V	d	method_ObjectMapIterator_advanceToNextIndex	advanceToNextIndex
+	m	()V	remove	method_ObjectMapIterator_remove	remove
+c	com/corrodinggames/rts/java/audio/a/s	rw/audio/util/StreamUtils	rustedwarfare/audio/util/StreamUtils
+	f	[B	a	field_StreamUtils_emptyBytes	emptyBytes
+	m	(Ljava/io/InputStream;Ljava/io/OutputStream;)V	a	method_StreamUtils_copyStream	copyStream
+	m	(Ljava/io/InputStream;Ljava/io/OutputStream;[B)V	a	method_StreamUtils_copyStreamWithBuffer	copyStreamWithBuffer
+	m	(Ljava/io/InputStream;I)[B	a	method_StreamUtils_readBytes	readBytes
+	m	(Ljava/io/Closeable;)V	a	method_StreamUtils_closeQuietly	closeQuietly
+c	com/corrodinggames/rts/java/audio/a/t	rw/audio/util/OptimizedByteArrayOutputStream	rustedwarfare/audio/util/OptimizedByteArrayOutputStream
+	m	(I)V	<init>	method_OptimizedByteArrayOutputStream_<init>	<init>
+c	com/corrodinggames/rts/java/audio/lwjgl/JavaSoundAudioRecorder	rw/audio/openal/JavaSoundAudioRecorder	rustedwarfare/audio/openal/JavaSoundAudioRecorder
+	f	Ljavax/sound/sampled/TargetDataLine;	line	field_JavaSoundAudioRecorder_line	line
+	f	[B	buffer	field_JavaSoundAudioRecorder_buffer	buffer
+	m	(IZ)V	<init>	method_JavaSoundAudioRecorder_<init>	<init>
+	m	([SII)V	read	method_JavaSoundAudioRecorder_read	read
+	m	()V	dispose	method_JavaSoundAudioRecorder_dispose	dispose
+c	com/corrodinggames/rts/java/audio/lwjgl/Ogg	rw/audio/openal/Ogg	rustedwarfare/audio/openal/Ogg
+	m	()V	<init>	method_Ogg_<init>	<init>
+c	com/corrodinggames/rts/java/audio/lwjgl/Ogg$Music	rw/audio/openal/OggMusic	rustedwarfare/audio/openal/OggMusic
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OggInputStream;	input	field_OggMusic_input	input
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OggInputStream;	previousInput	field_OggMusic_previousInput	previousInput
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_OggMusic_<init>	<init>
+	m	([B)I	read	method_OggMusic_read	read
+	m	()V	reset	method_OggMusic_reset	reset
+	m	()V	loop	method_OggMusic_loop	loop
+c	com/corrodinggames/rts/java/audio/lwjgl/Ogg$MusicWithThreadedLoader	rw/audio/openal/OggMusicWithThreadedLoader	rustedwarfare/audio/openal/OggMusicWithThreadedLoader
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OggInputStream;	input	field_OggMusicWithThreadedLoader_input	input
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OggInputStream;	previousInput	field_OggMusicWithThreadedLoader_previousInput	previousInput
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/ThreadedWrappingAudioInputStream;	backgroundInput	field_OggMusicWithThreadedLoader_backgroundInput	backgroundInput
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_OggMusicWithThreadedLoader_<init>	<init>
+	m	([B)I	read	method_OggMusicWithThreadedLoader_read	read
+	m	()V	backgroundUpdate	method_OggMusicWithThreadedLoader_backgroundUpdate	backgroundUpdate
+	m	()V	reset	method_OggMusicWithThreadedLoader_reset	reset
+	m	()V	loop	method_OggMusicWithThreadedLoader_loop	loop
+c	com/corrodinggames/rts/java/audio/lwjgl/Ogg$Sound	rw/audio/openal/OggSound	rustedwarfare/audio/openal/OggSound
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_OggSound_<init>	<init>
+c	com/corrodinggames/rts/java/audio/lwjgl/OggInputStream	rw/audio/openal/OggInputStream	rustedwarfare/audio/openal/OggInputStream
+	f	I	BUFFER_SIZE	field_OggInputStream_BUFFER_SIZE	BUFFER_SIZE
+	f	I	convsize	field_OggInputStream_convsize	convsize
+	f	[B	convbuffer	field_OggInputStream_convbuffer	convbuffer
+	f	Ljava/io/InputStream;	input	field_OggInputStream_input	input
+	f	Lcom/jcraft/jorbis/Info;	oggInfo	field_OggInputStream_oggInfo	oggInfo
+	f	Z	endOfStream	field_OggInputStream_endOfStream	endOfStream
+	f	Lcom/jcraft/jogg/SyncState;	syncState	field_OggInputStream_syncState	syncState
+	f	Lcom/jcraft/jogg/StreamState;	streamState	field_OggInputStream_streamState	streamState
+	f	Lcom/jcraft/jogg/Page;	page	field_OggInputStream_page	page
+	f	Lcom/jcraft/jogg/Packet;	packet	field_OggInputStream_packet	packet
+	f	Lcom/jcraft/jorbis/Comment;	comment	field_OggInputStream_comment	comment
+	f	Lcom/jcraft/jorbis/DspState;	dspState	field_OggInputStream_dspState	dspState
+	f	Lcom/jcraft/jorbis/Block;	vorbisBlock	field_OggInputStream_vorbisBlock	vorbisBlock
+	f	[B	buffer	field_OggInputStream_buffer	buffer
+	f	I	bytes	field_OggInputStream_bytes	bytes
+	f	Z	bigEndian	field_OggInputStream_bigEndian	bigEndian
+	f	Z	endOfBitStream	field_OggInputStream_endOfBitStream	endOfBitStream
+	f	Z	inited	field_OggInputStream_inited	inited
+	f	I	readIndex	field_OggInputStream_readIndex	readIndex
+	f	[B	outBuffer	field_OggInputStream_outBuffer	outBuffer
+	f	I	outIndex	field_OggInputStream_outIndex	outIndex
+	f	I	total	field_OggInputStream_total	total
+	m	(Ljava/io/InputStream;)V	<init>	method_OggInputStream_<init>	<init>
+	m	(Ljava/io/InputStream;Lcom/corrodinggames/rts/java/audio/lwjgl/OggInputStream;)V	<init>	method_OggInputStream_<init>	<init>
+	m	()I	getLength	method_OggInputStream_getLength	getLength
+	m	()I	getChannels	method_OggInputStream_getChannels	getChannels
+	m	()I	getSampleRate	method_OggInputStream_getSampleRate	getSampleRate
+	m	()V	init	method_OggInputStream_init	init
+	m	()I	available	method_OggInputStream_available	available
+	m	()V	initVorbis	method_OggInputStream_initVorbis	initVorbis
+	m	()Z	getPageAndPacket	method_OggInputStream_getPageAndPacket	getPageAndPacket
+	m	()V	readPCM	method_OggInputStream_readPCM	readPCM
+	m	()I	read	method_OggInputStream_read	read
+	m	()Z	atEnd	method_OggInputStream_atEnd	atEnd
+	m	([BII)I	read	method_OggInputStream_read	read
+	m	([B)I	read	method_OggInputStream_read	read
+	m	()V	close	method_OggInputStream_close	close
+c	com/corrodinggames/rts/java/audio/lwjgl/OpenALAudio	rw/audio/openal/OpenALAudio	rustedwarfare/audio/openal/OpenALAudio
+	f	I	deviceBufferSize	field_OpenALAudio_deviceBufferSize	deviceBufferSize
+	f	I	deviceBufferCount	field_OpenALAudio_deviceBufferCount	deviceBufferCount
+	f	Lcom/corrodinggames/rts/java/audio/a/d;	idleSources	field_OpenALAudio_idleSources	idleSources
+	f	Lcom/corrodinggames/rts/java/audio/a/d;	allSources	field_OpenALAudio_allSources	allSources
+	f	Lcom/corrodinggames/rts/java/audio/a/i;	soundIdToSource	field_OpenALAudio_soundIdToSource	soundIdToSource
+	f	Lcom/corrodinggames/rts/java/audio/a/e;	sourceToSoundId	field_OpenALAudio_sourceToSoundId	sourceToSoundId
+	f	J	nextSoundId	field_OpenALAudio_nextSoundId	nextSoundId
+	f	Lcom/corrodinggames/rts/java/audio/a/o;	extensionToSoundClass	field_OpenALAudio_extensionToSoundClass	extensionToSoundClass
+	f	Lcom/corrodinggames/rts/java/audio/a/o;	extensionToMusicClass	field_OpenALAudio_extensionToMusicClass	extensionToMusicClass
+	f	[Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALSound;	recentSounds	field_OpenALAudio_recentSounds	recentSounds
+	f	I	mostRecetSound	field_OpenALAudio_mostRecentSound	mostRecentSound
+	f	Ljava/util/ArrayList;	music	field_OpenALAudio_music	music
+	f	Z	noDevice	field_OpenALAudio_noDevice	noDevice
+	m	()V	<init>	method_OpenALAudio_<init>	<init>
+	m	(III)V	<init>	method_OpenALAudio_<init>	<init>
+	m	(Ljava/lang/String;Ljava/lang/Class;)V	registerSound	method_OpenALAudio_registerSound	registerSound
+	m	(Ljava/lang/String;Ljava/lang/Class;)V	registerMusic	method_OpenALAudio_registerMusic	registerMusic
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALSound;	newSound	method_OpenALAudio_newSound	newSound
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALMusic;	newMusic	method_OpenALAudio_newMusic	newMusic
+	m	(Z)I	obtainSource	method_OpenALAudio_obtainSource	obtainSource
+	m	(I)V	freeSource	method_OpenALAudio_freeSource	freeSource
+	m	(I)V	freeBuffer	method_OpenALAudio_freeBuffer	freeBuffer
+	m	(I)V	stopSourcesWithBuffer	method_OpenALAudio_stopSourcesWithBuffer	stopSourcesWithBuffer
+	m	(I)V	pauseSourcesWithBuffer	method_OpenALAudio_pauseSourcesWithBuffer	pauseSourcesWithBuffer
+	m	(I)V	resumeSourcesWithBuffer	method_OpenALAudio_resumeSourcesWithBuffer	resumeSourcesWithBuffer
+	m	()V	backgroundUpdate	method_OpenALAudio_backgroundUpdate	backgroundUpdate
+	m	()Z	hasDevice	method_OpenALAudio_hasDevice	hasDevice
+	m	()V	update	method_OpenALAudio_update	update
+	m	(I)J	getSoundId	method_OpenALAudio_getSoundId	getSoundId
+	m	(J)V	stopSound	method_OpenALAudio_stopSound	stopSound
+	m	(J)V	pauseSound	method_OpenALAudio_pauseSound	pauseSound
+	m	(J)V	resumeSound	method_OpenALAudio_resumeSound	resumeSound
+	m	(JF)V	setSoundGain	method_OpenALAudio_setSoundGain	setSoundGain
+	m	(JZ)V	setSoundLooping	method_OpenALAudio_setSoundLooping	setSoundLooping
+	m	(JF)V	setSoundPitch	method_OpenALAudio_setSoundPitch	setSoundPitch
+	m	(JFF)V	setSoundPan	method_OpenALAudio_setSoundPan	setSoundPan
+	m	()V	dispose	method_OpenALAudio_dispose	dispose
+	m	(IZ)Lcom/corrodinggames/rts/java/audio/AudioDevice;	newAudioDevice	method_OpenALAudio_newAudioDevice	newAudioDevice
+	m	(IZ)Lcom/corrodinggames/rts/java/audio/AudioRecorder;	newAudioRecorder	method_OpenALAudio_newAudioRecorder	newAudioRecorder
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALSound;Z)V	retain	method_OpenALAudio_retain	retain
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALSound;)V	forget	method_OpenALAudio_forget	forget
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)Lcom/corrodinggames/rts/java/audio/Music;	newMusic	method_OpenALAudio_newMusic	newMusic
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)Lcom/corrodinggames/rts/java/audio/Sound;	newSound	method_OpenALAudio_newSound	newSound
+c	com/corrodinggames/rts/java/audio/lwjgl/OpenALAudio$1	rw/audio/openal/OpenALNoDeviceAudioDevice	rustedwarfare/audio/openal/OpenALNoDeviceAudioDevice
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Z)V	<init>	method_OpenALNoDeviceAudioDevice_<init>	<init>
+	m	([FII)V	writeSamples	method_OpenALNoDeviceAudioDevice_writeSamples	writeSamples
+	m	([SII)V	writeSamples	method_OpenALNoDeviceAudioDevice_writeSamples	writeSamples
+	m	(F)V	setVolume	method_OpenALNoDeviceAudioDevice_setVolume	setVolume
+	m	()Z	isMono	method_OpenALNoDeviceAudioDevice_isMono	isMono
+	m	()I	getLatency	method_OpenALNoDeviceAudioDevice_getLatency	getLatency
+	m	()V	dispose	method_OpenALNoDeviceAudioDevice_dispose	dispose
+c	com/corrodinggames/rts/java/audio/lwjgl/OpenALAudio$2	rw/audio/openal/OpenALNoDeviceAudioRecorder	rustedwarfare/audio/openal/OpenALNoDeviceAudioRecorder
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;)V	<init>	method_OpenALNoDeviceAudioRecorder_<init>	<init>
+	m	([SII)V	read	method_OpenALNoDeviceAudioRecorder_read	read
+	m	()V	dispose	method_OpenALNoDeviceAudioRecorder_dispose	dispose
+c	com/corrodinggames/rts/java/audio/lwjgl/OpenALAudioDevice	rw/audio/openal/OpenALAudioDevice	rustedwarfare/audio/openal/OpenALAudioDevice
+	f	I	bytesPerSample	field_OpenALAudioDevice_bytesPerSample	bytesPerSample
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;	audio	field_OpenALAudioDevice_audio	audio
+	f	I	channels	field_OpenALAudioDevice_channels	channels
+	f	Ljava/nio/IntBuffer;	buffers	field_OpenALAudioDevice_buffers	buffers
+	f	I	sourceID	field_OpenALAudioDevice_sourceID	sourceID
+	f	I	format	field_OpenALAudioDevice_format	format
+	f	I	sampleRate	field_OpenALAudioDevice_sampleRate	sampleRate
+	f	Z	isPlaying	field_OpenALAudioDevice_isPlaying	isPlaying
+	f	F	volume	field_OpenALAudioDevice_volume	volume
+	f	F	renderedSeconds	field_OpenALAudioDevice_renderedSeconds	renderedSeconds
+	f	F	secondsPerBuffer	field_OpenALAudioDevice_secondsPerBuffer	secondsPerBuffer
+	f	[B	bytes	field_OpenALAudioDevice_bytes	bytes
+	f	I	bufferSize	field_OpenALAudioDevice_bufferSize	bufferSize
+	f	I	bufferCount	field_OpenALAudioDevice_bufferCount	bufferCount
+	f	Ljava/nio/ByteBuffer;	tempBuffer	field_OpenALAudioDevice_tempBuffer	tempBuffer
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;IZII)V	<init>	method_OpenALAudioDevice_<init>	<init>
+	m	([SII)V	writeSamples	method_OpenALAudioDevice_writeSamples	writeSamples
+	m	([FII)V	writeSamples	method_OpenALAudioDevice_writeSamples	writeSamples
+	m	([BII)V	writeSamples	method_OpenALAudioDevice_writeSamples	writeSamples
+	m	([BII)I	fillBuffer	method_OpenALAudioDevice_fillBuffer	fillBuffer
+	m	()V	stop	method_OpenALAudioDevice_stop	stop
+	m	()Z	isPlaying	method_OpenALAudioDevice_isPlaying	isPlaying
+	m	(F)V	setVolume	method_OpenALAudioDevice_setVolume	setVolume
+	m	()F	getPosition	method_OpenALAudioDevice_getPosition	getPosition
+	m	(F)V	setPosition	method_OpenALAudioDevice_setPosition	setPosition
+	m	()I	getChannels	method_OpenALAudioDevice_getChannels	getChannels
+	m	()I	getRate	method_OpenALAudioDevice_getRate	getRate
+	m	()V	dispose	method_OpenALAudioDevice_dispose	dispose
+	m	()Z	isMono	method_OpenALAudioDevice_isMono	isMono
+	m	()I	getLatency	method_OpenALAudioDevice_getLatency	getLatency
+c	com/corrodinggames/rts/java/audio/lwjgl/OpenALMusic	rw/audio/openal/OpenALMusic	rustedwarfare/audio/openal/OpenALMusic
+	f	I	bufferSize	field_OpenALMusic_bufferSize	bufferSize
+	f	I	bufferCount	field_OpenALMusic_bufferCount	bufferCount
+	f	I	bytesPerSample	field_OpenALMusic_bytesPerSample	bytesPerSample
+	f	[B	tempBytes	field_OpenALMusic_tempBytes	tempBytes
+	f	Ljava/nio/ByteBuffer;	tempBuffer	field_OpenALMusic_tempBuffer	tempBuffer
+	f	Lcom/corrodinggames/rts/java/audio/a/b;	renderedSecondsQueue	field_OpenALMusic_renderedSecondsQueue	renderedSecondsQueue
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;	audio	field_OpenALMusic_audio	audio
+	f	Ljava/nio/IntBuffer;	buffers	field_OpenALMusic_buffers	buffers
+	f	I	sourceID	field_OpenALMusic_sourceID	sourceID
+	f	I	format	field_OpenALMusic_format	format
+	f	I	sampleRate	field_OpenALMusic_sampleRate	sampleRate
+	f	Z	isLooping	field_OpenALMusic_isLooping	isLooping
+	f	Z	isPlaying	field_OpenALMusic_isPlaying	isPlaying
+	f	F	volume	field_OpenALMusic_volume	volume
+	f	F	pan	field_OpenALMusic_pan	pan
+	f	F	renderedSeconds	field_OpenALMusic_renderedSeconds	renderedSeconds
+	f	F	maxSecondsPerBuffer	field_OpenALMusic_maxSecondsPerBuffer	maxSecondsPerBuffer
+	f	Lcom/corrodinggames/rts/java/audio/a/a;	file	field_OpenALMusic_file	file
+	f	I	bufferOverhead	field_OpenALMusic_bufferOverhead	bufferOverhead
+	f	Lcom/corrodinggames/rts/java/audio/Music$OnCompletionListener;	onCompletionListener	field_OpenALMusic_onCompletionListener	onCompletionListener
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_OpenALMusic_<init>	<init>
+	m	(II)V	setup	method_OpenALMusic_setup	setup
+	m	()V	playWhenReady	method_OpenALMusic_playWhenReady	playWhenReady
+	m	()V	play	method_OpenALMusic_play	play
+	m	()V	stop	method_OpenALMusic_stop	stop
+	m	()V	pause	method_OpenALMusic_pause	pause
+	m	()Z	isPlaying	method_OpenALMusic_isPlaying	isPlaying
+	m	(Z)V	setLooping	method_OpenALMusic_setLooping	setLooping
+	m	()Z	isLooping	method_OpenALMusic_isLooping	isLooping
+	m	(F)V	setVolume	method_OpenALMusic_setVolume	setVolume
+	m	()F	getVolume	method_OpenALMusic_getVolume	getVolume
+	m	(FF)V	setPan	method_OpenALMusic_setPan	setPan
+	m	(F)V	setPosition	method_OpenALMusic_setPosition	setPosition
+	m	()F	getPosition	method_OpenALMusic_getPosition	getPosition
+	m	([B)I	read	method_OpenALMusic_read	read
+	m	()V	reset	method_OpenALMusic_reset	reset
+	m	()V	loop	method_OpenALMusic_loop	loop
+	m	()I	getChannels	method_OpenALMusic_getChannels	getChannels
+	m	()I	getRate	method_OpenALMusic_getRate	getRate
+	m	()V	backgroundUpdate	method_OpenALMusic_backgroundUpdate	backgroundUpdate
+	m	()V	update	method_OpenALMusic_update	update
+	m	(I)Z	fill	method_OpenALMusic_fill	fill
+	m	()V	dispose	method_OpenALMusic_dispose	dispose
+	m	(Lcom/corrodinggames/rts/java/audio/Music$OnCompletionListener;)V	setOnCompletionListener	method_OpenALMusic_setOnCompletionListener	setOnCompletionListener
+	m	()I	getSourceId	method_OpenALMusic_getSourceId	getSourceId
+c	com/corrodinggames/rts/java/audio/lwjgl/OpenALSound	rw/audio/openal/OpenALSound	rustedwarfare/audio/openal/OpenALSound
+	f	I	bufferID	field_OpenALSound_bufferID	bufferID
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;	audio	field_OpenALSound_audio	audio
+	f	F	duration	field_OpenALSound_duration	duration
+	f	I	bytesUsed	field_OpenALSound_bytesUsed	bytesUsed
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;)V	<init>	method_OpenALSound_<init>	<init>
+	m	([BII)V	setup	method_OpenALSound_setup	setup
+	m	()I	getBytesUsed	method_OpenALSound_getBytesUsed	getBytesUsed
+	m	()J	play	method_OpenALSound_play	play
+	m	(F)J	play	method_OpenALSound_play	play
+	m	()J	loop	method_OpenALSound_loop	loop
+	m	(F)J	loop	method_OpenALSound_loop	loop
+	m	()V	stop	method_OpenALSound_stop	stop
+	m	()V	dispose	method_OpenALSound_dispose	dispose
+	m	(J)V	stop	method_OpenALSound_stop	stop
+	m	()V	pause	method_OpenALSound_pause	pause
+	m	(J)V	pause	method_OpenALSound_pause	pause
+	m	()V	resume	method_OpenALSound_resume	resume
+	m	(J)V	resume	method_OpenALSound_resume	resume
+	m	(JF)V	setPitch	method_OpenALSound_setPitch	setPitch
+	m	(JF)V	setVolume	method_OpenALSound_setVolume	setVolume
+	m	(JZ)V	setLooping	method_OpenALSound_setLooping	setLooping
+	m	(JFF)V	setPan	method_OpenALSound_setPan	setPan
+	m	(FFF)J	play	method_OpenALSound_play	play
+	m	(FFF)J	loop	method_OpenALSound_loop	loop
+	m	()F	duration	method_OpenALSound_duration	duration
+c	com/corrodinggames/rts/java/audio/lwjgl/ThreadedWrappingAudioInputStream	rw/audio/openal/ThreadedWrappingAudioInputStream	rustedwarfare/audio/openal/ThreadedWrappingAudioInputStream
+	f	Ljava/io/InputStream;	source	field_ThreadedWrappingAudioInputStream_source	source
+	f	Ljava/io/PipedInputStream;	bufferInputStream	field_ThreadedWrappingAudioInputStream_bufferInputStream	bufferInputStream
+	f	Ljava/io/PipedOutputStream;	bufferOutputStream	field_ThreadedWrappingAudioInputStream_bufferOutputStream	bufferOutputStream
+	f	[B	transferBuffer	field_ThreadedWrappingAudioInputStream_transferBuffer	transferBuffer
+	f	Z	isClosed	field_ThreadedWrappingAudioInputStream_isClosed	isClosed
+	f	Z	sourceEnded	field_ThreadedWrappingAudioInputStream_sourceEnded	sourceEnded
+	f	I	bufferSize	field_ThreadedWrappingAudioInputStream_bufferSize	bufferSize
+	f	I	totalBytesRead	field_ThreadedWrappingAudioInputStream_totalBytesRead	totalBytesRead
+	m	(Ljava/io/InputStream;)V	<init>	method_ThreadedWrappingAudioInputStream_<init>	<init>
+	m	()V	backgroundFillBuffer	method_ThreadedWrappingAudioInputStream_backgroundFillBuffer	backgroundFillBuffer
+	m	()I	read	method_ThreadedWrappingAudioInputStream_read	read
+	m	([BII)I	read	method_ThreadedWrappingAudioInputStream_read	read
+	m	([B)I	read	method_ThreadedWrappingAudioInputStream_read	read
+	m	()V	close	method_ThreadedWrappingAudioInputStream_close	close
+c	com/corrodinggames/rts/java/audio/lwjgl/Wav	rw/audio/openal/Wav	rustedwarfare/audio/openal/Wav
+	m	()V	<init>	method_Wav_<init>	<init>
+c	com/corrodinggames/rts/java/audio/lwjgl/Wav$Music	rw/audio/openal/WavMusic	rustedwarfare/audio/openal/WavMusic
+	f	Lcom/corrodinggames/rts/java/audio/lwjgl/Wav$WavInputStream;	input	field_WavMusic_input	input
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_WavMusic_<init>	<init>
+	m	([B)I	read	method_WavMusic_read	read
+	m	()V	reset	method_WavMusic_reset	reset
+c	com/corrodinggames/rts/java/audio/lwjgl/Wav$Sound	rw/audio/openal/WavSound	rustedwarfare/audio/openal/WavSound
+	m	(Lcom/corrodinggames/rts/java/audio/lwjgl/OpenALAudio;Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_WavSound_<init>	<init>
+c	com/corrodinggames/rts/java/audio/lwjgl/Wav$WavInputStream	rw/audio/openal/WavInputStream	rustedwarfare/audio/openal/WavInputStream
+	f	I	channels	field_WavInputStream_channels	channels
+	f	I	sampleRate	field_WavInputStream_sampleRate	sampleRate
+	f	I	dataRemaining	field_WavInputStream_dataRemaining	dataRemaining
+	m	(Lcom/corrodinggames/rts/java/audio/a/a;)V	<init>	method_WavInputStream_<init>	<init>
+	m	(CCCC)I	seekToChunk	method_WavInputStream_seekToChunk	seekToChunk
+	m	(I)V	skipFully	method_WavInputStream_skipFully	skipFully
+	m	([B)I	read	method_WavInputStream_read	read
+c	com/corrodinggames/rts/gameFramework/aq	rw/audio/MusicFactory	rustedwarfare/audio/MusicFactory
+	f	Lcom/corrodinggames/rts/gameFramework/am;	e	field_MusicFactory_musicController	musicController
+	m	(F)V	a	method_MusicFactory_update	update
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/ar;	a	method_MusicFactory_loadMusicTrack	loadMusicTrack
+	m	()Lcom/corrodinggames/rts/gameFramework/as;	a	method_MusicFactory_newMusicPlayer	newMusicPlayer
+	m	(Lcom/corrodinggames/rts/gameFramework/am;)V	a	method_MusicFactory_setMusicController	setMusicController
+	m	()V	b	method_MusicFactory_shutdown	shutdown
+	m	()Z	c	method_MusicFactory_isAvailable	isAvailable
+	m	()Z	d	method_MusicFactory_isEnabled	isEnabled
+	m	()I	e	method_MusicFactory_getMaxMusicVolumePercent	getMaxMusicVolumePercent
+c	com/corrodinggames/rts/gameFramework/ar	rw/audio/MusicTrack	rustedwarfare/audio/MusicTrack
+	f	Ljava/lang/String;	b	field_MusicTrack_trackPath	trackPath
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/aq;)V	<init>	method_MusicTrack_<init>	<init>
+c	com/corrodinggames/rts/gameFramework/as	rw/audio/MusicPlayer	rustedwarfare/audio/MusicPlayer
+	m	(Lcom/corrodinggames/rts/gameFramework/ar;)V	a	method_MusicPlayer_setTrack	setTrack
+	m	(F)V	a	method_MusicPlayer_setVolume	setVolume
+	m	(Z)V	a	method_MusicPlayer_queuePlay	queuePlay
+	m	()V	d	method_MusicPlayer_stop	stop
+	m	()V	a	method_MusicPlayer_pause	pause
+	m	()V	b	method_MusicPlayer_resume	resume
+	m	()Z	c	method_MusicPlayer_isPlaying	isPlaying
+	m	()V	e	method_MusicPlayer_dispose	dispose
+c	com/corrodinggames/rts/java/m	rw/audio/OpenALMusicTrack	rustedwarfare/audio/OpenALMusicTrack
+	f	Lcom/corrodinggames/rts/java/l;	a	field_OpenALMusicTrack_musicFactory	musicFactory
+	f	Lcom/corrodinggames/rts/java/audio/Music;	c	field_OpenALMusicTrack_music	music
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/java/l;)V	<init>	method_OpenALMusicTrack_<init>	<init>
+c	com/corrodinggames/rts/java/n	rw/audio/OpenALMusicPlayer	rustedwarfare/audio/OpenALMusicPlayer
+	f	Lcom/corrodinggames/rts/java/m;	a	field_OpenALMusicPlayer_track	track
+	f	Lcom/corrodinggames/rts/java/l;	b	field_OpenALMusicPlayer_musicFactory	musicFactory
+	f	Lcom/corrodinggames/rts/java/audio/Music;	c	field_OpenALMusicPlayer_music	music
+	f	Z	d	field_OpenALMusicPlayer_playQueued	playQueued
+	f	Z	e	field_OpenALMusicPlayer_loopQueued	loopQueued
+	f	Z	f	field_OpenALMusicPlayer_hasStartedPlayback	hasStartedPlayback
+	m	(Lcom/corrodinggames/rts/gameFramework/ar;)V	a	method_OpenALMusicPlayer_setTrack	setTrack
+	m	(F)V	a	method_OpenALMusicPlayer_setVolume	setVolume
+	m	(Z)V	a	method_OpenALMusicPlayer_queuePlay	queuePlay
+	m	()V	d	method_OpenALMusicPlayer_stop	stop
+	m	()V	a	method_OpenALMusicPlayer_pause	pause
+	m	()V	b	method_OpenALMusicPlayer_resume	resume
+	m	()Z	c	method_OpenALMusicPlayer_isPlaying	isPlaying
+	m	()V	e	method_OpenALMusicPlayer_dispose	dispose
+	m	()V	f	method_OpenALMusicPlayer_playQueuedTrackNow	playQueuedTrackNow
+c	com/corrodinggames/rts/java/q	rw/audio/OpenALGameSound	rustedwarfare/audio/OpenALGameSound
+	f	Lcom/corrodinggames/rts/java/audio/Sound;	a	field_OpenALGameSound_sound	sound
+	f	Lcom/corrodinggames/rts/java/o;	b	field_OpenALGameSound_soundFactory	soundFactory
+	m	(Lcom/corrodinggames/rts/java/o;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/a/h;)V	<init>	method_OpenALGameSound_<init>	<init>
+	m	(FFIIF)V	a	method_OpenALGameSound_play	play
+	m	(FFIIF)V	b	method_OpenALGameSound_playNow	playNow
+	m	()I	a	method_OpenALGameSound_getBytesUsed	getBytesUsed
+c	com/corrodinggames/rts/java/r	rw/audio/OpenALSoundQueueThread	rustedwarfare/audio/OpenALSoundQueueThread
+	f	Lcom/corrodinggames/rts/java/o;	a	field_OpenALSoundQueueThread_soundFactory	soundFactory
+	m	(Lcom/corrodinggames/rts/java/o;)V	<init>	method_OpenALSoundQueueThread_<init>	<init>
+	m	()V	run	method_OpenALSoundQueueThread_run	run
+c	com/corrodinggames/rts/java/p	rw/audio/OpenALSoundPlayTask	rustedwarfare/audio/OpenALSoundPlayTask
+	f	Lcom/corrodinggames/rts/java/q;	a	field_OpenALSoundPlayTask_gameSound	gameSound
+	f	F	b	field_OpenALSoundPlayTask_leftVolume	leftVolume
+	f	F	c	field_OpenALSoundPlayTask_rightVolume	rightVolume
+	f	I	d	field_OpenALSoundPlayTask_priority	priority
+	f	I	e	field_OpenALSoundPlayTask_loop	loop
+	f	F	f	field_OpenALSoundPlayTask_pitch	pitch
+	m	()V	<init>	method_OpenALSoundPlayTask_<init>	<init>
+	m	()V	a	method_OpenALSoundPlayTask_play	play

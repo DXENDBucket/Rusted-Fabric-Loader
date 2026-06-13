@@ -1,0 +1,11 @@
+stage,owner,member,semantic
+asset path / stream,com/corrodinggames/rts/java/audio/a/a,read / extension,AudioFileHandle wraps file path or InputStream and exposes extension for codec lookup
+sound load,com/corrodinggames/rts/java/audio/lwjgl/OpenALAudio,newSound(AudioFileHandle),"Extension map selects Wav$Sound/Ogg$Sound, creates OpenALSound buffer"
+music load,com/corrodinggames/rts/java/audio/lwjgl/OpenALAudio,newMusic(AudioFileHandle),Extension map selects Wav$Music/Ogg$Music and creates streaming OpenALMusic
+sound bridge,com/corrodinggames/rts/java/o,loadSoundFromStream,Game SoundFactory bridge creates OpenALGameSound and backend Sound
+sound queue,com/corrodinggames/rts/java/q,enqueuePlay -> OpenALSoundPlayTask,GameSound playback is queued then played by OpenALSoundQueueThread
+music bridge,com/corrodinggames/rts/java/l,loadMusicTrack,MusicFactory creates OpenALMusicTrack
+music player,com/corrodinggames/rts/java/n,queuePlay / playQueuedTrackNow,OpenALMusicPlayer schedules and starts backend Music
+streaming update,com/corrodinggames/rts/java/audio/lwjgl/OpenALMusic,update / backgroundUpdate / fill,OpenALMusic streams decoded PCM into OpenAL buffers
+decoder,com/corrodinggames/rts/java/audio/lwjgl/OggInputStream,readPCM,Vorbis decoder feeds PCM bytes for Ogg music/sound
+decoder,com/corrodinggames/rts/java/audio/lwjgl/Wav$WavInputStream,read,WAV header parser exposes channels/sampleRate/dataRemaining

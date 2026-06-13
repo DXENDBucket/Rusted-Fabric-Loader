@@ -1,0 +1,4 @@
+kind,owner,official_name,descriptor,named_name,reason
+method,com/corrodinggames/rts/gameFramework/a/h,a,()V,startThreads,OpenALSoundFactory.a()V overrides SoundFactory.a()V; family must match
+method,com/corrodinggames/rts/java/o,a,()V,startThreads,OpenAL implementation starts worker thread but must retain SoundFactory family name
+method,com/corrodinggames/rts/java/q,a,(FFIIF)V,play,OpenALGameSound queues playback but overrides GameSound.play

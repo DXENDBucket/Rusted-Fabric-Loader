@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricexample;
 import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.MappingEvidenceDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
@@ -70,6 +71,7 @@ final class ExampleDiagnosticActions {
                     "Evidence manifest=" + manifest.size()
                             + " fsRows=" + MappingEvidenceDiagnostics.allFileSystemBackendRows().size()
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
+                            + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
                     null);
@@ -79,6 +81,32 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("Evidence snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showAudioSnapshot(String stage) {
+        try {
+            Object lastAudioObject = ExampleEventProbes.lastAudioObject();
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Audio evidence rows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
+                            + " openalRows=" + MappingEvidenceDiagnostics.allAudioOpenAlRows().size()
+                            + " bridgeRows=" + MappingEvidenceDiagnostics.allAudioFactoryBridgeRows().size()
+                            + " last=" + ExampleEventProbes.describeAudioObject(lastAudioObject),
+                    lastAudioObject);
+
+            if (lastAudioObject != null && AudioRuntimeDiagnostics.isOpenALGameSound(lastAudioObject)) {
+                Map<String, Object> sound = AudioRuntimeDiagnostics.describeOpenALGameSound(lastAudioObject);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Audio gameSound bytes=" + sound.get("bytesUsed")
+                                + " backend=" + ExampleDebugOverlay.describeObject(sound.get("sound")),
+                        lastAudioObject);
+            }
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Audio snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Audio snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 

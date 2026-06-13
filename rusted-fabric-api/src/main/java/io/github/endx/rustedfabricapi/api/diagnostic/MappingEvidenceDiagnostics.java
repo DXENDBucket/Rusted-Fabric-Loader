@@ -626,6 +626,34 @@ public final class MappingEvidenceDiagnostics {
         return Holder.FILESYSTEM_BACKEND_COVERAGE;
     }
 
+    public static List<MappingEvidenceRow> allAudioBackendRows() {
+        return allEvidenceRows("audio_backend_added_rows_v0_60");
+    }
+
+    public static List<MappingEvidenceRow> allAudioBackendUpdatedRows() {
+        return allEvidenceRows("audio_backend_updated_rows_v0_60");
+    }
+
+    public static List<MappingEvidenceRow> allAudioBackendFamilyHotfixRows() {
+        return allEvidenceRows("audio_backend_family_hotfix_rows_v0_60");
+    }
+
+    public static List<MappingEvidenceRow> allAudioBackendFlowMap() {
+        return allEvidenceRows("audio_backend_flow_map_v0_60");
+    }
+
+    public static List<MappingEvidenceRow> allAudioFactoryBridgeRows() {
+        return allEvidenceRows("audio_factory_bridge_rows_v0_60");
+    }
+
+    public static List<MappingEvidenceRow> allAudioOpenAlRows() {
+        return allEvidenceRows("audio_openal_rows_v0_60");
+    }
+
+    public static List<MappingEvidenceRow> allAudioUtilityRows() {
+        return allEvidenceRows("audio_utility_rows_v0_60");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -829,6 +857,22 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findEvidenceRows(String resourceId, String text) {
         return findByText(allEvidenceRows(resourceId), text);
+    }
+
+    public static List<MappingEvidenceRow> findAudioBackendRows(String text) {
+        return findByText(allAudioBackendRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findAudioFactoryBridgeRows(String text) {
+        return findByText(allAudioFactoryBridgeRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findAudioOpenAlRows(String text) {
+        return findByText(allAudioOpenAlRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {
+        return findByText(allAudioUtilityRows(), text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {
@@ -1082,7 +1126,18 @@ public final class MappingEvidenceDiagnostics {
         result.put("filesystem_backend_flow_map_v0_59", Holder.FILESYSTEM_BACKEND_FLOW_MAP);
         result.put("filesystem_backend_coverage", Holder.FILESYSTEM_BACKEND_COVERAGE);
         result.put("filesystem_backend_coverage_v0_59", Holder.FILESYSTEM_BACKEND_COVERAGE);
+        addManifestEvidenceRows(result);
         return Collections.unmodifiableMap(result);
+    }
+
+    private static void addManifestEvidenceRows(Map<String, List<MappingEvidenceRow>> result) {
+        for (EvidenceManifestRow row : Holder.EVIDENCE_MANIFEST_ROWS) {
+            String resourceId = normalizeResourceId(row.resourceId());
+            if (resourceId.isEmpty() || row.fileName().isEmpty() || result.containsKey(resourceId)) {
+                continue;
+            }
+            result.put(resourceId, loadRows("/rustedfabricapi/mapping/" + row.fileName()));
+        }
     }
 
     private static String first(Map<String, String> row, String... keys) {
