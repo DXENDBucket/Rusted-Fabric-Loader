@@ -7,6 +7,7 @@ import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRenderEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.event.FileSystemEvents;
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
@@ -237,6 +238,32 @@ final class ExampleEventProbes {
                             + " result=" + describeObject(projectileSpawnList),
                     projectileSpawnList, 1500L);
             return projectileSpawnList;
+        });
+
+        FileSystemEvents.AFTER_RESOLVE_ABSTRACT_PATH.register((path, resolvedPath) -> {
+            showEventProbeMessage(stage, "AfterResolveAbstractPath." + safeText(path),
+                    "AfterResolveAbstractPath " + compactPath(path)
+                            + " -> " + compactPath(resolvedPath),
+                    null, 5000L);
+            return resolvedPath;
+        });
+
+        FileSystemEvents.AFTER_OPEN_ASSET_CACHED.register((source, key, inputStream) -> {
+            showEventProbeMessage(stage, "AfterOpenAssetCached." + safeText(source) + "." + safeText(key),
+                    "AfterOpenAssetCached source=" + compactPath(source)
+                            + " key=" + compactPath(key)
+                            + " stream=" + describeObject(inputStream),
+                    inputStream, 2000L);
+            return inputStream;
+        });
+
+        FileSystemEvents.AFTER_LIST_CACHED_ASSET_DIRECTORY.register((source, key, entries) -> {
+            showEventProbeMessage(stage, "AfterListCachedAssetDirectory." + safeText(source) + "." + safeText(key),
+                    "AfterListCachedAssetDirectory source=" + compactPath(source)
+                            + " key=" + compactPath(key)
+                            + " entries=" + countArray(entries),
+                    null, 2000L);
+            return entries;
         });
 
         GameLifecycleEvents.AFTER_FRAME_UPDATE.register((renderer, gameContainer, delta) ->

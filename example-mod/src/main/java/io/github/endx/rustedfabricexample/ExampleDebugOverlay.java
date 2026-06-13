@@ -191,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 2;
+        int actionRows = 3;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -229,7 +229,7 @@ final class ExampleDebugOverlay {
             y += renderRows * rowHeight + sectionGap;
             drawSlickLabel(graphics, "Actions", contentLeft, y);
             y += labelHeight;
-            drawSlickDebugActionButtons(graphics, input, contentLeft, y, panelWidth - 20);
+            drawSlickDebugActionButtons(graphics, input, contentLeft, y, panelWidth - 20, frameRenderer);
         }
 
         slickFlushMethod.invoke(graphics);
@@ -274,7 +274,7 @@ final class ExampleDebugOverlay {
     }
 
     static void drawSlickDebugActionButtons(Object graphics, SlickInputState input,
-                                                    int left, int top, int width)
+                                                    int left, int top, int width, Object frameRenderer)
             throws ReflectiveOperationException {
         int gap = 6;
         int cellWidth = (width - gap) / 2;
@@ -296,6 +296,21 @@ final class ExampleDebugOverlay {
             enqueueOverlayMessage("debug",
                     "Invincible units " + (invincibleUnitsEnabled ? "enabled" : "disabled"),
                     graphics);
+        }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 28, cellWidth, 24,
+                "FS snapshot")) {
+            ExampleDiagnosticActions.showFileSystemSnapshot("debug");
+        }
+
+        if (drawSlickButton(graphics, input, left, top + 56, cellWidth, 24,
+                "Render snapshot")) {
+            ExampleDiagnosticActions.showRenderSnapshot("debug", frameRenderer);
+        }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 56, cellWidth, 24,
+                "Evidence")) {
+            ExampleDiagnosticActions.showEvidenceSnapshot("debug");
         }
     }
 
@@ -351,7 +366,9 @@ final class ExampleDebugOverlay {
         if (containsAny(text, "Map", "Tmx", "Tileset", "Mission", "StartingUnitSpawn", "TileProperty", "ExtraMaps", "NetworkMap")) {
             return DebugProbeGroup.MAP;
         }
-        if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList", "NativeCustomUnit", "CustomUnitRegistry", "CustomUnitOverride", "CustomUnitLink")) {
+        if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList",
+                "NativeCustomUnit", "CustomUnitRegistry", "CustomUnitOverride", "CustomUnitLink",
+                "ResolveAbstractPath", "AssetCached", "CachedAssetDirectory", "FileSystem")) {
             return DebugProbeGroup.ASSET;
         }
         if (containsAny(text, "ParseStream", "ParseUnitConfig", "CopyFrom", "StaticVariables", "MetadataParsed", "PendingRegister", "CustomUnitCommit", "RebuildCustomUnitLinks", "ValidateCustomUnitLinks")) {

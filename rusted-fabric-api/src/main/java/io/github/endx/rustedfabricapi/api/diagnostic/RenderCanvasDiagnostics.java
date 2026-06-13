@@ -81,6 +81,14 @@ public final class RenderCanvasDiagnostics {
         return value != null && RustedReflection.isAnyClass(value.getClass(), QUEUED_CANVAS_DRAW_TARGET_CLASSES);
     }
 
+    public static boolean isGlCanvasDrawTarget(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), GL_CANVAS_DRAW_TARGET_CLASSES);
+    }
+
+    public static boolean isNoOpCanvasDrawTarget(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), NO_OP_CANVAS_DRAW_TARGET_CLASSES);
+    }
+
     public static boolean isCanvasOperation(Object value) {
         return value != null && RustedReflection.isAnyClass(value.getClass(), CANVAS_OPERATION_CLASSES);
     }
@@ -98,9 +106,13 @@ public final class RenderCanvasDiagnostics {
         boolean noOp = isAny(target, NO_OP_CANVAS_DRAW_TARGET_CLASSES);
         result.put("className", target.getClass().getName());
         result.put("queued", Boolean.valueOf(queued));
+        result.put("queuedCanvasDrawTarget", Boolean.valueOf(queued));
         result.put("androidCanvas", Boolean.valueOf(androidCanvas));
+        result.put("androidCanvasDrawTarget", Boolean.valueOf(androidCanvas));
         result.put("glCanvas", Boolean.valueOf(glCanvas));
+        result.put("glCanvasDrawTarget", Boolean.valueOf(glCanvas));
         result.put("noOp", Boolean.valueOf(noOp));
+        result.put("noOpCanvasDrawTarget", Boolean.valueOf(noOp));
         putOptionalBooleanField(result, target, "recordingEnabled",
                 new String[]{"recordingEnabled", "k", "o", "b", "a"});
         if (queued) {
@@ -114,8 +126,65 @@ public final class RenderCanvasDiagnostics {
         if (glCanvas) {
             putOptionalField(result, target, "glCanvas", new String[]{"glCanvas", "a"});
             putOptionalField(result, target, "glRenderer", new String[]{"glRenderer", "b"});
+            putOptionalField(result, target, "scratchGlPaint", new String[]{"scratchGlPaint", "c"});
+            putOptionalField(result, target, "scratchSrcRect", new String[]{"scratchSrcRect", "e"});
+            putOptionalField(result, target, "scratchDstRectF", new String[]{"scratchDstRectF", "f"});
+            putOptionalField(result, target, "currentBitmapImage", new String[]{"currentBitmapImage", "n"});
+            putOptionalBooleanField(result, target, "recordingEnabled",
+                    new String[]{"recordingEnabled", "o"});
         }
         return Collections.unmodifiableMap(result);
+    }
+
+    public static Object glCanvasFromGlCanvasDrawTarget(Object target) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.getFieldValue(target, new String[]{"glCanvas", "a"});
+    }
+
+    public static Object glRendererFromGlCanvasDrawTarget(Object target) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.getFieldValue(target, new String[]{"glRenderer", "b"});
+    }
+
+    public static Object scratchGlPaintFromGlCanvasDrawTarget(Object target) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.getFieldValue(target, new String[]{"scratchGlPaint", "c"});
+    }
+
+    public static Object currentBitmapImageFromGlCanvasDrawTarget(Object target) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.getFieldValue(target, new String[]{"currentBitmapImage", "n"});
+    }
+
+    public static boolean isGlCanvasDrawTargetRecording(Object target) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.getBooleanField(target, new String[]{"recordingEnabled", "o"});
+    }
+
+    public static void bindImageTexture(Object target, Object image) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        RustedReflection.invokeInstance(target, new String[]{"bindImageTexture", "b"}, image);
+    }
+
+    public static void flushGlState(Object target) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        RustedReflection.invokeInstance(target, new String[]{"flushGlState", "d"});
+    }
+
+    public static Object getGlPaintState(Object target, Object paint) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.invokeInstance(target, new String[]{"getGlPaintState", "a"}, paint);
+    }
+
+    public static Object getOrCreateGlTexture(Object target, Object bitmap, Object image) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.invokeInstance(target, new String[]{"getOrCreateGlTexture", "a"}, bitmap, image);
+    }
+
+    public static Object ensureFloatArrayCapacity(Object target, int capacity) {
+        requireAny(target, GL_CANVAS_DRAW_TARGET_CLASSES, "GlCanvasDrawTarget");
+        return RustedReflection.invokeInstance(target, new String[]{"ensureFloatArrayCapacity", "b"},
+                Integer.valueOf(capacity));
     }
 
     public static Map<String, Object> describeQueuedCanvasDrawTarget(Object target) {

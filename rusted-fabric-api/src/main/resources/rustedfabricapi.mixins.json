@@ -6,6 +6,7 @@
   "mixins": [
     "AndroidMapStartNamedMixin",
     "ActiveResourceDeltaNamedMixin",
+    "AssetCacheStoreNamedMixin",
     "BuildQueueHostNamedMixin",
     "BuildQueueNamedMixin",
     "BuildQueueResourceDeltaNamedMixin",
@@ -24,6 +25,7 @@
     "CustomUnitRuntimeNamedMixin",
     "CustomUnitTransportUnloadNamedMixin",
     "GameObjectSerializationNamedMixin",
+    "GameFileSystemNamedMixin",
     "GameSaverRuntimeNamedMixin",
     "GameFileSystemMapDiscoveryNamedMixin",
     "InterfaceDrawNamedMixin",
