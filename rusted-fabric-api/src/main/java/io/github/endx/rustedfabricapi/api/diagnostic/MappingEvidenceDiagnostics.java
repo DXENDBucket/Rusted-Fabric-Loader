@@ -666,6 +666,18 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("audio_family_completion_flow_map_v0_61");
     }
 
+    public static List<MappingEvidenceRow> allInputKeybindingRows() {
+        return allEvidenceRows("input_keybinding_added_rows_v0_62");
+    }
+
+    public static List<MappingEvidenceRow> allInputKeybindingUpdatedRows() {
+        return allEvidenceRows("input_keybinding_updated_rows_v0_62");
+    }
+
+    public static List<MappingEvidenceRow> allInputKeybindingFlowMap() {
+        return allEvidenceRows("input_keybinding_flow_map_v0_62");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -889,6 +901,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findAudioFamilyCompletionRows(String text) {
         return findByText(allAudioFamilyCompletionRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findInputKeybindingRows(String text) {
+        return findByText(allInputKeybindingRows(), text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {

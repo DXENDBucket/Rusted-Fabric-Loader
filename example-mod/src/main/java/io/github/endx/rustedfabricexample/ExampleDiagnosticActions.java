@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.MappingEvidenceDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
@@ -135,6 +136,56 @@ final class ExampleDiagnosticActions {
         }
     }
 
+    static void showInputSnapshot(String stage) {
+        try {
+            Object registry = InputRuntimeDiagnostics.currentInputBindingRegistry();
+            Object provider = InputRuntimeDiagnostics.currentInputDeviceProvider();
+            Map<String, Object> bridge = InputRuntimeDiagnostics.describeKeycodeBridge();
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Input evidence rows=" + MappingEvidenceDiagnostics.allInputKeybindingRows().size()
+                            + " updated=" + MappingEvidenceDiagnostics.allInputKeybindingUpdatedRows().size()
+                            + " bridge slick=" + bridge.get("slickToAndroidCodesSize")
+                            + " android=" + bridge.get("androidCodesByNameSize")
+                            + " ENTER=" + bridge.get("enterAndroidCode"),
+                    registry != null ? registry : provider);
+
+            if (provider != null && InputRuntimeDiagnostics.isInputDeviceProvider(provider)) {
+                Map<String, Object> providerDetails = InputRuntimeDiagnostics.describeInputDeviceProvider(provider);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Input provider controllers=" + providerDetails.get("controllerCount")
+                                + " desktop=" + providerDetails.get("desktopProvider")
+                                + " class=" + ExampleDebugOverlay.describeObject(provider),
+                        provider);
+            }
+
+            if (registry == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Input registry unavailable from current GameEngine", null);
+                return;
+            }
+
+            Map<String, Object> registryDetails = InputRuntimeDiagnostics.describeInputBindingRegistry(registry);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Input registry actions=" + registryDetails.get("actionsSize")
+                            + " visible=" + registryDetails.get("visibleActionCount")
+                            + " categories=" + registryDetails.get("categoryCount")
+                            + " bound=" + registryDetails.get("boundActionCount"),
+                    registry);
+
+            showInputActionSummary(stage, "Shoot", registryDetails.get("shootAction"));
+            showInputActionSummary(stage, "Menu", registryDetails.get("showMenuAction"));
+            showInputActionSummary(stage, "Pause", registryDetails.get("pauseGameAction"));
+            showInputActionSummary(stage, "Debug invincible", registryDetails.get("debugInvincibleUnitsAction"));
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Input snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Input snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
     private static void showSlickRenderSnapshot(String stage, Object frameRenderer) {
         Map<String, Object> slick = SlickRuntimeDiagnostics.describeSlickGame(frameRenderer);
         Object graphicsContext = SlickRuntimeDiagnostics.graphicsContext(frameRenderer);
@@ -186,6 +237,20 @@ final class ExampleDiagnosticActions {
         }
 
         return ExampleDebugOverlay.describeObject(value);
+    }
+
+    private static void showInputActionSummary(String stage, String label, Object action) {
+        if (action == null || !InputRuntimeDiagnostics.isInputAction(action)) {
+            return;
+        }
+
+        Map<String, Object> details = InputRuntimeDiagnostics.describeInputAction(action);
+        ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                "Input " + label
+                        + " key=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("primaryBindingDisplay")))
+                        + " config=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("configKey")))
+                        + " bindings=" + details.get("bindingCount"),
+                action);
     }
 
     @SuppressWarnings("unchecked")

@@ -1,0 +1,11 @@
+component,official,role
+InputBindingRegistry,com/corrodinggames/rts/gameFramework/ac,"Owns action list, creates visible/hidden actions/categories, loads and serializes keybinding settings, checks conflicts."
+InputAction,com/corrodinggames/rts/gameFramework/ad,Action label plus ordered InputBinding slots; provides pressed/just-pressed queries and config-key normalization.
+InputActionCategory,com/corrodinggames/rts/gameFramework/ae,Marker action used as a UI/settings category row; isCategory returns true.
+InputBinding,com/corrodinggames/rts/gameFramework/af,Base binding contract: sourceId/modifierMask/userDefined and abstract press/display/cleared methods.
+KeyInputBinding,com/corrodinggames/rts/gameFramework/ag,Keyboard binding with Android keyCode and CTRL/SHIFT/ALT modifier mask.
+ControllerInputBinding,com/corrodinggames/rts/gameFramework/ah,Controller axis/button binding with neutral-axis gate and 0.5 pressed threshold.
+UnboundInputBinding,com/corrodinggames/rts/gameFramework/ak,Structural placeholder inserted while expanding sparse binding slot lists; displays None.
+InputDeviceProvider,com/corrodinggames/rts/gameFramework/ai,Platform provider abstraction for key/controller state and display names.
+DesktopInputDeviceProvider,com/corrodinggames/rts/java/v,Desktop override; delegates keyboard state to base provider and formats display names through SlickToAndroidKeycodes.
+SlickToAndroidKeycodes,com/corrodinggames/rts/gameFramework/utility/SlickToAndroidKeycodes,Reflective keycode bridge between Slick/GDX/Android/LibRocket key constant namespaces.

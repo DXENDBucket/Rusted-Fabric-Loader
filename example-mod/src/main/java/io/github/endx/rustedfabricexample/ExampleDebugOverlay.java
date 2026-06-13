@@ -317,6 +317,11 @@ final class ExampleDebugOverlay {
                 "Audio snapshot")) {
             ExampleDiagnosticActions.showAudioSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 84, cellWidth, 24,
+                "Input snapshot")) {
+            ExampleDiagnosticActions.showInputSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {
@@ -373,6 +378,9 @@ final class ExampleDebugOverlay {
         }
         if (containsAny(text, "Audio", "Sound", "Music", "OpenAL")) {
             return DebugProbeGroup.AUDIO;
+        }
+        if (containsAny(text, "Input", "KeyBinding", "Keycode", "KeyInput", "ControllerInput")) {
+            return DebugProbeGroup.INPUT;
         }
         if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList",
                 "NativeCustomUnit", "CustomUnitRegistry", "CustomUnitOverride", "CustomUnitLink",
@@ -933,7 +941,8 @@ final class ExampleDebugOverlay {
         MAP("Map"),
         RESOURCE("Resource"),
         SAVE("Save"),
-        AUDIO("Audio");
+        AUDIO("Audio"),
+        INPUT("Input");
 
         final String label;
 
