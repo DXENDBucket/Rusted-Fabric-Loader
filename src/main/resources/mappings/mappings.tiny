@@ -9728,6 +9728,50 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	()Ljava/util/ArrayList;	ax	method_NetworkEngine_getTeamListSnapshot	getTeamListSnapshot
 	m	(Lcom/corrodinggames/rts/gameFramework/j/am;)V	a	method_NetworkEngine_applyTeamLayoutLocked	applyTeamLayoutLocked
 	m	(Lcom/corrodinggames/rts/gameFramework/j/am;)V	b	method_NetworkEngine_applyTeamLayout	applyTeamLayout
+	f	F	bI	field_NetworkEngine_currentStepRate	currentStepRate
+	f	Z	G	field_NetworkEngine_isServerController	isServerController
+	f	I	aw	field_NetworkEngine_teamUnitCap	teamUnitCap
+	f	I	ax	field_NetworkEngine_maxTeamUnitCap	maxTeamUnitCap
+	m	()Z	n	method_NetworkEngine_hasGameBeenStarted	hasGameBeenStarted
+	m	()Z	o	method_NetworkEngine_isGameStarting	isGameStarting
+	m	(Ljava/lang/String;)Ljava/lang/String;	a	method_NetworkEngine_setLocalPlayerName	setLocalPlayerName
+	m	()F	c	method_NetworkEngine_getCurrentStepRate	getCurrentStepRate
+	m	()V	f	method_NetworkEngine_updateAiDifficulty	updateAiDifficulty
+	m	(Lcom/corrodinggames/rts/game/n;)V	a	method_NetworkEngine_applyAiDifficultyForTeam	applyAiDifficultyForTeam
+	m	(Lcom/corrodinggames/rts/game/n;)Z	b	method_NetworkEngine_updateAiTeamName	updateAiTeamName
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	b	method_NetworkEngine_applyProxyControlSetup	applyProxyControlSetup
+	m	()Ljava/lang/String;	g	method_NetworkEngine_getFogModeDisplayName	getFogModeDisplayName
+	m	(I)Ljava/lang/String;	a	method_NetworkEngine_getFogModeCode	getFogModeCode
+	m	(I)Ljava/lang/String;	b	method_NetworkEngine_getAiDifficultyName	getAiDifficultyName
+	m	(I)Ljava/lang/String;	c	method_NetworkEngine_getAiDifficultyDisplayName	getAiDifficultyDisplayName
+	m	()Ljava/lang/String;	h	method_NetworkEngine_getStartingUnitsDisplayName	getStartingUnitsDisplayName
+	m	()Ljava/util/ArrayList;	i	method_NetworkEngine_getStartingUnitOptions	getStartingUnitOptions
+	m	(I)Ljava/lang/String;	d	method_NetworkEngine_getStartingUnitsDisplayName	getStartingUnitsDisplayName
+	m	()Ljava/lang/String;	j	method_NetworkEngine_getStartingCreditsDisplayName	getStartingCreditsDisplayName
+	m	()I	k	method_NetworkEngine_getStartingCredits	getStartingCredits
+	m	(I)I	e	method_NetworkEngine_resolveStartingCredits	resolveStartingCredits
+	m	()Ljava/lang/String;	l	method_NetworkEngine_getNetworkMapDisplayName	getNetworkMapDisplayName
+	m	(Z)V	a	method_NetworkEngine_resetNetworkState	resetNetworkState
+	m	(Ljava/lang/String;)V	b	method_NetworkEngine_disconnectWithReason	disconnectWithReason
+	m	()J	y	method_NetworkEngine_getNextUnitId	getNextUnitId
+	m	(ZI)Z	a	method_NetworkEngine_areAllClientsReady	areAllClientsReady
+	m	()V	A	method_NetworkEngine_resetClientReadyFlags	resetClientReadyFlags
+	m	(Ljava/lang/String;)Ljava/lang/String;	i	method_NetworkEngine_sanitizeChatMessage	sanitizeChatMessage
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	i	method_NetworkEngine_sendPacketToValidatedConnections	sendPacketToValidatedConnections
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	e	method_NetworkEngine_sendPacketToAllIncludingRelay	sendPacketToAllIncludingRelay
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	f	method_NetworkEngine_sendPacketToServer	sendPacketToServer
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	g	method_NetworkEngine_sendPacketToClientsIncludingRelay	sendPacketToClientsIncludingRelay
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	h	method_NetworkEngine_sendPacketToClients	sendPacketToClients
+	m	()V	X	method_NetworkEngine_sendRegisterConnectionToAll	sendRegisterConnectionToAll
+	m	()V	Y	method_NetworkEngine_resetNetworkClientId	resetNetworkClientId
+	m	()Ljava/lang/String;	Z	method_NetworkEngine_getOwnClientIdHashed	getOwnClientIdHashed
+	m	()V	aa	method_NetworkEngine_generateNewServerId	generateNewServerId
+	m	()Ljava/lang/String;	ab	method_NetworkEngine_getOwnServerId	getOwnServerId
+	m	()Ljava/lang/String;	ac	method_NetworkEngine_getCurrentServerId	getCurrentServerId
+	m	()V	O	method_NetworkEngine_updateSharedControlDueToDisconnects	updateSharedControlDueToDisconnects
+	m	()Ljava/lang/String;	ai	method_NetworkEngine_getLocalIpAddressListString	getLocalIpAddressListString
+	m	()Ljava/util/ArrayList;	aj	method_NetworkEngine_getLocalIpAddressList	getLocalIpAddressList
+	m	()Ljava/net/InetAddress;	al	method_NetworkEngine_getWifiLocalInetAddress	getWifiLocalInetAddress
 c	com/corrodinggames/rts/gameFramework/j/ah	rw/network/GameSetup	rustedwarfare/network/GameSetup
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	a	field_GameSetup_mapType	mapType
 	f	Ljava/lang/String;	b	field_GameSetup_mapPath	mapPath
@@ -9936,6 +9980,8 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	m	()Z	h	method_c_isOpen	isOpen
 	f	I	k	field_c_forwardedClientId	forwardedClientId
 	f	Z	u	field_c_savedDesyncDebugSave	savedDesyncDebugSave
+	f	Z	q	field_NetworkConnection_forwardingAllowed	forwardingAllowed
+	f	Z	r	field_NetworkConnection_multicastEnabled	multicastEnabled
 c	com/corrodinggames/rts/gameFramework/j/d	rw/network/ConnectionReaderThread	rustedwarfare/network/ConnectionReaderThread
 	f	Ljava/lang/Boolean;	a	field_d_running	running
 	f	Lcom/corrodinggames/rts/gameFramework/j/c;	b	field_d_connection	connection
@@ -11808,6 +11854,19 @@ c	com/corrodinggames/rts/java/c/m	rw/steam/SteamSocketOutputStream	rustedwarfare
 c	com/corrodinggames/rts/gameFramework/j/ac	rw/network/NetworkCallbacks	rustedwarfare/network/NetworkCallbacks
 	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ac_onPasswordPrompt	onPasswordPrompt
 	m	()V	b	method_ac_enqueueStartGameEvent	enqueueStartGameEvent
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;Ljava/lang/String;)Z	a	method_NetworkCallbacks_allowClientChatMessage	allowClientChatMessage
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Z)Z	a	method_NetworkCallbacks_allowServerChatMessage	allowServerChatMessage
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;Ljava/lang/String;)V	b	method_NetworkCallbacks_onClientChatMessageAccepted	onClientChatMessageAccepted
+	m	(ILjava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkCallbacks_queueChatMessageToUi	queueChatMessageToUi
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;IILjava/lang/String;Lcom/corrodinggames/rts/game/e;)Ljava/lang/String;	a	method_NetworkCallbacks_validateNewPlayerJoin	validateNewPlayerJoin
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)Ljava/lang/String;	a	method_NetworkCallbacks_validatePlayerSlotJoin	validatePlayerSlotJoin
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;Ljava/lang/String;)V	c	method_NetworkCallbacks_onPlayerRegistered	onPlayerRegistered
+	m	(Lcom/corrodinggames/rts/game/n;)V	a	method_NetworkCallbacks_onPlayerAdded	onPlayerAdded
+	m	()V	a	method_NetworkCallbacks_onAllPlayersReady	onAllPlayersReady
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)Z	a	method_NetworkCallbacks_canGrantServerControl	canGrantServerControl
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)Z	b	method_NetworkCallbacks_isProxyControllerConnection	isProxyControllerConnection
+	m	()V	d	method_NetworkCallbacks_onBattleroomClosed	onBattleroomClosed
+	m	()Z	e	method_NetworkCallbacks_isGameStarting	isGameStarting
 c	com/corrodinggames/rts/gameFramework/j/ae	rw/network/PasswordPrompt	rustedwarfare/network/PasswordPrompt
 	f	Ljava/lang/String;	b	field_ae_promptMessage	promptMessage
 	f	I	c	field_ae_targetConnectionId	targetConnectionId
@@ -12157,3 +12216,10 @@ c	com/corrodinggames/rts/gameFramework/j/f	rw/io/GameOutputTraceStream	rustedwar
 	m	(Ljava/lang/String;Z)V	a	method_f_startBlock	startBlock
 	m	(Ljava/lang/String;)V	a	method_f_endBlock	endBlock
 	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_f_writeUnitId	writeUnitId
+c	com/corrodinggames/rts/gameFramework/j/ad$6	rw/network/MasterServerUpdateTimerTask	rustedwarfare/network/MasterServerUpdateTimerTask
+	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	a	field_MasterServerUpdateTimerTask_networkEngine	networkEngine
+c	com/corrodinggames/rts/gameFramework/j/ad$8	rw/network/JoinServerCompletionRunnable	rustedwarfare/network/JoinServerCompletionRunnable
+	f	Z	a	field_JoinServerCompletionRunnable_isReconnectAttempt	isReconnectAttempt
+	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	b	field_JoinServerCompletionRunnable_networkEngine	networkEngine
+c	com/corrodinggames/rts/gameFramework/j/o	rw/network/MasterServerRemoveStaleServersTask	rustedwarfare/network/MasterServerRemoveStaleServersTask
+	f	I	a	field_MasterServerRemoveStaleServersTask_minimumRequestId	minimumRequestId

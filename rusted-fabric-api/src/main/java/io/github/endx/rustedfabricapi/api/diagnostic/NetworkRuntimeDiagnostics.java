@@ -204,13 +204,17 @@ public final class NetworkRuntimeDiagnostics {
         putIntField(result, networkEngine, "chatSpamLimit", new String[]{"chatSpamLimit", "h"});
         putBooleanField(result, networkEngine, "networkingStarted", new String[]{"networkingStarted", "B"});
         putBooleanField(result, networkEngine, "singlePlayerServer", new String[]{"singlePlayerServer", "F"});
+        putBooleanField(result, networkEngine, "isServerController", new String[]{"isServerController", "G"});
         putBooleanField(result, networkEngine, "isProxyController", new String[]{"isProxyController", "H"});
         putBooleanField(result, networkEngine, "gameHasBeenStarted", new String[]{"gameHasBeenStarted", "aW"});
         putBooleanField(result, networkEngine, "gamePaused", new String[]{"gamePaused", "al"});
         putBooleanField(result, networkEngine, "chatOnlyMode", new String[]{"chatOnlyMode", "v"});
+        putFloatField(result, networkEngine, "currentStepRate", new String[]{"currentStepRate", "bI"});
         putBooleanField(result, networkEngine, "enableQuickResync", new String[]{"enableQuickResync", "b"});
         putIntField(result, networkEngine, "serverPort", new String[]{"serverPort", "m"});
         putIntField(result, networkEngine, "udpDiscoveryPort", new String[]{"udpDiscoveryPort", "t"});
+        putIntField(result, networkEngine, "teamUnitCap", new String[]{"teamUnitCap", "aw"});
+        putIntField(result, networkEngine, "maxTeamUnitCap", new String[]{"maxTeamUnitCap", "ax"});
         putStringField(result, networkEngine, "localPlayerName", new String[]{"localPlayerName", "y"});
         putStringField(result, networkEngine, "remoteServerId", new String[]{"remoteServerId", "S"});
         putStringField(result, networkEngine, "ownServerId", new String[]{"ownServerId", "bw"});
@@ -259,7 +263,15 @@ public final class NetworkRuntimeDiagnostics {
         putField(result, networkEngine, "defaultPasswordPrompt", new String[]{"defaultPasswordPrompt", "bE"});
         result.put("serverOrProxyController", Boolean.valueOf(invokeBooleanOrFalse(networkEngine,
                 new String[]{"isServerOrProxyController", "aw"})));
+        result.put("hasGameBeenStarted", Boolean.valueOf(invokeBooleanOrFalse(networkEngine,
+                new String[]{"hasGameBeenStarted", "n"})));
+        result.put("gameStarting", Boolean.valueOf(invokeBooleanOrFalse(networkEngine,
+                new String[]{"isGameStarting", "o"})));
         result.put("teamListSnapshotSize", Integer.valueOf(teamListSnapshot(networkEngine).size()));
+        result.put("networkMapDisplayName", getNetworkMapDisplayName(networkEngine));
+        result.put("fogModeDisplayName", getFogModeDisplayName(networkEngine));
+        result.put("startingUnitsDisplayName", getStartingUnitsDisplayName(networkEngine));
+        result.put("startingCreditsDisplayName", getStartingCreditsDisplayName(networkEngine));
         Object gameSetup = fieldValueOrNull(networkEngine, new String[]{"gameSetup", "ay"});
         result.put("gameSetup", gameSetup);
         result.put("gameSetupDescription", gameSetup != null && isGameSetup(gameSetup)
@@ -389,6 +401,8 @@ public final class NetworkRuntimeDiagnostics {
         putStringField(result, connection, "forwardedAddress", new String[]{"forwardedAddress", "n"});
         putStringField(result, connection, "queryString", new String[]{"queryString", "o"});
         putBooleanField(result, connection, "validated", new String[]{"validated", "p"});
+        putBooleanField(result, connection, "forwardingAllowed", new String[]{"forwardingAllowed", "q"});
+        putBooleanField(result, connection, "multicastEnabled", new String[]{"multicastEnabled", "r"});
         putBooleanField(result, connection, "isLocalOrClosed", new String[]{"isLocalOrClosed", "s"});
         putBooleanField(result, connection, "savedDesyncDebugSave", new String[]{"savedDesyncDebugSave", "u"});
         putBooleanField(result, connection, "hasMinorDesync", new String[]{"hasMinorDesync", "v"});
@@ -482,6 +496,109 @@ public final class NetworkRuntimeDiagnostics {
     public static String formatChatLine(Object networkEngine, String senderName, String message) {
         requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
         return invokeStringOrEmpty(networkEngine, new String[]{"formatChatLine", "c"}, senderName, message);
+    }
+
+    public static String sanitizeChatMessage(String message) {
+        try {
+            Object value = RustedReflection.invokeStatic(NETWORK_ENGINE_CLASSES,
+                    new String[]{"sanitizeChatMessage", "i"}, message);
+            return value != null ? value.toString() : "";
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    public static boolean hasGameBeenStarted(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeBooleanOrFalse(networkEngine, new String[]{"hasGameBeenStarted", "n"});
+    }
+
+    public static boolean isGameStarting(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeBooleanOrFalse(networkEngine, new String[]{"isGameStarting", "o"});
+    }
+
+    public static float getCurrentStepRate(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeFloatOrZero(networkEngine, new String[]{"getCurrentStepRate", "c"});
+    }
+
+    public static String getFogModeDisplayName(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getFogModeDisplayName", "g"});
+    }
+
+    public static String getFogModeCode(Object networkEngine, int fogMode) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getFogModeCode", "a"}, Integer.valueOf(fogMode));
+    }
+
+    public static String getAiDifficultyName(Object networkEngine, int difficulty) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getAiDifficultyName", "b"}, Integer.valueOf(difficulty));
+    }
+
+    public static String getAiDifficultyDisplayName(Object networkEngine, int difficulty) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine,
+                new String[]{"getAiDifficultyDisplayName", "c"}, Integer.valueOf(difficulty));
+    }
+
+    public static String getStartingUnitsDisplayName(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getStartingUnitsDisplayName", "h"});
+    }
+
+    public static String getStartingUnitsDisplayName(Object networkEngine, int startingUnits) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine,
+                new String[]{"getStartingUnitsDisplayName", "d"}, Integer.valueOf(startingUnits));
+    }
+
+    public static List<Object> getStartingUnitOptions(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        try {
+            return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                    RustedReflection.invokeInstance(networkEngine, new String[]{"getStartingUnitOptions", "i"})));
+        } catch (RuntimeException ignored) {
+            return Collections.emptyList();
+        }
+    }
+
+    public static String getStartingCreditsDisplayName(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getStartingCreditsDisplayName", "j"});
+    }
+
+    public static int getStartingCredits(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeIntOrZero(networkEngine, new String[]{"getStartingCredits", "k"});
+    }
+
+    public static int resolveStartingCredits(Object networkEngine, int creditOption) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeIntOrZero(networkEngine,
+                new String[]{"resolveStartingCredits", "e"}, Integer.valueOf(creditOption));
+    }
+
+    public static String getNetworkMapDisplayName(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getNetworkMapDisplayName", "l"});
+    }
+
+    public static String getLocalIpAddressListString(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"getLocalIpAddressListString", "ai"});
+    }
+
+    public static List<Object> getLocalIpAddressList(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        try {
+            return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                    RustedReflection.invokeInstance(networkEngine, new String[]{"getLocalIpAddressList", "aj"})));
+        } catch (RuntimeException ignored) {
+            return Collections.emptyList();
+        }
     }
 
     public static Object currentChatHistory() {

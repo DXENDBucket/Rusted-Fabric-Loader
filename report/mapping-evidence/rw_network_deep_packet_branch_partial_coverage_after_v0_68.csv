@@ -1,0 +1,2 @@
+check,missing_count,notes
+v0.68_expected_new_rows,0,All v0.68 planned rows are present in final CSV/Tiny.

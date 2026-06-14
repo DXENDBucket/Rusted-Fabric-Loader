@@ -13,8 +13,10 @@ import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
+import io.github.endx.rustedfabricapi.api.event.NetworkCallbackEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkLobbyChatEvents;
+import io.github.endx.rustedfabricapi.api.event.NetworkPacketEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
@@ -367,6 +369,137 @@ final class ExampleEventProbes {
 
         NetworkLobbyChatEvents.AFTER_APPLY_TEAM_LAYOUT_LOCKED.register((networkEngine, teamLayout) ->
                 showNetworkLobbyLayoutProbe(stage, "AfterApplyTeamLayoutLocked", teamLayout, networkEngine));
+
+        NetworkPacketEvents.AFTER_RESET_NETWORK_STATE.register((networkEngine, chatOnly) ->
+                showNetworkPacketProbe(stage, "AfterResetNetworkState",
+                        "chatOnly=" + chatOnly, networkEngine, 1000L));
+
+        NetworkPacketEvents.AFTER_DISCONNECT_WITH_REASON.register((networkEngine, reason) ->
+                showNetworkPacketProbe(stage, "AfterDisconnectWithReason",
+                        "reason=" + safeText(reason), networkEngine, 1000L));
+
+        NetworkPacketEvents.AFTER_ARE_ALL_CLIENTS_READY.register((networkEngine, includeSpectators, minimumPlayerCount, ready) ->
+                showNetworkPacketProbe(stage, "AfterAreAllClientsReady",
+                        "ready=" + ready + " spectators=" + includeSpectators + " min=" + minimumPlayerCount,
+                        networkEngine, 750L));
+
+        NetworkPacketEvents.AFTER_RESET_CLIENT_READY_FLAGS.register(networkEngine ->
+                showNetworkPacketProbe(stage, "AfterResetClientReadyFlags", networkEngine));
+
+        NetworkPacketEvents.AFTER_SEND_PACKET_TO_VALIDATED_CONNECTIONS.register((networkEngine, packet) ->
+                showNetworkPacketProbe(stage, "AfterSendPacketToValidatedConnections",
+                        describePacket(packet), networkEngine, 1500L));
+
+        NetworkPacketEvents.AFTER_SEND_PACKET_TO_ALL_INCLUDING_RELAY.register((networkEngine, packet) ->
+                showNetworkPacketProbe(stage, "AfterSendPacketToAllIncludingRelay",
+                        describePacket(packet), networkEngine, 1500L));
+
+        NetworkPacketEvents.AFTER_SEND_PACKET_TO_SERVER.register((networkEngine, packet) ->
+                showNetworkPacketProbe(stage, "AfterSendPacketToServer",
+                        describePacket(packet), networkEngine, 1500L));
+
+        NetworkPacketEvents.AFTER_SEND_PACKET_TO_CLIENTS.register((networkEngine, packet) ->
+                showNetworkPacketProbe(stage, "AfterSendPacketToClients",
+                        describePacket(packet), networkEngine, 1500L));
+
+        NetworkPacketEvents.AFTER_SEND_REGISTER_CONNECTION_TO_ALL.register(networkEngine ->
+                showNetworkPacketProbe(stage, "AfterSendRegisterConnectionToAll", networkEngine));
+
+        NetworkPacketEvents.AFTER_SET_LOCAL_PLAYER_NAME.register((networkEngine, playerName, resultName) ->
+                showNetworkPacketProbe(stage, "AfterSetLocalPlayerName",
+                        "input=" + safeText(playerName) + " result=" + safeText(resultName),
+                        networkEngine, 1000L));
+
+        NetworkPacketEvents.AFTER_UPDATE_AI_DIFFICULTY.register(networkEngine ->
+                showNetworkPacketProbe(stage, "AfterUpdateAiDifficulty", networkEngine));
+
+        NetworkPacketEvents.AFTER_APPLY_AI_DIFFICULTY_FOR_TEAM.register((networkEngine, team) ->
+                showNetworkPacketProbe(stage, "AfterApplyAiDifficultyForTeam",
+                        describeTeam(team), networkEngine, 1000L));
+
+        NetworkPacketEvents.AFTER_UPDATE_AI_TEAM_NAME.register((networkEngine, team, changed) ->
+                showNetworkPacketProbe(stage, "AfterUpdateAiTeamName",
+                        "changed=" + changed + " " + describeTeam(team), networkEngine, 1000L));
+
+        NetworkPacketEvents.AFTER_APPLY_PROXY_CONTROL_SETUP.register((networkEngine, gameSetup) ->
+                showNetworkPacketProbe(stage, "AfterApplyProxyControlSetup",
+                        describeGameSetup(gameSetup), networkEngine, 1000L));
+
+        NetworkPacketEvents.AFTER_UPDATE_SHARED_CONTROL_DUE_TO_DISCONNECTS.register(networkEngine ->
+                showNetworkPacketProbe(stage, "AfterUpdateSharedControlDueToDisconnects", networkEngine));
+
+        NetworkCallbackEvents.AFTER_ALLOW_CLIENT_CHAT_MESSAGE.register((callbacks, connection, senderName, message, allowed) ->
+                showNetworkCallbackProbe(stage, "AfterAllowClientChatMessage",
+                        "allowed=" + allowed
+                                + " from=" + safeText(senderName)
+                                + " msg=" + safeText(message)
+                                + " " + describeNetworkConnection(connection),
+                        callbacks, 750L));
+
+        NetworkCallbackEvents.AFTER_ALLOW_SERVER_CHAT_MESSAGE.register((callbacks, connection, team, message, teamOnly, allowed) ->
+                showNetworkCallbackProbe(stage, "AfterAllowServerChatMessage",
+                        "allowed=" + allowed
+                                + " teamOnly=" + teamOnly
+                                + " msg=" + safeText(message)
+                                + " " + describeTeam(team)
+                                + " " + describeNetworkConnection(connection),
+                        callbacks, 750L));
+
+        NetworkCallbackEvents.AFTER_ON_CLIENT_CHAT_MESSAGE_ACCEPTED.register((callbacks, connection, senderName, message) ->
+                showNetworkCallbackProbe(stage, "AfterOnClientChatMessageAccepted",
+                        "from=" + safeText(senderName)
+                                + " msg=" + safeText(message)
+                                + " " + describeNetworkConnection(connection),
+                        callbacks, 750L));
+
+        NetworkCallbackEvents.AFTER_VALIDATE_NEW_PLAYER_JOIN.register((callbacks, connection, playerName, networkVersion, appVersion, packageName, playerColor, rejectionReason) ->
+                showNetworkCallbackProbe(stage, "AfterValidateNewPlayerJoin",
+                        "name=" + safeText(playerName)
+                                + " net=" + networkVersion
+                                + " app=" + appVersion
+                                + " package=" + safeText(packageName)
+                                + " reject=" + safeText(rejectionReason)
+                                + " color=" + describeObject(playerColor)
+                                + " " + describeNetworkConnection(connection),
+                        callbacks, 1000L));
+
+        NetworkCallbackEvents.AFTER_VALIDATE_PLAYER_SLOT_JOIN.register((callbacks, connection, playerName, rejectionReason) ->
+                showNetworkCallbackProbe(stage, "AfterValidatePlayerSlotJoin",
+                        "name=" + safeText(playerName)
+                                + " reject=" + safeText(rejectionReason)
+                                + " " + describeNetworkConnection(connection),
+                        callbacks, 1000L));
+
+        NetworkCallbackEvents.AFTER_ON_PLAYER_REGISTERED.register((callbacks, connection, playerName, playerIdText) ->
+                showNetworkCallbackProbe(stage, "AfterOnPlayerRegistered",
+                        "name=" + safeText(playerName)
+                                + " id=" + safeText(playerIdText)
+                                + " " + describeNetworkConnection(connection),
+                        callbacks, 1000L));
+
+        NetworkCallbackEvents.AFTER_ON_PLAYER_ADDED.register((callbacks, team) ->
+                showNetworkCallbackProbe(stage, "AfterOnPlayerAdded",
+                        describeTeam(team), callbacks, 1000L));
+
+        NetworkCallbackEvents.AFTER_ON_ALL_PLAYERS_READY.register(callbacks ->
+                showNetworkCallbackProbe(stage, "AfterOnAllPlayersReady", callbacks));
+
+        NetworkCallbackEvents.AFTER_CAN_GRANT_SERVER_CONTROL.register((callbacks, connection, result) ->
+                showNetworkCallbackProbe(stage, "AfterCanGrantServerControl",
+                        "result=" + result + " " + describeNetworkConnection(connection),
+                        callbacks, 1000L));
+
+        NetworkCallbackEvents.AFTER_IS_PROXY_CONTROLLER_CONNECTION.register((callbacks, connection, result) ->
+                showNetworkCallbackProbe(stage, "AfterIsProxyControllerConnection",
+                        "result=" + result + " " + describeNetworkConnection(connection),
+                        callbacks, 1000L));
+
+        NetworkCallbackEvents.AFTER_ON_BATTLEROOM_CLOSED.register(callbacks ->
+                showNetworkCallbackProbe(stage, "AfterOnBattleroomClosed", callbacks));
+
+        NetworkCallbackEvents.AFTER_IS_GAME_STARTING.register((callbacks, result) ->
+                showNetworkCallbackProbe(stage, "AfterIsGameStarting",
+                        "result=" + result, callbacks, 1000L));
 
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
@@ -2037,6 +2170,30 @@ final class ExampleEventProbes {
         showEventProbeMessage(stage, "NetworkLobby." + key, message, networkEngine, minIntervalMillis);
     }
 
+    private static void showNetworkPacketProbe(String stage, String key, Object networkEngine) {
+        showNetworkPacketProbe(stage, key, "", networkEngine, 1000L);
+    }
+
+    private static void showNetworkPacketProbe(String stage, String key, String extra,
+                                               Object networkEngine, long minIntervalMillis) {
+        String message = "NetworkPacket." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " " + describeNetworkLobbyState(networkEngine);
+        showEventProbeMessage(stage, "NetworkPacket." + key, message, networkEngine, minIntervalMillis);
+    }
+
+    private static void showNetworkCallbackProbe(String stage, String key, Object callbacks) {
+        showNetworkCallbackProbe(stage, key, "", callbacks, 1000L);
+    }
+
+    private static void showNetworkCallbackProbe(String stage, String key, String extra,
+                                                 Object callbacks, long minIntervalMillis) {
+        String message = "NetworkCallback." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " cb=" + describeObject(callbacks);
+        showEventProbeMessage(stage, "NetworkCallback." + key, message, callbacks, minIntervalMillis);
+    }
+
     private static String describeNetworkState(Object networkEngine) {
         if (networkEngine == null) {
             return "net=null";
@@ -2102,6 +2259,22 @@ final class ExampleEventProbes {
         return "conn=" + describeObject(connection);
     }
 
+    private static String describePacket(Object packet) {
+        if (packet == null) {
+            return "packet=null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isPacket(packet)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describePacket(packet);
+                return "packet={type=" + details.get("type")
+                        + ", bytes=" + details.get("bytesLength")
+                        + ", reliable=" + details.get("reliable") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "packet=" + describeObject(packet);
+    }
+
     private static String describeTeam(Object team) {
         if (team == null) {
             return "team=null";
@@ -2129,6 +2302,23 @@ final class ExampleEventProbes {
         } catch (RuntimeException ignored) {
         }
         return describeObject(teamLayout);
+    }
+
+    private static String describeGameSetup(Object gameSetup) {
+        if (gameSetup == null) {
+            return "setup=null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isGameSetup(gameSetup)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describeGameSetup(gameSetup);
+                return "setup={map=" + compactPath(String.valueOf(details.get("mapPath")))
+                        + ", fog=" + details.get("fogMode")
+                        + ", credits=" + details.get("startingCredits")
+                        + ", ai=" + details.get("aiDifficulty") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "setup=" + describeObject(gameSetup);
     }
 
     private static String describeTeamListSize(Object networkEngine) {

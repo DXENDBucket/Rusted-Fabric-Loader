@@ -79,6 +79,7 @@ final class ExampleDiagnosticActions {
                             + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
                             + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
                             + " lobbyRows=" + MappingEvidenceDiagnostics.allNetworkLobbyChatCommandRows().size()
+                            + " deepNetRows=" + MappingEvidenceDiagnostics.allNetworkDeepPacketBranchRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
@@ -295,6 +296,7 @@ final class ExampleDiagnosticActions {
                             + " started=" + network.get("networkingStarted")
                             + " single=" + network.get("singlePlayerServer")
                             + " proxy=" + network.get("isProxyController")
+                            + " serverCtrl=" + network.get("isServerController")
                             + " ctrl=" + network.get("serverOrProxyController")
                             + " protocol=" + network.get("networkProtocolVersion")
                             + " conns=" + network.get("connectionCount")
@@ -307,9 +309,19 @@ final class ExampleDiagnosticActions {
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
                     "Network lobby started=" + network.get("gameHasBeenStarted")
                             + " paused=" + network.get("gamePaused")
+                            + " starting=" + network.get("gameStarting")
                             + " chatOnly=" + network.get("chatOnlyMode")
                             + " teams=" + network.get("teamListSnapshotSize")
+                            + " cap=" + network.get("teamUnitCap") + "/" + network.get("maxTeamUnitCap")
                             + " lock=" + ExampleDebugOverlay.describeObject(network.get("teamListLock")),
+                    networkEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network setup display map=" + ExampleDebugOverlay.safeText(String.valueOf(network.get("networkMapDisplayName")))
+                            + " fog=" + ExampleDebugOverlay.safeText(String.valueOf(network.get("fogModeDisplayName")))
+                            + " units=" + ExampleDebugOverlay.safeText(String.valueOf(network.get("startingUnitsDisplayName")))
+                            + " credits=" + ExampleDebugOverlay.safeText(String.valueOf(network.get("startingCreditsDisplayName")))
+                            + " step=" + network.get("currentStepRate"),
                     networkEngine);
 
             Object pingerTask = network.get("networkPingerTask");
@@ -392,6 +404,8 @@ final class ExampleDiagnosticActions {
                             "First connection id=" + details.get("connectionId")
                                     + " name=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("displayName")))
                                     + " validated=" + details.get("validated")
+                                    + " fwd=" + details.get("forwardingAllowed")
+                                    + " multicast=" + details.get("multicastEnabled")
                                     + " open=" + details.get("open")
                                     + " queue=" + details.get("sendQueueSize")
                                     + " ping=" + details.get("lastPingMillis")

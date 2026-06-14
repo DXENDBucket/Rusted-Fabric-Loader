@@ -1,0 +1,64 @@
+area,official,named,evidence
+network-step-rate,com/corrodinggames/rts/gameFramework/j/ad.bIF,currentStepRate,setCurrentStepRate writes bI; getCurrentStepRate returns it; process packet 10 resync updates step rate.
+network-server-info,com/corrodinggames/rts/gameFramework/j/ad.GZ,isServerController,Server-info packet 106 reads boolean G directly before H/isProxyController; sendServerInfo writes callbacks.a(connection).
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.awI,teamUnitCap,Constructor copies SettingsEngine.teamUnitCapHostedGame to ax then aw; packet 106 serializes both.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.axI,maxTeamUnitCap,Constructor initializes ax from SettingsEngine.teamUnitCapHostedGame and clamps to at least 1; packet 106 serializes it with aw.
+network-forwarding,com/corrodinggames/rts/gameFramework/j/c.qZ,forwardingAllowed,Packet 140 allows non-player messages only when q is true; forwarding packet branches reject when q is false.
+network-forwarding,com/corrodinggames/rts/gameFramework/j/c.rZ,multicastEnabled,"Become-server/forwarding branch logs ""Multicast:"" then stores boolean into r."
+network-lifecycle,com/corrodinggames/rts/gameFramework/j/ad.n()Z,hasGameBeenStarted,Returns field aW/gameHasBeenStarted.
+network-lifecycle,com/corrodinggames/rts/gameFramework/j/ad.o()Z,isGameStarting,"Delegates to NetworkCallbacks.e(); chat team-change path rejects with ""Cannot Set Team - Game is starting"" when true."
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.a(Ljava/lang/String;)Ljava/lang/String;,setLocalPlayerName,"Trims/replaces spaces, stores localPlayerName, writes SettingsEngine.lastNetworkPlayerName, saves settings."
+network-step-rate,com/corrodinggames/rts/gameFramework/j/ad.c()F,getCurrentStepRate,Returns bI/currentStepRate.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.f()V,updateAiDifficulty,"String evidence: ""updateAIDifficulty with gameHasBeenStarted=true""; applies setup AI difficulty."
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.a(Lcom/corrodinggames/rts/game/n;)V,applyAiDifficultyForTeam,Writes AI difficulty override/current GameSetup.aiDifficulty to an AI team.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.b(Lcom/corrodinggames/rts/game/n;)Z,updateAiTeamName,"Builds ""AI - <difficulty>"" display names and returns if changed."
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.b(Lcom/corrodinggames/rts/gameFramework/j/ah;)V,applyProxyControlSetup,String evidence includes applyProxyControl and emits -map/-fog/-credits/-income/-nukes/-sharedControl commands.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.g()Ljava/lang/String;,getFogModeDisplayName,"Maps current GameSetup.fogMode to ""No fog"", ""Basic fog"", or ""Line of Sight""."
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.a(I)Ljava/lang/String;,getFogModeCode,Maps fog mode int to command code off/basic/los.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.b(I)Ljava/lang/String;,getAiDifficultyName,AI difficulty display wrapper used by setup UI/commands.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.c(I)Ljava/lang/String;,getAiDifficultyDisplayName,Maps difficulty -2..3 to Very Easy/Easy/Medium/Hard/Very Hard/Impossible.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.h()Ljava/lang/String;,getStartingUnitsDisplayName,No-arg helper reads GameSetup.startingUnits then delegates to the int display resolver.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.i()Ljava/util/ArrayList;,getStartingUnitOptions,Builds selectable starting-unit mode list including custom starts.
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.d(I)Ljava/lang/String;,getStartingUnitsDisplayName,"Maps starting-unit mode to labels like Normal, Small Army, 3 Engineers."
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.j()Ljava/lang/String;,getStartingCreditsDisplayName,"Builds ""Default ($...)"" / ""$..."" credit display text from GameSetup.startingCredits."
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.k()I,getStartingCredits,Returns resolveStartingCredits(GameSetup.startingCredits).
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.e(I)I,resolveStartingCredits,"Maps credit option indices to actual credits: 0, 1000, 2000, 5000, ..."
+network-game-setup,com/corrodinggames/rts/gameFramework/j/ad.l()Ljava/lang/String;,getNetworkMapDisplayName,Returns display-ready network map name/path for lobby setup.
+network-lifecycle,com/corrodinggames/rts/gameFramework/j/ad.a(Z)V,resetNetworkState,"String evidence includes ""<CHAT ONLY>"" and chat-only map restart branch; resets network/session state."
+network-lifecycle,com/corrodinggames/rts/gameFramework/j/ad.b(Ljava/lang/String;)V,disconnectWithReason,"String evidence: ""Disconnect:""; records/displays disconnect reason."
+network-sync,com/corrodinggames/rts/gameFramework/j/ad.y()J,getNextUnitId,"String evidence: ""New id set:"" and ""getNextUnitId: id==0""."
+network-lobby-ready,com/corrodinggames/rts/gameFramework/j/ad.a(ZI)Z,areAllClientsReady,"String evidence: ""Still waiting on:""; ready-gate used before start-game event."
+network-lobby-ready,com/corrodinggames/rts/gameFramework/j/ad.A()V,resetClientReadyFlags,Clears connection/player ready state before lobby/start transitions.
+network-chat-packet,com/corrodinggames/rts/gameFramework/j/ad.i(Ljava/lang/String;)Ljava/lang/String;,sanitizeChatMessage,Static helper removes newlines/NULs and limits bad control characters before packet 140 handling.
+network-packet-send,com/corrodinggames/rts/gameFramework/j/ad.i(Lcom/corrodinggames/rts/gameFramework/j/au;)V,sendPacketToValidatedConnections,Sends a packet to validated/open client connections.
+network-packet-send,com/corrodinggames/rts/gameFramework/j/ad.e(Lcom/corrodinggames/rts/gameFramework/j/au;)V,sendPacketToAllIncludingRelay,"String evidence: ""Skipping sendPacketToAllIncludingRelay, not networked""."
+network-packet-send,com/corrodinggames/rts/gameFramework/j/ad.f(Lcom/corrodinggames/rts/gameFramework/j/au;)V,sendPacketToServer,"String evidence: ""Skipping sendPacketToServer, not networked"" and ""We are a server""."
+network-packet-send,com/corrodinggames/rts/gameFramework/j/ad.g(Lcom/corrodinggames/rts/gameFramework/j/au;)V,sendPacketToClientsIncludingRelay,Server-only wrapper around all/relay broadcast path.
+network-packet-send,com/corrodinggames/rts/gameFramework/j/ad.h(Lcom/corrodinggames/rts/gameFramework/j/au;)V,sendPacketToClients,Server-only wrapper for normal validated clients.
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.X()V,sendRegisterConnectionToAll,"String evidence: ""registerConnection: We are a server""; iterates and sends registration data."
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.Y()V,resetNetworkClientId,"String evidence: ""generateNewClientId: serverUUID==null""; clears/regenerates networkClientId."
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.Z()Ljava/lang/String;,getOwnClientIdHashed,"String evidence: ""getOwnClientIdHashed: serverUUID==null"" and machine-change hash check."
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.aa()V,generateNewServerId,Generates/stores a new UUID into SettingsEngine.networkServerId.
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.ab()Ljava/lang/String;,getOwnServerId,"Returns SettingsEngine.networkServerId, generating if missing."
+network-identity,com/corrodinggames/rts/gameFramework/j/ad.ac()Ljava/lang/String;,getCurrentServerId,"Returns own server id when hosting, otherwise connected remoteServerId."
+network-admin-sync,com/corrodinggames/rts/gameFramework/j/ad.O()V,updateSharedControlDueToDisconnects,"String evidence: ""Sharing control due to disconnect/afk""."
+network-local-discovery,com/corrodinggames/rts/gameFramework/j/ad.ai()Ljava/lang/String;,getLocalIpAddressListString,Joins local IP address list into a comma-separated display string.
+network-local-discovery,com/corrodinggames/rts/gameFramework/j/ad.aj()Ljava/util/ArrayList;,getLocalIpAddressList,"String evidence: ""getLocalIpAddressList""; scans/caches local addresses."
+network-local-discovery,com/corrodinggames/rts/gameFramework/j/ad.al()Ljava/net/InetAddress;,getWifiLocalInetAddress,Android/Wi-Fi helper returning local InetAddress when available.
+network-chat-packet,com/corrodinggames/rts/gameFramework/j/ac.a(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;Ljava/lang/String;)Z,allowClientChatMessage,Packet 140 server branch calls this before spam checks and broadcast.
+network-chat-packet,com/corrodinggames/rts/gameFramework/j/ac.a(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Z)Z,allowServerChatMessage,Server-to-client chat send path asks callback before packet 141 serialization.
+network-chat-packet,com/corrodinggames/rts/gameFramework/j/ac.b(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;Ljava/lang/String;)V,onClientChatMessageAccepted,Called after server accepts and rebroadcasts a packet 140 client chat message.
+network-chat-packet,com/corrodinggames/rts/gameFramework/j/ac.a(ILjava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V,queueChatMessageToUi,NetworkEngine records chat history and dispatches callback; Java Main override is already named queueChatMessageToUi.
+network-registration,com/corrodinggames/rts/gameFramework/j/ac.a(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;IILjava/lang/String;Lcom/corrodinggames/rts/game/e;)Ljava/lang/String;,validateNewPlayerJoin,Register packet branch calls this before version/free-slot checks; non-null return is sent as kick reason.
+network-registration,com/corrodinggames/rts/gameFramework/j/ac.a(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)Ljava/lang/String;,validatePlayerSlotJoin,Called after free-slot candidate selection; non-null return is sent as kick reason.
+network-registration,com/corrodinggames/rts/gameFramework/j/ac.c(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;Ljava/lang/String;)V,onPlayerRegistered,Called after connection is validated and assigned/linked to a player.
+network-registration,com/corrodinggames/rts/gameFramework/j/ac.a(Lcom/corrodinggames/rts/game/n;)V,onPlayerAdded,Called when a new player/team is created for a connection or AI slot.
+network-lobby-ready,com/corrodinggames/rts/gameFramework/j/ac.a()V,onAllPlayersReady,"Called by ready countdown path immediately after ""<All players ready>"" log."
+network-server-info,com/corrodinggames/rts/gameFramework/j/ac.a(Lcom/corrodinggames/rts/gameFramework/j/c;)Z,canGrantServerControl,sendServerInfo writes this callback boolean into packet 106 before proxy-controller flag.
+network-server-info,com/corrodinggames/rts/gameFramework/j/ac.b(Lcom/corrodinggames/rts/gameFramework/j/c;)Z,isProxyControllerConnection,sendServerInfo writes this callback boolean into packet 106; client stores it in NetworkEngine.isProxyController.
+network-lifecycle,com/corrodinggames/rts/gameFramework/j/ac.d()V,onBattleroomClosed,closeBattleroom path calls this after appFramework closes UI state.
+network-lifecycle,com/corrodinggames/rts/gameFramework/j/ac.e()Z,isGameStarting,NetworkEngine.isGameStarting delegates directly to this callback.
+master-server-update,com/corrodinggames/rts/gameFramework/j/ad$6.aLcom/corrodinggames/rts/gameFramework/j/ad;,networkEngine,Synthetic outer NetworkEngine reference.
+network-join,com/corrodinggames/rts/gameFramework/j/ad$8.aZ,isReconnectAttempt,"If true, failed connection path shows ""Reconnect failed"" UI and disconnect reason."
+network-join,com/corrodinggames/rts/gameFramework/j/ad$8.bLcom/corrodinggames/rts/gameFramework/j/ad;,networkEngine,Synthetic outer NetworkEngine reference; clears activeConnectThread and connects socket.
+master-server-list,com/corrodinggames/rts/gameFramework/j/o.aI,minimumRequestId,"run passes this int as first argument to removeStaleServers(minimumRequestId,-1)."
