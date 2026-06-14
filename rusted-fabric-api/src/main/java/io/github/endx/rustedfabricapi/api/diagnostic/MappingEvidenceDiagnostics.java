@@ -730,6 +730,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("network_handshake_sync_core_coverage_after_v0_65");
     }
 
+    public static List<MappingEvidenceRow> allNetworkSyncDesyncRows() {
+        return allEvidenceRows("network_sync_desync_added_rows_v0_66");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkSyncDesyncUpdatedRows() {
+        return allEvidenceRows("network_sync_desync_updated_rows_v0_66");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkSyncDesyncFlowMap() {
+        return allEvidenceRows("network_sync_desync_flow_map_v0_66");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkSyncDesyncSkippedRows() {
+        return allEvidenceRows("network_sync_desync_skipped_rows_v0_66");
+    }
+
+    public static List<MappingEvidenceRow> allNetworkSyncDesyncCoreCoverageRows() {
+        return allEvidenceRows("network_sync_desync_core_coverage_after_v0_66");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -977,6 +997,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findNetworkHandshakeSyncRows(String text) {
         return findByText(allNetworkHandshakeSyncRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findNetworkSyncDesyncRows(String text) {
+        return findByText(allNetworkSyncDesyncRows(), text);
     }
 
     public static List<MappingEvidenceRow> findParserHelpersByCategory(String category) {

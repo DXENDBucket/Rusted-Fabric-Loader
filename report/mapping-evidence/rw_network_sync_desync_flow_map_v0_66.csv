@@ -1,0 +1,6 @@
+area,official,named,packet_or_signal,evidence
+desync/quick resync,NetworkEngine.v / w / e(float) / az,queueQuickResyncCommand / applyQuickResyncSave / updateDesyncDetectionAndResync / resetResyncState,packet 35 plus quick-resync command frame 200,Adding quick resync command; lastResyncTimer; disableDesyncFixing string evidence
+return to battleroom,NetworkEngine.d(float) / i(c) / aC / aD,scheduleReturnToBattleroom / sendReturnToBattleroom / markReturnToBattleroomPending / returnToBattleroom,packet 122,Game ended by host. Returning to battleroom; ----- returnToBattleroom -----
+chat,j/a and j/b,NetworkChatHistory / NetworkChatMessage,chat history rendering and spam counting,"queue of NetworkChatMessage, HTML/plain text output and recent-message count"
+master server token,j/aq,MasterServerAuthTokenHelper,tx/_ request parameters,adds tx2/tx3/tx4 and timestamp-like _1 request params to master-server request list
+forwarded socket,"NetworkConnection.k and NetworkEngine.a(c,int,...)",forwardedClientId / createForwardedConnection,ForwardedSocket child connections,"creates ForwardedSocket, stores forwardedClientId and parent connection, starts child threads"

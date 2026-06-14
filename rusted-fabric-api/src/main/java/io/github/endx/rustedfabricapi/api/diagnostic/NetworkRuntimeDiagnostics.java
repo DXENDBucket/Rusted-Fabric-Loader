@@ -41,6 +41,30 @@ public final class NetworkRuntimeDiagnostics {
             "rustedwarfare.network.NetworkPingerTask",
             "com.corrodinggames.rts.gameFramework.j.av"
     };
+    private static final String[] NETWORK_CHAT_HISTORY_CLASSES = {
+            "rustedwarfare.network.NetworkChatHistory",
+            "com.corrodinggames.rts.gameFramework.j.a"
+    };
+    private static final String[] NETWORK_CHAT_MESSAGE_CLASSES = {
+            "rustedwarfare.network.NetworkChatMessage",
+            "com.corrodinggames.rts.gameFramework.j.b"
+    };
+    private static final String[] NETWORK_BAN_ENTRY_CLASSES = {
+            "rustedwarfare.network.NetworkBanEntry",
+            "com.corrodinggames.rts.gameFramework.j.aj"
+    };
+    private static final String[] MASTER_SERVER_AUTH_TOKEN_HELPER_CLASSES = {
+            "rustedwarfare.network.MasterServerAuthTokenHelper",
+            "com.corrodinggames.rts.gameFramework.j.aq"
+    };
+    private static final String[] TEXT_GAME_OUTPUT_BLOCK_CLASSES = {
+            "rustedwarfare.io.TextGameOutputBlock",
+            "com.corrodinggames.rts.gameFramework.j.ax"
+    };
+    private static final String[] GAME_OUTPUT_TRACE_STREAM_CLASSES = {
+            "rustedwarfare.io.GameOutputTraceStream",
+            "com.corrodinggames.rts.gameFramework.j.f"
+    };
     private static final String[] FORWARDED_SOCKET_CLASSES = {
             "rustedwarfare.network.ForwardedSocket",
             "com.corrodinggames.rts.gameFramework.j.h"
@@ -114,6 +138,30 @@ public final class NetworkRuntimeDiagnostics {
         return isAny(value, NETWORK_PINGER_TASK_CLASSES);
     }
 
+    public static boolean isNetworkChatHistory(Object value) {
+        return isAny(value, NETWORK_CHAT_HISTORY_CLASSES);
+    }
+
+    public static boolean isNetworkChatMessage(Object value) {
+        return isAny(value, NETWORK_CHAT_MESSAGE_CLASSES);
+    }
+
+    public static boolean isNetworkBanEntry(Object value) {
+        return isAny(value, NETWORK_BAN_ENTRY_CLASSES);
+    }
+
+    public static boolean isMasterServerAuthTokenHelper(Object value) {
+        return isAny(value, MASTER_SERVER_AUTH_TOKEN_HELPER_CLASSES);
+    }
+
+    public static boolean isTextGameOutputBlock(Object value) {
+        return isAny(value, TEXT_GAME_OUTPUT_BLOCK_CLASSES);
+    }
+
+    public static boolean isGameOutputTraceStream(Object value) {
+        return isAny(value, GAME_OUTPUT_TRACE_STREAM_CLASSES);
+    }
+
     public static boolean isForwardedSocket(Object value) {
         return isAny(value, FORWARDED_SOCKET_CLASSES);
     }
@@ -148,6 +196,7 @@ public final class NetworkRuntimeDiagnostics {
         putIntField(result, networkEngine, "chatSpamLimit", new String[]{"chatSpamLimit", "h"});
         putBooleanField(result, networkEngine, "networkingStarted", new String[]{"networkingStarted", "B"});
         putBooleanField(result, networkEngine, "singlePlayerServer", new String[]{"singlePlayerServer", "F"});
+        putBooleanField(result, networkEngine, "enableQuickResync", new String[]{"enableQuickResync", "b"});
         putIntField(result, networkEngine, "serverPort", new String[]{"serverPort", "m"});
         putIntField(result, networkEngine, "udpDiscoveryPort", new String[]{"udpDiscoveryPort", "t"});
         putStringField(result, networkEngine, "localPlayerName", new String[]{"localPlayerName", "y"});
@@ -160,8 +209,10 @@ public final class NetworkRuntimeDiagnostics {
                 new String[]{"resolvedNetworkMapPath", "az"});
         putBooleanField(result, networkEngine, "hasPendingQuickResync",
                 new String[]{"hasPendingQuickResync", "N"});
+        putBooleanField(result, networkEngine, "disableDesyncFixing", new String[]{"disableDesyncFixing", "as"});
         putIntField(result, networkEngine, "nextChecksumFrame", new String[]{"nextChecksumFrame", "ah"});
         putIntField(result, networkEngine, "checksumInterval", new String[]{"checksumInterval", "ai"});
+        putCollectionSizeField(result, networkEngine, "banEntriesCount", new String[]{"banEntries", "M"});
         putCollectionSizeField(result, networkEngine, "connectionCount", new String[]{"connections", "aM"});
         putCollectionSizeField(result, networkEngine, "incomingPacketCount", new String[]{"incomingPackets", "aN"});
         putCollectionSizeField(result, networkEngine, "serverListSize", new String[]{"serverList", "bi"});
@@ -178,6 +229,19 @@ public final class NetworkRuntimeDiagnostics {
         putField(result, networkEngine, "adminTeam", new String[]{"adminTeam", "bk"});
         putField(result, networkEngine, "lastConnectedSocket", new String[]{"lastConnectedSocket", "bv"});
         putBooleanField(result, networkEngine, "sentRegisterConnection", new String[]{"sentRegisterConnection", "bz"});
+        putBooleanField(result, networkEngine, "returnToBattleroomPending",
+                new String[]{"returnToBattleroomPending", "aY"});
+        putBooleanField(result, networkEngine, "returnToBattleroomTimerActive",
+                new String[]{"returnToBattleroomTimerActive", "aZ"});
+        putFloatField(result, networkEngine, "returnToBattleroomCountdownSeconds",
+                new String[]{"returnToBattleroomCountdownSeconds", "ba"});
+        putBooleanField(result, networkEngine, "startGameFailed", new String[]{"startGameFailed", "bc"});
+        putFloatField(result, networkEngine, "lastResyncTimer", new String[]{"lastResyncTimer", "bn"});
+        putFloatField(result, networkEngine, "resyncTriggerTimer", new String[]{"resyncTriggerTimer", "bo"});
+        putIntField(result, networkEngine, "resyncAttemptCount", new String[]{"resyncAttemptCount", "bp"});
+        putIntField(result, networkEngine, "lastResyncFrame", new String[]{"lastResyncFrame", "bq"});
+        putBooleanField(result, networkEngine, "quickResyncCommandQueued",
+                new String[]{"quickResyncCommandQueued", "br"});
         putField(result, networkEngine, "activeConnectThread", new String[]{"activeConnectThread", "bF"});
         putField(result, networkEngine, "defaultPasswordPrompt", new String[]{"defaultPasswordPrompt", "bE"});
         Object gameSetup = fieldValueOrNull(networkEngine, new String[]{"gameSetup", "ay"});
@@ -209,6 +273,17 @@ public final class NetworkRuntimeDiagnostics {
         requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
         return Collections.unmodifiableList(RustedReflection.snapshotIterable(
                 fieldValueOrNull(networkEngine, new String[]{"incomingPackets", "aN"})));
+    }
+
+    public static List<Object> currentBanEntries() {
+        Object networkEngine = currentNetworkEngine();
+        return networkEngine != null ? banEntries(networkEngine) : Collections.<Object>emptyList();
+    }
+
+    public static List<Object> banEntries(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                fieldValueOrNull(networkEngine, new String[]{"banEntries", "M"})));
     }
 
     public static List<Object> currentServerList() {
@@ -277,11 +352,13 @@ public final class NetworkRuntimeDiagnostics {
         putCollectionSizeField(result, connection, "sendQueueSize", new String[]{"sendQueue", "f"});
         putLongField(result, connection, "lastChatSpamWarningTime", new String[]{"lastChatSpamWarningTime", "g"});
         putField(result, connection, "forwardedParentConnection", new String[]{"forwardedParentConnection", "j"});
+        putIntField(result, connection, "forwardedClientId", new String[]{"forwardedClientId", "k"});
         putField(result, connection, "lastForwardedPacket", new String[]{"lastForwardedPacket", "l"});
         putStringField(result, connection, "forwardedAddress", new String[]{"forwardedAddress", "n"});
         putStringField(result, connection, "queryString", new String[]{"queryString", "o"});
         putBooleanField(result, connection, "validated", new String[]{"validated", "p"});
         putBooleanField(result, connection, "isLocalOrClosed", new String[]{"isLocalOrClosed", "s"});
+        putBooleanField(result, connection, "savedDesyncDebugSave", new String[]{"savedDesyncDebugSave", "u"});
         putBooleanField(result, connection, "hasMinorDesync", new String[]{"hasMinorDesync", "v"});
         putBooleanField(result, connection, "hasCompleteDesync", new String[]{"hasCompleteDesync", "w"});
         putIntField(result, connection, "syncMatches", new String[]{"syncMatches", "x"});
@@ -355,6 +432,105 @@ public final class NetworkRuntimeDiagnostics {
     public static String sanitizePlayerName(Object networkEngine, String playerName) {
         requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
         return invokeStringOrEmpty(networkEngine, new String[]{"sanitizePlayerName", "p"}, playerName);
+    }
+
+    public static Object currentChatHistory() {
+        Object networkEngine = currentNetworkEngine();
+        return networkEngine != null ? chatHistory(networkEngine) : null;
+    }
+
+    public static Object chatHistory(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return fieldValueOrNull(networkEngine, new String[]{"chatHistory", "aC"});
+    }
+
+    public static List<Object> chatMessages(Object chatHistory) {
+        requireAny(chatHistory, NETWORK_CHAT_HISTORY_CLASSES, "NetworkChatHistory");
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                fieldValueOrNull(chatHistory, new String[]{"messages", "a"})));
+    }
+
+    public static Map<String, Object> describeNetworkChatHistory(Object chatHistory) {
+        requireAny(chatHistory, NETWORK_CHAT_HISTORY_CLASSES, "NetworkChatHistory");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", chatHistory.getClass().getName());
+        putCollectionSizeField(result, chatHistory, "messagesSize", new String[]{"messages", "a"});
+        result.put("plainTextLog", invokeStringOrEmpty(chatHistory, new String[]{"toPlainTextLog", "a"}));
+        result.put("htmlLog", invokeStringOrEmpty(chatHistory, new String[]{"toHtmlLog", "a"}, Boolean.FALSE));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static int countRecentChatMessages(Object chatHistory, Object connection, int seconds) {
+        requireAny(chatHistory, NETWORK_CHAT_HISTORY_CLASSES, "NetworkChatHistory");
+        return invokeIntOrZero(chatHistory, new String[]{"countRecentMessagesForConnection", "a"},
+                connection, Integer.valueOf(seconds));
+    }
+
+    public static Map<String, Object> describeNetworkChatMessage(Object message) {
+        requireAny(message, NETWORK_CHAT_MESSAGE_CLASSES, "NetworkChatMessage");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", message.getClass().getName());
+        putIntField(result, message, "teamId", new String[]{"teamId", "a"});
+        putStringField(result, message, "senderName", new String[]{"senderName", "b"});
+        putStringField(result, message, "message", new String[]{"message", "c"});
+        putIntField(result, message, "connectionId", new String[]{"connectionId", "d"});
+        putLongField(result, message, "createdNanos", new String[]{"createdNanos", "e"});
+        putField(result, message, "history", new String[]{"history", "f"});
+        result.put("plainText", invokeStringOrEmpty(message, new String[]{"toPlainText", "a"}));
+        result.put("html", invokeStringOrEmpty(message, new String[]{"toHtml", "b"}));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeNetworkBanEntry(Object banEntry) {
+        requireAny(banEntry, NETWORK_BAN_ENTRY_CLASSES, "NetworkBanEntry");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", banEntry.getClass().getName());
+        putStringField(result, banEntry, "playerId", new String[]{"playerId", "a"});
+        putLongField(result, banEntry, "expiresAtMillis", new String[]{"expiresAtMillis", "b"});
+        putStringField(result, banEntry, "reason", new String[]{"reason", "c"});
+        result.put("reasonText", invokeStringOrEmpty(banEntry, new String[]{"getReasonText", "a"}));
+        result.put("secondsRemaining", Float.valueOf(invokeFloatOrZero(banEntry,
+                new String[]{"getSecondsRemaining", "b"})));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Object currentMasterServerAuthTokenHelper() {
+        try {
+            return RustedReflection.getStaticFieldValue(MASTER_SERVER_AUTH_TOKEN_HELPER_CLASSES,
+                    new String[]{"instance", "a"});
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    public static Map<String, Object> describeMasterServerAuthTokenHelper(Object helper) {
+        requireAny(helper, MASTER_SERVER_AUTH_TOKEN_HELPER_CLASSES, "MasterServerAuthTokenHelper");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", helper.getClass().getName());
+        putStringField(result, helper, "tokenKeyPrefix", new String[]{"tokenKeyPrefix", "g"});
+        putStringField(result, helper, "timestampKeyPrefix", new String[]{"timestampKeyPrefix", "h"});
+        putBooleanField(result, helper, "enabled", new String[]{"enabled", "l"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeTextGameOutputBlock(Object outputBlock) {
+        requireAny(outputBlock, TEXT_GAME_OUTPUT_BLOCK_CLASSES, "TextGameOutputBlock");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", outputBlock.getClass().getName());
+        putField(result, outputBlock, "bufferedStream", new String[]{"bufferedStream", "a"});
+        putStringField(result, outputBlock, "name", new String[]{"name", "b"});
+        putByteArrayOutputStreamSizeField(result, outputBlock, "byteBufferSize", new String[]{"byteBuffer", "c"});
+        putField(result, outputBlock, "printStream", new String[]{"printStream", "d"});
+        putBooleanField(result, outputBlock, "wrapsExternalStream", new String[]{"wrapsExternalStream", "e"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeGameOutputTraceStream(Object traceStream) {
+        requireAny(traceStream, GAME_OUTPUT_TRACE_STREAM_CLASSES, "GameOutputTraceStream");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", traceStream.getClass().getName());
+        putStringField(result, traceStream, "traceText", new String[]{"traceText", "a"});
+        return Collections.unmodifiableMap(result);
     }
 
     public static Map<String, Object> describeForwardedSocket(Object socket) {
@@ -515,6 +691,15 @@ public final class NetworkRuntimeDiagnostics {
         }
     }
 
+    private static float invokeFloatOrZero(Object owner, String[] methodNames, Object... args) {
+        try {
+            Object value = RustedReflection.invokeInstance(owner, methodNames, args);
+            return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+        } catch (RuntimeException ignored) {
+            return 0.0F;
+        }
+    }
+
     private static int collectionSize(Object value) {
         if (value == null) {
             return 0;
@@ -599,6 +784,16 @@ public final class NetworkRuntimeDiagnostics {
         try {
             Object value = RustedReflection.getFieldValue(owner, fieldNames);
             result.put(key, Integer.valueOf(value instanceof byte[] ? ((byte[]) value).length : 0));
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private static void putByteArrayOutputStreamSizeField(Map<String, Object> result, Object owner, String key,
+                                                          String[] fieldNames) {
+        try {
+            Object value = RustedReflection.getFieldValue(owner, fieldNames);
+            result.put(key, Integer.valueOf(value instanceof java.io.ByteArrayOutputStream
+                    ? ((java.io.ByteArrayOutputStream) value).size() : 0));
         } catch (RuntimeException ignored) {
         }
     }

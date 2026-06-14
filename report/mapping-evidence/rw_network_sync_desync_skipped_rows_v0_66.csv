@@ -1,0 +1,3 @@
+owner_official,official_name,descriptor,reason
+com/corrodinggames/rts/gameFramework/j/c,m/O/P/Q,various,identity/integrity booleans and strings were observed but not named without stronger cross-method evidence
+com/corrodinggames/rts/gameFramework/j/ad,processSystemPacket switch body,(Lcom/corrodinggames/rts/gameFramework/j/au;)V,v0.65 already names dispatcher; full switch body packet-state split should be a separate deep packet pass

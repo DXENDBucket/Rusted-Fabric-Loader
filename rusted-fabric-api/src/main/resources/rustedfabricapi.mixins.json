@@ -42,6 +42,7 @@
     "MutableStatRuntimeNamedMixin",
     "NetworkHandshakeNamedMixin",
     "NetworkMapPathNamedMixin",
+    "NetworkSyncDesyncNamedMixin",
     "NetworkSyncRuntimeNamedMixin",
     "OrderableRepairReclaimNamedMixin",
     "OrderableTransportStateNamedMixin",

@@ -14,6 +14,7 @@ import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
+import io.github.endx.rustedfabricapi.api.event.NetworkSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
@@ -198,6 +199,77 @@ final class ExampleEventProbes {
 
         NetworkHandshakeEvents.AFTER_SEND_UPDATE_PLAYER.register((networkEngine, connection) ->
                 showNetworkHandshakeProbe(stage, "AfterSendUpdatePlayer", networkEngine, connection));
+
+        NetworkSyncEvents.AFTER_UPDATE_DESYNC_DETECTION.register((networkEngine, delta) ->
+                showNetworkSyncProbe(stage, "AfterUpdateDesyncDetection",
+                        "delta=" + formatFloat(delta), networkEngine, 5000L));
+
+        NetworkSyncEvents.BEFORE_QUEUE_QUICK_RESYNC_COMMAND.register(networkEngine ->
+                showNetworkSyncProbe(stage, "BeforeQueueQuickResyncCommand", networkEngine));
+
+        NetworkSyncEvents.AFTER_QUEUE_QUICK_RESYNC_COMMAND.register(networkEngine ->
+                showNetworkSyncProbe(stage, "AfterQueueQuickResyncCommand", networkEngine));
+
+        NetworkSyncEvents.BEFORE_APPLY_QUICK_RESYNC_SAVE.register(networkEngine ->
+                showNetworkSyncProbe(stage, "BeforeApplyQuickResyncSave", networkEngine));
+
+        NetworkSyncEvents.AFTER_APPLY_QUICK_RESYNC_SAVE.register(networkEngine ->
+                showNetworkSyncProbe(stage, "AfterApplyQuickResyncSave", networkEngine));
+
+        NetworkSyncEvents.BEFORE_RESET_RESYNC_STATE.register(networkEngine ->
+                showNetworkSyncProbe(stage, "BeforeResetResyncState", networkEngine));
+
+        NetworkSyncEvents.AFTER_RESET_RESYNC_STATE.register(networkEngine ->
+                showNetworkSyncProbe(stage, "AfterResetResyncState", networkEngine));
+
+        NetworkSyncEvents.BEFORE_SCHEDULE_RETURN_TO_BATTLEROOM.register((networkEngine, seconds) ->
+                showNetworkSyncProbe(stage, "BeforeScheduleReturnToBattleroom",
+                        "seconds=" + formatFloat(seconds), networkEngine, 1000L));
+
+        NetworkSyncEvents.AFTER_SCHEDULE_RETURN_TO_BATTLEROOM.register((networkEngine, seconds) ->
+                showNetworkSyncProbe(stage, "AfterScheduleReturnToBattleroom",
+                        "seconds=" + formatFloat(seconds), networkEngine, 1000L));
+
+        NetworkSyncEvents.BEFORE_SEND_RETURN_TO_BATTLEROOM.register((networkEngine, connection) ->
+                showNetworkConnectionProbe(stage, "BeforeSendReturnToBattleroom", networkEngine, connection));
+
+        NetworkSyncEvents.AFTER_SEND_RETURN_TO_BATTLEROOM.register((networkEngine, connection) ->
+                showNetworkConnectionProbe(stage, "AfterSendReturnToBattleroom", networkEngine, connection));
+
+        NetworkSyncEvents.BEFORE_MARK_RETURN_TO_BATTLEROOM_PENDING.register(networkEngine ->
+                showNetworkSyncProbe(stage, "BeforeMarkReturnToBattleroomPending", networkEngine));
+
+        NetworkSyncEvents.AFTER_MARK_RETURN_TO_BATTLEROOM_PENDING.register(networkEngine ->
+                showNetworkSyncProbe(stage, "AfterMarkReturnToBattleroomPending", networkEngine));
+
+        NetworkSyncEvents.BEFORE_RETURN_TO_BATTLEROOM.register(networkEngine ->
+                showNetworkSyncProbe(stage, "BeforeReturnToBattleroom", networkEngine));
+
+        NetworkSyncEvents.AFTER_RETURN_TO_BATTLEROOM.register(networkEngine ->
+                showNetworkSyncProbe(stage, "AfterReturnToBattleroom", networkEngine));
+
+        NetworkSyncEvents.AFTER_BAN_CONNECTION.register((networkEngine, connection, reason, minutes, result) ->
+                showNetworkConnectionProbe(stage, "AfterBanConnection",
+                        "result=" + result + " minutes=" + minutes + " reason=" + safeText(reason),
+                        networkEngine, connection));
+
+        NetworkSyncEvents.AFTER_REMOVE_CONNECTION.register((networkEngine, connection) ->
+                showNetworkConnectionProbe(stage, "AfterRemoveConnection", networkEngine, connection));
+
+        NetworkSyncEvents.AFTER_CREATE_FORWARDED_CONNECTION.register((networkEngine, parentConnection, forwardedClientId, host, queryString, childConnection) ->
+                showNetworkConnectionProbe(stage, "AfterCreateForwardedConnection",
+                        "child=" + describeNetworkConnection(childConnection)
+                                + " forwardedId=" + forwardedClientId
+                                + " host=" + safeText(host),
+                        networkEngine, parentConnection));
+
+        NetworkSyncEvents.AFTER_CLOSE_CONNECTION_WITH_REASON.register((networkEngine, connection, reason) ->
+                showNetworkConnectionProbe(stage, "AfterCloseConnectionWithReason",
+                        "reason=" + safeText(reason), networkEngine, connection));
+
+        NetworkSyncEvents.AFTER_CLOSE_FORWARDED_CHILD_CONNECTIONS.register((networkEngine, connection, reason) ->
+                showNetworkConnectionProbe(stage, "AfterCloseForwardedChildConnections",
+                        "reason=" + safeText(reason), networkEngine, connection));
 
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
@@ -1815,6 +1887,54 @@ final class ExampleEventProbes {
                 connection != null ? connection : networkEngine, 1000L);
     }
 
+    private static void showNetworkSyncProbe(String stage, String key, Object networkEngine) {
+        showNetworkSyncProbe(stage, key, "", networkEngine, 1000L);
+    }
+
+    private static void showNetworkSyncProbe(String stage, String key, String extra,
+                                             Object networkEngine, long minIntervalMillis) {
+        String message = "NetworkSync." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " " + describeNetworkState(networkEngine);
+        showEventProbeMessage(stage, "NetworkSync." + key, message, networkEngine, minIntervalMillis);
+    }
+
+    private static void showNetworkConnectionProbe(String stage, String key,
+                                                   Object networkEngine, Object connection) {
+        showNetworkConnectionProbe(stage, key, "", networkEngine, connection);
+    }
+
+    private static void showNetworkConnectionProbe(String stage, String key, String extra,
+                                                   Object networkEngine, Object connection) {
+        String message = "NetworkSync." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " " + describeNetworkConnection(connection)
+                + " " + describeNetworkState(networkEngine);
+        showEventProbeMessage(stage, "NetworkSync." + key, message,
+                connection != null ? connection : networkEngine, 1000L);
+    }
+
+    private static String describeNetworkState(Object networkEngine) {
+        if (networkEngine == null) {
+            return "net=null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isNetworkEngine(networkEngine)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describeNetworkEngine(networkEngine);
+                return "net={quick=" + details.get("quickResyncCommandQueued")
+                        + ", pending=" + details.get("hasPendingQuickResync")
+                        + ", fixOff=" + details.get("disableDesyncFixing")
+                        + ", last=" + details.get("lastResyncTimer")
+                        + ", trigger=" + details.get("resyncTriggerTimer")
+                        + ", attempts=" + details.get("resyncAttemptCount")
+                        + ", return=" + details.get("returnToBattleroomPending")
+                        + ", bans=" + details.get("banEntriesCount") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "net=" + describeObject(networkEngine);
+    }
+
     private static String describeNetworkConnection(Object connection) {
         if (connection == null) {
             return "conn=null";
@@ -1830,6 +1950,8 @@ final class ExampleEventProbes {
                         + ", q=" + details.get("sendQueueSize")
                         + ", ping=" + details.get("lastPingMillis")
                         + ", nonce=" + details.get("challengeNonce")
+                        + ", fwd=" + details.get("forwardedClientId")
+                        + ", savedDbg=" + details.get("savedDesyncDebugSave")
                         + ", addr=" + safeText(String.valueOf(details.get("addressDisplay"))) + "}";
             }
         } catch (RuntimeException ignored) {

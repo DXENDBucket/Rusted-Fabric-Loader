@@ -9619,6 +9619,18 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Lcom/corrodinggames/rts/game/e;	bk	field_ad_adminTeam	adminTeam
 	f	Ljava/net/Socket;	bv	field_ad_lastConnectedSocket	lastConnectedSocket
 	f	Z	bz	field_ad_sentRegisterConnection	sentRegisterConnection
+	f	Ljava/util/ArrayList;	M	field_ad_banEntries	banEntries
+	f	Z	aY	field_ad_returnToBattleroomPending	returnToBattleroomPending
+	f	Z	aZ	field_ad_returnToBattleroomTimerActive	returnToBattleroomTimerActive
+	f	F	ba	field_ad_returnToBattleroomCountdownSeconds	returnToBattleroomCountdownSeconds
+	f	Z	bc	field_ad_startGameFailed	startGameFailed
+	f	F	bn	field_ad_lastResyncTimer	lastResyncTimer
+	f	F	bo	field_ad_resyncTriggerTimer	resyncTriggerTimer
+	f	I	bp	field_ad_resyncAttemptCount	resyncAttemptCount
+	f	I	bq	field_ad_lastResyncFrame	lastResyncFrame
+	f	Z	br	field_ad_quickResyncCommandQueued	quickResyncCommandQueued
+	f	Z	as	field_ad_disableDesyncFixing	disableDesyncFixing
+	f	Z	b	field_ad_enableQuickResync	enableQuickResync
 	m	(FLjava/lang/String;)V	a	method_NetworkEngine_setCurrentStepRate	setCurrentStepRate
 	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	a	method_NetworkEngine_applyGameSetup	applyGameSetup
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_serialize	serialize
@@ -9664,6 +9676,25 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	(I)Ljava/lang/String;	h	method_ad_buildExtraIntegrityResponse	buildExtraIntegrityResponse
 	m	(Ljava/lang/String;)Ljava/lang/String;	p	method_ad_sanitizePlayerName	sanitizePlayerName
 	m	(Ljava/util/ArrayList;Z)V	a	method_ad_startJoinServerInternalThread	startJoinServerInternalThread
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)Lcom/corrodinggames/rts/gameFramework/j/aj;	a	method_ad_getActiveBanForConnection	getActiveBanForConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;I)Z	a	method_ad_banConnection	banConnection
+	m	()V	a	method_ad_clearBanEntries	clearBanEntries
+	m	()V	b	method_ad_pruneExpiredBanEntries	pruneExpiredBanEntries
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)V	b	method_ad_removeConnection	removeConnection
+	m	()V	ay	method_ad_pruneDisconnectedConnections	pruneDisconnectedConnections
+	m	()V	az	method_ad_resetResyncState	resetResyncState
+	m	()V	af	method_ad_onStartGameFailed	onStartGameFailed
+	m	()V	aB	method_ad_beginNetworkGameLoad	beginNetworkGameLoad
+	m	()Z	ae	method_ad_startGameForAllClients	startGameForAllClients
+	m	()V	ag	method_ad_scheduleDefaultReturnToBattleroom	scheduleDefaultReturnToBattleroom
+	m	(F)V	d	method_ad_scheduleReturnToBattleroom	scheduleReturnToBattleroom
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)V	i	method_ad_sendReturnToBattleroom	sendReturnToBattleroom
+	m	()V	aC	method_ad_markReturnToBattleroomPending	markReturnToBattleroomPending
+	m	()V	aD	method_ad_returnToBattleroom	returnToBattleroom
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;ILjava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/j/c;	a	method_ad_createForwardedConnection	createForwardedConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;I)Lcom/corrodinggames/rts/gameFramework/j/c;	a	method_ad_findForwardedConnection	findForwardedConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	b	method_ad_closeConnectionWithReason	closeConnectionWithReason
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	c	method_ad_closeForwardedChildConnectionsWithReason	closeForwardedChildConnectionsWithReason
 c	com/corrodinggames/rts/gameFramework/j/ah	rw/network/GameSetup	rustedwarfare/network/GameSetup
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	a	field_GameSetup_mapType	mapType
 	f	Ljava/lang/String;	b	field_GameSetup_mapPath	mapPath
@@ -9852,6 +9883,8 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	f	Z	T	field_c_commandLimitWarningShown	commandLimitWarningShown
 	f	I	U	field_c_currentIncomingPacketSize	currentIncomingPacketSize
 	f	I	V	field_c_currentIncomingPacketBytesRead	currentIncomingPacketBytesRead
+	f	I	k	field_c_forwardedClientId	forwardedClientId
+	f	Z	u	field_c_savedDesyncDebugSave	savedDesyncDebugSave
 	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkConnection_sendPacket	sendPacket
 	m	()Ljava/lang/String;	e	method_NetworkConnection_getDisplayName	getDisplayName
 	m	()Z	a	method_c_isCommandRateLimitExceeded	isCommandRateLimitExceeded
@@ -12044,3 +12077,49 @@ c	com/corrodinggames/rts/gameFramework/j/av	rw/network/NetworkPingerTask	rustedw
 	f	Z	a	field_av_sendPingThisTick	sendPingThisTick
 	f	J	b	field_av_lastRunTimeMillis	lastRunTimeMillis
 	m	()V	run	method_av_run	run
+c	com/corrodinggames/rts/gameFramework/j/a	rw/network/NetworkChatHistory	rustedwarfare/network/NetworkChatHistory
+	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	a	field_a_messages	messages
+	m	(Ljava/lang/String;)Ljava/lang/String;	a	method_a_escapeChatText	escapeChatText
+	m	(ILjava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_a_addMessage	addMessage
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;I)I	a	method_a_countRecentMessagesForConnection	countRecentMessagesForConnection
+	m	()Ljava/lang/String;	a	method_a_toPlainTextLog	toPlainTextLog
+	m	()Ljava/util/concurrent/ConcurrentLinkedQueue;	b	method_a_getMessages	getMessages
+	m	(Z)Ljava/lang/String;	a	method_a_toHtmlLog	toHtmlLog
+	m	(Z)Landroid/text/Spanned;	b	method_a_toSpannedLog	toSpannedLog
+	m	()V	c	method_a_clear	clear
+c	com/corrodinggames/rts/gameFramework/j/b	rw/network/NetworkChatMessage	rustedwarfare/network/NetworkChatMessage
+	f	I	a	field_b_teamId	teamId
+	f	Ljava/lang/String;	b	field_b_senderName	senderName
+	f	Ljava/lang/String;	c	field_b_message	message
+	f	I	d	field_b_connectionId	connectionId
+	f	J	e	field_b_createdNanos	createdNanos
+	f	Lcom/corrodinggames/rts/gameFramework/j/a;	f	field_b_history	history
+	m	()Ljava/lang/String;	a	method_b_toPlainText	toPlainText
+	m	()Ljava/lang/String;	b	method_b_toHtml	toHtml
+c	com/corrodinggames/rts/gameFramework/j/aq	rw/network/MasterServerAuthTokenHelper	rustedwarfare/network/MasterServerAuthTokenHelper
+	f	Lcom/corrodinggames/rts/gameFramework/j/aq;	a	field_aq_instance	instance
+	f	Ljava/lang/String;	g	field_aq_tokenKeyPrefix	tokenKeyPrefix
+	f	Ljava/lang/String;	h	field_aq_timestampKeyPrefix	timestampKeyPrefix
+	f	Z	l	field_aq_enabled	enabled
+	m	(FFF)F	a	method_aq_lerp	lerp
+	m	(Ljava/lang/String;Ljava/util/List;)V	a	method_aq_addCreateServerTokens	addCreateServerTokens
+	m	(Ljava/lang/String;Ljava/util/List;)V	b	method_aq_addGetOwnInfoTokens	addGetOwnInfoTokens
+	m	(Ljava/lang/String;Ljava/util/List;)V	c	method_aq_addGetOwnInfoExtraTokensIfNeeded	addGetOwnInfoExtraTokensIfNeeded
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_aq_updateExtraIntegrityCheckState	updateExtraIntegrityCheckState
+c	com/corrodinggames/rts/gameFramework/j/ax	rw/io/TextGameOutputBlock	rustedwarfare/io/TextGameOutputBlock
+	f	Ljava/io/BufferedOutputStream;	a	field_ax_bufferedStream	bufferedStream
+	f	Ljava/lang/String;	b	field_ax_name	name
+	f	Ljava/io/ByteArrayOutputStream;	c	field_ax_byteBuffer	byteBuffer
+	f	Ljava/io/PrintStream;	d	field_ax_printStream	printStream
+	f	Z	e	field_ax_wrapsExternalStream	wrapsExternalStream
+	m	()V	a	method_ax_flush	flush
+	m	()V	b	method_ax_close	close
+c	com/corrodinggames/rts/gameFramework/j/f	rw/io/GameOutputTraceStream	rustedwarfare/io/GameOutputTraceStream
+	f	Ljava/lang/String;	a	field_f_traceText	traceText
+	m	(I)V	a	method_f_writeInt	writeInt
+	m	(F)V	a	method_f_writeFloat	writeFloat
+	m	(S)V	a	method_f_writeShort	writeShort
+	m	(Z)V	a	method_f_writeBoolean	writeBoolean
+	m	(Ljava/lang/String;Z)V	a	method_f_startBlock	startBlock
+	m	(Ljava/lang/String;)V	a	method_f_endBlock	endBlock
+	m	(Lcom/corrodinggames/rts/game/units/am;)V	a	method_f_writeUnitId	writeUnitId

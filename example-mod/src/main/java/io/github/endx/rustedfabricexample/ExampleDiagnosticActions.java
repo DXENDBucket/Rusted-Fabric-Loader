@@ -77,6 +77,7 @@ final class ExampleDiagnosticActions {
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
+                            + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
@@ -310,12 +311,50 @@ final class ExampleDiagnosticActions {
                             + " pinger=" + ExampleDebugOverlay.describeObject(pingerTask),
                     pingerTask != null ? pingerTask : networkEngine);
 
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network sync quick=" + network.get("quickResyncCommandQueued")
+                            + " pending=" + network.get("hasPendingQuickResync")
+                            + " enabled=" + network.get("enableQuickResync")
+                            + " fixOff=" + network.get("disableDesyncFixing")
+                            + " last=" + network.get("lastResyncTimer")
+                            + " trigger=" + network.get("resyncTriggerTimer")
+                            + " attempts=" + network.get("resyncAttemptCount")
+                            + " frame=" + network.get("lastResyncFrame"),
+                    networkEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network battleroom return=" + network.get("returnToBattleroomPending")
+                            + " timer=" + network.get("returnToBattleroomTimerActive")
+                            + " countdown=" + network.get("returnToBattleroomCountdownSeconds")
+                            + " startFailed=" + network.get("startGameFailed")
+                            + " bans=" + network.get("banEntriesCount"),
+                    networkEngine);
+
             if (pingerTask != null && NetworkRuntimeDiagnostics.isNetworkPingerTask(pingerTask)) {
                 Map<String, Object> pinger = NetworkRuntimeDiagnostics.describeNetworkPingerTask(pingerTask);
                 ExampleDebugOverlay.enqueueOverlayMessage(stage,
                         "Pinger sendThisTick=" + pinger.get("sendPingThisTick")
                                 + " lastRunMs=" + pinger.get("lastRunTimeMillis"),
                         pingerTask);
+            }
+
+            Object chatHistory = network.get("chatHistory");
+            if (chatHistory != null && NetworkRuntimeDiagnostics.isNetworkChatHistory(chatHistory)) {
+                Map<String, Object> chat = NetworkRuntimeDiagnostics.describeNetworkChatHistory(chatHistory);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Chat messages=" + chat.get("messagesSize")
+                                + " plain=" + ExampleDebugOverlay.safeText(String.valueOf(chat.get("plainTextLog"))),
+                        chatHistory);
+            }
+
+            Object tokenHelper = NetworkRuntimeDiagnostics.currentMasterServerAuthTokenHelper();
+            if (tokenHelper != null && NetworkRuntimeDiagnostics.isMasterServerAuthTokenHelper(tokenHelper)) {
+                Map<String, Object> token = NetworkRuntimeDiagnostics.describeMasterServerAuthTokenHelper(tokenHelper);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Master token helper enabled=" + token.get("enabled")
+                                + " tx=" + ExampleDebugOverlay.safeText(String.valueOf(token.get("tokenKeyPrefix")))
+                                + " ts=" + ExampleDebugOverlay.safeText(String.valueOf(token.get("timestampKeyPrefix"))),
+                        tokenHelper);
             }
 
             Object gameSetup = network.get("gameSetup");
