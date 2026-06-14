@@ -78,6 +78,7 @@ final class ExampleDiagnosticActions {
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
                             + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
+                            + " lobbyRows=" + MappingEvidenceDiagnostics.allNetworkLobbyChatCommandRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
@@ -293,12 +294,22 @@ final class ExampleDiagnosticActions {
                     "Network server=" + network.get("isServer")
                             + " started=" + network.get("networkingStarted")
                             + " single=" + network.get("singlePlayerServer")
+                            + " proxy=" + network.get("isProxyController")
+                            + " ctrl=" + network.get("serverOrProxyController")
                             + " protocol=" + network.get("networkProtocolVersion")
                             + " conns=" + network.get("connectionCount")
                             + " incoming=" + network.get("incomingPacketCount")
                             + " servers=" + network.get("serverListSize")
                             + " port=" + network.get("serverPort")
                             + " map=" + ExampleDebugOverlay.compactPath(String.valueOf(network.get("resolvedNetworkMapPath"))),
+                    networkEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Network lobby started=" + network.get("gameHasBeenStarted")
+                            + " paused=" + network.get("gamePaused")
+                            + " chatOnly=" + network.get("chatOnlyMode")
+                            + " teams=" + network.get("teamListSnapshotSize")
+                            + " lock=" + ExampleDebugOverlay.describeObject(network.get("teamListLock")),
                     networkEngine);
 
             Object pingerTask = network.get("networkPingerTask");
@@ -365,6 +376,7 @@ final class ExampleDiagnosticActions {
                                 + " type=" + ExampleDebugOverlay.safeText(String.valueOf(setup.get("mapTypeName")))
                                 + " credits=" + setup.get("startingCredits")
                                 + " fog=" + setup.get("fogMode")
+                                + " teamsLocked=" + setup.get("teamsLocked")
                                 + " spectators=" + setup.get("allowSpectators")
                                 + " locked=" + setup.get("lockedRoom")
                                 + " seed=" + setup.get("randomSeed"),

@@ -101,14 +101,14 @@ c	com/corrodinggames/librocket/e	rw/ui/PopupButton	rustedwarfare/ui/PopupButton
 	f	Ljava/lang/Runnable;	b	field_PopupButton_runnable	runnable
 	f	Z	c	field_PopupButton_bindEnterKey	bindEnterKey
 c	com/corrodinggames/librocket/scripts/Debug	rw/ui/script/DebugScript	rustedwarfare/ui/script/DebugScript
+	m	(IFFIZ)Ljava/lang/Long;	createCustomUnitFromTypeId	createCustomUnitFromTypeId	createCustomUnitFromTypeId
+	m	()I	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId
 	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_DebugScript_root	root
 	f	Z	allFeatures	field_DebugScript_allFeatures	allFeatures
 	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	backgroundClientConnections	field_DebugScript_backgroundClientConnections	backgroundClientConnections
 	f	Ljava/lang/Thread;	backgroundConnectionThread	field_DebugScript_backgroundConnectionThread	backgroundConnectionThread
 	f	Ljava/lang/Runnable;	backgroundConnectionRunnable	field_DebugScript_backgroundConnectionRunnable	backgroundConnectionRunnable
 	f	Z	forceNonThreaded	field_DebugScript_forceNonThreaded	forceNonThreaded
-	m	(IFFIZ)Ljava/lang/Long;	createCustomUnitFromTypeId	createCustomUnitFromTypeId	createCustomUnitFromTypeId
-	m	()I	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId
 	m	()I	currentPid	method_DebugScript_currentPid	currentPid
 	m	(Ljava/lang/String;)V	setLocalPlayerName	method_DebugScript_setLocalPlayerName	setLocalPlayerName
 	m	(Z)V	setDdosProtection	method_DebugScript_setDdosProtection	setDdosProtection
@@ -9585,6 +9585,27 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Lcom/corrodinggames/rts/gameFramework/j/ak;	am	field_NetworkEngine_networkChecksum	networkChecksum
 	f	Lcom/corrodinggames/rts/gameFramework/j/ah;	ay	field_NetworkEngine_gameSetup	gameSetup
 	f	Ljava/lang/String;	az	field_NetworkEngine_resolvedNetworkMapPath	resolvedNetworkMapPath
+	m	(FLjava/lang/String;)V	a	method_NetworkEngine_setCurrentStepRate	setCurrentStepRate
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	a	method_NetworkEngine_applyGameSetup	applyGameSetup
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_processGamePacket	processGamePacket
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_sendPacketToConnection	sendPacketToConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Z)Z	a	method_NetworkEngine_sendStartGamePacket	sendStartGamePacket
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;[BZZ)V	a	method_NetworkEngine_sendResyncSaveBytesToConnection	sendResyncSaveBytesToConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_deserialize	deserialize
+	m	(ZZZ)V	a	method_NetworkEngine_sendResyncSave	sendResyncSave
+	m	([BLcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkEngine_saveIncomingDesyncDebugSave	saveIncomingDesyncDebugSave
+	m	()Ljava/lang/String;	au	method_NetworkEngine_getEnabledModsSummary	getEnabledModsSummary
+	m	()Ljava/lang/String;	av	method_NetworkEngine_getNetworkMapPath	getNetworkMapPath
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)Z	b	method_NetworkEngine_shouldFilterPacket	shouldFilterPacket
+	m	(F)V	c	method_NetworkEngine_sendSyncChecksumPackets	sendSyncChecksumPackets
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	c	method_NetworkEngine_processSystemPacket	processSystemPacket
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	d	method_NetworkEngine_sendPacketToAll	sendPacketToAll
+	m	()Lcom/corrodinggames/rts/gameFramework/j/ah;	e	method_NetworkEngine_getGameSetup	getGameSetup
+	m	(F)V	e	method_NetworkEngine_updateDesyncDetectionAndResync	updateDesyncDetectionAndResync
+	m	()V	v	method_NetworkEngine_queueQuickResyncCommand	queueQuickResyncCommand
+	m	()V	w	method_NetworkEngine_applyQuickResyncSave	applyQuickResyncSave
+	m	()V	x	method_NetworkEngine_assertClientSyncStatus	assertClientSyncStatus
 	f	Lcom/corrodinggames/rts/gameFramework/j/ac;	d	field_ad_callbacks	callbacks
 	f	I	e	field_ad_networkProtocolVersion	networkProtocolVersion
 	f	I	m	field_ad_serverPort	serverPort
@@ -9597,6 +9618,11 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Ljava/lang/String;	bw	field_ad_ownServerId	ownServerId
 	f	Lcom/corrodinggames/rts/gameFramework/j/ae;	bE	field_ad_defaultPasswordPrompt	defaultPasswordPrompt
 	f	Lcom/corrodinggames/rts/gameFramework/j/an;	bF	field_ad_activeConnectThread	activeConnectThread
+	m	(Lcom/corrodinggames/rts/gameFramework/j/g;)V	a	method_ad_addLanServerInfo	addLanServerInfo
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ad_showPasswordPrompt	showPasswordPrompt
+	m	(Ljava/lang/String;ZLjava/lang/Runnable;)Lcom/corrodinggames/rts/gameFramework/j/an;	a	method_ad_startConnectSocketThread	startConnectSocketThread
+	m	(Ljava/lang/String;Z)Ljava/net/Socket;	b	method_ad_connectToServerSocket	connectToServerSocket
+	m	(Ljava/net/Socket;)Z	a	method_ad_connectToSocket	connectToSocket
 	f	I	h	field_ad_chatSpamLimit	chatSpamLimit
 	f	Z	B	field_ad_networkingStarted	networkingStarted
 	f	Z	F	field_ad_singlePlayerServer	singlePlayerServer
@@ -9619,44 +9645,6 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Lcom/corrodinggames/rts/game/e;	bk	field_ad_adminTeam	adminTeam
 	f	Ljava/net/Socket;	bv	field_ad_lastConnectedSocket	lastConnectedSocket
 	f	Z	bz	field_ad_sentRegisterConnection	sentRegisterConnection
-	f	Ljava/util/ArrayList;	M	field_ad_banEntries	banEntries
-	f	Z	aY	field_ad_returnToBattleroomPending	returnToBattleroomPending
-	f	Z	aZ	field_ad_returnToBattleroomTimerActive	returnToBattleroomTimerActive
-	f	F	ba	field_ad_returnToBattleroomCountdownSeconds	returnToBattleroomCountdownSeconds
-	f	Z	bc	field_ad_startGameFailed	startGameFailed
-	f	F	bn	field_ad_lastResyncTimer	lastResyncTimer
-	f	F	bo	field_ad_resyncTriggerTimer	resyncTriggerTimer
-	f	I	bp	field_ad_resyncAttemptCount	resyncAttemptCount
-	f	I	bq	field_ad_lastResyncFrame	lastResyncFrame
-	f	Z	br	field_ad_quickResyncCommandQueued	quickResyncCommandQueued
-	f	Z	as	field_ad_disableDesyncFixing	disableDesyncFixing
-	f	Z	b	field_ad_enableQuickResync	enableQuickResync
-	m	(FLjava/lang/String;)V	a	method_NetworkEngine_setCurrentStepRate	setCurrentStepRate
-	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	a	method_NetworkEngine_applyGameSetup	applyGameSetup
-	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_serialize	serialize
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_processGamePacket	processGamePacket
-	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_sendPacketToConnection	sendPacketToConnection
-	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Z)Z	a	method_NetworkEngine_sendStartGamePacket	sendStartGamePacket
-	m	(Lcom/corrodinggames/rts/gameFramework/j/c;[BZZ)V	a	method_NetworkEngine_sendResyncSaveBytesToConnection	sendResyncSaveBytesToConnection
-	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_deserialize	deserialize
-	m	(ZZZ)V	a	method_NetworkEngine_sendResyncSave	sendResyncSave
-	m	([BLcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkEngine_saveIncomingDesyncDebugSave	saveIncomingDesyncDebugSave
-	m	()Ljava/lang/String;	au	method_NetworkEngine_getEnabledModsSummary	getEnabledModsSummary
-	m	()Ljava/lang/String;	av	method_NetworkEngine_getNetworkMapPath	getNetworkMapPath
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)Z	b	method_NetworkEngine_shouldFilterPacket	shouldFilterPacket
-	m	(F)V	c	method_NetworkEngine_sendSyncChecksumPackets	sendSyncChecksumPackets
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	c	method_NetworkEngine_processSystemPacket	processSystemPacket
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	d	method_NetworkEngine_sendPacketToAll	sendPacketToAll
-	m	()Lcom/corrodinggames/rts/gameFramework/j/ah;	e	method_NetworkEngine_getGameSetup	getGameSetup
-	m	(F)V	e	method_NetworkEngine_updateDesyncDetectionAndResync	updateDesyncDetectionAndResync
-	m	()V	v	method_NetworkEngine_queueQuickResyncCommand	queueQuickResyncCommand
-	m	()V	w	method_NetworkEngine_applyQuickResyncSave	applyQuickResyncSave
-	m	()V	x	method_NetworkEngine_assertClientSyncStatus	assertClientSyncStatus
-	m	(Lcom/corrodinggames/rts/gameFramework/j/g;)V	a	method_ad_addLanServerInfo	addLanServerInfo
-	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ad_showPasswordPrompt	showPasswordPrompt
-	m	(Ljava/lang/String;ZLjava/lang/Runnable;)Lcom/corrodinggames/rts/gameFramework/j/an;	a	method_ad_startConnectSocketThread	startConnectSocketThread
-	m	(Ljava/lang/String;Z)Ljava/net/Socket;	b	method_ad_connectToServerSocket	connectToServerSocket
-	m	(Ljava/net/Socket;)Z	a	method_ad_connectToSocket	connectToSocket
 	m	()V	L	method_ad_broadcastServerInfo	broadcastServerInfo
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)V	c	method_ad_sendServerInfo	sendServerInfo
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	a	method_ad_sendKick	sendKick
@@ -9676,6 +9664,18 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	(I)Ljava/lang/String;	h	method_ad_buildExtraIntegrityResponse	buildExtraIntegrityResponse
 	m	(Ljava/lang/String;)Ljava/lang/String;	p	method_ad_sanitizePlayerName	sanitizePlayerName
 	m	(Ljava/util/ArrayList;Z)V	a	method_ad_startJoinServerInternalThread	startJoinServerInternalThread
+	f	Ljava/util/ArrayList;	M	field_ad_banEntries	banEntries
+	f	Z	aY	field_ad_returnToBattleroomPending	returnToBattleroomPending
+	f	Z	aZ	field_ad_returnToBattleroomTimerActive	returnToBattleroomTimerActive
+	f	F	ba	field_ad_returnToBattleroomCountdownSeconds	returnToBattleroomCountdownSeconds
+	f	Z	bc	field_ad_startGameFailed	startGameFailed
+	f	F	bn	field_ad_lastResyncTimer	lastResyncTimer
+	f	F	bo	field_ad_resyncTriggerTimer	resyncTriggerTimer
+	f	I	bp	field_ad_resyncAttemptCount	resyncAttemptCount
+	f	I	bq	field_ad_lastResyncFrame	lastResyncFrame
+	f	Z	br	field_ad_quickResyncCommandQueued	quickResyncCommandQueued
+	f	Z	as	field_ad_disableDesyncFixing	disableDesyncFixing
+	f	Z	b	field_ad_enableQuickResync	enableQuickResync
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)Lcom/corrodinggames/rts/gameFramework/j/aj;	a	method_ad_getActiveBanForConnection	getActiveBanForConnection
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;I)Z	a	method_ad_banConnection	banConnection
 	m	()V	a	method_ad_clearBanEntries	clearBanEntries
@@ -9695,6 +9695,39 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;I)Lcom/corrodinggames/rts/gameFramework/j/c;	a	method_ad_findForwardedConnection	findForwardedConnection
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	b	method_ad_closeConnectionWithReason	closeConnectionWithReason
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	c	method_ad_closeForwardedChildConnectionsWithReason	closeForwardedChildConnectionsWithReason
+	f	Z	H	field_NetworkEngine_isProxyController	isProxyController
+	f	Z	aW	field_NetworkEngine_gameHasBeenStarted	gameHasBeenStarted
+	f	Z	al	field_NetworkEngine_gamePaused	gamePaused
+	f	Z	v	field_NetworkEngine_chatOnlyMode	chatOnlyMode
+	f	Ljava/lang/Object;	bC	field_NetworkEngine_teamListLock	teamListLock
+	m	(Ljava/lang/String;)V	j	method_NetworkEngine_sendSystemMessage	sendSystemMessage
+	m	(Ljava/lang/String;)V	k	method_NetworkEngine_sendQuickChatCommand	sendQuickChatCommand
+	m	(Ljava/lang/String;)V	l	method_NetworkEngine_sendTeamChatMessage	sendTeamChatMessage
+	m	(Ljava/lang/String;)V	m	method_NetworkEngine_sendChatMessage	sendChatMessage
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Ljava/lang/String;)V	a	method_NetworkEngine_sendChatMessageFromServer	sendChatMessageFromServer
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkEngine_sendChatMessageFromServerToTarget	sendChatMessageFromServerToTarget
+	m	(Ljava/lang/String;)Ljava/lang/String;	n	method_NetworkEngine_extractChatCommandName	extractChatCommandName
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	c	method_NetworkEngine_formatChatLine	formatChatLine
+	m	(Ljava/lang/String;)V	o	method_NetworkEngine_addLocalSystemMessage	addLocalSystemMessage
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;ILjava/lang/String;Ljava/lang/String;)V	b	method_NetworkEngine_recordReceivedChatMessage	recordReceivedChatMessage
+	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkEngine_sendCommandError	sendCommandError
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Ljava/lang/String;)Z	b	method_NetworkEngine_handleChatCommand	handleChatCommand
+	m	()Z	aw	method_NetworkEngine_isServerOrProxyController	isServerOrProxyController
+	m	(Z)V	e	method_NetworkEngine_setGamePaused	setGamePaused
+	m	(Lcom/corrodinggames/rts/game/n;)V	e	method_NetworkEngine_requestKickTeamAndPlayer	requestKickTeamAndPlayer
+	m	(Lcom/corrodinggames/rts/game/n;)V	f	method_NetworkEngine_kickTeamAndAttachedPlayer	kickTeamAndAttachedPlayer
+	m	()V	ap	method_NetworkEngine_addAIToGame	addAIToGame
+	m	()Z	aq	method_NetworkEngine_updateAiNames	updateAiNames
+	m	(Lcom/corrodinggames/rts/game/n;I)V	a	method_NetworkEngine_movePlayerToSlot	movePlayerToSlot
+	m	(Lcom/corrodinggames/rts/game/n;I)V	c	method_NetworkEngine_applyMovePlayerToSlot	applyMovePlayerToSlot
+	m	(Lcom/corrodinggames/rts/game/n;ILjava/lang/Integer;)V	a	method_NetworkEngine_requestMovePlayerSlot	requestMovePlayerSlot
+	m	(Lcom/corrodinggames/rts/game/n;I)V	b	method_NetworkEngine_requestSetAllyTeam	requestSetAllyTeam
+	m	(Lcom/corrodinggames/rts/game/n;)V	g	method_NetworkEngine_announcePlayerVictory	announcePlayerVictory
+	m	(Lcom/corrodinggames/rts/game/n;)V	h	method_NetworkEngine_announcePlayerDefeated	announcePlayerDefeated
+	m	(Lcom/corrodinggames/rts/game/n;)V	i	method_NetworkEngine_announcePlayerWipedOut	announcePlayerWipedOut
+	m	()Ljava/util/ArrayList;	ax	method_NetworkEngine_getTeamListSnapshot	getTeamListSnapshot
+	m	(Lcom/corrodinggames/rts/gameFramework/j/am;)V	a	method_NetworkEngine_applyTeamLayoutLocked	applyTeamLayoutLocked
+	m	(Lcom/corrodinggames/rts/gameFramework/j/am;)V	b	method_NetworkEngine_applyTeamLayout	applyTeamLayout
 c	com/corrodinggames/rts/gameFramework/j/ah	rw/network/GameSetup	rustedwarfare/network/GameSetup
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	a	field_GameSetup_mapType	mapType
 	f	Ljava/lang/String;	b	field_GameSetup_mapPath	mapPath
@@ -9707,13 +9740,14 @@ c	com/corrodinggames/rts/gameFramework/j/ah	rw/network/GameSetup	rustedwarfare/n
 	f	Z	i	field_GameSetup_noNukes	noNukes
 	f	Z	l	field_GameSetup_sharedControl	sharedControl
 	f	I	q	field_GameSetup_randomSeed	randomSeed
-	f	Z	o	field_ah_allowSpectators	allowSpectators
-	f	Z	p	field_ah_lockedRoom	lockedRoom
 	m	()V	a	method_GameSetup_resetDefaults	resetDefaults
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_GameSetup_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_GameSetup_deserialize	deserialize
 	m	()Ljava/lang/String;	b	method_GameSetup_describe	describe
 	m	()Lcom/corrodinggames/rts/gameFramework/j/ah;	c	method_GameSetup_copy	copy
+	f	Z	o	field_ah_allowSpectators	allowSpectators
+	f	Z	p	field_ah_lockedRoom	lockedRoom
+	f	Z	m	field_GameSetup_teamsLocked	teamsLocked
 c	com/corrodinggames/rts/gameFramework/j/ai	rw/network/MapType	rustedwarfare/network/MapType
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	a	field_MapType_skirmishMap	skirmishMap
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	b	field_MapType_customMap	customMap
@@ -9856,6 +9890,8 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	f	Z	w	field_NetworkConnection_hasCompleteDesync	hasCompleteDesync
 	f	I	x	field_NetworkConnection_syncMatches	syncMatches
 	f	I	y	field_NetworkConnection_desyncCount	desyncCount
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkConnection_sendPacket	sendPacket
+	m	()Ljava/lang/String;	e	method_NetworkConnection_getDisplayName	getDisplayName
 	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	W	field_c_networkEngine	networkEngine
 	f	Z	b	field_c_closeRequested	closeRequested
 	f	Ljava/net/Socket;	d	field_c_socket	socket
@@ -9883,10 +9919,6 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	f	Z	T	field_c_commandLimitWarningShown	commandLimitWarningShown
 	f	I	U	field_c_currentIncomingPacketSize	currentIncomingPacketSize
 	f	I	V	field_c_currentIncomingPacketBytesRead	currentIncomingPacketBytesRead
-	f	I	k	field_c_forwardedClientId	forwardedClientId
-	f	Z	u	field_c_savedDesyncDebugSave	savedDesyncDebugSave
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkConnection_sendPacket	sendPacket
-	m	()Ljava/lang/String;	e	method_NetworkConnection_getDisplayName	getDisplayName
 	m	()Z	a	method_c_isCommandRateLimitExceeded	isCommandRateLimitExceeded
 	m	()I	b	method_c_getRecentPingMillis	getRecentPingMillis
 	m	()I	c	method_c_getPlayerId	getPlayerId
@@ -9902,6 +9934,8 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	m	(Ljava/lang/String;)V	c	method_c_logInfo	logInfo
 	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_c_formatLogPrefix	formatLogPrefix
 	m	()Z	h	method_c_isOpen	isOpen
+	f	I	k	field_c_forwardedClientId	forwardedClientId
+	f	Z	u	field_c_savedDesyncDebugSave	savedDesyncDebugSave
 c	com/corrodinggames/rts/gameFramework/j/d	rw/network/ConnectionReaderThread	rustedwarfare/network/ConnectionReaderThread
 	f	Ljava/lang/Boolean;	a	field_d_running	running
 	f	Lcom/corrodinggames/rts/gameFramework/j/c;	b	field_d_connection	connection
@@ -11778,11 +11812,11 @@ c	com/corrodinggames/rts/gameFramework/j/ae	rw/network/PasswordPrompt	rustedwarf
 	f	Ljava/lang/String;	b	field_ae_promptMessage	promptMessage
 	f	I	c	field_ae_targetConnectionId	targetConnectionId
 	f	Z	d	field_ae_replyToRemoteConnection	replyToRemoteConnection
+	m	(Ljava/lang/String;)V	a	method_ae_submitPassword	submitPassword
+	m	()V	a	method_ae_cancelPasswordPrompt	cancelPasswordPrompt
 	f	Ljava/lang/String;	e	field_PasswordPrompt_customTitle	customTitle
 	f	Ljava/lang/String;	f	field_PasswordPrompt_positiveButtonText	positiveButtonText
 	f	Ljava/lang/String;	g	field_PasswordPrompt_negativeButtonText	negativeButtonText
-	m	(Ljava/lang/String;)V	a	method_ae_submitPassword	submitPassword
-	m	()V	a	method_ae_cancelPasswordPrompt	cancelPasswordPrompt
 c	com/corrodinggames/rts/gameFramework/j/ad$1	rw/network/BlockingPasswordPrompt	rustedwarfare/network/BlockingPasswordPrompt
 	f	Ljava/lang/Object;	a	field_ad_1_monitorLock	monitorLock
 	m	(Ljava/lang/String;)V	a	method_ad_1_submitPassword	submitPassword

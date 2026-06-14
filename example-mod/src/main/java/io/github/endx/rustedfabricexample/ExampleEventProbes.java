@@ -14,6 +14,7 @@ import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
+import io.github.endx.rustedfabricapi.api.event.NetworkLobbyChatEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
@@ -31,6 +32,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.TeamStatsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.UnitRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.ini.RustedIniDiagnostics;
 
@@ -270,6 +272,101 @@ final class ExampleEventProbes {
         NetworkSyncEvents.AFTER_CLOSE_FORWARDED_CHILD_CONNECTIONS.register((networkEngine, connection, reason) ->
                 showNetworkConnectionProbe(stage, "AfterCloseForwardedChildConnections",
                         "reason=" + safeText(reason), networkEngine, connection));
+
+        NetworkLobbyChatEvents.AFTER_SEND_SYSTEM_MESSAGE.register((networkEngine, text) ->
+                showNetworkLobbyTextProbe(stage, "AfterSendSystemMessage", text, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_SEND_QUICK_CHAT_COMMAND.register((networkEngine, text) ->
+                showNetworkLobbyTextProbe(stage, "AfterSendQuickChatCommand", text, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_SEND_TEAM_CHAT_MESSAGE.register((networkEngine, text) ->
+                showNetworkLobbyTextProbe(stage, "AfterSendTeamChatMessage", text, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_SEND_CHAT_MESSAGE.register((networkEngine, text) ->
+                showNetworkLobbyTextProbe(stage, "AfterSendChatMessage", text, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_SEND_SERVER_CHAT_MESSAGE.register((networkEngine, sourceConnection, team, senderName, message, targetConnection) ->
+                showNetworkLobbyProbe(stage, "AfterSendServerChatMessage",
+                        "from=" + safeText(senderName)
+                                + " msg=" + safeText(message)
+                                + " team=" + describeTeam(team)
+                                + " target=" + describeNetworkConnection(targetConnection)
+                                + " source=" + describeNetworkConnection(sourceConnection),
+                        networkEngine, 750L));
+
+        NetworkLobbyChatEvents.AFTER_RECORD_RECEIVED_CHAT_MESSAGE.register((networkEngine, connection, teamId, senderName, message) ->
+                showNetworkLobbyProbe(stage, "AfterRecordReceivedChatMessage",
+                        "teamId=" + teamId
+                                + " from=" + safeText(senderName)
+                                + " msg=" + safeText(message)
+                                + " " + describeNetworkConnection(connection),
+                        networkEngine, 750L));
+
+        NetworkLobbyChatEvents.AFTER_SEND_COMMAND_ERROR.register((networkEngine, message, targetConnection) ->
+                showNetworkLobbyProbe(stage, "AfterSendCommandError",
+                        "error=" + safeText(message)
+                                + " target=" + describeNetworkConnection(targetConnection),
+                        networkEngine, 1000L));
+
+        NetworkLobbyChatEvents.AFTER_HANDLE_CHAT_COMMAND.register((networkEngine, connection, team, senderName, message, commandName, consumed) ->
+                showNetworkLobbyProbe(stage, "AfterHandleChatCommand",
+                        "cmd=" + safeText(commandName)
+                                + " consumed=" + consumed
+                                + " from=" + safeText(senderName)
+                                + " msg=" + safeText(message)
+                                + " " + describeTeam(team)
+                                + " " + describeNetworkConnection(connection),
+                        networkEngine, 750L));
+
+        NetworkLobbyChatEvents.AFTER_SET_GAME_PAUSED.register((networkEngine, paused) ->
+                showNetworkLobbyProbe(stage, "AfterSetGamePaused",
+                        "paused=" + paused, networkEngine, 1000L));
+
+        NetworkLobbyChatEvents.AFTER_REQUEST_KICK_TEAM_AND_PLAYER.register((networkEngine, team) ->
+                showNetworkLobbyTeamProbe(stage, "AfterRequestKickTeamAndPlayer", team, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_KICK_TEAM_AND_ATTACHED_PLAYER.register((networkEngine, team) ->
+                showNetworkLobbyTeamProbe(stage, "AfterKickTeamAndAttachedPlayer", team, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_ADD_AI_TO_GAME.register(networkEngine ->
+                showNetworkLobbyProbe(stage, "AfterAddAIToGame", "teams=" + describeTeamListSize(networkEngine),
+                        networkEngine, 1000L));
+
+        NetworkLobbyChatEvents.AFTER_UPDATE_AI_NAMES.register((networkEngine, changed) ->
+                showNetworkLobbyProbe(stage, "AfterUpdateAiNames",
+                        "changed=" + changed + " teams=" + describeTeamListSize(networkEngine),
+                        networkEngine, 1000L));
+
+        NetworkLobbyChatEvents.AFTER_MOVE_PLAYER_TO_SLOT.register((networkEngine, team, slot) ->
+                showNetworkLobbyTeamSlotProbe(stage, "AfterMovePlayerToSlot", team, slot, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_APPLY_MOVE_PLAYER_TO_SLOT.register((networkEngine, team, slot) ->
+                showNetworkLobbyTeamSlotProbe(stage, "AfterApplyMovePlayerToSlot", team, slot, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_REQUEST_MOVE_PLAYER_SLOT.register((networkEngine, team, slot, optionalValue) ->
+                showNetworkLobbyProbe(stage, "AfterRequestMovePlayerSlot",
+                        describeTeam(team) + " slot=" + slot + " value=" + optionalValue,
+                        networkEngine, 1000L));
+
+        NetworkLobbyChatEvents.AFTER_REQUEST_SET_ALLY_TEAM.register((networkEngine, team, allyTeam) ->
+                showNetworkLobbyProbe(stage, "AfterRequestSetAllyTeam",
+                        describeTeam(team) + " allyTeam=" + allyTeam,
+                        networkEngine, 1000L));
+
+        NetworkLobbyChatEvents.AFTER_ANNOUNCE_PLAYER_VICTORY.register((networkEngine, team) ->
+                showNetworkLobbyTeamProbe(stage, "AfterAnnouncePlayerVictory", team, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_ANNOUNCE_PLAYER_DEFEATED.register((networkEngine, team) ->
+                showNetworkLobbyTeamProbe(stage, "AfterAnnouncePlayerDefeated", team, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_ANNOUNCE_PLAYER_WIPED_OUT.register((networkEngine, team) ->
+                showNetworkLobbyTeamProbe(stage, "AfterAnnouncePlayerWipedOut", team, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_APPLY_TEAM_LAYOUT.register((networkEngine, teamLayout) ->
+                showNetworkLobbyLayoutProbe(stage, "AfterApplyTeamLayout", teamLayout, networkEngine));
+
+        NetworkLobbyChatEvents.AFTER_APPLY_TEAM_LAYOUT_LOCKED.register((networkEngine, teamLayout) ->
+                showNetworkLobbyLayoutProbe(stage, "AfterApplyTeamLayoutLocked", teamLayout, networkEngine));
 
         RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
             showEventProbeMessage(stage, "AfterMetadataParsed",
@@ -1914,6 +2011,32 @@ final class ExampleEventProbes {
                 connection != null ? connection : networkEngine, 1000L);
     }
 
+    private static void showNetworkLobbyTextProbe(String stage, String key, String text, Object networkEngine) {
+        showNetworkLobbyProbe(stage, key, "text=" + safeText(text), networkEngine, 750L);
+    }
+
+    private static void showNetworkLobbyTeamProbe(String stage, String key, Object team, Object networkEngine) {
+        showNetworkLobbyProbe(stage, key, describeTeam(team), networkEngine, 1000L);
+    }
+
+    private static void showNetworkLobbyTeamSlotProbe(String stage, String key,
+                                                      Object team, int slot, Object networkEngine) {
+        showNetworkLobbyProbe(stage, key, describeTeam(team) + " slot=" + slot, networkEngine, 1000L);
+    }
+
+    private static void showNetworkLobbyLayoutProbe(String stage, String key,
+                                                    Object teamLayout, Object networkEngine) {
+        showNetworkLobbyProbe(stage, key, "layout=" + describeTeamLayout(teamLayout), networkEngine, 1000L);
+    }
+
+    private static void showNetworkLobbyProbe(String stage, String key, String extra,
+                                              Object networkEngine, long minIntervalMillis) {
+        String message = "NetworkLobby." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " " + describeNetworkLobbyState(networkEngine);
+        showEventProbeMessage(stage, "NetworkLobby." + key, message, networkEngine, minIntervalMillis);
+    }
+
     private static String describeNetworkState(Object networkEngine) {
         if (networkEngine == null) {
             return "net=null";
@@ -1933,6 +2056,26 @@ final class ExampleEventProbes {
         } catch (RuntimeException ignored) {
         }
         return "net=" + describeObject(networkEngine);
+    }
+
+    private static String describeNetworkLobbyState(Object networkEngine) {
+        if (networkEngine == null) {
+            return "lobby=null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isNetworkEngine(networkEngine)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describeNetworkEngine(networkEngine);
+                return "lobby={server=" + details.get("isServer")
+                        + ", proxy=" + details.get("isProxyController")
+                        + ", ctrl=" + details.get("serverOrProxyController")
+                        + ", started=" + details.get("gameHasBeenStarted")
+                        + ", paused=" + details.get("gamePaused")
+                        + ", chatOnly=" + details.get("chatOnlyMode")
+                        + ", teams=" + details.get("teamListSnapshotSize") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "lobby=" + describeObject(networkEngine);
     }
 
     private static String describeNetworkConnection(Object connection) {
@@ -1957,6 +2100,43 @@ final class ExampleEventProbes {
         } catch (RuntimeException ignored) {
         }
         return "conn=" + describeObject(connection);
+    }
+
+    private static String describeTeam(Object team) {
+        if (team == null) {
+            return "team=null";
+        }
+        try {
+            Map<String, Object> details = TeamStatsDiagnostics.describeTeam(team);
+            return "team=" + describeObject(team)
+                    + "{units=" + details.get("totalUnitCountIncludingQueued")
+                    + ", income=" + details.get("incomeRate")
+                    + ", max=" + details.get("maxUnitCount") + "}";
+        } catch (RuntimeException e) {
+            return "team=" + describeObject(team);
+        }
+    }
+
+    private static String describeTeamLayout(Object teamLayout) {
+        if (teamLayout == null) {
+            return "null";
+        }
+        try {
+            if (NetworkRuntimeDiagnostics.isTeamLayout(teamLayout)) {
+                Map<String, Object> details = NetworkRuntimeDiagnostics.describeTeamLayout(teamLayout);
+                return safeText(String.valueOf(details.get("text")));
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return describeObject(teamLayout);
+    }
+
+    private static String describeTeamListSize(Object networkEngine) {
+        try {
+            return String.valueOf(NetworkRuntimeDiagnostics.teamListSnapshot(networkEngine).size());
+        } catch (RuntimeException e) {
+            return "<unavailable>";
+        }
     }
 
     private static String describeCommand(Object command) {

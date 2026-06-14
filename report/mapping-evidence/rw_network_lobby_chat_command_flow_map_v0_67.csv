@@ -1,0 +1,7 @@
+surface,entry,descriptor,evidence,notes
+packet 140,NetworkEngine.sendChatMessage,(Ljava/lang/String;)V,client serializes packet 140 with text payload,client-to-server chat/command packet
+packet 141,NetworkEngine.sendChatMessageFromServerToTarget,(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/j/c;)V,"server serializes packet 141, sender/team id/message",server-to-client chat/system packet
+local display,NetworkEngine.recordReceivedChatMessage,(Lcom/corrodinggames/rts/gameFramework/j/c;ILjava/lang/String;Ljava/lang/String;)V,"updates chatHistory/callbacks, may show New Message notification",local chat-history sink
+command parser,NetworkEngine.handleChatCommand,(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/game/n;Ljava/lang/String;Ljava/lang/String;)Z,pause/unpause/endgame/teamlock/roomlock/kick/move/team strings,returns true when a command was consumed
+proxy/admin gate,NetworkEngine.isServerOrProxyController,()Z,returns C || H,host or proxy-controller privilege surface
+team lock,GameSetup.teamsLocked,Z,teamlock true/on false/off toggles ah.m,lobby team-change gate

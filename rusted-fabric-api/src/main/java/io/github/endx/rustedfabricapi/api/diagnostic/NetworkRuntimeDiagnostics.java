@@ -41,6 +41,10 @@ public final class NetworkRuntimeDiagnostics {
             "rustedwarfare.network.NetworkPingerTask",
             "com.corrodinggames.rts.gameFramework.j.av"
     };
+    private static final String[] TEAM_LAYOUT_CLASSES = {
+            "rustedwarfare.network.TeamLayout",
+            "com.corrodinggames.rts.gameFramework.j.am"
+    };
     private static final String[] NETWORK_CHAT_HISTORY_CLASSES = {
             "rustedwarfare.network.NetworkChatHistory",
             "com.corrodinggames.rts.gameFramework.j.a"
@@ -138,6 +142,10 @@ public final class NetworkRuntimeDiagnostics {
         return isAny(value, NETWORK_PINGER_TASK_CLASSES);
     }
 
+    public static boolean isTeamLayout(Object value) {
+        return isAny(value, TEAM_LAYOUT_CLASSES);
+    }
+
     public static boolean isNetworkChatHistory(Object value) {
         return isAny(value, NETWORK_CHAT_HISTORY_CLASSES);
     }
@@ -196,6 +204,10 @@ public final class NetworkRuntimeDiagnostics {
         putIntField(result, networkEngine, "chatSpamLimit", new String[]{"chatSpamLimit", "h"});
         putBooleanField(result, networkEngine, "networkingStarted", new String[]{"networkingStarted", "B"});
         putBooleanField(result, networkEngine, "singlePlayerServer", new String[]{"singlePlayerServer", "F"});
+        putBooleanField(result, networkEngine, "isProxyController", new String[]{"isProxyController", "H"});
+        putBooleanField(result, networkEngine, "gameHasBeenStarted", new String[]{"gameHasBeenStarted", "aW"});
+        putBooleanField(result, networkEngine, "gamePaused", new String[]{"gamePaused", "al"});
+        putBooleanField(result, networkEngine, "chatOnlyMode", new String[]{"chatOnlyMode", "v"});
         putBooleanField(result, networkEngine, "enableQuickResync", new String[]{"enableQuickResync", "b"});
         putIntField(result, networkEngine, "serverPort", new String[]{"serverPort", "m"});
         putIntField(result, networkEngine, "udpDiscoveryPort", new String[]{"udpDiscoveryPort", "t"});
@@ -228,6 +240,7 @@ public final class NetworkRuntimeDiagnostics {
         putField(result, networkEngine, "spectatorTeam", new String[]{"spectatorTeam", "bj"});
         putField(result, networkEngine, "adminTeam", new String[]{"adminTeam", "bk"});
         putField(result, networkEngine, "lastConnectedSocket", new String[]{"lastConnectedSocket", "bv"});
+        putField(result, networkEngine, "teamListLock", new String[]{"teamListLock", "bC"});
         putBooleanField(result, networkEngine, "sentRegisterConnection", new String[]{"sentRegisterConnection", "bz"});
         putBooleanField(result, networkEngine, "returnToBattleroomPending",
                 new String[]{"returnToBattleroomPending", "aY"});
@@ -244,6 +257,9 @@ public final class NetworkRuntimeDiagnostics {
                 new String[]{"quickResyncCommandQueued", "br"});
         putField(result, networkEngine, "activeConnectThread", new String[]{"activeConnectThread", "bF"});
         putField(result, networkEngine, "defaultPasswordPrompt", new String[]{"defaultPasswordPrompt", "bE"});
+        result.put("serverOrProxyController", Boolean.valueOf(invokeBooleanOrFalse(networkEngine,
+                new String[]{"isServerOrProxyController", "aw"})));
+        result.put("teamListSnapshotSize", Integer.valueOf(teamListSnapshot(networkEngine).size()));
         Object gameSetup = fieldValueOrNull(networkEngine, new String[]{"gameSetup", "ay"});
         result.put("gameSetup", gameSetup);
         result.put("gameSetupDescription", gameSetup != null && isGameSetup(gameSetup)
@@ -297,6 +313,21 @@ public final class NetworkRuntimeDiagnostics {
                 fieldValueOrNull(networkEngine, new String[]{"serverList", "bi"})));
     }
 
+    public static List<Object> currentTeamListSnapshot() {
+        Object networkEngine = currentNetworkEngine();
+        return networkEngine != null ? teamListSnapshot(networkEngine) : Collections.<Object>emptyList();
+    }
+
+    public static List<Object> teamListSnapshot(Object networkEngine) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        try {
+            return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                    RustedReflection.invokeInstance(networkEngine, new String[]{"getTeamListSnapshot", "ax"})));
+        } catch (RuntimeException ignored) {
+            return Collections.emptyList();
+        }
+    }
+
     public static Object gameSetup(Object networkEngine) {
         requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
         return fieldValueOrNull(networkEngine, new String[]{"gameSetup", "ay"});
@@ -320,6 +351,7 @@ public final class NetworkRuntimeDiagnostics {
         putFloatField(result, gameSetup, "incomeMultiplier", new String[]{"incomeMultiplier", "h"});
         putBooleanField(result, gameSetup, "noNukes", new String[]{"noNukes", "i"});
         putBooleanField(result, gameSetup, "sharedControl", new String[]{"sharedControl", "l"});
+        putBooleanField(result, gameSetup, "teamsLocked", new String[]{"teamsLocked", "m"});
         putBooleanField(result, gameSetup, "allowSpectators", new String[]{"allowSpectators", "o"});
         putBooleanField(result, gameSetup, "lockedRoom", new String[]{"lockedRoom", "p"});
         putIntField(result, gameSetup, "randomSeed", new String[]{"randomSeed", "q"});
@@ -429,9 +461,27 @@ public final class NetworkRuntimeDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Map<String, Object> describeTeamLayout(Object teamLayout) {
+        requireAny(teamLayout, TEAM_LAYOUT_CLASSES, "TeamLayout");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", teamLayout.getClass().getName());
+        result.put("text", String.valueOf(teamLayout));
+        return Collections.unmodifiableMap(result);
+    }
+
     public static String sanitizePlayerName(Object networkEngine, String playerName) {
         requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
         return invokeStringOrEmpty(networkEngine, new String[]{"sanitizePlayerName", "p"}, playerName);
+    }
+
+    public static String extractChatCommandName(Object networkEngine, String text) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"extractChatCommandName", "n"}, text);
+    }
+
+    public static String formatChatLine(Object networkEngine, String senderName, String message) {
+        requireAny(networkEngine, NETWORK_ENGINE_CLASSES, "NetworkEngine");
+        return invokeStringOrEmpty(networkEngine, new String[]{"formatChatLine", "c"}, senderName, message);
     }
 
     public static Object currentChatHistory() {
