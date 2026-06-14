@@ -101,14 +101,14 @@ c	com/corrodinggames/librocket/e	rw/ui/PopupButton	rustedwarfare/ui/PopupButton
 	f	Ljava/lang/Runnable;	b	field_PopupButton_runnable	runnable
 	f	Z	c	field_PopupButton_bindEnterKey	bindEnterKey
 c	com/corrodinggames/librocket/scripts/Debug	rw/ui/script/DebugScript	rustedwarfare/ui/script/DebugScript
-	m	(IFFIZ)Ljava/lang/Long;	createCustomUnitFromTypeId	createCustomUnitFromTypeId	createCustomUnitFromTypeId
-	m	()I	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId
 	f	Lcom/corrodinggames/librocket/scripts/Root;	root	field_DebugScript_root	root
 	f	Z	allFeatures	field_DebugScript_allFeatures	allFeatures
 	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	backgroundClientConnections	field_DebugScript_backgroundClientConnections	backgroundClientConnections
 	f	Ljava/lang/Thread;	backgroundConnectionThread	field_DebugScript_backgroundConnectionThread	backgroundConnectionThread
 	f	Ljava/lang/Runnable;	backgroundConnectionRunnable	field_DebugScript_backgroundConnectionRunnable	backgroundConnectionRunnable
 	f	Z	forceNonThreaded	field_DebugScript_forceNonThreaded	forceNonThreaded
+	m	(IFFIZ)Ljava/lang/Long;	createCustomUnitFromTypeId	createCustomUnitFromTypeId	createCustomUnitFromTypeId
+	m	()I	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId	getMaxCustomUnitTypeId
 	m	()I	currentPid	method_DebugScript_currentPid	currentPid
 	m	(Ljava/lang/String;)V	setLocalPlayerName	method_DebugScript_setLocalPlayerName	setLocalPlayerName
 	m	(Z)V	setDdosProtection	method_DebugScript_setDdosProtection	setDdosProtection
@@ -9585,27 +9585,6 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Lcom/corrodinggames/rts/gameFramework/j/ak;	am	field_NetworkEngine_networkChecksum	networkChecksum
 	f	Lcom/corrodinggames/rts/gameFramework/j/ah;	ay	field_NetworkEngine_gameSetup	gameSetup
 	f	Ljava/lang/String;	az	field_NetworkEngine_resolvedNetworkMapPath	resolvedNetworkMapPath
-	m	(FLjava/lang/String;)V	a	method_NetworkEngine_setCurrentStepRate	setCurrentStepRate
-	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	a	method_NetworkEngine_applyGameSetup	applyGameSetup
-	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_serialize	serialize
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_processGamePacket	processGamePacket
-	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_sendPacketToConnection	sendPacketToConnection
-	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Z)Z	a	method_NetworkEngine_sendStartGamePacket	sendStartGamePacket
-	m	(Lcom/corrodinggames/rts/gameFramework/j/c;[BZZ)V	a	method_NetworkEngine_sendResyncSaveBytesToConnection	sendResyncSaveBytesToConnection
-	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_deserialize	deserialize
-	m	(ZZZ)V	a	method_NetworkEngine_sendResyncSave	sendResyncSave
-	m	([BLcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkEngine_saveIncomingDesyncDebugSave	saveIncomingDesyncDebugSave
-	m	()Ljava/lang/String;	au	method_NetworkEngine_getEnabledModsSummary	getEnabledModsSummary
-	m	()Ljava/lang/String;	av	method_NetworkEngine_getNetworkMapPath	getNetworkMapPath
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)Z	b	method_NetworkEngine_shouldFilterPacket	shouldFilterPacket
-	m	(F)V	c	method_NetworkEngine_sendSyncChecksumPackets	sendSyncChecksumPackets
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	c	method_NetworkEngine_processSystemPacket	processSystemPacket
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	d	method_NetworkEngine_sendPacketToAll	sendPacketToAll
-	m	()Lcom/corrodinggames/rts/gameFramework/j/ah;	e	method_NetworkEngine_getGameSetup	getGameSetup
-	m	(F)V	e	method_NetworkEngine_updateDesyncDetectionAndResync	updateDesyncDetectionAndResync
-	m	()V	v	method_NetworkEngine_queueQuickResyncCommand	queueQuickResyncCommand
-	m	()V	w	method_NetworkEngine_applyQuickResyncSave	applyQuickResyncSave
-	m	()V	x	method_NetworkEngine_assertClientSyncStatus	assertClientSyncStatus
 	f	Lcom/corrodinggames/rts/gameFramework/j/ac;	d	field_ad_callbacks	callbacks
 	f	I	e	field_ad_networkProtocolVersion	networkProtocolVersion
 	f	I	m	field_ad_serverPort	serverPort
@@ -9618,11 +9597,6 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Ljava/lang/String;	bw	field_ad_ownServerId	ownServerId
 	f	Lcom/corrodinggames/rts/gameFramework/j/ae;	bE	field_ad_defaultPasswordPrompt	defaultPasswordPrompt
 	f	Lcom/corrodinggames/rts/gameFramework/j/an;	bF	field_ad_activeConnectThread	activeConnectThread
-	m	(Lcom/corrodinggames/rts/gameFramework/j/g;)V	a	method_ad_addLanServerInfo	addLanServerInfo
-	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ad_showPasswordPrompt	showPasswordPrompt
-	m	(Ljava/lang/String;ZLjava/lang/Runnable;)Lcom/corrodinggames/rts/gameFramework/j/an;	a	method_ad_startConnectSocketThread	startConnectSocketThread
-	m	(Ljava/lang/String;Z)Ljava/net/Socket;	b	method_ad_connectToServerSocket	connectToServerSocket
-	m	(Ljava/net/Socket;)Z	a	method_ad_connectToSocket	connectToSocket
 	f	I	h	field_ad_chatSpamLimit	chatSpamLimit
 	f	Z	B	field_ad_networkingStarted	networkingStarted
 	f	Z	F	field_ad_singlePlayerServer	singlePlayerServer
@@ -9645,6 +9619,53 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	f	Lcom/corrodinggames/rts/game/e;	bk	field_ad_adminTeam	adminTeam
 	f	Ljava/net/Socket;	bv	field_ad_lastConnectedSocket	lastConnectedSocket
 	f	Z	bz	field_ad_sentRegisterConnection	sentRegisterConnection
+	f	Ljava/util/ArrayList;	M	field_ad_banEntries	banEntries
+	f	Z	aY	field_ad_returnToBattleroomPending	returnToBattleroomPending
+	f	Z	aZ	field_ad_returnToBattleroomTimerActive	returnToBattleroomTimerActive
+	f	F	ba	field_ad_returnToBattleroomCountdownSeconds	returnToBattleroomCountdownSeconds
+	f	Z	bc	field_ad_startGameFailed	startGameFailed
+	f	F	bn	field_ad_lastResyncTimer	lastResyncTimer
+	f	F	bo	field_ad_resyncTriggerTimer	resyncTriggerTimer
+	f	I	bp	field_ad_resyncAttemptCount	resyncAttemptCount
+	f	I	bq	field_ad_lastResyncFrame	lastResyncFrame
+	f	Z	br	field_ad_quickResyncCommandQueued	quickResyncCommandQueued
+	f	Z	as	field_ad_disableDesyncFixing	disableDesyncFixing
+	f	Z	b	field_ad_enableQuickResync	enableQuickResync
+	f	Z	H	field_NetworkEngine_isProxyController	isProxyController
+	f	Z	aW	field_NetworkEngine_gameHasBeenStarted	gameHasBeenStarted
+	f	Z	al	field_NetworkEngine_gamePaused	gamePaused
+	f	Z	v	field_NetworkEngine_chatOnlyMode	chatOnlyMode
+	f	Ljava/lang/Object;	bC	field_NetworkEngine_teamListLock	teamListLock
+	f	F	bI	field_NetworkEngine_currentStepRate	currentStepRate
+	f	Z	G	field_NetworkEngine_isServerController	isServerController
+	f	I	aw	field_NetworkEngine_teamUnitCap	teamUnitCap
+	f	I	ax	field_NetworkEngine_maxTeamUnitCap	maxTeamUnitCap
+	m	(FLjava/lang/String;)V	a	method_NetworkEngine_setCurrentStepRate	setCurrentStepRate
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ah;)V	a	method_NetworkEngine_applyGameSetup	applyGameSetup
+	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_serialize	serialize
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_processGamePacket	processGamePacket
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkEngine_sendPacketToConnection	sendPacketToConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Z)Z	a	method_NetworkEngine_sendStartGamePacket	sendStartGamePacket
+	m	(Lcom/corrodinggames/rts/gameFramework/j/c;[BZZ)V	a	method_NetworkEngine_sendResyncSaveBytesToConnection	sendResyncSaveBytesToConnection
+	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_gameFramework_j_ad_deserialize	deserialize
+	m	(ZZZ)V	a	method_NetworkEngine_sendResyncSave	sendResyncSave
+	m	([BLcom/corrodinggames/rts/gameFramework/j/c;)V	a	method_NetworkEngine_saveIncomingDesyncDebugSave	saveIncomingDesyncDebugSave
+	m	()Ljava/lang/String;	au	method_NetworkEngine_getEnabledModsSummary	getEnabledModsSummary
+	m	()Ljava/lang/String;	av	method_NetworkEngine_getNetworkMapPath	getNetworkMapPath
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)Z	b	method_NetworkEngine_shouldFilterPacket	shouldFilterPacket
+	m	(F)V	c	method_NetworkEngine_sendSyncChecksumPackets	sendSyncChecksumPackets
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	c	method_NetworkEngine_processSystemPacket	processSystemPacket
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	d	method_NetworkEngine_sendPacketToAll	sendPacketToAll
+	m	()Lcom/corrodinggames/rts/gameFramework/j/ah;	e	method_NetworkEngine_getGameSetup	getGameSetup
+	m	(F)V	e	method_NetworkEngine_updateDesyncDetectionAndResync	updateDesyncDetectionAndResync
+	m	()V	v	method_NetworkEngine_queueQuickResyncCommand	queueQuickResyncCommand
+	m	()V	w	method_NetworkEngine_applyQuickResyncSave	applyQuickResyncSave
+	m	()V	x	method_NetworkEngine_assertClientSyncStatus	assertClientSyncStatus
+	m	(Lcom/corrodinggames/rts/gameFramework/j/g;)V	a	method_ad_addLanServerInfo	addLanServerInfo
+	m	(Lcom/corrodinggames/rts/gameFramework/j/ae;)V	a	method_ad_showPasswordPrompt	showPasswordPrompt
+	m	(Ljava/lang/String;ZLjava/lang/Runnable;)Lcom/corrodinggames/rts/gameFramework/j/an;	a	method_ad_startConnectSocketThread	startConnectSocketThread
+	m	(Ljava/lang/String;Z)Ljava/net/Socket;	b	method_ad_connectToServerSocket	connectToServerSocket
+	m	(Ljava/net/Socket;)Z	a	method_ad_connectToSocket	connectToSocket
 	m	()V	L	method_ad_broadcastServerInfo	broadcastServerInfo
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)V	c	method_ad_sendServerInfo	sendServerInfo
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	a	method_ad_sendKick	sendKick
@@ -9664,18 +9685,6 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	(I)Ljava/lang/String;	h	method_ad_buildExtraIntegrityResponse	buildExtraIntegrityResponse
 	m	(Ljava/lang/String;)Ljava/lang/String;	p	method_ad_sanitizePlayerName	sanitizePlayerName
 	m	(Ljava/util/ArrayList;Z)V	a	method_ad_startJoinServerInternalThread	startJoinServerInternalThread
-	f	Ljava/util/ArrayList;	M	field_ad_banEntries	banEntries
-	f	Z	aY	field_ad_returnToBattleroomPending	returnToBattleroomPending
-	f	Z	aZ	field_ad_returnToBattleroomTimerActive	returnToBattleroomTimerActive
-	f	F	ba	field_ad_returnToBattleroomCountdownSeconds	returnToBattleroomCountdownSeconds
-	f	Z	bc	field_ad_startGameFailed	startGameFailed
-	f	F	bn	field_ad_lastResyncTimer	lastResyncTimer
-	f	F	bo	field_ad_resyncTriggerTimer	resyncTriggerTimer
-	f	I	bp	field_ad_resyncAttemptCount	resyncAttemptCount
-	f	I	bq	field_ad_lastResyncFrame	lastResyncFrame
-	f	Z	br	field_ad_quickResyncCommandQueued	quickResyncCommandQueued
-	f	Z	as	field_ad_disableDesyncFixing	disableDesyncFixing
-	f	Z	b	field_ad_enableQuickResync	enableQuickResync
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;)Lcom/corrodinggames/rts/gameFramework/j/aj;	a	method_ad_getActiveBanForConnection	getActiveBanForConnection
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;I)Z	a	method_ad_banConnection	banConnection
 	m	()V	a	method_ad_clearBanEntries	clearBanEntries
@@ -9695,11 +9704,6 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;I)Lcom/corrodinggames/rts/gameFramework/j/c;	a	method_ad_findForwardedConnection	findForwardedConnection
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	b	method_ad_closeConnectionWithReason	closeConnectionWithReason
 	m	(Lcom/corrodinggames/rts/gameFramework/j/c;Ljava/lang/String;)V	c	method_ad_closeForwardedChildConnectionsWithReason	closeForwardedChildConnectionsWithReason
-	f	Z	H	field_NetworkEngine_isProxyController	isProxyController
-	f	Z	aW	field_NetworkEngine_gameHasBeenStarted	gameHasBeenStarted
-	f	Z	al	field_NetworkEngine_gamePaused	gamePaused
-	f	Z	v	field_NetworkEngine_chatOnlyMode	chatOnlyMode
-	f	Ljava/lang/Object;	bC	field_NetworkEngine_teamListLock	teamListLock
 	m	(Ljava/lang/String;)V	j	method_NetworkEngine_sendSystemMessage	sendSystemMessage
 	m	(Ljava/lang/String;)V	k	method_NetworkEngine_sendQuickChatCommand	sendQuickChatCommand
 	m	(Ljava/lang/String;)V	l	method_NetworkEngine_sendTeamChatMessage	sendTeamChatMessage
@@ -9728,10 +9732,6 @@ c	com/corrodinggames/rts/gameFramework/j/ad	rw/network/NetworkEngine	rustedwarfa
 	m	()Ljava/util/ArrayList;	ax	method_NetworkEngine_getTeamListSnapshot	getTeamListSnapshot
 	m	(Lcom/corrodinggames/rts/gameFramework/j/am;)V	a	method_NetworkEngine_applyTeamLayoutLocked	applyTeamLayoutLocked
 	m	(Lcom/corrodinggames/rts/gameFramework/j/am;)V	b	method_NetworkEngine_applyTeamLayout	applyTeamLayout
-	f	F	bI	field_NetworkEngine_currentStepRate	currentStepRate
-	f	Z	G	field_NetworkEngine_isServerController	isServerController
-	f	I	aw	field_NetworkEngine_teamUnitCap	teamUnitCap
-	f	I	ax	field_NetworkEngine_maxTeamUnitCap	maxTeamUnitCap
 	m	()Z	n	method_NetworkEngine_hasGameBeenStarted	hasGameBeenStarted
 	m	()Z	o	method_NetworkEngine_isGameStarting	isGameStarting
 	m	(Ljava/lang/String;)Ljava/lang/String;	a	method_NetworkEngine_setLocalPlayerName	setLocalPlayerName
@@ -9784,14 +9784,14 @@ c	com/corrodinggames/rts/gameFramework/j/ah	rw/network/GameSetup	rustedwarfare/n
 	f	Z	i	field_GameSetup_noNukes	noNukes
 	f	Z	l	field_GameSetup_sharedControl	sharedControl
 	f	I	q	field_GameSetup_randomSeed	randomSeed
+	f	Z	o	field_ah_allowSpectators	allowSpectators
+	f	Z	p	field_ah_lockedRoom	lockedRoom
+	f	Z	m	field_GameSetup_teamsLocked	teamsLocked
 	m	()V	a	method_GameSetup_resetDefaults	resetDefaults
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_GameSetup_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_GameSetup_deserialize	deserialize
 	m	()Ljava/lang/String;	b	method_GameSetup_describe	describe
 	m	()Lcom/corrodinggames/rts/gameFramework/j/ah;	c	method_GameSetup_copy	copy
-	f	Z	o	field_ah_allowSpectators	allowSpectators
-	f	Z	p	field_ah_lockedRoom	lockedRoom
-	f	Z	m	field_GameSetup_teamsLocked	teamsLocked
 c	com/corrodinggames/rts/gameFramework/j/ai	rw/network/MapType	rustedwarfare/network/MapType
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	a	field_MapType_skirmishMap	skirmishMap
 	f	Lcom/corrodinggames/rts/gameFramework/j/ai;	b	field_MapType_customMap	customMap
@@ -9934,8 +9934,6 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	f	Z	w	field_NetworkConnection_hasCompleteDesync	hasCompleteDesync
 	f	I	x	field_NetworkConnection_syncMatches	syncMatches
 	f	I	y	field_NetworkConnection_desyncCount	desyncCount
-	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkConnection_sendPacket	sendPacket
-	m	()Ljava/lang/String;	e	method_NetworkConnection_getDisplayName	getDisplayName
 	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	W	field_c_networkEngine	networkEngine
 	f	Z	b	field_c_closeRequested	closeRequested
 	f	Ljava/net/Socket;	d	field_c_socket	socket
@@ -9963,6 +9961,12 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	f	Z	T	field_c_commandLimitWarningShown	commandLimitWarningShown
 	f	I	U	field_c_currentIncomingPacketSize	currentIncomingPacketSize
 	f	I	V	field_c_currentIncomingPacketBytesRead	currentIncomingPacketBytesRead
+	f	I	k	field_c_forwardedClientId	forwardedClientId
+	f	Z	u	field_c_savedDesyncDebugSave	savedDesyncDebugSave
+	f	Z	q	field_NetworkConnection_forwardingAllowed	forwardingAllowed
+	f	Z	r	field_NetworkConnection_multicastEnabled	multicastEnabled
+	m	(Lcom/corrodinggames/rts/gameFramework/j/au;)V	a	method_NetworkConnection_sendPacket	sendPacket
+	m	()Ljava/lang/String;	e	method_NetworkConnection_getDisplayName	getDisplayName
 	m	()Z	a	method_c_isCommandRateLimitExceeded	isCommandRateLimitExceeded
 	m	()I	b	method_c_getRecentPingMillis	getRecentPingMillis
 	m	()I	c	method_c_getPlayerId	getPlayerId
@@ -9978,10 +9982,6 @@ c	com/corrodinggames/rts/gameFramework/j/c	rw/network/NetworkConnection	rustedwa
 	m	(Ljava/lang/String;)V	c	method_c_logInfo	logInfo
 	m	(Ljava/lang/String;)Ljava/lang/String;	d	method_c_formatLogPrefix	formatLogPrefix
 	m	()Z	h	method_c_isOpen	isOpen
-	f	I	k	field_c_forwardedClientId	forwardedClientId
-	f	Z	u	field_c_savedDesyncDebugSave	savedDesyncDebugSave
-	f	Z	q	field_NetworkConnection_forwardingAllowed	forwardingAllowed
-	f	Z	r	field_NetworkConnection_multicastEnabled	multicastEnabled
 c	com/corrodinggames/rts/gameFramework/j/d	rw/network/ConnectionReaderThread	rustedwarfare/network/ConnectionReaderThread
 	f	Ljava/lang/Boolean;	a	field_d_running	running
 	f	Lcom/corrodinggames/rts/gameFramework/j/c;	b	field_d_connection	connection
@@ -10305,6 +10305,7 @@ c	com/corrodinggames/rts/gameFramework/m/ae	rw/render/ShaderProgram	rustedwarfar
 	m	()V	d	method_ae_reloadSources__V	reloadSources
 	m	()Z	e	method_ae_checkSourceFilesChanged__Z	checkSourceFilesChanged
 	m	()V	f	method_ae_hotReloadIfNeeded__V	hotReloadIfNeeded
+	m	(Landroid/graphics/Paint;Lcom/corrodinggames/rts/gameFramework/m/e;)Z	a	method_ae_applyForImage	applyForImage
 c	com/corrodinggames/rts/gameFramework/m/af	rw/render/ShaderParameter	rustedwarfare/render/ShaderParameter
 	f	Ljava/lang/String;	a	field_af_name	name
 	f	I	b	field_af_location	location
@@ -10340,6 +10341,7 @@ c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/cli
 	f	F	u	field_e_halfHeight	halfHeight
 	f	Z	w	field_e_keepInGpuMemory	keepInGpuMemory
 	f	I	x	field_e_nextImageId	nextImageId
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	i	field_e_shader	shader
 	m	()Z	A	method_e_isOutOfMemoryFallback	isOutOfMemoryFallback
 	m	()Lcom/corrodinggames/rts/gameFramework/m/ae;	B	method_e_getShader	getShader
 	m	()Ljava/lang/String;	a	method_e_getName	getName
@@ -10370,6 +10372,13 @@ c	com/corrodinggames/rts/gameFramework/m/e	rw/render/GameImage	rustedwarfare/cli
 	m	()V	r	method_e_dropPixelBuffer	dropPixelBuffer
 	m	()I	u	method_e_estimateMemoryBytes	estimateMemoryBytes
 	m	()V	v	method_e_clearTeamImageCaches	clearTeamImageCaches
+	m	()V	q	method_e_releaseImageData	releaseImageData
+	m	()V	s	method_e_discardPixelBuffer	discardPixelBuffer
+	m	()V	t	method_e_checkAndReloadIfFileChanged	checkAndReloadIfFileChanged
+	m	()V	w	method_e_forceLoad	forceLoad
+	m	()V	x	method_e_ensureImageDataAvailable	ensureImageDataAvailable
+	m	()V	n	method_e_enableAutoReleaseOnFinalize	enableAutoReleaseOnFinalize
+	m	()Ljava/lang/Object;	clone	method_e_clone	clone
 c	com/corrodinggames/rts/gameFramework/m/j	rw/render/AndroidCanvasDrawTarget	rustedwarfare/render/AndroidCanvasDrawTarget
 	f	Landroid/graphics/Canvas;	a	field_j_canvas	canvas
 	f	Z	b	field_j_recordingEnabled	recordingEnabled
@@ -11622,6 +11631,25 @@ c	com/corrodinggames/rts/java/d/b	rw/ui/SlickLibRocketTextureHolder	rustedwarfar
 	m	()Z	a	method_SlickLibRocketTextureHolder_loadTexture	loadTexture
 	m	()V	remove	remove	remove
 c	com/corrodinggames/rts/java/e	rw/client/render/SlickGraphicsBackend	rustedwarfare/client/render/SlickGraphicsBackend
+	f	Lcom/corrodinggames/rts/java/a;	r	field_e_outOfMemoryErrorImage	outOfMemoryErrorImage
+	f	Lcom/corrodinggames/rts/java/a;	s	field_e_generalErrorImage	generalErrorImage
+	f	Lcom/corrodinggames/rts/java/a;	t	field_e_tooLargeThumbnailErrorImage	tooLargeThumbnailErrorImage
+	f	Ljava/util/ArrayList;	E	field_e_pendingImageDataDiscards	pendingImageDataDiscards
+	f	I	F	field_e_loadedImageCount	loadedImageCount
+	m	()V	b	method_e_loadErrorImages	loadErrorImages
+	m	()V	e	method_e_flushImageDataDiscards	flushImageDataDiscards
+	m	()V	w	method_e_flushPendingImageDataDiscards	flushPendingImageDataDiscards
+	m	(Lcom/corrodinggames/rts/java/s;)V	a	method_e_queueImageDataDiscard	queueImageDataDiscard
+	m	(IZ)Lcom/corrodinggames/rts/java/s;	b	method_e_loadSlickImageByResourceId	loadSlickImageByResourceId
+	m	(I)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_e_loadImageByResourceId	loadImageByResourceId
+	m	(IZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_e_loadImageByResourceId	loadImageByResourceId
+	m	(Ljava/io/InputStream;)Lorg/newdawn/slick/opengl/ImageData;	a	method_e_loadSlickImageData	loadSlickImageData
+	m	(Ljava/io/InputStream;Z)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_e_loadImageFromStream	loadImageFromStream
+	m	(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;)Lcom/corrodinggames/rts/java/s;	a	method_e_createSlickImageFromData	createSlickImageFromData
+	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_e_createImage	createImage
+	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	b	method_e_createImageBufferBacked	createImageBufferBacked
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_e_compileShader	compileShader
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	r	method_e_getErrorImage	getErrorImage
 c	com/corrodinggames/rts/java/i	rw/client/DesktopPlatformCallbacks	rustedwarfare/client/DesktopPlatformCallbacks
 	f	Lcom/corrodinggames/rts/java/Main;	a	field_1400_main	main
 	m	(Ljava/lang/String;I)V	a	method_1400_showMessageBox	showMessageBox
@@ -11871,11 +11899,11 @@ c	com/corrodinggames/rts/gameFramework/j/ae	rw/network/PasswordPrompt	rustedwarf
 	f	Ljava/lang/String;	b	field_ae_promptMessage	promptMessage
 	f	I	c	field_ae_targetConnectionId	targetConnectionId
 	f	Z	d	field_ae_replyToRemoteConnection	replyToRemoteConnection
-	m	(Ljava/lang/String;)V	a	method_ae_submitPassword	submitPassword
-	m	()V	a	method_ae_cancelPasswordPrompt	cancelPasswordPrompt
 	f	Ljava/lang/String;	e	field_PasswordPrompt_customTitle	customTitle
 	f	Ljava/lang/String;	f	field_PasswordPrompt_positiveButtonText	positiveButtonText
 	f	Ljava/lang/String;	g	field_PasswordPrompt_negativeButtonText	negativeButtonText
+	m	(Ljava/lang/String;)V	a	method_ae_submitPassword	submitPassword
+	m	()V	a	method_ae_cancelPasswordPrompt	cancelPasswordPrompt
 c	com/corrodinggames/rts/gameFramework/j/ad$1	rw/network/BlockingPasswordPrompt	rustedwarfare/network/BlockingPasswordPrompt
 	f	Ljava/lang/Object;	a	field_ad_1_monitorLock	monitorLock
 	m	(Ljava/lang/String;)V	a	method_ad_1_submitPassword	submitPassword
@@ -12223,3 +12251,159 @@ c	com/corrodinggames/rts/gameFramework/j/ad$8	rw/network/JoinServerCompletionRun
 	f	Lcom/corrodinggames/rts/gameFramework/j/ad;	b	field_JoinServerCompletionRunnable_networkEngine	networkEngine
 c	com/corrodinggames/rts/gameFramework/j/o	rw/network/MasterServerRemoveStaleServersTask	rustedwarfare/network/MasterServerRemoveStaleServersTask
 	f	I	a	field_MasterServerRemoveStaleServersTask_minimumRequestId	minimumRequestId
+c	com/corrodinggames/rts/gameFramework/m/ad	rw/client/render/MutableBitmapOrTexture	rustedwarfare/client/render/MutableBitmapOrTexture
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	x	field_ad_wrappedImage	wrappedImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	<init>	<init>	<init>
+	m	()Ljava/lang/String;	a	method_ad_getName	getName
+	m	()Landroid/graphics/Bitmap;	b	method_ad_getBitmap	getBitmap
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	c	method_ad_getRealImage	getRealImage
+	m	(Z)V	a	method_ad_setSmooth	setSmooth
+	m	(Landroid/graphics/Bitmap;)V	a	method_ad_setBitmap	setBitmap
+	m	()V	g	method_ad_updateCenterValues	updateCenterValues
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_ad_copyImageMetadataFrom	copyImageMetadataFrom
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	h	method_ad_copyImage	copyImage
+	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_ad_createImageCopyWithSize	createImageCopyWithSize
+	m	()V	i	method_ad_ensurePixelBuffer	ensurePixelBuffer
+	m	()V	j	method_ad_readPixelsFromBitmap	readPixelsFromBitmap
+	m	(II)I	a	method_ad_getPixel	getPixel
+	m	(III)V	a	method_ad_setPixel	setPixel
+	m	()I	l	method_ad_getHeight	getHeight
+	m	()I	m	method_ad_getWidth	getWidth
+	m	()V	n	method_ad_enableAutoReleaseOnFinalize	enableAutoReleaseOnFinalize
+	m	()V	o	method_ad_releaseBitmap	releaseBitmap
+	m	()V	p	method_ad_flushPixelBufferToBitmap	flushPixelBufferToBitmap
+	m	()V	r	method_ad_dropPixelBuffer	dropPixelBuffer
+	m	()V	t	method_ad_checkAndReloadIfFileChanged	checkAndReloadIfFileChanged
+	m	()I	u	method_ad_estimateMemoryBytes	estimateMemoryBytes
+	m	()V	v	method_ad_clearTeamImageCaches	clearTeamImageCaches
+	m	()V	w	method_ad_forceLoad	forceLoad
+	m	()Lcom/corrodinggames/rts/gameFramework/m/ae;	B	method_ad_getShader	getShader
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_ad_setShader	setShader
+	m	()Ljava/lang/Object;	clone	method_ad_clone	clone
+	m	()Ljava/lang/String;	toString	method_ad_toString	toString
+c	com/corrodinggames/rts/gameFramework/m/h	rw/client/render/LazyTeamColorImage	rustedwarfare/client/render/LazyTeamColorImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	x	field_h_pureGreenTeamColorShader	pureGreenTeamColorShader
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	y	field_h_hueAddTeamColorShader	hueAddTeamColorShader
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	z	field_h_hueShiftTeamColorShader	hueShiftTeamColorShader
+	f	Z	A	field_h_teamShadersLoaded	teamShadersLoaded
+	f	Z	B	field_h_loaded	loaded
+	f	Z	C	field_h_usingShaderColoring	usingShaderColoring
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	H	field_h_sourceImage	sourceImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	I	field_h_coloredImage	coloredImage
+	f	I	D	field_h_teamColor	teamColor
+	f	I	E	field_h_teamIndex	teamIndex
+	f	Lcom/corrodinggames/rts/game/o;	F	field_h_coloringMode	coloringMode
+	f	F	G	field_h_totalColoringTime	totalColoringTime
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;ILcom/corrodinggames/rts/game/o;I)V	<init>	<init>	<init>
+	m	()V	C	method_h_loadTeamColorShaders	loadTeamColorShaders
+	m	()V	D	method_h_ensureTeamColorShadersLoaded	ensureTeamColorShadersLoaded
+	m	()Ljava/lang/String;	a	method_h_getName	getName
+	m	(Z)V	c	method_h_loadLazyColoredImage	loadLazyColoredImage
+	m	()Landroid/graphics/Bitmap;	b	method_h_getBitmap	getBitmap
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	c	method_h_getRealImage	getRealImage
+	m	()V	w	method_h_forceLoad	forceLoad
+	m	()I	u	method_h_estimateMemoryBytes	estimateMemoryBytes
+c	com/corrodinggames/rts/gameFramework/m/i	rw/render/TeamColorShaderProgram	rustedwarfare/render/TeamColorShaderProgram
+	f	I	a	field_i_lastTeamColor	lastTeamColor
+	m	(Ljava/lang/String;Z)V	<init>	<init>	<init>
+	m	()Z	b	method_i_applyDefaultTeamColorUniform	applyDefaultTeamColorUniform
+	m	(Landroid/graphics/Paint;Lcom/corrodinggames/rts/gameFramework/m/e;)Z	a	method_i_applyForImage	applyForImage
+	m	()V	c	method_i_compileOnGraphicsEngine	compileOnGraphicsEngine
+c	com/corrodinggames/rts/java/s	rw/client/render/SlickBitmapOrTexture	rustedwarfare/client/render/SlickBitmapOrTexture
+	f	Ljava/util/ArrayList;	y	field_s_liveImages	liveImages
+	f	Lorg/newdawn/slick/Image;	x	field_s_slickImage	slickImage
+	f	Lorg/newdawn/slick/opengl/ImageData;	z	field_s_slickImageData	slickImageData
+	f	Ljava/nio/ByteBuffer;	A	field_s_imageByteBuffer	imageByteBuffer
+	f	I	B	field_s_bytesPerPixel	bytesPerPixel
+	f	Ljava/lang/String;	C	field_s_filePath	filePath
+	f	Z	D	field_s_cloned	cloned
+	f	I	E	field_s_slickFilter	slickFilter
+	f	Z	F	field_s_discardImageDataAfterUpload	discardImageDataAfterUpload
+	f	Z	G	field_s_pixelBufferLoaded	pixelBufferLoaded
+	f	Z	H	field_s_pixelBufferDiscarded	pixelBufferDiscarded
+	f	Z	I	field_s_autoReleaseOnFinalize	autoReleaseOnFinalize
+	f	J	J	field_s_lastModifiedTimestamp	lastModifiedTimestamp
+	f	I	K	field_s_reloadImageCounter	reloadImageCounter
+	m	()V	<init>	<init>	<init>
+	m	()Lorg/newdawn/slick/Image;	C	method_s_getSlickImage	getSlickImage
+	m	(Lorg/newdawn/slick/opengl/ImageData;)V	a	method_s_setSlickImageDataInternal	setSlickImageDataInternal
+	m	()Ljava/lang/String;	a	method_s_getName	getName
+	m	()V	D	method_s_reloadFromImageData	reloadFromImageData
+	m	(Lorg/newdawn/slick/Image;Ljava/lang/String;)V	a	method_s_setSlickImage	setSlickImage
+	m	(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;Z)V	a	method_s_setSlickImageData	setSlickImageData
+	m	(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;	a	method_s_copyByteBuffer	copyByteBuffer
+	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_s_createImageCopyWithSize	createImageCopyWithSize
+	m	()V	i	method_s_ensurePixelBuffer	ensurePixelBuffer
+	m	()V	x	method_s_ensureImageDataAvailable	ensureImageDataAvailable
+	m	()V	j	method_s_readPixelsFromBitmap	readPixelsFromBitmap
+	m	()V	H	method_s_ensureImageDataLoaded	ensureImageDataLoaded
+	m	()V	q	method_s_releaseImageData	releaseImageData
+	m	()V	I	method_s_dropImageDataIfAllowed	dropImageDataIfAllowed
+	m	()V	J	method_s_recreateImageDataFromTexture	recreateImageDataFromTexture
+	m	()Z	k	method_s_canReadPixels	canReadPixels
+	m	(II)I	a	method_s_getPixel	getPixel
+	m	(III)V	a	method_s_setPixel	setPixel
+	m	()V	p	method_s_flushPixelBufferToBitmap	flushPixelBufferToBitmap
+	m	()V	r	method_s_dropPixelBuffer	dropPixelBuffer
+	m	()V	s	method_s_discardPixelBuffer	discardPixelBuffer
+	m	()V	n	method_s_enableAutoReleaseOnFinalize	enableAutoReleaseOnFinalize
+	m	()V	o	method_s_releaseBitmap	releaseBitmap
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	h	method_s_copyImage	copyImage
+	m	()V	e	method_s_onFilteringChanged	onFilteringChanged
+	m	()V	E	method_s_applySlickFilter	applySlickFilter
+	m	()V	F	method_s_reloadImage	reloadImage
+	m	(Z)J	c	method_s_getFileLastModified	getFileLastModified
+	m	()V	t	method_s_checkAndReloadIfFileChanged	checkAndReloadIfFileChanged
+	m	()V	G	method_s_logSlickImageState	logSlickImageState
+	m	()Ljava/lang/Object;	clone	method_s_clone	clone
+c	com/corrodinggames/rts/java/a	rw/client/render/SlickFallbackBitmapOrTexture	rustedwarfare/client/render/SlickFallbackBitmapOrTexture
+	f	Lcom/corrodinggames/rts/java/s;	x	field_a_fallbackImage	fallbackImage
+	m	(Lcom/corrodinggames/rts/java/s;)V	<init>	<init>	<init>
+	m	()Lorg/newdawn/slick/Image;	C	method_a_getSlickImage	getSlickImage
+	m	()Landroid/graphics/Bitmap;	b	method_a_getBitmap	getBitmap
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	c	method_a_getRealImage	getRealImage
+	m	()Ljava/lang/String;	a	method_a_getName	getName
+	m	()I	l	method_a_getHeight	getHeight
+	m	()I	m	method_a_getWidth	getWidth
+	m	()I	u	method_a_estimateMemoryBytes	estimateMemoryBytes
+	m	()V	w	method_a_forceLoad	forceLoad
+	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_a_createImageCopyWithSize	createImageCopyWithSize
+	m	(II)I	a	method_a_getPixel	getPixel
+	m	()V	p	method_a_flushPixelBufferToBitmap	flushPixelBufferToBitmap
+	m	()V	r	method_a_dropPixelBuffer	dropPixelBuffer
+	m	()V	n	method_a_enableAutoReleaseOnFinalize	enableAutoReleaseOnFinalize
+	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	h	method_a_copyImage	copyImage
+	m	()V	t	method_a_checkAndReloadIfFileChanged	checkAndReloadIfFileChanged
+	m	(Z)J	c	method_a_getFileLastModified	getFileLastModified
+	m	(Z)V	a	method_a_setSmooth	setSmooth
+	m	(Landroid/graphics/Bitmap;)V	a	method_a_setBitmap	setBitmap
+	m	()V	g	method_a_updateCenterValues	updateCenterValues
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_a_copyImageMetadataFrom	copyImageMetadataFrom
+	m	()V	D	method_a_reloadFromImageData	reloadFromImageData
+	m	(Lorg/newdawn/slick/Image;Ljava/lang/String;)V	a	method_a_setSlickImage	setSlickImage
+	m	(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;Z)V	a	method_a_setSlickImageData	setSlickImageData
+	m	()V	v	method_a_clearTeamImageCaches	clearTeamImageCaches
+	m	()V	i	method_a_ensurePixelBuffer	ensurePixelBuffer
+	m	()V	j	method_a_readPixelsFromBitmap	readPixelsFromBitmap
+	m	(III)V	a	method_a_setPixel	setPixel
+	m	()V	o	method_a_releaseBitmap	releaseBitmap
+	m	()V	E	method_a_applySlickFilter	applySlickFilter
+	m	()V	F	method_a_reloadImage	reloadImage
+	m	()V	G	method_a_logSlickImageState	logSlickImageState
+	m	()Z	A	method_a_isOutOfMemoryFallback	isOutOfMemoryFallback
+	m	()Ljava/lang/Object;	clone	method_a_clone	clone
+	m	()Ljava/lang/String;	toString	method_a_toString	toString
+c	com/corrodinggames/rts/java/t	rw/client/render/SlickTextureReadbackImageData	rustedwarfare/client/render/SlickTextureReadbackImageData
+	f	I	a	field_t_depth	depth
+	f	I	c	field_t_imageWidth	imageWidth
+	f	I	d	field_t_imageHeight	imageHeight
+	f	I	e	field_t_textureWidth	textureWidth
+	f	I	f	field_t_textureHeight	textureHeight
+	f	[B	g	field_t_rawTextureData	rawTextureData
+	f	Lcom/corrodinggames/rts/java/s;	b	field_t_ownerImage	ownerImage
+	m	(Lcom/corrodinggames/rts/java/s;Lorg/newdawn/slick/Image;)V	<init>	<init>	<init>
+	m	()[B	a	method_t_getRawTextureData	getRawTextureData
+c	com/corrodinggames/rts/java/a/a	rw/client/render/BufferedSlickImageData	rustedwarfare/client/render/BufferedSlickImageData
+	f	Lorg/newdawn/slick/opengl/ImageData;	a	field_a_delegate	delegate
+	f	Ljava/nio/ByteBuffer;	b	field_a_imageBufferData	imageBufferData
+	m	(Lorg/newdawn/slick/opengl/ImageData;Ljava/nio/ByteBuffer;)V	<init>	<init>	<init>

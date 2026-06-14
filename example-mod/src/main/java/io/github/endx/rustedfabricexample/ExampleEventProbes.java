@@ -19,6 +19,7 @@ import io.github.endx.rustedfabricapi.api.event.NetworkLobbyChatEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkPacketEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkSyncEvents;
 import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
+import io.github.endx.rustedfabricapi.api.event.RenderImageLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
@@ -33,6 +34,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.TeamStatsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.UnitRuntimeDiagnostics;
@@ -1908,6 +1910,69 @@ final class ExampleEventProbes {
                                 + " in=" + describeObject(inputStream),
                         gameObject, 250L));
 
+        RenderImageLifecycleEvents.AFTER_LOAD_ERROR_IMAGES.register(backend ->
+                showRenderBackendProbe(stage, "AfterLoadErrorImages", backend, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_LOAD_IMAGE_BY_RESOURCE_ID.register((backend, resourceId, smooth, image) ->
+                showRenderImageProbe(stage, "AfterLoadImageByResourceId",
+                        "resourceId=" + resourceId + " smooth=" + smooth,
+                        image != null ? image : backend, image, 1500L));
+
+        RenderImageLifecycleEvents.AFTER_LOAD_SLICK_IMAGE_BY_RESOURCE_ID.register((backend, resourceId, smooth, image) ->
+                showRenderImageProbe(stage, "AfterLoadSlickImageByResourceId",
+                        "resourceId=" + resourceId + " smooth=" + smooth,
+                        image != null ? image : backend, image, 1500L));
+
+        RenderImageLifecycleEvents.AFTER_LOAD_SLICK_IMAGE_DATA.register((backend, inputStream, imageData) ->
+                showRenderImageDataProbe(stage, "AfterLoadSlickImageData",
+                        "stream=" + describeObject(inputStream),
+                        backend, imageData, 1500L));
+
+        RenderImageLifecycleEvents.AFTER_LOAD_IMAGE_FROM_STREAM.register((backend, inputStream, smooth, image) ->
+                showRenderImageProbe(stage, "AfterLoadImageFromStream",
+                        "smooth=" + smooth + " stream=" + describeObject(inputStream),
+                        image != null ? image : backend, image, 1500L));
+
+        RenderImageLifecycleEvents.AFTER_CREATE_SLICK_IMAGE_FROM_DATA.register((backend, imageData, name, image) ->
+                showRenderImageProbe(stage, "AfterCreateSlickImageFromData",
+                        "name=" + safeText(name) + " data=" + describeRenderImageData(imageData),
+                        image != null ? image : backend, image, 1500L));
+
+        RenderImageLifecycleEvents.AFTER_CREATE_IMAGE.register((backend, width, height, smooth, bufferBacked, image) ->
+                showRenderImageProbe(stage, "AfterCreateImage",
+                        width + "x" + height + " smooth=" + smooth + " bufferBacked=" + bufferBacked,
+                        image != null ? image : backend, image, 1500L));
+
+        RenderImageLifecycleEvents.AFTER_QUEUE_IMAGE_DATA_DISCARD.register((backend, image) ->
+                showRenderImageProbe(stage, "AfterQueueImageDataDiscard",
+                        describeRenderBackend(backend), image != null ? image : backend, image, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_FLUSH_PENDING_IMAGE_DATA_DISCARDS.register(backend ->
+                showRenderBackendProbe(stage, "AfterFlushPendingImageDataDiscards", backend, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_LOAD_LAZY_TEAM_COLOR_IMAGE.register((image, allowShader) ->
+                showRenderImageProbe(stage, "AfterLoadLazyTeamColorImage",
+                        "allowShader=" + allowShader, image, image, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_RECREATE_SLICK_IMAGE_DATA_FROM_TEXTURE.register(image ->
+                showRenderImageProbe(stage, "AfterRecreateSlickImageDataFromTexture", "", image, image, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_DROP_SLICK_IMAGE_DATA_IF_ALLOWED.register(image ->
+                showRenderImageProbe(stage, "AfterDropSlickImageDataIfAllowed", "", image, image, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_RELOAD_SLICK_IMAGE.register(image ->
+                showRenderImageProbe(stage, "AfterReloadSlickImage", "", image, image, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_RELEASE_BITMAP.register(image ->
+                showRenderImageProbe(stage, "AfterReleaseBitmap", "", image, image, 1000L));
+
+        RenderImageLifecycleEvents.AFTER_SET_SLICK_IMAGE_DATA.register((image, imageData, name, fallback) ->
+                showRenderImageProbe(stage, "AfterSetSlickImageData",
+                        "name=" + safeText(name)
+                                + " fallback=" + fallback
+                                + " data=" + describeRenderImageData(imageData),
+                        image, image, 1000L));
+
         ExampleMod.log("registered event probe messages from " + stage);
     }
 
@@ -1919,6 +1984,115 @@ final class ExampleEventProbes {
         if (value != null) {
             lastAudioObject = value;
         }
+    }
+
+    private static void showRenderBackendProbe(String stage, String key, Object backend,
+                                               long minIntervalMillis) {
+        showEventProbeMessage(stage, "RenderImage." + key,
+                "RenderImage." + key + " " + describeRenderBackend(backend),
+                backend, minIntervalMillis);
+    }
+
+    private static void showRenderImageDataProbe(String stage, String key, String extra,
+                                                 Object source, Object imageData, long minIntervalMillis) {
+        String message = "RenderImage." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " data=" + describeRenderImageData(imageData);
+        showEventProbeMessage(stage, "RenderImage." + key, message,
+                imageData != null ? imageData : source, minIntervalMillis);
+    }
+
+    private static void showRenderImageProbe(String stage, String key, String extra,
+                                             Object source, Object image, long minIntervalMillis) {
+        String message = "RenderImage." + key
+                + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                + " " + describeRenderImage(image);
+        showEventProbeMessage(stage, "RenderImage." + key, message,
+                source != null ? source : image, minIntervalMillis);
+    }
+
+    private static String describeRenderBackend(Object backend) {
+        if (backend == null) {
+            return "backend=null";
+        }
+        try {
+            if (RenderImageDiagnostics.isSlickGraphicsBackend(backend)) {
+                Map<String, Object> details = RenderImageDiagnostics.describeSlickGraphicsBackend(backend);
+                return "backend=" + describeObject(backend)
+                        + "{loaded=" + details.get("loadedImageCount")
+                        + ", pending=" + details.get("pendingImageDataDiscardsSize")
+                        + ", live=" + RenderImageDiagnostics.liveSlickImagesSnapshot().size()
+                        + ", oom=" + describeRenderImage(details.get("outOfMemoryErrorImage")) + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "backend=" + describeObject(backend);
+    }
+
+    private static String describeRenderImage(Object image) {
+        if (image == null) {
+            return "image=null";
+        }
+        try {
+            if (!RenderImageDiagnostics.isGameImage(image)) {
+                return "image=" + describeObject(image);
+            }
+
+            Map<String, Object> details = RenderImageDiagnostics.describeGameImage(image);
+            String result = "image=" + describeObject(image)
+                    + "{name=" + compactPath(String.valueOf(firstValue(details, "nameFromGetter", "name")))
+                    + ", size=" + firstValue(details, "widthFromGetter", "width")
+                    + "x" + firstValue(details, "heightFromGetter", "height")
+                    + ", mem=" + details.get("estimatedMemoryBytes");
+
+            if (RenderImageDiagnostics.isSlickBitmapOrTexture(image)) {
+                Map<String, Object> slick = RenderImageDiagnostics.describeSlickBitmapOrTexture(image);
+                result += ", file=" + compactPath(String.valueOf(slick.get("filePath")))
+                        + ", data=" + (slick.get("slickImageData") != null)
+                        + ", buf=" + slick.get("imageByteBufferRemaining")
+                        + ", reload=" + slick.get("reloadImageCounter");
+            }
+            if (RenderImageDiagnostics.isSlickFallbackBitmapOrTexture(image)) {
+                Map<String, Object> fallback = RenderImageDiagnostics.describeSlickFallbackBitmapOrTexture(image);
+                result += ", fallback=" + fallback.get("outOfMemoryFallback");
+            }
+            if (RenderImageDiagnostics.isLazyTeamColorImage(image)) {
+                Map<String, Object> lazy = RenderImageDiagnostics.describeLazyTeamColorImage(image);
+                result += ", lazyLoaded=" + lazy.get("loaded")
+                        + ", shader=" + lazy.get("usingShaderColoring")
+                        + ", team=" + lazy.get("teamIndex");
+            }
+            return result + "}";
+        } catch (RuntimeException e) {
+            return "image=" + describeObject(image);
+        }
+    }
+
+    private static String describeRenderImageData(Object imageData) {
+        if (imageData == null) {
+            return "null";
+        }
+        try {
+            if (RenderImageDiagnostics.isSlickTextureReadbackImageData(imageData)) {
+                Map<String, Object> details = RenderImageDiagnostics.describeSlickTextureReadbackImageData(imageData);
+                return describeObject(imageData)
+                        + "{size=" + details.get("imageWidth") + "x" + details.get("imageHeight")
+                        + ", tex=" + details.get("textureWidth") + "x" + details.get("textureHeight")
+                        + ", bytes=" + details.get("rawTextureDataLength") + "}";
+            }
+            if (RenderImageDiagnostics.isBufferedSlickImageData(imageData)) {
+                Map<String, Object> details = RenderImageDiagnostics.describeBufferedSlickImageData(imageData);
+                return describeObject(imageData)
+                        + "{remaining=" + details.get("imageBufferDataRemaining") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return describeObject(imageData);
+    }
+
+    private static Object firstValue(Map<String, Object> values, String firstKey, String secondKey) {
+        Object value = values.get(firstKey);
+        return value != null ? value : values.get(secondKey);
     }
 
     static String describeAudioObject(Object value) {

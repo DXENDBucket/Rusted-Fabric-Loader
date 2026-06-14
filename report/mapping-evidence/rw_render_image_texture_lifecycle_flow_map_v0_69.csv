@@ -1,0 +1,6 @@
+flow,official_members,named_surface,evidence
+resource image load,"java/e.a(int), java/e.a(int,boolean), java/e.b(int,boolean), java/e.a(InputStream), java/e.a(ImageData,String)",loadImageByResourceId -> loadSlickImageData -> createSlickImageFromData,"resource path conversion, PNGImageData/ImageIO fallback, SlickBitmapOrTexture construction"
+error fallback images,"java/e.b(), fields r/s/t, java/a.A()",loadErrorImages + SlickFallbackBitmapOrTexture + isOutOfMemoryFallback,R.drawable.error_outmem/error_general/error_toolargethumb and fallback name strings
+lazy team coloring,"m/h.C/D/c(boolean)/b()/c()/w(), m/i.a(Paint,GameImage)",LazyTeamColorImage + TeamColorShaderProgram,"shader paths pureGreen/hueAdd/hueShift, teamColor/teamColorAmount uniforms, LazyColoring strings"
+Slick pixel/texture lifecycle,java/s.H/I/J/q/s/p/F/t/G,"ensureImageDataLoaded, dropImageDataIfAllowed, recreateImageDataFromTexture, reloadImage, checkAndReloadIfFileChanged","ImageData/ByteBuffer fields, texture readback helper, reloadImage log strings"
+GameImage family propagation,"m/ad, m/h, java/s, java/a overrides","MutableBitmapOrTexture, LazyTeamColorImage, SlickBitmapOrTexture, SlickFallbackBitmapOrTexture",override descriptors match GameImage and wrapper bytecode delegates/no-ops consistently

@@ -778,6 +778,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("network_deep_packet_branch_partial_coverage_after_v0_68");
     }
 
+    public static List<MappingEvidenceRow> allRenderImageTextureLifecycleRows() {
+        return allEvidenceRows("render_image_texture_lifecycle_added_rows_v0_69");
+    }
+
+    public static List<MappingEvidenceRow> allRenderImageTextureLifecycleUpdatedRows() {
+        return allEvidenceRows("render_image_texture_lifecycle_updated_rows_v0_69");
+    }
+
+    public static List<MappingEvidenceRow> allRenderImageTextureLifecycleFlowMap() {
+        return allEvidenceRows("render_image_texture_lifecycle_flow_map_v0_69");
+    }
+
+    public static List<MappingEvidenceRow> allRenderImageTextureLifecycleSkippedRows() {
+        return allEvidenceRows("render_image_texture_lifecycle_skipped_rows_v0_69");
+    }
+
+    public static List<MappingEvidenceRow> allRenderImageTextureLifecyclePartialCoverageRows() {
+        return allEvidenceRows("render_image_texture_family_partial_coverage_after_v0_69");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1009,6 +1029,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findAudioOpenAlRows(String text) {
         return findByText(allAudioOpenAlRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findRenderImageTextureLifecycleRows(String text) {
+        return findByText(allRenderImageTextureLifecycleRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

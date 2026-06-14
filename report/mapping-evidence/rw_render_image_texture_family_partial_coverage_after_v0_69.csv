@@ -1,0 +1,185 @@
+owner_official,kind,official_name,descriptor,expected_named_name,present,evidence
+com/corrodinggames/rts/gameFramework/m/ad,class,,,rustedwarfare/client/render/MutableBitmapOrTexture,True,toString literal: MutableBitmapOrTexture(...); delegates almost all GameImage operations to wrapped image
+com/corrodinggames/rts/gameFramework/m/h,class,,,rustedwarfare/client/render/LazyTeamColorImage,True,LazyColoring(...) name string; lazy loads base image into team-colored image; shader and CPU recolor paths
+com/corrodinggames/rts/gameFramework/m/i,class,,,rustedwarfare/render/TeamColorShaderProgram,True,Constructed by LazyTeamColorImage with pureGreen/hueAdd/hueShift shader fragments and teamColor uniform
+com/corrodinggames/rts/java/s,class,,,rustedwarfare/client/render/SlickBitmapOrTexture,True,Leak/debug log literal: SlickBitmapOrTexture; wraps org.newdawn.slick.Image and ImageData
+com/corrodinggames/rts/java/a,class,,,rustedwarfare/client/render/SlickFallbackBitmapOrTexture,True,Wrapper used for Out of memory/General Error/Too Large Thumbnail Error fallback images; A() returns true
+com/corrodinggames/rts/java/t,class,,,rustedwarfare/client/render/SlickTextureReadbackImageData,True,ImageData implementation built from Image.getTexture().getTextureData() in SlickBitmapOrTexture.recreateImageDataFromTexture
+com/corrodinggames/rts/java/a/a,class,,,rustedwarfare/client/render/BufferedSlickImageData,True,ImageIO fallback adapter wrapping ImageData plus ByteBuffer after PNGImageData load failure
+com/corrodinggames/rts/gameFramework/m/ad,method,<init>,(Lcom/corrodinggames/rts/gameFramework/m/e;)V,<init>,True,constructor from class descriptor inventory
+com/corrodinggames/rts/gameFramework/m/h,method,<init>,(Lcom/corrodinggames/rts/gameFramework/m/e;ILcom/corrodinggames/rts/game/o;I)V,<init>,True,"constructor stores source image, team color, coloring mode, and team index"
+com/corrodinggames/rts/gameFramework/m/i,method,<init>,(Ljava/lang/String;Z)V,<init>,True,constructor used by LazyTeamColorImage shader loader
+com/corrodinggames/rts/java/s,method,<init>,()V,<init>,True,constructor registers image in live Slick bitmap/texture list
+com/corrodinggames/rts/java/a,method,<init>,(Lcom/corrodinggames/rts/java/s;)V,<init>,True,constructor wraps fallback SlickBitmapOrTexture
+com/corrodinggames/rts/java/t,method,<init>,(Lcom/corrodinggames/rts/java/s;Lorg/newdawn/slick/Image;)V,<init>,True,constructor snapshots Slick texture metadata and raw texture data
+com/corrodinggames/rts/java/a/a,method,<init>,(Lorg/newdawn/slick/opengl/ImageData;Ljava/nio/ByteBuffer;)V,<init>,True,constructor stores delegate ImageData and ImageIO ByteBuffer
+com/corrodinggames/rts/gameFramework/m/e,field,i,Lcom/corrodinggames/rts/gameFramework/m/ae;,shader,True,GameImage.B()/setShader read and write field i
+com/corrodinggames/rts/gameFramework/m/e,method,q,()V,releaseImageData,True,base no-op; SlickBitmapOrTexture.q delegates to image-data discard helper; LazyTeamColorImage calls sourceImage.q after coloring
+com/corrodinggames/rts/gameFramework/m/e,method,s,()V,discardPixelBuffer,True,base calls dropPixelBuffer; SlickBitmapOrTexture.s marks pixel buffer discarded and drops ImageData/ByteBuffer
+com/corrodinggames/rts/gameFramework/m/e,method,t,()V,checkAndReloadIfFileChanged,True,base no-op; SlickBitmapOrTexture.t compares file timestamp and reloads changed images
+com/corrodinggames/rts/gameFramework/m/e,method,w,()V,forceLoad,True,base no-op; LazyTeamColorImage.w performs non-shader eager recolor load
+com/corrodinggames/rts/gameFramework/m/e,method,x,()V,ensureImageDataAvailable,True,base no-op; SlickBitmapOrTexture.x/H recreate ImageData from texture when discarded
+com/corrodinggames/rts/gameFramework/m/e,method,n,()V,enableAutoReleaseOnFinalize,True,base no-op; SlickBitmapOrTexture.n sets auto-release flag used by finalize
+com/corrodinggames/rts/gameFramework/m/e,method,clone,()Ljava/lang/Object;,clone,True,clone method descriptor; subclasses return copyImage
+com/corrodinggames/rts/gameFramework/m/ad,field,x,Lcom/corrodinggames/rts/gameFramework/m/e;,wrappedImage,True,all accessor methods delegate to field x
+com/corrodinggames/rts/gameFramework/m/ad,method,a,()Ljava/lang/String;,getName,True,MutableBitmapOrTexture override/delegation of GameImage.getName
+com/corrodinggames/rts/gameFramework/m/ad,method,b,()Landroid/graphics/Bitmap;,getBitmap,True,MutableBitmapOrTexture override/delegation of GameImage.getBitmap
+com/corrodinggames/rts/gameFramework/m/ad,method,c,()Lcom/corrodinggames/rts/gameFramework/m/e;,getRealImage,True,MutableBitmapOrTexture override/delegation of GameImage.getRealImage
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(Z)V,setSmooth,True,MutableBitmapOrTexture override/delegation of GameImage.setSmooth
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(Landroid/graphics/Bitmap;)V,setBitmap,True,MutableBitmapOrTexture override/delegation of GameImage.setBitmap
+com/corrodinggames/rts/gameFramework/m/ad,method,g,()V,updateCenterValues,True,MutableBitmapOrTexture override/delegation of GameImage.updateCenterValues
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(Lcom/corrodinggames/rts/gameFramework/m/e;)V,copyImageMetadataFrom,True,MutableBitmapOrTexture override/delegation of GameImage.copyImageMetadataFrom
+com/corrodinggames/rts/gameFramework/m/ad,method,h,()Lcom/corrodinggames/rts/gameFramework/m/e;,copyImage,True,MutableBitmapOrTexture override/delegation of GameImage.copyImage
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;,createImageCopyWithSize,True,MutableBitmapOrTexture override/delegation of GameImage.createImageCopyWithSize
+com/corrodinggames/rts/gameFramework/m/ad,method,i,()V,ensurePixelBuffer,True,MutableBitmapOrTexture override/delegation of GameImage.ensurePixelBuffer
+com/corrodinggames/rts/gameFramework/m/ad,method,j,()V,readPixelsFromBitmap,True,MutableBitmapOrTexture override/delegation of GameImage.readPixelsFromBitmap
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(II)I,getPixel,True,MutableBitmapOrTexture override/delegation of GameImage.getPixel
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(III)V,setPixel,True,MutableBitmapOrTexture override/delegation of GameImage.setPixel
+com/corrodinggames/rts/gameFramework/m/ad,method,l,()I,getHeight,True,MutableBitmapOrTexture override/delegation of GameImage.getHeight
+com/corrodinggames/rts/gameFramework/m/ad,method,m,()I,getWidth,True,MutableBitmapOrTexture override/delegation of GameImage.getWidth
+com/corrodinggames/rts/gameFramework/m/ad,method,n,()V,enableAutoReleaseOnFinalize,True,MutableBitmapOrTexture override/delegation of GameImage.enableAutoReleaseOnFinalize
+com/corrodinggames/rts/gameFramework/m/ad,method,o,()V,releaseBitmap,True,MutableBitmapOrTexture override/delegation of GameImage.releaseBitmap
+com/corrodinggames/rts/gameFramework/m/ad,method,p,()V,flushPixelBufferToBitmap,True,MutableBitmapOrTexture override/delegation of GameImage.flushPixelBufferToBitmap
+com/corrodinggames/rts/gameFramework/m/ad,method,r,()V,dropPixelBuffer,True,MutableBitmapOrTexture override/delegation of GameImage.dropPixelBuffer
+com/corrodinggames/rts/gameFramework/m/ad,method,t,()V,checkAndReloadIfFileChanged,True,MutableBitmapOrTexture override/delegation of GameImage.checkAndReloadIfFileChanged
+com/corrodinggames/rts/gameFramework/m/ad,method,u,()I,estimateMemoryBytes,True,MutableBitmapOrTexture override/delegation of GameImage.estimateMemoryBytes
+com/corrodinggames/rts/gameFramework/m/ad,method,v,()V,clearTeamImageCaches,True,MutableBitmapOrTexture override/delegation of GameImage.clearTeamImageCaches
+com/corrodinggames/rts/gameFramework/m/ad,method,w,()V,forceLoad,True,MutableBitmapOrTexture override/delegation of GameImage.forceLoad
+com/corrodinggames/rts/gameFramework/m/ad,method,B,()Lcom/corrodinggames/rts/gameFramework/m/ae;,getShader,True,MutableBitmapOrTexture override/delegation of GameImage.getShader
+com/corrodinggames/rts/gameFramework/m/ad,method,a,(Lcom/corrodinggames/rts/gameFramework/m/ae;)V,setShader,True,MutableBitmapOrTexture override/delegation of GameImage.setShader
+com/corrodinggames/rts/gameFramework/m/ad,method,clone,()Ljava/lang/Object;,clone,True,MutableBitmapOrTexture override/delegation of GameImage.clone
+com/corrodinggames/rts/gameFramework/m/ad,method,toString,()Ljava/lang/String;,toString,True,toString literal: MutableBitmapOrTexture(...)
+com/corrodinggames/rts/gameFramework/m/h,field,x,Lcom/corrodinggames/rts/gameFramework/m/ae;,pureGreenTeamColorShader,True,static shader loaded from assets/shaders/pureGreenTeamColor.frag
+com/corrodinggames/rts/gameFramework/m/h,field,y,Lcom/corrodinggames/rts/gameFramework/m/ae;,hueAddTeamColorShader,True,static shader loaded from assets/shaders/hueAddTeamColor.frag
+com/corrodinggames/rts/gameFramework/m/h,field,z,Lcom/corrodinggames/rts/gameFramework/m/ae;,hueShiftTeamColorShader,True,static shader loaded from assets/shaders/hueShiftTeamColor.frag
+com/corrodinggames/rts/gameFramework/m/h,field,A,Z,teamShadersLoaded,True,guards static synchronized shader loading method C()
+com/corrodinggames/rts/gameFramework/m/h,field,B,Z,loaded,True,lazy load guard checked by getBitmap/getRealImage/forceLoad
+com/corrodinggames/rts/gameFramework/m/h,field,C,Z,usingShaderColoring,True,set when shader coloring path is active; reset when shader coloring disabled
+com/corrodinggames/rts/gameFramework/m/h,field,H,Lcom/corrodinggames/rts/gameFramework/m/e;,sourceImage,True,constructor requires baseImage and stores it in H
+com/corrodinggames/rts/gameFramework/m/h,field,I,Lcom/corrodinggames/rts/gameFramework/m/e;,coloredImage,True,CPU recolor/fallback image stored in I; getRealImage returns it after lazy load
+com/corrodinggames/rts/gameFramework/m/h,field,D,I,teamColor,True,team color int passed to constructor and shader uniform teamColor
+com/corrodinggames/rts/gameFramework/m/h,field,E,I,teamIndex,True,included in LazyColoring(teamIndex): name string
+com/corrodinggames/rts/gameFramework/m/h,field,F,Lcom/corrodinggames/rts/game/o;,coloringMode,True,compared against GameColoring modes for pureGreen/hueAdd/hueShift branches
+com/corrodinggames/rts/gameFramework/m/h,field,G,F,totalColoringTime,True,accumulates elapsed lazy coloring time after Colouring took log
+com/corrodinggames/rts/gameFramework/m/h,method,C,()V,loadTeamColorShaders,True,loads pureGreen/hueAdd/hueShift fragment shaders and sets teamColor uniforms
+com/corrodinggames/rts/gameFramework/m/h,method,D,()V,ensureTeamColorShadersLoaded,True,checks teamShadersLoaded and calls loadTeamColorShaders
+com/corrodinggames/rts/gameFramework/m/h,method,a,()Ljava/lang/String;,getName,True,LazyColoring(...) name string override
+com/corrodinggames/rts/gameFramework/m/h,method,c,(Z)V,loadLazyColoredImage,True,"performs shader or CPU team recolor, logs Loading in lazy loaded bitmap/Colouring took/OOM"
+com/corrodinggames/rts/gameFramework/m/h,method,b,()Landroid/graphics/Bitmap;,getBitmap,True,triggers lazy recolor then returns coloredImage.bitmap
+com/corrodinggames/rts/gameFramework/m/h,method,c,()Lcom/corrodinggames/rts/gameFramework/m/e;,getRealImage,True,triggers lazy recolor then returns coloredImage
+com/corrodinggames/rts/gameFramework/m/h,method,w,()V,forceLoad,True,forces lazy image to load without shader-only fast path
+com/corrodinggames/rts/gameFramework/m/h,method,u,()I,estimateMemoryBytes,True,delegates memory estimate to source image until colored image is loaded
+com/corrodinggames/rts/gameFramework/m/i,field,a,I,lastTeamColor,True,tracks last teamColor uniform sent to shader
+com/corrodinggames/rts/gameFramework/m/ae,method,a,(Landroid/graphics/Paint;Lcom/corrodinggames/rts/gameFramework/m/e;)Z,applyForImage,True,base ShaderProgram hook used by TeamColorShaderProgram to update per-image uniforms
+com/corrodinggames/rts/gameFramework/m/i,method,b,()Z,applyDefaultTeamColorUniform,True,sets teamColor uniform to pure green sentinel when needed
+com/corrodinggames/rts/gameFramework/m/i,method,a,(Landroid/graphics/Paint;Lcom/corrodinggames/rts/gameFramework/m/e;)Z,applyForImage,True,"if image is LazyTeamColorImage, updates teamColor uniform from image.teamColor"
+com/corrodinggames/rts/gameFramework/m/i,method,c,()V,compileOnGraphicsEngine,True,override delegates to ShaderProgram.compileOnGraphicsEngine
+com/corrodinggames/rts/java/s,field,y,Ljava/util/ArrayList;,liveImages,True,constructor initializes static list and adds each SlickBitmapOrTexture; release removes it
+com/corrodinggames/rts/java/s,field,x,Lorg/newdawn/slick/Image;,slickImage,True,primary Slick Image texture object
+com/corrodinggames/rts/java/s,field,z,Lorg/newdawn/slick/opengl/ImageData;,slickImageData,True,backing ImageData for reload/upload/pixel read
+com/corrodinggames/rts/java/s,field,A,Ljava/nio/ByteBuffer;,imageByteBuffer,True,ImageData byte buffer used for get/set pixel and texture reload
+com/corrodinggames/rts/java/s,field,B,I,bytesPerPixel,True,computed from ImageData depth and used in pixel addressing
+com/corrodinggames/rts/java/s,field,C,Ljava/lang/String;,filePath,True,file path retained for reload/hot reload
+com/corrodinggames/rts/java/s,field,D,Z,cloned,True,reloadImage skips cloned images
+com/corrodinggames/rts/java/s,field,E,I,slickFilter,True,filter mode applied to Slick Image when smoothing changes
+com/corrodinggames/rts/java/s,field,F,Z,discardImageDataAfterUpload,True,static flag controls dropping ImageData/ByteBuffer and recreating from texture
+com/corrodinggames/rts/java/s,field,G,Z,pixelBufferLoaded,True,set by readPixelsFromBitmap; flushPixelBufferToBitmap uploads when true
+com/corrodinggames/rts/java/s,field,H,Z,pixelBufferDiscarded,True,readPixelsFromBitmap throws after discardPixelBuffer sets this flag
+com/corrodinggames/rts/java/s,field,I,Z,autoReleaseOnFinalize,True,finalize releases texture only when enabled
+com/corrodinggames/rts/java/s,field,J,J,lastModifiedTimestamp,True,timestamp compared by checkAndReloadIfFileChanged
+com/corrodinggames/rts/java/s,field,K,I,reloadImageCounter,True,static counter used in reload_ texture names
+com/corrodinggames/rts/java/s,method,C,()Lorg/newdawn/slick/Image;,getSlickImage,True,returns wrapped org.newdawn.slick.Image
+com/corrodinggames/rts/java/s,method,a,(Lorg/newdawn/slick/opengl/ImageData;)V,setSlickImageDataInternal,True,"private helper stores ImageData, ByteBuffer, bytesPerPixel and cleans transparent pixels"
+com/corrodinggames/rts/java/s,method,a,()Ljava/lang/String;,getName,True,returns GameImage.name or filePath
+com/corrodinggames/rts/java/s,method,D,()V,reloadFromImageData,True,literal: reloadFromImageData; destroys/recreates Slick Image from ImageData
+com/corrodinggames/rts/java/s,method,a,(Lorg/newdawn/slick/Image;Ljava/lang/String;)V,setSlickImage,True,"sets Slick Image, file path, dimensions, timestamp"
+com/corrodinggames/rts/java/s,method,a,(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;Z)V,setSlickImageData,True,sets ImageData and optionally defers reloadFromImageData
+com/corrodinggames/rts/java/s,method,a,(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;,copyByteBuffer,True,static ByteBuffer copy helper
+com/corrodinggames/rts/java/s,method,a,(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;,createImageCopyWithSize,True,creates resized copy using SlickGraphicsBackend.createImage and copies metadata
+com/corrodinggames/rts/java/s,method,i,()V,ensurePixelBuffer,True,Slick override; pixel buffer is ImageData/ByteBuffer-backed
+com/corrodinggames/rts/java/s,method,x,()V,ensureImageDataAvailable,True,calls H/ensureImageDataLoaded
+com/corrodinggames/rts/java/s,method,j,()V,readPixelsFromBitmap,True,marks pixelBufferLoaded and ensures image data; throws if pixel buffer discarded
+com/corrodinggames/rts/java/s,method,H,()V,ensureImageDataLoaded,True,recreates ImageData from texture when discardImageDataAfterUpload is true and buffer is null
+com/corrodinggames/rts/java/s,method,q,()V,releaseImageData,True,delegates to dropImageDataIfAllowed
+com/corrodinggames/rts/java/s,method,I,()V,dropImageDataIfAllowed,True,nulls ImageData/ByteBuffer when discardImageDataAfterUpload is enabled
+com/corrodinggames/rts/java/s,method,J,()V,recreateImageDataFromTexture,True,creates SlickTextureReadbackImageData and logs texture readback cost
+com/corrodinggames/rts/java/s,method,k,()Z,canReadPixels,True,Slick pixel reads are supported via ImageData/ByteBuffer
+com/corrodinggames/rts/java/s,method,a,(II)I,getPixel,True,reads RGBA from ImageData ByteBuffer with bytesPerPixel
+com/corrodinggames/rts/java/s,method,a,(III)V,setPixel,True,writes RGBA into ImageData ByteBuffer with bytesPerPixel
+com/corrodinggames/rts/java/s,method,p,()V,flushPixelBufferToBitmap,True,reloads Slick texture from ImageData when pixel buffer was loaded/modified
+com/corrodinggames/rts/java/s,method,r,()V,dropPixelBuffer,True,Slick override; no-op for regular drop
+com/corrodinggames/rts/java/s,method,s,()V,discardPixelBuffer,True,marks pixelBufferDiscarded and drops ImageData/ByteBuffer
+com/corrodinggames/rts/java/s,method,n,()V,enableAutoReleaseOnFinalize,True,sets autoReleaseOnFinalize flag
+com/corrodinggames/rts/java/s,method,o,()V,releaseBitmap,True,removes from liveImages and destroys Slick Image
+com/corrodinggames/rts/java/s,method,h,()Lcom/corrodinggames/rts/gameFramework/m/e;,copyImage,True,copies image data into new SlickBitmapOrTexture and marks clone
+com/corrodinggames/rts/java/s,method,e,()V,onFilteringChanged,True,protected override applies Slick texture filter
+com/corrodinggames/rts/java/s,method,E,()V,applySlickFilter,True,updates Slick Image filter based on GameImage.smooth
+com/corrodinggames/rts/java/s,method,F,()V,reloadImage,True,literal: reloadImage; destroys/reloads texture from file path and refreshes map cache
+com/corrodinggames/rts/java/s,method,c,(Z)J,getFileLastModified,True,queries file timestamp for hot reload
+com/corrodinggames/rts/java/s,method,t,()V,checkAndReloadIfFileChanged,True,compares lastModifiedTimestamp and calls reloadImage
+com/corrodinggames/rts/java/s,method,G,()V,logSlickImageState,True,"debug log literal: SlickBitmapOrTexture, filepath, slickImage, cloned"
+com/corrodinggames/rts/java/s,method,clone,()Ljava/lang/Object;,clone,True,clone method delegates to copyImage
+com/corrodinggames/rts/java/a,field,x,Lcom/corrodinggames/rts/java/s;,fallbackImage,True,wrapper delegates fallback image operations to field x
+com/corrodinggames/rts/java/a,method,C,()Lorg/newdawn/slick/Image;,getSlickImage,True,SlickFallbackBitmapOrTexture wrapper override of getSlickImage
+com/corrodinggames/rts/java/a,method,b,()Landroid/graphics/Bitmap;,getBitmap,True,SlickFallbackBitmapOrTexture wrapper override of getBitmap
+com/corrodinggames/rts/java/a,method,c,()Lcom/corrodinggames/rts/gameFramework/m/e;,getRealImage,True,SlickFallbackBitmapOrTexture wrapper override of getRealImage
+com/corrodinggames/rts/java/a,method,a,()Ljava/lang/String;,getName,True,SlickFallbackBitmapOrTexture wrapper override of getName
+com/corrodinggames/rts/java/a,method,l,()I,getHeight,True,SlickFallbackBitmapOrTexture wrapper override of getHeight
+com/corrodinggames/rts/java/a,method,m,()I,getWidth,True,SlickFallbackBitmapOrTexture wrapper override of getWidth
+com/corrodinggames/rts/java/a,method,u,()I,estimateMemoryBytes,True,SlickFallbackBitmapOrTexture wrapper override of estimateMemoryBytes
+com/corrodinggames/rts/java/a,method,w,()V,forceLoad,True,SlickFallbackBitmapOrTexture wrapper override of forceLoad
+com/corrodinggames/rts/java/a,method,a,(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;,createImageCopyWithSize,True,SlickFallbackBitmapOrTexture wrapper override of createImageCopyWithSize
+com/corrodinggames/rts/java/a,method,a,(II)I,getPixel,True,SlickFallbackBitmapOrTexture wrapper override of getPixel
+com/corrodinggames/rts/java/a,method,p,()V,flushPixelBufferToBitmap,True,SlickFallbackBitmapOrTexture wrapper override of flushPixelBufferToBitmap
+com/corrodinggames/rts/java/a,method,r,()V,dropPixelBuffer,True,SlickFallbackBitmapOrTexture wrapper override of dropPixelBuffer
+com/corrodinggames/rts/java/a,method,n,()V,enableAutoReleaseOnFinalize,True,SlickFallbackBitmapOrTexture wrapper override of enableAutoReleaseOnFinalize
+com/corrodinggames/rts/java/a,method,h,()Lcom/corrodinggames/rts/gameFramework/m/e;,copyImage,True,SlickFallbackBitmapOrTexture wrapper override of copyImage
+com/corrodinggames/rts/java/a,method,t,()V,checkAndReloadIfFileChanged,True,SlickFallbackBitmapOrTexture wrapper override of checkAndReloadIfFileChanged
+com/corrodinggames/rts/java/a,method,c,(Z)J,getFileLastModified,True,SlickFallbackBitmapOrTexture wrapper override of getFileLastModified
+com/corrodinggames/rts/java/a,method,a,(Z)V,setSmooth,True,SlickFallbackBitmapOrTexture wrapper override of setSmooth
+com/corrodinggames/rts/java/a,method,a,(Landroid/graphics/Bitmap;)V,setBitmap,True,SlickFallbackBitmapOrTexture wrapper override of setBitmap
+com/corrodinggames/rts/java/a,method,g,()V,updateCenterValues,True,SlickFallbackBitmapOrTexture wrapper override of updateCenterValues
+com/corrodinggames/rts/java/a,method,a,(Lcom/corrodinggames/rts/gameFramework/m/e;)V,copyImageMetadataFrom,True,SlickFallbackBitmapOrTexture wrapper override of copyImageMetadataFrom
+com/corrodinggames/rts/java/a,method,D,()V,reloadFromImageData,True,SlickFallbackBitmapOrTexture wrapper override of reloadFromImageData
+com/corrodinggames/rts/java/a,method,a,(Lorg/newdawn/slick/Image;Ljava/lang/String;)V,setSlickImage,True,SlickFallbackBitmapOrTexture wrapper override of setSlickImage
+com/corrodinggames/rts/java/a,method,a,(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;Z)V,setSlickImageData,True,SlickFallbackBitmapOrTexture wrapper override of setSlickImageData
+com/corrodinggames/rts/java/a,method,v,()V,clearTeamImageCaches,True,SlickFallbackBitmapOrTexture wrapper override of clearTeamImageCaches
+com/corrodinggames/rts/java/a,method,i,()V,ensurePixelBuffer,True,SlickFallbackBitmapOrTexture wrapper override of ensurePixelBuffer
+com/corrodinggames/rts/java/a,method,j,()V,readPixelsFromBitmap,True,SlickFallbackBitmapOrTexture wrapper override of readPixelsFromBitmap
+com/corrodinggames/rts/java/a,method,a,(III)V,setPixel,True,SlickFallbackBitmapOrTexture wrapper override of setPixel
+com/corrodinggames/rts/java/a,method,o,()V,releaseBitmap,True,SlickFallbackBitmapOrTexture wrapper override of releaseBitmap
+com/corrodinggames/rts/java/a,method,E,()V,applySlickFilter,True,SlickFallbackBitmapOrTexture wrapper override of applySlickFilter
+com/corrodinggames/rts/java/a,method,F,()V,reloadImage,True,SlickFallbackBitmapOrTexture wrapper override of reloadImage
+com/corrodinggames/rts/java/a,method,G,()V,logSlickImageState,True,SlickFallbackBitmapOrTexture wrapper override of logSlickImageState
+com/corrodinggames/rts/java/a,method,A,()Z,isOutOfMemoryFallback,True,SlickFallbackBitmapOrTexture wrapper override of isOutOfMemoryFallback
+com/corrodinggames/rts/java/a,method,clone,()Ljava/lang/Object;,clone,True,SlickFallbackBitmapOrTexture wrapper override of clone
+com/corrodinggames/rts/java/a,method,toString,()Ljava/lang/String;,toString,True,toString delegate/debug method on fallback wrapper
+com/corrodinggames/rts/java/t,field,a,I,depth,True,set to 32 if texture has alpha else 24
+com/corrodinggames/rts/java/t,field,c,I,imageWidth,True,Texture.getImageWidth()
+com/corrodinggames/rts/java/t,field,d,I,imageHeight,True,Texture.getImageHeight()
+com/corrodinggames/rts/java/t,field,e,I,textureWidth,True,Texture.getTextureWidth()
+com/corrodinggames/rts/java/t,field,f,I,textureHeight,True,Texture.getTextureHeight()
+com/corrodinggames/rts/java/t,field,g,[B,rawTextureData,True,Texture.getTextureData() byte array
+com/corrodinggames/rts/java/t,field,b,Lcom/corrodinggames/rts/java/s;,ownerImage,True,outer SlickBitmapOrTexture owning this readback helper
+com/corrodinggames/rts/java/t,method,a,()[B,getRawTextureData,True,returns rawTextureData byte array used to wrap ImageData ByteBuffer
+com/corrodinggames/rts/java/a/a,field,a,Lorg/newdawn/slick/opengl/ImageData;,delegate,True,all ImageData dimension methods delegate to field a
+com/corrodinggames/rts/java/a/a,field,b,Ljava/nio/ByteBuffer;,imageBufferData,True,getImageBufferData returns field b from ImageIO fallback path
+com/corrodinggames/rts/java/e,field,r,Lcom/corrodinggames/rts/java/a;,outOfMemoryErrorImage,True,initialized from R.drawable.error_outmem and named Out of memory
+com/corrodinggames/rts/java/e,field,s,Lcom/corrodinggames/rts/java/a;,generalErrorImage,True,initialized from R.drawable.error_general and named General Error
+com/corrodinggames/rts/java/e,field,t,Lcom/corrodinggames/rts/java/a;,tooLargeThumbnailErrorImage,True,initialized from R.drawable.error_toolargethumb / Too Large Thumbnail Error path
+com/corrodinggames/rts/java/e,field,E,Ljava/util/ArrayList;,pendingImageDataDiscards,True,"static list flushed by w(), which calls SlickBitmapOrTexture.dropImageDataIfAllowed"
+com/corrodinggames/rts/java/e,field,F,I,loadedImageCount,True,incremented in loadImageFromStream before ImageData decode
+com/corrodinggames/rts/java/e,method,b,()V,loadErrorImages,True,initializes Out of memory/General Error/Too Large Thumbnail Error fallback images
+com/corrodinggames/rts/java/e,method,e,()V,flushImageDataDiscards,True,instance wrapper around static flushPendingImageDataDiscards
+com/corrodinggames/rts/java/e,method,w,()V,flushPendingImageDataDiscards,True,iterates pendingImageDataDiscards and calls SlickBitmapOrTexture.dropImageDataIfAllowed
+com/corrodinggames/rts/java/e,method,a,(Lcom/corrodinggames/rts/java/s;)V,queueImageDataDiscard,True,adds SlickBitmapOrTexture to pendingImageDataDiscards and flushes when list grows beyond 15
+com/corrodinggames/rts/java/e,method,b,(IZ)Lcom/corrodinggames/rts/java/s;,loadSlickImageByResourceId,True,loads resource file path to ImageData and wraps as SlickBitmapOrTexture
+com/corrodinggames/rts/java/e,method,a,(I)Lcom/corrodinggames/rts/gameFramework/m/e;,loadImageByResourceId,True,loads resource id with default filtering/deferred flag
+com/corrodinggames/rts/java/e,method,a,(IZ)Lcom/corrodinggames/rts/gameFramework/m/e;,loadImageByResourceId,True,delegates to loadSlickImageByResourceId
+com/corrodinggames/rts/java/e,method,a,(Ljava/io/InputStream;)Lorg/newdawn/slick/opengl/ImageData;,loadSlickImageData,True,"tries PNGImageData first, logs PNG load failed, falls back to ImageIOImageData"
+com/corrodinggames/rts/java/e,method,a,(Ljava/io/InputStream;Z)Lcom/corrodinggames/rts/gameFramework/m/e;,loadImageFromStream,True,GraphicsEngine override; decodes InputStream into ImageData/SlickBitmapOrTexture with OOM fallback
+com/corrodinggames/rts/java/e,method,a,(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;)Lcom/corrodinggames/rts/java/s;,createSlickImageFromData,True,"constructs SlickBitmapOrTexture, sets ImageData, queues ImageData discard"
+com/corrodinggames/rts/java/e,method,a,(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;,createImage,True,GraphicsEngine override; creates Slick Image-backed GameImage
+com/corrodinggames/rts/java/e,method,b,(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;,createImageBufferBacked,True,creates ImageBuffer-backed SlickBitmapOrTexture
+com/corrodinggames/rts/java/e,method,a,(Lcom/corrodinggames/rts/gameFramework/m/ae;)V,compileShader,True,GraphicsEngine override for ShaderProgram.compileShader
+com/corrodinggames/rts/java/e,method,r,()Lcom/corrodinggames/rts/gameFramework/m/e;,getErrorImage,True,GraphicsEngine override; returns outOfMemoryErrorImage fallback

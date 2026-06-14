@@ -9,6 +9,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
 
@@ -51,6 +52,16 @@ final class ExampleDiagnosticActions {
                             + " graphics=" + ExampleDebugOverlay.describeObject(graphicsEngine),
                     graphicsEngine);
 
+            if (graphicsEngine != null && RenderImageDiagnostics.isSlickGraphicsBackend(graphicsEngine)) {
+                Map<String, Object> backend = RenderImageDiagnostics.describeSlickGraphicsBackend(graphicsEngine);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Image backend loaded=" + backend.get("loadedImageCount")
+                                + " pendingDiscards=" + backend.get("pendingImageDataDiscardsSize")
+                                + " live=" + RenderImageDiagnostics.liveSlickImagesSnapshot().size()
+                                + " oom=" + summarizeImage(backend.get("outOfMemoryErrorImage")),
+                        graphicsEngine);
+            }
+
             if (SlickRuntimeDiagnostics.isSlickGame(frameRenderer)) {
                 showSlickRenderSnapshot(stage, frameRenderer);
             } else {
@@ -80,6 +91,7 @@ final class ExampleDiagnosticActions {
                             + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
                             + " lobbyRows=" + MappingEvidenceDiagnostics.allNetworkLobbyChatCommandRows().size()
                             + " deepNetRows=" + MappingEvidenceDiagnostics.allNetworkDeepPacketBranchRows().size()
+                            + " imageRows=" + MappingEvidenceDiagnostics.allRenderImageTextureLifecycleRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
@@ -483,6 +495,8 @@ final class ExampleDiagnosticActions {
                         + " loaded=" + slick.get("finishedInitialLoad")
                         + " ctx=" + ExampleDebugOverlay.describeObject(graphicsContext),
                 graphicsContext);
+        showImageSummary(stage, "Slick loadingLogo", slick.get("loadingLogo"));
+        showImageSummary(stage, "Slick pointerImage", slick.get("pointerImage"));
 
         if (!RenderCanvasDiagnostics.isCanvasDrawTarget(graphicsContext)) {
             return;
@@ -503,6 +517,43 @@ final class ExampleDiagnosticActions {
                     "GL field glCanvas=" + summarizeGlObject(glCanvas)
                             + " glRenderer=" + summarizeGlObject(glRenderer),
                     graphicsContext);
+        }
+    }
+
+    private static void showImageSummary(String stage, String label, Object image) {
+        if (image == null || !RenderImageDiagnostics.isGameImage(image)) {
+            return;
+        }
+        ExampleDebugOverlay.enqueueOverlayMessage(stage, label + " " + summarizeImage(image), image);
+    }
+
+    private static String summarizeImage(Object image) {
+        if (image == null) {
+            return "null";
+        }
+
+        try {
+            Map<String, Object> details = RenderImageDiagnostics.describeGameImage(image);
+            String name = String.valueOf(details.containsKey("nameFromGetter")
+                    ? details.get("nameFromGetter") : details.get("name"));
+            Object width = details.containsKey("widthFromGetter")
+                    ? details.get("widthFromGetter") : details.get("width");
+            Object height = details.containsKey("heightFromGetter")
+                    ? details.get("heightFromGetter") : details.get("height");
+            String result = ExampleDebugOverlay.describeObject(image)
+                    + "{name=" + ExampleDebugOverlay.compactPath(name)
+                    + ", size=" + width + "x" + height
+                    + ", slick=" + details.get("slickBitmapOrTexture")
+                    + ", lazy=" + details.get("lazyTeamColorImage");
+            if (RenderImageDiagnostics.isSlickBitmapOrTexture(image)) {
+                Map<String, Object> slick = RenderImageDiagnostics.describeSlickBitmapOrTexture(image);
+                result += ", file=" + ExampleDebugOverlay.compactPath(String.valueOf(slick.get("filePath")))
+                        + ", data=" + (slick.get("slickImageData") != null)
+                        + ", buf=" + slick.get("imageByteBufferRemaining");
+            }
+            return result + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(image);
         }
     }
 

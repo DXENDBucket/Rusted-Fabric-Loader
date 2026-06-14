@@ -1,0 +1,5 @@
+area,candidate,reason
+SlickGraphicsBackend broad draw backend,line/rect/text/transform/HUD drawing methods,Deferred; v0.69 only maps image/texture lifecycle and GraphicsEngine image overrides.
+GameImage residual no-op hooks,"f(), y(), z() and booleans l/m/n/v",Insufficient semantic evidence beyond no-op/residual state; naming would be speculative.
+Java font/transform helpers,com/corrodinggames/rts/java/f and java/g,"Likely render text cache/transform state, but not part of GameImage/Slick texture lifecycle."
+Full CanvasGraphicsEngine overrides,gameFramework/m/z and android canvas draw target residuals,Kept for later render/HUD pass to avoid mixing texture lifecycle with draw command surface.
