@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricexample;
 import io.github.endx.rustedfabricapi.api.event.CommandEvents;
 import io.github.endx.rustedfabricapi.api.event.AudioRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.BuildQueueEvents;
+import io.github.endx.rustedfabricapi.api.event.CoreDebugStatsEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomAssetEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
@@ -33,6 +34,7 @@ import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CoreDebugStatsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
@@ -753,6 +755,56 @@ final class ExampleEventProbes {
                         "AfterFrameUpdate delta=" + delta
                                 + " renderer=" + describeObject(renderer),
                         renderer, 5000L));
+
+        CoreDebugStatsEvents.BEFORE_STATS_ENGINE_RESET.register(statsEngine -> {
+            showCoreStatsProbe(stage, "BeforeStatsEngineReset", statsEngine, 1000L);
+            return false;
+        });
+
+        CoreDebugStatsEvents.AFTER_STATS_ENGINE_RESET.register(statsEngine ->
+                showCoreStatsProbe(stage, "AfterStatsEngineReset", statsEngine, 1000L));
+
+        CoreDebugStatsEvents.BEFORE_PERIODIC_STATS_SNAPSHOT.register(statsEngine -> {
+            showCoreStatsProbe(stage, "BeforePeriodicStatsSnapshot", statsEngine, 5000L);
+            return false;
+        });
+
+        CoreDebugStatsEvents.AFTER_PERIODIC_STATS_SNAPSHOT.register(statsEngine ->
+                showCoreStatsProbe(stage, "AfterPeriodicStatsSnapshot", statsEngine, 5000L));
+
+        CoreDebugStatsEvents.BEFORE_FINALIZE_STATS_HISTORY.register(statsEngine -> {
+            showCoreStatsProbe(stage, "BeforeFinalizeStatsHistory", statsEngine, 1000L);
+            return false;
+        });
+
+        CoreDebugStatsEvents.AFTER_FINALIZE_STATS_HISTORY.register(statsEngine ->
+                showCoreStatsProbe(stage, "AfterFinalizeStatsHistory", statsEngine, 1000L));
+
+        CoreDebugStatsEvents.BEFORE_STATS_HISTORY_SNAPSHOT.register((statsEngine, frame, flagA, flagB) -> {
+            showCoreStatsProbe(stage, "BeforeStatsHistorySnapshot",
+                    "frame=" + frame + " flagA=" + flagA + " flagB=" + flagB,
+                    statsEngine, 5000L);
+            return false;
+        });
+
+        CoreDebugStatsEvents.AFTER_STATS_HISTORY_SNAPSHOT.register((statsEngine, frame, flagA, flagB) ->
+                showCoreStatsProbe(stage, "AfterStatsHistorySnapshot",
+                        "frame=" + frame + " flagA=" + flagA + " flagB=" + flagB,
+                        statsEngine, 5000L));
+
+        CoreDebugStatsEvents.BEFORE_NOTIFY_UNIT_KILLED.register((dispatcher, killedUnit, attackerUnit) ->
+                showEventProbeMessage(stage, "CoreStats.BeforeNotifyUnitKilled",
+                        "CoreStats.BeforeNotifyUnitKilled killed=" + describeObject(killedUnit)
+                                + " attacker=" + describeObject(attackerUnit)
+                                + " dispatcher=" + describeObject(dispatcher),
+                        killedUnit, 300L));
+
+        CoreDebugStatsEvents.AFTER_NOTIFY_UNIT_KILLED.register((dispatcher, killedUnit, attackerUnit) ->
+                showEventProbeMessage(stage, "CoreStats.AfterNotifyUnitKilled",
+                        "CoreStats.AfterNotifyUnitKilled killed=" + describeObject(killedUnit)
+                                + " attacker=" + describeObject(attackerUnit)
+                                + " dispatcher=" + describeObject(dispatcher),
+                        killedUnit, 300L));
 
         UnitLifecycleEvents.BEFORE_UNIT_REGISTER.register(unit ->
                 showEventProbeMessage(stage, "BeforeUnitRegister",
@@ -2451,6 +2503,19 @@ final class ExampleEventProbes {
                 interfaceEngine, 250L);
     }
 
+    private static void showCoreStatsProbe(String stage, String key, Object statsEngine, long minIntervalMillis) {
+        showCoreStatsProbe(stage, key, "", statsEngine, minIntervalMillis);
+    }
+
+    private static void showCoreStatsProbe(String stage, String key, String extra,
+                                           Object statsEngine, long minIntervalMillis) {
+        showEventProbeMessage(stage, "CoreStats." + key,
+                "CoreStats." + key
+                        + (extra != null && !extra.isEmpty() ? " " + extra : "")
+                        + " " + describeCoreStatsEngine(statsEngine),
+                statsEngine, minIntervalMillis);
+    }
+
     private static void showNetworkCallbackProbe(String stage, String key, Object callbacks) {
         showNetworkCallbackProbe(stage, key, "", callbacks, 1000L);
     }
@@ -2559,6 +2624,24 @@ final class ExampleEventProbes {
         } catch (RuntimeException ignored) {
         }
         return "hud=" + describeObject(interfaceEngine);
+    }
+
+    private static String describeCoreStatsEngine(Object statsEngine) {
+        if (statsEngine == null) {
+            return "stats=null";
+        }
+        try {
+            if (CoreDebugStatsDiagnostics.isStatsEngine(statsEngine)) {
+                Map<String, Object> details = CoreDebugStatsDiagnostics.describeStatsEngine(statsEngine);
+                return "stats={enabled=" + details.get("enabled")
+                        + ", frame=" + details.get("lastFrame")
+                        + ", recording=" + details.get("historyRecordingEnabled")
+                        + ", teams=" + details.get("teamStatsSize")
+                        + ", dispatcher=" + describeObject(details.get("unitKillEventDispatcher")) + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "stats=" + describeObject(statsEngine);
     }
 
     private static String describeTeam(Object team) {

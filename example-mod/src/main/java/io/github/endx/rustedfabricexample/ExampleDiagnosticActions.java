@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CoreDebugStatsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.LibRocketUiDiagnostics;
@@ -136,6 +137,114 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("HUD snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showCoreStatsSnapshot(String stage) {
+        try {
+            Object statsEngine = CoreDebugStatsDiagnostics.currentStatsEngine();
+            if (statsEngine == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "CoreStats engine unavailable from current GameEngine", null);
+                return;
+            }
+
+            Map<String, Object> stats = CoreDebugStatsDiagnostics.describeStatsEngine(statsEngine);
+            List<Object> teamStats = CoreDebugStatsDiagnostics.teamStatsSnapshot(statsEngine);
+            List<Object> statsWithHistory = CoreDebugStatsDiagnostics.statsWithHistorySnapshot(statsEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "CoreStats evidence rows=" + MappingEvidenceDiagnostics.allCoreDebugStatsRows().size()
+                            + " updated=" + MappingEvidenceDiagnostics.allCoreDebugStatsUpdatedRows().size()
+                            + " flow=" + MappingEvidenceDiagnostics.allCoreDebugStatsFlowMap().size()
+                            + " partial=" + MappingEvidenceDiagnostics.allCoreDebugStatsPartialCoverageRows().size()
+                            + " metrics=" + CoreDebugStatsDiagnostics.statsHistoryMetricNames().size()
+                            + " sources=" + CoreDebugStatsDiagnostics.teamStatValueSourceNames().size(),
+                    statsEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "CoreStats engine enabled=" + stats.get("enabled")
+                            + " frame=" + stats.get("lastFrame")
+                            + " recording=" + stats.get("historyRecordingEnabled")
+                            + " teams=" + stats.get("teamStatsSize")
+                            + " withHistory=" + statsWithHistory.size()
+                            + " dispatcher=" + ExampleDebugOverlay.describeObject(stats.get("unitKillEventDispatcher")),
+                    statsEngine);
+
+            Object neutralStats = stats.get("neutralStats");
+            if (neutralStats != null && CoreDebugStatsDiagnostics.isStatsTeamStats(neutralStats)) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Neutral " + summarizeCoreTeamStats(neutralStats),
+                        neutralStats);
+            }
+
+            if (!teamStats.isEmpty()) {
+                Object firstStats = teamStats.get(0);
+                if (CoreDebugStatsDiagnostics.isStatsTeamStats(firstStats)) {
+                    ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                            "First team stats " + summarizeCoreTeamStats(firstStats),
+                            firstStats);
+                }
+            }
+
+            Object dispatcher = stats.get("unitKillEventDispatcher");
+            if (dispatcher != null && CoreDebugStatsDiagnostics.isStatsEventDispatcher(dispatcher)) {
+                Map<String, Object> dispatcherDetails =
+                        CoreDebugStatsDiagnostics.describeStatsEventDispatcher(dispatcher);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Stats dispatcher listeners=" + dispatcherDetails.get("listenerCount"),
+                        dispatcher);
+            }
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "CoreStats snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("CoreStats snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showProfilerSnapshot(String stage) {
+        try {
+            List<String> sections = CoreDebugStatsDiagnostics.profilerSectionNames();
+            Object timer = CoreDebugStatsDiagnostics.newPerformanceTimer("example-profiler-snapshot", false);
+            Map<String, Object> timerDetails = CoreDebugStatsDiagnostics.describePerformanceTimer(timer);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Profiler sections=" + sections.size()
+                            + " first=" + firstItems(sections, 4)
+                            + " timer=" + ExampleDebugOverlay.safeText(String.valueOf(timerDetails.get("summary"))),
+                    timer);
+
+            Object engine = GameEngineDiagnostics.currentEngineOrNull();
+            if (engine != null) {
+                Object profiler = CoreDebugStatsDiagnostics.newGameProfiler(engine);
+                Map<String, Object> profilerDetails = CoreDebugStatsDiagnostics.describeGameProfiler(profiler);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Profiler maxSections=" + profilerDetails.get("maxProfilerSections")
+                                + " data=" + ExampleDebugOverlay.describeObject(profilerDetails.get("sectionData")),
+                        profiler);
+
+                Object data = profilerDetails.get("sectionData");
+                if (data != null && CoreDebugStatsDiagnostics.isProfilerSectionData(data)) {
+                    Map<String, Object> dataDetails = CoreDebugStatsDiagnostics.describeProfilerSectionData(data);
+                    ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                            "Profiler data starts=" + dataDetails.get("sectionStartTimesNanosSize")
+                                    + " totals=" + dataDetails.get("sectionTotalTimesNanosSize")
+                                    + " lastFrame=" + dataDetails.get("sectionLastFrameMillisSize")
+                                    + " active=" + dataDetails.get("activeSectionCount"),
+                            data);
+                }
+            }
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "ANR title=" + ExampleDebugOverlay.safeText(safeAnrThreadTitle()),
+                    null);
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Profiler snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Profiler snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 
@@ -624,6 +733,47 @@ final class ExampleDiagnosticActions {
                         + " config=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("configKey")))
                         + " bindings=" + details.get("bindingCount"),
                 action);
+    }
+
+    private static String summarizeCoreTeamStats(Object stats) {
+        try {
+            Map<String, Object> details = CoreDebugStatsDiagnostics.describeStatsTeamStats(stats);
+            Object history = details.get("history");
+            String historyText = "null";
+            if (history != null && CoreDebugStatsDiagnostics.isStatsHistory(history)) {
+                Map<String, Object> historyDetails = CoreDebugStatsDiagnostics.describeStatsHistory(history);
+                historyText = "{team=" + historyDetails.get("teamIndex")
+                        + ", series=" + historyDetails.get("metricSeriesSize")
+                        + ", has=" + historyDetails.get("hasHistory") + "}";
+            }
+            return "kills=" + details.get("unitsKilled") + "/" + details.get("buildingsKilled")
+                    + "/" + details.get("experimentalsKilled")
+                    + " lost=" + details.get("unitsLost") + "/" + details.get("buildingsLost")
+                    + "/" + details.get("experimentalsLost")
+                    + " ver=" + details.get("serializationVersion")
+                    + " history=" + historyText;
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(stats);
+        }
+    }
+
+    private static String firstItems(List<String> values, int limit) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < values.size() && i < limit; i++) {
+            if (i > 0) {
+                result.append(',');
+            }
+            result.append(values.get(i));
+        }
+        return result.toString();
+    }
+
+    private static String safeAnrThreadTitle() {
+        try {
+            return CoreDebugStatsDiagnostics.formatAnrThreadTitle(Thread.currentThread());
+        } catch (RuntimeException e) {
+            return "<unavailable>";
+        }
     }
 
     @SuppressWarnings("unchecked")

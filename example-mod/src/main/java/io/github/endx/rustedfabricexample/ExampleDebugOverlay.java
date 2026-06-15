@@ -191,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 6;
+        int actionRows = 7;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -342,6 +342,16 @@ final class ExampleDebugOverlay {
                 "HUD snapshot")) {
             ExampleDiagnosticActions.showHudSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left, top + 168, cellWidth, 24,
+                "Core stats")) {
+            ExampleDiagnosticActions.showCoreStatsSnapshot("debug");
+        }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 168, cellWidth, 24,
+                "Profiler info")) {
+            ExampleDiagnosticActions.showProfilerSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {
@@ -387,6 +397,9 @@ final class ExampleDebugOverlay {
 
     static DebugProbeGroup classifyDebugProbeGroup(String key) {
         String text = key != null ? key : "";
+        if (containsAny(text, "CoreStats", "StatsEngine", "StatsHistory", "Profiler", "Anr")) {
+            return DebugProbeGroup.GAME;
+        }
         if (containsAny(text, "HudCommand")) {
             return DebugProbeGroup.ACTION;
         }

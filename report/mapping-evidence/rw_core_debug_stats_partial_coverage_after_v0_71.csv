@@ -1,0 +1,178 @@
+owner_official,kind,official_name,descriptor,expected_named_name,present,evidence
+com/corrodinggames/rts/gameFramework/bo,class,,,rustedwarfare/stats/TeamStats,True,Existing StatsEngine serializes per-team counters and StatsTable renders these counters
+com/corrodinggames/rts/gameFramework/bp,class,,,rustedwarfare/stats/TeamStatsSerializationVersion,True,TeamStats writes current enum ordinal byte and checks V220911_ADDED_HISTORY before deserializing history
+com/corrodinggames/rts/gameFramework/bl,class,,,rustedwarfare/stats/StatsEventDispatcher,True,StatsEngine static field dispatches Unit killed events to listener list
+com/corrodinggames/rts/gameFramework/bk,class,,,rustedwarfare/stats/StatsEventListener,True,"StatsEventDispatcher iterates listeners and invokes a(attacker,victim,null)"
+com/corrodinggames/rts/gameFramework/bm,class,,,rustedwarfare/stats/CombinedTeamStats,True,Constructor accepts ArrayList<TeamStats> and sums counters/merged histories
+com/corrodinggames/rts/gameFramework/bn,class,,,rustedwarfare/stats/StatsHistory,True,TeamStats.l is serialized after V220911_ADDED_HISTORY and stores metric series snapshots
+com/corrodinggames/rts/gameFramework/bh,class,,,rustedwarfare/stats/StatsHistoryPoint,True,Immutable frame/value pair used by StatsHistorySeries
+com/corrodinggames/rts/gameFramework/bi,class,,,rustedwarfare/stats/StatsHistorySeries,True,StatsHistory owns array of metric series and retrieves values by frame
+com/corrodinggames/rts/gameFramework/bj,class,,,rustedwarfare/stats/StatsHistoryMetric,True,"Enum values wrap TeamStatValueSource values: income, armyValue, buildingValue, totalValue"
+com/corrodinggames/rts/gameFramework/g/f,class,,,rustedwarfare/stats/TeamStatValueSource,True,Enum values none/income/armyValue/buildingValue/totalValue/credits calculate team stat value from Team
+com/corrodinggames/rts/gameFramework/bg,field,e,Z,historyRecordingEnabled,True,StatsEngine.b()/c() guard snapshot recording with this flag; reset sets it true and finalizeStatsHistory sets it false
+com/corrodinggames/rts/gameFramework/bg,field,f,Lcom/corrodinggames/rts/gameFramework/bl;,unitKillEventDispatcher,True,Static StatsEngine field used to notify listeners when Unit kills are recorded
+com/corrodinggames/rts/gameFramework/bg,method,b,()V,recordPeriodicStatsSnapshot,True,"Method checks GameEngine.by frame counter and calls private a(frame,false,false) for periodic stat history sampling"
+com/corrodinggames/rts/gameFramework/bg,method,c,()V,finalizeStatsHistory,True,Method sets historyRecordingEnabled false and forces final stat history snapshot
+com/corrodinggames/rts/gameFramework/bg,method,d,()Ljava/util/ArrayList;,getStatsWithHistory,True,Method returns ArrayList containing neutral/team stats with history for chart/table consumers
+com/corrodinggames/rts/gameFramework/bg,method,a,(IZZ)V,recordStatsHistorySnapshot,True,Private helper iterates TeamStats.history and appends forced/periodic metric snapshots
+com/corrodinggames/rts/gameFramework/bo,field,c,I,unitsKilled,True,Stats table renderer labels this TeamStats field as Units Killed
+com/corrodinggames/rts/gameFramework/bo,field,d,I,buildingsKilled,True,Stats table renderer labels this TeamStats field as Buildings Killed
+com/corrodinggames/rts/gameFramework/bo,field,e,I,experimentalsKilled,True,Stats table renderer labels this TeamStats field as Experimentals Killed
+com/corrodinggames/rts/gameFramework/bo,field,f,I,unitsLost,True,Stats table renderer labels this TeamStats field as Units Lost
+com/corrodinggames/rts/gameFramework/bo,field,g,I,buildingsLost,True,Stats table renderer labels this TeamStats field as Buildings Lost
+com/corrodinggames/rts/gameFramework/bo,field,h,I,experimentalsLost,True,Stats table renderer labels this TeamStats field as Experimentals Lost
+com/corrodinggames/rts/gameFramework/bo,field,l,Lcom/corrodinggames/rts/gameFramework/bn;,history,True,TeamStats constructor allocates StatsHistory and serialize/deserialize writes it after V220911_ADDED_HISTORY
+com/corrodinggames/rts/gameFramework/bo,field,m,B,serializationVersion,True,TeamStats static initializer stores TeamStatsSerializationVersion.V220911_ADDED_HISTORY.ordinal() as byte
+com/corrodinggames/rts/gameFramework/bp,field,a,Lcom/corrodinggames/rts/gameFramework/bp;,ORIGINAL,True,Enum clinit creates values ORIGINAL and V220911_ADDED_HISTORY
+com/corrodinggames/rts/gameFramework/bp,field,b,Lcom/corrodinggames/rts/gameFramework/bp;,V220911_ADDED_HISTORY,True,TeamStats.deserialize compares version byte with bp.b before reading StatsHistory
+com/corrodinggames/rts/gameFramework/bl,field,a,Lcom/corrodinggames/rts/gameFramework/utility/m;,listeners,True,StatsEventDispatcher iterates utility/m listener list
+com/corrodinggames/rts/gameFramework/bl,method,a,(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/am;)V,notifyUnitKilled,True,"Dispatcher iterates StatsEventListener instances and calls onUnitKilled(attacker,victim,null)"
+com/corrodinggames/rts/gameFramework/bk,method,a,(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/am;Ljava/lang/Object;)V,onUnitKilled,True,Abstract listener callback invoked by StatsEventDispatcher when a unit kill is recorded
+com/corrodinggames/rts/gameFramework/bm,method,<init>,(Ljava/util/ArrayList;)V,<init>,True,CombinedTeamStats constructor sums TeamStats counters and merges history series
+com/corrodinggames/rts/gameFramework/bn,field,a,I,teamIndex,True,StatsHistory stores team index; setter/getter pair a(int)/b() used by chart renderer
+com/corrodinggames/rts/gameFramework/bn,field,b,[Lcom/corrodinggames/rts/gameFramework/bi;,metricSeries,True,StatsHistory owns one StatsHistorySeries per StatsHistoryMetric enum
+com/corrodinggames/rts/gameFramework/bn,method,a,()V,resetSeries,True,StatsHistory allocates/clears metric series array
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/gameFramework/j/k;)V,deserialize,True,StatsHistory reads team index and metric series snapshots from GameInputStream
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/gameFramework/j/as;)V,serialize,True,StatsHistory writes team index and metric series snapshots to GameOutputStream
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/game/n;IZ)V,appendSnapshotForTeam,True,"StatsEngine passes Team, frame, forced flag and records metric values for TeamStatValueSource"
+com/corrodinggames/rts/gameFramework/bn,method,a,(I)V,setTeamIndex,True,Simple setter for StatsHistory team index
+com/corrodinggames/rts/gameFramework/bn,method,b,()I,getTeamIndex,True,Simple getter for StatsHistory team index
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/gameFramework/bj;)Lcom/corrodinggames/rts/gameFramework/bi;,getSeries,True,Returns StatsHistorySeries for a StatsHistoryMetric
+com/corrodinggames/rts/gameFramework/bn,method,c,()Z,hasHistory,True,Returns true when any metric series contains data
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/gameFramework/bj;I)I,getValueAtFrame,True,Looks up a StatsHistoryMetric value at a frame
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/gameFramework/bn;)V,mergeFrom,True,Merges another StatsHistory into this one; used by CombinedTeamStats
+com/corrodinggames/rts/gameFramework/bn,method,a,(Lcom/corrodinggames/rts/gameFramework/bi;Lcom/corrodinggames/rts/gameFramework/bi;)Lcom/corrodinggames/rts/gameFramework/bi;,mergeSeries,True,Private helper merges two StatsHistorySeries timelines
+com/corrodinggames/rts/gameFramework/bh,field,a,I,frame,True,StatsHistoryPoint constructor stores first int as frame
+com/corrodinggames/rts/gameFramework/bh,field,b,I,value,True,StatsHistoryPoint constructor stores second int as value
+com/corrodinggames/rts/gameFramework/bh,method,<init>,(II)V,<init>,True,StatsHistoryPoint immutable frame/value pair constructor
+com/corrodinggames/rts/gameFramework/bi,method,a,(I)I,getValueAtFrame,True,StatsHistorySeries returns sampled value for requested frame
+com/corrodinggames/rts/gameFramework/bj,field,a,Lcom/corrodinggames/rts/gameFramework/bj;,INCOME,True,StatsHistoryMetric clinit wraps TeamStatValueSource.income
+com/corrodinggames/rts/gameFramework/bj,field,b,Lcom/corrodinggames/rts/gameFramework/bj;,ARMY_VALUE,True,StatsHistoryMetric clinit wraps TeamStatValueSource.armyValue
+com/corrodinggames/rts/gameFramework/bj,field,c,Lcom/corrodinggames/rts/gameFramework/bj;,BUILDING_VALUE,True,StatsHistoryMetric clinit wraps TeamStatValueSource.buildingValue
+com/corrodinggames/rts/gameFramework/bj,field,d,Lcom/corrodinggames/rts/gameFramework/bj;,TOTAL_VALUE,True,StatsHistoryMetric clinit wraps TeamStatValueSource.totalValue
+com/corrodinggames/rts/gameFramework/bj,field,e,Lcom/corrodinggames/rts/gameFramework/g/f;,valueSource,True,StatsHistoryMetric constructor stores TeamStatValueSource and getter returns it
+com/corrodinggames/rts/gameFramework/bj,method,a,()Lcom/corrodinggames/rts/gameFramework/g/f;,getValueSource,True,Returns the TeamStatValueSource backing this history metric
+com/corrodinggames/rts/gameFramework/g/f,field,a,Lcom/corrodinggames/rts/gameFramework/g/f;,NONE,True,TeamStatValueSource enum value none returns zero
+com/corrodinggames/rts/gameFramework/g/f,field,b,Lcom/corrodinggames/rts/gameFramework/g/f;,INCOME,True,TeamStatValueSource enum value income computes income/custom-resource equivalent
+com/corrodinggames/rts/gameFramework/g/f,field,c,Lcom/corrodinggames/rts/gameFramework/g/f;,ARMY_VALUE,True,TeamStatValueSource enum value armyValue reads TeamStats unit/army value accumulator
+com/corrodinggames/rts/gameFramework/g/f,field,d,Lcom/corrodinggames/rts/gameFramework/g/f;,BUILDING_VALUE,True,TeamStatValueSource enum value buildingValue reads TeamStats building value accumulator
+com/corrodinggames/rts/gameFramework/g/f,field,e,Lcom/corrodinggames/rts/gameFramework/g/f;,TOTAL_VALUE,True,TeamStatValueSource enum value totalValue combines army and building value
+com/corrodinggames/rts/gameFramework/g/f,field,f,Lcom/corrodinggames/rts/gameFramework/g/f;,CREDITS,True,TeamStatValueSource enum value credits returns Team credits as int
+com/corrodinggames/rts/gameFramework/g/f,method,a,(Lcom/corrodinggames/rts/game/n;)I,getValueForTeam,True,Switch on enum ordinal calculates selected stat value from Team
+com/corrodinggames/rts/gameFramework/br,class,,,rustedwarfare/debug/GameProfiler,True,Class owns profiler section data and timing helpers around System.nanoTime
+com/corrodinggames/rts/gameFramework/bs,class,,,rustedwarfare/debug/ProfilerSection,True,Enum constants include update/draw/load/init profiler section names
+com/corrodinggames/rts/gameFramework/bt,class,,,rustedwarfare/debug/PerformanceTimer,True,"Timer accumulates sample count, total ms, peak ms and logs formatted summaries"
+com/corrodinggames/rts/gameFramework/bu,class,,,rustedwarfare/debug/ProfilerSectionData,True,Profiler data arrays are sized by GameProfiler.maxProfilerSections
+com/corrodinggames/rts/gameFramework/br,field,a,Lcom/corrodinggames/rts/gameFramework/l;,gameEngine,True,GameProfiler constructor stores GameEngine reference
+com/corrodinggames/rts/gameFramework/br,field,c,I,maxProfilerSections,True,Static clinit sets max profiler section count to 40 and ProfilerSectionData arrays use it
+com/corrodinggames/rts/gameFramework/br,field,e,Lcom/corrodinggames/rts/gameFramework/bu;,sectionData,True,GameProfiler constructor allocates ProfilerSectionData
+com/corrodinggames/rts/gameFramework/br,field,f,Landroid/graphics/Paint;,paint,True,GameProfiler constructor allocates Paint for profiler rendering
+com/corrodinggames/rts/gameFramework/br,field,g,Landroid/graphics/Rect;,scratchRect,True,GameProfiler constructor allocates Rect scratch object
+com/corrodinggames/rts/gameFramework/br,method,<init>,(Lcom/corrodinggames/rts/gameFramework/l;)V,<init>,True,"GameProfiler constructor initializes profiler data, paint, rect, and engine reference"
+com/corrodinggames/rts/gameFramework/br,method,a,()J,nowNanos,True,Static helper is direct System.nanoTime wrapper
+com/corrodinggames/rts/gameFramework/br,method,a,(J)F,millisSince,True,"Static helper returns (System.nanoTime()-start)/1,000,000 as float"
+com/corrodinggames/rts/gameFramework/br,method,a,(JJ)D,elapsedMillis,True,"Static helper returns (end-start)/1,000,000 as double"
+com/corrodinggames/rts/gameFramework/br,method,a,(Ljava/lang/String;J)V,logElapsed,True,Static helper logs label plus formatted elapsed milliseconds
+com/corrodinggames/rts/gameFramework/br,method,a,(Lcom/corrodinggames/rts/gameFramework/bs;)V,beginSection,True,Profiler section begin hook; no-op in this build but parameter type is ProfilerSection
+com/corrodinggames/rts/gameFramework/br,method,b,(Lcom/corrodinggames/rts/gameFramework/bs;)V,endSection,True,Profiler section end hook; no-op in this build but parameter type is ProfilerSection
+com/corrodinggames/rts/gameFramework/br,method,a,(D)Ljava/lang/String;,formatMillis,True,Formats double milliseconds with three decimals and ms suffix
+com/corrodinggames/rts/gameFramework/br,method,b,(D)Ljava/lang/String;,formatNanosAsMillis,True,"Divides nanoseconds by 1,000,000 and appends ms suffix"
+com/corrodinggames/rts/gameFramework/bs,field,a,Lcom/corrodinggames/rts/gameFramework/bs;,TOTAL,True,ProfilerSection enum clinit creates TOTAL constant
+com/corrodinggames/rts/gameFramework/bs,field,b,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE,True,ProfilerSection enum clinit creates UPDATE constant
+com/corrodinggames/rts/gameFramework/bs,field,c,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW,True,ProfilerSection enum clinit creates DRAW constant
+com/corrodinggames/rts/gameFramework/bs,field,d,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_GAME,True,ProfilerSection enum clinit creates DRAW_GAME constant
+com/corrodinggames/rts/gameFramework/bs,field,e,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_END,True,ProfilerSection enum clinit creates DRAW_END constant
+com/corrodinggames/rts/gameFramework/bs,field,f,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_GUI,True,ProfilerSection enum clinit creates DRAW_GUI constant
+com/corrodinggames/rts/gameFramework/bs,field,g,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_GAME_EFFECTS,True,ProfilerSection enum clinit creates DRAW_GAME_EFFECTS constant
+com/corrodinggames/rts/gameFramework/bs,field,h,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_GAME_SHOULD_DRAW,True,ProfilerSection enum clinit creates UPDATE_GAME_SHOULD_DRAW constant
+com/corrodinggames/rts/gameFramework/bs,field,i,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_GAME_SORT_RENDER,True,ProfilerSection enum clinit creates UPDATE_GAME_SORT_RENDER constant
+com/corrodinggames/rts/gameFramework/bs,field,j,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_DO_ALL_COLLISIONS,True,ProfilerSection enum clinit creates UPDATE_DO_ALL_COLLISIONS constant
+com/corrodinggames/rts/gameFramework/bs,field,k,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_DO_ALL_COLLISIONS2,True,ProfilerSection enum clinit creates UPDATE_DO_ALL_COLLISIONS2 constant
+com/corrodinggames/rts/gameFramework/bs,field,l,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_ALL_TEAM_AND_AI,True,ProfilerSection enum clinit creates UPDATE_ALL_TEAM_AND_AI constant
+com/corrodinggames/rts/gameFramework/bs,field,m,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_GEO_INDEXES,True,ProfilerSection enum clinit creates UPDATE_GEO_INDEXES constant
+com/corrodinggames/rts/gameFramework/bs,field,n,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_MINIMAP,True,ProfilerSection enum clinit creates UPDATE_MINIMAP constant
+com/corrodinggames/rts/gameFramework/bs,field,o,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_GROUPCONTROLLER,True,ProfilerSection enum clinit creates UPDATE_GROUPCONTROLLER constant
+com/corrodinggames/rts/gameFramework/bs,field,p,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_GAME_UNIT,True,ProfilerSection enum clinit creates DRAW_GAME_UNIT constant
+com/corrodinggames/rts/gameFramework/bs,field,q,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_SETUP,True,ProfilerSection enum clinit creates DRAW_SETUP constant
+com/corrodinggames/rts/gameFramework/bs,field,r,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_SETUP_FILL,True,ProfilerSection enum clinit creates DRAW_SETUP_FILL constant
+com/corrodinggames/rts/gameFramework/bs,field,s,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_SETUP_CLIP,True,ProfilerSection enum clinit creates DRAW_SETUP_CLIP constant
+com/corrodinggames/rts/gameFramework/bs,field,t,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_SETUP_DRAW_MAP,True,ProfilerSection enum clinit creates DRAW_SETUP_DRAW_MAP constant
+com/corrodinggames/rts/gameFramework/bs,field,u,Lcom/corrodinggames/rts/gameFramework/bs;,SURFACE_DRAW,True,ProfilerSection enum clinit creates SURFACE_DRAW constant
+com/corrodinggames/rts/gameFramework/bs,field,v,Lcom/corrodinggames/rts/gameFramework/bs;,REALDRAW_IN_DRAWTHREAD,True,ProfilerSection enum clinit creates REALDRAW_IN_DRAWTHREAD constant
+com/corrodinggames/rts/gameFramework/bs,field,w,Lcom/corrodinggames/rts/gameFramework/bs;,UPDATE_WAITING_ON_DRAW,True,ProfilerSection enum clinit creates UPDATE_WAITING_ON_DRAW constant
+com/corrodinggames/rts/gameFramework/bs,field,x,Lcom/corrodinggames/rts/gameFramework/bs;,DRAW_WAITING_ON_UPDATE,True,ProfilerSection enum clinit creates DRAW_WAITING_ON_UPDATE constant
+com/corrodinggames/rts/gameFramework/bs,field,y,Lcom/corrodinggames/rts/gameFramework/bs;,LOAD_TOTAL,True,ProfilerSection enum clinit creates LOAD_TOTAL constant
+com/corrodinggames/rts/gameFramework/bs,field,z,Lcom/corrodinggames/rts/gameFramework/bs;,LOAD_MAP,True,ProfilerSection enum clinit creates LOAD_MAP constant
+com/corrodinggames/rts/gameFramework/bs,field,A,Lcom/corrodinggames/rts/gameFramework/bs;,LOAD_UNITS,True,ProfilerSection enum clinit creates LOAD_UNITS constant
+com/corrodinggames/rts/gameFramework/bs,field,B,Lcom/corrodinggames/rts/gameFramework/bs;,LOAD_COMPRESSION,True,ProfilerSection enum clinit creates LOAD_COMPRESSION constant
+com/corrodinggames/rts/gameFramework/bs,field,C,Lcom/corrodinggames/rts/gameFramework/bs;,INIT_TOTAL,True,ProfilerSection enum clinit creates INIT_TOTAL constant
+com/corrodinggames/rts/gameFramework/bs,field,D,Lcom/corrodinggames/rts/gameFramework/bs;,INIT_UNITCOLOUR,True,ProfilerSection enum clinit creates INIT_UNITCOLOUR constant
+com/corrodinggames/rts/gameFramework/bt,field,a,Z,enabled,True,PerformanceTimer methods return early when enabled is false
+com/corrodinggames/rts/gameFramework/bt,field,b,I,sampleCount,True,stop() increments this sample count and formatSummary prints #count
+com/corrodinggames/rts/gameFramework/bt,field,c,D,totalMillis,True,stop() accumulates elapsed milliseconds and formatSummary prints total/avg
+com/corrodinggames/rts/gameFramework/bt,field,d,D,peakMillis,True,stop() tracks max elapsed milliseconds and formatSummary prints peak
+com/corrodinggames/rts/gameFramework/bt,field,e,J,startTimeNanos,True,start() stores GameProfiler.nowNanos and stop() clears it
+com/corrodinggames/rts/gameFramework/bt,field,f,Ljava/lang/String;,label,True,logAndReset prefixes formatted summary with this label
+com/corrodinggames/rts/gameFramework/bt,method,<init>,(Ljava/lang/String;)V,<init>,True,"PerformanceTimer label constructor, enabled defaults true"
+com/corrodinggames/rts/gameFramework/bt,method,<init>,(Ljava/lang/String;Z)V,<init>,True,PerformanceTimer label/enabled constructor
+com/corrodinggames/rts/gameFramework/bt,method,a,()V,start,True,Starts timer by recording nowNanos unless disabled
+com/corrodinggames/rts/gameFramework/bt,method,b,()V,stop,True,"Stops timer, increments sample count, totalMillis and peakMillis"
+com/corrodinggames/rts/gameFramework/bt,method,c,()Ljava/lang/String;,formatSummary,True,"Returns string with sample count, peak/avg/total milliseconds"
+com/corrodinggames/rts/gameFramework/bt,method,d,()V,stopAndLog,True,Calls stop() then logAndReset()
+com/corrodinggames/rts/gameFramework/bt,method,e,()V,logAndReset,True,"Logs label and formatted summary when sampleCount > 0, then reset()"
+com/corrodinggames/rts/gameFramework/bt,method,f,()V,reset,True,"Clears sampleCount, totalMillis and peakMillis"
+com/corrodinggames/rts/gameFramework/bu,field,a,[J,sectionStartTimesNanos,True,ProfilerSectionData constructor allocates long array sized by maxProfilerSections
+com/corrodinggames/rts/gameFramework/bu,field,b,[J,sectionTotalTimesNanos,True,ProfilerSectionData constructor allocates second long array sized by maxProfilerSections
+com/corrodinggames/rts/gameFramework/bu,field,c,[F,sectionLastFrameMillis,True,ProfilerSectionData constructor allocates float array sized by maxProfilerSections
+com/corrodinggames/rts/gameFramework/bu,field,f,Lcom/corrodinggames/rts/gameFramework/br;,profiler,True,ProfilerSectionData stores enclosing GameProfiler reference
+com/corrodinggames/rts/gameFramework/bu,method,<init>,(Lcom/corrodinggames/rts/gameFramework/br;)V,<init>,True,ProfilerSectionData constructor allocates arrays sized by GameProfiler.maxProfilerSections
+com/corrodinggames/rts/gameFramework/i,class,,,rustedwarfare/debug/GameUncaughtExceptionHandler,True,Implements Thread.UncaughtExceptionHandler and routes OOM/reporting/default-handler crash flow
+com/corrodinggames/rts/gameFramework/i,field,a,Ljava/lang/Thread$UncaughtExceptionHandler;,defaultHandler,True,Constructor stores existing/default uncaught exception handler
+com/corrodinggames/rts/gameFramework/i,method,<init>,(Ljava/lang/Thread$UncaughtExceptionHandler;)V,<init>,True,Stores default Thread.UncaughtExceptionHandler
+com/corrodinggames/rts/gameFramework/i,method,uncaughtException,(Ljava/lang/Thread;Ljava/lang/Throwable;)V,uncaughtException,True,"Handles OutOfMemoryError memory release, optional report submission, and default/in-game crash flow"
+com/corrodinggames/rts/gameFramework/utility/a,class,,,rustedwarfare/debug/anr/AnrError,True,ANR error builds chained thread stack trace throwables
+com/corrodinggames/rts/gameFramework/utility/a$1,class,,,rustedwarfare/debug/anr/AnrThreadComparator,True,Comparator prioritizes main thread when sorting ANR thread stack traces
+com/corrodinggames/rts/gameFramework/utility/b,class,,,rustedwarfare/debug/anr/AnrThreadInfo,True,Stores formatted thread title and stack trace for ANR throwable chain
+com/corrodinggames/rts/gameFramework/utility/c,class,,,rustedwarfare/debug/anr/AnrThrowableChain,True,Throwable chain node wraps one ANR thread info and links to next node
+com/corrodinggames/rts/gameFramework/utility/d,class,,,rustedwarfare/debug/anr/AnrWatchDog,True,Thread watchdog posts ticker to main handler and reports ANR when tick stalls
+com/corrodinggames/rts/gameFramework/utility/d$1,class,,,rustedwarfare/debug/anr/DefaultAnrListener,True,Default ANR listener throws the generated AnrError
+com/corrodinggames/rts/gameFramework/utility/d$2,class,,,rustedwarfare/debug/anr/DefaultInterruptionListener,True,Default watchdog interruption listener logs InterruptedException
+com/corrodinggames/rts/gameFramework/utility/d$3,class,,,rustedwarfare/debug/anr/AnrTickerRunnable,True,Runnable posted to main Handler increments watchdog tick
+com/corrodinggames/rts/gameFramework/utility/e,class,,,rustedwarfare/debug/anr/AnrListener,True,ANR callback interface accepting AnrError
+com/corrodinggames/rts/gameFramework/utility/f,class,,,rustedwarfare/debug/anr/AnrInterruptionListener,True,Watchdog interruption callback interface accepting InterruptedException
+com/corrodinggames/rts/gameFramework/utility/a,method,fillInStackTrace,()Ljava/lang/Throwable;,fillInStackTrace,True,ANR error suppresses own stack trace and uses chained thread stack traces
+com/corrodinggames/rts/gameFramework/utility/a,method,a,(Ljava/lang/String;Z)Lcom/corrodinggames/rts/gameFramework/utility/a;,newWithStackTraces,True,Static factory captures stack traces for all matching threads using prefix and include-empty flag
+com/corrodinggames/rts/gameFramework/utility/a,method,a,()Lcom/corrodinggames/rts/gameFramework/utility/a;,newMainOnly,True,Static factory creates ANR error for main thread only
+com/corrodinggames/rts/gameFramework/utility/a,method,a,(Ljava/lang/Thread;)Ljava/lang/String;,formatThreadTitle,True,Formats thread name/id/state/title for ANR stack trace entries
+com/corrodinggames/rts/gameFramework/utility/a$1,field,a,Ljava/lang/Thread;,mainThread,True,Comparator captures main thread to sort it first
+com/corrodinggames/rts/gameFramework/utility/a$1,method,a,(Ljava/lang/Thread;Ljava/lang/Thread;)I,compareThreads,True,"Compares threads, prioritizing main thread and then thread names"
+com/corrodinggames/rts/gameFramework/utility/a$1,method,compare,(Ljava/lang/Object;Ljava/lang/Object;)I,compare,True,Bridge Comparator.compare delegates to compareThreads
+com/corrodinggames/rts/gameFramework/utility/b,field,a,Ljava/lang/String;,title,True,AnrThreadInfo stores formatted thread title
+com/corrodinggames/rts/gameFramework/utility/b,field,b,[Ljava/lang/StackTraceElement;,stackTrace,True,AnrThreadInfo stores captured StackTraceElement array
+com/corrodinggames/rts/gameFramework/utility/b,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/b;)Ljava/lang/String;,getTitle,True,Synthetic accessor returns title
+com/corrodinggames/rts/gameFramework/utility/b,method,b,(Lcom/corrodinggames/rts/gameFramework/utility/b;)[Ljava/lang/StackTraceElement;,getStackTrace,True,Synthetic accessor returns stackTrace
+com/corrodinggames/rts/gameFramework/utility/c,field,a,Lcom/corrodinggames/rts/gameFramework/utility/b;,threadInfo,True,Throwable chain node stores AnrThreadInfo
+com/corrodinggames/rts/gameFramework/utility/c,method,fillInStackTrace,()Ljava/lang/Throwable;,fillInStackTrace,True,Throwable chain fills its stack trace from AnrThreadInfo
+com/corrodinggames/rts/gameFramework/utility/d,field,a,Lcom/corrodinggames/rts/gameFramework/utility/e;,defaultAnrListener,True,Static default listener handles generated ANR errors
+com/corrodinggames/rts/gameFramework/utility/d,field,b,Lcom/corrodinggames/rts/gameFramework/utility/f;,defaultInterruptionListener,True,Static default listener handles InterruptedException
+com/corrodinggames/rts/gameFramework/utility/d,field,c,Lcom/corrodinggames/rts/gameFramework/utility/e;,anrListener,True,Watchdog instance listener set by setAnrListener
+com/corrodinggames/rts/gameFramework/utility/d,field,d,Lcom/corrodinggames/rts/gameFramework/utility/f;,interruptionListener,True,Watchdog instance listener for InterruptedException
+com/corrodinggames/rts/gameFramework/utility/d,field,e,Landroid/os/Handler;,mainHandler,True,Watchdog posts ticker runnable to main handler
+com/corrodinggames/rts/gameFramework/utility/d,field,f,I,timeoutMillis,True,Constructors store ANR timeout in milliseconds
+com/corrodinggames/rts/gameFramework/utility/d,field,g,Ljava/lang/String;,threadNamePrefix,True,Watchdog passes prefix to AnrError.newWithStackTraces
+com/corrodinggames/rts/gameFramework/utility/d,field,h,Z,includeThreadsWithoutStackTrace,True,Watchdog passes include-empty flag to AnrError.newWithStackTraces
+com/corrodinggames/rts/gameFramework/utility/d,field,i,Z,ignoreDebugger,True,Watchdog suppresses debugger-present ANR unless this flag is set
+com/corrodinggames/rts/gameFramework/utility/d,field,j,I,tick,True,Ticker runnable increments tick; watchdog checks if it changes after timeout
+com/corrodinggames/rts/gameFramework/utility/d,field,k,Ljava/lang/Runnable;,tickerRunnable,True,Runnable posted to main Handler to update tick
+com/corrodinggames/rts/gameFramework/utility/d,method,<init>,()V,<init>,True,Default ANR watchdog constructor
+com/corrodinggames/rts/gameFramework/utility/d,method,<init>,(I)V,<init>,True,ANR watchdog constructor with timeoutMillis
+com/corrodinggames/rts/gameFramework/utility/d,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/e;)Lcom/corrodinggames/rts/gameFramework/utility/d;,setAnrListener,True,Builder-style setter for ANR listener
+com/corrodinggames/rts/gameFramework/utility/d,method,run,()V,run,True,Watchdog thread loop posts ticker and reports AnrError if main-thread tick stalls
+com/corrodinggames/rts/gameFramework/utility/d,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/d;I)I,setTick,True,Synthetic accessor used by AnrTickerRunnable to update tick
+com/corrodinggames/rts/gameFramework/utility/d,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/d;)I,getTick,True,Synthetic accessor used by AnrTickerRunnable/watchdog loop
+com/corrodinggames/rts/gameFramework/utility/d$1,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/a;)V,onAppNotResponding,True,Default ANR listener callback for AnrError
+com/corrodinggames/rts/gameFramework/utility/d$2,method,a,(Ljava/lang/InterruptedException;)V,onInterrupted,True,Default interruption listener callback
+com/corrodinggames/rts/gameFramework/utility/d$3,field,a,Lcom/corrodinggames/rts/gameFramework/utility/d;,watchDog,True,Ticker runnable stores enclosing AnrWatchDog
+com/corrodinggames/rts/gameFramework/utility/d$3,method,run,()V,run,True,Ticker runnable increments AnrWatchDog tick on main thread
+com/corrodinggames/rts/gameFramework/utility/e,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/a;)V,onAppNotResponding,True,ANR listener interface callback
+com/corrodinggames/rts/gameFramework/utility/f,method,a,(Ljava/lang/InterruptedException;)V,onInterrupted,True,Watchdog interruption listener interface callback

@@ -1,0 +1,6 @@
+area,candidate,reason
+CommonUtils mega-class,gameFramework/f large math/string/path helper class,Huge overload-heavy utility class; v0.71 only maps profiler/stat/debug subsystems with strong bounded evidence.
+Profiler no-op hooks,"GameProfiler.b(), GameProfiler.c(), GameProfiler.a(boolean,boolean), residual counters b/d/h",Methods are no-op in this build or field semantics are not externally evidenced enough.
+TeamStats residual counters,TeamStats.a/b/i/j/k,"Serialized and used, but exact human labels were not as direct as StatsTable-labelled kill/loss counters."
+ProfilerSection synthetic enum subclasses,bs$1..bs$4,Only enum constructor subclasses; no stable semantic value beyond parent ProfilerSection enum.
+ANR private synthetic constructors,utility/b and utility/c package-private/synthetic constructors,Class identity and accessors are enough for named jar readability; constructor overload labels add little value.

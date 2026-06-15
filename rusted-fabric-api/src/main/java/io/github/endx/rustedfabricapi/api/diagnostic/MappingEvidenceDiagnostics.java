@@ -818,6 +818,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("hud_command_interface_partial_coverage_after_v0_70");
     }
 
+    public static List<MappingEvidenceRow> allCoreDebugStatsRows() {
+        return allEvidenceRows("core_debug_stats_added_rows_v0_71");
+    }
+
+    public static List<MappingEvidenceRow> allCoreDebugStatsUpdatedRows() {
+        return allEvidenceRows("core_debug_stats_updated_rows_v0_71");
+    }
+
+    public static List<MappingEvidenceRow> allCoreDebugStatsFlowMap() {
+        return allEvidenceRows("core_debug_stats_flow_map_v0_71");
+    }
+
+    public static List<MappingEvidenceRow> allCoreDebugStatsSkippedRows() {
+        return allEvidenceRows("core_debug_stats_skipped_rows_v0_71");
+    }
+
+    public static List<MappingEvidenceRow> allCoreDebugStatsPartialCoverageRows() {
+        return allEvidenceRows("core_debug_stats_partial_coverage_after_v0_71");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1057,6 +1077,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findHudCommandInterfaceRows(String text) {
         return findByText(allHudCommandInterfaceRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCoreDebugStatsRows(String text) {
+        return findByText(allCoreDebugStatsRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

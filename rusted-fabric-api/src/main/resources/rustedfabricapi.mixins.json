@@ -70,6 +70,8 @@
     "SlickFallbackBitmapOrTextureLifecycleNamedMixin",
     "SlickGraphicsBackendImageNamedMixin",
     "SoundEffectListAssetNamedMixin",
+    "StatsEngineNamedMixin",
+    "StatsEventDispatcherNamedMixin",
     "StartingUnitSpawnNamedMixin",
     "TakeResourcesCollectNamedMixin",
     "TeamUnitLifecycleNamedMixin",

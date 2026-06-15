@@ -1,0 +1,9 @@
+flow,official_members,named_surface,evidence
+stats event dispatch,"bg.f, bl.a, bk.a",unitKillEventDispatcher -> notifyUnitKilled -> onUnitKilled,StatsEngine kill path dispatches attacker/victim to listener list
+stats serialization history,"bo.l, bp.b, bn.serialize/deserialize",TeamStats.history with TeamStatsSerializationVersion.V220911_ADDED_HISTORY,TeamStats writes version byte and conditionally reads StatsHistory after version check
+stats history sampling,"bg.b/c/a(IZZ), bn.appendSnapshotForTeam, bj/g.f enums",periodic/final history snapshots via TeamStatValueSource,StatsEngine frame sampling records income/army/building/total values per team
+stats chart/table surface,"bo.c-h, bn.getSeries/getValueAtFrame",units/buildings/experimentals killed/lost and metric series lookups,Stats table strings and chart renderer consume TeamStats.history
+performance timer,"bt.a-f, br.nowNanos/elapsedMillis",PerformanceTimer start/stop/summary/log/reset,"Timer accumulates count, peak, average and total ms from nanoTime"
+profiler section enum,"bs.a-D, bu arrays",ProfilerSection + ProfilerSectionData,Enum constants encode update/draw/load/init profiler sections and arrays are sized by maxProfilerSections
+uncaught exception handling,"i.<init>, i.uncaughtException",GameUncaughtExceptionHandler,"Thread.UncaughtExceptionHandler flow handles OOM, reporting, default handler and game crash dialog"
+ANR watchdog,"utility/d, utility/a, utility/e/f",AnrWatchDog -> AnrError -> AnrListener/AnrInterruptionListener,Watchdog posts ticker to main handler and builds stack-trace error when tick stalls

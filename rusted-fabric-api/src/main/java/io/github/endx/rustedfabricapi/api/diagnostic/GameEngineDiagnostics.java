@@ -106,6 +106,11 @@ public final class GameEngineDiagnostics {
         return engine != null ? interfaceEngine(engine) : null;
     }
 
+    public static Object currentStatsEngine() {
+        Object engine = currentEngineOrNull();
+        return engine != null ? statsEngine(engine) : null;
+    }
+
     public static Object graphicsEngine(Object engine) {
         requireGameEngine(engine);
         return RustedReflection.getFieldValue(engine, new String[]{"graphicsEngine", "bO"});
@@ -114,6 +119,11 @@ public final class GameEngineDiagnostics {
     public static Object interfaceEngine(Object engine) {
         requireGameEngine(engine);
         return RustedReflection.getFieldValue(engine, new String[]{"interfaceEngine", "bS"});
+    }
+
+    public static Object statsEngine(Object engine) {
+        requireGameEngine(engine);
+        return RustedReflection.getFieldValue(engine, new String[]{"statsEngine", "bY"});
     }
 
     public static Object settings(Object engine) {
