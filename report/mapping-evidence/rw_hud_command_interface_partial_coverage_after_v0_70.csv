@@ -1,0 +1,69 @@
+owner_official,kind,official_name,descriptor,expected_named_name,present,evidence
+com/corrodinggames/rts/gameFramework/f/g,field,l,Lcom/corrodinggames/rts/game/units/a/e;,attackMoveAction,True,InterfaceEngine constructor creates units/a/e; UI strings and input registry bind this action as Attack Move
+com/corrodinggames/rts/gameFramework/f/g,field,m,Lcom/corrodinggames/rts/game/units/a/f;,guardUnitAction,True,InterfaceEngine constructor creates units/a/f; localized action strings are Guard Unit
+com/corrodinggames/rts/gameFramework/f/g,field,n,Lcom/corrodinggames/rts/game/units/a/i;,patrolAction,True,InterfaceEngine constructor creates units/a/i; localized action strings are Patrol
+com/corrodinggames/rts/gameFramework/f/g,field,o,Lcom/corrodinggames/rts/game/units/a/d;,attackModeAction,True,InterfaceEngine constructor creates units/a/d; action string is Attack Mode
+com/corrodinggames/rts/gameFramework/f/g,field,p,Lcom/corrodinggames/rts/game/units/a/j;,pingMapAction,True,InterfaceEngine constructor creates units/a/j; pending targeting action used by sendMapPingAtWorldPosition
+com/corrodinggames/rts/gameFramework/f/g,field,q,Lcom/corrodinggames/rts/game/units/a/r;,mapPingAction,True,InterfaceEngine constructor creates units/a/r; literal Map Ping / Send a map ping to your allies
+com/corrodinggames/rts/gameFramework/f/g,field,r,Lcom/corrodinggames/rts/game/units/a/q;,teamChatAction,True,InterfaceEngine constructor creates units/a/q; literal Team Chat / Send a team chat message
+com/corrodinggames/rts/gameFramework/f/g,field,bG,Ljava/lang/String;,notAvailableInDemoText,True,initialize loads localization key gui.notAvailableInDemoText
+com/corrodinggames/rts/gameFramework/f/g,field,bH,Ljava/lang/String;,lockedText,True,initialize stores literal Locked
+com/corrodinggames/rts/gameFramework/f/g,field,bI,Lcom/corrodinggames/rts/game/units/custom/bb;,notEnoughResourcesTextBlock,True,initialize builds custom text block from gui.notEnoughResources; used in action tooltip fallback
+com/corrodinggames/rts/gameFramework/f/g,field,bJ,Ljava/lang/String;,cannotPlaceGeneralText,True,initialize loads localization key gui.cannotPlace.general
+com/corrodinggames/rts/gameFramework/f/g,field,bK,Ljava/lang/String;,cannotPlaceNeedsResourcePoolText,True,initialize loads localization key gui.cannotPlace.needsResourcePool
+com/corrodinggames/rts/gameFramework/f/g,field,bL,Ljava/lang/String;,cannotPlaceNeedsWaterText,True,initialize loads localization key gui.cannotPlace.needsWater
+com/corrodinggames/rts/gameFramework/f/g,field,ba,Lcom/corrodinggames/rts/gameFramework/m/e;,buttonNoImage,True,initialize loads R.drawable.button_no
+com/corrodinggames/rts/gameFramework/f/g,field,bb,Lcom/corrodinggames/rts/gameFramework/m/e;,buttonYesImage,True,initialize loads R.drawable.button_yes
+com/corrodinggames/rts/gameFramework/f/g,field,bc,Lcom/corrodinggames/rts/gameFramework/m/e;,buttonMoreImage,True,initialize loads R.drawable.button_more
+com/corrodinggames/rts/gameFramework/f/g,field,bh,Lcom/corrodinggames/rts/gameFramework/m/e;,buttonAddImage,True,initialize loads R.drawable.button_add
+com/corrodinggames/rts/gameFramework/f/g,field,bi,Lcom/corrodinggames/rts/gameFramework/m/e;,buttonSubtractImage,True,initialize loads R.drawable.button_subtract
+com/corrodinggames/rts/gameFramework/f/g,field,bj,Lcom/corrodinggames/rts/gameFramework/m/e;,rallyIconImage,True,initialize loads R.drawable.icon_rally
+com/corrodinggames/rts/gameFramework/f/g,field,bk,Lcom/corrodinggames/rts/gameFramework/m/e;,upgradeIconImage,True,initialize loads R.drawable.icon_upgrade
+com/corrodinggames/rts/gameFramework/f/g,field,bl,Lcom/corrodinggames/rts/gameFramework/m/e;,metalDarkImage,True,initialize loads R.drawable.metal_dark
+com/corrodinggames/rts/gameFramework/f/g,field,bm,Lcom/corrodinggames/rts/gameFramework/m/e;,touchIndicatorImage,True,initialize loads R.drawable.touch_indicator
+com/corrodinggames/rts/gameFramework/f/g,field,bn,Lcom/corrodinggames/rts/gameFramework/m/e;,roundedGlowButtonImage,True,initialize loads R.drawable.rounded_glow_button
+com/corrodinggames/rts/gameFramework/f/g,field,bo,Lcom/corrodinggames/rts/gameFramework/m/e;,roundedWhiteButtonImage,True,initialize loads R.drawable.rounded_white_button
+com/corrodinggames/rts/gameFramework/f/g,field,bp,Lcom/corrodinggames/rts/gameFramework/f/a/e;,roundedGlowButtonStyle,True,initialize wraps roundedGlowButtonImage into NinePatchDrawable style
+com/corrodinggames/rts/gameFramework/f/g,field,bq,Lcom/corrodinggames/rts/gameFramework/f/a/e;,roundedGlowHighlightButtonStyle,True,initialize loads R.drawable.rounded_glow_highlight_button into highlighted NinePatch style
+com/corrodinggames/rts/gameFramework/f/g,field,br,Lcom/corrodinggames/rts/gameFramework/f/a/e;,roundedGlowButtonHighlightedStyle,True,initialize copies roundedGlowButtonStyle and sets highlighted state
+com/corrodinggames/rts/gameFramework/f/g,field,bs,Lcom/corrodinggames/rts/gameFramework/f/a/e;,roundedDarkBoxStyle,True,initialize loads R.drawable.rounded_dark_box
+com/corrodinggames/rts/gameFramework/f/g,field,bt,Lcom/corrodinggames/rts/gameFramework/f/a/e;,roundedDarkBoxTitledStyle,True,initialize loads R.drawable.rounded_dark_box_titled and rounded_shadow
+com/corrodinggames/rts/gameFramework/f/g,field,bu,Lcom/corrodinggames/rts/gameFramework/f/a/e;,roundedGreenStyle,True,initialize loads R.drawable.rounded_green
+com/corrodinggames/rts/gameFramework/f/g,field,bT,Lcom/corrodinggames/rts/game/units/custom/e/f;,resourceDisplayScratch,True,drawTeamResourceDisplay copies Team resource totals into this scratch resource container before filtering
+com/corrodinggames/rts/gameFramework/f/g,field,bW,J,lastMapPingBroadcastMillis,True,sendMapPingAtWorldPosition throttles MAP PING chat/log broadcasts using this timestamp and 15000ms window
+com/corrodinggames/rts/gameFramework/f/g,field,cd,I,interfaceLayoutRevision,True,static K() increments this revision and marks layout dirty
+com/corrodinggames/rts/gameFramework/f/g,field,ce,Z,interfaceLayoutDirty,True,static K() sets this flag; update loop clears it after recalculating layout
+com/corrodinggames/rts/gameFramework/f/a,field,S,Lcom/corrodinggames/rts/gameFramework/m/e;,zoomButtonImage,True,loadCommandInterfaceAssets loads R.drawable.zoom_button
+com/corrodinggames/rts/gameFramework/f/a,field,T,Lcom/corrodinggames/rts/gameFramework/m/e;,lockIconMenuImage,True,loadCommandInterfaceAssets loads R.drawable.lock_icon_menu
+com/corrodinggames/rts/gameFramework/f/a,field,U,Lcom/corrodinggames/rts/gameFramework/m/e;,pauseIconImage,True,loadCommandInterfaceAssets loads R.drawable.pause
+com/corrodinggames/rts/gameFramework/f/a,field,V,Lcom/corrodinggames/rts/gameFramework/m/e;,replayPauseIconImage,True,loadCommandInterfaceAssets loads R.drawable.replay_pause
+com/corrodinggames/rts/gameFramework/f/a,field,W,Lcom/corrodinggames/rts/gameFramework/m/e;,fastForwardIconImage,True,loadCommandInterfaceAssets loads R.drawable.fast
+com/corrodinggames/rts/gameFramework/f/a,field,X,Lcom/corrodinggames/rts/gameFramework/m/e;,replayLeaderboardIconImage,True,loadCommandInterfaceAssets loads R.drawable.replay_leaderboard
+com/corrodinggames/rts/gameFramework/f/a,field,Y,Landroid/graphics/Paint;,disabledIconPaint,True,loadCommandInterfaceAssets creates Paint and applies disabled icon color filter
+com/corrodinggames/rts/gameFramework/f/a,field,Z,Landroid/graphics/PorterDuffColorFilter;,disabledIconColorFilter,True,"loadCommandInterfaceAssets creates PorterDuffColorFilter color(255,30,30,30) with mode Z"
+com/corrodinggames/rts/gameFramework/f/a,field,ar,Lcom/corrodinggames/rts/game/units/a/y;,unitInfoAction,True,CommandInterface constructor creates units/a/y with UnitInfo string; first variant
+com/corrodinggames/rts/gameFramework/f/a,field,as,Lcom/corrodinggames/rts/game/units/a/y;,unitInfoAltAction,True,CommandInterface constructor creates second units/a/y UnitInfo action variant
+com/corrodinggames/rts/gameFramework/f/a,field,at,Lcom/corrodinggames/rts/game/units/a/d;,attackModeAction,True,CommandInterface constructor creates units/a/d Attack Mode action
+com/corrodinggames/rts/gameFramework/f/a,field,aA,Ljava/util/ArrayList;,commandQueueOverlays,True,j()/k()/draw loop iterate CommandQueueOverlay objects; methods call clearTrackedUnits/removeDeadTrackedUnits/collectSelectedUnits
+com/corrodinggames/rts/gameFramework/f/g,method,<init>,()V,<init>,True,"constructor initializes InterfaceEngine action singletons, widget root, paints, rects, scratch lists, and CommandInterface surface"
+com/corrodinggames/rts/gameFramework/f/g,method,e,()V,reloadCommandInterfaceStrings,True,method directly calls CommandInterface.loadLocalizedStrings() when commandInterface is present
+com/corrodinggames/rts/gameFramework/f/g,method,a,(Z)V,resetInterfaceState,True,"resets command queue overlays, UI mode flags, selection input state, camera/order flags, and interface layout state"
+com/corrodinggames/rts/gameFramework/f/g,method,f,()V,refreshClassicInterfaceFlags,True,sets static interface layout booleans from platform helpers and SettingsEngine.classicInterface
+com/corrodinggames/rts/gameFramework/f/g,method,a,(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/game/n;ZZ)V,drawTeamResourceDisplay,True,draws Team credits plus optional custom resource list using Team.aa()/Team.ab() and resourceDisplayScratch
+com/corrodinggames/rts/gameFramework/f/g,method,a,(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/game/n;ZLcom/corrodinggames/rts/game/units/custom/e/f;)V,drawCustomResourceList,True,"iterates resource container entries, skips hidden/global resources, and delegates each line to drawResourceDisplayLine"
+com/corrodinggames/rts/gameFramework/f/g,method,a,(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/game/n;ZLcom/corrodinggames/rts/game/units/custom/e/a;DLcom/corrodinggames/rts/game/units/custom/e/f;ILcom/corrodinggames/rts/game/units/custom/e/a;)Z,drawResourceDisplayLine,True,"recursive custom-resource line renderer; uses resource icon/text, +/− income suffixes, nesting parent resources, and layout counters"
+com/corrodinggames/rts/gameFramework/f/g,method,b,(FFLandroid/graphics/Point;)V,issueMoveCommandAtWorldPosition,True,"default order path creates queued-aware command, calls command.a(x,y), plays order sound/effects, and can fall back to quick rally"
+com/corrodinggames/rts/gameFramework/f/g,method,c,(FFLandroid/graphics/Point;)V,issueDefaultMoveOrAttackMove,True,"checks SettingsEngine.doubleClickToAttackMove and attack-move availability, dispatching to issueAttackMoveAtWorldPosition or issueMoveCommandAtWorldPosition"
+com/corrodinggames/rts/gameFramework/f/g,method,d,(FFLandroid/graphics/Point;)V,issueAttackMoveAtWorldPosition,True,"creates queued-aware command, sets command.h=true, calls command.b(x,y), plays order sound/effects"
+com/corrodinggames/rts/gameFramework/f/g,method,b,(FF)V,issueQuickRallyAtWorldPosition,True,"quick rally path creates command, adds PointF rally target, plays order sound/effect"
+com/corrodinggames/rts/gameFramework/f/g,method,a,(FFLandroid/graphics/Point;Lcom/corrodinggames/rts/game/units/a/j;)V,sendMapPingAtWorldPosition,True,"checks map-ping settings, creates command with ping action id and PointF target, logs MAP PING with 15s throttle"
+com/corrodinggames/rts/gameFramework/f/g,method,a,(FFLcom/corrodinggames/rts/game/n;Lcom/corrodinggames/rts/game/units/a/j;)V,showMapPingEffect,True,renders battlefield/minimap ping effects for a team ping; warns once if local ping display is disabled
+com/corrodinggames/rts/gameFramework/f/g,method,a,(Landroid/graphics/Rect;IZ)V,drawButtonBorderOverlay,True,draws rectangular button border/overlay with classic-interface inset handling
+com/corrodinggames/rts/gameFramework/f/g,method,a,(IIIILjava/lang/String;ILandroid/graphics/Paint;ZLcom/corrodinggames/rts/gameFramework/f/a/h;Lcom/corrodinggames/rts/gameFramework/f/a/i;)V,drawStyledButtonBackgroundAndText,True,"draws button rect via UiStyle/UiStyleState or fallback background, then centered label"
+com/corrodinggames/rts/gameFramework/f/g,method,a,(IIIILjava/lang/String;ILandroid/graphics/Paint;)V,drawCenteredButtonText,True,draws label centered in button rect with legacy/classic text vertical alignment handling
+com/corrodinggames/rts/gameFramework/f/g,method,a,(IIIILjava/lang/String;Lcom/corrodinggames/rts/gameFramework/f/i;ZILandroid/graphics/Paint;Lcom/corrodinggames/rts/gameFramework/f/a/h;)Z,drawButtonAndHandleClickStyled,True,button draw/click wrapper with UiStyle argument; delegates into full drawButtonAndHandleClick path
+com/corrodinggames/rts/gameFramework/f/g,method,a,(Lcom/corrodinggames/rts/gameFramework/f/a/f;)V,showDialogWidget,True,positions DialogWidget to game viewport and attaches it to widgetRoot
+com/corrodinggames/rts/gameFramework/f/g,method,K,()V,markInterfaceLayoutDirty,True,static method increments interfaceLayoutRevision and sets interfaceLayoutDirty
+com/corrodinggames/rts/gameFramework/f/a,method,<init>,(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/gameFramework/f/g;)V,<init>,True,"constructor stores GameEngine/InterfaceEngine, allocates paints/rects/action lists/command queue overlays, and loads assets"
+com/corrodinggames/rts/gameFramework/f/a,method,j,()V,markCommandQueueOverlaysDirty,True,iterates commandQueueOverlays and sets CommandQueueOverlay dirty/refresh flag h=true
+com/corrodinggames/rts/gameFramework/f/a,method,k,()V,resetCommandQueueOverlaysAndWarning,True,"iterates commandQueueOverlays.clearTrackedUnits(), then clears currentWarningText and timer"

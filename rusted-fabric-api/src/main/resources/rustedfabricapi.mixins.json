@@ -29,6 +29,7 @@
     "GameFileSystemNamedMixin",
     "GameSaverRuntimeNamedMixin",
     "GameFileSystemMapDiscoveryNamedMixin",
+    "InterfaceCommandNamedMixin",
     "InterfaceDrawNamedMixin",
     "InterfaceSelectionNamedMixin",
     "LibRocketUiControllerNamedMixin",

@@ -798,6 +798,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("render_image_texture_family_partial_coverage_after_v0_69");
     }
 
+    public static List<MappingEvidenceRow> allHudCommandInterfaceRows() {
+        return allEvidenceRows("hud_command_interface_added_rows_v0_70");
+    }
+
+    public static List<MappingEvidenceRow> allHudCommandInterfaceUpdatedRows() {
+        return allEvidenceRows("hud_command_interface_updated_rows_v0_70");
+    }
+
+    public static List<MappingEvidenceRow> allHudCommandInterfaceFlowMap() {
+        return allEvidenceRows("hud_command_interface_flow_map_v0_70");
+    }
+
+    public static List<MappingEvidenceRow> allHudCommandInterfaceSkippedRows() {
+        return allEvidenceRows("hud_command_interface_skipped_rows_v0_70");
+    }
+
+    public static List<MappingEvidenceRow> allHudCommandInterfacePartialCoverageRows() {
+        return allEvidenceRows("hud_command_interface_partial_coverage_after_v0_70");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1033,6 +1053,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findRenderImageTextureLifecycleRows(String text) {
         return findByText(allRenderImageTextureLifecycleRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findHudCommandInterfaceRows(String text) {
+        return findByText(allHudCommandInterfaceRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

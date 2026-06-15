@@ -101,9 +101,19 @@ public final class GameEngineDiagnostics {
         return engine != null ? graphicsEngine(engine) : null;
     }
 
+    public static Object currentInterfaceEngine() {
+        Object engine = currentEngineOrNull();
+        return engine != null ? interfaceEngine(engine) : null;
+    }
+
     public static Object graphicsEngine(Object engine) {
         requireGameEngine(engine);
         return RustedReflection.getFieldValue(engine, new String[]{"graphicsEngine", "bO"});
+    }
+
+    public static Object interfaceEngine(Object engine) {
+        requireGameEngine(engine);
+        return RustedReflection.getFieldValue(engine, new String[]{"interfaceEngine", "bS"});
     }
 
     public static Object settings(Object engine) {

@@ -337,6 +337,11 @@ final class ExampleDebugOverlay {
                 "UI snapshot")) {
             ExampleDiagnosticActions.showUiSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 140, cellWidth, 24,
+                "HUD snapshot")) {
+            ExampleDiagnosticActions.showHudSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {
@@ -382,6 +387,9 @@ final class ExampleDebugOverlay {
 
     static DebugProbeGroup classifyDebugProbeGroup(String key) {
         String text = key != null ? key : "";
+        if (containsAny(text, "HudCommand")) {
+            return DebugProbeGroup.ACTION;
+        }
         if (containsAny(text, "Resource", "TakeResources", "Repair", "Reclaim", "Unbuild")) {
             return DebugProbeGroup.RESOURCE;
         }

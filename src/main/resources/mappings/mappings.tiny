@@ -8913,6 +8913,18 @@ c	com/corrodinggames/rts/gameFramework/f/a	rw/ui/CommandInterface	rustedwarfare/
 	f	Ljava/util/ArrayList;	ax	field_a_ax_selectionInfoLines	selectionInfoLines
 	f	Ljava/util/HashMap;	az	field_a_az_selectedUnitTypeCounts	selectedUnitTypeCounts
 	f	Lcom/corrodinggames/rts/gameFramework/l;	b	field_a_b_gameEngine	gameEngine
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	S	field_a_zoomButtonImage	zoomButtonImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	T	field_a_lockIconMenuImage	lockIconMenuImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	U	field_a_pauseIconImage	pauseIconImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	V	field_a_replayPauseIconImage	replayPauseIconImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	W	field_a_fastForwardIconImage	fastForwardIconImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	X	field_a_replayLeaderboardIconImage	replayLeaderboardIconImage
+	f	Landroid/graphics/Paint;	Y	field_a_disabledIconPaint	disabledIconPaint
+	f	Landroid/graphics/PorterDuffColorFilter;	Z	field_a_disabledIconColorFilter	disabledIconColorFilter
+	f	Lcom/corrodinggames/rts/game/units/a/y;	ar	field_a_unitInfoAction	unitInfoAction
+	f	Lcom/corrodinggames/rts/game/units/a/y;	as	field_a_unitInfoAltAction	unitInfoAltAction
+	f	Lcom/corrodinggames/rts/game/units/a/d;	at	field_a_attackModeAction	attackModeAction
+	f	Ljava/util/ArrayList;	aA	field_a_commandQueueOverlays	commandQueueOverlays
 	m	()V	a	method_a_a_loadLocalizedStrings	loadLocalizedStrings
 	m	(F)V	a	method_a_a_drawZoomButton	drawZoomButton
 	m	(FI)V	a	method_a_a_drawSelectedUnitInfoPanel	drawSelectedUnitInfoPanel
@@ -8954,6 +8966,9 @@ c	com/corrodinggames/rts/gameFramework/f/a	rw/ui/CommandInterface	rustedwarfare/
 	m	()F	p	method_a_p_getActionButtonBaseSize	getActionButtonBaseSize
 	m	()F	q	method_a_q_getActionButtonPadding	getActionButtonPadding
 	m	()F	r	method_a_r_getActionButtonStride	getActionButtonStride
+	m	(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/gameFramework/f/g;)V	<init>	<init>	<init>
+	m	()V	j	method_a_markCommandQueueOverlaysDirty	markCommandQueueOverlaysDirty
+	m	()V	k	method_a_resetCommandQueueOverlaysAndWarning	resetCommandQueueOverlaysAndWarning
 c	com/corrodinggames/rts/gameFramework/f/a/a	rw/ui/widget/UiRoot	rustedwarfare/ui/widget/UiRoot
 c	com/corrodinggames/rts/gameFramework/f/a/b	rw/ui/widget/ButtonWidget	rustedwarfare/ui/widget/ButtonWidget
 	m	(FF)V	a	method_b_a_drawAt	drawAt
@@ -9291,6 +9306,40 @@ c	com/corrodinggames/rts/gameFramework/f/g	rw/ui/InterfaceEngine	rustedwarfare/u
 	f	Lcom/corrodinggames/rts/gameFramework/f/k;	j	field_InterfaceEngine_leaderboardInterface	leaderboardInterface
 	f	Lcom/corrodinggames/rts/gameFramework/f/f;	k	field_InterfaceEngine_endGameInterface	endGameInterface
 	f	Lcom/corrodinggames/rts/gameFramework/f/a/l;	s	field_InterfaceEngine_widgetRoot	widgetRoot
+	f	Lcom/corrodinggames/rts/game/units/a/e;	l	field_g_attackMoveAction	attackMoveAction
+	f	Lcom/corrodinggames/rts/game/units/a/f;	m	field_g_guardUnitAction	guardUnitAction
+	f	Lcom/corrodinggames/rts/game/units/a/i;	n	field_g_patrolAction	patrolAction
+	f	Lcom/corrodinggames/rts/game/units/a/d;	o	field_g_attackModeAction	attackModeAction
+	f	Lcom/corrodinggames/rts/game/units/a/j;	p	field_g_pingMapAction	pingMapAction
+	f	Lcom/corrodinggames/rts/game/units/a/r;	q	field_g_mapPingAction	mapPingAction
+	f	Lcom/corrodinggames/rts/game/units/a/q;	r	field_g_teamChatAction	teamChatAction
+	f	Ljava/lang/String;	bG	field_g_notAvailableInDemoText	notAvailableInDemoText
+	f	Ljava/lang/String;	bH	field_g_lockedText	lockedText
+	f	Lcom/corrodinggames/rts/game/units/custom/bb;	bI	field_g_notEnoughResourcesTextBlock	notEnoughResourcesTextBlock
+	f	Ljava/lang/String;	bJ	field_g_cannotPlaceGeneralText	cannotPlaceGeneralText
+	f	Ljava/lang/String;	bK	field_g_cannotPlaceNeedsResourcePoolText	cannotPlaceNeedsResourcePoolText
+	f	Ljava/lang/String;	bL	field_g_cannotPlaceNeedsWaterText	cannotPlaceNeedsWaterText
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	ba	field_g_buttonNoImage	buttonNoImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bb	field_g_buttonYesImage	buttonYesImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bc	field_g_buttonMoreImage	buttonMoreImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bh	field_g_buttonAddImage	buttonAddImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bi	field_g_buttonSubtractImage	buttonSubtractImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bj	field_g_rallyIconImage	rallyIconImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bk	field_g_upgradeIconImage	upgradeIconImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bl	field_g_metalDarkImage	metalDarkImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bm	field_g_touchIndicatorImage	touchIndicatorImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bn	field_g_roundedGlowButtonImage	roundedGlowButtonImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	bo	field_g_roundedWhiteButtonImage	roundedWhiteButtonImage
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/e;	bp	field_g_roundedGlowButtonStyle	roundedGlowButtonStyle
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/e;	bq	field_g_roundedGlowHighlightButtonStyle	roundedGlowHighlightButtonStyle
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/e;	br	field_g_roundedGlowButtonHighlightedStyle	roundedGlowButtonHighlightedStyle
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/e;	bs	field_g_roundedDarkBoxStyle	roundedDarkBoxStyle
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/e;	bt	field_g_roundedDarkBoxTitledStyle	roundedDarkBoxTitledStyle
+	f	Lcom/corrodinggames/rts/gameFramework/f/a/e;	bu	field_g_roundedGreenStyle	roundedGreenStyle
+	f	Lcom/corrodinggames/rts/game/units/custom/e/f;	bT	field_g_resourceDisplayScratch	resourceDisplayScratch
+	f	J	bW	field_g_lastMapPingBroadcastMillis	lastMapPingBroadcastMillis
+	f	I	cd	field_g_interfaceLayoutRevision	interfaceLayoutRevision
+	f	Z	ce	field_g_interfaceLayoutDirty	interfaceLayoutDirty
 	m	()Z	a	method_InterfaceEngine_isCircleSelectEnabled	isCircleSelectEnabled
 	m	(F)V	a	method_InterfaceEngine_update	update
 	m	(FFFLandroid/graphics/Point;)V	a	method_g_a_updatePendingActionTargeting	updatePendingActionTargeting
@@ -9347,6 +9396,25 @@ c	com/corrodinggames/rts/gameFramework/f/g	rw/ui/InterfaceEngine	rustedwarfare/u
 	m	()Lcom/corrodinggames/rts/gameFramework/e;	w	method_g_w_createCommand	createCommand
 	m	()Lcom/corrodinggames/rts/gameFramework/e;	x	method_g_x_createQueuedAwareCommand	createQueuedAwareCommand
 	m	()V	y	method_g_y_clearSelectedUnits	clearSelectedUnits
+	m	()V	<init>	<init>	<init>
+	m	()V	e	method_g_reloadCommandInterfaceStrings	reloadCommandInterfaceStrings
+	m	(Z)V	a	method_g_resetInterfaceState	resetInterfaceState
+	m	()V	f	method_g_refreshClassicInterfaceFlags	refreshClassicInterfaceFlags
+	m	(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/game/n;ZZ)V	a	method_g_drawTeamResourceDisplay	drawTeamResourceDisplay
+	m	(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/game/n;ZLcom/corrodinggames/rts/game/units/custom/e/f;)V	a	method_g_drawCustomResourceList	drawCustomResourceList
+	m	(Lcom/corrodinggames/rts/gameFramework/l;Lcom/corrodinggames/rts/game/n;ZLcom/corrodinggames/rts/game/units/custom/e/a;DLcom/corrodinggames/rts/game/units/custom/e/f;ILcom/corrodinggames/rts/game/units/custom/e/a;)Z	a	method_g_drawResourceDisplayLine	drawResourceDisplayLine
+	m	(FFLandroid/graphics/Point;)V	b	method_g_issueMoveCommandAtWorldPosition	issueMoveCommandAtWorldPosition
+	m	(FFLandroid/graphics/Point;)V	c	method_g_issueDefaultMoveOrAttackMove	issueDefaultMoveOrAttackMove
+	m	(FFLandroid/graphics/Point;)V	d	method_g_issueAttackMoveAtWorldPosition	issueAttackMoveAtWorldPosition
+	m	(FF)V	b	method_g_issueQuickRallyAtWorldPosition	issueQuickRallyAtWorldPosition
+	m	(FFLandroid/graphics/Point;Lcom/corrodinggames/rts/game/units/a/j;)V	a	method_g_sendMapPingAtWorldPosition	sendMapPingAtWorldPosition
+	m	(FFLcom/corrodinggames/rts/game/n;Lcom/corrodinggames/rts/game/units/a/j;)V	a	method_g_showMapPingEffect	showMapPingEffect
+	m	(Landroid/graphics/Rect;IZ)V	a	method_g_drawButtonBorderOverlay	drawButtonBorderOverlay
+	m	(IIIILjava/lang/String;ILandroid/graphics/Paint;ZLcom/corrodinggames/rts/gameFramework/f/a/h;Lcom/corrodinggames/rts/gameFramework/f/a/i;)V	a	method_g_drawStyledButtonBackgroundAndText	drawStyledButtonBackgroundAndText
+	m	(IIIILjava/lang/String;ILandroid/graphics/Paint;)V	a	method_g_drawCenteredButtonText	drawCenteredButtonText
+	m	(IIIILjava/lang/String;Lcom/corrodinggames/rts/gameFramework/f/i;ZILandroid/graphics/Paint;Lcom/corrodinggames/rts/gameFramework/f/a/h;)Z	a	method_g_drawButtonAndHandleClickStyled	drawButtonAndHandleClickStyled
+	m	(Lcom/corrodinggames/rts/gameFramework/f/a/f;)V	a	method_g_showDialogWidget	showDialogWidget
+	m	()V	K	method_g_markInterfaceLayoutDirty	markInterfaceLayoutDirty
 c	com/corrodinggames/rts/gameFramework/f/h	rw/ui/ChoiceButtonType	rustedwarfare/ui/ChoiceButtonType
 	f	Lcom/corrodinggames/rts/gameFramework/f/h;	a	field_ChoiceButtonType_YES	YES
 	f	Lcom/corrodinggames/rts/gameFramework/f/h;	b	field_ChoiceButtonType_NO	NO

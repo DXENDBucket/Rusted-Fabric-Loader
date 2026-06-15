@@ -1,0 +1,6 @@
+area,candidate,reason
+InterfaceEngine broad draw/update loop,"Full drawGameInterface/updateInGameCommandInterface branches, selection-box edge cases, mobile input residual fields",Deferred; v0.70 maps only stable HUD/command surface with direct string/resource/action evidence.
+CommandInterface full action grid layout,Every paint/rect/geometric field and action-button pagination variable,Many are layout temporaries; naming without full visual branch decomposition would be speculative.
+In-game menu option wrappers,CommandInterface.l/m/n option IDs 20/21/16,The option IDs are clear but semantic labels need stronger menu-state evidence before naming beyond generic selectInGameMenuOption.
+LibRocket/modal UI,RootScript and popup callbacks,Already handled in v0.64; v0.70 intentionally stays on legacy HUD/CommandInterface surface.
+SlickGraphicsBackend draw backend,low-level line/rect/text/transform methods,Render texture lifecycle was v0.69; broad draw backend remains separate from HUD command naming.

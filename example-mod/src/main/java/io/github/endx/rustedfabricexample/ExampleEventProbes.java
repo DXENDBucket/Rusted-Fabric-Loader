@@ -10,6 +10,7 @@ import io.github.endx.rustedfabricapi.api.event.CustomUnitRenderEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.FileSystemEvents;
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.HudCommandEvents;
 import io.github.endx.rustedfabricapi.api.event.MapDiscoveryEvents;
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
 import io.github.endx.rustedfabricapi.api.event.MapSpawnEvents;
@@ -33,6 +34,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
@@ -1158,6 +1160,64 @@ final class ExampleEventProbes {
                 showEventProbeMessage(stage, "AfterCommandIssue",
                         "AfterCommandIssue " + describeCommand(command),
                         command, 500L));
+
+        HudCommandEvents.BEFORE_ISSUE_MOVE_COMMAND_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY, screenPoint) -> {
+            showHudWorldPointProbe(stage, "BeforeIssueMoveCommandAtWorldPosition",
+                    interfaceEngine, worldX, worldY, screenPoint);
+            return false;
+        });
+
+        HudCommandEvents.AFTER_ISSUE_MOVE_COMMAND_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY, screenPoint) ->
+                showHudWorldPointProbe(stage, "AfterIssueMoveCommandAtWorldPosition",
+                        interfaceEngine, worldX, worldY, screenPoint));
+
+        HudCommandEvents.BEFORE_ISSUE_DEFAULT_MOVE_OR_ATTACK_MOVE.register((interfaceEngine, worldX, worldY, screenPoint) -> {
+            showHudWorldPointProbe(stage, "BeforeIssueDefaultMoveOrAttackMove",
+                    interfaceEngine, worldX, worldY, screenPoint);
+            return false;
+        });
+
+        HudCommandEvents.AFTER_ISSUE_DEFAULT_MOVE_OR_ATTACK_MOVE.register((interfaceEngine, worldX, worldY, screenPoint) ->
+                showHudWorldPointProbe(stage, "AfterIssueDefaultMoveOrAttackMove",
+                        interfaceEngine, worldX, worldY, screenPoint));
+
+        HudCommandEvents.BEFORE_ISSUE_ATTACK_MOVE_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY, screenPoint) -> {
+            showHudWorldPointProbe(stage, "BeforeIssueAttackMoveAtWorldPosition",
+                    interfaceEngine, worldX, worldY, screenPoint);
+            return false;
+        });
+
+        HudCommandEvents.AFTER_ISSUE_ATTACK_MOVE_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY, screenPoint) ->
+                showHudWorldPointProbe(stage, "AfterIssueAttackMoveAtWorldPosition",
+                        interfaceEngine, worldX, worldY, screenPoint));
+
+        HudCommandEvents.BEFORE_ISSUE_QUICK_RALLY_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY) -> {
+            showHudWorldProbe(stage, "BeforeIssueQuickRallyAtWorldPosition", interfaceEngine, worldX, worldY);
+            return false;
+        });
+
+        HudCommandEvents.AFTER_ISSUE_QUICK_RALLY_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY) ->
+                showHudWorldProbe(stage, "AfterIssueQuickRallyAtWorldPosition", interfaceEngine, worldX, worldY));
+
+        HudCommandEvents.BEFORE_SEND_MAP_PING_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY, screenPoint, pingAction) -> {
+            showHudMapPingProbe(stage, "BeforeSendMapPingAtWorldPosition",
+                    interfaceEngine, worldX, worldY, screenPoint, null, pingAction);
+            return false;
+        });
+
+        HudCommandEvents.AFTER_SEND_MAP_PING_AT_WORLD_POSITION.register((interfaceEngine, worldX, worldY, screenPoint, pingAction) ->
+                showHudMapPingProbe(stage, "AfterSendMapPingAtWorldPosition",
+                        interfaceEngine, worldX, worldY, screenPoint, null, pingAction));
+
+        HudCommandEvents.BEFORE_SHOW_MAP_PING_EFFECT.register((interfaceEngine, worldX, worldY, team, pingAction) -> {
+            showHudMapPingProbe(stage, "BeforeShowMapPingEffect",
+                    interfaceEngine, worldX, worldY, null, team, pingAction);
+            return false;
+        });
+
+        HudCommandEvents.AFTER_SHOW_MAP_PING_EFFECT.register((interfaceEngine, worldX, worldY, team, pingAction) ->
+                showHudMapPingProbe(stage, "AfterShowMapPingEffect",
+                        interfaceEngine, worldX, worldY, null, team, pingAction));
 
         CustomUnitRuntimeEvents.BEFORE_CUSTOM_ACTION_EXECUTE.register((unit, action, targetPoint, targetUnit, recursionDepth) -> {
             showEventProbeMessage(stage, "BeforeCustomActionExecute",
@@ -2356,6 +2416,41 @@ final class ExampleEventProbes {
         showEventProbeMessage(stage, "NetworkPacket." + key, message, networkEngine, minIntervalMillis);
     }
 
+    private static void showHudWorldPointProbe(String stage, String key, Object interfaceEngine,
+                                               float worldX, float worldY, Object screenPoint) {
+        showEventProbeMessage(stage, "HudCommand." + key,
+                "HudCommand." + key
+                        + " world=" + formatPoint(worldX, worldY)
+                        + " screen=" + describeObject(screenPoint)
+                        + " " + describeHudCommandState(interfaceEngine),
+                interfaceEngine, 250L);
+    }
+
+    private static void showHudWorldProbe(String stage, String key, Object interfaceEngine,
+                                          float worldX, float worldY) {
+        showEventProbeMessage(stage, "HudCommand." + key,
+                "HudCommand." + key
+                        + " world=" + formatPoint(worldX, worldY)
+                        + " " + describeHudCommandState(interfaceEngine),
+                interfaceEngine, 250L);
+    }
+
+    private static void showHudMapPingProbe(String stage, String key, Object interfaceEngine,
+                                            float worldX, float worldY, Object screenPoint,
+                                            Object team, Object pingAction) {
+        String extra = screenPoint != null ? " screen=" + describeObject(screenPoint) : "";
+        if (team != null) {
+            extra += " " + describeTeam(team);
+        }
+        showEventProbeMessage(stage, "HudCommand." + key,
+                "HudCommand." + key
+                        + " world=" + formatPoint(worldX, worldY)
+                        + extra
+                        + " action=" + describeObject(pingAction)
+                        + " " + describeHudCommandState(interfaceEngine),
+                interfaceEngine, 250L);
+    }
+
     private static void showNetworkCallbackProbe(String stage, String key, Object callbacks) {
         showNetworkCallbackProbe(stage, key, "", callbacks, 1000L);
     }
@@ -2447,6 +2542,23 @@ final class ExampleEventProbes {
         } catch (RuntimeException ignored) {
         }
         return "packet=" + describeObject(packet);
+    }
+
+    private static String describeHudCommandState(Object interfaceEngine) {
+        if (interfaceEngine == null) {
+            return "hud=null";
+        }
+        try {
+            if (HudCommandDiagnostics.isInterfaceEngine(interfaceEngine)) {
+                Map<String, Object> details = HudCommandDiagnostics.describeInterfaceEngine(interfaceEngine);
+                return "hud={rev=" + details.get("interfaceLayoutRevision")
+                        + ", dirty=" + details.get("interfaceLayoutDirty")
+                        + ", pingAction=" + describeObject(details.get("pingMapAction"))
+                        + ", lastPing=" + details.get("lastMapPingBroadcastMillis") + "}";
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "hud=" + describeObject(interfaceEngine);
     }
 
     private static String describeTeam(Object team) {

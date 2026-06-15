@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricexample;
 import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.LibRocketUiDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.MappingEvidenceDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
@@ -92,6 +93,7 @@ final class ExampleDiagnosticActions {
                             + " lobbyRows=" + MappingEvidenceDiagnostics.allNetworkLobbyChatCommandRows().size()
                             + " deepNetRows=" + MappingEvidenceDiagnostics.allNetworkDeepPacketBranchRows().size()
                             + " imageRows=" + MappingEvidenceDiagnostics.allRenderImageTextureLifecycleRows().size()
+                            + " hudRows=" + MappingEvidenceDiagnostics.allHudCommandInterfaceRows().size()
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
@@ -103,6 +105,37 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("Evidence snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showHudSnapshot(String stage) {
+        try {
+            Object interfaceEngine = GameEngineDiagnostics.currentInterfaceEngine();
+            if (interfaceEngine == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage, "HUD interface engine unavailable", null);
+                return;
+            }
+
+            Map<String, Object> hud = HudCommandDiagnostics.describeInterfaceEngine(interfaceEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "HUD evidence rows=" + MappingEvidenceDiagnostics.allHudCommandInterfaceRows().size()
+                            + " flow=" + MappingEvidenceDiagnostics.allHudCommandInterfaceFlowMap().size()
+                            + " rev=" + hud.get("interfaceLayoutRevision")
+                            + " dirty=" + hud.get("interfaceLayoutDirty")
+                            + " lastPing=" + hud.get("lastMapPingBroadcastMillis"),
+                    interfaceEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "HUD actions attackMove=" + ExampleDebugOverlay.describeObject(hud.get("attackMoveAction"))
+                            + " guard=" + ExampleDebugOverlay.describeObject(hud.get("guardUnitAction"))
+                            + " patrol=" + ExampleDebugOverlay.describeObject(hud.get("patrolAction"))
+                            + " ping=" + ExampleDebugOverlay.describeObject(hud.get("pingMapAction")),
+                    interfaceEngine);
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "HUD snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("HUD snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 
