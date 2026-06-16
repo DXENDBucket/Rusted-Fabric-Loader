@@ -1599,7 +1599,9 @@ c	com/corrodinggames/rts/game/units/a/c	rustedwarfare/unit/action/UnitActionId	r
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;Lcom/corrodinggames/rts/game/units/a/c;)V	a	method_c_a_writeActionId	writeActionId
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)Lcom/corrodinggames/rts/game/units/a/c;	a	method_c_a_readActionId	readActionId
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/a/c;	a	method_c_a_of	of
-c	com/corrodinggames/rts/game/units/a/d	rw/unit/action/internal/Obf_a_d	rustedwarfare/unit/action/internal/Obf_a_d
+c	com/corrodinggames/rts/game/units/a/d	rw/unit/action/AttackModeAction	rustedwarfare/unit/action/AttackModeAction
+	f	I	a	field_d_lastSelectionGeneration	lastSelectionGeneration
+	f	Lcom/corrodinggames/rts/game/units/a;	b	field_d_cachedAttackMode	cachedAttackMode
 	m	()Ljava/lang/String;	a	method_Obf_a_d_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_d_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;)Z	b	method_Obf_a_d_isVisible	isVisible
@@ -1611,7 +1613,11 @@ c	com/corrodinggames/rts/game/units/a/d	rw/unit/action/internal/Obf_a_d	rustedwa
 	m	()Z	g	method_Obf_a_d_isBuildAction	isBuildAction
 	m	()Z	h_	method_Obf_a_d_shouldShowText	shouldShowText
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_d_getBuildUnitType	getBuildUnitType
-c	com/corrodinggames/rts/game/units/a/e	rw/unit/action/internal/Obf_a_e	rustedwarfare/unit/action/internal/Obf_a_e
+	m	()V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/units/a;)Lcom/corrodinggames/rts/game/units/a;	a	method_d_getNextAttackMode	getNextAttackMode
+	m	()Lcom/corrodinggames/rts/game/units/a;	q	method_d_getSelectedAttackMode	getSelectedAttackMode
+	m	()Lcom/corrodinggames/rts/game/units/a;	r	method_d_getSelectedAttackModeCached	getSelectedAttackModeCached
+c	com/corrodinggames/rts/game/units/a/e	rw/unit/action/AttackMoveAction	rustedwarfare/unit/action/AttackMoveAction
 	m	()Ljava/lang/String;	a	method_Obf_a_e_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_e_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)I	b	method_Obf_a_e_getDisplayQueueCount	getDisplayQueueCount
@@ -1621,7 +1627,8 @@ c	com/corrodinggames/rts/game/units/a/e	rw/unit/action/internal/Obf_a_e	rustedwa
 	m	()Z	g	method_Obf_a_e_isBuildAction	isBuildAction
 	m	()Z	h_	method_Obf_a_e_shouldShowText	shouldShowText
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_e_getBuildUnitType	getBuildUnitType
-c	com/corrodinggames/rts/game/units/a/f	rw/unit/action/internal/Obf_a_f	rustedwarfare/unit/action/internal/Obf_a_f
+	m	()V	<init>	<init>	<init>
+c	com/corrodinggames/rts/game/units/a/f	rw/unit/action/GuardUnitAction	rustedwarfare/unit/action/GuardUnitAction
 	m	()Ljava/lang/String;	a	method_Obf_a_f_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_f_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)I	b	method_Obf_a_f_getDisplayQueueCount	getDisplayQueueCount
@@ -1630,7 +1637,13 @@ c	com/corrodinggames/rts/game/units/a/f	rw/unit/action/internal/Obf_a_f	rustedwa
 	m	()Lcom/corrodinggames/rts/game/units/a/t;	f	method_Obf_a_f_getDisplayType	getDisplayType
 	m	()Z	g	method_Obf_a_f_isBuildAction	isBuildAction
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_f_getBuildUnitType	getBuildUnitType
-c	com/corrodinggames/rts/game/units/a/g	rw/unit/action/internal/Obf_a_g	rustedwarfare/unit/action/internal/Obf_a_g
+	m	()V	<init>	<init>	<init>
+c	com/corrodinggames/rts/game/units/a/g	rw/unit/action/UnitSpecificActionProxy	rustedwarfare/unit/action/UnitSpecificActionProxy
+	f	Lcom/corrodinggames/rts/game/units/a/s;	a	field_g_delegateAction	delegateAction
+	f	Lcom/corrodinggames/rts/game/units/y;	b	field_g_boundUnit	boundUnit
+	f	Lcom/corrodinggames/rts/game/units/a/b;	c	field_g_actionFilter	actionFilter
+	f	Lcom/corrodinggames/rts/gameFramework/utility/u;	d	field_g_savedSelectedUnitsCache	savedSelectedUnitsCache
+	f	Lcom/corrodinggames/rts/gameFramework/utility/u;	e	field_g_singleSelectedUnitCache	singleSelectedUnitCache
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	B	method_Obf_a_g_getPrice	getPrice
 	m	()Lcom/corrodinggames/rts/game/units/as;	E	method_Obf_a_g_getAiConsiderSameAsBuildingUnitType	getAiConsiderSameAsBuildingUnitType
 	m	()Z	H	method_Obf_a_g_isHighPriorityQueue	isHighPriorityQueue
@@ -1674,7 +1687,15 @@ c	com/corrodinggames/rts/game/units/a/g	rw/unit/action/internal/Obf_a_g	rustedwa
 	m	()Landroid/graphics/Rect;	v	method_Obf_a_g_getIconImageSrcRect	getIconImageSrcRect
 	m	()Lcom/corrodinggames/rts/game/units/as;	y	method_Obf_a_g_getGuiBuildUnitType	getGuiBuildUnitType
 	m	()Lcom/corrodinggames/rts/game/units/a/c;	z	method_Obf_a_g_getActionIdForSerialization	getActionIdForSerialization
-c	com/corrodinggames/rts/game/units/a/h	rw/unit/action/internal/Obf_a_h	rustedwarfare/unit/action/internal/Obf_a_h
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/y;Lcom/corrodinggames/rts/game/units/a/c;)V	<init>	<init>	<init>
+	m	()V	K	method_g_pushBoundUnitSelectionContext	pushBoundUnitSelectionContext
+	m	()V	L	method_g_popBoundUnitSelectionContext	popBoundUnitSelectionContext
+	m	()Lcom/corrodinggames/rts/game/units/a/s;	p_	method_g_getDelegateAction	getDelegateAction
+c	com/corrodinggames/rts/game/units/a/h	rw/unit/action/FilteredUnitAction	rustedwarfare/unit/action/FilteredUnitAction
+	f	Lcom/corrodinggames/rts/game/units/a/s;	a	field_h_delegateAction	delegateAction
+	f	Lcom/corrodinggames/rts/game/units/a/b;	b	field_h_actionFilter	actionFilter
+	f	Z	c	field_h_respectDelegateAvailability	respectDelegateAvailability
+	f	I	f	field_h_disabledOverlayColor	disabledOverlayColor
 	m	()Ljava/lang/String;	a	method_Obf_a_h_getDescription	getDescription
 	m	(Lcom/corrodinggames/rts/game/units/a/s;)I	a	method_Obf_a_h_compareToAction	compareToAction
 	m	(Lcom/corrodinggames/rts/game/units/am;)Z	a	method_Obf_a_h_isGuiBlinking	isGuiBlinking
@@ -1701,7 +1722,10 @@ c	com/corrodinggames/rts/game/units/a/h	rw/unit/action/internal/Obf_a_h	rustedwa
 	m	()Z	u	method_Obf_a_h_isQueuedAction	isQueuedAction
 	m	()Landroid/graphics/Rect;	v	method_Obf_a_h_getIconImageSrcRect	getIconImageSrcRect
 	m	()Lcom/corrodinggames/rts/game/units/as;	y	method_Obf_a_h_getGuiBuildUnitType	getGuiBuildUnitType
-c	com/corrodinggames/rts/game/units/a/i	rw/unit/action/internal/Obf_a_i	rustedwarfare/unit/action/internal/Obf_a_i
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/a/b;)V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/a/b;Z)V	<init>	<init>	<init>
+	m	()Lcom/corrodinggames/rts/game/units/a/s;	q_	method_h_getDelegateAction	getDelegateAction
+c	com/corrodinggames/rts/game/units/a/i	rw/unit/action/PatrolAction	rustedwarfare/unit/action/PatrolAction
 	m	()Ljava/lang/String;	a	method_Obf_a_i_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_i_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)I	b	method_Obf_a_i_getDisplayQueueCount	getDisplayQueueCount
@@ -1710,7 +1734,11 @@ c	com/corrodinggames/rts/game/units/a/i	rw/unit/action/internal/Obf_a_i	rustedwa
 	m	()Lcom/corrodinggames/rts/game/units/a/t;	f	method_Obf_a_i_getDisplayType	getDisplayType
 	m	()Z	g	method_Obf_a_i_isBuildAction	isBuildAction
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_i_getBuildUnitType	getBuildUnitType
-c	com/corrodinggames/rts/game/units/a/j	rw/unit/action/internal/Obf_a_j	rustedwarfare/unit/action/internal/Obf_a_j
+	m	()V	<init>	<init>	<init>
+c	com/corrodinggames/rts/game/units/a/j	rw/unit/action/PingMapAction	rustedwarfare/unit/action/PingMapAction
+	f	Lcom/corrodinggames/rts/game/units/a/k;	a	field_j_pingType	pingType
+	f	Ljava/util/ArrayList;	b	field_j_allPingActions	allPingActions
+	f	Landroid/graphics/Rect;	c	field_j_pingIconSrcRect	pingIconSrcRect
 	m	()Ljava/lang/String;	a	method_Obf_a_j_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_j_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)I	b	method_Obf_a_j_getDisplayQueueCount	getDisplayQueueCount
@@ -1722,6 +1750,11 @@ c	com/corrodinggames/rts/game/units/a/j	rw/unit/action/internal/Obf_a_j	rustedwa
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_j_getBuildUnitType	getBuildUnitType
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	j	method_Obf_a_j_getIconImage	getIconImage
 	m	()Landroid/graphics/Rect;	v	method_Obf_a_j_getIconImageSrcRect	getIconImageSrcRect
+	m	()V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/units/a/k;)V	<init>	<init>	<init>
+	m	()Ljava/lang/String;	K	method_j_getPingLocalizationKey	getPingLocalizationKey
+	m	(Lcom/corrodinggames/rts/game/units/a/c;)Lcom/corrodinggames/rts/game/units/a/j;	a	method_j_findByActionId	findByActionId
+	m	(Lcom/corrodinggames/rts/game/units/am;)Ljava/util/ArrayList;	q	method_j_getNestedPingActions	getNestedPingActions
 c	com/corrodinggames/rts/game/units/a/l	rw/unit/action/QueueBuildUnitAction	rustedwarfare/unit/action/QueueBuildUnitAction
 	f	Lcom/corrodinggames/rts/game/units/as;	a	field_QueueBuildUnitAction_targetUnitType	targetUnitType
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	B	method_Obf_a_l_getPrice	getPrice
@@ -1773,14 +1806,16 @@ c	com/corrodinggames/rts/game/units/a/p	rw/unit/action/internal/Obf_a_p	rustedwa
 	m	()Z	g	method_Obf_a_p_isBuildAction	isBuildAction
 	m	()Z	h_	method_Obf_a_p_shouldShowText	shouldShowText
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_p_getBuildUnitType	getBuildUnitType
-c	com/corrodinggames/rts/game/units/a/q	rw/unit/action/internal/Obf_a_q	rustedwarfare/unit/action/internal/Obf_a_q
+c	com/corrodinggames/rts/game/units/a/q	rw/unit/action/TeamChatAction	rustedwarfare/unit/action/TeamChatAction
 	m	()Ljava/lang/String;	a	method_Obf_a_q_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_q_getText	getText
 	m	()Lcom/corrodinggames/rts/gameFramework/ad;	M	method_Obf_a_q_getInputAction	getInputAction
-c	com/corrodinggames/rts/game/units/a/r	rw/unit/action/internal/Obf_a_r	rustedwarfare/unit/action/internal/Obf_a_r
+	m	()V	<init>	<init>	<init>
+c	com/corrodinggames/rts/game/units/a/r	rw/unit/action/MapPingShortcutAction	rustedwarfare/unit/action/MapPingShortcutAction
 	m	()Ljava/lang/String;	a	method_Obf_a_r_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_r_getText	getText
 	m	()Lcom/corrodinggames/rts/gameFramework/ad;	M	method_Obf_a_r_getInputAction	getInputAction
+	m	()V	<init>	<init>	<init>
 c	com/corrodinggames/rts/game/units/a/s	rustedwarfare/unit/action/UnitAction	rustedwarfare/unit/action/UnitAction
 	f	Lcom/corrodinggames/rts/game/units/a/c;	a	field_s_a_actionId	actionId
 	f	Lcom/corrodinggames/rts/game/units/custom/d/b;	b	field_s_b_cachedCreditPrice	cachedCreditPrice
@@ -1902,7 +1937,7 @@ c	com/corrodinggames/rts/game/units/a/x	rw/unit/action/internal/Obf_a_x	rustedwa
 	m	()Lcom/corrodinggames/rts/game/units/a/t;	f	method_Obf_a_x_getDisplayType	getDisplayType
 	m	()Z	g	method_Obf_a_x_isBuildAction	isBuildAction
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_x_getBuildUnitType	getBuildUnitType
-c	com/corrodinggames/rts/game/units/a/y	rw/unit/action/internal/Obf_a_y	rustedwarfare/unit/action/internal/Obf_a_y
+c	com/corrodinggames/rts/game/units/a/y	rw/unit/action/SelectedUnitInfoAction	rustedwarfare/unit/action/SelectedUnitInfoAction
 	m	()Ljava/lang/String;	a	method_Obf_a_y_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_y_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)I	b	method_Obf_a_y_getDisplayQueueCount	getDisplayQueueCount
@@ -1915,7 +1950,15 @@ c	com/corrodinggames/rts/game/units/a/y	rw/unit/action/internal/Obf_a_y	rustedwa
 	m	()Z	h_	method_Obf_a_y_shouldShowText	shouldShowText
 	m	()Lcom/corrodinggames/rts/game/units/as;	i	method_Obf_a_y_getBuildUnitType	getBuildUnitType
 	m	()Z	u	method_Obf_a_y_isQueuedAction	isQueuedAction
-c	com/corrodinggames/rts/game/units/a/z	rw/unit/action/internal/Obf_a_z	rustedwarfare/unit/action/internal/Obf_a_z
+	m	(Z)V	<init>	<init>	<init>
+	m	()Lcom/corrodinggames/rts/game/units/y;	K	method_y_findFirstSelectedOrderableUnit	findFirstSelectedOrderableUnit
+	m	()Z	L	method_y_canShowPlayerInfoForSelectedUnit	canShowPlayerInfoForSelectedUnit
+c	com/corrodinggames/rts/game/units/a/z	rw/unit/action/GroupedUnitInfoAction	rustedwarfare/unit/action/GroupedUnitInfoAction
+	f	Lcom/corrodinggames/rts/game/units/as;	a	field_z_unitType	unitType
+	f	I	c	field_z_selectedCount	selectedCount
+	f	Z	d	field_z_hasMixedSelection	hasMixedSelection
+	f	Lcom/corrodinggames/rts/game/units/y;	e	field_z_firstSelectedUnitOfType	firstSelectedUnitOfType
+	f	I	f	field_z_lastSelectionGeneration	lastSelectionGeneration
 	m	()Ljava/lang/String;	a	method_Obf_a_z_getDescription	getDescription
 	m	()Ljava/lang/String;	b	method_Obf_a_z_getText	getText
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)I	b	method_Obf_a_z_getDisplayQueueCount	getDisplayQueueCount
@@ -1929,6 +1972,8 @@ c	com/corrodinggames/rts/game/units/a/z	rw/unit/action/internal/Obf_a_z	rustedwa
 	m	()F	m_	method_Obf_a_z_getSortOrder	getSortOrder
 	m	()Z	u	method_Obf_a_z_isQueuedAction	isQueuedAction
 	m	(Lcom/corrodinggames/rts/game/units/am;)Ljava/lang/String;	w	method_Obf_a_z_getTextForTooltip	getTextForTooltip
+	m	(Lcom/corrodinggames/rts/game/units/as;)V	<init>	<init>	<init>
+	m	()V	K	method_z_refreshSelectedUnitTypeCache	refreshSelectedUnitTypeCache
 c	com/corrodinggames/rts/game/units/ab	rw/unit/UnitDeathEffectType	rustedwarfare/unit/UnitDeathEffectType
 	f	Lcom/corrodinggames/rts/game/units/ab;	a	field_ab_a_verySmall	verySmall
 	f	Lcom/corrodinggames/rts/game/units/ab;	b	field_ab_b_small	small
@@ -7072,6 +7117,7 @@ c	com/corrodinggames/rts/game/units/g/e	rw/unit/status/SpecialActionBlockStatusE
 	m	(Lcom/corrodinggames/rts/game/units/am;Lcom/corrodinggames/rts/game/units/a/c;)V	c	method_com_corrodinggames_rts_game_units_g_e_expireSpecialActionBlocks	expireSpecialActionBlocks
 	m	()I	d	method_com_corrodinggames_rts_game_units_g_e_getRemainingFrames	getRemainingFrames
 c	com/corrodinggames/rts/game/units/h	rw/unit/special/EditorOrBuilderUnit	rustedwarfare/unit/special/EditorOrBuilderUnit
+	f	Lcom/corrodinggames/rts/game/units/a/b;	K	field_h_editorActionFilter	editorActionFilter
 	m	()Z	J	method_h_isDamageImmune	isDamageImmune
 	m	(F)V	a	method_Obf_h_update	update
 	m	(FZ)V	a	method_Obf_h_drawStatusOverlayLayer	drawStatusOverlayLayer
@@ -13088,3 +13134,25 @@ c	com/corrodinggames/rts/gameFramework/f	rw/util/CommonUtils	rustedwarfare/util/
 c	com/corrodinggames/rts/gameFramework/f$a	rw/util/CommonUtils$CpuCoreFileFilter	rustedwarfare/util/CommonUtils$CpuCoreFileFilter
 	m	()V	<init>	<init>	<init>
 	m	(Ljava/io/File;)Z	accept	method_f_a_accept	accept
+c	com/corrodinggames/rts/game/units/a/b	rw/unit/action/UnitActionFilter	rustedwarfare/unit/action/UnitActionFilter
+	f	Lcom/corrodinggames/rts/game/units/a/b;	emptyActionFilter	field_b_emptyActionFilter	emptyActionFilter
+	m	()V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/am;)Z	isAvailable	method_b_isAvailable	isAvailable
+c	com/corrodinggames/rts/game/units/a/k	rw/unit/action/MapPingType	rustedwarfare/unit/action/MapPingType
+	f	Lcom/corrodinggames/rts/game/units/a/k;	a	field_k_normal	normal
+	f	Lcom/corrodinggames/rts/game/units/a/k;	b	field_k_attack	attack
+	f	Lcom/corrodinggames/rts/game/units/a/k;	c	field_k_defend	defend
+	f	Lcom/corrodinggames/rts/game/units/a/k;	d	field_k_nuke	nuke
+	f	Lcom/corrodinggames/rts/game/units/a/k;	e	field_k_build	build
+	f	Lcom/corrodinggames/rts/game/units/a/k;	f	field_k_upgrade	upgrade
+	f	Lcom/corrodinggames/rts/game/units/a/k;	g	field_k_ok	ok
+	f	Lcom/corrodinggames/rts/game/units/a/k;	h	field_k_no	no
+	f	Lcom/corrodinggames/rts/game/units/a/k;	i	field_k_happy	happy
+	f	Lcom/corrodinggames/rts/game/units/a/k;	j	field_k_sad	sad
+	f	Lcom/corrodinggames/rts/game/units/a/k;	k	field_k_retreat	retreat
+	m	()Ljava/lang/String;	a	method_k_getDisplaySuffix	getDisplaySuffix
+	m	()Ljava/lang/String;	b	method_k_getLocalizedName	getLocalizedName
+	m	()Ljava/lang/String;	c	method_k_getLocalizationKey	getLocalizationKey
+c	com/corrodinggames/rts/game/units/h$16	rw/unit/special/EditorActionAvailabilityFilter	rustedwarfare/unit/special/EditorActionAvailabilityFilter
+	m	()V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/am;)Z	isAvailable	method_h_16_isAvailable	isAvailable

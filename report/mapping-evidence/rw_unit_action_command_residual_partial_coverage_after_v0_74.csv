@@ -1,0 +1,80 @@
+owner_official,kind,official_name,descriptor,expected_named_name,present,evidence
+com/corrodinggames/rts/game/units/a/b,class,,,rustedwarfare/unit/action/UnitActionFilter,True,"Base filter object with static emptyActionFilter and isAvailable(UnitAction,Unit) returning true; used by FilteredUnitAction and UnitSpecificActionProxy"
+com/corrodinggames/rts/game/units/a/d,class,,,rustedwarfare/unit/action/AttackModeAction,True,Action id c_7; text 'Attack Mode'; reads selected y.P UnitAttackMode and cycles attack mode through command builder
+com/corrodinggames/rts/game/units/a/e,class,,,rustedwarfare/unit/action/AttackMoveAction,True,Action id c_4; text 'Attack Move'; returns ActionCommandType.attackMove
+com/corrodinggames/rts/game/units/a/f,class,,,rustedwarfare/unit/action/GuardUnitAction,True,Localized gui.actions.guardUnit and gui.actions.guardUnit.description; returns ActionCommandType.guardUnit
+com/corrodinggames/rts/game/units/a/i,class,,,rustedwarfare/unit/action/PatrolAction,True,Localized gui.actions.patrol and gui.actions.patrol.description; returns ActionCommandType.patrol
+com/corrodinggames/rts/game/units/a/g,class,,,rustedwarfare/unit/action/UnitSpecificActionProxy,True,Proxy wraps a delegate UnitAction plus one bound OrderableUnit; temporarily replaces InterfaceEngine selection cache while delegating methods
+com/corrodinggames/rts/game/units/a/h,class,,,rustedwarfare/unit/action/FilteredUnitAction,True,Proxy wraps a delegate UnitAction plus UnitActionFilter; visibility/availability first consult the filter
+com/corrodinggames/rts/game/units/a/j,class,,,rustedwarfare/unit/action/PingMapAction,True,Action id c_6_<pingType>; text 'Ping Map' + MapPingType suffix; returns ActionCommandType.pingMap and uses ping icon atlas rect
+com/corrodinggames/rts/game/units/a/k,class,,,rustedwarfare/unit/action/MapPingType,True,Enum constants normal/attack/defend/nuke/build/upgrade/ok/no/happy/sad/retreat; localization key prefix menus.ingame.ping.type.
+com/corrodinggames/rts/game/units/a/q,class,,,rustedwarfare/unit/action/TeamChatAction,True,Cut/input action id c__cut_chat; text 'Team Chat'; description 'Send a team chat message to your allies'; getInputAction returns team chat input action
+com/corrodinggames/rts/game/units/a/r,class,,,rustedwarfare/unit/action/MapPingShortcutAction,True,Cut/input action id c__cut_ping; text 'Map Ping'; description 'Send a map ping to your allies'; opens ping-map action surface
+com/corrodinggames/rts/game/units/a/y,class,,,rustedwarfare/unit/action/SelectedUnitInfoAction,True,UnitInfo action for the first selected orderable unit; optionally displays player/team line rather than detailed unit text
+com/corrodinggames/rts/game/units/a/z,class,,,rustedwarfare/unit/action/GroupedUnitInfoAction,True,UnitInfo action for a unit type group; refreshes selected count and toggles selection/unselection by unit type
+com/corrodinggames/rts/game/units/h$16,class,,,rustedwarfare/unit/special/EditorActionAvailabilityFilter,True,EditorOrBuilderUnit anonymous UnitActionFilter; hides filtered editor actions by current editor unit/search filter
+com/corrodinggames/rts/game/units/a/b,field,emptyActionFilter,Lcom/corrodinggames/rts/game/units/a/b;,emptyActionFilter,True,Static final filter instance used when no filter is provided; isAvailable always returns true
+com/corrodinggames/rts/game/units/a/b,method,<init>,()V,<init>,True,Default UnitActionFilter constructor
+com/corrodinggames/rts/game/units/a/b,method,isAvailable,(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/am;)Z,isAvailable,True,Base filter implementation returns true for any UnitAction/Unit pair
+com/corrodinggames/rts/game/units/h,field,K,Lcom/corrodinggames/rts/game/units/a/b;,editorActionFilter,True,EditorOrBuilderUnit static filter used to hide editor actions outside the current editor filter/search mode
+com/corrodinggames/rts/game/units/h$16,method,<init>,()V,<init>,True,Anonymous editor filter constructor
+com/corrodinggames/rts/game/units/h$16,method,isAvailable,(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/am;)Z,isAvailable,True,Unwraps FilteredUnitAction delegate and checks editor filter/unit-type criteria before returning availability
+com/corrodinggames/rts/game/units/a/d,field,a,I,lastSelectionGeneration,True,Cached against InterfaceEngine.selectionGeneration (Y) while summarizing selected units' attack mode
+com/corrodinggames/rts/game/units/a/d,field,b,Lcom/corrodinggames/rts/game/units/a;,cachedAttackMode,True,"Cached common selected UnitAttackMode, or mixed/NA mode when selection differs"
+com/corrodinggames/rts/game/units/a/d,method,<init>,()V,<init>,True,Constructor sets UnitAction id c_7
+com/corrodinggames/rts/game/units/a/d,method,a,(Lcom/corrodinggames/rts/game/units/a;)Lcom/corrodinggames/rts/game/units/a;,getNextAttackMode,True,Switches selected attack mode to the next enum value before command queue submission
+com/corrodinggames/rts/game/units/a/d,method,q,()Lcom/corrodinggames/rts/game/units/a;,getSelectedAttackMode,True,Refreshes selected attack mode cache from currently selected orderable units
+com/corrodinggames/rts/game/units/a/d,method,r,()Lcom/corrodinggames/rts/game/units/a;,getSelectedAttackModeCached,True,Returns cached selected attack mode when InterfaceEngine selection generation has not changed
+com/corrodinggames/rts/game/units/a/e,method,<init>,()V,<init>,True,Constructor sets UnitAction id c_4 for the Attack Move command
+com/corrodinggames/rts/game/units/a/f,method,<init>,()V,<init>,True,Constructor sets the guard unit action id and localized guard-unit labels
+com/corrodinggames/rts/game/units/a/i,method,<init>,()V,<init>,True,Constructor sets the patrol action id and localized patrol labels
+com/corrodinggames/rts/game/units/a/q,method,<init>,()V,<init>,True,Constructor sets cut/input action id c__cut_chat for team chat
+com/corrodinggames/rts/game/units/a/r,method,<init>,()V,<init>,True,Constructor sets cut/input action id c__cut_ping for map ping shortcut
+com/corrodinggames/rts/game/units/a/y,method,<init>,(Z)V,<init>,True,Constructor stores the UnitInfo/player-info mode flag
+com/corrodinggames/rts/game/units/a/z,method,<init>,(Lcom/corrodinggames/rts/game/units/as;)V,<init>,True,Constructor stores the grouped UnitInfo unit type and initializes counters
+com/corrodinggames/rts/game/units/a/y,method,K,()Lcom/corrodinggames/rts/game/units/y;,findFirstSelectedOrderableUnit,True,Scans InterfaceEngine selected-unit cache and returns the first selected OrderableUnit
+com/corrodinggames/rts/game/units/a/y,method,L,()Z,canShowPlayerInfoForSelectedUnit,True,Returns true for editor units or units owned by the local player when the UnitInfo player-line action is active
+com/corrodinggames/rts/game/units/a/g,field,a,Lcom/corrodinggames/rts/game/units/a/s;,delegateAction,True,Wrapped UnitAction that receives delegated UI/action calls
+com/corrodinggames/rts/game/units/a/g,field,b,Lcom/corrodinggames/rts/game/units/y;,boundUnit,True,Specific OrderableUnit temporarily made the sole selected unit for delegate calls
+com/corrodinggames/rts/game/units/a/g,field,c,Lcom/corrodinggames/rts/game/units/a/b;,actionFilter,True,Availability filter checked before delegated visibility/availability calls
+com/corrodinggames/rts/game/units/a/g,field,d,Lcom/corrodinggames/rts/gameFramework/utility/u;,savedSelectedUnitsCache,True,Static saved InterfaceEngine selected-unit cache while proxy delegation runs
+com/corrodinggames/rts/game/units/a/g,field,e,Lcom/corrodinggames/rts/gameFramework/utility/u;,singleSelectedUnitCache,True,Static one-element selection cache containing the boundUnit
+com/corrodinggames/rts/game/units/a/g,method,<init>,(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/y;Lcom/corrodinggames/rts/game/units/a/c;)V,<init>,True,"Constructs proxy from delegate UnitAction, bound OrderableUnit and action id/context"
+com/corrodinggames/rts/game/units/a/g,method,K,()V,pushBoundUnitSelectionContext,True,Saves InterfaceEngine.bZ and replaces it with singleSelectedUnitCache containing boundUnit; throws if nested
+com/corrodinggames/rts/game/units/a/g,method,L,()V,popBoundUnitSelectionContext,True,Restores saved InterfaceEngine.bZ after delegated action call; throws if no saved cache exists
+com/corrodinggames/rts/game/units/a/g,method,p_,()Lcom/corrodinggames/rts/game/units/a/s;,getDelegateAction,True,Returns wrapped UnitAction delegate
+com/corrodinggames/rts/game/units/a/h,field,a,Lcom/corrodinggames/rts/game/units/a/s;,delegateAction,True,Wrapped UnitAction whose behavior is delegated after filter checks
+com/corrodinggames/rts/game/units/a/h,field,b,Lcom/corrodinggames/rts/game/units/a/b;,actionFilter,True,UnitActionFilter tested before delegate visibility/availability
+com/corrodinggames/rts/game/units/a/h,field,c,Z,respectDelegateAvailability,True,"When true, s()/availability also consult delegate availability; otherwise filter-only behavior is allowed"
+com/corrodinggames/rts/game/units/a/h,field,f,I,disabledOverlayColor,True,"Final grey ARGB color Color.a(255,50,50,50) used by the filtered action wrapper"
+com/corrodinggames/rts/game/units/a/h,method,<init>,(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/a/b;)V,<init>,True,Constructs filter wrapper with default respectDelegateAvailability=false
+com/corrodinggames/rts/game/units/a/h,method,<init>,(Lcom/corrodinggames/rts/game/units/a/s;Lcom/corrodinggames/rts/game/units/a/b;Z)V,<init>,True,Constructs filter wrapper with explicit delegate-availability behavior
+com/corrodinggames/rts/game/units/a/h,method,q_,()Lcom/corrodinggames/rts/game/units/a/s;,getDelegateAction,True,Returns wrapped UnitAction delegate
+com/corrodinggames/rts/game/units/a/j,field,a,Lcom/corrodinggames/rts/game/units/a/k;,pingType,True,PingMapAction variant enum; constructor builds action id c_6_<pingType.name()>
+com/corrodinggames/rts/game/units/a/j,field,b,Ljava/util/ArrayList;,allPingActions,True,Static list containing one PingMapAction for each MapPingType
+com/corrodinggames/rts/game/units/a/j,field,c,Landroid/graphics/Rect;,pingIconSrcRect,True,Static Rect scratch for EffectEngine.s[9] atlas cell at 7 + pingType.ordinal()
+com/corrodinggames/rts/game/units/a/j,method,<init>,()V,<init>,True,Default constructor uses MapPingType.normal
+com/corrodinggames/rts/game/units/a/j,method,<init>,(Lcom/corrodinggames/rts/game/units/a/k;)V,<init>,True,Constructor sets UnitAction id c_6_<pingType.name()>
+com/corrodinggames/rts/game/units/a/j,method,K,()Ljava/lang/String;,getPingLocalizationKey,True,"Returns pingType.getLocalizationKey(), e.g. menus.ingame.ping.type.attack"
+com/corrodinggames/rts/game/units/a/j,method,a,(Lcom/corrodinggames/rts/game/units/a/c;)Lcom/corrodinggames/rts/game/units/a/j;,findByActionId,True,Static lookup returns a PingMapAction from allPingActions by UnitActionId
+com/corrodinggames/rts/game/units/a/j,method,q,(Lcom/corrodinggames/rts/game/units/am;)Ljava/util/ArrayList;,getNestedPingActions,True,Returns the static list of all ping-map subtype actions
+com/corrodinggames/rts/game/units/a/k,field,a,Lcom/corrodinggames/rts/game/units/a/k;,normal,True,Enum constant with constructor string 'normal'
+com/corrodinggames/rts/game/units/a/k,field,b,Lcom/corrodinggames/rts/game/units/a/k;,attack,True,Enum constant with constructor string 'attack'
+com/corrodinggames/rts/game/units/a/k,field,c,Lcom/corrodinggames/rts/game/units/a/k;,defend,True,Enum constant with constructor string 'defend'
+com/corrodinggames/rts/game/units/a/k,field,d,Lcom/corrodinggames/rts/game/units/a/k;,nuke,True,Enum constant with constructor string 'nuke'
+com/corrodinggames/rts/game/units/a/k,field,e,Lcom/corrodinggames/rts/game/units/a/k;,build,True,Enum constant with constructor string 'build'
+com/corrodinggames/rts/game/units/a/k,field,f,Lcom/corrodinggames/rts/game/units/a/k;,upgrade,True,Enum constant with constructor string 'upgrade'
+com/corrodinggames/rts/game/units/a/k,field,g,Lcom/corrodinggames/rts/game/units/a/k;,ok,True,Enum constant with constructor string 'ok'
+com/corrodinggames/rts/game/units/a/k,field,h,Lcom/corrodinggames/rts/game/units/a/k;,no,True,Enum constant with constructor string 'no'
+com/corrodinggames/rts/game/units/a/k,field,i,Lcom/corrodinggames/rts/game/units/a/k;,happy,True,Enum constant with constructor string 'happy'
+com/corrodinggames/rts/game/units/a/k,field,j,Lcom/corrodinggames/rts/game/units/a/k;,sad,True,Enum constant with constructor string 'sad'
+com/corrodinggames/rts/game/units/a/k,field,k,Lcom/corrodinggames/rts/game/units/a/k;,retreat,True,Enum constant with constructor string 'retreat'
+com/corrodinggames/rts/game/units/a/k,method,a,()Ljava/lang/String;,getDisplaySuffix,True,Returns ' -' + getLocalizedName() for Ping Map button text
+com/corrodinggames/rts/game/units/a/k,method,b,()Ljava/lang/String;,getLocalizedName,True,Looks up getLocalizationKey() through the localization engine
+com/corrodinggames/rts/game/units/a/k,method,c,()Ljava/lang/String;,getLocalizationKey,True,Builds menus.ingame.ping.type. + enum name()
+com/corrodinggames/rts/game/units/a/z,field,a,Lcom/corrodinggames/rts/game/units/as;,unitType,True,Grouped UnitInfo row is keyed by this unit type
+com/corrodinggames/rts/game/units/a/z,field,c,I,selectedCount,True,Count of currently selected units matching unitType
+com/corrodinggames/rts/game/units/a/z,field,d,Z,hasMixedSelection,True,Set when selected units include a different unit type
+com/corrodinggames/rts/game/units/a/z,field,e,Lcom/corrodinggames/rts/game/units/y;,firstSelectedUnitOfType,True,"First selected OrderableUnit matching unitType, used for editor/name logic"
+com/corrodinggames/rts/game/units/a/z,field,f,I,lastSelectionGeneration,True,InterfaceEngine selection-generation guard for grouped UnitInfo cache
+com/corrodinggames/rts/game/units/a/z,method,K,()V,refreshSelectedUnitTypeCache,True,Refreshes selectedCount/hasMixedSelection/firstSelectedUnitOfType when InterfaceEngine selection generation changes

@@ -1,0 +1,5 @@
+area,candidate,reason
+UnitAction residuals,UnitAction base no-op/boolean residual hooks,Several inherited default methods still return simple constants; their UI semantics are not stable without additional call-site evidence
+CommandQueueOverlay,"gameFramework/f/am residual float/boolean fields b,d,e,f,h",Serialized but not enough direct call-site/string evidence to distinguish timer/progress/position semantics safely
+GroupedUnitInfoAction,field b:ArrayList,"Constructor allocates it, but current bytecode evidence does not show a stable role beyond an unused/reserved list"
+MapPingType,synthetic $VALUES / values / valueOf,Readable Java enum scaffolding; omitted to avoid low-value mapping rows

@@ -16,6 +16,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickGraphicsBackendDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.UnitActionDiagnostics;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -99,6 +100,7 @@ final class ExampleDiagnosticActions {
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
                             + " slickRows=" + MappingEvidenceDiagnostics.allSlickGraphicsBackendRows().size()
                             + " commonRows=" + MappingEvidenceDiagnostics.allCommonUtilsRows().size()
+                            + " actionRows=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualRows().size()
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
                             + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
@@ -188,10 +190,10 @@ final class ExampleDiagnosticActions {
                             + " lastPing=" + hud.get("lastMapPingBroadcastMillis"),
                     interfaceEngine);
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
-                    "HUD actions attackMove=" + ExampleDebugOverlay.describeObject(hud.get("attackMoveAction"))
-                            + " guard=" + ExampleDebugOverlay.describeObject(hud.get("guardUnitAction"))
-                            + " patrol=" + ExampleDebugOverlay.describeObject(hud.get("patrolAction"))
-                            + " ping=" + ExampleDebugOverlay.describeObject(hud.get("pingMapAction")),
+                    "HUD actions attackMove=" + summarizeActionKind(hud.get("attackMoveAction"))
+                            + " guard=" + summarizeActionKind(hud.get("guardUnitAction"))
+                            + " patrol=" + summarizeActionKind(hud.get("patrolAction"))
+                            + " ping=" + summarizeActionKind(hud.get("pingMapAction")),
                     interfaceEngine);
         } catch (Throwable t) {
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
@@ -199,6 +201,63 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("HUD snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showActionSnapshot(String stage) {
+        try {
+            Object interfaceEngine = GameEngineDiagnostics.currentInterfaceEngine();
+            if (interfaceEngine == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage, "Action snapshot interface engine unavailable", null);
+                return;
+            }
+
+            Map<String, Object> hud = HudCommandDiagnostics.describeInterfaceEngine(interfaceEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Action evidence rows=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualRows().size()
+                            + " updated=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualUpdatedRows().size()
+                            + " flow=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualFlowMap().size()
+                            + " skipped=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualSkippedRows().size()
+                            + " partial=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualPartialCoverageRows().size(),
+                    interfaceEngine);
+
+            showHudActionSummary(stage, "attackMove", hud.get("attackMoveAction"));
+            showHudActionSummary(stage, "guard", hud.get("guardUnitAction"));
+            showHudActionSummary(stage, "patrol", hud.get("patrolAction"));
+            showHudActionSummary(stage, "attackMode", hud.get("attackModeAction"));
+            showHudActionSummary(stage, "mapPingShortcut", hud.get("pingMapAction"));
+            showHudActionSummary(stage, "mapPing", hud.get("mapPingAction"));
+
+            Object attackModeAction = hud.get("attackModeAction");
+            if (attackModeAction != null && UnitActionDiagnostics.isAttackModeAction(attackModeAction)) {
+                Map<String, Object> details = UnitActionDiagnostics.describeAttackModeAction(attackModeAction);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "AttackMode cache gen=" + details.get("lastSelectionGeneration")
+                                + " cached=" + details.get("cachedAttackMode")
+                                + " selected=" + details.get("selectedAttackModeCached"),
+                        attackModeAction);
+            }
+
+            Object pingAction = hud.get("mapPingAction");
+            if (pingAction != null && UnitActionDiagnostics.isPingMapAction(pingAction)) {
+                Map<String, Object> ping = UnitActionDiagnostics.describePingMapAction(pingAction);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "PingMap type=" + summarizePingType(ping.get("pingType"))
+                                + " nested=" + ping.get("allPingActionsSize")
+                                + " key=" + ExampleDebugOverlay.safeText(String.valueOf(ping.get("pingLocalizationKey"))),
+                        pingAction);
+            }
+
+            List<Map<String, Object>> types = UnitActionDiagnostics.describePingMapTypes();
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Ping types " + summarizePingTypes(types),
+                    null);
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Action snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Action snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 
@@ -855,6 +914,87 @@ final class ExampleDiagnosticActions {
         } catch (RuntimeException e) {
             return ExampleDebugOverlay.describeObject(fontKey);
         }
+    }
+
+    private static String summarizeActionKind(Object action) {
+        if (action == null || !UnitActionDiagnostics.isUnitAction(action)) {
+            return ExampleDebugOverlay.describeObject(action);
+        }
+        return UnitActionDiagnostics.actionKind(action);
+    }
+
+    private static void showHudActionSummary(String stage, String label, Object action) {
+        if (action == null || !UnitActionDiagnostics.isUnitAction(action)) {
+            return;
+        }
+
+        try {
+            Map<String, Object> details = UnitActionDiagnostics.describeUnitAction(action);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Action " + label
+                            + " kind=" + details.get("actionKind")
+                            + " id=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("actionIdString")))
+                            + " text=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("text")))
+                            + " cmd=" + details.get("actionCommandType")
+                            + " display=" + details.get("displayType"),
+                    action);
+
+            Object filter = details.get("availabilityFilter");
+            if (filter != null && UnitActionDiagnostics.isUnitActionFilter(filter)) {
+                Map<String, Object> filterDetails = UnitActionDiagnostics.describeUnitActionFilter(filter);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Action " + label + " filter empty=" + filterDetails.get("emptyActionFilter")
+                                + " editor=" + filterDetails.get("editorActionAvailabilityFilter")
+                                + " class=" + ExampleDebugOverlay.describeObject(filter),
+                        filter);
+            }
+
+            Object actionId = details.get("actionId");
+            if (actionId != null && UnitActionDiagnostics.isUnitActionId(actionId)) {
+                Map<String, Object> actionIdDetails = UnitActionDiagnostics.describeActionId(actionId);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Action " + label + " actionId "
+                                + ExampleDebugOverlay.safeText(String.valueOf(actionIdDetails.get("asString")))
+                                + " raw=" + ExampleDebugOverlay.safeText(String.valueOf(actionIdDetails.get("idString"))),
+                        actionId);
+            }
+        } catch (RuntimeException e) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Action " + label + " summary failed: " + e.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(e.getMessage()),
+                    action);
+        }
+    }
+
+    private static String summarizePingType(Object pingType) {
+        if (pingType == null || !UnitActionDiagnostics.isMapPingType(pingType)) {
+            return ExampleDebugOverlay.describeObject(pingType);
+        }
+
+        Map<String, Object> details = UnitActionDiagnostics.describeMapPingType(pingType);
+        return details.get("fieldName")
+                + "/" + ExampleDebugOverlay.safeText(String.valueOf(details.get("displaySuffix")))
+                + "/" + ExampleDebugOverlay.safeText(String.valueOf(details.get("localizationKey")));
+    }
+
+    private static String summarizePingTypes(List<Map<String, Object>> types) {
+        StringBuilder result = new StringBuilder();
+        int limit = Math.min(types.size(), 6);
+        for (int i = 0; i < limit; i++) {
+            if (i > 0) {
+                result.append(", ");
+            }
+            Map<String, Object> details = types.get(i);
+            result.append(details.get("fieldName"));
+            Object suffix = details.get("displaySuffix");
+            if (suffix != null && !String.valueOf(suffix).isEmpty()) {
+                result.append(':').append(ExampleDebugOverlay.safeText(String.valueOf(suffix)));
+            }
+        }
+        if (types.size() > limit) {
+            result.append(" +").append(types.size() - limit);
+        }
+        return result.toString();
     }
 
     private static void showInputActionSummary(String stage, String label, Object action) {

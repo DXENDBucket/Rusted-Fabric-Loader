@@ -357,6 +357,11 @@ final class ExampleDebugOverlay {
                 "Common utils")) {
             ExampleDiagnosticActions.showCommonUtilsSnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 196, cellWidth, 24,
+                "Action snapshot")) {
+            ExampleDiagnosticActions.showActionSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {

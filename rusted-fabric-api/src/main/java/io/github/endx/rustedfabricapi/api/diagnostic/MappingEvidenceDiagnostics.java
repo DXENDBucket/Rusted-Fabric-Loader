@@ -874,6 +874,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("common_utils_skipped_rows_v0_73");
     }
 
+    public static List<MappingEvidenceRow> allUnitActionCommandResidualRows() {
+        return allEvidenceRows("unit_action_command_residual_added_rows_v0_74");
+    }
+
+    public static List<MappingEvidenceRow> allUnitActionCommandResidualUpdatedRows() {
+        return allEvidenceRows("unit_action_command_residual_updated_rows_v0_74");
+    }
+
+    public static List<MappingEvidenceRow> allUnitActionCommandResidualFlowMap() {
+        return allEvidenceRows("unit_action_command_residual_flow_map_v0_74");
+    }
+
+    public static List<MappingEvidenceRow> allUnitActionCommandResidualSkippedRows() {
+        return allEvidenceRows("unit_action_command_residual_skipped_rows_v0_74");
+    }
+
+    public static List<MappingEvidenceRow> allUnitActionCommandResidualPartialCoverageRows() {
+        return allEvidenceRows("unit_action_command_residual_partial_coverage_after_v0_74");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1125,6 +1145,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findCommonUtilsRows(String text) {
         return findByText(allCommonUtilsRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findUnitActionCommandResidualRows(String text) {
+        return findByText(allUnitActionCommandResidualRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {
