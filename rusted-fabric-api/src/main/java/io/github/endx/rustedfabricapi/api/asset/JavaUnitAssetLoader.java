@@ -73,6 +73,13 @@ public final class JavaUnitAssetLoader {
                 metadata, rawList, section, key, Boolean.valueOf(requireSingle));
     }
 
+    public static String joinUnitResourcePath(String basePath, String childPath) {
+        Object value = invokeStatic(findClass(CUSTOM_UNIT_LOADER_CLASSES),
+                new String[]{"joinUnitResourcePath", "a"},
+                basePath, childPath);
+        return value != null ? value.toString() : null;
+    }
+
     public static Object createEffectList(Object metadata, String rawEffectList, boolean resolve) {
         requireMetadata(metadata);
         Object effectList = newEffectList(metadata, rawEffectList);

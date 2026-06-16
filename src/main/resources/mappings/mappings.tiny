@@ -3134,6 +3134,13 @@ c	com/corrodinggames/rts/game/units/custom/ag	rw/custom/CustomUnitLoader	rustedw
 	m	()Ljava/lang/String;	m	method_0716_getExternalCustomUnitsDir	getExternalCustomUnitsDir
 	m	()V	n	method_ag_n_rebuildActiveUnitTypeRegistryInternal	rebuildActiveUnitTypeRegistryInternal
 	m	()V	o	method_ag_o_rebuildCustomUnitLookupAndActionLinksInternal	rebuildCustomUnitLookupAndActionLinksInternal
+	m	(Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/bb;	a	method_ag_readLocalizedStringData	readLocalizedStringData
+	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/aj;	a	method_ag_readDynamicLocalizedString	readDynamicLocalizedString
+	m	(Ljava/lang/String;Ljava/lang/Exception;Lcom/corrodinggames/rts/game/units/as;)V	a	method_ag_reportUnitTypeLoadException	reportUnitTypeLoadException
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;Ljava/lang/String;Z)Ljava/lang/String;	a	method_ag_formatModRelativePathForError	formatModRelativePathForError
+	m	(Ljava/lang/String;Ljava/lang/Exception;Lcom/corrodinggames/rts/gameFramework/i/b;)V	a	method_ag_reportCustomUnitLoadException	reportCustomUnitLoadException
+	m	(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;	a	method_ag_joinUnitResourcePath	joinUnitResourcePath
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;	a	method_ag_parseAutoTriggerEventList	parseAutoTriggerEventList
 c	com/corrodinggames/rts/game/units/custom/ah	rw/custom/CustomUnitLoadTimingPhase	rustedwarfare/custom/CustomUnitLoadTimingPhase
 	f	Lcom/corrodinggames/rts/game/units/custom/ah;	a	field_ah_a_imageLoad	imageLoad
 	f	Lcom/corrodinggames/rts/game/units/custom/ah;	b	field_ah_b_imageLoadOrGet	imageLoadOrGet
@@ -3151,7 +3158,9 @@ c	com/corrodinggames/rts/game/units/custom/ah	rw/custom/CustomUnitLoadTimingPhas
 	f	Lcom/corrodinggames/rts/game/units/custom/ah;	n	field_ah_n_unitParsePartD	unitParsePartD
 	f	D	o	field_ah_o_accumulatedTimeMillis	accumulatedTimeMillis
 	f	[Lcom/corrodinggames/rts/game/units/custom/ah;	p	field_ah_p_values	$VALUES
-c	com/corrodinggames/rts/game/units/custom/ai	rw/custom/ini/UnitTemplateOverrideMap	rustedwarfare/custom/ini/UnitTemplateOverrideMap
+c	com/corrodinggames/rts/game/units/custom/ai	rw/custom/event/AutoTriggerEventSpec	rustedwarfare/custom/event/AutoTriggerEventSpec
+	f	Ljava/lang/String;	a	field_ai_eventTypeName	eventTypeName
+	f	Ljava/util/HashMap;	b	field_ai_parameterMap	parameterMap
 c	com/corrodinggames/rts/game/units/custom/aj	rw/custom/LocalizedString	rustedwarfare/custom/LocalizedString
 c	com/corrodinggames/rts/game/units/custom/ak	rw/custom/text/DynamicTextResolver	rustedwarfare/custom/text/DynamicTextResolver
 	m	(Lcom/corrodinggames/rts/game/units/y;)Ljava/lang/String;	a	method_ak_a_resolve	resolve
@@ -9674,6 +9683,8 @@ c	com/corrodinggames/rts/gameFramework/h/a	rw/core/LanguageSettings	rustedwarfar
 	f	Ljava/lang/String;	d	field_LanguageSettings_d_forcedLanguage	forcedLanguage
 c	com/corrodinggames/rts/gameFramework/i/a	rw/mod/ModManager	rustedwarfare/mod/ModManager
 	f	Ljava/util/ArrayList;	f	field_ModManager_extraMapRecords	extraMapRecords
+	f	Ljava/lang/Object;	d	field_a_modListLock	modListLock
+	f	Ljava/util/ArrayList;	e	field_a_mods	mods
 	m	(Ljava/lang/String;Lcom/corrodinggames/rts/gameFramework/i/b;)V	a	method_0303_addExtraMapForMod	addExtraMapForMod
 	m	(ZZ)V	a	method_0305_reloadMods	reloadMods
 	m	([Ljava/lang/String;Ljava/lang/String;)[Ljava/lang/String;	a	method_ModManager_addExtraMapsForPath	addExtraMapsForPath
@@ -9682,6 +9693,27 @@ c	com/corrodinggames/rts/gameFramework/i/a	rw/mod/ModManager	rustedwarfare/mod/M
 	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/i/b;	h	method_0304_getLinkedModForFile	getLinkedModForFile
 	m	()Ljava/util/ArrayList;	k	method_0300_getAllModsForCustomUnitLoading	getAllModsForCustomUnitLoading
 	m	()V	n	method_ModManager_clearExtraMapRecords	clearExtraMapRecords
+	m	(Ljava/lang/String;I)I	a	method_a_parseVersionPart	parseVersionPart
+	m	(Ljava/lang/String;)V	a	method_a_validateMinVersionAgainstCurrentGame	validateMinVersionAgainstCurrentGame
+	m	(Ljava/lang/String;)Ljava/lang/String;	b	method_a_normalizeVersionString	normalizeVersionString
+	m	(Ljava/lang/String;Ljava/lang/String;)V	a	method_a_validateMinVersion	validateMinVersion
+	m	()V	a	method_a_loadModListAndSelection	loadModListAndSelection
+	m	(Z)I	a	method_a_countEnabledMods	countEnabledMods
+	m	()I	b	method_a_countEnabledModsWithErrors	countEnabledModsWithErrors
+	m	()V	d	method_a_snapshotModSelectionState	snapshotModSelectionState
+	m	()V	e	method_a_saveModSelection	saveModSelection
+	m	()V	f	method_a_loadModSelection	loadModSelection
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/i/b;	c	method_a_findModByHash	findModByHash
+	m	(Ljava/lang/String;)I	d	method_a_countModsWithShortTitle	countModsWithShortTitle
+	m	(I)Lcom/corrodinggames/rts/gameFramework/i/b;	a	method_a_findModByInternalId	findModByInternalId
+	m	()V	g	method_a_disableAllMods	disableAllMods
+	m	(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/i/b;	f	method_a_findModByDisplayName	findModByDisplayName
+	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZI)Lcom/corrodinggames/rts/gameFramework/i/b;	a	method_a_registerOrUpdateMod	registerOrUpdateMod
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)V	a	method_a_removeMod	removeMod
+	m	(Ljava/lang/String;ZZ)V	a	method_a_scanModDirectory	scanModDirectory
+	m	()Ljava/util/ArrayList;	i	method_a_getMusicTracksFromActiveMods	getMusicTracksFromActiveMods
+	m	()Ljava/util/ArrayList;	j	method_a_getEnabledAndErrorFreeMods	getEnabledAndErrorFreeMods
+	m	()V	m	method_a_notifyModCallbacks	notifyModCallbacks
 c	com/corrodinggames/rts/gameFramework/i/b	rw/mod/ModInfo	rustedwarfare/mod/ModInfo
 	f	Z	A	field_ModInfo_hasExtraMaps	hasExtraMaps
 	f	Z	B	field_0403_allowMaps	allowMaps
@@ -9707,6 +9739,17 @@ c	com/corrodinggames/rts/gameFramework/i/b	rw/mod/ModInfo	rustedwarfare/mod/ModI
 	f	Ljava/lang/String;	u	field_0409_description	description
 	f	Ljava/lang/String;	v	field_0410_minVersion	minVersion
 	f	Z	y	field_0402_workshop	workshop
+	f	Ljava/lang/String;	c	field_b_defaultDisplayName	defaultDisplayName
+	f	Z	g	field_b_savedDisabledSnapshot	savedDisabledSnapshot
+	f	Z	i	field_b_seenInSavedSelection	seenInSavedSelection
+	f	Z	j	field_b_rwmodPackage	rwmodPackage
+	f	J	k	field_b_workshopId	workshopId
+	f	Z	l	field_b_seenInCurrentScan	seenInCurrentScan
+	f	Z	r	field_b_modInfoLoaded	modInfoLoaded
+	f	I	x	field_b_scanOrder	scanOrder
+	f	I	L	field_b_stableSortId	stableSortId
+	f	Ljava/util/ArrayList;	U	field_b_loadWarnings	loadWarnings
+	f	Ljava/util/ArrayList;	V	field_b_loadErrors	loadErrors
 	m	()Ljava/lang/String;	a	method_0400_getDisplayName	getDisplayName
 	m	(Ljava/lang/String;)V	a	method_0406_addLoadError	addLoadError
 	m	(Ljava/lang/String;I)Ljava/lang/String;	a	method_b_findFileCaseInsensitive	findFileCaseInsensitive
@@ -9726,6 +9769,15 @@ c	com/corrodinggames/rts/gameFramework/i/b	rw/mod/ModInfo	rustedwarfare/mod/ModI
 	m	()Ljava/lang/String;	p	method_0408_getThumbnailPath	getThumbnailPath
 	m	()Ljava/util/ArrayList;	q	method_0409_getMusicTracks	getMusicTracks
 	m	()V	r	method_0410_refreshModInfo	refreshModInfo
+	m	()V	n	method_b_updateSourceFolderForNestedModInfo	updateSourceFolderForNestedModInfo
+	m	(Ljava/lang/String;)Ljava/lang/String;	c	method_b_getModInfoValue	getModInfoValue
+	m	()Ljava/lang/String;	w	method_b_getSteamDatPath	getSteamDatPath
+	m	(J)Z	a	method_b_saveWorkshopId	saveWorkshopId
+	m	()Ljava/lang/String;	s	method_b_getMemoryUsageSummary	getMemoryUsageSummary
+	m	()V	t	method_b_logMemoryUsage	logMemoryUsage
+	m	()Z	u	method_b_deleteModFile	deleteModFile
+	m	()Z	v	method_b_canDeleteModFile	canDeleteModFile
+	m	(Lcom/corrodinggames/rts/gameFramework/i/b;)I	a	method_b_compareToModInfo	compareToModInfo
 c	com/corrodinggames/rts/gameFramework/i/c	rw/mod/ExtraMapRecord	rustedwarfare/mod/ExtraMapRecord
 	f	Ljava/lang/String;	a	field_ExtraMapRecord_originalPath	originalPath
 	f	Ljava/lang/String;	b	field_ExtraMapRecord_relativePath	relativePath

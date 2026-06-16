@@ -367,6 +367,11 @@ final class ExampleDebugOverlay {
                 "Replay snapshot")) {
             ExampleDiagnosticActions.showReplaySnapshot("debug");
         }
+
+        if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 224, cellWidth, 24,
+                "Mod snapshot")) {
+            ExampleDiagnosticActions.showModPipelineSnapshot("debug");
+        }
     }
 
     static void registerJavaDebugUnitFromPanel() {

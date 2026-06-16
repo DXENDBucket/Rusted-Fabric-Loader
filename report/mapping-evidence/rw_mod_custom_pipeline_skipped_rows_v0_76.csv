@@ -1,0 +1,6 @@
+area,candidate,reason
+ModManager,c()I,Counts mods against an unmapped boolean z whose exact built-in/read-only semantics are not isolated enough for this pass
+ModManager,l()V,Refresh callback around reloadMods; needs broader platform callback context before naming
+ModInfo,z:Z,"Deletion/counting checks suggest built-in/read-only flag, but exact user-visible contract is not isolated"
+CustomUnitLoader,"b(CustomUnitMetadata, ini, section, prefix, boolean)",Custom action/sound/effect parser branch is useful but belongs to a deeper custom action pass
+CustomUnitLoader,"a(UnitType, CustomUnitMetadata, boolean)",Registry/action-linking helper already partially named; remaining branch effects need unit-type pass evidence

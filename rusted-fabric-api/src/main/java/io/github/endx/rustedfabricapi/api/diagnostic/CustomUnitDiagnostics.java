@@ -64,6 +64,18 @@ public final class CustomUnitDiagnostics {
             "rustedwarfare.mod.ModInfo",
             "com.corrodinggames.rts.gameFramework.i.b"
     };
+    private static final String[] MOD_MANAGER_CLASSES = {
+            "rustedwarfare.mod.ModManager",
+            "com.corrodinggames.rts.gameFramework.i.a"
+    };
+    private static final String[] CUSTOM_UNIT_LOADER_CLASSES = {
+            "rustedwarfare.custom.CustomUnitLoader",
+            "com.corrodinggames.rts.game.units.custom.ag"
+    };
+    private static final String[] AUTO_TRIGGER_EVENT_SPEC_CLASSES = {
+            "rustedwarfare.custom.event.AutoTriggerEventSpec",
+            "com.corrodinggames.rts.game.units.custom.ai"
+    };
 
     private CustomUnitDiagnostics() {
     }
@@ -481,6 +493,84 @@ public final class CustomUnitDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Object currentModManager() {
+        Object engine = GameEngineDiagnostics.currentEngineOrNull();
+        return engine != null ? RustedReflection.getFieldValue(engine, new String[]{"modManager", "bZ"}) : null;
+    }
+
+    public static Map<String, Object> describeCurrentModManager() {
+        Object modManager = currentModManager();
+        return modManager != null ? describeModManager(modManager) : Collections.<String, Object>emptyMap();
+    }
+
+    public static Map<String, Object> describeModManager(Object modManager) {
+        requireModManager(modManager);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putField(result, modManager, "modListLock", new String[]{"modListLock", "d"});
+        putCollectionField(result, modManager, "mods", new String[]{"mods", "e"});
+        putCollectionField(result, modManager, "extraMapRecords", new String[]{"extraMapRecords", "f"});
+        result.put("enabledModsIncludingErrors",
+                Integer.valueOf(invokeIntOrZero(modManager, new String[]{"countEnabledMods", "a"}, Boolean.FALSE)));
+        result.put("enabledModsSkippingErrors",
+                Integer.valueOf(invokeIntOrZero(modManager, new String[]{"countEnabledMods", "a"}, Boolean.TRUE)));
+        result.put("enabledModsWithErrors",
+                Integer.valueOf(invokeIntOrZero(modManager, new String[]{"countEnabledModsWithErrors", "b"})));
+        result.put("enabledAndErrorFreeModsSize",
+                Integer.valueOf(modManagerListMethodSize(modManager,
+                        new String[]{"getEnabledAndErrorFreeMods", "j"})));
+        result.put("musicTracksFromActiveModsSize",
+                Integer.valueOf(modManagerListMethodSize(modManager,
+                        new String[]{"getMusicTracksFromActiveMods", "i"})));
+        result.put("allModsForCustomUnitLoadingSize",
+                Integer.valueOf(modManagerListMethodSize(modManager,
+                        new String[]{"getAllModsForCustomUnitLoading", "k"})));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static List<Object> modsSnapshot(Object modManager) {
+        requireModManager(modManager);
+        Object mods = RustedReflection.getFieldValue(modManager, new String[]{"mods", "e"});
+        Object lock = RustedReflection.getFieldValue(modManager, new String[]{"modListLock", "d"});
+        if (lock != null) {
+            synchronized (lock) {
+                return Collections.unmodifiableList(RustedReflection.snapshotIterable(mods));
+            }
+        }
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(mods));
+    }
+
+    public static List<Object> enabledAndErrorFreeModsSnapshot(Object modManager) {
+        requireModManager(modManager);
+        Object value = RustedReflection.invokeInstance(modManager, new String[]{"getEnabledAndErrorFreeMods", "j"});
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static List<Object> musicTracksFromActiveModsSnapshot(Object modManager) {
+        requireModManager(modManager);
+        Object value = RustedReflection.invokeInstance(modManager, new String[]{"getMusicTracksFromActiveMods", "i"});
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static Object findModByHash(Object modManager, String hash) {
+        requireModManager(modManager);
+        return RustedReflection.invokeInstance(modManager, new String[]{"findModByHash", "c"}, hash);
+    }
+
+    public static Object findModByInternalId(Object modManager, int internalId) {
+        requireModManager(modManager);
+        return RustedReflection.invokeInstance(modManager,
+                new String[]{"findModByInternalId", "a"}, Integer.valueOf(internalId));
+    }
+
+    public static Object findModByDisplayName(Object modManager, String displayName) {
+        requireModManager(modManager);
+        return RustedReflection.invokeInstance(modManager, new String[]{"findModByDisplayName", "f"}, displayName);
+    }
+
+    public static String normalizeModVersionString(String version) {
+        return invokeStaticString(MOD_MANAGER_CLASSES, new String[]{"normalizeVersionString", "b"}, version);
+    }
+
     public static Map<String, Object> describeModInfo(Object modInfo) {
         requireModInfo(modInfo);
         Map<String, Object> result = new LinkedHashMap<String, Object>();
@@ -489,7 +579,10 @@ public final class CustomUnitDiagnostics {
         result.put("shortDisplayName40", invokeString(modInfo, new String[]{"getShortDisplayName40", "c"}));
         result.put("statusText", getModStatusText(modInfo));
         result.put("enabledAndErrorFree", Boolean.valueOf(isModEnabledAndErrorFree(modInfo)));
+        result.put("disabled", Boolean.valueOf(RustedReflection.getBooleanField(modInfo, new String[]{"disabled", "f"})));
         result.put("folderName", RustedReflection.getStringField(modInfo, new String[]{"folderName", "d"}));
+        result.put("defaultDisplayName",
+                RustedReflection.getStringField(modInfo, new String[]{"defaultDisplayName", "c"}));
         result.put("title", RustedReflection.getStringField(modInfo, new String[]{"title", "s"}));
         result.put("fallbackTitle", RustedReflection.getStringField(modInfo, new String[]{"fallbackTitle", "t"}));
         result.put("description", RustedReflection.getStringField(modInfo, new String[]{"description", "u"}));
@@ -504,6 +597,18 @@ public final class CustomUnitDiagnostics {
         result.put("loadError", RustedReflection.getStringField(modInfo, new String[]{"loadError", "R"}));
         result.put("loadWarning", RustedReflection.getStringField(modInfo, new String[]{"loadWarning", "S"}));
         result.put("loadWarningExtra", RustedReflection.getStringField(modInfo, new String[]{"loadWarningExtra", "T"}));
+        putBooleanField(result, modInfo, "savedDisabledSnapshot", new String[]{"savedDisabledSnapshot", "g"});
+        putBooleanField(result, modInfo, "seenInSavedSelection", new String[]{"seenInSavedSelection", "i"});
+        putBooleanField(result, modInfo, "rwmodPackage", new String[]{"rwmodPackage", "j"});
+        putLongField(result, modInfo, "workshopId", new String[]{"workshopId", "k"});
+        putBooleanField(result, modInfo, "seenInCurrentScan", new String[]{"seenInCurrentScan", "l"});
+        putBooleanField(result, modInfo, "modInfoLoaded", new String[]{"modInfoLoaded", "r"});
+        putIntField(result, modInfo, "scanOrder", new String[]{"scanOrder", "x"});
+        putIntField(result, modInfo, "stableSortId", new String[]{"stableSortId", "L"});
+        putCollectionField(result, modInfo, "loadWarnings", new String[]{"loadWarnings", "U"});
+        putCollectionField(result, modInfo, "loadErrors", new String[]{"loadErrors", "V"});
+        result.put("memoryUsageSummary", getModMemoryUsageSummary(modInfo));
+        result.put("canDeleteModFile", Boolean.valueOf(canDeleteModFile(modInfo)));
         return Collections.unmodifiableMap(result);
     }
 
@@ -528,6 +633,27 @@ public final class CustomUnitDiagnostics {
                 new String[]{"isEnabledAndErrorFree", "m"}));
     }
 
+    public static String getModInfoValue(Object modInfo, String key) {
+        requireModInfo(modInfo);
+        requireText(key, "key");
+        return invokeString(modInfo, new String[]{"getModInfoValue", "c"}, key);
+    }
+
+    public static String getModSteamDatPath(Object modInfo) {
+        requireModInfo(modInfo);
+        return invokeString(modInfo, new String[]{"getSteamDatPath", "w"});
+    }
+
+    public static String getModMemoryUsageSummary(Object modInfo) {
+        requireModInfo(modInfo);
+        return invokeString(modInfo, new String[]{"getMemoryUsageSummary", "s"});
+    }
+
+    public static boolean canDeleteModFile(Object modInfo) {
+        requireModInfo(modInfo);
+        return invokeBooleanOrFalse(modInfo, new String[]{"canDeleteModFile", "v"});
+    }
+
     public static void addModLoadWarning(Object modInfo, String warning) {
         requireModInfo(modInfo);
         RustedReflection.invokeInstance(modInfo, new String[]{"addLoadWarning", "b"}, warning);
@@ -540,8 +666,60 @@ public final class CustomUnitDiagnostics {
         return value != null ? value.toString() : null;
     }
 
-    private static String invokeString(Object owner, String[] methodNames) {
-        Object value = RustedReflection.invokeInstance(owner, methodNames);
+    public static String joinUnitResourcePath(String basePath, String childPath) {
+        Object value = RustedReflection.invokeStatic(CUSTOM_UNIT_LOADER_CLASSES,
+                new String[]{"joinUnitResourcePath", "a"}, basePath, childPath);
+        return value != null ? value.toString() : null;
+    }
+
+    public static String formatModRelativePathForError(Object modInfo, String path, boolean includeModName) {
+        if (modInfo != null) {
+            requireModInfo(modInfo);
+        }
+        Object value = RustedReflection.invokeStatic(CUSTOM_UNIT_LOADER_CLASSES,
+                new String[]{"formatModRelativePathForError", "a"},
+                modInfo, path, Boolean.valueOf(includeModName));
+        return value != null ? value.toString() : null;
+    }
+
+    public static List<Object> parseAutoTriggerEventList(String rawEvents, String section, String key) {
+        Object value = RustedReflection.invokeStatic(CUSTOM_UNIT_LOADER_CLASSES,
+                new String[]{"parseAutoTriggerEventList", "a"}, rawEvents, section, key);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static List<Map<String, Object>> describeAutoTriggerEventSpecs(String rawEvents, String section, String key) {
+        List<Object> specs = parseAutoTriggerEventList(rawEvents, section, key);
+        java.util.ArrayList<Map<String, Object>> result = new java.util.ArrayList<Map<String, Object>>();
+        for (Object spec : specs) {
+            if (isAutoTriggerEventSpec(spec)) {
+                result.add(describeAutoTriggerEventSpec(spec));
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    public static boolean isAutoTriggerEventSpec(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), AUTO_TRIGGER_EVENT_SPEC_CLASSES);
+    }
+
+    public static Map<String, Object> describeAutoTriggerEventSpec(Object spec) {
+        requireAutoTriggerEventSpec(spec);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("eventTypeName", RustedReflection.getStringField(spec, new String[]{"eventTypeName", "a"}));
+        Object parameterMap = RustedReflection.getFieldValue(spec, new String[]{"parameterMap", "b"});
+        result.put("parameterMap", parameterMap);
+        result.put("parameterMapSize", Integer.valueOf(mapSize(parameterMap)));
+        return Collections.unmodifiableMap(result);
+    }
+
+    private static String invokeString(Object owner, String[] methodNames, Object... args) {
+        Object value = RustedReflection.invokeInstance(owner, methodNames, args);
+        return value != null ? value.toString() : null;
+    }
+
+    private static String invokeStaticString(String[] classNames, String[] methodNames, Object... args) {
+        Object value = RustedReflection.invokeStatic(classNames, methodNames, args);
         return value != null ? value.toString() : null;
     }
 
@@ -558,12 +736,54 @@ public final class CustomUnitDiagnostics {
         result.put(key, Integer.valueOf(RustedReflection.getIntField(owner, fieldNames)));
     }
 
+    private static void putLongField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
+        Object value = RustedReflection.getFieldValue(owner, fieldNames);
+        result.put(key, Long.valueOf(value instanceof Number ? ((Number) value).longValue() : 0L));
+    }
+
     private static void putFloatField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
         result.put(key, Float.valueOf(RustedReflection.getFloatField(owner, fieldNames)));
     }
 
     private static void putBooleanField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
         result.put(key, Boolean.valueOf(RustedReflection.getBooleanField(owner, fieldNames)));
+    }
+
+    private static void putCollectionField(Map<String, Object> result, Object owner, String key,
+                                           String[] fieldNames) {
+        Object value = RustedReflection.getFieldValue(owner, fieldNames);
+        result.put(key, value);
+        result.put(key + "Size", Integer.valueOf(RustedReflection.snapshotIterable(value).size()));
+    }
+
+    private static int modManagerListMethodSize(Object modManager, String[] methodNames) {
+        try {
+            Object value = RustedReflection.invokeInstance(modManager, methodNames);
+            return RustedReflection.snapshotIterable(value).size();
+        } catch (RuntimeException ignored) {
+            return 0;
+        }
+    }
+
+    private static int invokeIntOrZero(Object owner, String[] methodNames, Object... args) {
+        try {
+            Object value = RustedReflection.invokeInstance(owner, methodNames, args);
+            return value instanceof Number ? ((Number) value).intValue() : 0;
+        } catch (RuntimeException ignored) {
+            return 0;
+        }
+    }
+
+    private static boolean invokeBooleanOrFalse(Object owner, String[] methodNames, Object... args) {
+        try {
+            return Boolean.TRUE.equals(RustedReflection.invokeInstance(owner, methodNames, args));
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private static int mapSize(Object value) {
+        return value instanceof Map<?, ?> ? ((Map<?, ?>) value).size() : 0;
     }
 
     private static void requireTurretTemplate(Object turretTemplate) {
@@ -608,6 +828,14 @@ public final class CustomUnitDiagnostics {
 
     private static void requireModInfo(Object modInfo) {
         requireAny(modInfo, MOD_INFO_CLASSES, "ModInfo");
+    }
+
+    private static void requireModManager(Object modManager) {
+        requireAny(modManager, MOD_MANAGER_CLASSES, "ModManager");
+    }
+
+    private static void requireAutoTriggerEventSpec(Object spec) {
+        requireAny(spec, AUTO_TRIGGER_EVENT_SPEC_CLASSES, "AutoTriggerEventSpec");
     }
 
     private static void requireAny(Object value, String[] classNames, String label) {

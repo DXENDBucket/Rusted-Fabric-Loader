@@ -1,0 +1,54 @@
+owner_official,kind,official_name,descriptor,expected_named_name,present,evidence
+com/corrodinggames/rts/game/units/custom/ai,class,,,rustedwarfare/custom/event/AutoTriggerEventSpec,True,"CustomUnitLoader.parseAutoTriggerEventList creates custom/ai instances, sets a to the event token and b to parsed key=value parameters; later action parsing resolves ai.a to custom/af event type and ai.b keys withtag/withprojectiletag/withactiontag"
+com/corrodinggames/rts/game/units/custom/ai,field,a,Ljava/lang/String;,eventTypeName,True,parseAutoTriggerEventList stores the left side event token in ai.a before resolving it against the event enum
+com/corrodinggames/rts/game/units/custom/ai,field,b,Ljava/util/HashMap;,parameterMap,True,parseAutoTriggerEventList lazily creates this HashMap and stores withtag/withprojectiletag/withactiontag or other key=value parameters
+com/corrodinggames/rts/gameFramework/i/a,field,d,Ljava/lang/Object;,modListLock,True,ModManager synchronizes on this object when mutating or iterating the main mod ArrayList
+com/corrodinggames/rts/gameFramework/i/a,field,e,Ljava/util/ArrayList;,mods,True,Constructor initializes this ArrayList; scans/register/remove/sort operations store ModInfo entries here
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Ljava/lang/String;I)I,parseVersionPart,True,Private static version parser logs Unexpected version format for missing/bad numeric parts and returns an int component
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Ljava/lang/String;)V,validateMinVersionAgainstCurrentGame,True,Static helper validates a mod-info minVersion string against the current game version
+com/corrodinggames/rts/gameFramework/i/a,method,b,(Ljava/lang/String;)Ljava/lang/String;,normalizeVersionString,True,Static helper strips a leading v and normalizes supported version suffixes before min-version comparison
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Ljava/lang/String;Ljava/lang/String;)V,validateMinVersion,True,Throws for Requires version / Requires newer build / Min version cannot be less than v1.10 while comparing required/current versions
+com/corrodinggames/rts/gameFramework/i/a,method,a,()V,loadModListAndSelection,True,Public startup helper calls mod scan/load flow then applies persisted mod selection
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Z)I,countEnabledMods,True,Counts ModInfo entries that are not disabled and not still in directory-scan state; optional boolean skips errored mods
+com/corrodinggames/rts/gameFramework/i/a,method,b,()I,countEnabledModsWithErrors,True,Counts enabled mods that currently have a loadError string
+com/corrodinggames/rts/gameFramework/i/a,method,d,()V,snapshotModSelectionState,True,Copies each ModInfo.disabled value into its savedDisabledSnapshot field and clears the per-run selection-changed flag
+com/corrodinggames/rts/gameFramework/i/a,method,e,()V,saveModSelection,True,Serializes mod selection into SettingsEngine.modSettings/modSettingsVersion using enabled/disabled tokens
+com/corrodinggames/rts/gameFramework/i/a,method,f,()V,loadModSelection,True,"Loads SettingsEngine.modSettings, logs Loading mod selection, and applies saved enabled/disabled states to matching mods"
+com/corrodinggames/rts/gameFramework/i/a,method,c,(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/i/b;,findModByHash,True,Searches the main mod list by ModInfo.modHash
+com/corrodinggames/rts/gameFramework/i/a,method,d,(Ljava/lang/String;)I,countModsWithShortTitle,True,Counts mods whose short display title matches the provided string
+com/corrodinggames/rts/gameFramework/i/a,method,a,(I)Lcom/corrodinggames/rts/gameFramework/i/b;,findModByInternalId,True,Searches ModInfo entries by the stable/internal id field L
+com/corrodinggames/rts/gameFramework/i/a,method,g,()V,disableAllMods,True,Iterates all ModInfo entries and sets disabled=true
+com/corrodinggames/rts/gameFramework/i/a,method,f,(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/i/b;,findModByDisplayName,True,Searches mods by getDisplayName() rather than folder or hash
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZI)Lcom/corrodinggames/rts/gameFramework/i/b;,registerOrUpdateMod,True,"Adds or updates a ModInfo during scan, setting display/folder/hash/source/rwmod/scan-order flags then refreshing mod-info"
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Lcom/corrodinggames/rts/gameFramework/i/b;)V,removeMod,True,Removes a ModInfo from the synchronized main mod list
+com/corrodinggames/rts/gameFramework/i/a,method,a,(Ljava/lang/String;ZZ)V,scanModDirectory,True,Logs loading mod custom units at: and scans a directory/archive for mod-info/custom-unit data
+com/corrodinggames/rts/gameFramework/i/a,method,i,()Ljava/util/ArrayList;,getMusicTracksFromActiveMods,True,Builds a list of music tracks from enabled/error-free mods by calling ModInfo.getMusicTracks
+com/corrodinggames/rts/gameFramework/i/a,method,j,()Ljava/util/ArrayList;,getEnabledAndErrorFreeMods,True,Returns enabled mods that pass ModInfo.isEnabledAndErrorFree
+com/corrodinggames/rts/gameFramework/i/a,method,m,()V,notifyModCallbacks,True,Invokes active mod callbacks when present; otherwise logs No active callbacks
+com/corrodinggames/rts/gameFramework/i/b,field,c,Ljava/lang/String;,defaultDisplayName,True,getDisplayName falls back from title/fallbackTitle to this default display string
+com/corrodinggames/rts/gameFramework/i/b,field,g,Z,savedDisabledSnapshot,True,ModManager.snapshotModSelectionState copies disabled into this field before UI/selection changes
+com/corrodinggames/rts/gameFramework/i/b,field,i,Z,seenInSavedSelection,True,loadModSelection marks this true for mods seen in saved SettingsEngine.modSettings; new-mod auto-disable logic checks it
+com/corrodinggames/rts/gameFramework/i/b,field,j,Z,rwmodPackage,True,Set when a source path is an .rwmod package; mod-info loading and deletion logic special-case this flag
+com/corrodinggames/rts/gameFramework/i/b,field,k,J,workshopId,True,Loaded from /steam.dat [steam] id and written by saveWorkshopId; identifies the Steam Workshop item
+com/corrodinggames/rts/gameFramework/i/b,field,l,Z,seenInCurrentScan,True,"ModManager scan resets this false, sets it true for discovered mods, and removes stale entries left false"
+com/corrodinggames/rts/gameFramework/i/b,field,r,Z,modInfoLoaded,True,refreshModInfo sets this after attempting to read mod-info metadata
+com/corrodinggames/rts/gameFramework/i/b,field,x,I,scanOrder,True,registerOrUpdateMod stores the scan-order/load-order integer here; compareToModInfo sorts by it before display name
+com/corrodinggames/rts/gameFramework/i/b,field,L,I,stableSortId,True,Constructor assigns incrementing K++ value and ModManager.findModByInternalId searches this id
+com/corrodinggames/rts/gameFramework/i/b,field,U,Ljava/util/ArrayList;,loadWarnings,True,addLoadWarning appends unique warning strings and getStatusText displays up to three warnings
+com/corrodinggames/rts/gameFramework/i/b,field,V,Ljava/util/ArrayList;,loadErrors,True,addLoadError appends load error strings for later status reporting
+com/corrodinggames/rts/gameFramework/i/b,method,n,()V,updateSourceFolderForNestedModInfo,True,Looks for a nested mod-info.txt and logs Changing mod sourceFolder to: when the real source folder is one directory deeper
+com/corrodinggames/rts/gameFramework/i/b,method,c,(Ljava/lang/String;)Ljava/lang/String;,getModInfoValue,True,Reads a key from the [mod] section of the loaded mod-info ini
+com/corrodinggames/rts/gameFramework/i/b,method,w,()Ljava/lang/String;,getSteamDatPath,True,Private helper returns the normalized source path plus /steam.dat for workshop id persistence
+com/corrodinggames/rts/gameFramework/i/b,method,a,(J)Z,saveWorkshopId,True,Writes [steam] id:<workshopId> to steam.dat and stores the id on this ModInfo
+com/corrodinggames/rts/gameFramework/i/b,method,s,()Ljava/lang/String;,getMemoryUsageSummary,True,Formats image/sound memory counters as %.2f mb and appends disabled status text
+com/corrodinggames/rts/gameFramework/i/b,method,t,()V,logMemoryUsage,True,Logs Mod: '<name>' - Memory use: <summary> using getMemoryUsageSummary
+com/corrodinggames/rts/gameFramework/i/b,method,u,()Z,deleteModFile,True,Logs Trying to delete mod and Delete result while removing a deletable mod package/file
+com/corrodinggames/rts/gameFramework/i/b,method,v,()Z,canDeleteModFile,True,"Returns whether this mod's package/source can be deleted, with .rwmod and built-in/source checks"
+com/corrodinggames/rts/gameFramework/i/b,method,a,(Lcom/corrodinggames/rts/gameFramework/i/b;)I,compareToModInfo,True,Compares ModInfo entries by scanOrder and display name; synthetic compareTo(Object) delegates here
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/bb;,readLocalizedStringData,True,"Wrapper around ini.readLocalizedString(section,key,default,false) returning a custom localized-string data object"
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/aj;,readDynamicLocalizedString,True,Wrapper around ini dynamic localized-string reader with CustomUnitMetadata context
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Ljava/lang/String;Ljava/lang/Exception;Lcom/corrodinggames/rts/game/units/as;)V,reportUnitTypeLoadException,True,Extracts ModInfo from CustomUnitMetadata-backed UnitType and delegates to the ModInfo-aware custom-unit load error reporter
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Lcom/corrodinggames/rts/gameFramework/i/b;Ljava/lang/String;Z)Ljava/lang/String;,formatModRelativePathForError,True,Strips the mod source path from an absolute custom-unit path and optionally appends (in mod <name>) for load error messages
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Ljava/lang/String;Ljava/lang/Exception;Lcom/corrodinggames/rts/gameFramework/i/b;)V,reportCustomUnitLoadException,True,"Logs Error while loading unit, formats a mod-relative path, and records the error on ModInfo or throws if no mod is available"
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;,joinUnitResourcePath,True,"Ensures the base path ends with /, strips leading / or \ from child, and concatenates for unit resource lookup"
+com/corrodinggames/rts/game/units/custom/ag,method,a,(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/util/ArrayList;,parseAutoTriggerEventList,True,"Parses comma-separated autoTriggerOnEvent entries, including eventName(key=value,...) parameter maps; NONE/empty returns null"

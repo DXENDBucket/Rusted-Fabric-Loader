@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommonUtilsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CoreDebugStatsDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.LibRocketUiDiagnostics;
@@ -113,6 +114,7 @@ final class ExampleDiagnosticActions {
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
                             + " saveReplayRows=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataRows().size()
+                            + " modRows=" + MappingEvidenceDiagnostics.allModCustomPipelineRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
                     null);
         } catch (Throwable t) {
@@ -172,6 +174,68 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("CommonUtils snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showModPipelineSnapshot(String stage) {
+        try {
+            Object modManager = CustomUnitDiagnostics.currentModManager();
+            if (modManager == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage, "ModManager unavailable", null);
+                return;
+            }
+
+            Map<String, Object> manager = CustomUnitDiagnostics.describeModManager(modManager);
+            List<Object> mods = CustomUnitDiagnostics.modsSnapshot(modManager);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Mod pipeline mods=" + manager.get("modsSize")
+                            + " enabled=" + manager.get("enabledModsSkippingErrors")
+                            + "/" + manager.get("enabledModsIncludingErrors")
+                            + " errored=" + manager.get("enabledModsWithErrors")
+                            + " loadable=" + manager.get("allModsForCustomUnitLoadingSize")
+                            + " music=" + manager.get("musicTracksFromActiveModsSize"),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Mod evidence rows=" + MappingEvidenceDiagnostics.allModCustomPipelineRows().size()
+                            + " updated=" + MappingEvidenceDiagnostics.allModCustomPipelineUpdatedRows().size()
+                            + " flow=" + MappingEvidenceDiagnostics.allModCustomPipelineFlowMap().size()
+                            + " skipped=" + MappingEvidenceDiagnostics.allModCustomPipelineSkippedRows().size()
+                            + " partial=" + MappingEvidenceDiagnostics.allModCustomPipelinePartialCoverageRows().size(),
+                    modManager);
+
+            int limit = Math.min(mods.size(), 3);
+            for (int i = 0; i < limit; i++) {
+                Object mod = mods.get(i);
+                if (mod == null) {
+                    continue;
+                }
+
+                Map<String, Object> details = CustomUnitDiagnostics.describeModInfo(mod);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Mod[" + i + "] " + ExampleDebugOverlay.safeText(String.valueOf(details.get("displayName")))
+                                + " disabled=" + details.get("disabled")
+                                + " ok=" + details.get("enabledAndErrorFree")
+                                + " rwmod=" + details.get("rwmodPackage")
+                                + " workshop=" + details.get("workshopId")
+                                + " scan=" + details.get("scanOrder")
+                                + " warnings=" + details.get("loadWarningsSize")
+                                + " errors=" + details.get("loadErrorsSize"),
+                        mod);
+            }
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Unit path join=" + ExampleDebugOverlay.compactPath(
+                            CustomUnitDiagnostics.joinUnitResourcePath("units/debug", "/image.png")),
+                    modManager);
+
+            showAutoTriggerParserProbe(stage);
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Mod snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Mod snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 
@@ -245,6 +309,28 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("Replay snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    private static void showAutoTriggerParserProbe(String stage) {
+        try {
+            List<Map<String, Object>> specs = CustomUnitDiagnostics.describeAutoTriggerEventSpecs(
+                    "created(withtag=debug)", "example", "autoTriggerOnEvent");
+            if (specs.isEmpty()) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage, "AutoTrigger parser produced no specs", null);
+                return;
+            }
+
+            Map<String, Object> spec = specs.get(0);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "AutoTrigger spec event=" + ExampleDebugOverlay.safeText(String.valueOf(spec.get("eventTypeName")))
+                            + " params=" + spec.get("parameterMapSize"),
+                    spec.get("parameterMap"));
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "AutoTrigger parser probe failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
         }
     }
 

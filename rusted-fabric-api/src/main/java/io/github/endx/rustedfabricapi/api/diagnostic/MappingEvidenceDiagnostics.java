@@ -914,6 +914,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("save_replay_versioned_data_partial_coverage_after_v0_75");
     }
 
+    public static List<MappingEvidenceRow> allModCustomPipelineRows() {
+        return allEvidenceRows("mod_custom_pipeline_added_rows_v0_76");
+    }
+
+    public static List<MappingEvidenceRow> allModCustomPipelineUpdatedRows() {
+        return allEvidenceRows("mod_custom_pipeline_updated_rows_v0_76");
+    }
+
+    public static List<MappingEvidenceRow> allModCustomPipelineFlowMap() {
+        return allEvidenceRows("mod_custom_pipeline_flow_map_v0_76");
+    }
+
+    public static List<MappingEvidenceRow> allModCustomPipelineSkippedRows() {
+        return allEvidenceRows("mod_custom_pipeline_skipped_rows_v0_76");
+    }
+
+    public static List<MappingEvidenceRow> allModCustomPipelinePartialCoverageRows() {
+        return allEvidenceRows("mod_custom_pipeline_partial_coverage_after_v0_76");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1177,6 +1197,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findSaveReplayVersionedDataUpdatedRows(String text) {
         return findByText(allSaveReplayVersionedDataUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findModCustomPipelineRows(String text) {
+        return findByText(allModCustomPipelineRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findModCustomPipelineUpdatedRows(String text) {
+        return findByText(allModCustomPipelineUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {
