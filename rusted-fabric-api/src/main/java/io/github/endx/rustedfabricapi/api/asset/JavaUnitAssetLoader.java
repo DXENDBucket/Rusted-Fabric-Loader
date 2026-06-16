@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class JavaUnitAssetLoader {
@@ -78,6 +79,61 @@ public final class JavaUnitAssetLoader {
                 new String[]{"joinUnitResourcePath", "a"},
                 basePath, childPath);
         return value != null ? value.toString() : null;
+    }
+
+    public static Object createUnitTypeReference(Object metadata, String section, String key, String unitName) {
+        requireMetadata(metadata);
+        return invokeInstance(metadata, new String[]{"createUnitTypeReference", "a"}, section, key, unitName);
+    }
+
+    public static Object createResolvedUnitTypeReference(Object metadata, Object unitType) {
+        requireMetadata(metadata);
+        if (unitType == null) {
+            throw new IllegalArgumentException("unitType must not be null");
+        }
+        return invokeInstance(metadata, new String[]{"createResolvedUnitTypeReference", "a"}, unitType);
+    }
+
+    public static Object createActionReferenceList(Object metadata, String section, String key, String actionList) {
+        requireMetadata(metadata);
+        return invokeInstance(metadata, new String[]{"createActionReferenceList", "c"}, section, key, actionList);
+    }
+
+    public static Object getPlacementRules(Object metadata) {
+        requireMetadata(metadata);
+        return invokeInstance(metadata, new String[]{"getPlacementRules", "q"});
+    }
+
+    public static List<Object> getCustomUnitTypeIds(Object metadata) {
+        requireMetadata(metadata);
+        return Collections.unmodifiableList(snapshotIterable(
+                invokeInstance(metadata, new String[]{"getCustomUnitTypeIds", "s"})));
+    }
+
+    public static Object getCustomUnitTags(Object metadata) {
+        requireMetadata(metadata);
+        return invokeInstance(metadata, new String[]{"getTags", "x"});
+    }
+
+    public static boolean usesCreditResources(Object metadata) {
+        requireMetadata(metadata);
+        return Boolean.TRUE.equals(invokeInstance(metadata, new String[]{"usesCreditResources", "y"}));
+    }
+
+    public static void computeLegNeighborIndexCache(Object metadata) {
+        requireMetadata(metadata);
+        invokeStatic(findClass(CUSTOM_UNIT_LOADER_CLASSES),
+                new String[]{"computeLegNeighborIndexCache", "b"}, metadata);
+    }
+
+    public static void replaceLiveCustomUnitsOfType(Object unitType, Object metadata, boolean includeExistingUnits) {
+        requireMetadata(metadata);
+        if (unitType == null) {
+            throw new IllegalArgumentException("unitType must not be null");
+        }
+        invokeStatic(findClass(CUSTOM_UNIT_LOADER_CLASSES),
+                new String[]{"replaceLiveCustomUnitsOfType", "a"},
+                unitType, metadata, Boolean.valueOf(includeExistingUnits));
     }
 
     public static Object createEffectList(Object metadata, String rawEffectList, boolean resolve) {
@@ -399,6 +455,28 @@ public final class JavaUnitAssetLoader {
         } catch (IllegalStateException e) {
             return null;
         }
+    }
+
+    private static List<Object> snapshotIterable(Object value) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+        List<Object> result = new ArrayList<>();
+        if (value instanceof Iterable<?>) {
+            for (Object item : (Iterable<?>) value) {
+                result.add(item);
+            }
+            return result;
+        }
+        if (value.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                result.add(java.lang.reflect.Array.get(value, i));
+            }
+            return result;
+        }
+        result.add(value);
+        return result;
     }
 
     private static Method findMethod(Class<?> type, String[] names, boolean staticMethod, Object[] args) {

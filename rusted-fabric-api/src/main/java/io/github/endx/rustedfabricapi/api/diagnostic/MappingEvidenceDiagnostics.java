@@ -934,6 +934,42 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("mod_custom_pipeline_partial_coverage_after_v0_76");
     }
 
+    public static List<MappingEvidenceRow> allCustomUnitMetadataResourcesRows() {
+        return allEvidenceRows("custom_unit_metadata_resources_added_rows_v0_77");
+    }
+
+    public static List<MappingEvidenceRow> allCustomUnitMetadataResourcesUpdatedRows() {
+        return allEvidenceRows("custom_unit_metadata_resources_updated_rows_v0_77");
+    }
+
+    public static List<MappingEvidenceRow> allCustomUnitMetadataResourcesFlowMap() {
+        return allEvidenceRows("custom_unit_metadata_resources_flow_map_v0_77");
+    }
+
+    public static List<MappingEvidenceRow> allCustomUnitMetadataResourcesSkippedRows() {
+        return allEvidenceRows("custom_unit_metadata_resources_skipped_rows_v0_77");
+    }
+
+    public static List<MappingEvidenceRow> allCustomUnitMetadataResourcesPartialCoverageRows() {
+        return allEvidenceRows("custom_unit_metadata_resources_partial_coverage_after_v0_77");
+    }
+
+    public static List<MappingEvidenceRow> allIsBuilderUseAsBuilderHotfixUpdatedRows() {
+        return allEvidenceRows("isbuilder_useasbuilder_hotfix_updated_rows_v0_77_1");
+    }
+
+    public static List<MappingEvidenceRow> allCustomUnitBuilderFieldValidationRows() {
+        return allEvidenceRows("custom_l_builder_fields_v0_77_1");
+    }
+
+    public static List<MappingEvidenceRow> allNamedFieldCollisionRows() {
+        return allEvidenceRows("named_field_collisions_v0_77_1");
+    }
+
+    public static List<MappingEvidenceRow> allNamedMethodCollisionRows() {
+        return allEvidenceRows("named_method_collisions_v0_77_1");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1205,6 +1241,18 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findModCustomPipelineUpdatedRows(String text) {
         return findByText(allModCustomPipelineUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomUnitMetadataResourcesRows(String text) {
+        return findByText(allCustomUnitMetadataResourcesRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomUnitMetadataResourcesUpdatedRows(String text) {
+        return findByText(allCustomUnitMetadataResourcesUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findIsBuilderUseAsBuilderHotfixUpdatedRows(String text) {
+        return findByText(allIsBuilderUseAsBuilderHotfixUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

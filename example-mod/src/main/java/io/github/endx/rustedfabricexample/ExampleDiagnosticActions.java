@@ -115,6 +115,9 @@ final class ExampleDiagnosticActions {
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
                             + " saveReplayRows=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataRows().size()
                             + " modRows=" + MappingEvidenceDiagnostics.allModCustomPipelineRows().size()
+                            + " metadataRows=" + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesRows().size()
+                            + " builderHotfix="
+                            + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
                     null);
         } catch (Throwable t) {
@@ -202,6 +205,21 @@ final class ExampleDiagnosticActions {
                             + " flow=" + MappingEvidenceDiagnostics.allModCustomPipelineFlowMap().size()
                             + " skipped=" + MappingEvidenceDiagnostics.allModCustomPipelineSkippedRows().size()
                             + " partial=" + MappingEvidenceDiagnostics.allModCustomPipelinePartialCoverageRows().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Metadata evidence rows="
+                            + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesSkippedRows().size()
+                            + " hotfix="
+                            + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRows().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);

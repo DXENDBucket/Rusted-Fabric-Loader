@@ -84,7 +84,65 @@ public final class CustomUnitDiagnostics {
         requireCustomUnitMetadata(metadata);
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         putFloatField(result, metadata, "nanoUnbuildSpeed", new String[]{"nanoUnbuildSpeed", "be"});
+        putField(result, metadata, "buildPrice", new String[]{"buildPrice", "ch"});
         putField(result, metadata, "reclaimPrice", new String[]{"reclaimPrice", "ci"});
+        putField(result, metadata, "streamingCost", new String[]{"streamingCost", "cj"});
+        putField(result, metadata, "generationResources", new String[]{"generationResources", "co"});
+        putIntField(result, metadata, "generationDelay", new String[]{"generationDelay", "cr"});
+        putBooleanField(result, metadata, "hasPeriodicResourceGeneration",
+                new String[]{"hasPeriodicResourceGeneration", "cn"});
+        putField(result, metadata, "generationResourcesPerSecond",
+                new String[]{"generationResourcesPerSecond", "cp"});
+        putField(result, metadata, "globalGenerationResourcesPerSecond",
+                new String[]{"globalGenerationResourcesPerSecond", "cq"});
+        putFloatField(result, metadata, "generationRateScale", new String[]{"generationRateScale", "cs"});
+        putField(result, metadata, "generationActiveLogic", new String[]{"generationActiveLogic", "cx"});
+        putField(result, metadata, "borrowResourcesWhileAlive", new String[]{"borrowResourcesWhileAlive", "cv"});
+        putField(result, metadata, "borrowResourcesWhileBuilt", new String[]{"borrowResourcesWhileBuilt", "cw"});
+        putField(result, metadata, "energyDisplayName", new String[]{"energyDisplayName", "cT"});
+        putField(result, metadata, "placementRules", new String[]{"placementRules", "ff"});
+        result.put("placementRulesFromGetter", invokeOrNull(metadata, new String[]{"getPlacementRules", "q"}));
+        putField(result, metadata, "showActionsWithMixedSelectionIfOtherUnitsHaveTag",
+                new String[]{"showActionsWithMixedSelectionIfOtherUnitsHaveTag", "fO"});
+        putField(result, metadata, "canOnlyBeAttackedByUnitsWithTags",
+                new String[]{"canOnlyBeAttackedByUnitsWithTags", "aS"});
+        putField(result, metadata, "unitsSpawnedOnDeath", new String[]{"unitsSpawnedOnDeath", "bC"});
+        putBooleanField(result, metadata, "hasMovementEffect", new String[]{"hasMovementEffect", "bL"});
+        putBooleanField(result, metadata, "hasRepairEffect", new String[]{"hasRepairEffect", "bS"});
+        putBooleanField(result, metadata, "hasReclaimEffect", new String[]{"hasReclaimEffect", "bW"});
+        putField(result, metadata, "movementType", new String[]{"movementType", "fg"});
+        putField(result, metadata, "pathingMovementType", new String[]{"pathingMovementType", "fh"});
+        putBooleanField(result, metadata, "isBuilder", new String[]{"isBuilder", "fp"});
+        putBooleanField(result, metadata, "useAsBuilder", new String[]{"useAsBuilder", "fq"});
+        putBooleanField(result, metadata, "useAsHarvester", new String[]{"useAsHarvester", "fr"});
+        putBooleanField(result, metadata, "useAsAttacker", new String[]{"useAsAttacker", "fs"});
+        putBooleanField(result, metadata, "useAsTransport", new String[]{"useAsTransport", "ft"});
+        putBooleanField(result, metadata, "hasBuildActions", new String[]{"hasBuildActions", "fu"});
+        putField(result, metadata, "aiTags", new String[]{"aiTags", "fv"});
+        putField(result, metadata, "onlyUseAsHarvesterIfBaseHasUnitTagged",
+                new String[]{"onlyUseAsHarvesterIfBaseHasUnitTagged", "fH"});
+        putBooleanField(result, metadata, "hasAiHighPriorityLogic", new String[]{"hasAiHighPriorityLogic", "fJ"});
+        putFloatField(result, metadata, "moveAccelerationSpeed", new String[]{"moveAccelerationSpeed", "dN"});
+        putFloatField(result, metadata, "moveDecelerationSpeed", new String[]{"moveDecelerationSpeed", "dO"});
+        putBooleanField(result, metadata, "ignoreMoveOrders", new String[]{"ignoreMoveOrders", "dP"});
+        putFloatField(result, metadata, "inverseMoveYAxisScaling",
+                new String[]{"inverseMoveYAxisScaling", "ek"});
+        putBooleanField(result, metadata, "landOnGround", new String[]{"landOnGround", "dQ"});
+        putBooleanField(result, metadata, "landOnGroundOnlyIdle", new String[]{"landOnGroundOnlyIdle", "dR"});
+        putFloatField(result, metadata, "turretSize", new String[]{"turretSize", "ea"});
+        putField(result, metadata, "attackMovement", new String[]{"attackMovement", "ec"});
+        putIntField(result, metadata, "mainTurretIndex", new String[]{"mainTurretIndex", "dG"});
+        putField(result, metadata, "canAttackFlyingUnits", new String[]{"canAttackFlyingUnits", "eq"});
+        putField(result, metadata, "canAttackLandUnits", new String[]{"canAttackLandUnits", "er"});
+        putField(result, metadata, "canAttackUnderwaterUnits",
+                new String[]{"canAttackUnderwaterUnits", "es"});
+        putField(result, metadata, "canAttackNotTouchingWaterUnits",
+                new String[]{"canAttackNotTouchingWaterUnits", "et"});
+        putField(result, metadata, "canOnlyAttackUnitsWithTags",
+                new String[]{"canOnlyAttackUnitsWithTags", "ev"});
+        putField(result, metadata, "canOnlyAttackUnitsWithoutTags",
+                new String[]{"canOnlyAttackUnitsWithoutTags", "ew"});
+        putBooleanField(result, metadata, "hasAttackTagFilters", new String[]{"hasAttackTagFilters", "eu"});
         putBooleanField(result, metadata, "canReclaimResources", new String[]{"canReclaimResources", "fk"});
         putIntField(result, metadata, "canReclaimResourcesNextSearchRange",
                 new String[]{"canReclaimResourcesNextSearchRange", "fm"});
@@ -95,7 +153,83 @@ public final class CustomUnitDiagnostics {
         putField(result, metadata, "canRepairUnitsOnlyWithTags",
                 new String[]{"canRepairUnitsOnlyWithTags", "fo"});
         putField(result, metadata, "similarResourcesHaveTag", new String[]{"similarResourcesHaveTag", "cH"});
+        putBooleanField(result, metadata, "usesCreditResourcesField", new String[]{"usesCreditResources", "gr"});
+        result.put("availableInDemo", Boolean.valueOf(metadataIsAvailableInDemo(metadata)));
+        result.put("locked", Boolean.valueOf(metadataIsLocked(metadata)));
+        result.put("building", Boolean.valueOf(metadataIsBuilding(metadata)));
+        result.put("ignoredInUnitCapCalculation",
+                Boolean.valueOf(metadataIsIgnoredInUnitCapCalculation(metadata)));
+        result.put("builderFromGetter", Boolean.valueOf(metadataIsBuilder(metadata)));
+        result.put("useAsBuilderFromGetter", Boolean.valueOf(metadataUseAsBuilder(metadata)));
+        result.put("useAsHarvesterFromGetter", Boolean.valueOf(metadataUseAsHarvester(metadata)));
+        result.put("placeOnlyOnResourcePool", Boolean.valueOf(metadataIsPlaceOnlyOnResourcePool(metadata)));
+        result.put("usesCreditResources", Boolean.valueOf(metadataUsesCreditResources(metadata)));
+        result.put("defaultAction", RustedReflection.invokeInstance(metadata,
+                new String[]{"getDefaultAction", "d"}));
+        putMethodCollection(result, metadata, "customUnitTypeIds", new String[]{"getCustomUnitTypeIds", "s"});
+        result.put("tags", RustedReflection.invokeInstance(metadata, new String[]{"getTags", "x"}));
         return Collections.unmodifiableMap(result);
+    }
+
+    public static Object getPlacementRules(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return RustedReflection.invokeInstance(metadata, new String[]{"getPlacementRules", "q"});
+    }
+
+    public static List<Object> customUnitTypeIds(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.invokeInstance(metadata, new String[]{"getCustomUnitTypeIds", "s"})));
+    }
+
+    public static Object getCustomUnitTags(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return RustedReflection.invokeInstance(metadata, new String[]{"getTags", "x"});
+    }
+
+    public static boolean metadataIsAvailableInDemo(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"isAvailableInDemo", "C"});
+    }
+
+    public static boolean metadataIsLocked(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"isLocked", "w"});
+    }
+
+    public static boolean metadataIsBuilding(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"isBuilding", "j"});
+    }
+
+    public static boolean metadataIsIgnoredInUnitCapCalculation(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"isIgnoredInUnitCapCalculation", "k"});
+    }
+
+    public static boolean metadataIsBuilder(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"isBuilder", "l"});
+    }
+
+    public static boolean metadataUseAsBuilder(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"useAsBuilder", "m"});
+    }
+
+    public static boolean metadataUseAsHarvester(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"useAsHarvester", "n"});
+    }
+
+    public static boolean metadataIsPlaceOnlyOnResourcePool(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"isPlaceOnlyOnResourcePool", "p"});
+    }
+
+    public static boolean metadataUsesCreditResources(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return invokeBooleanOrFalse(metadata, new String[]{"usesCreditResources", "y"});
     }
 
     public static Map<String, Object> describeTransportMetadata(Object metadata) {
@@ -754,6 +888,21 @@ public final class CustomUnitDiagnostics {
         Object value = RustedReflection.getFieldValue(owner, fieldNames);
         result.put(key, value);
         result.put(key + "Size", Integer.valueOf(RustedReflection.snapshotIterable(value).size()));
+    }
+
+    private static void putMethodCollection(Map<String, Object> result, Object owner, String key,
+                                            String[] methodNames) {
+        Object value = RustedReflection.invokeInstance(owner, methodNames);
+        result.put(key, value);
+        result.put(key + "Size", Integer.valueOf(RustedReflection.snapshotIterable(value).size()));
+    }
+
+    private static Object invokeOrNull(Object owner, String[] methodNames, Object... args) {
+        try {
+            return RustedReflection.invokeInstance(owner, methodNames, args);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     private static int modManagerListMethodSize(Object modManager, String[] methodNames) {

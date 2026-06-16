@@ -1,0 +1,5 @@
+area,candidate,reason
+CustomUnitMetadata,bg Z,set by construction animation and conversion-action paths; combined semantic not stable enough for v0.77
+CustomUnitMetadata,ex Z,derived from turret-level tag-filter analysis; exact predicate needs turret template pass
+CustomUnitMetadata,em/en I,derived from turret range/offset heuristics; names need turret-template evidence pass
+CustomUnitMetadata,d(int) ResourceAmount / b(int) int,interface overloads currently return build-price fields but parameter meaning is not proven
