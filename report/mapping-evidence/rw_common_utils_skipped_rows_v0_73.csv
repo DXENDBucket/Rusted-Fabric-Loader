@@ -1,0 +1,5 @@
+area,candidate,reason
+CommonUtils,d(FF)F random-float duplicate,Bytecode body duplicates randomFloat(FF) but call-site purpose does not distinguish the overload; left obfuscated to avoid alias noise
+CommonUtils,d(FFF) PointF scratch helper,"Only writes (x, y - z) into a shared PointF; semantic role is too local/ambiguous"
+CommonUtils,"b(Rect,float) asymmetric rect helper",Rect field interpretation at call sites is not strong enough for a stable name
+CommonUtils,remaining no-op / low-value static initializer details,Static table construction is documented by field names and evidence; <clinit> is intentionally unmapped

@@ -191,7 +191,7 @@ final class ExampleDebugOverlay {
         int sectionGap = 18;
         int groupRows = (DebugProbeGroup.values().length + 1) / 2;
         int renderRows = (DebugRenderPart.values().length + 1) / 2;
-        int actionRows = 7;
+        int actionRows = 8;
         int panelHeight = 14 + labelHeight + groupRows * rowHeight
                 + sectionGap + labelHeight + renderRows * rowHeight
                 + sectionGap + labelHeight + actionRows * rowHeight + 14;
@@ -351,6 +351,11 @@ final class ExampleDebugOverlay {
         if (drawSlickButton(graphics, input, left + cellWidth + gap, top + 168, cellWidth, 24,
                 "Profiler info")) {
             ExampleDiagnosticActions.showProfilerSnapshot("debug");
+        }
+
+        if (drawSlickButton(graphics, input, left, top + 196, cellWidth, 24,
+                "Common utils")) {
+            ExampleDiagnosticActions.showCommonUtilsSnapshot("debug");
         }
     }
 

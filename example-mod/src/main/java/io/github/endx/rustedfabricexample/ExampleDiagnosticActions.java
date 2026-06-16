@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CommonUtilsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CoreDebugStatsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
@@ -16,6 +17,9 @@ import io.github.endx.rustedfabricapi.api.diagnostic.SlickGraphicsBackendDiagnos
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -94,6 +98,7 @@ final class ExampleDiagnosticActions {
                             + " fsRows=" + MappingEvidenceDiagnostics.allFileSystemBackendRows().size()
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
                             + " slickRows=" + MappingEvidenceDiagnostics.allSlickGraphicsBackendRows().size()
+                            + " commonRows=" + MappingEvidenceDiagnostics.allCommonUtilsRows().size()
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
                             + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
@@ -112,6 +117,57 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("Evidence snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showCommonUtilsSnapshot(String stage) {
+        try {
+            Map<String, Object> state = CommonUtilsDiagnostics.describeCommonUtilsState();
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "CommonUtils rows=" + MappingEvidenceDiagnostics.allCommonUtilsRows().size()
+                            + " skipped=" + MappingEvidenceDiagnostics.allCommonUtilsSkippedRows().size()
+                            + " available=" + state.get("available")
+                            + " cpu=" + CommonUtilsDiagnostics.getCpuCoreCount()
+                            + " sqrtLut=" + state.get("sqrtIntLookupLength")
+                            + " trig=" + state.get("sinTableLength") + "/" + state.get("cosTableLength"),
+                    state.get("random"));
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Common math dist=" + CommonUtilsDiagnostics.formatFloat2dp(
+                            CommonUtilsDiagnostics.distance(0.0F, 0.0F, 3.0F, 4.0F))
+                            + " angle=" + CommonUtilsDiagnostics.formatFloat(
+                            CommonUtilsDiagnostics.angleTo(0.0F, 0.0F, 1.0F, 1.0F), 2)
+                            + " fastSin90=" + CommonUtilsDiagnostics.formatFloat(
+                            CommonUtilsDiagnostics.fastSin(90.0F), 3)
+                            + " clamp=" + CommonUtilsDiagnostics.clampInt(300, 0, 255),
+                    null);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Common text file=" + ExampleDebugOverlay.compactPath(
+                            CommonUtilsDiagnostics.fileNameWithoutExtension("maps/skirmish/[p4]demo.tmx"))
+                            + " parent=" + ExampleDebugOverlay.compactPath(
+                            CommonUtilsDiagnostics.parentPath("mods/example/units/demo.ini"))
+                            + " split=" + CommonUtilsDiagnostics.split("a,b,c", ',').length
+                            + " xml=" + ExampleDebugOverlay.safeText(
+                            CommonUtilsDiagnostics.escapeXml("<tag>${value}&")),
+                    null);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Common hash md5=" + ExampleDebugOverlay.safeText(
+                            CommonUtilsDiagnostics.md5Hex("Example").substring(0, 8))
+                            + " sha4=" + ExampleDebugOverlay.safeText(
+                            CommonUtilsDiagnostics.sha256HexShort4("Example"))
+                            + " join=" + ExampleDebugOverlay.compactPath(
+                            CommonUtilsDiagnostics.join("/", Arrays.asList("mods", "java", "unit.ini")))
+                            + " read=" + ExampleDebugOverlay.safeText(CommonUtilsDiagnostics.readInputStreamUtf8AndClose(
+                            new ByteArrayInputStream("utf8-ok".getBytes(StandardCharsets.UTF_8)))),
+                    null);
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "CommonUtils snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("CommonUtils snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 

@@ -858,6 +858,22 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("slick_graphics_backend_partial_coverage_after_v0_72");
     }
 
+    public static List<MappingEvidenceRow> allCommonUtilsRows() {
+        return allEvidenceRows("common_utils_added_rows_v0_73");
+    }
+
+    public static List<MappingEvidenceRow> allCommonUtilsUpdatedRows() {
+        return allEvidenceRows("common_utils_updated_rows_v0_73");
+    }
+
+    public static List<MappingEvidenceRow> allCommonUtilsFlowMap() {
+        return allEvidenceRows("common_utils_flow_map_v0_73");
+    }
+
+    public static List<MappingEvidenceRow> allCommonUtilsSkippedRows() {
+        return allEvidenceRows("common_utils_skipped_rows_v0_73");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1105,6 +1121,10 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findSlickGraphicsBackendRows(String text) {
         return findByText(allSlickGraphicsBackendRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCommonUtilsRows(String text) {
+        return findByText(allCommonUtilsRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

@@ -1,0 +1,6 @@
+flow,official_members,named_surface,evidence
+deterministic random,"f.a() / f.a(Unit,II) / f.a(Unit,FFI) / f.a(GameObject,III) / f.a(III)",resetDeterministicRandom and deterministicRandom* helpers,min>max / notRandInt guard strings and GameEngine frame/object id mixing
+math geometry,"sqrt, approach, clamp, distance, angle, fastAtan2, fastSin, fastCos descriptors","sqrtIntCached, approach, clamp, distanceSquared/distance, angleTo, fast trig helpers","sqrt lookup table, atan2 slow fallback log, 8192-entry sin/cos tables, Rect/RectF overlap tests"
+hash and text,MD5/SHA-256/UTF-8 helpers and string format/pad/split/escape descriptors,"md5Hex, sha256Hex*, escapeXml/unescapeXml, split, join, pad helpers","Literal algorithm names, XML entities, String.format patterns and custom char split bytecode"
+path and resources,"File(path).getName/getParent, R.drawable/R.raw reflection, path join helpers","fileName, fileNameWithoutExtension, parentPath, joinPath, resourceIdToPath",res/drawable and res/raw literals plus slash/backslash normalization
+IO and diagnostics,"InputStream/File read helpers, Exception message helpers, CPU core filter",copyStream/readFileUtf8/stackTraceToString/exceptionMessage/getCpuCoreCount,"8192-byte copy loop, UTF-8 Charset, printStackTrace StringWriter, cpu[0-9]+ FileFilter"
