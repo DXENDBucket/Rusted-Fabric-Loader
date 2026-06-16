@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.util.RustedReflection;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class CustomLogicDiagnostics {
@@ -94,6 +95,94 @@ public final class CustomLogicDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Map<String, Object> describeMutableUnitStats(Object stats) {
+        requireAny(stats, MUTABLE_UNIT_STATS_CLASSES, "MutableUnitStats");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", stats.getClass().getName());
+        putOptionalField(result, stats, "mutableCopy", new String[]{"mutableCopy", "a"});
+        putOptionalField(result, stats, "mass", new String[]{"mass", "b"});
+        putOptionalField(result, stats, "maxHp", new String[]{"maxHp", "c"});
+        putOptionalField(result, stats, "maxEnergy", new String[]{"maxEnergy", "d"});
+        putOptionalField(result, stats, "shootDelayMultiplier", new String[]{"shootDelayMultiplier", "e"});
+        putOptionalField(result, stats, "shootDamageMultiplier", new String[]{"shootDamageMultiplier", "f"});
+        putOptionalField(result, stats, "maxShield", new String[]{"maxShield", "g"});
+        putOptionalField(result, stats, "shieldRegen", new String[]{"shieldRegen", "h"});
+        putOptionalField(result, stats, "maxAttackRange", new String[]{"maxAttackRange", "i"});
+        putOptionalField(result, stats, "moveSpeed", new String[]{"moveSpeed", "j"});
+        putOptionalField(result, stats, "maxTurnSpeed", new String[]{"maxTurnSpeed", "k"});
+        putOptionalField(result, stats, "armour", new String[]{"armour", "l"});
+        putOptionalField(result, stats, "visibleToEnemies", new String[]{"visibleToEnemies", "m"});
+        putOptionalField(result, stats, "fogOfWarSightRange", new String[]{"fogOfWarSightRange", "n"});
+        putOptionalField(result, stats, "nanoRange", new String[]{"nanoRange", "o"});
+        putOptionalField(result, stats, "selfRegenRate", new String[]{"selfRegenRate", "p"});
+        putOptionalField(result, stats, "targetHeight", new String[]{"targetHeight", "q"});
+        putOptionalField(result, stats, "nanoFactorySpeed", new String[]{"nanoFactorySpeed", "r"});
+        Object allAccessors = optionalStaticField(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"mutableStatFieldsByName", "s"});
+        Object writableAccessors = optionalStaticField(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"mutableStatFieldsWritableByName", "t"});
+        result.put("mutableStatFieldsByName", allAccessors);
+        result.put("mutableStatFieldsByNameSize", Integer.valueOf(mapSize(allAccessors)));
+        result.put("mutableStatFieldsWritableByName", writableAccessors);
+        result.put("mutableStatFieldsWritableByNameSize", Integer.valueOf(mapSize(writableAccessors)));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Object getMutableStatAccessorById(int id) {
+        return RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"getMutableStatAccessorById", "a"}, Integer.valueOf(id));
+    }
+
+    public static List<Object> parseMutableStatAccessorList(String rawList, Object defaultAccessors) {
+        Object value = RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"parseMutableStatAccessorList", "a"}, rawList, defaultAccessors);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static List<Object> parseMutableStatAccessorListFromConfig(Object unitConfig, String section, String key,
+                                                                      Object defaultAccessors) {
+        if (unitConfig == null) {
+            throw new IllegalArgumentException("UnitConfig must not be null");
+        }
+        Object value = RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"parseMutableStatAccessorListFromConfig", "a"},
+                unitConfig, section, key, defaultAccessors);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static void applyMetadataStatsToUnit(Object customUnit, Object metadataStats, Object metadata) {
+        requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
+        requireAny(metadataStats, MUTABLE_UNIT_STATS_CLASSES, "MutableUnitStats");
+        RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"applyMetadataStatsToUnit", "a"}, customUnit, metadataStats, metadata);
+    }
+
+    public static void applyChangedStatsToUnit(Object customUnit, Object mutableStats, Object accessors) {
+        requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
+        requireAny(mutableStats, MUTABLE_UNIT_STATS_CLASSES, "MutableUnitStats");
+        RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"applyChangedStatsToUnit", "a"}, customUnit, mutableStats, accessors);
+    }
+
+    public static void writeRuntimeStatDelta(Object metadataStats, Object customUnit, Object outputStream) {
+        requireAny(metadataStats, MUTABLE_UNIT_STATS_CLASSES, "MutableUnitStats");
+        requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
+        if (outputStream == null) {
+            throw new IllegalArgumentException("GameOutputStream must not be null");
+        }
+        RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"writeRuntimeStatDelta", "a"}, metadataStats, customUnit, outputStream);
+    }
+
+    public static void readRuntimeStatDelta(Object customUnit, Object inputStream, int version) {
+        requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
+        if (inputStream == null) {
+            throw new IllegalArgumentException("GameInputStream must not be null");
+        }
+        RustedReflection.invokeStatic(MUTABLE_UNIT_STATS_CLASSES,
+                new String[]{"readRuntimeStatDelta", "a"}, customUnit, inputStream, Integer.valueOf(version));
+    }
+
     public static double readMutableStat(Object accessor, Object customUnit, Object metadataStats) {
         requireAny(accessor, MUTABLE_STAT_ACCESSOR_CLASSES, "MutableStatAccessor");
         requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
@@ -178,6 +267,18 @@ public final class CustomLogicDiagnostics {
             result.put(key, value != null ? value.toString() : null);
         } catch (RuntimeException ignored) {
         }
+    }
+
+    private static Object optionalStaticField(String[] classNames, String[] fieldNames) {
+        try {
+            return RustedReflection.getStaticFieldValue(classNames, fieldNames);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static int mapSize(Object value) {
+        return value instanceof Map<?, ?> ? ((Map<?, ?>) value).size() : 0;
     }
 
     private static void requireAny(Object value, String[] classNames, String label) {

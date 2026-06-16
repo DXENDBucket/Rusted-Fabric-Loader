@@ -33,6 +33,22 @@ public final class CustomUnitDiagnostics {
             "rustedwarfare.custom.CustomUnit",
             "com.corrodinggames.rts.game.units.custom.j"
     };
+    private static final String[] UNIT_CLASSES = {
+            "rustedwarfare.unit.Unit",
+            "com.corrodinggames.rts.game.units.am"
+    };
+    private static final String[] UNIT_ACTION_CLASSES = {
+            "rustedwarfare.unit.action.UnitAction",
+            "com.corrodinggames.rts.game.units.a.s"
+    };
+    private static final String[] UNIT_ACTION_ID_CLASSES = {
+            "rustedwarfare.unit.action.UnitActionId",
+            "com.corrodinggames.rts.game.units.a.c"
+    };
+    private static final String[] UNIT_TYPE_CLASSES = {
+            "rustedwarfare.unit.UnitType",
+            "com.corrodinggames.rts.game.units.as"
+    };
     private static final String[] CUSTOM_UNIT_METADATA_CLASSES = {
             "rustedwarfare.custom.CustomUnitMetadata",
             "com.corrodinggames.rts.game.units.custom.l"
@@ -44,6 +60,18 @@ public final class CustomUnitDiagnostics {
     private static final String[] LEG_RUNTIME_STATE_CLASSES = {
             "rustedwarfare.custom.runtime.LegRuntimeState",
             "com.corrodinggames.rts.game.units.custom.b.i"
+    };
+    private static final String[] LOCALIZED_STRING_CLASSES = {
+            "rustedwarfare.custom.LocalizedString",
+            "com.corrodinggames.rts.game.units.custom.aj"
+    };
+    private static final String[] LOCALIZED_STRING_DATA_CLASSES = {
+            "rustedwarfare.custom.LocalizedStringData",
+            "com.corrodinggames.rts.game.units.custom.bb"
+    };
+    private static final String[] LOCALIZED_STRING_ENTRY_CLASSES = {
+            "rustedwarfare.custom.LocalizedStringEntry",
+            "com.corrodinggames.rts.game.units.custom.bc"
     };
     private static final String[] ATTACHMENT_SLOT_CLASSES = {
             "rustedwarfare.custom.attachment.AttachmentSlot",
@@ -409,6 +437,213 @@ public final class CustomUnitDiagnostics {
     public static void markLegsForFalling(Object customUnit) {
         requireCustomUnit(customUnit);
         RustedReflection.invokeInstance(customUnit, new String[]{"markLegsForFalling", "dB"});
+    }
+
+    public static Object emptyLocalizedString() {
+        return RustedReflection.getStaticFieldValue(LOCALIZED_STRING_CLASSES, new String[]{"EMPTY", "a"});
+    }
+
+    public static Object localizedStringFromLiteral(String text) {
+        return RustedReflection.invokeStatic(LOCALIZED_STRING_CLASSES,
+                new String[]{"fromLiteral", "a"}, text);
+    }
+
+    public static Object localizedStringFromData(Object data) {
+        requireLocalizedStringData(data);
+        return RustedReflection.invokeStatic(LOCALIZED_STRING_CLASSES,
+                new String[]{"fromData", "a"}, data);
+    }
+
+    public static boolean isLocalizedString(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), LOCALIZED_STRING_CLASSES);
+    }
+
+    public static Map<String, Object> describeLocalizedString(Object localizedString) {
+        requireLocalizedString(localizedString);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", localizedString.getClass().getName());
+        putField(result, localizedString, "dynamicTextResolvers",
+                new String[]{"dynamicTextResolvers", "b"});
+        result.put("dynamicTextResolversSize", Integer.valueOf(dynamicTextResolvers(localizedString).size()));
+        putField(result, localizedString, "localizedEntries", new String[]{"localizedEntries", "c"});
+        result.put("localizedEntriesSize", Integer.valueOf(localizedStringEntries(localizedString).size()));
+        putField(result, localizedString, "cachedText", new String[]{"cachedText", "d"});
+        putIntField(result, localizedString, "cachedLocaleVersion",
+                new String[]{"cachedLocaleVersion", "e"});
+        putField(result, localizedString, "translationKey", new String[]{"translationKey", "f"});
+        putField(result, localizedString, "dynamicParseError", new String[]{"dynamicParseError", "g"});
+        putField(result, localizedString, "metadata", new String[]{"metadata", "h"});
+        result.put("staticText", resolveStaticLocalizedText(localizedString));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static List<Object> dynamicTextResolvers(Object localizedString) {
+        requireLocalizedString(localizedString);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(localizedString, new String[]{"dynamicTextResolvers", "b"})));
+    }
+
+    public static List<Object> localizedStringEntries(Object localizedString) {
+        requireLocalizedString(localizedString);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(localizedString, new String[]{"localizedEntries", "c"})));
+    }
+
+    public static void refreshTextAndDynamicResolvers(Object localizedString) {
+        requireLocalizedString(localizedString);
+        RustedReflection.invokeInstance(localizedString, new String[]{"refreshTextAndDynamicResolvers", "a"});
+    }
+
+    public static void refreshTextAndDynamicResolvers(Object localizedString, boolean forceDynamicParse) {
+        requireLocalizedString(localizedString);
+        RustedReflection.invokeInstance(localizedString, new String[]{"refreshTextAndDynamicResolvers", "a"},
+                Boolean.valueOf(forceDynamicParse));
+    }
+
+    public static List<Object> parseDynamicTextResolvers(Object localizedString, String text,
+                                                         boolean requireUnitContext) {
+        requireLocalizedString(localizedString);
+        Object value = RustedReflection.invokeInstance(localizedString,
+                new String[]{"parseDynamicTextResolvers", "a"}, text, Boolean.valueOf(requireUnitContext));
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static String resolveDynamicTextForUnit(Object localizedString, Object unit) {
+        requireLocalizedString(localizedString);
+        if (unit != null) {
+            requireUnit(unit);
+        }
+        return invokeString(localizedString, new String[]{"resolveDynamicTextForUnit", "a"}, unit);
+    }
+
+    public static String resolveLocalizedTextForUnit(Object localizedString, Object unit) {
+        requireLocalizedString(localizedString);
+        if (unit != null) {
+            requireUnit(unit);
+        }
+        return invokeString(localizedString, new String[]{"resolveForUnit", "b"}, unit);
+    }
+
+    public static String resolveStaticLocalizedText(Object localizedString) {
+        requireLocalizedString(localizedString);
+        return invokeString(localizedString, new String[]{"resolveStaticText", "b"});
+    }
+
+    public static void refreshLocalizedText(Object localizedString) {
+        requireLocalizedString(localizedString);
+        RustedReflection.invokeInstance(localizedString, new String[]{"refreshLocalizedText", "c"});
+    }
+
+    public static Map<String, Object> describeLocalizedStringData(Object data) {
+        requireLocalizedStringData(data);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", data.getClass().getName());
+        putField(result, data, "entries", new String[]{"entries", "b"});
+        result.put("entriesSize", Integer.valueOf(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(data, new String[]{"entries", "b"})).size()));
+        putField(result, data, "cachedText", new String[]{"cachedText", "c"});
+        putIntField(result, data, "cachedLocaleVersion", new String[]{"cachedLocaleVersion", "d"});
+        putField(result, data, "translationKey", new String[]{"translationKey", "e"});
+        result.put("empty", Boolean.valueOf(invokeBooleanOrFalse(data, new String[]{"isEmpty", "a"})));
+        result.put("resolved", invokeString(data, new String[]{"resolve", "b"}));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeLocalizedStringEntry(Object entry) {
+        requireLocalizedStringEntry(entry);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", entry.getClass().getName());
+        putField(result, entry, "locale", new String[]{"locale", "a"});
+        putField(result, entry, "text", new String[]{"text", "b"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeCurrentActionContext() {
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("currentActionTargetPoint",
+                RustedReflection.getStaticFieldValue(CUSTOM_UNIT_CLASSES,
+                        new String[]{"currentActionTargetPoint", "dM"}));
+        result.put("currentActionTargetUnit",
+                RustedReflection.getStaticFieldValue(CUSTOM_UNIT_CLASSES,
+                        new String[]{"currentActionTargetUnit", "dN"}));
+        result.put("currentActionRepeatedCount", Integer.valueOf(((Number)
+                RustedReflection.getStaticFieldValue(CUSTOM_UNIT_CLASSES,
+                        new String[]{"currentActionRepeatedCount", "dO"})).intValue()));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeCustomUnitActionRuntime(Object customUnit) {
+        requireCustomUnit(customUnit);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.putAll(describeCurrentActionContext());
+        putFloatField(result, customUnit, "generationDelayTimer", new String[]{"generationDelayTimer", "o"});
+        putBooleanField(result, customUnit, "generationResourcesActive",
+                new String[]{"generationResourcesActive", "p"});
+        putFloatField(result, customUnit, "updateUnitMemoryTimer", new String[]{"updateUnitMemoryTimer", "q"});
+        putField(result, customUnit, "upgradeActionScratchList",
+                new String[]{"upgradeActionScratchList", "dU"});
+        result.put("actionsForCurrentMetadataSize",
+                Integer.valueOf(getActionsForCurrentMetadata(customUnit).size()));
+        result.put("upgradeActionsSize", Integer.valueOf(getUpgradeActions(customUnit).size()));
+        result.put("firstUpgradeActionId", getFirstUpgradeActionId(customUnit));
+        result.put("secondaryUpgradeActionIdsSize",
+                Integer.valueOf(collectSecondaryUpgradeActionIds(customUnit).size()));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static List<Object> getActionsForCurrentMetadata(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.invokeInstance(customUnit,
+                        new String[]{"getActionsForCurrentMetadata", "N"})));
+    }
+
+    public static Object findActionById(Object customUnit, Object actionId) {
+        requireCustomUnit(customUnit);
+        requireUnitActionId(actionId);
+        return RustedReflection.invokeInstance(customUnit,
+                new String[]{"findActionById", "a"}, actionId);
+    }
+
+    public static Object findBuildQueueActionForUnitType(Object customUnit, Object unitType) {
+        requireCustomUnit(customUnit);
+        requireUnitType(unitType);
+        return RustedReflection.invokeInstance(customUnit,
+                new String[]{"findBuildQueueActionForUnitType", "e"}, unitType);
+    }
+
+    public static boolean checkTargetedActionOrder(Object customUnit, Object action, float x, float y) {
+        requireCustomUnit(customUnit);
+        requireUnitAction(action);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(customUnit,
+                new String[]{"checkTargetedActionOrder", "a"},
+                action, Float.valueOf(x), Float.valueOf(y)));
+    }
+
+    public static void onTargetedActionQueued(Object customUnit, Object action, boolean queued, float x, float y) {
+        requireCustomUnit(customUnit);
+        requireUnitAction(action);
+        RustedReflection.invokeInstance(customUnit, new String[]{"onTargetedActionQueued", "a"},
+                action, Boolean.valueOf(queued), Float.valueOf(x), Float.valueOf(y));
+    }
+
+    public static List<Object> getUpgradeActions(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.invokeInstance(customUnit, new String[]{"getUpgradeActions", "dC"})));
+    }
+
+    public static Object getFirstUpgradeActionId(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.invokeInstance(customUnit, new String[]{"getFirstUpgradeActionId", "cm"});
+    }
+
+    public static List<Object> collectSecondaryUpgradeActionIds(Object customUnit) {
+        requireCustomUnit(customUnit);
+        ArrayList<Object> result = new ArrayList<Object>();
+        RustedReflection.invokeInstance(customUnit,
+                new String[]{"collectSecondaryUpgradeActionIds", "a"}, result);
+        return Collections.unmodifiableList(result);
     }
 
     public static Map<String, Object> describeTransportMetadata(Object metadata) {
@@ -1134,6 +1369,22 @@ public final class CustomUnitDiagnostics {
         requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
     }
 
+    private static void requireUnit(Object unit) {
+        requireAny(unit, UNIT_CLASSES, "Unit");
+    }
+
+    private static void requireUnitAction(Object action) {
+        requireAny(action, UNIT_ACTION_CLASSES, "UnitAction");
+    }
+
+    private static void requireUnitActionId(Object actionId) {
+        requireAny(actionId, UNIT_ACTION_ID_CLASSES, "UnitActionId");
+    }
+
+    private static void requireUnitType(Object unitType) {
+        requireAny(unitType, UNIT_TYPE_CLASSES, "UnitType");
+    }
+
     private static void requireCustomUnitMetadata(Object metadata) {
         requireAny(metadata, CUSTOM_UNIT_METADATA_CLASSES, "CustomUnitMetadata");
     }
@@ -1144,6 +1395,18 @@ public final class CustomUnitDiagnostics {
 
     private static void requireLegRuntimeState(Object state) {
         requireAny(state, LEG_RUNTIME_STATE_CLASSES, "LegRuntimeState");
+    }
+
+    private static void requireLocalizedString(Object localizedString) {
+        requireAny(localizedString, LOCALIZED_STRING_CLASSES, "LocalizedString");
+    }
+
+    private static void requireLocalizedStringData(Object data) {
+        requireAny(data, LOCALIZED_STRING_DATA_CLASSES, "LocalizedStringData");
+    }
+
+    private static void requireLocalizedStringEntry(Object entry) {
+        requireAny(entry, LOCALIZED_STRING_ENTRY_CLASSES, "LocalizedStringEntry");
     }
 
     private static void requireAttachmentSlot(Object attachmentSlot) {

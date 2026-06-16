@@ -16,6 +16,10 @@ public final class UnitRuntimeDiagnostics {
             "rustedwarfare.unit.OrderableUnit",
             "com.corrodinggames.rts.game.units.y"
     };
+    private static final String[] UNIT_ACTION_CLASSES = {
+            "rustedwarfare.unit.action.UnitAction",
+            "com.corrodinggames.rts.game.units.a.s"
+    };
 
     private UnitRuntimeDiagnostics() {
     }
@@ -294,6 +298,21 @@ public final class UnitRuntimeDiagnostics {
                 searcher, Float.valueOf(x), Float.valueOf(y), Float.valueOf(range), requiredTags);
     }
 
+    public static boolean checkTargetedActionOrder(Object unit, Object action, float x, float y) {
+        requireOrderableUnit(unit);
+        requireUnitAction(action);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(unit,
+                new String[]{"checkTargetedActionOrder", "a"},
+                action, Float.valueOf(x), Float.valueOf(y)));
+    }
+
+    public static void onTargetedActionQueued(Object unit, Object action, boolean queued, float x, float y) {
+        requireOrderableUnit(unit);
+        requireUnitAction(action);
+        RustedReflection.invokeInstance(unit, new String[]{"onTargetedActionQueued", "a"},
+                action, Boolean.valueOf(queued), Float.valueOf(x), Float.valueOf(y));
+    }
+
     public static int getDeathSmokeParticleCount(Object unit) {
         requireOrderableUnit(unit);
         Object value = RustedReflection.invokeInstance(unit, new String[]{"getDeathSmokeParticleCount", "bp"});
@@ -327,6 +346,15 @@ public final class UnitRuntimeDiagnostics {
         }
         if (!RustedReflection.isAnyClass(unit.getClass(), ORDERABLE_UNIT_CLASSES)) {
             throw new IllegalArgumentException("Expected OrderableUnit, got " + unit.getClass().getName());
+        }
+    }
+
+    private static void requireUnitAction(Object action) {
+        if (action == null) {
+            throw new IllegalArgumentException("UnitAction must not be null");
+        }
+        if (!RustedReflection.isAnyClass(action.getClass(), UNIT_ACTION_CLASSES)) {
+            throw new IllegalArgumentException("Expected UnitAction, got " + action.getClass().getName());
         }
     }
 

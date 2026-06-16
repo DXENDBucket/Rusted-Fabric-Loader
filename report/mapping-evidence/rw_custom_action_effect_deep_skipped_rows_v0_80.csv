@@ -1,0 +1,7 @@
+area,candidate,reason
+custom-action-method,CustomAction.F()Z / UnitAction.F()Z,"CustomAction returns true and proxy delegates, but no non-proxy runtime consumer was found; leave the action-contract name for a later branch."
+localized-string-constructors,LocalizedString.<init> overloads,constructors are obvious but add little semantic value; v0.80 maps the factories and resolver methods instead.
+mutable-stats-constructor,MutableUnitStats.<init>(boolean),constructor only initializes default multipliers and mutableCopy; existing field names already capture the semantics.
+mutable-stats-clone,MutableUnitStats.clone()Object,synthetic bridge to mutableClone; not useful enough to map in this pass.
+action-effect-clinit,WaypointActionEffect/MessageActionEffect/TakeResourcesActionEffect <clinit>,static scratch/pattern initialization only; already covered by named fields and execute/parse methods.
+custom-unit-broad-runtime,CustomUnit draw/animation scratch fields around dP-dS,off-topic for action/effect deep branch and better handled with render/animation evidence.

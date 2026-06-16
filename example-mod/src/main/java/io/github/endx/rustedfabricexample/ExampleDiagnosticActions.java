@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.FileSystemDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.GameEngineDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommonUtilsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CoreDebugStatsDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.CustomLogicDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
@@ -120,6 +121,8 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectRows().size()
                             + " attachLegRows="
                             + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeRows().size()
+                            + " actionDeepRows="
+                            + MappingEvidenceDiagnostics.allCustomActionEffectDeepRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -256,6 +259,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV079().size(),
                     modManager);
 
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Custom action/effect evidence rows="
+                            + MappingEvidenceDiagnostics.allCustomActionEffectDeepRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allCustomActionEffectDeepUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allCustomActionEffectDeepFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allCustomActionEffectDeepSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allCustomActionEffectDeepPartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV080().size(),
+                    modManager);
+
             int limit = Math.min(mods.size(), 3);
             for (int i = 0; i < limit; i++) {
                 Object mod = mods.get(i);
@@ -282,6 +300,7 @@ final class ExampleDiagnosticActions {
                     modManager);
 
             showAutoTriggerParserProbe(stage);
+            showCustomActionEffectProbe(stage);
         } catch (Throwable t) {
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
                     "Mod snapshot failed: " + t.getClass().getSimpleName()
@@ -386,6 +405,32 @@ final class ExampleDiagnosticActions {
         }
     }
 
+    private static void showCustomActionEffectProbe(String stage) {
+        try {
+            Object text = CustomUnitDiagnostics.localizedStringFromLiteral("Example localized text");
+            Map<String, Object> textDetails = CustomUnitDiagnostics.describeLocalizedString(text);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "LocalizedString static="
+                            + ExampleDebugOverlay.safeText(String.valueOf(textDetails.get("staticText")))
+                            + " entries=" + textDetails.get("localizedEntriesSize")
+                            + " dynamic=" + textDetails.get("dynamicTextResolversSize")
+                            + " cache=" + textDetails.get("cachedLocaleVersion"),
+                    text);
+
+            List<Object> mutableFields = CustomLogicDiagnostics.parseMutableStatAccessorList("mass,maxHp", null);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "MutableUnitStats parsedFields=" + mutableFields.size()
+                            + " first=" + ExampleDebugOverlay.describeObject(
+                            mutableFields.isEmpty() ? null : mutableFields.get(0)),
+                    mutableFields.isEmpty() ? null : mutableFields.get(0));
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Custom action/effect probe failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+        }
+    }
+
     static void showHudSnapshot(String stage) {
         try {
             Object interfaceEngine = GameEngineDiagnostics.currentInterfaceEngine();
@@ -431,7 +476,8 @@ final class ExampleDiagnosticActions {
                             + " updated=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualUpdatedRows().size()
                             + " flow=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualFlowMap().size()
                             + " skipped=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualSkippedRows().size()
-                            + " partial=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualPartialCoverageRows().size(),
+                            + " partial=" + MappingEvidenceDiagnostics.allUnitActionCommandResidualPartialCoverageRows().size()
+                            + " deep=" + MappingEvidenceDiagnostics.allCustomActionEffectDeepRows().size(),
                     interfaceEngine);
 
             showHudActionSummary(stage, "attackMove", hud.get("attackMoveAction"));
@@ -1149,7 +1195,8 @@ final class ExampleDiagnosticActions {
                             + " id=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("actionIdString")))
                             + " text=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("text")))
                             + " cmd=" + details.get("actionCommandType")
-                            + " display=" + details.get("displayType"),
+                            + " display=" + details.get("displayType")
+                            + " targetPoint=" + details.get("usesActionTargetPoint"),
                     action);
 
             Object filter = details.get("availabilityFilter");

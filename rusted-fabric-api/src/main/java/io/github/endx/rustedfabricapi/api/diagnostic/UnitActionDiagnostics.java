@@ -77,6 +77,10 @@ public final class UnitActionDiagnostics {
             "rustedwarfare.unit.action.GroupedUnitInfoAction",
             "com.corrodinggames.rts.game.units.a.z"
     };
+    private static final String[] CUSTOM_ACTION_CLASSES = {
+            "rustedwarfare.custom.action.CustomAction",
+            "com.corrodinggames.rts.game.units.custom.a.g"
+    };
     private static final String[] UNIT_CLASSES = {
             "rustedwarfare.unit.Unit",
             "com.corrodinggames.rts.game.units.am"
@@ -163,6 +167,10 @@ public final class UnitActionDiagnostics {
         return isAny(value, GROUPED_UNIT_INFO_ACTION_CLASSES);
     }
 
+    public static boolean isCustomAction(Object value) {
+        return isAny(value, CUSTOM_ACTION_CLASSES);
+    }
+
     public static Map<String, Object> describeUnitAction(Object action) {
         requireAny(action, UNIT_ACTION_CLASSES, "UnitAction");
         Map<String, Object> result = new LinkedHashMap<String, Object>();
@@ -179,6 +187,7 @@ public final class UnitActionDiagnostics {
         result.put("filteredUnitAction", Boolean.valueOf(isFilteredUnitAction(action)));
         result.put("selectedUnitInfoAction", Boolean.valueOf(isSelectedUnitInfoAction(action)));
         result.put("groupedUnitInfoAction", Boolean.valueOf(isGroupedUnitInfoAction(action)));
+        result.put("customAction", Boolean.valueOf(isCustomAction(action)));
         putOptionalField(result, action, "actionIdField", new String[]{"actionId", "a"});
         putOptionalField(result, action, "cachedCreditPrice", new String[]{"cachedCreditPrice", "b"});
         putOptionalFloatField(result, action, "displayPriority", new String[]{"displayPriority", "g"});
@@ -195,6 +204,7 @@ public final class UnitActionDiagnostics {
         result.put("buildAction", Boolean.valueOf(invokeBooleanOrFalse(action, new String[]{"isBuildAction", "g"})));
         result.put("showText", Boolean.valueOf(invokeBooleanOrFalse(action, new String[]{"shouldShowText", "h_"})));
         result.put("queuedAction", Boolean.valueOf(invokeBooleanOrFalse(action, new String[]{"isQueuedAction", "u"})));
+        result.put("usesActionTargetPoint", Boolean.valueOf(usesActionTargetPoint(action)));
         result.put("buildUnitType", invokeOrNull(action, new String[]{"getBuildUnitType", "i"}));
         result.put("guiBuildUnitType", invokeOrNull(action, new String[]{"getGuiBuildUnitType", "y"}));
         if (isAttackModeAction(action)) {
@@ -215,7 +225,16 @@ public final class UnitActionDiagnostics {
         if (isGroupedUnitInfoAction(action)) {
             result.put("groupedUnitInfoDetails", describeGroupedUnitInfoAction(action));
         }
+        if (isCustomAction(action)) {
+            result.put("customActionDetails", describeCustomAction(action));
+        }
         return Collections.unmodifiableMap(result);
+    }
+
+    public static boolean usesActionTargetPoint(Object action) {
+        requireAny(action, UNIT_ACTION_CLASSES, "UnitAction");
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(action,
+                new String[]{"usesActionTargetPoint", "A"}));
     }
 
     public static Map<String, Object> describeActionId(Object actionId) {
@@ -436,6 +455,24 @@ public final class UnitActionDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Map<String, Object> describeCustomAction(Object action) {
+        requireAny(action, CUSTOM_ACTION_CLASSES, "CustomAction");
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", action.getClass().getName());
+        putOptionalField(result, action, "config", new String[]{"config", "a"});
+        putOptionalField(result, action, "unitTypeReference", new String[]{"unitTypeReference", "b"});
+        putOptionalField(result, action, "aiUse", new String[]{"aiUse", "c"});
+        result.put("usesActionTargetPoint", Boolean.valueOf(usesActionTargetPoint(action)));
+        result.put("price", invokeOrNull(action, new String[]{"getPrice", "B"}));
+        result.put("aiConsiderSameAsBuildingUnitType",
+                invokeOrNull(action, new String[]{"getAiConsiderSameAsBuildingUnitType", "E"}));
+        result.put("highPriorityQueue", Boolean.valueOf(invokeBooleanOrFalse(action,
+                new String[]{"isHighPriorityQueue", "H"})));
+        result.put("onlyOneUnitAtATime", Boolean.valueOf(invokeBooleanOrFalse(action,
+                new String[]{"isOnlyOneUnitAtATime", "I"})));
+        return Collections.unmodifiableMap(result);
+    }
+
     public static void refreshSelectedUnitTypeCache(Object action) {
         requireAny(action, GROUPED_UNIT_INFO_ACTION_CLASSES, "GroupedUnitInfoAction");
         RustedReflection.invokeInstance(action, new String[]{"refreshSelectedUnitTypeCache", "K"});
@@ -474,6 +511,9 @@ public final class UnitActionDiagnostics {
         }
         if (isGroupedUnitInfoAction(action)) {
             return "GroupedUnitInfoAction";
+        }
+        if (isCustomAction(action)) {
+            return "CustomAction";
         }
         return isUnitAction(action) ? "UnitAction" : "unknown";
     }
