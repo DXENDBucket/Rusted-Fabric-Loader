@@ -894,6 +894,26 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("unit_action_command_residual_partial_coverage_after_v0_74");
     }
 
+    public static List<MappingEvidenceRow> allSaveReplayVersionedDataRows() {
+        return allEvidenceRows("save_replay_versioned_data_added_rows_v0_75");
+    }
+
+    public static List<MappingEvidenceRow> allSaveReplayVersionedDataUpdatedRows() {
+        return allEvidenceRows("save_replay_versioned_data_updated_rows_v0_75");
+    }
+
+    public static List<MappingEvidenceRow> allSaveReplayVersionedDataFlowMap() {
+        return allEvidenceRows("save_replay_versioned_data_flow_map_v0_75");
+    }
+
+    public static List<MappingEvidenceRow> allSaveReplayVersionedDataSkippedRows() {
+        return allEvidenceRows("save_replay_versioned_data_skipped_rows_v0_75");
+    }
+
+    public static List<MappingEvidenceRow> allSaveReplayVersionedDataPartialCoverageRows() {
+        return allEvidenceRows("save_replay_versioned_data_partial_coverage_after_v0_75");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1149,6 +1169,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findUnitActionCommandResidualRows(String text) {
         return findByText(allUnitActionCommandResidualRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findSaveReplayVersionedDataRows(String text) {
+        return findByText(allSaveReplayVersionedDataRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findSaveReplayVersionedDataUpdatedRows(String text) {
+        return findByText(allSaveReplayVersionedDataUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

@@ -13,6 +13,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.ReplayChecksumDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickGraphicsBackendDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
@@ -111,6 +112,7 @@ final class ExampleDiagnosticActions {
                             + " glTextRows=" + MappingEvidenceDiagnostics.allRenderGlTextRows().size()
                             + " inputHotfix=" + MappingEvidenceDiagnostics.allInputActionNamingHotfixRows().size()
                             + " uiRows=" + MappingEvidenceDiagnostics.allLibRocketUiScriptSurfaceRows().size()
+                            + " saveReplayRows=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
                     null);
         } catch (Throwable t) {
@@ -170,6 +172,79 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("CommonUtils snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showReplaySnapshot(String stage) {
+        try {
+            Object replayEngine = ReplayChecksumDiagnostics.currentReplayEngine();
+            if (replayEngine == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage, "Replay engine unavailable", null);
+                return;
+            }
+
+            Map<String, Object> replay = ReplayChecksumDiagnostics.describeReplayEngine(replayEngine);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Replay active=" + replay.get("isActive")
+                            + " replaying=" + replay.get("isReplaying")
+                            + " recording=" + replay.get("isRecording")
+                            + " ended=" + replay.get("playbackEnded")
+                            + " file=" + ExampleDebugOverlay.safeText(String.valueOf(replay.get("currentReplayFileName")))
+                            + " folder=" + ExampleDebugOverlay.compactPath(String.valueOf(replay.get("replayFolderPath"))),
+                    replayEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Replay streams in=" + ExampleDebugOverlay.describeObject(replay.get("inputStream"))
+                            + " rawIn=" + ExampleDebugOverlay.describeObject(replay.get("rawInputStream"))
+                            + " dataIn=" + ExampleDebugOverlay.describeObject(replay.get("dataInputStream"))
+                            + " out=" + ExampleDebugOverlay.describeObject(replay.get("outputStream"))
+                            + " rawOut=" + ExampleDebugOverlay.describeObject(replay.get("rawOutputStream"))
+                            + " writerThread=" + ExampleDebugOverlay.describeObject(replay.get("writerThreadHandle")),
+                    replayEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Replay checksum cmdsSince=" + replay.get("commandsSinceQuickChecksum")
+                            + " mismatches=" + replay.get("checksumMismatchCount")
+                            + " warned=" + replay.get("shownOutOfSyncWarning")
+                            + " extraLogged=" + replay.get("extraChecksumInfoLogged")
+                            + " lastFrame=" + replay.get("lastReadReplayCommandFrame")
+                            + " readCount=" + replay.get("readReplayCommandCount")
+                            + " debugId=" + replay.get("replayCommandDebugId"),
+                    replayEngine);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "SaveReplay evidence rows=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataRows().size()
+                            + " updated=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataUpdatedRows().size()
+                            + " flow=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataFlowMap().size()
+                            + " skipped=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataSkippedRows().size()
+                            + " partial=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataPartialCoverageRows().size(),
+                    replayEngine);
+
+            Object checksum = replay.get("networkChecksum");
+            if (checksum != null) {
+                Map<String, Object> checksumDetails = ReplayChecksumDiagnostics.describeNetworkChecksum(checksum);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Replay checksum total=" + checksumDetails.get("totalChecksum")
+                                + " entries=" + checksumDetails.get("entriesSize"),
+                        checksum);
+            }
+
+            Object writerThread = replay.get("writerThread");
+            if (writerThread != null) {
+                Map<String, Object> writer = ReplayChecksumDiagnostics.describeReplayWriterThread(writerThread);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Replay writer running=" + writer.get("running")
+                                + " queue=" + writer.get("queueSize")
+                                + " finished=" + writer.get("finishedWriting")
+                                + " lastFrame=" + writer.get("lastQueuedFrame"),
+                        writerThread);
+            }
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Replay snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Replay snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 

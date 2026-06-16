@@ -26,6 +26,10 @@ public final class ReplayChecksumDiagnostics {
             "rustedwarfare.replay.ReplayChatMessage",
             "com.corrodinggames.rts.gameFramework.bc"
     };
+    private static final String[] TEXT_GAME_OUTPUT_STREAM_CLASSES = {
+            "rustedwarfare.io.TextGameOutputStream",
+            "com.corrodinggames.rts.gameFramework.j.aw"
+    };
     private static final String[] NETWORK_CHECKSUM_CLASSES = {
             "rustedwarfare.network.NetworkChecksum",
             "com.corrodinggames.rts.gameFramework.j.ak"
@@ -45,12 +49,14 @@ public final class ReplayChecksumDiagnostics {
         putField(result, replayEngine, "outputStream", new String[]{"outputStream", "J"});
         putField(result, replayEngine, "writerThread", new String[]{"writerThread", "K"});
         putField(result, replayEngine, "writerLock", new String[]{"writerLock", "M"});
-        putBooleanField(result, replayEngine, "allowRecording", new String[]{"allowRecording", "N"});
-        putBooleanField(result, replayEngine, "allowPlayback", new String[]{"allowPlayback", "O"});
-        putField(result, replayEngine, "currentReplayName", new String[]{"currentReplayName", "a"});
+        putBooleanField(result, replayEngine, "loadingReplayInitialSave",
+                new String[]{"loadingReplayInitialSave", "N"});
+        putBooleanField(result, replayEngine, "replayGameSetupRead",
+                new String[]{"replayGameSetupRead", "O"});
+        putField(result, replayEngine, "replayFolderPath", new String[]{"replayFolderPath", "a"});
         putField(result, replayEngine, "networkChecksum", new String[]{"networkChecksum", "g"});
-        putBooleanField(result, replayEngine, "legacyRecordingFlag", new String[]{"recording", "h"});
-        putBooleanField(result, replayEngine, "legacyReplayingFlag", new String[]{"replaying", "n"});
+        putBooleanField(result, replayEngine, "recordingFlag", new String[]{"recording", "h"});
+        putBooleanField(result, replayEngine, "replayingFlag", new String[]{"replaying", "n"});
         putField(result, replayEngine, "currentEntry", new String[]{"currentEntry", "w"});
         putField(result, replayEngine, "nextEntry", new String[]{"nextEntry", "x"});
         putBooleanField(result, replayEngine, "active", new String[]{"active", "P"});
@@ -60,6 +66,34 @@ public final class ReplayChecksumDiagnostics {
         putIntField(result, replayEngine, "issuedReplayCommandCount", new String[]{"issuedReplayCommandCount", "z"});
         putIntField(result, replayEngine, "replaySaveVersion", new String[]{"replaySaveVersion", "q"});
         putField(result, replayEngine, "replayVersionString", new String[]{"replayVersionString", "r"});
+        putBooleanField(result, replayEngine, "logReplayPlaybackSchedule",
+                new String[]{"logReplayPlaybackSchedule", "b"});
+        putBooleanField(result, replayEngine, "logReplayCommandDetails",
+                new String[]{"logReplayCommandDetails", "c"});
+        putBooleanField(result, replayEngine, "logReplayCommandTeamState",
+                new String[]{"logReplayCommandTeamState", "d"});
+        putBooleanField(result, replayEngine, "traceChecksumsWriting",
+                new String[]{"traceChecksumsWriting", "f"});
+        putBooleanField(result, replayEngine, "playbackEnded", new String[]{"playbackEnded", "s"});
+        putField(result, replayEngine, "currentReplayFileName", new String[]{"currentReplayFileName", "t"});
+        putField(result, replayEngine, "rawInputStream", new String[]{"rawInputStream", "C"});
+        putField(result, replayEngine, "bufferedInputStream", new String[]{"bufferedInputStream", "D"});
+        putField(result, replayEngine, "dataInputStream", new String[]{"dataInputStream", "E"});
+        putField(result, replayEngine, "rawOutputStream", new String[]{"rawOutputStream", "G"});
+        putField(result, replayEngine, "bufferedOutputStream", new String[]{"bufferedOutputStream", "H"});
+        putField(result, replayEngine, "dataOutputStream", new String[]{"dataOutputStream", "I"});
+        putField(result, replayEngine, "writerThreadHandle", new String[]{"writerThreadHandle", "L"});
+        putIntField(result, replayEngine, "commandsSinceQuickChecksum",
+                new String[]{"commandsSinceQuickChecksum", "j"});
+        putBooleanField(result, replayEngine, "shownOutOfSyncWarning",
+                new String[]{"shownOutOfSyncWarning", "k"});
+        putIntField(result, replayEngine, "checksumMismatchCount", new String[]{"checksumMismatchCount", "l"});
+        putBooleanField(result, replayEngine, "extraChecksumInfoLogged",
+                new String[]{"extraChecksumInfoLogged", "m"});
+        putIntField(result, replayEngine, "lastReadReplayCommandFrame",
+                new String[]{"lastReadReplayCommandFrame", "o"});
+        putIntField(result, replayEngine, "readReplayCommandCount", new String[]{"readReplayCommandCount", "p"});
+        putIntField(result, replayEngine, "replayCommandDebugId", new String[]{"replayCommandDebugId", "y"});
         putOptional(result, "isActive", new Supplier<Object>() {
             @Override
             public Object get() {
@@ -81,6 +115,16 @@ public final class ReplayChecksumDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Object currentReplayEngine() {
+        Object engine = GameEngineDiagnostics.currentEngineOrNull();
+        return engine != null ? RustedReflection.getFieldValue(engine, new String[]{"replayEngine", "cb"}) : null;
+    }
+
+    public static Map<String, Object> describeCurrentReplayEngine() {
+        Object replayEngine = currentReplayEngine();
+        return replayEngine != null ? describeReplayEngine(replayEngine) : Collections.<String, Object>emptyMap();
+    }
+
     public static Object getNetworkChecksum(Object replayEngine) {
         requireReplayEngine(replayEngine);
         return RustedReflection.getFieldValue(replayEngine, new String[]{"networkChecksum", "g"});
@@ -99,6 +143,26 @@ public final class ReplayChecksumDiagnostics {
     public static Object getNextEntry(Object replayEngine) {
         requireReplayEngine(replayEngine);
         return RustedReflection.getFieldValue(replayEngine, new String[]{"nextEntry", "x"});
+    }
+
+    public static String getReplayFolderPath(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        return RustedReflection.getStringField(replayEngine, new String[]{"replayFolderPath", "a"});
+    }
+
+    public static String getCurrentReplayFileName(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        return RustedReflection.getStringField(replayEngine, new String[]{"currentReplayFileName", "t"});
+    }
+
+    public static Object getRawInputStream(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        return RustedReflection.getFieldValue(replayEngine, new String[]{"rawInputStream", "C"});
+    }
+
+    public static Object getRawOutputStream(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        return RustedReflection.getFieldValue(replayEngine, new String[]{"rawOutputStream", "G"});
     }
 
     public static boolean isActive(Object replayEngine) {
@@ -124,6 +188,47 @@ public final class ReplayChecksumDiagnostics {
         Object value = RustedReflection.invokeInstance(replayEngine,
                 new String[]{"calculateQuickUnitChecksum", "getReplayLength", "f"});
         return value instanceof Number ? ((Number) value).longValue() : 0L;
+    }
+
+    public static void togglePlaybackPause(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        RustedReflection.invokeInstance(replayEngine, new String[]{"togglePlaybackPause", "a"});
+    }
+
+    public static void cyclePlaybackSpeed(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        RustedReflection.invokeInstance(replayEngine, new String[]{"cyclePlaybackSpeed", "b"});
+    }
+
+    public static void closeReplayStreamsUnlessLoadingInitialSave(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        RustedReflection.invokeInstance(replayEngine,
+                new String[]{"closeReplayStreamsUnlessLoadingInitialSave", "g"});
+    }
+
+    public static void markAiPlayersFromReplay(Object replayEngine) {
+        requireReplayEngine(replayEngine);
+        RustedReflection.invokeInstance(replayEngine, new String[]{"markAiPlayersFromReplay", "l"});
+    }
+
+    public static boolean isTextGameOutputStream(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), TEXT_GAME_OUTPUT_STREAM_CLASSES);
+    }
+
+    public static Map<String, Object> describeTextGameOutputStream(Object outputStream) {
+        requireTextGameOutputStream(outputStream);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putField(result, outputStream, "byteArrayOutput", new String[]{"byteArrayOutput", "a"});
+        putField(result, outputStream, "rootPrintStream", new String[]{"rootPrintStream", "e"});
+        putField(result, outputStream, "currentPrintStream", new String[]{"currentPrintStream", "f"});
+        putCollectionField(result, outputStream, "blockStack", new String[]{"blockStack", "g"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static List<Object> textGameOutputBlockStackSnapshot(Object outputStream) {
+        requireTextGameOutputStream(outputStream);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(outputStream, new String[]{"blockStack", "g"})));
     }
 
     public static Map<String, Object> describeReplayWriterThread(Object writerThread) {
@@ -248,6 +353,10 @@ public final class ReplayChecksumDiagnostics {
 
     private static void requireReplayChatMessage(Object chatMessage) {
         requireAny(chatMessage, REPLAY_CHAT_MESSAGE_CLASSES, "ReplayChatMessage");
+    }
+
+    private static void requireTextGameOutputStream(Object outputStream) {
+        requireAny(outputStream, TEXT_GAME_OUTPUT_STREAM_CLASSES, "TextGameOutputStream");
     }
 
     private static void requireNetworkChecksum(Object checksum) {

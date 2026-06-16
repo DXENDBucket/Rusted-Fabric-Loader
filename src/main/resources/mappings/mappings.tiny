@@ -8401,10 +8401,10 @@ c	com/corrodinggames/rts/gameFramework/ba	rw/replay/ReplayEngine	rustedwarfare/r
 	f	Lcom/corrodinggames/rts/gameFramework/j/as;	J	field_ReplayEngine_outputStream	outputStream
 	f	Lcom/corrodinggames/rts/gameFramework/bb;	K	field_ReplayEngine_writerThread	writerThread
 	f	Ljava/lang/Object;	M	field_ReplayEngine_writerLock	writerLock
-	f	Z	N	field_ReplayEngine_allowRecording	allowRecording
-	f	Z	O	field_ReplayEngine_allowPlayback	allowPlayback
+	f	Z	N	field_ba_loadingReplayInitialSave	loadingReplayInitialSave
+	f	Z	O	field_ba_replayGameSetupRead	replayGameSetupRead
 	f	Z	P	field_ba_active	active
-	f	Ljava/lang/String;	a	field_ReplayEngine_currentReplayName	currentReplayName
+	f	Ljava/lang/String;	a	field_ba_replayFolderPath	replayFolderPath
 	f	Lcom/corrodinggames/rts/gameFramework/j/ak;	g	field_ReplayEngine_networkChecksum	networkChecksum
 	f	Z	h	field_ReplayEngine_recording	recording
 	f	Z	n	field_ReplayEngine_replaying	replaying
@@ -8414,7 +8414,27 @@ c	com/corrodinggames/rts/gameFramework/ba	rw/replay/ReplayEngine	rustedwarfare/r
 	f	Lcom/corrodinggames/rts/gameFramework/bd;	w	field_ReplayEngine_currentEntry	currentEntry
 	f	Lcom/corrodinggames/rts/gameFramework/bd;	x	field_ReplayEngine_nextEntry	nextEntry
 	f	I	z	field_ba_issuedReplayCommandCount	issuedReplayCommandCount
-	m	()V	a	method_ReplayEngine_reset	reset
+	f	Z	b	field_ba_logReplayPlaybackSchedule	logReplayPlaybackSchedule
+	f	Z	c	field_ba_logReplayCommandDetails	logReplayCommandDetails
+	f	Z	d	field_ba_logReplayCommandTeamState	logReplayCommandTeamState
+	f	Z	f	field_ba_traceChecksumsWriting	traceChecksumsWriting
+	f	Z	s	field_ba_playbackEnded	playbackEnded
+	f	Ljava/lang/String;	t	field_ba_currentReplayFileName	currentReplayFileName
+	f	Ljava/io/InputStream;	C	field_ba_rawInputStream	rawInputStream
+	f	Ljava/io/BufferedInputStream;	D	field_ba_bufferedInputStream	bufferedInputStream
+	f	Ljava/io/DataInputStream;	E	field_ba_dataInputStream	dataInputStream
+	f	Ljava/io/OutputStream;	G	field_ba_rawOutputStream	rawOutputStream
+	f	Ljava/io/BufferedOutputStream;	H	field_ba_bufferedOutputStream	bufferedOutputStream
+	f	Ljava/io/DataOutputStream;	I	field_ba_dataOutputStream	dataOutputStream
+	f	Ljava/lang/Thread;	L	field_ba_writerThreadHandle	writerThreadHandle
+	f	I	j	field_ba_commandsSinceQuickChecksum	commandsSinceQuickChecksum
+	f	Z	k	field_ba_shownOutOfSyncWarning	shownOutOfSyncWarning
+	f	I	l	field_ba_checksumMismatchCount	checksumMismatchCount
+	f	Z	m	field_ba_extraChecksumInfoLogged	extraChecksumInfoLogged
+	f	I	o	field_ba_lastReadReplayCommandFrame	lastReadReplayCommandFrame
+	f	I	p	field_ba_readReplayCommandCount	readReplayCommandCount
+	f	I	y	field_ba_replayCommandDebugId	replayCommandDebugId
+	m	()V	a	method_ba_togglePlaybackPause	togglePlaybackPause
 	m	(F)V	a	method_ReplayEngine_updateReplayPlayback	updateReplayPlayback
 	m	(ILjava/lang/String;Ljava/lang/String;I)V	a	method_ReplayEngine_recordChatMessage	recordChatMessage
 	m	(Landroid/content/Context;)V	a	method_ReplayEngine_init	init
@@ -8427,7 +8447,7 @@ c	com/corrodinggames/rts/gameFramework/ba	rw/replay/ReplayEngine	rustedwarfare/r
 	m	(Ljava/lang/String;Z)Ljava/io/File;	a	method_ReplayEngine_getReplayFile	getReplayFile
 	m	(Z)V	a	method_ReplayEngine_startSavingWithAutoName	startSavingWithAutoName
 	m	([BIIIFF)V	a	method_ReplayEngine_recordResyncSaveBytes	recordResyncSaveBytes
-	m	()V	b	method_ReplayEngine_stop	stop
+	m	()V	b	method_ba_cyclePlaybackSpeed	cyclePlaybackSpeed
 	m	(Ljava/lang/String;)V	b	method_ReplayEngine_warn	warn
 	m	()V	c	method_ReplayEngine_flushReplayWriter	recordTracingChecksumIfEnabled
 	m	(Ljava/lang/String;)Z	c	method_ReplayEngine_loadReplayByName	loadReplayByName
@@ -8436,11 +8456,12 @@ c	com/corrodinggames/rts/gameFramework/ba	rw/replay/ReplayEngine	rustedwarfare/r
 	m	()V	e	method_ReplayEngine_closeReplayStreams	closeReplayStreams
 	m	(Ljava/lang/String;)V	e	method_ReplayEngine_deleteReplay	deleteReplay
 	m	()J	f	method_ReplayEngine_getReplayLength	calculateQuickUnitChecksum
-	m	()V	g	method_ReplayEngine_markReplayDesynced	markReplayDesynced
+	m	()V	g	method_ba_closeReplayStreamsUnlessLoadingInitialSave	closeReplayStreamsUnlessLoadingInitialSave
 	m	()Z	h	method_ReplayEngine_readNextReplayBlock	readNextReplayBlock
 	m	()Z	i	method_ReplayEngine_isRecording	isActive
 	m	()Z	j	method_ReplayEngine_isReplaying	isReplaying
 	m	()Z	k	method_ReplayEngine_isActive	isRecording
+	m	()V	l	method_ba_markAiPlayersFromReplay	markAiPlayersFromReplay
 c	com/corrodinggames/rts/gameFramework/bb	rw/replay/ReplayWriterThread	rustedwarfare/replay/ReplayWriterThread
 	f	Z	a	field_ReplayWriterThread_running	running
 	f	I	b	field_bb_stoppedFrame	stoppedFrame
@@ -10025,6 +10046,10 @@ c	com/corrodinggames/rts/gameFramework/j/au	rw/network/Packet	rustedwarfare/netw
 	f	I	d	field_Packet_extraData	extraData
 	f	Z	e	field_Packet_reliable	reliable
 c	com/corrodinggames/rts/gameFramework/j/aw	rw/io/TextGameOutputStream	rustedwarfare/io/TextGameOutputStream
+	f	Ljava/io/ByteArrayOutputStream;	a	field_aw_byteArrayOutput	byteArrayOutput
+	f	Ljava/io/PrintStream;	e	field_aw_rootPrintStream	rootPrintStream
+	f	Ljava/io/PrintStream;	f	field_aw_currentPrintStream	currentPrintStream
+	f	Ljava/util/LinkedList;	g	field_aw_blockStack	blockStack
 	m	()V	a	method_GameOutputStream_flush	flush
 	m	(F)V	a	method_GameOutputStream_writeFloat	writeFloat
 	m	(I)V	a	method_GameOutputStream_writeInt	writeInt

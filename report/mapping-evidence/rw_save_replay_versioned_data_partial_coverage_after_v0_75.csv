@@ -1,0 +1,32 @@
+owner_official,kind,official_name,descriptor,expected_named_name,present,evidence
+com/corrodinggames/rts/gameFramework/j/aw,field,a,Ljava/io/ByteArrayOutputStream;,byteArrayOutput,True,Default constructor creates this backing ByteArrayOutputStream; toPacket/toTextString/toByteArray read from it
+com/corrodinggames/rts/gameFramework/j/aw,field,e,Ljava/io/PrintStream;,rootPrintStream,True,Constructor stores the root PrintStream; flush writes nested text blocks into it and resetCurrentStream restores from it
+com/corrodinggames/rts/gameFramework/j/aw,field,f,Ljava/io/PrintStream;,currentPrintStream,True,write* methods print to this stream; startBlock/endBlock swap it between root and nested block PrintStreams
+com/corrodinggames/rts/gameFramework/j/aw,field,g,Ljava/util/LinkedList;,blockStack,True,"startBlock pushes TextGameOutputBlock objects, endBlock pops them, and flush iterates them in reverse order"
+com/corrodinggames/rts/gameFramework/ba,field,a,Ljava/lang/String;,replayFolderPath,True,Constructor stores literal 'replays/' and getReplayFile resolves replay files relative to this path; it is not the current replay name
+com/corrodinggames/rts/gameFramework/ba,field,N,Z,loadingReplayInitialSave,True,Set true only while startReplayingFile feeds the embedded 'gamesave' block into GameSaver; suppresses auto replay start and guarded stream close
+com/corrodinggames/rts/gameFramework/ba,field,O,Z,replayGameSetupRead,True,Cleared before loading the replay initial save; GameSaver sets it when 'Using game rules from save' reads the gameSetup block; false triggers 'No game setup read' fallback
+com/corrodinggames/rts/gameFramework/ba,method,a,()V,togglePlaybackPause,True,Toggles GameEngine.bt between 0 and 1 during replay playback; old reset naming was wrong
+com/corrodinggames/rts/gameFramework/ba,method,b,()V,cyclePlaybackSpeed,True,"Cycles GameEngine.bt through 1,2,4,8,16,32,64 and back to 1; old stop naming was wrong"
+com/corrodinggames/rts/gameFramework/ba,method,g,()V,closeReplayStreamsUnlessLoadingInitialSave,True,"If loadingReplayInitialSave is false, delegates to closeReplayStreams; otherwise leaves streams open during embedded save loading"
+com/corrodinggames/rts/gameFramework/ba,field,b,Z,logReplayPlaybackSchedule,True,updateReplayPlayback logs upcoming replay entry scheduling under this static debug flag
+com/corrodinggames/rts/gameFramework/ba,field,c,Z,logReplayCommandDetails,True,readNextReplayBlock logs 'updateGameFrame: Command/Waypoint/Build Type' under this static debug flag
+com/corrodinggames/rts/gameFramework/ba,field,d,Z,logReplayCommandTeamState,True,updateReplayPlayback logs Precommand/Postcommand team credits/count/max under this static debug flag
+com/corrodinggames/rts/gameFramework/ba,field,f,Z,traceChecksumsWriting,True,startSavingReplay copies SettingsEngine.replayTracing into this flag and warns about large replay files; recordTracingChecksumIfEnabled checks it
+com/corrodinggames/rts/gameFramework/ba,field,s,Z,playbackEnded,True,readNextReplayBlock sets this on replay end/endReplayMetaData; updateReplayPlayback treats it as replay-ended state
+com/corrodinggames/rts/gameFramework/ba,field,t,Ljava/lang/String;,currentReplayFileName,True,startSavingReplay/startReplayingFile store the active replay file name here; closeReplayStreams clears it
+com/corrodinggames/rts/gameFramework/ba,field,C,Ljava/io/InputStream;,rawInputStream,True,startReplayingFile opens the replay InputStream into this field; closeReplayStreams closes and clears it
+com/corrodinggames/rts/gameFramework/ba,field,D,Ljava/io/BufferedInputStream;,bufferedInputStream,True,Replay raw input is wrapped in this BufferedInputStream before DataInputStream/GameInputStream construction
+com/corrodinggames/rts/gameFramework/ba,field,E,Ljava/io/DataInputStream;,dataInputStream,True,Replay buffered input is wrapped in this DataInputStream and passed to GameInputStream
+com/corrodinggames/rts/gameFramework/ba,field,G,Ljava/io/OutputStream;,rawOutputStream,True,startSavingReplay opens the replay OutputStream here; closeReplayStreams flushes/closes and clears it
+com/corrodinggames/rts/gameFramework/ba,field,H,Ljava/io/BufferedOutputStream;,bufferedOutputStream,True,Replay raw output is wrapped in this BufferedOutputStream before DataOutputStream/GameOutputStream construction
+com/corrodinggames/rts/gameFramework/ba,field,I,Ljava/io/DataOutputStream;,dataOutputStream,True,Replay buffered output is wrapped in this DataOutputStream used by GameOutputStream and replay header writes
+com/corrodinggames/rts/gameFramework/ba,field,L,Ljava/lang/Thread;,writerThreadHandle,True,startSavingReplay constructs a Java Thread around ReplayWriterThread and closeReplayStreams joins/clears this handle
+com/corrodinggames/rts/gameFramework/ba,field,j,I,commandsSinceQuickChecksum,True,"recordCommand increments this counter and every >5 commands queues a quick checksum ReplayRecordEntry, then resets it"
+com/corrodinggames/rts/gameFramework/ba,field,k,Z,shownOutOfSyncWarning,True,First checksum mismatch sets this flag after displaying 'Error: This replay might be out of sync'
+com/corrodinggames/rts/gameFramework/ba,field,l,I,checksumMismatchCount,True,Incremented for replay checksum mismatch and extraChecksum mismatch; used to cap noisy mismatch output at 150
+com/corrodinggames/rts/gameFramework/ba,field,m,Z,extraChecksumInfoLogged,True,"Initially false; while false, matching extraChecksum lines are logged, then the es block sets it true to reduce repeat output"
+com/corrodinggames/rts/gameFramework/ba,field,o,I,lastReadReplayCommandFrame,True,readNextReplayBlock stores the frame number of the most recently read rc command entry here
+com/corrodinggames/rts/gameFramework/ba,field,p,I,readReplayCommandCount,True,readNextReplayBlock increments this for every rc command block read from replay input
+com/corrodinggames/rts/gameFramework/ba,field,y,I,replayCommandDebugId,True,readNextReplayBlock increments this and prints it as the detailed command log id when command detail logging is enabled
+com/corrodinggames/rts/gameFramework/ba,method,l,()V,markAiPlayersFromReplay,True,"After replay initial save load, scans teams and marks AIPlayer.aX=true for AI players reconstructed from the replay save"
