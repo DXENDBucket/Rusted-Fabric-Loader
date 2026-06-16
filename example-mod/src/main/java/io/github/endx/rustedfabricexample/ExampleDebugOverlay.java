@@ -546,9 +546,9 @@ final class ExampleDebugOverlay {
             OverlayMessage message = visibleMessages.get(i);
             int yTop = top + i * (boxHeight + gap);
             OVERLAY_RECT.a(left, yTop, left + boxWidth, yTop + boxHeight);
-            renderer.b(OVERLAY_RECT, overlayFillPaint);
-            renderer.b(OVERLAY_RECT, overlayBorderPaint);
-            renderer.a(fitOverlayText(renderer, message.text, maxTextWidth),
+            renderer.drawRect(OVERLAY_RECT, overlayFillPaint);
+            renderer.drawRect(OVERLAY_RECT, overlayBorderPaint);
+            renderer.drawText(fitOverlayText(renderer, message.text, maxTextWidth),
                     left + 10.0f, yTop + 22.0f, overlayTextPaint);
         }
     }
@@ -844,13 +844,13 @@ final class ExampleDebugOverlay {
             return "";
         }
 
-        if (renderer.a(text, overlayTextPaint) <= maxWidth) {
+        if (renderer.getTextWidth(text, overlayTextPaint) <= maxWidth) {
             return text;
         }
 
         String suffix = "...";
         int end = text.length();
-        while (end > 0 && renderer.a(text.substring(0, end) + suffix, overlayTextPaint) > maxWidth) {
+        while (end > 0 && renderer.getTextWidth(text.substring(0, end) + suffix, overlayTextPaint) > maxWidth) {
             end--;
         }
         return end > 0 ? text.substring(0, end) + suffix : suffix;

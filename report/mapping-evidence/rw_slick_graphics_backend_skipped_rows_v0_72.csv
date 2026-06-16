@@ -1,0 +1,2 @@
+area,candidate,reason
+SlickGraphicsBackend,draw/text/transform low-confidence residuals,No descriptor drift skipped; intentionally left low-confidence color scratch/static fields and no-op hooks unmapped

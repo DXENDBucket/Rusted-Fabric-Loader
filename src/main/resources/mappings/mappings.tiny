@@ -10740,16 +10740,169 @@ c	com/corrodinggames/rts/gameFramework/m/x	rw/render/CanvasGraphicsEngine	rusted
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_x_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_V	compileShader
 	m	(Ljava/io/InputStream;Z)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_x_loadImageFromStream	loadImageFromStream
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	r	method_x_getErrorImage	getErrorImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	a	method_x_createChildBackendForImage	createChildBackendForImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	b	method_x_createBackendForImage	createBackendForImage
+	m	()I	m	method_x_getWidth	getWidth
+	m	()I	n	method_x_getHeight	getHeight
+	m	(II)V	a	method_x_setSize	setSize
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFFLandroid/graphics/Paint;)V	a	method_x_drawImageRotated	drawImageRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;FFFLandroid/graphics/Paint;)V	a	method_x_drawImageSectionRotated	drawImageSectionRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_x_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_x_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_x_drawImageDirect	drawImageDirect
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_x_drawImageCentered	drawImageCentered
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;FF)V	a	method_x_drawImageTransformed	drawImageTransformed
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	b	method_x_drawImageRaw	drawImageRaw
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_x_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;IIII)V	a	method_x_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/RectF;Landroid/graphics/Paint;FFII)V	a	method_x_drawTiledImage	drawTiledImage
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_x_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_x_drawRectDirect	drawRectDirect
+	m	(Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_x_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	c	method_x_drawRectFromSize	drawRectFromSize
+	m	(I)V	b	method_x_drawColor	drawColor
+	m	(ILandroid/graphics/PorterDuff$Mode;)V	a	method_x_drawColor	drawColor
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;Landroid/graphics/Paint;F)V	a	method_x_drawTextWithBackground	drawTextWithBackground
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_x_drawText	drawText
+	m	(Landroid/graphics/Rect;)V	a	method_x_setClipRect	setClipRect
+	m	(Landroid/graphics/RectF;)V	a	method_x_setClipRect	setClipRect
+	m	(FFFLandroid/graphics/Paint;)V	a	method_x_drawCircle	drawCircle
+	m	(FFFLandroid/graphics/Paint;)V	b	method_x_drawCircleDirect	drawCircleDirect
+	m	([FIILandroid/graphics/Paint;)V	a	method_x_drawLines	drawLines
+	m	(FFFFLandroid/graphics/Paint;)V	a	method_x_drawLine	drawLine
+	m	()V	g	method_x_beginFrame	beginFrame
+	m	()V	h	method_x_endFrame	endFrame
+	m	()V	i	method_x_save	save
+	m	()V	j	method_x_restore	restore
+	m	()V	k	method_x_saveTransform	saveTransform
+	m	()V	l	method_x_restoreTransform	restoreTransform
+	m	(FFF)V	a	method_x_rotate	rotate
+	m	(FF)V	a	method_x_scale	scale
+	m	(FFFF)V	a	method_x_scaleAround	scaleAround
+	m	(FF)V	b	method_x_translate	translate
+	m	(Lcom/corrodinggames/rts/gameFramework/m/m;)V	a	method_x_runDrawTimeCallback	runDrawTimeCallback
+	m	()V	o	method_x_clearAlphaMap	clearAlphaMap
+	m	(Landroid/graphics/Paint;)V	a	method_x_prepareFontForPaint	prepareFontForPaint
+	m	()V	p	method_x_flush	flush
+	m	()V	q	method_x_dispose	dispose
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	a	method_x_getTextHeight	getTextHeight
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	b	method_x_getTextWidth	getTextWidth
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Ljava/io/File;)V	a	method_x_saveImageToFile	saveImageToFile
+	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_x_enterLock	enterLock
+	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_x_leaveLock	leaveLock
+	m	()F	s	method_x_getUiScale	getUiScale
 c	com/corrodinggames/rts/gameFramework/m/y	rw/render/GraphicsEngine	rustedwarfare/render/GraphicsEngine
 	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_y_createImage	createImage
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_y_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_V	compileShader
 	m	(Ljava/io/InputStream;Z)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_y_loadImageFromStream	loadImageFromStream
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	r	method_y_getErrorImage	getErrorImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	a	method_y_createChildBackendForImage	createChildBackendForImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	b	method_y_createBackendForImage	createBackendForImage
+	m	()I	m	method_y_getWidth	getWidth
+	m	()I	n	method_y_getHeight	getHeight
+	m	(II)V	a	method_y_setSize	setSize
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFFLandroid/graphics/Paint;)V	a	method_y_drawImageRotated	drawImageRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;FFFLandroid/graphics/Paint;)V	a	method_y_drawImageSectionRotated	drawImageSectionRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_y_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_y_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_y_drawImageDirect	drawImageDirect
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_y_drawImageCentered	drawImageCentered
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;FF)V	a	method_y_drawImageTransformed	drawImageTransformed
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	b	method_y_drawImageRaw	drawImageRaw
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_y_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;IIII)V	a	method_y_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/RectF;Landroid/graphics/Paint;FFII)V	a	method_y_drawTiledImage	drawTiledImage
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_y_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_y_drawRectDirect	drawRectDirect
+	m	(Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_y_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	c	method_y_drawRectFromSize	drawRectFromSize
+	m	(I)V	b	method_y_drawColor	drawColor
+	m	(ILandroid/graphics/PorterDuff$Mode;)V	a	method_y_drawColor	drawColor
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;Landroid/graphics/Paint;F)V	a	method_y_drawTextWithBackground	drawTextWithBackground
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_y_drawText	drawText
+	m	(Landroid/graphics/Rect;)V	a	method_y_setClipRect	setClipRect
+	m	(Landroid/graphics/RectF;)V	a	method_y_setClipRect	setClipRect
+	m	(FFFLandroid/graphics/Paint;)V	a	method_y_drawCircle	drawCircle
+	m	(FFFLandroid/graphics/Paint;)V	b	method_y_drawCircleDirect	drawCircleDirect
+	m	([FIILandroid/graphics/Paint;)V	a	method_y_drawLines	drawLines
+	m	(FFFFLandroid/graphics/Paint;)V	a	method_y_drawLine	drawLine
+	m	()V	g	method_y_beginFrame	beginFrame
+	m	()V	h	method_y_endFrame	endFrame
+	m	()V	i	method_y_save	save
+	m	()V	j	method_y_restore	restore
+	m	()V	k	method_y_saveTransform	saveTransform
+	m	()V	l	method_y_restoreTransform	restoreTransform
+	m	(FFF)V	a	method_y_rotate	rotate
+	m	(FF)V	a	method_y_scale	scale
+	m	(FFFF)V	a	method_y_scaleAround	scaleAround
+	m	(FF)V	b	method_y_translate	translate
+	m	(Lcom/corrodinggames/rts/gameFramework/m/m;)V	a	method_y_runDrawTimeCallback	runDrawTimeCallback
+	m	()V	o	method_y_clearAlphaMap	clearAlphaMap
+	m	(Landroid/graphics/Paint;)V	a	method_y_prepareFontForPaint	prepareFontForPaint
+	m	()V	p	method_y_flush	flush
+	m	()V	q	method_y_dispose	dispose
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	a	method_y_getTextHeight	getTextHeight
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	b	method_y_getTextWidth	getTextWidth
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Ljava/io/File;)V	a	method_y_saveImageToFile	saveImageToFile
+	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_y_enterLock	enterLock
+	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_y_leaveLock	leaveLock
+	m	()F	s	method_y_getUiScale	getUiScale
 c	com/corrodinggames/rts/gameFramework/m/z	rw/render/NullGraphicsEngine	rustedwarfare/render/NullGraphicsEngine
 	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_z_createImage	createImage
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_z_compileShader__Lcom_corrodinggames_rts_gameFramework_m_ae_V	compileShader
 	m	(Ljava/io/InputStream;Z)Lcom/corrodinggames/rts/gameFramework/m/e;	a	method_z_loadImageFromStream	loadImageFromStream
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	r	method_z_getErrorImage	getErrorImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	a	method_z_createChildBackendForImage	createChildBackendForImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	b	method_z_createBackendForImage	createBackendForImage
+	m	()I	m	method_z_getWidth	getWidth
+	m	()I	n	method_z_getHeight	getHeight
+	m	(II)V	a	method_z_setSize	setSize
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFFLandroid/graphics/Paint;)V	a	method_z_drawImageRotated	drawImageRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;FFFLandroid/graphics/Paint;)V	a	method_z_drawImageSectionRotated	drawImageSectionRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_z_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_z_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_z_drawImageDirect	drawImageDirect
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_z_drawImageCentered	drawImageCentered
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;FF)V	a	method_z_drawImageTransformed	drawImageTransformed
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	b	method_z_drawImageRaw	drawImageRaw
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_z_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;IIII)V	a	method_z_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/RectF;Landroid/graphics/Paint;FFII)V	a	method_z_drawTiledImage	drawTiledImage
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_z_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_z_drawRectDirect	drawRectDirect
+	m	(Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_z_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	c	method_z_drawRectFromSize	drawRectFromSize
+	m	(I)V	b	method_z_drawColor	drawColor
+	m	(ILandroid/graphics/PorterDuff$Mode;)V	a	method_z_drawColor	drawColor
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;Landroid/graphics/Paint;F)V	a	method_z_drawTextWithBackground	drawTextWithBackground
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_z_drawText	drawText
+	m	(Landroid/graphics/Rect;)V	a	method_z_setClipRect	setClipRect
+	m	(Landroid/graphics/RectF;)V	a	method_z_setClipRect	setClipRect
+	m	(FFFLandroid/graphics/Paint;)V	a	method_z_drawCircle	drawCircle
+	m	(FFFLandroid/graphics/Paint;)V	b	method_z_drawCircleDirect	drawCircleDirect
+	m	([FIILandroid/graphics/Paint;)V	a	method_z_drawLines	drawLines
+	m	(FFFFLandroid/graphics/Paint;)V	a	method_z_drawLine	drawLine
+	m	()V	g	method_z_beginFrame	beginFrame
+	m	()V	h	method_z_endFrame	endFrame
+	m	()V	i	method_z_save	save
+	m	()V	j	method_z_restore	restore
+	m	()V	k	method_z_saveTransform	saveTransform
+	m	()V	l	method_z_restoreTransform	restoreTransform
+	m	(FFF)V	a	method_z_rotate	rotate
+	m	(FF)V	a	method_z_scale	scale
+	m	(FFFF)V	a	method_z_scaleAround	scaleAround
+	m	(FF)V	b	method_z_translate	translate
+	m	(Lcom/corrodinggames/rts/gameFramework/m/m;)V	a	method_z_runDrawTimeCallback	runDrawTimeCallback
+	m	()V	o	method_z_clearAlphaMap	clearAlphaMap
+	m	(Landroid/graphics/Paint;)V	a	method_z_prepareFontForPaint	prepareFontForPaint
+	m	()V	p	method_z_flush	flush
+	m	()V	q	method_z_dispose	dispose
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	a	method_z_getTextHeight	getTextHeight
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	b	method_z_getTextWidth	getTextWidth
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Ljava/io/File;)V	a	method_z_saveImageToFile	saveImageToFile
+	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_z_enterLock	enterLock
+	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_z_leaveLock	leaveLock
+	m	()F	s	method_z_getUiScale	getUiScale
 c	com/corrodinggames/rts/gameFramework/n	rw/core/PlatformCallbacks	rustedwarfare/core/PlatformCallbacks
 c	com/corrodinggames/rts/gameFramework/n/a	rw/mission/MissionTrigger	rustedwarfare/mission/MissionTrigger
 	f	Lcom/corrodinggames/rts/game/units/custom/bb;	A	field_a_globalMessage	globalMessage
@@ -11724,6 +11877,40 @@ c	com/corrodinggames/rts/java/e	rw/client/render/SlickGraphicsBackend	rustedwarf
 	f	Lcom/corrodinggames/rts/java/a;	t	field_e_tooLargeThumbnailErrorImage	tooLargeThumbnailErrorImage
 	f	Ljava/util/ArrayList;	E	field_e_pendingImageDataDiscards	pendingImageDataDiscards
 	f	I	F	field_e_loadedImageCount	loadedImageCount
+	f	Z	a	field_e_shadersEnabled	shadersEnabled
+	f	Z	b	field_e_paintStateDirty	paintStateDirty
+	f	Lorg/newdawn/slick/Graphics;	f	field_e_slickGraphics	slickGraphics
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	g	field_e_renderTargetImage	renderTargetImage
+	f	I	h	field_e_targetWidth	targetWidth
+	f	I	i	field_e_targetHeight	targetHeight
+	f	Lorg/newdawn/slick/Graphics;	k	field_e_currentSlickGraphics	currentSlickGraphics
+	f	Lcom/corrodinggames/rts/java/e;	l	field_e_activeBackend	activeBackend
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	m	field_e_activeShader	activeShader
+	f	Landroid/graphics/Rect;	n	field_e_scratchSrcRect	scratchSrcRect
+	f	Landroid/graphics/Rect;	o	field_e_scratchDstRect	scratchDstRect
+	f	Landroid/graphics/RectF;	p	field_e_scratchDstRectF	scratchDstRectF
+	f	Landroid/graphics/PointF;	q	field_e_scratchPoint	scratchPoint
+	f	Ljava/util/ArrayList;	u	field_e_fontCacheKeys	fontCacheKeys
+	f	I	v	field_e_currentDrawMode	currentDrawMode
+	f	Landroid/graphics/Paint;	w	field_e_currentPaint	currentPaint
+	f	Lcom/corrodinggames/rts/java/s;	x	field_e_currentPaintImage	currentPaintImage
+	f	Landroid/graphics/Paint;	z	field_e_scratchPaint	scratchPaint
+	f	F	B	field_e_currentLineWidth	currentLineWidth
+	f	Lcom/corrodinggames/rts/java/f;	C	field_e_fontKeyScratch	fontKeyScratch
+	f	[B	D	field_e_pixelScratchBytes	pixelScratchBytes
+	f	Landroid/graphics/RectF;	G	field_e_scratchRectF	scratchRectF
+	f	F	L	field_e_uiScale	uiScale
+	f	Ljava/nio/FloatBuffer;	N	field_e_sharedFloatBuffer	sharedFloatBuffer
+	f	[F	O	field_e_sharedFloatArray	sharedFloatArray
+	f	I	P	field_e_cachedCircleSegments	cachedCircleSegments
+	f	F	Q	field_e_cachedCircleAngleStep	cachedCircleAngleStep
+	f	F	R	field_e_cachedCircleCosStep	cachedCircleCosStep
+	f	F	S	field_e_cachedCircleSinStep	cachedCircleSinStep
+	f	Lcom/corrodinggames/rts/java/g;	T	field_e_transformState	transformState
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	U	field_e_transformStack	transformStack
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	V	field_e_transformStatePool	transformStatePool
+	f	Lorg/newdawn/slick/opengl/renderer/SGL;	W	field_e_slickRenderer	slickRenderer
+	f	Lorg/newdawn/slick/opengl/renderer/LineStripRenderer;	X	field_e_lineStripRenderer	lineStripRenderer
 	m	()V	b	method_e_loadErrorImages	loadErrorImages
 	m	()V	e	method_e_flushImageDataDiscards	flushImageDataDiscards
 	m	()V	w	method_e_flushPendingImageDataDiscards	flushPendingImageDataDiscards
@@ -11738,6 +11925,97 @@ c	com/corrodinggames/rts/java/e	rw/client/render/SlickGraphicsBackend	rustedwarf
 	m	(IIZ)Lcom/corrodinggames/rts/gameFramework/m/e;	b	method_e_createImageBufferBacked	createImageBufferBacked
 	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	a	method_e_compileShader	compileShader
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	r	method_e_getErrorImage	getErrorImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	a	method_e_createChildBackendForImage	createChildBackendForImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/gameFramework/m/y;	b	method_e_createBackendForImage	createBackendForImage
+	m	()I	m	method_e_getWidth	getWidth
+	m	()I	n	method_e_getHeight	getHeight
+	m	(II)V	a	method_e_setSize	setSize
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFFLandroid/graphics/Paint;)V	a	method_e_drawImageRotated	drawImageRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;FFFLandroid/graphics/Paint;)V	a	method_e_drawImageSectionRotated	drawImageSectionRotated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_e_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_e_drawImage	drawImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_e_drawImageDirect	drawImageDirect
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	a	method_e_drawImageCentered	drawImageCentered
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;FF)V	a	method_e_drawImageTransformed	drawImageTransformed
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	b	method_e_drawImageRaw	drawImageRaw
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_e_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/Rect;Landroid/graphics/Paint;IIII)V	a	method_e_drawTiledImage	drawTiledImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Landroid/graphics/RectF;Landroid/graphics/Paint;FFII)V	a	method_e_drawTiledImage	drawTiledImage
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	a	method_e_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	b	method_e_drawRectDirect	drawRectDirect
+	m	(Landroid/graphics/RectF;Landroid/graphics/Paint;)V	a	method_e_drawRect	drawRect
+	m	(Landroid/graphics/Rect;Landroid/graphics/Paint;)V	c	method_e_drawRectFromSize	drawRectFromSize
+	m	(I)V	b	method_e_drawColor	drawColor
+	m	(ILandroid/graphics/PorterDuff$Mode;)V	a	method_e_drawColor	drawColor
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;Landroid/graphics/Paint;F)V	a	method_e_drawTextWithBackground	drawTextWithBackground
+	m	(Ljava/lang/String;FFLandroid/graphics/Paint;)V	a	method_e_drawText	drawText
+	m	(Landroid/graphics/Rect;)V	a	method_e_setClipRect	setClipRect
+	m	(Landroid/graphics/RectF;)V	a	method_e_setClipRect	setClipRect
+	m	(FFFLandroid/graphics/Paint;)V	a	method_e_drawCircle	drawCircle
+	m	(FFFLandroid/graphics/Paint;)V	b	method_e_drawCircleDirect	drawCircleDirect
+	m	([FIILandroid/graphics/Paint;)V	a	method_e_drawLines	drawLines
+	m	(FFFFLandroid/graphics/Paint;)V	a	method_e_drawLine	drawLine
+	m	()V	g	method_e_beginFrame	beginFrame
+	m	()V	h	method_e_endFrame	endFrame
+	m	()V	i	method_e_save	save
+	m	()V	j	method_e_restore	restore
+	m	()V	k	method_e_saveTransform	saveTransform
+	m	()V	l	method_e_restoreTransform	restoreTransform
+	m	(FFF)V	a	method_e_rotate	rotate
+	m	(FF)V	a	method_e_scale	scale
+	m	(FFFF)V	a	method_e_scaleAround	scaleAround
+	m	(FF)V	b	method_e_translate	translate
+	m	(Lcom/corrodinggames/rts/gameFramework/m/m;)V	a	method_e_runDrawTimeCallback	runDrawTimeCallback
+	m	()V	o	method_e_clearAlphaMap	clearAlphaMap
+	m	(Landroid/graphics/Paint;)V	a	method_e_prepareFontForPaint	prepareFontForPaint
+	m	()V	p	method_e_flush	flush
+	m	()V	q	method_e_dispose	dispose
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	a	method_e_getTextHeight	getTextHeight
+	m	(Ljava/lang/String;Landroid/graphics/Paint;)I	b	method_e_getTextWidth	getTextWidth
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;Ljava/io/File;)V	a	method_e_saveImageToFile	saveImageToFile
+	m	(Ljava/util/concurrent/locks/Lock;)V	a	method_e_enterLock	enterLock
+	m	(Ljava/util/concurrent/locks/Lock;)V	b	method_e_leaveLock	leaveLock
+	m	()F	s	method_e_getUiScale	getUiScale
+	m	()V	c	method_e_initSlickRenderer	initSlickRenderer
+	m	()Lorg/newdawn/slick/Color;	t	method_e_getReusableSlickColor	getReusableSlickColor
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/java/e;	c	method_e_createChildBackendForImage	createChildBackendForImage
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/java/e;	d	method_e_createBackendForImage	createBackendForImage
+	m	(Ljava/lang/String;)Z	a	method_e_containsNonAscii	containsNonAscii
+	m	(Lcom/corrodinggames/rts/java/f;Ljava/lang/String;Z)Lorg/newdawn/slick/Font;	a	method_e_getFontForText	getFontForText
+	m	(Lcom/corrodinggames/rts/java/f;Z)Lcom/corrodinggames/rts/java/f;	a	method_e_getOrCreateFontKey	getOrCreateFontKey
+	m	(Landroid/graphics/Paint;Ljava/lang/String;)V	a	method_e_applyPaintForText	applyPaintForText
+	m	(Landroid/graphics/Paint;)V	b	method_e_applyPaint	applyPaint
+	m	(Landroid/graphics/Paint;Lcom/corrodinggames/rts/java/s;Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_e_applyPaintForImage	applyPaintForImage
+	m	()V	u	method_e_activateGraphicsContext	activateGraphicsContext
+	m	(Landroid/graphics/Paint;ZLjava/lang/String;Lcom/corrodinggames/rts/java/s;Lcom/corrodinggames/rts/gameFramework/m/e;)V	a	method_e_applyPaintState	applyPaintState
+	m	()V	v	method_e_clearShaderProgram	clearShaderProgram
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)V	b	method_e_updateShaderUniforms	updateShaderUniforms
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;)Z	c	method_e_ensureShaderProgram	ensureShaderProgram
+	m	(Lcom/corrodinggames/rts/gameFramework/m/ae;ILjava/lang/String;)I	a	method_e_compileShaderStage	compileShaderStage
+	m	(I)Ljava/lang/String;	e	method_e_getShaderTypeName	getShaderTypeName
+	m	(I)V	f	method_e_setGlColorFromArgb	setGlColorFromArgb
+	m	(Lorg/newdawn/slick/Color;)V	a	method_e_setSlickColor	setSlickColor
+	m	(F)V	a	method_e_setLineWidth	setLineWidth
+	m	(Landroid/graphics/Paint;Ljava/lang/String;Z)Lorg/newdawn/slick/Font;	a	method_e_getFont	getFont
+	m	(Lorg/newdawn/slick/opengl/ImageData;Ljava/nio/ByteBuffer;IIIIIII)V	a	method_e_copyPixelsFromImageData	copyPixelsFromImageData
+	m	(Lorg/newdawn/slick/opengl/ImageData;Ljava/nio/ByteBuffer;III)I	a	method_e_readPixelFromImageData	readPixelFromImageData
+	m	(IIII)I	a	method_e_packArgb	packArgb
+	m	(ILorg/newdawn/slick/Color;)Lorg/newdawn/slick/Color;	a	method_e_setColorFromArgb	setColorFromArgb
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Lcom/corrodinggames/rts/java/s;	e	method_e_unwrapSlickBitmapOrTexture	unwrapSlickBitmapOrTexture
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFLandroid/graphics/Paint;)V	c	method_e_drawImageRawInternal	drawImageRawInternal
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;FFFFFFFFLandroid/graphics/Paint;)V	a	method_e_drawImageQuadInternal	drawImageQuadInternal
+	m	(Lorg/newdawn/slick/Image;FFFFFFFFLorg/newdawn/slick/Color;F)V	a	method_e_drawSlickImageQuad	drawSlickImageQuad
+	m	()Z	x	method_e_shouldScaleTextForUi	shouldScaleTextForUi
+	m	(Z)V	b	method_e_applyClipState	applyClipState
+	m	(I)Ljava/nio/FloatBuffer;	c	method_e_ensureFloatBufferCapacity	ensureFloatBufferCapacity
+	m	([FI)Ljava/nio/FloatBuffer;	a	method_e_wrapFloatBuffer	wrapFloatBuffer
+	m	(I)[F	d	method_e_ensureFloatArrayCapacity	ensureFloatArrayCapacity
+	m	([FIILandroid/graphics/Paint;)V	b	method_e_drawLinesWithVertexArray	drawLinesWithVertexArray
+	m	(FFFI)V	a	method_e_drawCircleWithSegments	drawCircleWithSegments
+	m	(FLandroid/graphics/PointF;)V	a	method_e_rotatePoint	rotatePoint
+	m	()V	y	method_e_flushBuffer	flushBuffer
+	m	()V	z	method_e_pushTransformState	pushTransformState
+	m	()V	A	method_e_popTransformState	popTransformState
 c	com/corrodinggames/rts/java/i	rw/client/DesktopPlatformCallbacks	rustedwarfare/client/DesktopPlatformCallbacks
 	f	Lcom/corrodinggames/rts/java/Main;	a	field_1400_main	main
 	m	(Ljava/lang/String;I)V	a	method_1400_showMessageBox	showMessageBox
@@ -12636,3 +12914,28 @@ c	com/corrodinggames/rts/gameFramework/utility/e	rw/debug/anr/AnrListener	rusted
 	m	(Lcom/corrodinggames/rts/gameFramework/utility/a;)V	a	method_e_onAppNotResponding	onAppNotResponding
 c	com/corrodinggames/rts/gameFramework/utility/f	rw/debug/anr/AnrInterruptionListener	rustedwarfare/debug/anr/AnrInterruptionListener
 	m	(Ljava/lang/InterruptedException;)V	a	method_f_onInterrupted	onInterrupted
+c	com/corrodinggames/rts/java/f	rw/client/render/SlickFontKey	rustedwarfare/client/render/SlickFontKey
+	f	I	a	field_f_fontSize	fontSize
+	f	Z	b	field_f_bold	bold
+	f	Z	c	field_f_fallback	fallback
+	f	Lorg/newdawn/slick/Font;	d	field_f_font	font
+	f	I	e	field_f_recentTextIndex	recentTextIndex
+	f	[Ljava/lang/String;	f	field_f_recentTexts	recentTexts
+	f	Lcom/corrodinggames/rts/java/e;	g	field_f_owner	owner
+	m	(Lcom/corrodinggames/rts/java/e;)V	<init>	<init>	<init>
+	m	()Lcom/corrodinggames/rts/java/f;	a	method_f_copyKey	copyKey
+	m	()Ljava/lang/String;	toString	method_f_toString	toString
+	m	(Ljava/lang/String;)Z	a	method_f_hasGlyphsForText	hasGlyphsForText
+	m	(Ljava/lang/String;)V	b	method_f_rememberText	rememberText
+	m	()Ljava/lang/Object;	clone	method_f_clone	clone
+c	com/corrodinggames/rts/java/g	rw/client/render/SlickTransformState	rustedwarfare/client/render/SlickTransformState
+	f	F	a	field_g_translateX	translateX
+	f	F	b	field_g_translateY	translateY
+	f	F	c	field_g_rotationDegrees	rotationDegrees
+	f	F	d	field_g_scaleX	scaleX
+	f	F	e	field_g_scaleY	scaleY
+	f	Landroid/graphics/RectF;	f	field_g_clipRect	clipRect
+	f	F	g	field_g_rotationPivotX	rotationPivotX
+	f	F	h	field_g_rotationPivotY	rotationPivotY
+	m	()V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/java/g;)V	a	method_g_copyInto	copyInto

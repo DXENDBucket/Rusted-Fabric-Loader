@@ -12,6 +12,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.SlickGraphicsBackendDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
 
@@ -64,6 +65,10 @@ final class ExampleDiagnosticActions {
                         graphicsEngine);
             }
 
+            if (graphicsEngine != null && SlickGraphicsBackendDiagnostics.isGraphicsEngine(graphicsEngine)) {
+                showSlickGraphicsBackendSnapshot(stage, graphicsEngine);
+            }
+
             if (SlickRuntimeDiagnostics.isSlickGame(frameRenderer)) {
                 showSlickRenderSnapshot(stage, frameRenderer);
             } else {
@@ -88,6 +93,7 @@ final class ExampleDiagnosticActions {
                     "Evidence manifest=" + manifest.size()
                             + " fsRows=" + MappingEvidenceDiagnostics.allFileSystemBackendRows().size()
                             + " glRows=" + MappingEvidenceDiagnostics.allRenderGlBackendRows().size()
+                            + " slickRows=" + MappingEvidenceDiagnostics.allSlickGraphicsBackendRows().size()
                             + " audioRows=" + MappingEvidenceDiagnostics.allAudioBackendRows().size()
                             + " netRows=" + MappingEvidenceDiagnostics.allNetworkHandshakeSyncRows().size()
                             + " syncRows=" + MappingEvidenceDiagnostics.allNetworkSyncDesyncRows().size()
@@ -662,6 +668,54 @@ final class ExampleDiagnosticActions {
         }
     }
 
+    private static void showSlickGraphicsBackendSnapshot(String stage, Object graphicsEngine) {
+        Map<String, Object> generic = SlickGraphicsBackendDiagnostics.describeGraphicsBackend(graphicsEngine);
+        ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                "Graphics backend size=" + generic.get("width") + "x" + generic.get("height")
+                        + " slick=" + generic.get("slickGraphicsBackend")
+                        + " canvas=" + generic.get("canvasGraphicsEngine")
+                        + " null=" + generic.get("nullGraphicsEngine")
+                        + " evidence=" + MappingEvidenceDiagnostics.allSlickGraphicsBackendRows().size(),
+                graphicsEngine);
+
+        if (!SlickGraphicsBackendDiagnostics.isSlickGraphicsBackend(graphicsEngine)) {
+            return;
+        }
+
+        Map<String, Object> backend = SlickGraphicsBackendDiagnostics.describeSlickGraphicsBackend(graphicsEngine);
+        ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                "Slick backend shaders=" + backend.get("shadersEnabled")
+                        + " dirty=" + backend.get("paintStateDirty")
+                        + " uiScale=" + backend.get("uiScale")
+                        + " target=" + backend.get("targetWidth") + "x" + backend.get("targetHeight")
+                        + " drawMode=" + backend.get("currentDrawMode")
+                        + " lineWidth=" + backend.get("currentLineWidth"),
+                graphicsEngine);
+        ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                "Slick backend fonts=" + backend.get("fontCacheKeysSize")
+                        + " transforms=" + backend.get("transformStackSize")
+                        + " pool=" + backend.get("transformStatePoolSize")
+                        + " pendingDiscards=" + backend.get("pendingImageDataDiscardsSize")
+                        + " floatBuffer=" + backend.get("sharedFloatBufferCapacity")
+                        + "/" + backend.get("sharedFloatBufferRemaining")
+                        + " floatArray=" + backend.get("sharedFloatArrayLength"),
+                graphicsEngine);
+
+        Object transformState = backend.get("transformState");
+        if (transformState != null && SlickGraphicsBackendDiagnostics.isSlickTransformState(transformState)) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Slick transform " + summarizeSlickTransform(transformState),
+                    transformState);
+        }
+
+        List<Object> fontKeys = SlickGraphicsBackendDiagnostics.fontCacheKeysSnapshot(graphicsEngine);
+        if (!fontKeys.isEmpty() && SlickGraphicsBackendDiagnostics.isSlickFontKey(fontKeys.get(0))) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Slick first font " + summarizeSlickFontKey(fontKeys.get(0)),
+                    fontKeys.get(0));
+        }
+    }
+
     private static void showImageSummary(String stage, String label, Object image) {
         if (image == null || !RenderImageDiagnostics.isGameImage(image)) {
             return;
@@ -719,6 +773,32 @@ final class ExampleDiagnosticActions {
         }
 
         return ExampleDebugOverlay.describeObject(value);
+    }
+
+    private static String summarizeSlickTransform(Object transformState) {
+        try {
+            Map<String, Object> details = SlickGraphicsBackendDiagnostics.describeSlickTransformState(transformState);
+            return "{xy=" + details.get("translateX") + "," + details.get("translateY")
+                    + ", rot=" + details.get("rotationDegrees")
+                    + ", scale=" + details.get("scaleX") + "," + details.get("scaleY")
+                    + ", pivot=" + details.get("rotationPivotX") + "," + details.get("rotationPivotY")
+                    + ", clip=" + ExampleDebugOverlay.describeObject(details.get("clipRect")) + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(transformState);
+        }
+    }
+
+    private static String summarizeSlickFontKey(Object fontKey) {
+        try {
+            Map<String, Object> details = SlickGraphicsBackendDiagnostics.describeSlickFontKey(fontKey);
+            return "{size=" + details.get("fontSize")
+                    + ", bold=" + details.get("bold")
+                    + ", fallback=" + details.get("fallback")
+                    + ", recent=" + details.get("recentTextsUsed") + "/" + details.get("recentTextsLength")
+                    + ", font=" + ExampleDebugOverlay.describeObject(details.get("font")) + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(fontKey);
+        }
     }
 
     private static void showInputActionSummary(String stage, String label, Object action) {
