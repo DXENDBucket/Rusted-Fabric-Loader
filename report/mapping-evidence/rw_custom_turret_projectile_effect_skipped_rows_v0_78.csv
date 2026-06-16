@@ -1,0 +1,8 @@
+area,candidate,reason
+turret-template-field,com/corrodinggames/rts/game/units/custom/bn.ap,constructor/copy evidence only; no stable parser/runtime semantic isolated yet
+turret-template-field,com/corrodinggames/rts/game/units/custom/bn.az,constructor/copy evidence only; field meaning not separated from nearby projectile/effect defaults
+turret-template-field,com/corrodinggames/rts/game/units/custom/bn.aJ,tag field is copied by TurretTemplate.copyFrom but not otherwise parsed/used strongly enough in v0.78 evidence; skipped to avoid guessing turret-level tag-filter semantics
+custom-metadata-field,com/corrodinggames/rts/game/units/custom/l.bg,still mixes construction animation and conversion-action paths; leave for custom action/effect deep branch pass
+leg-arm-template-field,com/corrodinggames/rts/game/units/custom/ba.z,copied but no high-confidence parser/runtime use observed; not enough evidence to name safely
+leg-arm-template-field,com/corrodinggames/rts/game/units/custom/ba.A,copied but no high-confidence parser/runtime use observed; not enough evidence to name safely
+effect-template-method,com/corrodinggames/rts/game/units/custom/ay.<clinit>,EffectTemplate only has static initializer residual; no semantic member mapping needed

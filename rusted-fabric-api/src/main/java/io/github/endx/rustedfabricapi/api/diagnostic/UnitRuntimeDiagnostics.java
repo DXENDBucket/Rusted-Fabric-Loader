@@ -292,6 +292,18 @@ public final class UnitRuntimeDiagnostics {
         return value instanceof Number ? ((Number) value).intValue() : 0;
     }
 
+    public static void addTurretAimAngle(Object unit, int turretIndex, float angleDelta) {
+        requireOrderableUnit(unit);
+        RustedReflection.invokeInstance(unit, new String[]{"addTurretAimAngle", "a"},
+                Integer.valueOf(turretIndex), Float.valueOf(angleDelta));
+    }
+
+    public static int getMainNanoTurretIndex(Object unit) {
+        requireOrderableUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getMainNanoTurretIndex", "aT"});
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
     private static void requireUnit(Object unit) {
         if (unit == null) {
             throw new IllegalArgumentException("Unit must not be null");

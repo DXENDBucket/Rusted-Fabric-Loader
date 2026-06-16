@@ -116,6 +116,8 @@ final class ExampleDiagnosticActions {
                             + " saveReplayRows=" + MappingEvidenceDiagnostics.allSaveReplayVersionedDataRows().size()
                             + " modRows=" + MappingEvidenceDiagnostics.allModCustomPipelineRows().size()
                             + " metadataRows=" + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesRows().size()
+                            + " turretProjRows="
+                            + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -220,6 +222,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " fieldCollisions="
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRows().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Turret/projectile/effect evidence rows="
+                            + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectPartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV078().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);

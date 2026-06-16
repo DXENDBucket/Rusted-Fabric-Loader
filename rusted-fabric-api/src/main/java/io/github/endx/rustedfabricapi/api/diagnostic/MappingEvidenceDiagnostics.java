@@ -970,6 +970,34 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("named_method_collisions_v0_77_1");
     }
 
+    public static List<MappingEvidenceRow> allCustomTurretProjectileEffectRows() {
+        return allEvidenceRows("custom_turret_projectile_effect_added_rows_v0_78");
+    }
+
+    public static List<MappingEvidenceRow> allCustomTurretProjectileEffectUpdatedRows() {
+        return allEvidenceRows("custom_turret_projectile_effect_updated_rows_v0_78");
+    }
+
+    public static List<MappingEvidenceRow> allCustomTurretProjectileEffectFlowMap() {
+        return allEvidenceRows("custom_turret_projectile_effect_flow_map_v0_78");
+    }
+
+    public static List<MappingEvidenceRow> allCustomTurretProjectileEffectSkippedRows() {
+        return allEvidenceRows("custom_turret_projectile_effect_skipped_rows_v0_78");
+    }
+
+    public static List<MappingEvidenceRow> allCustomTurretProjectileEffectPartialCoverageRows() {
+        return allEvidenceRows("custom_turret_projectile_effect_partial_coverage_after_v0_78");
+    }
+
+    public static List<MappingEvidenceRow> allNamedFieldCollisionRowsV078() {
+        return allEvidenceRows("named_field_collisions_v0_78");
+    }
+
+    public static List<MappingEvidenceRow> allNamedMethodCollisionRowsV078() {
+        return allEvidenceRows("named_method_collisions_v0_78");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1253,6 +1281,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findIsBuilderUseAsBuilderHotfixUpdatedRows(String text) {
         return findByText(allIsBuilderUseAsBuilderHotfixUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomTurretProjectileEffectRows(String text) {
+        return findByText(allCustomTurretProjectileEffectRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomTurretProjectileEffectUpdatedRows(String text) {
+        return findByText(allCustomTurretProjectileEffectUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

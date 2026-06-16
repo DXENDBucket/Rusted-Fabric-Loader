@@ -32,6 +32,10 @@ public final class CustomUnitDiagnostics {
             "rustedwarfare.custom.CustomUnitMetadata",
             "com.corrodinggames.rts.game.units.custom.l"
     };
+    private static final String[] LEG_OR_ARM_TEMPLATE_CLASSES = {
+            "rustedwarfare.custom.LegOrArmTemplate",
+            "com.corrodinggames.rts.game.units.custom.ba"
+    };
     private static final String[] ATTACHMENT_SLOT_CLASSES = {
             "rustedwarfare.custom.attachment.AttachmentSlot",
             "com.corrodinggames.rts.game.units.custom.b.n"
@@ -107,9 +111,17 @@ public final class CustomUnitDiagnostics {
         putField(result, metadata, "canOnlyBeAttackedByUnitsWithTags",
                 new String[]{"canOnlyBeAttackedByUnitsWithTags", "aS"});
         putField(result, metadata, "unitsSpawnedOnDeath", new String[]{"unitsSpawnedOnDeath", "bC"});
+        putBooleanField(result, metadata, "hasLaserDefenceTurrets",
+                new String[]{"hasLaserDefenceTurrets", "bE"});
+        putBooleanField(result, metadata, "hasProjectileInterceptorTurrets",
+                new String[]{"hasProjectileInterceptorTurrets", "bF"});
+        putBooleanField(result, metadata, "hasTurretLimitingAngles",
+                new String[]{"hasTurretLimitingAngles", "bG"});
         putBooleanField(result, metadata, "hasMovementEffect", new String[]{"hasMovementEffect", "bL"});
         putBooleanField(result, metadata, "hasRepairEffect", new String[]{"hasRepairEffect", "bS"});
         putBooleanField(result, metadata, "hasReclaimEffect", new String[]{"hasReclaimEffect", "bW"});
+        putField(result, metadata, "legOrArmTemplates", new String[]{"legOrArmTemplates", "ax"});
+        result.put("legOrArmTemplatesSize", Integer.valueOf(legOrArmTemplates(metadata).size()));
         putField(result, metadata, "movementType", new String[]{"movementType", "fg"});
         putField(result, metadata, "pathingMovementType", new String[]{"pathingMovementType", "fh"});
         putBooleanField(result, metadata, "isBuilder", new String[]{"isBuilder", "fp"});
@@ -143,6 +155,17 @@ public final class CustomUnitDiagnostics {
         putField(result, metadata, "canOnlyAttackUnitsWithoutTags",
                 new String[]{"canOnlyAttackUnitsWithoutTags", "ew"});
         putBooleanField(result, metadata, "hasAttackTagFilters", new String[]{"hasAttackTagFilters", "eu"});
+        putBooleanField(result, metadata, "requiresTurretTagFilterTargetCheck",
+                new String[]{"requiresTurretTagFilterTargetCheck", "ex"});
+        putIntField(result, metadata, "reloadProgressTurretIndex",
+                new String[]{"reloadProgressTurretIndex", "em"});
+        putIntField(result, metadata, "warmupProgressTurretIndex",
+                new String[]{"warmupProgressTurretIndex", "en"});
+        putBooleanField(result, metadata, "hasAttachedTurretLinks",
+                new String[]{"hasAttachedTurretLinks", "fU"});
+        putField(result, metadata, "mainNanoTurret", new String[]{"mainNanoTurret", "fV"});
+        putBooleanField(result, metadata, "hasChargeEffectImages",
+                new String[]{"hasChargeEffectImages", "fP"});
         putBooleanField(result, metadata, "canReclaimResources", new String[]{"canReclaimResources", "fk"});
         putIntField(result, metadata, "canReclaimResourcesNextSearchRange",
                 new String[]{"canReclaimResourcesNextSearchRange", "fm"});
@@ -230,6 +253,72 @@ public final class CustomUnitDiagnostics {
     public static boolean metadataUsesCreditResources(Object metadata) {
         requireCustomUnitMetadata(metadata);
         return invokeBooleanOrFalse(metadata, new String[]{"usesCreditResources", "y"});
+    }
+
+    public static List<Object> legOrArmTemplates(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(metadata, new String[]{"legOrArmTemplates", "ax"})));
+    }
+
+    public static Map<String, Object> describeLegOrArmTemplate(Object template) {
+        requireLegOrArmTemplate(template);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putIntField(result, template, "index", new String[]{"index", "a"});
+        putField(result, template, "name", new String[]{"name", "b"});
+        putBooleanField(result, template, "isLeg", new String[]{"isLeg", "c"});
+        putFloatField(result, template, "x", new String[]{"x", "d"});
+        putFloatField(result, template, "y", new String[]{"y", "e"});
+        putFloatField(result, template, "liftingHeightOffset", new String[]{"liftingHeightOffset", "f"});
+        putFloatField(result, template, "targetHeight", new String[]{"targetHeight", "g"});
+        putBooleanField(result, template, "targetHeightRelative", new String[]{"targetHeightRelative", "h"});
+        putFloatField(result, template, "endDirOffset", new String[]{"endDirOffset", "i"});
+        putFloatField(result, template, "attachX", new String[]{"attachX", "j"});
+        putFloatField(result, template, "attachY", new String[]{"attachY", "k"});
+        putBooleanField(result, template, "lockMovement", new String[]{"lockMovement", "l"});
+        putFloatField(result, template, "estimatingPositionMultiplier",
+                new String[]{"estimatingPositionMultiplier", "m"});
+        putBooleanField(result, template, "holdDisMinCheckNeighbours",
+                new String[]{"holdDisMinCheckNeighbours", "n"});
+        putBooleanField(result, template, "favourOppositeSideNeighbours",
+                new String[]{"favourOppositeSideNeighbours", "o"});
+        putBooleanField(result, template, "alwaysHidden", new String[]{"alwaysHidden", "p"});
+        putField(result, template, "hidden", new String[]{"hidden", "q"});
+        putFloatField(result, template, "alpha", new String[]{"alpha", "r"});
+        putFloatField(result, template, "moveSpeed", new String[]{"moveSpeed", "s"});
+        putFloatField(result, template, "moveWarmUp", new String[]{"moveWarmUp", "t"});
+        putFloatField(result, template, "rotateSpeed", new String[]{"rotateSpeed", "u"});
+        putFloatField(result, template, "heightSpeed", new String[]{"heightSpeed", "v"});
+        putFloatField(result, template, "resetAngle", new String[]{"resetAngle", "w"});
+        putField(result, template, "middleImage", new String[]{"middleImage", "x"});
+        putField(result, template, "middleTeamImages", new String[]{"middleTeamImages", "y"});
+        putField(result, template, "endImage", new String[]{"endImage", "B"});
+        putField(result, template, "endTeamImages", new String[]{"endTeamImages", "C"});
+        putField(result, template, "endShadowImage", new String[]{"endShadowImage", "D"});
+        putBooleanField(result, template, "hasZoomedOutDrawOverride",
+                new String[]{"hasZoomedOutDrawOverride", "E"});
+        putBooleanField(result, template, "drawLegWhenZoomedOut",
+                new String[]{"drawLegWhenZoomedOut", "F"});
+        putBooleanField(result, template, "drawFootWhenZoomedOut",
+                new String[]{"drawFootWhenZoomedOut", "G"});
+        putBooleanField(result, template, "drawFootOnTop", new String[]{"drawFootOnTop", "H"});
+        putBooleanField(result, template, "dustEffect", new String[]{"dustEffect", "I"});
+        putBooleanField(result, template, "explodeOnDeath", new String[]{"explodeOnDeath", "J"});
+        putFloatField(result, template, "holdDisMin", new String[]{"holdDisMin", "K"});
+        putIntField(result, template, "holdDisMinMaxMovingLegs",
+                new String[]{"holdDisMinMaxMovingLegs", "L"});
+        putBooleanField(result, template, "holdMoveOnlyIfFurthest",
+                new String[]{"holdMoveOnlyIfFurthest", "M"});
+        putFloatField(result, template, "holdDisMax", new String[]{"holdDisMax", "N"});
+        putFloatField(result, template, "hardLimit", new String[]{"hardLimit", "O"});
+        putBooleanField(result, template, "drawOverBody", new String[]{"drawOverBody", "P"});
+        putBooleanField(result, template, "drawUnderAllUnits", new String[]{"drawUnderAllUnits", "Q"});
+        putFloatField(result, template, "drawDirOffset", new String[]{"drawDirOffset", "R"});
+        Object neighboring = RustedReflection.getFieldValue(template, new String[]{"neighboringLegIndices", "S"});
+        result.put("neighboringLegIndices", neighboring);
+        result.put("neighboringLegIndicesSize", Integer.valueOf(arrayLength(neighboring)));
+        putFloatField(result, template, "spinRate", new String[]{"spinRate", "T"});
+        return Collections.unmodifiableMap(result);
     }
 
     public static Map<String, Object> describeTransportMetadata(Object metadata) {
@@ -419,6 +508,10 @@ public final class CustomUnitDiagnostics {
         putFloatField(result, projectileTemplate, "targetSpeed", new String[]{"targetSpeed", "au"});
         putFloatField(result, projectileTemplate, "targetSpeedAcceleration",
                 new String[]{"targetSpeedAcceleration", "av"});
+        putFloatField(result, projectileTemplate, "ballisticDelayMoveHeight",
+                new String[]{"ballisticDelayMoveHeight", "as"});
+        putFloatField(result, projectileTemplate, "shieldDeflectionMultiplier",
+                new String[]{"shieldDeflectionMultiplier", "aT"});
         putFloatField(result, projectileTemplate, "targetGroundSpread", new String[]{"targetGroundSpread", "aK"});
         putFloatField(result, projectileTemplate, "targetGroundHeightOffset",
                 new String[]{"targetGroundHeightOffset", "aL"});
@@ -935,6 +1028,10 @@ public final class CustomUnitDiagnostics {
         return value instanceof Map<?, ?> ? ((Map<?, ?>) value).size() : 0;
     }
 
+    private static int arrayLength(Object value) {
+        return value != null && value.getClass().isArray() ? java.lang.reflect.Array.getLength(value) : 0;
+    }
+
     private static void requireTurretTemplate(Object turretTemplate) {
         requireAny(turretTemplate, TURRET_TEMPLATE_CLASSES, "TurretTemplate");
     }
@@ -945,6 +1042,10 @@ public final class CustomUnitDiagnostics {
 
     private static void requireCustomUnitMetadata(Object metadata) {
         requireAny(metadata, CUSTOM_UNIT_METADATA_CLASSES, "CustomUnitMetadata");
+    }
+
+    private static void requireLegOrArmTemplate(Object template) {
+        requireAny(template, LEG_OR_ARM_TEMPLATE_CLASSES, "LegOrArmTemplate");
     }
 
     private static void requireAttachmentSlot(Object attachmentSlot) {

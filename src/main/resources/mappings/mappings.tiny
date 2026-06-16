@@ -3646,6 +3646,20 @@ c	com/corrodinggames/rts/game/units/custom/ba	rw/custom/LegOrArmTemplate	rustedw
 	f	F	u	field_ba_u_rotateSpeed	rotateSpeed
 	f	F	v	field_ba_v_heightSpeed	heightSpeed
 	f	F	w	field_ba_w_resetAngle	resetAngle
+	f	I	a	field_ba_index	index
+	f	Ljava/lang/String;	b	field_ba_name	name
+	f	Z	c	field_ba_isLeg	isLeg
+	f	Z	p	field_ba_alwaysHidden	alwaysHidden
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	x	field_ba_middleImage	middleImage
+	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	y	field_ba_middleTeamImages	middleTeamImages
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	B	field_ba_endImage	endImage
+	f	[Lcom/corrodinggames/rts/gameFramework/m/e;	C	field_ba_endTeamImages	endTeamImages
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	D	field_ba_endShadowImage	endShadowImage
+	f	Z	E	field_ba_hasZoomedOutDrawOverride	hasZoomedOutDrawOverride
+	f	[I	S	field_ba_neighboringLegIndices	neighboringLegIndices
+	m	()V	<init>	<init>	<init>
+	m	(Lcom/corrodinggames/rts/game/units/custom/ba;)V	a	method_ba_copyFrom	copyFrom
+	m	(Lcom/corrodinggames/rts/game/units/custom/ba;Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;Ljava/lang/String;ZLjava/util/ArrayList;)V	a	method_ba_parseFromConfig	parseFromConfig
 c	com/corrodinggames/rts/game/units/custom/bb	rw/custom/LocalizedStringData	rustedwarfare/custom/LocalizedStringData
 	f	Lcom/corrodinggames/rts/game/units/custom/bb;	a	field_bb_a_EMPTY	EMPTY
 	f	[Lcom/corrodinggames/rts/game/units/custom/bc;	b	field_bb_b_entries	entries
@@ -3744,7 +3758,7 @@ c	com/corrodinggames/rts/game/units/custom/bh	rw/custom/CustomProjectileTemplate
 	f	F	aQ	field_bh_aQ_pushVelocity	pushVelocity
 	f	F	aR	field_bh_aR_buildingDamageMultiplier	buildingDamageMultiplier
 	f	F	aS	field_bh_aS_shieldDamageMultiplier	shieldDamageMultiplier
-	f	F	aT	field_bh_aT_shieldDefectionMultiplier	shieldDefectionMultiplier
+	f	F	aT	field_bh_shieldDeflectionMultiplier	shieldDeflectionMultiplier
 	f	F	aU	field_bh_aU_hullDamageMultiplier	hullDamageMultiplier
 	f	F	aV	field_bh_aV_armourIgnoreAmount	armourIgnoreAmount
 	f	F	aW	field_bh_aW_areaExpandTime	areaExpandTime
@@ -3763,7 +3777,7 @@ c	com/corrodinggames/rts/game/units/custom/bh	rw/custom/CustomProjectileTemplate
 	f	F	ap	field_bh_ap_lightSize	lightSize
 	f	Z	aq	field_bh_aq_lightCastOnGround	lightCastOnGround
 	f	Z	ar	field_bh_ar_largeHitEffect	largeHitEffect
-	f	F	as	field_bh_as_ballisticDelaymoveHeight	ballisticDelaymoveHeight
+	f	F	as	field_bh_ballisticDelayMoveHeight	ballisticDelayMoveHeight
 	f	F	at	field_bh_at_ballisticHeight	ballisticHeight
 	f	F	au	field_bh_au_targetSpeed	targetSpeed
 	f	F	av	field_bh_av_targetSpeedAcceleration	targetSpeedAcceleration
@@ -4622,6 +4636,8 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(I)Z	u	method_CustomUnit_isTurretAimedAtTarget	isTurretAimedAtTarget
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	v	method_CustomUnit_getZoomedOutIconImage	getZoomedOutIconImage
 	m	(I)I	v	method_CustomUnit_getLinkedDelayTurretIndex	getLinkedDelayTurretIndex
+	m	(IF)V	a	method_j_addTurretAimAngle	addTurretAimAngle
+	m	()I	aT	method_j_getMainNanoTurretIndex	getMainNanoTurretIndex
 c	com/corrodinggames/rts/game/units/custom/k	rw/custom/logic/LogicEventContext	rustedwarfare/custom/logic/LogicEventContext
 	f	Lcom/corrodinggames/rts/game/units/custom/ae;	a	field_LogicEventContext_eventAction	eventAction
 	f	Lcom/corrodinggames/rts/game/units/custom/j;	b	field_LogicEventContext_sourceCustomUnit	sourceCustomUnit
@@ -5061,6 +5077,15 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	m	()Ljava/util/ArrayList;	s	method_l_getCustomUnitTypeIds	getCustomUnitTypeIds
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	x	method_l_getTags	getTags
 	m	()Z	y	method_l_usesCreditResources	usesCreditResources
+	f	Z	bE	field_l_hasLaserDefenceTurrets	hasLaserDefenceTurrets
+	f	Z	bF	field_l_hasProjectileInterceptorTurrets	hasProjectileInterceptorTurrets
+	f	Z	bG	field_l_hasTurretLimitingAngles	hasTurretLimitingAngles
+	f	Z	ex	field_l_requiresTurretTagFilterTargetCheck	requiresTurretTagFilterTargetCheck
+	f	I	em	field_l_reloadProgressTurretIndex	reloadProgressTurretIndex
+	f	I	en	field_l_warmupProgressTurretIndex	warmupProgressTurretIndex
+	f	Z	fU	field_l_hasAttachedTurretLinks	hasAttachedTurretLinks
+	f	Lcom/corrodinggames/rts/game/units/custom/bn;	fV	field_l_mainNanoTurret	mainNanoTurret
+	f	Z	fP	field_l_hasChargeEffectImages	hasChargeEffectImages
 c	com/corrodinggames/rts/game/units/custom/l$1	rw/custom/internal/CustomUnitMetadataAnonymous1	rustedwarfare/custom/internal/CustomUnitMetadataAnonymous1
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/BooleanParseException	rw/custom/logic/BooleanParseException	rustedwarfare/custom/logic/BooleanParseException
 	f	J	serialVersionUID	field_BooleanParseException_serialVersionUID	serialVersionUID
@@ -7628,6 +7653,8 @@ c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/O
 	m	(I)F	t	method_OrderableUnit_getTurretWarmupShootDelayTransfer	getTurretWarmupShootDelayTransfer
 	m	(I)Z	u	method_y_isTurretAimedAtTarget	isTurretAimedAtTarget
 	m	(I)I	v	method_OrderableUnit_getLinkedDelayTurretIndex	getLinkedDelayTurretIndex
+	m	(IF)V	a	method_y_addTurretAimAngle	addTurretAimAngle
+	m	()I	aT	method_y_getMainNanoTurretIndex	getMainNanoTurretIndex
 c	com/corrodinggames/rts/game/units/z	rw/unit/action/ActionExecutionResult	rustedwarfare/unit/action/ActionExecutionResult
 	f	Lcom/corrodinggames/rts/game/units/am;	a	field_z_a_sourceUnit	sourceUnit
 	f	Lcom/corrodinggames/rts/game/units/am;	b	field_z_b_createdUnit	createdUnit
