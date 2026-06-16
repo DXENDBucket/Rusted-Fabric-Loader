@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricapi.api.diagnostic;
 
 import io.github.endx.rustedfabricapi.api.util.RustedReflection;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +29,10 @@ public final class CustomUnitDiagnostics {
             "rustedwarfare.custom.CustomProjectileTemplate",
             "com.corrodinggames.rts.game.units.custom.bh"
     };
+    private static final String[] CUSTOM_UNIT_CLASSES = {
+            "rustedwarfare.custom.CustomUnit",
+            "com.corrodinggames.rts.game.units.custom.j"
+    };
     private static final String[] CUSTOM_UNIT_METADATA_CLASSES = {
             "rustedwarfare.custom.CustomUnitMetadata",
             "com.corrodinggames.rts.game.units.custom.l"
@@ -35,6 +40,10 @@ public final class CustomUnitDiagnostics {
     private static final String[] LEG_OR_ARM_TEMPLATE_CLASSES = {
             "rustedwarfare.custom.LegOrArmTemplate",
             "com.corrodinggames.rts.game.units.custom.ba"
+    };
+    private static final String[] LEG_RUNTIME_STATE_CLASSES = {
+            "rustedwarfare.custom.runtime.LegRuntimeState",
+            "com.corrodinggames.rts.game.units.custom.b.i"
     };
     private static final String[] ATTACHMENT_SLOT_CLASSES = {
             "rustedwarfare.custom.attachment.AttachmentSlot",
@@ -122,6 +131,10 @@ public final class CustomUnitDiagnostics {
         putBooleanField(result, metadata, "hasReclaimEffect", new String[]{"hasReclaimEffect", "bW"});
         putField(result, metadata, "legOrArmTemplates", new String[]{"legOrArmTemplates", "ax"});
         result.put("legOrArmTemplatesSize", Integer.valueOf(legOrArmTemplates(metadata).size()));
+        putBooleanField(result, metadata, "hasDrawOverBodyLegs",
+                new String[]{"hasDrawOverBodyLegs", "ay"});
+        putBooleanField(result, metadata, "hasDrawUnderAllUnitsLegs",
+                new String[]{"hasDrawUnderAllUnitsLegs", "az"});
         putField(result, metadata, "movementType", new String[]{"movementType", "fg"});
         putField(result, metadata, "pathingMovementType", new String[]{"pathingMovementType", "fh"});
         putBooleanField(result, metadata, "isBuilder", new String[]{"isBuilder", "fp"});
@@ -319,6 +332,83 @@ public final class CustomUnitDiagnostics {
         result.put("neighboringLegIndicesSize", Integer.valueOf(arrayLength(neighboring)));
         putFloatField(result, template, "spinRate", new String[]{"spinRate", "T"});
         return Collections.unmodifiableMap(result);
+    }
+
+    public static boolean isCustomUnit(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), CUSTOM_UNIT_CLASSES);
+    }
+
+    public static List<Object> getAttachedUnitActions(Object customUnit, boolean includeUnavailable) {
+        requireCustomUnit(customUnit);
+        Object value = RustedReflection.invokeInstance(customUnit, new String[]{"getAttachedUnitActions", "e"},
+                Boolean.valueOf(includeUnavailable));
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
+    }
+
+    public static List<Object> attachedUnitActionBuffer(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(customUnit, new String[]{"attachedUnitActionBuffer", "eg"})));
+    }
+
+    public static List<Object> legRuntimeStates(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(customUnit, new String[]{"legRuntimeStates", "dT"})));
+    }
+
+    public static List<Map<String, Object>> describeLegRuntimeStates(Object customUnit) {
+        List<Object> states = legRuntimeStates(customUnit);
+        List<Map<String, Object>> result = new ArrayList<Map<String, Object>>(states.size());
+        for (Object state : states) {
+            if (state != null && isLegRuntimeState(state)) {
+                result.add(describeLegRuntimeState(state));
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    public static Map<String, Object> describeLegRuntimeState(Object state) {
+        requireLegRuntimeState(state);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        putIntField(result, state, "index", new String[]{"index", "a"});
+        putFloatField(result, state, "footX", new String[]{"footX", "b"});
+        putFloatField(result, state, "footY", new String[]{"footY", "c"});
+        putFloatField(result, state, "footHeight", new String[]{"footHeight", "d"});
+        putFloatField(result, state, "moveWarmupTimer", new String[]{"moveWarmupTimer", "e"});
+        putFloatField(result, state, "targetX", new String[]{"targetX", "f"});
+        putFloatField(result, state, "targetY", new String[]{"targetY", "g"});
+        putFloatField(result, state, "distanceToTargetSquared",
+                new String[]{"distanceToTargetSquared", "h"});
+        putFloatField(result, state, "footDir", new String[]{"footDir", "i"});
+        putBooleanField(result, state, "landingEffectEmitted",
+                new String[]{"landingEffectEmitted", "j"});
+        putBooleanField(result, state, "moving", new String[]{"moving", "k"});
+        putBooleanField(result, state, "needsPositionReset", new String[]{"needsPositionReset", "m"});
+        putBooleanField(result, state, "fallingReset", new String[]{"fallingReset", "n"});
+        putBooleanField(result, state, "positionDirty", new String[]{"positionDirty", "o"});
+        putFloatField(result, state, "spinAngle", new String[]{"spinAngle", "r"});
+        putFloatField(result, state, "alpha", new String[]{"alpha", "s"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static boolean isLegRuntimeState(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), LEG_RUNTIME_STATE_CLASSES);
+    }
+
+    public static void ensureLegRuntimeStates(Object customUnit) {
+        requireCustomUnit(customUnit);
+        RustedReflection.invokeInstance(customUnit, new String[]{"ensureLegRuntimeStates", "du"});
+    }
+
+    public static void refreshLegRuntimeStates(Object customUnit) {
+        requireCustomUnit(customUnit);
+        RustedReflection.invokeInstance(customUnit, new String[]{"refreshLegRuntimeStates", "dv"});
+    }
+
+    public static void markLegsForFalling(Object customUnit) {
+        requireCustomUnit(customUnit);
+        RustedReflection.invokeInstance(customUnit, new String[]{"markLegsForFalling", "dB"});
     }
 
     public static Map<String, Object> describeTransportMetadata(Object metadata) {
@@ -1040,12 +1130,20 @@ public final class CustomUnitDiagnostics {
         requireAny(projectileTemplate, CUSTOM_PROJECTILE_TEMPLATE_CLASSES, "CustomProjectileTemplate");
     }
 
+    private static void requireCustomUnit(Object customUnit) {
+        requireAny(customUnit, CUSTOM_UNIT_CLASSES, "CustomUnit");
+    }
+
     private static void requireCustomUnitMetadata(Object metadata) {
         requireAny(metadata, CUSTOM_UNIT_METADATA_CLASSES, "CustomUnitMetadata");
     }
 
     private static void requireLegOrArmTemplate(Object template) {
         requireAny(template, LEG_OR_ARM_TEMPLATE_CLASSES, "LegOrArmTemplate");
+    }
+
+    private static void requireLegRuntimeState(Object state) {
+        requireAny(state, LEG_RUNTIME_STATE_CLASSES, "LegRuntimeState");
     }
 
     private static void requireAttachmentSlot(Object attachmentSlot) {

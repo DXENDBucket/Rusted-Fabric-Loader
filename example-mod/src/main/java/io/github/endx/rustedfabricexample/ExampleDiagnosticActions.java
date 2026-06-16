@@ -118,6 +118,8 @@ final class ExampleDiagnosticActions {
                             + " metadataRows=" + MappingEvidenceDiagnostics.allCustomUnitMetadataResourcesRows().size()
                             + " turretProjRows="
                             + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectRows().size()
+                            + " attachLegRows="
+                            + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -237,6 +239,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allCustomTurretProjectileEffectPartialCoverageRows().size()
                             + " fieldCollisions="
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV078().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Attachment/leg/decal evidence rows="
+                            + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimePartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV079().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);

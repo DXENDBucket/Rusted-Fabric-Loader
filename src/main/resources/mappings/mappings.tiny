@@ -2161,6 +2161,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	(F)Lcom/corrodinggames/rts/game/units/am;	q	method_Unit_getRecentDamager	getRecentDamager
 	m	(F)V	r	method_am_setConstructionProgress	setConstructionProgress
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	v	method_Unit_getZoomedOutIconImage	getZoomedOutIconImage
+	m	(Z)Lcom/corrodinggames/rts/gameFramework/utility/m;	e	method_am_getAttachedUnitActions	getAttachedUnitActions
 c	com/corrodinggames/rts/game/units/an	rw/unit/visibility/PerTeamUnitVisibilityState	rustedwarfare/unit/visibility/PerTeamUnitVisibilityState
 	f	Z	a	field_an_wasVisible	wasVisible
 	f	I	b	field_an_lastKnownTechLevel	lastKnownTechLevel
@@ -3529,7 +3530,28 @@ c	com/corrodinggames/rts/game/units/custom/b/g	rw/custom/graphics/DecalReference
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;)V	a	method_CustomUnitMetadataPostLoadCallback_apply	apply
 c	com/corrodinggames/rts/game/units/custom/b/h	rw/custom/runtime/LegAnimationBehavior	rustedwarfare/custom/runtime/LegAnimationBehavior
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_h_onLateUpdate	onLateUpdate
+	f	Lcom/corrodinggames/rts/game/units/custom/b/a;	a	field_h_instance	instance
+	f	Landroid/graphics/Rect;	b	field_h_scratchSourceRect	scratchSourceRect
+	f	Landroid/graphics/RectF;	c	field_h_scratchDestRect	scratchDestRect
+	f	Landroid/graphics/Paint;	d	field_h_scratchPaint	scratchPaint
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;FZZ)V	a	method_h_drawLegLayer	drawLegLayer
 c	com/corrodinggames/rts/game/units/custom/b/i	rw/custom/runtime/LegRuntimeState	rustedwarfare/custom/runtime/LegRuntimeState
+	f	I	a	field_i_index	index
+	f	F	b	field_i_footX	footX
+	f	F	c	field_i_footY	footY
+	f	F	d	field_i_footHeight	footHeight
+	f	F	e	field_i_moveWarmupTimer	moveWarmupTimer
+	f	F	f	field_i_targetX	targetX
+	f	F	g	field_i_targetY	targetY
+	f	F	h	field_i_distanceToTargetSquared	distanceToTargetSquared
+	f	F	i	field_i_footDir	footDir
+	f	Z	j	field_i_landingEffectEmitted	landingEffectEmitted
+	f	Z	k	field_i_moving	moving
+	f	Z	m	field_i_needsPositionReset	needsPositionReset
+	f	Z	n	field_i_fallingReset	fallingReset
+	f	Z	o	field_i_positionDirty	positionDirty
+	f	F	r	field_i_spinAngle	spinAngle
+	f	F	s	field_i_alpha	alpha
 c	com/corrodinggames/rts/game/units/custom/b/j	rw/custom/runtime/RepelFromUnitsBehavior	rustedwarfare/custom/runtime/RepelFromUnitsBehavior
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	a	field_RepelFromUnitsBehavior_enabledCondition	enabledCondition
 	f	F	b	field_RepelFromUnitsBehavior_speed	speed
@@ -3561,13 +3583,14 @@ c	com/corrodinggames/rts/game/units/custom/b/m	rw/custom/attachment/AttachmentBe
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/b/n;)Lcom/corrodinggames/rts/game/units/y;	a	method_AttachmentBehavior_getAttachedUnitInSlot	getAttachedUnitInSlot
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/b/n;Lcom/corrodinggames/rts/game/units/y;)Z	a	method_AttachmentBehavior_attachUnitToSlot	attachUnitToSlot
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/l;)V	a	method_m_onMetadataChanged	onMetadataChanged
-	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/gameFramework/utility/m;Z)V	a	method_AttachmentBehavior_detachOrCleanList	detachOrCleanList
+	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/gameFramework/utility/m;Z)V	a	method_m_collectAttachedUnitActions	collectAttachedUnitActions
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;S)Lcom/corrodinggames/rts/game/units/custom/b/n;	a	method_AttachmentBehavior_getSlotByIndex	getSlotByIndex
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Z)V	a	method_AttachmentBehavior_refreshAttachedUnits	refreshAttachedUnits
 	m	(Lcom/corrodinggames/rts/game/units/custom/l;Lcom/corrodinggames/rts/gameFramework/utility/ab;)V	a	method_AttachmentBehavior_parseAttachmentSections	parseAttachmentSections
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;)V	b	method_m_onKilled	onKilled
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;F)V	b	method_m_onLateUpdate	onLateUpdate
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;)V	c	method_m_onRemovedFromGame	onRemovedFromGame
+	f	Lcom/corrodinggames/rts/game/units/custom/b/m;	a	field_m_instance	instance
 c	com/corrodinggames/rts/game/units/custom/b/n	rw/custom/attachment/AttachmentSlot	rustedwarfare/custom/attachment/AttachmentSlot
 	f	Z	A	field_AttachmentSlot_setDrawLayerOnTop	setDrawLayerOnTop
 	f	Z	B	field_AttachmentSlot_setDrawLayerOnBottom	setDrawLayerOnBottom
@@ -4495,7 +4518,7 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	dW	field_CustomUnit_pendingEventContexts	pendingEventContexts
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	dX	field_CustomUnit_recycledEventContexts	recycledEventContexts
 	f	Lcom/corrodinggames/rts/game/units/custom/h;	ed	field_j_ed_runtimeTags	runtimeTags
-	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	eg	field_j_eg_cachedWaypointActions	cachedWaypointActions
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	eg	field_j_attachedUnitActionBuffer	attachedUnitActionBuffer
 	f	F	m	field_CustomUnit_transportUnloadTimer	transportUnloadTimer
 	f	Z	n	field_CustomUnit_transportUnloading	transportUnloading
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	x	field_0900_metadata	unitMetadata
@@ -4597,7 +4620,7 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_CustomUnit_canTransportUnit	canTransportUnit
 	m	(Z)F	d	method_CustomUnit_getBodyOrShadowDrawRotation	getBodyOrShadowDrawRotation
 	m	()Z	dA	method_CustomUnit_isBuildQueueLimitExceeded	isBuildQueueLimitExceeded
-	m	()V	dB	method_CustomUnit_markAttachmentsFalling	markAttachmentsFalling
+	m	()V	dB	method_j_markLegsForFalling	markLegsForFalling
 	m	()V	dD	method_CustomUnit_clearQueuedCustomEvents	clearQueuedCustomEvents
 	m	()Z	dH	method_custom_j_isProtectedByAttachmentSlot	isProtectedByAttachmentSlot
 	m	()I	dI	method_CustomUnit_getUsedTransportSlots	getUsedTransportSlots
@@ -4638,6 +4661,9 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(I)I	v	method_CustomUnit_getLinkedDelayTurretIndex	getLinkedDelayTurretIndex
 	m	(IF)V	a	method_j_addTurretAimAngle	addTurretAimAngle
 	m	()I	aT	method_j_getMainNanoTurretIndex	getMainNanoTurretIndex
+	m	(Z)Lcom/corrodinggames/rts/gameFramework/utility/m;	e	method_j_getAttachedUnitActions	getAttachedUnitActions
+	m	()V	du	method_j_ensureLegRuntimeStates	ensureLegRuntimeStates
+	m	()V	dv	method_j_refreshLegRuntimeStates	refreshLegRuntimeStates
 c	com/corrodinggames/rts/game/units/custom/k	rw/custom/logic/LogicEventContext	rustedwarfare/custom/logic/LogicEventContext
 	f	Lcom/corrodinggames/rts/game/units/custom/ae;	a	field_LogicEventContext_eventAction	eventAction
 	f	Lcom/corrodinggames/rts/game/units/custom/j;	b	field_LogicEventContext_sourceCustomUnit	sourceCustomUnit
@@ -5086,6 +5112,8 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	Z	fU	field_l_hasAttachedTurretLinks	hasAttachedTurretLinks
 	f	Lcom/corrodinggames/rts/game/units/custom/bn;	fV	field_l_mainNanoTurret	mainNanoTurret
 	f	Z	fP	field_l_hasChargeEffectImages	hasChargeEffectImages
+	f	Z	ay	field_l_hasDrawOverBodyLegs	hasDrawOverBodyLegs
+	f	Z	az	field_l_hasDrawUnderAllUnitsLegs	hasDrawUnderAllUnitsLegs
 c	com/corrodinggames/rts/game/units/custom/l$1	rw/custom/internal/CustomUnitMetadataAnonymous1	rustedwarfare/custom/internal/CustomUnitMetadataAnonymous1
 c	com/corrodinggames/rts/game/units/custom/logicBooleans/BooleanParseException	rw/custom/logic/BooleanParseException	rustedwarfare/custom/logic/BooleanParseException
 	f	J	serialVersionUID	field_BooleanParseException_serialVersionUID	serialVersionUID

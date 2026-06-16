@@ -998,6 +998,34 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("named_method_collisions_v0_78");
     }
 
+    public static List<MappingEvidenceRow> allAttachmentLegDecalRuntimeRows() {
+        return allEvidenceRows("attachment_leg_decal_runtime_added_rows_v0_79");
+    }
+
+    public static List<MappingEvidenceRow> allAttachmentLegDecalRuntimeUpdatedRows() {
+        return allEvidenceRows("attachment_leg_decal_runtime_updated_rows_v0_79");
+    }
+
+    public static List<MappingEvidenceRow> allAttachmentLegDecalRuntimeFlowMap() {
+        return allEvidenceRows("attachment_leg_decal_runtime_flow_map_v0_79");
+    }
+
+    public static List<MappingEvidenceRow> allAttachmentLegDecalRuntimeSkippedRows() {
+        return allEvidenceRows("attachment_leg_decal_runtime_skipped_rows_v0_79");
+    }
+
+    public static List<MappingEvidenceRow> allAttachmentLegDecalRuntimePartialCoverageRows() {
+        return allEvidenceRows("attachment_leg_decal_runtime_partial_coverage_after_v0_79");
+    }
+
+    public static List<MappingEvidenceRow> allNamedFieldCollisionRowsV079() {
+        return allEvidenceRows("named_field_collisions_v0_79");
+    }
+
+    public static List<MappingEvidenceRow> allNamedMethodCollisionRowsV079() {
+        return allEvidenceRows("named_method_collisions_v0_79");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1289,6 +1317,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findCustomTurretProjectileEffectUpdatedRows(String text) {
         return findByText(allCustomTurretProjectileEffectUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findAttachmentLegDecalRuntimeRows(String text) {
+        return findByText(allAttachmentLegDecalRuntimeRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findAttachmentLegDecalRuntimeUpdatedRows(String text) {
+        return findByText(allAttachmentLegDecalRuntimeUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

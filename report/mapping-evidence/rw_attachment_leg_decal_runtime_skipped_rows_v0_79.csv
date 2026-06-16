@@ -1,0 +1,8 @@
+area,candidate,reason
+leg-runtime-state-field,com/corrodinggames/rts/game/units/custom/b/i.l:Z,terrain/water landing-effect branch is visible but not stable enough to distinguish water/surface/contact semantics
+leg-runtime-state-field,com/corrodinggames/rts/game/units/custom/b/i.p:F,"runtime offset consumed with template x/y, but no direct parser/save evidence for a stable name"
+leg-runtime-state-field,com/corrodinggames/rts/game/units/custom/b/i.q:F,"runtime offset consumed with template x/y, but no direct parser/save evidence for a stable name"
+leg-arm-template-field,com/corrodinggames/rts/game/units/custom/ba.z:Z,still only copied; no parser/runtime branch with enough evidence
+leg-arm-template-field,com/corrodinggames/rts/game/units/custom/ba.A:F,still only copied; no parser/runtime branch with enough evidence
+decal-layer-synthetic,DecalLayer.g / values / valueOf / <clinit>,enum synthetic boilerplate is already readable enough and not useful for v0.79
+decal-behavior-ctor,com/corrodinggames/rts/game/units/custom/b/c.<init>/<clinit>,constructor/static scratch initialization only; no additional semantic value

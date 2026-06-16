@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.util.RustedReflection;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class UnitRuntimeDiagnostics {
@@ -226,6 +227,13 @@ public final class UnitRuntimeDiagnostics {
     public static Object getActiveResourceDelta(Object unit) {
         requireUnit(unit);
         return RustedReflection.invokeInstance(unit, new String[]{"getActiveResourceDelta", "dq"});
+    }
+
+    public static List<Object> getAttachedUnitActions(Object unit, boolean includeUnavailable) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getAttachedUnitActions", "e"},
+                Boolean.valueOf(includeUnavailable));
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(value));
     }
 
     public static boolean canRepairTarget(Object unit, Object target) {
