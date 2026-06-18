@@ -16,6 +16,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.ReplayChecksumDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.ResourceEconomyDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickGraphicsBackendDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SlickRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.SteamRuntimeDiagnostics;
@@ -123,6 +124,8 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allAttachmentLegDecalRuntimeRows().size()
                             + " actionDeepRows="
                             + MappingEvidenceDiagnostics.allCustomActionEffectDeepRows().size()
+                            + " resTagRows="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -184,6 +187,61 @@ final class ExampleDiagnosticActions {
                             + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
                     null);
             ExampleMod.log("CommonUtils snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    static void showResourceSnapshot(String stage) {
+        try {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Resource/tag/memory evidence rows="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectRows().size()
+                            + " flow=" + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectPartialCoverageRows().size(),
+                    null);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Resource types all=" + ResourceEconomyDiagnostics.allResourceTypes().size()
+                            + " active=" + ResourceEconomyDiagnostics.activeDisplayResources().size()
+                            + " builtIn=" + ResourceEconomyDiagnostics.builtInResources().size()
+                            + " credits="
+                            + ExampleDebugOverlay.describeObject(ResourceEconomyDiagnostics.creditsResourceType()),
+                    null);
+
+            Object interfaceEngine = GameEngineDiagnostics.currentInterfaceEngine();
+            Object selectedUnit = interfaceEngine != null ? HudCommandDiagnostics.primarySelectedUnit(interfaceEngine) : null;
+            if (selectedUnit == null) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage, "Resource selected unit unavailable", null);
+                return;
+            }
+
+            Map<String, Object> resources = ResourceEconomyDiagnostics.describeUnitResourceEconomy(selectedUnit);
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Selected resources credit/s=" + resources.get("creditGenerationPerSecond")
+                            + " rate=" + resources.get("resourceRate")
+                            + " maxReclaimers=" + resources.get("resourceMaxConcurrentReclaimingThis")
+                            + " tags=" + summarizeTagList(resources.get("similarResourcesHaveTag")),
+                    selectedUnit);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Selected generation local="
+                            + summarizeStoredResourceSet(resources.get("generationResourcesPerSecond"))
+                            + " global="
+                            + summarizeStoredResourceSet(resources.get("globalGenerationResourcesPerSecond")),
+                    selectedUnit);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Selected queuedActionDelta="
+                            + summarizeResourceAmount(resources.get("queuedActionResourceDelta")),
+                    selectedUnit);
+        } catch (Throwable t) {
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Resource snapshot failed: " + t.getClass().getSimpleName()
+                            + ": " + ExampleDebugOverlay.safeText(t.getMessage()),
+                    null);
+            ExampleMod.log("Resource snapshot failed: " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 
@@ -272,6 +330,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allCustomActionEffectDeepPartialCoverageRows().size()
                             + " fieldCollisions="
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV080().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Resource/tag/memory evidence rows="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectPartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV081().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);
@@ -1172,6 +1245,48 @@ final class ExampleDiagnosticActions {
                     + ", font=" + ExampleDebugOverlay.describeObject(details.get("font")) + "}";
         } catch (RuntimeException e) {
             return ExampleDebugOverlay.describeObject(fontKey);
+        }
+    }
+
+    private static String summarizeResourceAmount(Object resourceAmount) {
+        if (resourceAmount == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = ResourceEconomyDiagnostics.describeResourceAmount(resourceAmount);
+            return "{credits=" + details.get("credits")
+                    + ", empty=" + details.get("empty")
+                    + ", value=" + details.get("estimatedValue")
+                    + ", custom=" + ExampleDebugOverlay.describeObject(details.get("customResources")) + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(resourceAmount);
+        }
+    }
+
+    private static String summarizeStoredResourceSet(Object storedResourceSet) {
+        if (storedResourceSet == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = ResourceEconomyDiagnostics.describeStoredResourceSet(storedResourceSet);
+            return "{size=" + details.get("size")
+                    + ", empty=" + details.get("empty") + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(storedResourceSet);
+        }
+    }
+
+    private static String summarizeTagList(Object tagList) {
+        if (tagList == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = ResourceEconomyDiagnostics.describeCustomTagList(tagList);
+            return "{size=" + details.get("size")
+                    + ", empty=" + details.get("empty")
+                    + ", tags=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("asString"))) + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(tagList);
         }
     }
 

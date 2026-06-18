@@ -36,6 +36,14 @@ public final class ResourceEconomyDiagnostics {
             "rustedwarfare.unit.Unit",
             "com.corrodinggames.rts.game.units.am"
     };
+    private static final String[] ORDERABLE_UNIT_CLASSES = {
+            "rustedwarfare.unit.OrderableUnit",
+            "com.corrodinggames.rts.game.units.y"
+    };
+    private static final String[] CUSTOM_TAG_LIST_CLASSES = {
+            "rustedwarfare.custom.CustomTagList",
+            "com.corrodinggames.rts.game.units.custom.h"
+    };
 
     private ResourceEconomyDiagnostics() {
     }
@@ -112,6 +120,45 @@ public final class ResourceEconomyDiagnostics {
         result.put("globalResources", getGlobalResources(team));
         result.put("resourceShortageCollector", RustedReflection.getFieldValue(team,
                 new String[]{"resourceShortageCollector", "am"}));
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeUnitResourceEconomy(Object unit) {
+        requireUnit(unit);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        Object generationResources = getGenerationResourcesPerSecond(unit);
+        Object globalGenerationResources = getGlobalGenerationResourcesPerSecond(unit);
+        Object similarTags = getSimilarResourcesHaveTag(unit);
+        result.put("className", unit.getClass().getName());
+        result.put("creditGenerationPerSecond", Float.valueOf(getCreditGenerationPerSecond(unit)));
+        result.put("generationResourcesPerSecond", generationResources);
+        result.put("generationResourcesPerSecondDetails", describeStoredResourceSetOrRaw(generationResources));
+        result.put("globalGenerationResourcesPerSecond", globalGenerationResources);
+        result.put("globalGenerationResourcesPerSecondDetails",
+                describeStoredResourceSetOrRaw(globalGenerationResources));
+        result.put("resourceRate", Float.valueOf(getResourceRate(unit)));
+        result.put("resourceMaxConcurrentReclaimingThis",
+                Integer.valueOf(getResourceMaxConcurrentReclaimingThis(unit)));
+        result.put("similarResourcesHaveTag", similarTags);
+        result.put("similarResourcesHaveTagDetails", describeCustomTagListOrRaw(similarTags));
+        if (isOrderableUnit(unit)) {
+            Object queuedDelta = getQueuedActionResourceDelta(unit);
+            result.put("queuedActionResourceDelta", queuedDelta);
+            result.put("queuedActionResourceDeltaDetails", describeResourceAmountOrRaw(queuedDelta));
+        } else {
+            result.put("queuedActionResourceDelta", null);
+            result.put("queuedActionResourceDeltaDetails", null);
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeCustomTagList(Object tagList) {
+        requireCustomTagList(tagList);
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        result.put("className", tagList.getClass().getName());
+        result.put("empty", Boolean.valueOf(isCustomTagListEmpty(tagList)));
+        result.put("size", Integer.valueOf(customTagListSize(tagList)));
+        result.put("asString", tagList.toString());
         return Collections.unmodifiableMap(result);
     }
 
@@ -266,6 +313,49 @@ public final class ResourceEconomyDiagnostics {
     public static Object getIconImage(Object resourceType) {
         requireResourceType(resourceType);
         return RustedReflection.invokeInstance(resourceType, new String[]{"getIconImage", "k"});
+    }
+
+    public static float getCreditGenerationPerSecond(Object unit) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getCreditGenerationPerSecond", "cy"});
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    public static Object getGenerationResourcesPerSecond(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getGenerationResourcesPerSecond", "cz"});
+    }
+
+    public static Object getGlobalGenerationResourcesPerSecond(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getGlobalGenerationResourcesPerSecond", "cA"});
+    }
+
+    public static float getResourceRate(Object unit) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit, new String[]{"getResourceRate", "g"});
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    public static int getResourceMaxConcurrentReclaimingThis(Object unit) {
+        requireUnit(unit);
+        Object value = RustedReflection.invokeInstance(unit,
+                new String[]{"getResourceMaxConcurrentReclaimingThis", "cQ"});
+        return value instanceof Number ? ((Number) value).intValue() : Integer.MAX_VALUE;
+    }
+
+    public static Object getSimilarResourcesHaveTag(Object unit) {
+        requireUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getSimilarResourcesHaveTag", "cR"});
+    }
+
+    public static Object getQueuedActionResourceDelta(Object unit) {
+        requireOrderableUnit(unit);
+        return RustedReflection.invokeInstance(unit, new String[]{"getQueuedActionResourceDelta", "by"});
+    }
+
+    public static boolean isOrderableUnit(Object unit) {
+        return unit != null && RustedReflection.isAnyClass(unit.getClass(), ORDERABLE_UNIT_CLASSES);
     }
 
     public static boolean isResourceAmountEmpty(Object resourceAmount) {
@@ -490,6 +580,43 @@ public final class ResourceEconomyDiagnostics {
         return value instanceof Number ? ((Number) value).doubleValue() : 0.0D;
     }
 
+    public static boolean isCustomTagList(Object tagList) {
+        return tagList != null && RustedReflection.isAnyClass(tagList.getClass(), CUSTOM_TAG_LIST_CLASSES);
+    }
+
+    public static boolean isCustomTagListEmpty(Object tagList) {
+        requireCustomTagList(tagList);
+        return Boolean.TRUE.equals(RustedReflection.invokeInstance(tagList, new String[]{"isEmpty", "a"}));
+    }
+
+    public static int customTagListSize(Object tagList) {
+        requireCustomTagList(tagList);
+        Object value = RustedReflection.invokeInstance(tagList, new String[]{"size", "b"});
+        return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    private static Object describeResourceAmountOrRaw(Object resourceAmount) {
+        if (resourceAmount == null || !RustedReflection.isAnyClass(resourceAmount.getClass(), RESOURCE_AMOUNT_CLASSES)) {
+            return resourceAmount;
+        }
+        return describeResourceAmount(resourceAmount);
+    }
+
+    private static Object describeStoredResourceSetOrRaw(Object storedResourceSet) {
+        if (storedResourceSet == null
+                || !RustedReflection.isAnyClass(storedResourceSet.getClass(), STORED_RESOURCE_SET_CLASSES)) {
+            return storedResourceSet;
+        }
+        return describeStoredResourceSet(storedResourceSet);
+    }
+
+    private static Object describeCustomTagListOrRaw(Object tagList) {
+        if (tagList == null || !isCustomTagList(tagList)) {
+            return tagList;
+        }
+        return describeCustomTagList(tagList);
+    }
+
     private static void putField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
         result.put(key, RustedReflection.getFieldValue(owner, fieldNames));
     }
@@ -528,6 +655,14 @@ public final class ResourceEconomyDiagnostics {
 
     private static void requireUnit(Object unit) {
         requireAny(unit, UNIT_CLASSES, "Unit");
+    }
+
+    private static void requireOrderableUnit(Object unit) {
+        requireAny(unit, ORDERABLE_UNIT_CLASSES, "OrderableUnit");
+    }
+
+    private static void requireCustomTagList(Object tagList) {
+        requireAny(tagList, CUSTOM_TAG_LIST_CLASSES, "CustomTagList");
     }
 
     private static void requireAny(Object value, String[] classNames, String label) {

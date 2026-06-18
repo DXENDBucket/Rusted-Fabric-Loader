@@ -2224,8 +2224,10 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()V	bv	method_am_killAndHandleDeathEffects	killAndHandleDeathEffects
 	m	(F)Z	c	method_Unit_drawMainLayer	drawMainLayer
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	c	method_Unit_canTransportUnitIgnoringCurrentContainer	canTransportUnitIgnoringCurrentContainer
+	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	cA	method_am_getGlobalGenerationResourcesPerSecond	getGlobalGenerationResourcesPerSecond
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	cM	method_am_getBaseReclaimPrice	getBaseReclaimPrice
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	cN	method_am_getReclaimPriceOverride	getReclaimPriceOverride
+	m	()I	cQ	method_am_getResourceMaxConcurrentReclaimingThis	getResourceMaxConcurrentReclaimingThis
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	cR	method_am_getSimilarResourcesHaveTag	getSimilarResourcesHaveTag
 	m	()V	cX	method_am_updateFogGhostForLocalPlayer	updateFogGhostForLocalPlayer
 	m	()F	cZ	method_Unit_getTileOffsetX	getTileOffsetX
@@ -2234,6 +2236,8 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()V	cj	method_am_forceHpBelowZero	forceHpBelowZero
 	m	()Z	cr	method_Unit_hasTransportCapacity	hasTransportCapacity
 	m	()I	cw	method_Unit_getTransportSlotsNeeded	getTransportSlotsNeeded
+	m	()F	cy	method_am_getCreditGenerationPerSecond	getCreditGenerationPerSecond
+	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	cz	method_am_getGenerationResourcesPerSecond	getGenerationResourcesPerSecond
 	m	(F)V	d	method_Unit_drawPreMainLayer	drawPreMainLayer
 	m	(Lcom/corrodinggames/rts/game/n;)Z	d	method_am_isHiddenByFogForTeam	isHiddenByFogForTeam
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	d	method_Unit_canTransportUnit	canTransportUnit
@@ -2251,6 +2255,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	(Lcom/corrodinggames/rts/game/units/am;Z)Z	e	method_Unit_tryAddUnitToTransport	tryAddUnitToTransport
 	m	(Z)Lcom/corrodinggames/rts/gameFramework/utility/m;	e	method_am_getAttachedUnitActions	getAttachedUnitActions
 	m	(F)Z	f	method_Unit_drawZoomedOutIconLayer	drawZoomedOutIconLayer
+	m	()F	g	method_am_getResourceRate	getResourceRate
 	m	(Lcom/corrodinggames/rts/game/n;)V	g	method_am_updateVisibilityStateForTeam	updateVisibilityStateForTeam
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_am_h_getMovementType	getMovementType
 	m	(F)V	h	method_Unit_setDirection	setDirection
@@ -4739,17 +4744,22 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	()V	bq	method_custom_j_createDeathScorchMark	createDeathScorchMark
 	m	()V	bu	method_CustomUnit_onKilled	onKilled
 	m	()V	bv	method_custom_j_killAndHandleDeathEffects	killAndHandleDeathEffects
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	by	method_j_getQueuedActionResourceDelta	getQueuedActionResourceDelta
 	m	()Lcom/corrodinggames/rts/gameFramework/utility/m;	bz	method_j_bz_getTransportedUnits	getTransportedUnits
 	m	(F)Z	c	method_CustomUnit_drawMainLayer	drawMainLayer
 	m	(Lcom/corrodinggames/rts/game/units/d/j;)Z	c	method_CustomUnit_canRefundBuildQueueItem	canRefundBuildQueueItem
+	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	cA	method_j_getGlobalGenerationResourcesPerSecond	getGlobalGenerationResourcesPerSecond
 	m	()F	cD	method_CustomUnit_getBodyImageScale	getBodyImageScale
 	m	()Landroid/graphics/RectF;	cF	method_CustomUnit_getImageDestinationRect	getImageDestinationRect
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	cN	method_j_getReclaimPriceOverride	getReclaimPriceOverride
+	m	()I	cQ	method_j_getResourceMaxConcurrentReclaimingThis	getResourceMaxConcurrentReclaimingThis
 	m	()Lcom/corrodinggames/rts/game/units/custom/h;	cR	method_j_getSimilarResourcesHaveTag	getSimilarResourcesHaveTag
 	m	()V	ch	method_CustomUnit_checkDeathState	checkDeathState
 	m	()Lcom/corrodinggames/rts/game/units/a/c;	cm	method_j_getFirstUpgradeActionId	getFirstUpgradeActionId
 	m	()Z	cr	method_CustomUnit_hasTransportCapacity	hasTransportCapacity
 	m	()I	cw	method_CustomUnit_getTransportSlotsNeeded	getTransportSlotsNeeded
+	m	()F	cy	method_j_getCreditGenerationPerSecond	getCreditGenerationPerSecond
+	m	()Lcom/corrodinggames/rts/game/units/custom/e/f;	cz	method_j_getGenerationResourcesPerSecond	getGenerationResourcesPerSecond
 	m	()Lcom/corrodinggames/rts/gameFramework/m/e;	d	method_CustomUnit_getBodyImage	getBodyImage
 	m	(F)V	d	method_CustomUnit_drawPreMainLayer	drawPreMainLayer
 	m	(I)Lcom/corrodinggames/rts/gameFramework/m/e;	d	method_CustomUnit_getTurretImage	getTurretImage
@@ -4783,6 +4793,7 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	m	(Lcom/corrodinggames/rts/game/units/am;)F	f	method_j_getUnbuildSpeedForTarget	getUnbuildSpeedForTarget
 	m	(Z)I	f	method_CustomUnit_countQueuedItems	countQueuedItems
 	m	()V	f_	method_CustomUnit_refreshBaseDrawFlag	refreshBaseDrawFlag
+	m	()F	g	method_j_getResourceRate	getResourceRate
 	m	(I)F	g	method_CustomUnit_getTurretBarrelForwardOffset	getTurretBarrelForwardOffset
 	m	(Z)Z	g	method_CustomUnit_unloadNextTransportedUnit	unloadNextTransportedUnit
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_j_h_getMovementType	getMovementType
@@ -6779,6 +6790,7 @@ c	com/corrodinggames/rts/game/units/d/e	rw/unit/building/CommandCenterUnit	ruste
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_game_units_d_e_deserialize	deserialize
 	m	(I)F	b	method_Obf_d_e_getTurretFireDelay	getTurretFireDelay
 	m	()I	bp	method_d_e_getDeathSmokeParticleCount	getDeathSmokeParticleCount
+	m	()F	cy	method_e_getCreditGenerationPerSecond	getCreditGenerationPerSecond
 	m	(F)V	e	method_Obf_d_e_drawHighlightLayer	drawHighlightLayer
 	m	(I)F	q	method_Obf_d_e_getTurretProjectileDirectDamage	getTurretProjectileDirectDamage
 c	com/corrodinggames/rts/game/units/d/f	rw/unit/building/ExperimentalLandFactoryUnit	rustedwarfare/unit/building/ExperimentalLandFactoryUnit
@@ -6805,6 +6817,7 @@ c	com/corrodinggames/rts/game/units/d/g	rw/unit/building/ExtractorUnit	rustedwar
 	m	(I)F	b	method_Obf_d_g_getTurretFireDelay	getTurretFireDelay
 	m	()I	bp	method_d_g_getDeathSmokeParticleCount	getDeathSmokeParticleCount
 	m	(F)Z	c	method_Obf_d_g_drawMainLayer	drawMainLayer
+	m	()F	cy	method_g_getCreditGenerationPerSecond	getCreditGenerationPerSecond
 c	com/corrodinggames/rts/game/units/d/g$1	rw/unit/action/internal/Obf_d_g_1	rustedwarfare/unit/action/internal/Obf_d_g_1
 	m	()F	K	method_Obf_d_g_1_getBuildSpeed	getBuildSpeed
 	m	()Ljava/lang/String;	a	method_Obf_d_g_1_getDescription	getDescription
@@ -6830,6 +6843,7 @@ c	com/corrodinggames/rts/game/units/d/h	rw/unit/building/FabricatorUnit	rustedwa
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_game_units_d_h_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_com_corrodinggames_rts_game_units_d_h_deserialize	deserialize
 	m	()I	bp	method_d_h_getDeathSmokeParticleCount	getDeathSmokeParticleCount
+	m	()F	cy	method_h_getCreditGenerationPerSecond	getCreditGenerationPerSecond
 c	com/corrodinggames/rts/game/units/d/h$1	rw/unit/action/internal/Obf_d_h_1	rustedwarfare/unit/action/internal/Obf_d_h_1
 	m	()F	K	method_Obf_d_h_1_getBuildSpeed	getBuildSpeed
 	m	()Ljava/lang/String;	a	method_Obf_d_h_1_getDescription	getDescription
@@ -7052,6 +7066,7 @@ c	com/corrodinggames/rts/game/units/e	rw/unit/resource/CrystalResourceUnit	ruste
 	m	(Lcom/corrodinggames/rts/game/units/am;I)V	a	method_CrystalResourceUnit_fireTurretAtTarget	fireTurretAtTarget
 	m	(I)F	b	method_CrystalResourceUnit_getTurretFireDelay	getTurretFireDelay
 	m	()Z	e	method_e_handleDeathEffects	handleDeathEffects
+	m	()F	g	method_e_getResourceRate	getResourceRate
 	m	()Lcom/corrodinggames/rts/game/units/ao;	h	method_e_h_getMovementType	getMovementType
 	m	()V	n	method_CrystalResourceUnit_onMapSpawned	onMapSpawned
 c	com/corrodinggames/rts/game/units/e/a	rw/unit/land/ArtilleryUnit	rustedwarfare/unit/land/ArtilleryUnit
@@ -7792,6 +7807,7 @@ c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/O
 	m	()V	bt	method_y_postDeathCleanup	postDeathCleanup
 	m	()V	bu	method_OrderableUnit_onKilled	onKilled
 	m	()V	bv	method_y_killAndHandleDeathEffects	killAndHandleDeathEffects
+	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	by	method_y_getQueuedActionResourceDelta	getQueuedActionResourceDelta
 	m	(F)Z	c	method_OrderableUnit_drawMainLayer	drawMainLayer
 	m	(FLcom/corrodinggames/rts/game/units/au;Lcom/corrodinggames/rts/game/units/ad;)V	c	method_y_updateGuardFollowOrder	updateGuardFollowOrder
 	m	(F)V	d	method_OrderableUnit_drawPreMainLayer	drawPreMainLayer

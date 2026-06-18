@@ -59,6 +59,7 @@
     "OpenALSoundFactoryNamedMixin",
     "OpenALSoundPlayTaskNamedMixin",
     "ProjectileSpawnListAssetNamedMixin",
+    "QueuedActionResourceDeltaNamedMixin",
     "ReclaimTargetNamedMixin",
     "RepairReclaimTargetNamedMixin",
     "ReplayRuntimeNamedMixin",

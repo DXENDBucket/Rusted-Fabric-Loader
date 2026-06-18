@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.util.RustedReflection;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class HudCommandDiagnostics {
@@ -44,6 +45,11 @@ public final class HudCommandDiagnostics {
                 new String[]{"interfaceLayoutRevision", "cd"});
         putBooleanField(result, interfaceEngine, "interfaceLayoutDirty",
                 new String[]{"interfaceLayoutDirty", "ce"});
+        result.put("selectedUnits", selectedUnits(interfaceEngine));
+        result.put("selectedUnitsSize", Integer.valueOf(selectedUnits(interfaceEngine).size()));
+        result.put("selectedUnitTypeCounts", selectedUnitTypeCounts(interfaceEngine));
+        result.put("primarySelectedUnit", primarySelectedUnit(interfaceEngine));
+        result.put("orderableSelectedUnitCount", Integer.valueOf(countOrderableSelectedUnits(interfaceEngine)));
         return Collections.unmodifiableMap(result);
     }
 
@@ -86,6 +92,39 @@ public final class HudCommandDiagnostics {
     public static void reloadCommandInterfaceStrings(Object interfaceEngine) {
         requireInterfaceEngine(interfaceEngine);
         RustedReflection.invokeInstance(interfaceEngine, new String[]{"reloadCommandInterfaceStrings", "e"});
+    }
+
+    public static List<Object> selectedUnits(Object interfaceEngine) {
+        requireInterfaceEngine(interfaceEngine);
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(interfaceEngine, new String[]{"selectedUnits", "bZ"})));
+    }
+
+    public static Object selectedUnitTypeCounts(Object interfaceEngine) {
+        requireInterfaceEngine(interfaceEngine);
+        return RustedReflection.getFieldValue(interfaceEngine, new String[]{"selectedUnitTypeCounts", "az"});
+    }
+
+    public static Object primarySelectedUnit(Object interfaceEngine) {
+        requireInterfaceEngine(interfaceEngine);
+        return RustedReflection.invokeInstance(interfaceEngine, new String[]{"getPrimarySelectedUnit", "e"});
+    }
+
+    public static int countOrderableSelectedUnits(Object interfaceEngine) {
+        requireInterfaceEngine(interfaceEngine);
+        Object value = RustedReflection.invokeInstance(interfaceEngine,
+                new String[]{"countOrderableSelectedUnits", "q"});
+        return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    public static List<Object> selectedUnitsForAction(Object interfaceEngine, Object action) {
+        requireInterfaceEngine(interfaceEngine);
+        if (action == null) {
+            throw new IllegalArgumentException("UnitAction must not be null");
+        }
+        return Collections.unmodifiableList(RustedReflection.snapshotIterable(
+                RustedReflection.invokeInstance(interfaceEngine,
+                        new String[]{"getSelectedUnitsForAction", "e"}, action)));
     }
 
     private static void requireInterfaceEngine(Object value) {

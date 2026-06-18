@@ -986,6 +986,14 @@ final class ExampleEventProbes {
             return currentDelta;
         });
 
+        RepairReclaimEvents.MODIFY_QUEUED_ACTION_RESOURCE_DELTA.register((unit, currentDelta) -> {
+            showEventProbeMessage(stage, "ModifyQueuedActionResourceDelta",
+                    "ModifyQueuedActionResourceDelta delta=" + describeResourceAmount(currentDelta)
+                            + " unit=" + describeObject(unit),
+                    unit, 1000L);
+            return currentDelta;
+        });
+
         RepairReclaimEvents.MODIFY_REPAIR_RECLAIM_RESOURCE_DELTA.register((unit, currentDelta) -> {
             showEventProbeMessage(stage, "ModifyRepairReclaimResourceDelta",
                     "ModifyRepairReclaimResourceDelta delta=" + describeObject(currentDelta)

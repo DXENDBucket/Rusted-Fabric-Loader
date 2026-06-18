@@ -1,0 +1,8 @@
+area,candidate,reason
+already-mapped,com/corrodinggames/rts/game/units/am cR ()Lcom/corrodinggames/rts/game/units/custom/h; -> getSimilarResourceTags,existing named_name=getSimilarResourcesHaveTag
+already-mapped,com/corrodinggames/rts/game/units/custom/j cR ()Lcom/corrodinggames/rts/game/units/custom/h; -> getSimilarResourceTags,existing named_name=getSimilarResourcesHaveTag
+resource-producer-construction-hook,Unit.cP() / CustomUnit.cP(),"CustomUnit.cP() auto-completes zero-build-rate resource producers, but the public contract is too narrow and only indirectly tied to resource action effects."
+static-type-tag-accessor,Unit.dh() / CustomUnit.dh(),"CustomUnit.dh() returns CustomUnitMetadata.P, but loader/write evidence for P is thin compared with runtimeTags; leave for a later tag audit."
+custom-action-contract,CustomAction.F()Z / UnitAction.F()Z,Still no non-proxy runtime consumer was found; preserving the v0.80 skip.
+resource-rate-broader-family,Other owner g()F methods outside the Unit resource-rate family,Same official name and descriptor appear in unrelated utility/serialization classes; v0.81 maps only Unit-family resource-rate overrides.
+save/header-version-branches,ResourceAmount/StoredResourceSet serialization helper internals,ResourceAmount and StoredResourceSet are already well mapped; deeper serialization/version gates are not part of this pass.

@@ -158,6 +158,18 @@ public final class RepairReclaimEvents {
                 return result;
             });
 
+    public static final RustedFabricEvent<ModifyQueuedActionResourceDelta> MODIFY_QUEUED_ACTION_RESOURCE_DELTA =
+            RustedFabricEvent.create(listeners -> (unit, currentDelta) -> {
+                Object result = currentDelta;
+                for (ModifyQueuedActionResourceDelta listener : listeners) {
+                    Object override = listener.modifyQueuedActionResourceDelta(unit, result);
+                    if (override != null) {
+                        result = override;
+                    }
+                }
+                return result;
+            });
+
     public static final RustedFabricEvent<ModifyRepairReclaimResourceDelta> MODIFY_REPAIR_RECLAIM_RESOURCE_DELTA =
             RustedFabricEvent.create(listeners -> (unit, currentDelta) -> {
                 Object result = currentDelta;
@@ -255,6 +267,11 @@ public final class RepairReclaimEvents {
     @FunctionalInterface
     public interface ModifyBuildQueueResourceDelta {
         Object modifyBuildQueueResourceDelta(Object unit, Object currentDelta);
+    }
+
+    @FunctionalInterface
+    public interface ModifyQueuedActionResourceDelta {
+        Object modifyQueuedActionResourceDelta(Object unit, Object currentDelta);
     }
 
     @FunctionalInterface
