@@ -1082,6 +1082,34 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("named_method_collisions_v0_81");
     }
 
+    public static List<MappingEvidenceRow> allProjectileEffectRuntimeRows() {
+        return allEvidenceRows("projectile_effect_runtime_added_rows_v0_82");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileEffectRuntimeUpdatedRows() {
+        return allEvidenceRows("projectile_effect_runtime_updated_rows_v0_82");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileEffectRuntimeFlowMap() {
+        return allEvidenceRows("projectile_effect_runtime_flow_map_v0_82");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileEffectRuntimeSkippedRows() {
+        return allEvidenceRows("projectile_effect_runtime_skipped_rows_v0_82");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileEffectRuntimePartialCoverageRows() {
+        return allEvidenceRows("projectile_effect_runtime_partial_coverage_after_v0_82");
+    }
+
+    public static List<MappingEvidenceRow> allNamedFieldCollisionRowsV082() {
+        return allEvidenceRows("named_field_collisions_v0_82");
+    }
+
+    public static List<MappingEvidenceRow> allNamedMethodCollisionRowsV082() {
+        return allEvidenceRows("named_method_collisions_v0_82");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1397,6 +1425,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findResourceTagMemoryActionEffectUpdatedRows(String text) {
         return findByText(allResourceTagMemoryActionEffectUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findProjectileEffectRuntimeRows(String text) {
+        return findByText(allProjectileEffectRuntimeRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findProjectileEffectRuntimeUpdatedRows(String text) {
+        return findByText(allProjectileEffectRuntimeUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

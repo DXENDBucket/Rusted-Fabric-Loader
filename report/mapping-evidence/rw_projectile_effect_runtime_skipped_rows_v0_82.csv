@@ -1,0 +1,7 @@
+area,candidate,reason
+projectile-field-residuals,Projectile.C/E/F/N/O/T/aj/as/at/aA/aB/aC/aK/aL/aO/bn,Several fields are serialized or copied but have ambiguous runtime contracts without a full projectile motion/laser/ballistic audit; only attachedLightEffect is named in v0.82.
+effect-kind-static-constants,EffectInstance.h/i/j/k/l/m/n,The constants are only numeric kind ids used by built-in helpers; wrapper names provide enough semantic coverage without guessing every static id label.
+fog-visibility-latch,EffectInstance.f,"Field latches a fog/visibility check in draw(), but the exact public contract is not as stable as showInFog/forceDraw."
+height-coordinate-draw-flag,EffectInstance.an / ao,"Fields are set by line/effect wrappers and custom effect spawn, but usage is mixed with coordinate conversion and requires a separate draw-position audit."
+remaining-effect-engine-wrappers,"EffectEngine.d/e/f(FFF), b(FFFFF), a(FFFIFF), a(FFFIFFF), a(FI)I, b(F)I",These helpers are not directly selected by the custom EffectTemplate builtInEffect switch in this pass or need more call-site evidence.
+effect-template-static-init,EffectTemplate.<clinit> / EffectInstance.<clinit> / EffectEngine.<clinit>,Static initializer rows have low value; semantic fields and runtime helpers are mapped instead.

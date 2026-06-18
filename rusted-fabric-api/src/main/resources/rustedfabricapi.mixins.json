@@ -23,6 +23,7 @@
     "CustomUnitReclaimPriceNamedMixin",
     "CustomUnitRenderNamedMixin",
     "CustomUnitRuntimeNamedMixin",
+    "EffectEngineRuntimeNamedMixin",
     "CustomUnitTransportUnloadNamedMixin",
     "GameObjectSerializationNamedMixin",
     "GameImageLifecycleNamedMixin",

@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.CommonUtilsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CoreDebugStatsDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomLogicDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CustomUnitDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.EffectRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.InputRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.HudCommandDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.LibRocketUiDiagnostics;
@@ -63,6 +64,24 @@ final class ExampleDiagnosticActions {
                             + " canvasGl=" + engine.get("useCanvasGl")
                             + " graphics=" + ExampleDebugOverlay.describeObject(graphicsEngine),
                     graphicsEngine);
+
+            Object effectEngine = engine.get("effectEngine");
+            if (effectEngine != null && EffectRuntimeDiagnostics.isEffectEngine(effectEngine)) {
+                Map<String, Object> effects = EffectRuntimeDiagnostics.describeEffectEngine(effectEngine);
+                List<Object> activeEffects = EffectRuntimeDiagnostics.activeEffectsSnapshot(effectEngine);
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Effect engine active=" + effects.get("activeEffectCount")
+                                + " snapshot=" + activeEffects.size()
+                                + " pool=" + effects.get("effectPoolLength")
+                                + " strips=" + effects.get("builtInImageStripsLength")
+                                + " evidence=" + MappingEvidenceDiagnostics.allProjectileEffectRuntimeRows().size(),
+                        effectEngine);
+                if (!activeEffects.isEmpty()) {
+                    ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                            "Effect[0] " + summarizeEffect(activeEffects.get(0)),
+                            activeEffects.get(0));
+                }
+            }
 
             if (graphicsEngine != null && RenderImageDiagnostics.isSlickGraphicsBackend(graphicsEngine)) {
                 Map<String, Object> backend = RenderImageDiagnostics.describeSlickGraphicsBackend(graphicsEngine);
@@ -126,6 +145,8 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allCustomActionEffectDeepRows().size()
                             + " resTagRows="
                             + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectRows().size()
+                            + " projEffectRows="
+                            + MappingEvidenceDiagnostics.allProjectileEffectRuntimeRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -345,6 +366,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectPartialCoverageRows().size()
                             + " fieldCollisions="
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV081().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Projectile/effect runtime evidence rows="
+                            + MappingEvidenceDiagnostics.allProjectileEffectRuntimeRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allProjectileEffectRuntimeUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allProjectileEffectRuntimeFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allProjectileEffectRuntimeSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allProjectileEffectRuntimePartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV082().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);
@@ -1197,6 +1233,24 @@ final class ExampleDiagnosticActions {
             return result + "}";
         } catch (RuntimeException e) {
             return ExampleDebugOverlay.describeObject(image);
+        }
+    }
+
+    private static String summarizeEffect(Object effect) {
+        if (effect == null || !EffectRuntimeDiagnostics.isEffectInstance(effect)) {
+            return ExampleDebugOverlay.describeObject(effect);
+        }
+        try {
+            Map<String, Object> details = EffectRuntimeDiagnostics.describeEffectInstance(effect);
+            return ExampleDebugOverlay.describeObject(effect)
+                    + "{active=" + details.get("active")
+                    + ", light=" + details.get("lightEffect")
+                    + ", ground=" + details.get("castLightOnGround")
+                    + ", line=" + details.get("drawLineTo")
+                    + ", text=" + ExampleDebugOverlay.safeText(String.valueOf(details.get("text")))
+                    + ", life=" + details.get("lifeRemaining") + "/" + details.get("lifeMax") + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(effect);
         }
     }
 

@@ -9,6 +9,7 @@ import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRenderEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.event.EffectRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.FileSystemEvents;
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.HudCommandEvents;
@@ -1367,6 +1368,30 @@ final class ExampleEventProbes {
                     unit, 500L);
             return false;
         });
+
+        EffectRuntimeEvents.AFTER_LINE_EFFECT_CREATED.register((engine, effect, startX, startY, startHeight, targetX, targetY, targetHeight) ->
+                showEventProbeMessage(stage, "AfterLineEffectCreated",
+                        "AfterLineEffectCreated start=" + formatPoint(startX, startY)
+                                + " target=" + formatPoint(targetX, targetY)
+                                + " h=" + formatFloat(startHeight) + "->" + formatFloat(targetHeight)
+                                + " effect=" + describeObject(effect),
+                        effect, 1000L));
+
+        EffectRuntimeEvents.AFTER_LIGHT_EFFECT_CREATED.register((engine, effect, x, y, height, color) ->
+                showEventProbeMessage(stage, "AfterLightEffectCreated",
+                        "AfterLightEffectCreated pos=" + formatPoint(x, y)
+                                + " h=" + formatFloat(height)
+                                + " color=" + color
+                                + " effect=" + describeObject(effect),
+                        effect, 1000L));
+
+        EffectRuntimeEvents.AFTER_ATTACHED_LIGHT_EFFECT_CREATED.register((engine, effect, object, color, size) ->
+                showEventProbeMessage(stage, "AfterAttachedLightEffectCreated",
+                        "AfterAttachedLightEffectCreated object=" + describeObject(object)
+                                + " size=" + formatFloat(size)
+                                + " color=" + color
+                                + " effect=" + describeObject(effect),
+                        effect, 1000L));
 
         CustomUnitRuntimeEvents.BEFORE_RESOURCE_COST_PAID.register((resourceAmount, unit, operation) -> {
             showEventProbeMessage(stage, "BeforeResourceCostPaid",

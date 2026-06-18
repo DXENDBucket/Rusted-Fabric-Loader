@@ -35,6 +35,10 @@ public final class EffectRuntimeDiagnostics {
             "rustedwarfare.render.effect.NoiseCloudOverlay",
             "com.corrodinggames.rts.gameFramework.d.b"
     };
+    private static final String[] GAME_OBJECT_CLASSES = {
+            "rustedwarfare.game.GameObject",
+            "com.corrodinggames.rts.gameFramework.w"
+    };
 
     private static final Alias[] EFFECT_PRIORITY_ALIASES = {
             new Alias("verylow", new String[]{"verylow", "a"}),
@@ -87,6 +91,8 @@ public final class EffectRuntimeDiagnostics {
         putBooleanField(result, engine, "requireNextEffectOnscreen", new String[]{"requireNextEffectOnscreen", "u"});
         putBooleanField(result, engine, "allowNextEffectOffscreen", new String[]{"allowNextEffectOffscreen", "v"});
         putField(result, engine, "scratchPaint", new String[]{"scratchPaint", "w"});
+        result.put("sharedLightingColorFilter", sharedLightingColorFilter());
+        result.put("sharedLightingColorFilterColor", Integer.valueOf(sharedLightingColorFilterColor()));
         return Collections.unmodifiableMap(result);
     }
 
@@ -126,7 +132,10 @@ public final class EffectRuntimeDiagnostics {
         putField(result, effect, "engine", new String[]{"engine", "ay"});
         putField(result, effect, "effectTemplate", new String[]{"effectTemplate", "a"});
         putField(result, effect, "attachedObject", new String[]{"attachedObject", "b"});
+        putBooleanField(result, effect, "castLightOnGround", new String[]{"castLightOnGround", "c"});
+        putBooleanField(result, effect, "lightEffect", new String[]{"lightEffect", "d"});
         putBooleanField(result, effect, "showInFog", new String[]{"showInFog", "e"});
+        putIntField(result, effect, "builtInEffectKind", new String[]{"builtInEffectKind", "g"});
         putBooleanField(result, effect, "active", new String[]{"active", "o"});
         putBooleanField(result, effect, "forceDraw", new String[]{"forceDraw", "p"});
         Object priority = RustedReflection.getFieldValue(effect, new String[]{"priority", "q"});
@@ -139,23 +148,38 @@ public final class EffectRuntimeDiagnostics {
         putBooleanField(result, effect, "physics", new String[]{"physics", "v"});
         putFloatField(result, effect, "physicsGravity", new String[]{"physicsGravity", "w"});
         putIntField(result, effect, "color", new String[]{"color", "x"});
+        putIntField(result, effect, "fadeToColor", new String[]{"fadeToColor", "y"});
+        putFloatField(result, effect, "fadeToColorTime", new String[]{"fadeToColorTime", "z"});
         putIntField(result, effect, "spawnDepth", new String[]{"spawnDepth", "A"});
         putField(result, effect, "lightingColorFilter", new String[]{"lightingColorFilter", "B"});
+        result.put("sharedLightingColorFilter", sharedLightingColorFilter());
+        result.put("sharedLightingColorFilterColor", Integer.valueOf(sharedLightingColorFilterColor()));
         putFloatField(result, effect, "alpha", new String[]{"alpha", "E"});
         putFloatField(result, effect, "scaleTo", new String[]{"scaleTo", "F"});
         putFloatField(result, effect, "scaleFrom", new String[]{"scaleFrom", "G"});
         putFloatField(result, effect, "worldX", new String[]{"worldX", "I"});
         putFloatField(result, effect, "worldY", new String[]{"worldY", "J"});
         putFloatField(result, effect, "height", new String[]{"height", "K"});
+        putBooleanField(result, effect, "drawLineTo", new String[]{"drawLineTo", "L"});
+        putFloatField(result, effect, "lineTargetX", new String[]{"lineTargetX", "M"});
+        putFloatField(result, effect, "lineTargetY", new String[]{"lineTargetY", "N"});
+        putFloatField(result, effect, "lineTargetHeight", new String[]{"lineTargetHeight", "O"});
         putFloatField(result, effect, "velocityX", new String[]{"velocityX", "P"});
         putFloatField(result, effect, "velocityY", new String[]{"velocityY", "Q"});
         putFloatField(result, effect, "velocityHeight", new String[]{"velocityHeight", "R"});
+        putFloatField(result, effect, "drawOscillationAmplitude",
+                new String[]{"drawOscillationAmplitude", "S"});
+        putFloatField(result, effect, "drawOscillationPeriod", new String[]{"drawOscillationPeriod", "T"});
         putFloatField(result, effect, "delayTimer", new String[]{"delayTimer", "U"});
         putFloatField(result, effect, "lifeRemaining", new String[]{"lifeRemaining", "V"});
         putFloatField(result, effect, "lifeMax", new String[]{"lifeMax", "W"});
         putFloatField(result, effect, "trailEffectTimer", new String[]{"trailEffectTimer", "X"});
         putFloatField(result, effect, "direction", new String[]{"direction", "Y"});
         putFloatField(result, effect, "angularVelocity", new String[]{"angularVelocity", "Z"});
+        putField(result, effect, "text", new String[]{"text", "aa"});
+        putField(result, effect, "textPaint", new String[]{"textPaint", "ab"});
+        putFloatField(result, effect, "textOffsetX", new String[]{"textOffsetX", "ac"});
+        putFloatField(result, effect, "textOffsetY", new String[]{"textOffsetY", "ad"});
         putBooleanField(result, effect, "animateFrames", new String[]{"animateFrames", "ae"});
         putIntField(result, effect, "animateFrameStart", new String[]{"animateFrameStart", "af"});
         putIntField(result, effect, "animateFrameEnd", new String[]{"animateFrameEnd", "ag"});
@@ -169,8 +193,110 @@ public final class EffectRuntimeDiagnostics {
         putIntField(result, effect, "drawLayer", new String[]{"drawLayer", "ar"});
         putBooleanField(result, effect, "shadow", new String[]{"shadow", "as"});
         putField(result, effect, "drawPaint", new String[]{"drawPaint", "at"});
+        putFloatField(result, effect, "cachedPaintAlpha", new String[]{"cachedPaintAlpha", "au"});
+        putIntField(result, effect, "cachedPaintColor", new String[]{"cachedPaintColor", "av"});
+        putBooleanField(result, effect, "hasAppliedColorFilter", new String[]{"hasAppliedColorFilter", "aw"});
         putArrayLengthField(result, effect, "alphaPaintCacheLength", new String[]{"alphaPaintCache", "ax"});
         return Collections.unmodifiableMap(result);
+    }
+
+    public static Object createLineEffect(Object engine, float startX, float startY, float startHeight,
+                                          float targetX, float targetY, float targetHeight) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createLineEffect", "a"},
+                Float.valueOf(startX), Float.valueOf(startY), Float.valueOf(startHeight),
+                Float.valueOf(targetX), Float.valueOf(targetY), Float.valueOf(targetHeight));
+    }
+
+    public static Object createLightEffect(Object engine, float x, float y, float height, int color) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createLightEffect", "b"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height), Integer.valueOf(color));
+    }
+
+    public static Object createAttachedLightEffect(Object engine, Object object, int color) {
+        requireEffectEngine(engine);
+        requireGameObject(object);
+        return RustedReflection.invokeInstance(engine, new String[]{"createAttachedLightEffect", "a"},
+                object, Integer.valueOf(color));
+    }
+
+    public static Object createAttachedLightEffect(Object engine, Object object, int color, float size) {
+        requireEffectEngine(engine);
+        requireGameObject(object);
+        return RustedReflection.invokeInstance(engine, new String[]{"createAttachedLightEffect", "a"},
+                object, Integer.valueOf(color), Float.valueOf(size));
+    }
+
+    public static void attachEffectToObject(Object effect, Object object) {
+        requireEffectInstance(effect);
+        requireGameObject(object);
+        RustedReflection.invokeStatic(EFFECT_ENGINE_CLASSES, new String[]{"attachEffectToObject", "a"}, effect, object);
+    }
+
+    public static Object createSmallBuiltInEffect(Object engine, float x, float y, float height, float direction) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createSmallBuiltInEffect", "a"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height), Float.valueOf(direction));
+    }
+
+    public static Object createLargeBuiltInEffect(Object engine, float x, float y, float height,
+                                                  float direction, int color) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createLargeBuiltInEffect", "b"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height),
+                Float.valueOf(direction), Integer.valueOf(color));
+    }
+
+    public static Object createSmokeBuiltInEffect(Object engine, float x, float y, float height,
+                                                 float direction, int color) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createSmokeBuiltInEffect", "c"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height),
+                Float.valueOf(direction), Integer.valueOf(color));
+    }
+
+    public static Object createShockwaveBuiltInEffect(Object engine, float x, float y, float height, int color) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createShockwaveBuiltInEffect", "d"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height), Integer.valueOf(color));
+    }
+
+    public static Object createResourcePoolSmokeEffect(Object engine, float x, float y, float height, int color) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createResourcePoolSmokeEffect", "c"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height), Integer.valueOf(color));
+    }
+
+    public static Object createSmallExplosionBuiltInEffect(Object engine, float x, float y, float height) {
+        requireEffectEngine(engine);
+        return RustedReflection.invokeInstance(engine, new String[]{"createSmallExplosionBuiltInEffect", "b"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height));
+    }
+
+    public static void emitLargeExplosionBuiltInEffect(Object engine, float x, float y, float height) {
+        requireEffectEngine(engine);
+        RustedReflection.invokeInstance(engine, new String[]{"emitLargeExplosionBuiltInEffect", "a"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height));
+    }
+
+    public static void emitLargeExplosionBuiltInEffect(Object engine, float x, float y, float height,
+                                                      float radius, float intensity) {
+        requireEffectEngine(engine);
+        RustedReflection.invokeInstance(engine, new String[]{"emitLargeExplosionBuiltInEffect", "a"},
+                Float.valueOf(x), Float.valueOf(y), Float.valueOf(height),
+                Float.valueOf(radius), Float.valueOf(intensity));
+    }
+
+    public static Object sharedLightingColorFilter() {
+        return RustedReflection.getStaticFieldValue(EFFECT_INSTANCE_CLASSES,
+                new String[]{"sharedLightingColorFilter", "C"});
+    }
+
+    public static int sharedLightingColorFilterColor() {
+        Object value = RustedReflection.getStaticFieldValue(EFFECT_INSTANCE_CLASSES,
+                new String[]{"sharedLightingColorFilterColor", "D"});
+        return value instanceof Number ? ((Number) value).intValue() : 0;
     }
 
     public static boolean isEffectActive(Object effect) {
@@ -181,6 +307,14 @@ public final class EffectRuntimeDiagnostics {
     public static Object getAlphaPaint(Object effect, float alpha) {
         requireEffectInstance(effect);
         return RustedReflection.invokeInstance(effect, new String[]{"getAlphaPaint", "a"}, Float.valueOf(alpha));
+    }
+
+    public static boolean isEffectEngine(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), EFFECT_ENGINE_CLASSES);
+    }
+
+    public static boolean isEffectInstance(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), EFFECT_INSTANCE_CLASSES);
     }
 
     public static List<String> effectPriorityNames() {
@@ -245,6 +379,10 @@ public final class EffectRuntimeDiagnostics {
 
     private static void requireEffectInstance(Object effect) {
         requireAny(effect, EFFECT_INSTANCE_CLASSES, "EffectInstance");
+    }
+
+    private static void requireGameObject(Object object) {
+        requireAny(object, GAME_OBJECT_CLASSES, "GameObject");
     }
 
     private static void requireAny(Object value, String[] classNames, String label) {

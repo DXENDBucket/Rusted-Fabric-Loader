@@ -451,7 +451,8 @@ final class ExampleDebugOverlay {
                 "ForwardedSocket", "ForwardedPacket")) {
             return DebugProbeGroup.NETWORK;
         }
-        if (containsAny(text, "RenderImage", "SlickImage", "ImageData", "ImageLifecycle", "CreateImage")) {
+        if (containsAny(text, "RenderImage", "SlickImage", "ImageData", "ImageLifecycle", "CreateImage",
+                "LineEffect", "LightEffect", "EffectCreated")) {
             return DebugProbeGroup.RENDER;
         }
         if (containsAny(text, "LoadImage", "TeamColor", "LoadSound", "ParseSoundList",

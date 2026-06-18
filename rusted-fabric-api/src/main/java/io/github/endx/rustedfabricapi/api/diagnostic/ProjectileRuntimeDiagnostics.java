@@ -24,6 +24,10 @@ public final class ProjectileRuntimeDiagnostics {
             "rustedwarfare.render.EffectImageStrip",
             "com.corrodinggames.rts.gameFramework.d.g"
     };
+    private static final String[] EFFECT_INSTANCE_CLASSES = {
+            "rustedwarfare.render.effect.EffectInstance",
+            "com.corrodinggames.rts.gameFramework.d.e"
+    };
     private static final String[] TURRET_PROJECTILE_BEHAVIOR_CLASSES = {
             "rustedwarfare.custom.runtime.TurretProjectileBehavior",
             "com.corrodinggames.rts.game.units.custom.b.k"
@@ -97,6 +101,8 @@ public final class ProjectileRuntimeDiagnostics {
         putFloatField(result, projectile, "ballisticHeight", new String[]{"ballisticHeight", "aJ"});
         putBooleanField(result, projectile, "builtInTrailEffect", new String[]{"builtInTrailEffect", "aM"});
         putFloatField(result, projectile, "trailEffectTimer", new String[]{"trailEffectTimer", "aN"});
+        putField(result, projectile, "attachedLightEffect", new String[]{"attachedLightEffect", "aP"});
+        result.put("attachedLightEffectDetails", describeAttachedLightEffectOrRaw(projectile));
         putBooleanField(result, projectile, "largeHitEffect", new String[]{"largeHitEffect", "aQ"});
         putBooleanField(result, projectile, "hitSound", new String[]{"hitSound", "aR"});
         putBooleanField(result, projectile, "removalRequested", new String[]{"removalRequested", "aS"});
@@ -137,6 +143,11 @@ public final class ProjectileRuntimeDiagnostics {
     public static void requestRemoval(Object projectile) {
         requireProjectile(projectile);
         RustedReflection.invokeInstance(projectile, new String[]{"requestRemoval", "d"});
+    }
+
+    public static Object getAttachedLightEffect(Object projectile) {
+        requireProjectile(projectile);
+        return RustedReflection.getFieldValue(projectile, new String[]{"attachedLightEffect", "aP"});
     }
 
     public static boolean hasExistingInterceptorForProjectile(Object projectile) {
@@ -228,6 +239,14 @@ public final class ProjectileRuntimeDiagnostics {
 
     private static void requireEffectImageStrip(Object imageStrip) {
         requireAny(imageStrip, EFFECT_IMAGE_STRIP_CLASSES, "EffectImageStrip");
+    }
+
+    private static Object describeAttachedLightEffectOrRaw(Object projectile) {
+        Object effect = getAttachedLightEffect(projectile);
+        if (effect == null || !RustedReflection.isAnyClass(effect.getClass(), EFFECT_INSTANCE_CLASSES)) {
+            return effect;
+        }
+        return EffectRuntimeDiagnostics.describeEffectInstance(effect);
     }
 
     private static void requireAny(Object value, String[] classNames, String label) {

@@ -1307,6 +1307,7 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	f	F	aJ	field_Projectile_ballisticHeight	ballisticHeight
 	f	Z	aM	field_Projectile_builtInTrailEffect	builtInTrailEffect
 	f	F	aN	field_Projectile_trailEffectTimer	trailEffectTimer
+	f	Lcom/corrodinggames/rts/gameFramework/d/e;	aP	field_f_attachedLightEffect	attachedLightEffect
 	f	Z	aQ	field_Projectile_largeHitEffect	largeHitEffect
 	f	Z	aR	field_Projectile_hitSound	hitSound
 	f	Z	aS	field_Projectile_removalRequested	removalRequested
@@ -9007,17 +9008,34 @@ c	com/corrodinggames/rts/gameFramework/d/c	rw/render/effect/EffectEngine	rustedw
 	f	Z	u	field_EffectEngine_requireNextEffectOnscreen	requireNextEffectOnscreen
 	f	Z	v	field_EffectEngine_allowNextEffectOffscreen	allowNextEffectOffscreen
 	f	Landroid/graphics/Paint;	w	field_EffectEngine_scratchPaint	scratchPaint
+	m	()V	<init>	method_c__init_	<init>
 	m	()V	a	method_EffectEngine_requireNextEffectOnscreen	requireNextEffectOnscreen
 	m	(F)V	a	method_EffectEngine_update	update
+	m	(FF)F	a	method_c_randomRange	randomRange
+	m	(FFF)V	a	method_c_emitLargeExplosionBuiltInEffect	emitLargeExplosionBuiltInEffect
+	m	(FFFF)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_c_createSmallBuiltInEffect	createSmallBuiltInEffect
+	m	(FFFFF)V	a	method_c_emitLargeExplosionBuiltInEffect	emitLargeExplosionBuiltInEffect
+	m	(FFFFFF)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_c_createLineEffect	createLineEffect
+	m	(FFFFI)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_c_createSmallBuiltInEffect	createSmallBuiltInEffect
+	m	(FFFFII)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_c_createSmallBuiltInEffectVariant	createSmallBuiltInEffectVariant
 	m	(FFFLcom/corrodinggames/rts/gameFramework/d/d;ZLcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_EffectEngine_createEffectAndMarkForDraw	createEffectAndMarkForDraw
 	m	(Landroid/content/Context;)V	a	method_EffectEngine_loadBuiltInEffectImages	loadBuiltInEffectImages
+	m	(Lcom/corrodinggames/rts/gameFramework/d/e;Lcom/corrodinggames/rts/gameFramework/w;)V	a	method_c_attachEffectToObject	attachEffectToObject
 	m	(Lcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_EffectEngine_allocateEffect	allocateEffect
+	m	(Lcom/corrodinggames/rts/gameFramework/w;I)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_c_createAttachedLightEffect	createAttachedLightEffect
+	m	(Lcom/corrodinggames/rts/gameFramework/w;IF)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_c_createAttachedLightEffect	createAttachedLightEffect
 	m	(Ljava/lang/String;)I	a	method_EffectEngine_getBuiltInImageStripIndex	getBuiltInImageStripIndex
 	m	(Z)V	a	method_EffectEngine_removeAll	removeAll
 	m	(ZLcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;	a	method_EffectEngine_findReusableEffect	findReusableEffect
 	m	()V	b	method_EffectEngine_allowNextEffectOffscreen	allowNextEffectOffscreen
+	m	(FFF)Lcom/corrodinggames/rts/gameFramework/d/e;	b	method_c_createSmallExplosionBuiltInEffect	createSmallExplosionBuiltInEffect
+	m	(FFFFI)Lcom/corrodinggames/rts/gameFramework/d/e;	b	method_c_createLargeBuiltInEffect	createLargeBuiltInEffect
+	m	(FFFI)Lcom/corrodinggames/rts/gameFramework/d/e;	b	method_c_createLightEffect	createLightEffect
 	m	(FFFLcom/corrodinggames/rts/gameFramework/d/d;ZLcom/corrodinggames/rts/gameFramework/d/h;)Lcom/corrodinggames/rts/gameFramework/d/e;	b	method_EffectEngine_createEffect	createEffect
 	m	(Lcom/corrodinggames/rts/gameFramework/d/h;)V	b	method_EffectEngine_setNextEffectPriority	setNextEffectPriority
+	m	(FFFFI)Lcom/corrodinggames/rts/gameFramework/d/e;	c	method_c_createSmokeBuiltInEffect	createSmokeBuiltInEffect
+	m	(FFFI)Lcom/corrodinggames/rts/gameFramework/d/e;	c	method_c_createResourcePoolSmokeEffect	createResourcePoolSmokeEffect
+	m	(FFFI)Lcom/corrodinggames/rts/gameFramework/d/e;	d	method_c_createShockwaveBuiltInEffect	createShockwaveBuiltInEffect
 c	com/corrodinggames/rts/gameFramework/d/d	rw/render/effect/BuiltInEffectKind	rustedwarfare/render/effect/BuiltInEffectKind
 	f	Lcom/corrodinggames/rts/gameFramework/d/d;	a	field_BuiltInEffectKind_custom	custom
 	f	Lcom/corrodinggames/rts/gameFramework/d/d;	b	field_BuiltInEffectKind_smoke	smoke
@@ -9034,15 +9052,23 @@ c	com/corrodinggames/rts/gameFramework/d/d	rw/render/effect/BuiltInEffectKind	ru
 c	com/corrodinggames/rts/gameFramework/d/e	rw/render/effect/EffectInstance	rustedwarfare/render/effect/EffectInstance
 	f	S	A	field_EffectInstance_spawnDepth	spawnDepth
 	f	Landroid/graphics/LightingColorFilter;	B	field_EffectInstance_lightingColorFilter	lightingColorFilter
+	f	Landroid/graphics/LightingColorFilter;	C	field_e_sharedLightingColorFilter	sharedLightingColorFilter
+	f	I	D	field_e_sharedLightingColorFilterColor	sharedLightingColorFilterColor
 	f	F	E	field_EffectInstance_alpha	alpha
 	f	F	F	field_EffectInstance_scaleTo	scaleTo
 	f	F	G	field_EffectInstance_scaleFrom	scaleFrom
 	f	F	I	field_EffectInstance_worldX	worldX
 	f	F	J	field_EffectInstance_worldY	worldY
 	f	F	K	field_EffectInstance_height	height
+	f	Z	L	field_e_drawLineTo	drawLineTo
+	f	F	M	field_e_lineTargetX	lineTargetX
+	f	F	N	field_e_lineTargetY	lineTargetY
+	f	F	O	field_e_lineTargetHeight	lineTargetHeight
 	f	F	P	field_EffectInstance_velocityX	velocityX
 	f	F	Q	field_EffectInstance_velocityY	velocityY
 	f	F	R	field_EffectInstance_velocityHeight	velocityHeight
+	f	F	S	field_e_drawOscillationAmplitude	drawOscillationAmplitude
+	f	F	T	field_e_drawOscillationPeriod	drawOscillationPeriod
 	f	F	U	field_EffectInstance_delayTimer	delayTimer
 	f	F	V	field_EffectInstance_lifeRemaining	lifeRemaining
 	f	F	W	field_EffectInstance_lifeMax	lifeMax
@@ -9050,6 +9076,10 @@ c	com/corrodinggames/rts/gameFramework/d/e	rw/render/effect/EffectInstance	ruste
 	f	F	Y	field_EffectInstance_direction	direction
 	f	F	Z	field_EffectInstance_angularVelocity	angularVelocity
 	f	Lcom/corrodinggames/rts/game/units/custom/ay;	a	field_EffectInstance_effectTemplate	effectTemplate
+	f	Ljava/lang/String;	aa	field_e_text	text
+	f	Landroid/graphics/Paint;	ab	field_e_textPaint	textPaint
+	f	F	ac	field_e_textOffsetX	textOffsetX
+	f	F	ad	field_e_textOffsetY	textOffsetY
 	f	Z	ae	field_EffectInstance_animateFrames	animateFrames
 	f	I	af	field_EffectInstance_animateFrameStart	animateFrameStart
 	f	I	ag	field_EffectInstance_animateFrameEnd	animateFrameEnd
@@ -9063,10 +9093,16 @@ c	com/corrodinggames/rts/gameFramework/d/e	rw/render/effect/EffectInstance	ruste
 	f	S	ar	field_EffectInstance_drawLayer	drawLayer
 	f	Z	as	field_EffectInstance_shadow	shadow
 	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	at	field_EffectInstance_drawPaint	drawPaint
+	f	F	au	field_e_cachedPaintAlpha	cachedPaintAlpha
+	f	I	av	field_e_cachedPaintColor	cachedPaintColor
+	f	Z	aw	field_e_hasAppliedColorFilter	hasAppliedColorFilter
 	f	[Lcom/corrodinggames/rts/gameFramework/m/ag;	ax	field_EffectInstance_alphaPaintCache	alphaPaintCache
 	f	Lcom/corrodinggames/rts/gameFramework/d/c;	ay	field_EffectInstance_engine	engine
 	f	Lcom/corrodinggames/rts/gameFramework/w;	b	field_EffectInstance_attachedObject	attachedObject
+	f	Z	c	field_e_castLightOnGround	castLightOnGround
+	f	Z	d	field_e_lightEffect	lightEffect
 	f	Z	e	field_EffectInstance_showInFog	showInFog
+	f	I	g	field_e_builtInEffectKind	builtInEffectKind
 	f	Z	o	field_EffectInstance_active	active
 	f	Z	p	field_EffectInstance_forceDraw	forceDraw
 	f	Lcom/corrodinggames/rts/gameFramework/d/h;	q	field_EffectInstance_priority	priority
@@ -9077,6 +9113,8 @@ c	com/corrodinggames/rts/gameFramework/d/e	rw/render/effect/EffectInstance	ruste
 	f	Z	v	field_EffectInstance_physics	physics
 	f	F	w	field_EffectInstance_physicsGravity	physicsGravity
 	f	I	x	field_EffectInstance_color	color
+	f	I	y	field_e_fadeToColor	fadeToColor
+	f	F	z	field_e_fadeToColorTime	fadeToColorTime
 	m	(Lcom/corrodinggames/rts/gameFramework/d/c;)V	<init>	method_EffectInstance_<init>	<init>
 	m	()Lcom/corrodinggames/rts/gameFramework/m/ag;	a	method_EffectInstance_newEffectPaint	newEffectPaint
 	m	(F)Lcom/corrodinggames/rts/gameFramework/m/ag;	a	method_EffectInstance_getAlphaPaint	getAlphaPaint
