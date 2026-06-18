@@ -13,6 +13,7 @@ import io.github.endx.rustedfabricapi.api.diagnostic.LibRocketUiDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.MappingEvidenceDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.NetworkRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.diagnostic.ProjectileRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderCanvasDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderGlDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.RenderImageDiagnostics;
@@ -83,6 +84,21 @@ final class ExampleDiagnosticActions {
                 }
             }
 
+            Map<String, Object> projectileStatics = ProjectileRuntimeDiagnostics.describeProjectileRuntimeStatics();
+            List<Object> activeProjectiles = ProjectileRuntimeDiagnostics.activeProjectilesSnapshot();
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Projectile runtime active=" + activeProjectiles.size()
+                            + " staticActive=" + projectileStatics.get("activeProjectilesSize")
+                            + " areaScratch=" + projectileStatics.get("areaDamageUnitScratchListSize")
+                            + " motionRows="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticRows().size(),
+                    projectileStatics.get("activeProjectiles"));
+            if (!activeProjectiles.isEmpty()) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Projectile[0] " + summarizeProjectile(activeProjectiles.get(0)),
+                        activeProjectiles.get(0));
+            }
+
             if (graphicsEngine != null && RenderImageDiagnostics.isSlickGraphicsBackend(graphicsEngine)) {
                 Map<String, Object> backend = RenderImageDiagnostics.describeSlickGraphicsBackend(graphicsEngine);
                 ExampleDebugOverlay.enqueueOverlayMessage(stage,
@@ -147,6 +163,8 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allResourceTagMemoryActionEffectRows().size()
                             + " projEffectRows="
                             + MappingEvidenceDiagnostics.allProjectileEffectRuntimeRows().size()
+                            + " projMotionRows="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -381,6 +399,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allProjectileEffectRuntimePartialCoverageRows().size()
                             + " fieldCollisions="
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV082().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Projectile motion/laser/ballistic evidence rows="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticPartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV083().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);
@@ -1251,6 +1284,27 @@ final class ExampleDiagnosticActions {
                     + ", life=" + details.get("lifeRemaining") + "/" + details.get("lifeMax") + "}";
         } catch (RuntimeException e) {
             return ExampleDebugOverlay.describeObject(effect);
+        }
+    }
+
+    private static String summarizeProjectile(Object projectile) {
+        if (projectile == null) {
+            return "null";
+        }
+        try {
+            Map<String, Object> details = ProjectileRuntimeDiagnostics.describeProjectile(projectile);
+            return ExampleDebugOverlay.describeObject(projectile)
+                    + "{life=" + details.get("remainingLife")
+                    + ", laser=" + details.get("laserEffect")
+                    + ", cont=" + details.get("continuousDamage")
+                    + ", unintercept=" + details.get("uninterceptable")
+                    + ", collide=" + details.get("collideWithUnits") + "/" + details.get("collideWithTerrain")
+                    + ", contact=" + details.get("contactCollisionRadius")
+                    + ", ballistic=" + details.get("ballistic") + "/" + details.get("ballisticReachedPeak")
+                    + ", impact=" + details.get("impactTriggered")
+                    + ", ratio=" + details.get("lifeProgressRatio") + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(projectile);
         }
     }
 

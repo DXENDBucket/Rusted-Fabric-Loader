@@ -1,0 +1,7 @@
+area,candidate,reason
+projectile-legacy-serialization-residuals,Projectile.T / aB,Serialized/deserialized but no stable runtime behavior was found in v0.83 evidence; mapping would be pure serialization-order guessing.
+projectile-damage-multiplier-residual,Projectile.aj,"It multiplies damage when Unit.i() is true, but Unit.i() lacks a stable named contract in this pass and custom projectile templates do not assign aj directly."
+projectile-contact-flags-extra,Projectile.aB,"Adjacent to contact collision fields in versioned IO, but no direct update/draw consumer was found outside serialization."
+projectile-draw-paints,Projectile.bc/bd/be/bf/bg/bh,"Paint constants are visible in drawMainLayer/static init, but several are generic visual paints and v0.83 focuses on motion/laser/ballistic state rather than visual paint naming."
+deep-effect-runtime,EffectInstance remaining numeric kind ids and EffectEngine extra wrappers,Covered by v0.82 selected helpers; no new projectile-motion evidence required extra names in v0.83.
+custom projectile template inherited duplicates,com/corrodinggames/rts/game/units/custom/bh inherited BaseProjectileTemplate fields,Base projectile template names are already present; this pass maps runtime Projectile residuals instead of duplicating inherited template rows.

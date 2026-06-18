@@ -1110,6 +1110,34 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("named_method_collisions_v0_82");
     }
 
+    public static List<MappingEvidenceRow> allProjectileMotionLaserBallisticRows() {
+        return allEvidenceRows("projectile_motion_laser_ballistic_added_rows_v0_83");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileMotionLaserBallisticUpdatedRows() {
+        return allEvidenceRows("projectile_motion_laser_ballistic_updated_rows_v0_83");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileMotionLaserBallisticFlowMap() {
+        return allEvidenceRows("projectile_motion_laser_ballistic_flow_map_v0_83");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileMotionLaserBallisticSkippedRows() {
+        return allEvidenceRows("projectile_motion_laser_ballistic_skipped_rows_v0_83");
+    }
+
+    public static List<MappingEvidenceRow> allProjectileMotionLaserBallisticPartialCoverageRows() {
+        return allEvidenceRows("projectile_motion_laser_ballistic_partial_coverage_after_v0_83");
+    }
+
+    public static List<MappingEvidenceRow> allNamedFieldCollisionRowsV083() {
+        return allEvidenceRows("named_field_collisions_v0_83");
+    }
+
+    public static List<MappingEvidenceRow> allNamedMethodCollisionRowsV083() {
+        return allEvidenceRows("named_method_collisions_v0_83");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1433,6 +1461,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findProjectileEffectRuntimeUpdatedRows(String text) {
         return findByText(allProjectileEffectRuntimeUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findProjectileMotionLaserBallisticRows(String text) {
+        return findByText(allProjectileMotionLaserBallisticRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findProjectileMotionLaserBallisticUpdatedRows(String text) {
+        return findByText(allProjectileMotionLaserBallisticUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

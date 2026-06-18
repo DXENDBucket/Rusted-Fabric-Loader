@@ -1279,7 +1279,10 @@ c	com/corrodinggames/rts/game/b/k	rw/map/TilesetImageCacheEntry	rustedwarfare/ma
 c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game/Projectile
 	f	Z	A	field_Projectile_instant	instant
 	f	Z	B	field_Projectile_laserEffect	laserEffect
+	f	Z	C	field_f_uninterceptable	uninterceptable
 	f	Z	D	field_f_D_nukeWeapon	nukeWeapon
+	f	Z	E	field_f_continuousDamage	continuousDamage
+	f	F	F	field_f_continuousDamageRampUpDuration	continuousDamageRampUpDuration
 	f	Z	G	field_f_G_flameWeapon	flameWeapon
 	f	F	H	field_f_H_deflectionPower	deflectionPower
 	f	F	I	field_Projectile_sweepPhaseSeed	sweepPhaseSeed
@@ -1287,6 +1290,8 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	f	F	K	field_Projectile_targetOffsetX	targetOffsetX
 	f	F	L	field_Projectile_targetOffsetY	targetOffsetY
 	f	Z	M	field_Projectile_lightingEffect	lightingEffect
+	f	F	N	field_f_lightingEffectRefreshTimer	lightingEffectRefreshTimer
+	f	[F	O	field_f_lightingEffectSegmentOffsets	lightingEffectSegmentOffsets
 	f	S	P	field_Projectile_frame	frame
 	f	S	Q	field_Projectile_shadowFrame	shadowFrame
 	f	S	R	field_Projectile_drawType	drawType
@@ -1298,6 +1303,8 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	f	F	Y	field_f_Y_areaDamage	areaDamage
 	f	F	Z	field_f_Z_areaRadius	areaRadius
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	field_f_a_activeProjectiles	activeProjectiles
+	f	F	aA	field_f_contactCollisionRadius	contactCollisionRadius
+	f	Z	aC	field_f_hasFixedTargetPosition	hasFixedTargetPosition
 	f	I	aD	field_Projectile_spawnRecursionDepth	spawnRecursionDepth
 	f	Lcom/corrodinggames/rts/game/units/custom/h;	aE	field_Projectile_tags	tags
 	f	F	aF	field_Projectile_retargetingInFlightTimer	retargetingInFlightTimer
@@ -1305,8 +1312,11 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	f	Z	aH	field_Projectile_ballistic	ballistic
 	f	F	aI	field_Projectile_ballisticDelayMoveHeight	ballisticDelayMoveHeight
 	f	F	aJ	field_Projectile_ballisticHeight	ballisticHeight
+	f	Z	aK	field_f_ballisticReachedPeak	ballisticReachedPeak
+	f	F	aL	field_f_ballisticHeightSpeed	ballisticHeightSpeed
 	f	Z	aM	field_Projectile_builtInTrailEffect	builtInTrailEffect
 	f	F	aN	field_Projectile_trailEffectTimer	trailEffectTimer
+	f	F	aO	field_f_continuousDamageSmokeTimer	continuousDamageSmokeTimer
 	f	Lcom/corrodinggames/rts/gameFramework/d/e;	aP	field_f_attachedLightEffect	attachedLightEffect
 	f	Z	aQ	field_Projectile_largeHitEffect	largeHitEffect
 	f	Z	aR	field_Projectile_hitSound	hitSound
@@ -1335,6 +1345,8 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	ap	field_f_ap_areaHitUnitsAlreadyHit	areaHitUnitsAlreadyHit
 	f	I	aq	field_Projectile_defaultColor	defaultColor
 	f	I	ar	field_Projectile_color	color
+	f	Z	as	field_f_collideWithUnits	collideWithUnits
+	f	Z	at	field_f_collideWithTerrain	collideWithTerrain
 	f	Lcom/corrodinggames/rts/gameFramework/w;	au	field_Projectile_moveWithParentObject	moveWithParentObject
 	f	I	av	field_Projectile_moveWithParentTurretIndex	moveWithParentTurretIndex
 	f	F	aw	field_Projectile_lastMoveWithParentX	lastMoveWithParentX
@@ -1344,10 +1356,12 @@ c	com/corrodinggames/rts/game/f	rustedwarfare/game/Projectile	rustedwarfare/game
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	b	field_Projectile_projectilesImage	projectilesImage
 	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	ba	field_Projectile_defaultPaint	defaultPaint
 	f	Landroid/graphics/Paint;	bb	field_Projectile_mutableColorPaint	mutableColorPaint
+	f	Lcom/corrodinggames/rts/gameFramework/utility/u;	bi	field_f_areaDamageUnitScratchList	areaDamageUnitScratchList
 	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	bj	field_Projectile_cachedTintedPaint	cachedTintedPaint
 	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	bk	field_Projectile_lastGlobalTintedPaint	lastGlobalTintedPaint
 	f	I	bl	field_Projectile_lastGlobalTintColor	lastGlobalTintColor
 	f	Lcom/corrodinggames/rts/game/f;	bm	field_Projectile_scratchDamageMultiplierProjectile	scratchDamageMultiplierProjectile
+	f	Z	bn	field_f_impactTriggered	impactTriggered
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	c	field_Projectile_projectiles2Image	projectiles2Image
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	d	field_Projectile_largeProjectilesImage	largeProjectilesImage
 	f	Landroid/graphics/Rect;	e	field_Projectile_scratchSourceRect	scratchSourceRect

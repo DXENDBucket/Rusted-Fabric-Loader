@@ -66,11 +66,24 @@ public final class ProjectileRuntimeDiagnostics {
         putBooleanField(result, projectile, "drawShadow", new String[]{"drawShadow", "z"});
         putBooleanField(result, projectile, "instant", new String[]{"instant", "A"});
         putBooleanField(result, projectile, "laserEffect", new String[]{"laserEffect", "B"});
+        putBooleanField(result, projectile, "uninterceptable", new String[]{"uninterceptable", "C"});
+        putBooleanField(result, projectile, "nukeWeapon", new String[]{"nukeWeapon", "D"});
+        putBooleanField(result, projectile, "continuousDamage", new String[]{"continuousDamage", "E"});
+        putFloatField(result, projectile, "continuousDamageRampUpDuration",
+                new String[]{"continuousDamageRampUpDuration", "F"});
+        putBooleanField(result, projectile, "flameWeapon", new String[]{"flameWeapon", "G"});
+        putFloatField(result, projectile, "deflectionPower", new String[]{"deflectionPower", "H"});
         putFloatField(result, projectile, "sweepPhaseSeed", new String[]{"sweepPhaseSeed", "I"});
         putFloatField(result, projectile, "ageTimer", new String[]{"ageTimer", "J"});
         putFloatField(result, projectile, "targetOffsetX", new String[]{"targetOffsetX", "K"});
         putFloatField(result, projectile, "targetOffsetY", new String[]{"targetOffsetY", "L"});
         putBooleanField(result, projectile, "lightingEffect", new String[]{"lightingEffect", "M"});
+        putFloatField(result, projectile, "lightingEffectRefreshTimer",
+                new String[]{"lightingEffectRefreshTimer", "N"});
+        putField(result, projectile, "lightingEffectSegmentOffsets",
+                new String[]{"lightingEffectSegmentOffsets", "O"});
+        putSnapshotSizeField(result, projectile, "lightingEffectSegmentOffsetsSize",
+                new String[]{"lightingEffectSegmentOffsets", "O"});
         putField(result, projectile, "frame", new String[]{"frame", "P"});
         putField(result, projectile, "shadowFrame", new String[]{"shadowFrame", "Q"});
         putField(result, projectile, "drawType", new String[]{"drawType", "R"});
@@ -82,6 +95,28 @@ public final class ProjectileRuntimeDiagnostics {
         putFloatField(result, projectile, "areaExpandTimeOriginal", new String[]{"areaExpandTimeOriginal", "X"});
         putFloatField(result, projectile, "areaDamage", new String[]{"areaDamage", "Y"});
         putFloatField(result, projectile, "areaRadius", new String[]{"areaRadius", "Z"});
+        putBooleanField(result, projectile, "onlyDamageEnemyUnits", new String[]{"onlyDamageEnemyUnits", "aa"});
+        putBooleanField(result, projectile, "ignoreEnemyUnits", new String[]{"ignoreEnemyUnits", "ab"});
+        putBooleanField(result, projectile, "areaHitUnderwaterAlways",
+                new String[]{"areaHitUnderwaterAlways", "ac"});
+        putBooleanField(result, projectile, "canAreaHitAirUnits", new String[]{"canAreaHitAirUnits", "ad"});
+        putBooleanField(result, projectile, "areaHitOnlySameAirLandLayer",
+                new String[]{"areaHitOnlySameAirLandLayer", "ae"});
+        putBooleanField(result, projectile, "explodeOnEndOfLife", new String[]{"explodeOnEndOfLife", "af"});
+        putFloatField(result, projectile, "pushForce", new String[]{"pushForce", "ag"});
+        putFloatField(result, projectile, "pushVelocity", new String[]{"pushVelocity", "ah"});
+        putFloatField(result, projectile, "buildingDamageMultiplier",
+                new String[]{"buildingDamageMultiplier", "ai"});
+        putFloatField(result, projectile, "shieldDamageMultiplier",
+                new String[]{"shieldDamageMultiplier", "ak"});
+        putFloatField(result, projectile, "shieldDeflectionMultiplier",
+                new String[]{"shieldDeflectionMultiplier", "al"});
+        putFloatField(result, projectile, "hullDamageMultiplier", new String[]{"hullDamageMultiplier", "am"});
+        putFloatField(result, projectile, "armourIgnoreAmount", new String[]{"armourIgnoreAmount", "an"});
+        putBooleanField(result, projectile, "trackAreaHitUnits", new String[]{"trackAreaHitUnits", "ao"});
+        putField(result, projectile, "areaHitUnitsAlreadyHit", new String[]{"areaHitUnitsAlreadyHit", "ap"});
+        putSnapshotSizeField(result, projectile, "areaHitUnitsAlreadyHitSize",
+                new String[]{"areaHitUnitsAlreadyHit", "ap"});
         putField(result, projectile, "moveWithParentObject", new String[]{"moveWithParentObject", "au"});
         putIntField(result, projectile, "moveWithParentTurretIndex", new String[]{"moveWithParentTurretIndex", "av"});
         putFloatField(result, projectile, "lastMoveWithParentX", new String[]{"lastMoveWithParentX", "aw"});
@@ -91,6 +126,12 @@ public final class ProjectileRuntimeDiagnostics {
         putFloatField(result, projectile, "retargetingInFlightTimer",
                 new String[]{"retargetingInFlightTimer", "aF"});
         putField(result, projectile, "color", new String[]{"color", "ar"});
+        putBooleanField(result, projectile, "collideWithUnits", new String[]{"collideWithUnits", "as"});
+        putBooleanField(result, projectile, "collideWithTerrain", new String[]{"collideWithTerrain", "at"});
+        putFloatField(result, projectile, "contactCollisionRadius",
+                new String[]{"contactCollisionRadius", "aA"});
+        putBooleanField(result, projectile, "hasFixedTargetPosition",
+                new String[]{"hasFixedTargetPosition", "aC"});
         putIntField(result, projectile, "spawnRecursionDepth", new String[]{"spawnRecursionDepth", "aD"});
         putField(result, projectile, "tags", new String[]{"tags", "aE"});
         putBooleanField(result, projectile, "autoTargetingOnDeadTarget",
@@ -99,8 +140,12 @@ public final class ProjectileRuntimeDiagnostics {
         putFloatField(result, projectile, "ballisticDelayMoveHeight",
                 new String[]{"ballisticDelayMoveHeight", "aI"});
         putFloatField(result, projectile, "ballisticHeight", new String[]{"ballisticHeight", "aJ"});
+        putBooleanField(result, projectile, "ballisticReachedPeak", new String[]{"ballisticReachedPeak", "aK"});
+        putFloatField(result, projectile, "ballisticHeightSpeed", new String[]{"ballisticHeightSpeed", "aL"});
         putBooleanField(result, projectile, "builtInTrailEffect", new String[]{"builtInTrailEffect", "aM"});
         putFloatField(result, projectile, "trailEffectTimer", new String[]{"trailEffectTimer", "aN"});
+        putFloatField(result, projectile, "continuousDamageSmokeTimer",
+                new String[]{"continuousDamageSmokeTimer", "aO"});
         putField(result, projectile, "attachedLightEffect", new String[]{"attachedLightEffect", "aP"});
         result.put("attachedLightEffectDetails", describeAttachedLightEffectOrRaw(projectile));
         putBooleanField(result, projectile, "largeHitEffect", new String[]{"largeHitEffect", "aQ"});
@@ -108,7 +153,28 @@ public final class ProjectileRuntimeDiagnostics {
         putBooleanField(result, projectile, "removalRequested", new String[]{"removalRequested", "aS"});
         putFloatField(result, projectile, "drawAngle", new String[]{"drawAngle", "aT"});
         putBooleanField(result, projectile, "drawAngleInitialized", new String[]{"drawAngleInitialized", "aU"});
+        putFloatField(result, projectile, "impactX", new String[]{"impactX", "aV"});
+        putFloatField(result, projectile, "impactY", new String[]{"impactY", "aW"});
+        putFloatField(result, projectile, "impactHeight", new String[]{"impactHeight", "aX"});
+        putBooleanField(result, projectile, "shouldRevealFog", new String[]{"shouldRevealFog", "aY"});
+        putBooleanField(result, projectile, "alwaysVisibleInFog", new String[]{"alwaysVisibleInFog", "aZ"});
+        putBooleanField(result, projectile, "impactTriggered", new String[]{"impactTriggered", "bn"});
+        result.put("lifeProgressRatio", Float.valueOf(getLifeProgressRatio(projectile)));
         putField(result, projectile, "cachedTintedPaint", new String[]{"cachedTintedPaint", "bj"});
+        return Collections.unmodifiableMap(result);
+    }
+
+    public static Map<String, Object> describeProjectileRuntimeStatics() {
+        Map<String, Object> result = new LinkedHashMap<String, Object>();
+        Object activeProjectiles = RustedReflection.getStaticFieldValue(PROJECTILE_CLASSES,
+                new String[]{"activeProjectiles", "a"});
+        Object areaDamageUnitScratchList = RustedReflection.getStaticFieldValue(PROJECTILE_CLASSES,
+                new String[]{"areaDamageUnitScratchList", "bi"});
+        result.put("activeProjectiles", activeProjectiles);
+        result.put("activeProjectilesSize", Integer.valueOf(RustedReflection.snapshotIterable(activeProjectiles).size()));
+        result.put("areaDamageUnitScratchList", areaDamageUnitScratchList);
+        result.put("areaDamageUnitScratchListSize",
+                Integer.valueOf(RustedReflection.snapshotIterable(areaDamageUnitScratchList).size()));
         return Collections.unmodifiableMap(result);
     }
 
@@ -126,6 +192,8 @@ public final class ProjectileRuntimeDiagnostics {
         putStaticProjectileField(result, "lastGlobalTintColor", new String[]{"lastGlobalTintColor", "bl"});
         putStaticProjectileField(result, "scratchDamageMultiplierProjectile",
                 new String[]{"scratchDamageMultiplierProjectile", "bm"});
+        putStaticProjectileField(result, "areaDamageUnitScratchList",
+                new String[]{"areaDamageUnitScratchList", "bi"});
         return Collections.unmodifiableMap(result);
     }
 
@@ -148,6 +216,32 @@ public final class ProjectileRuntimeDiagnostics {
     public static Object getAttachedLightEffect(Object projectile) {
         requireProjectile(projectile);
         return RustedReflection.getFieldValue(projectile, new String[]{"attachedLightEffect", "aP"});
+    }
+
+    public static float getLifeProgressRatio(Object projectile) {
+        requireProjectile(projectile);
+        Object value = RustedReflection.invokeInstance(projectile, new String[]{"getLifeProgressRatio", "e"});
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    public static boolean isUninterceptable(Object projectile) {
+        requireProjectile(projectile);
+        return RustedReflection.getBooleanField(projectile, new String[]{"uninterceptable", "C"});
+    }
+
+    public static boolean isContinuousDamage(Object projectile) {
+        requireProjectile(projectile);
+        return RustedReflection.getBooleanField(projectile, new String[]{"continuousDamage", "E"});
+    }
+
+    public static boolean isImpactTriggered(Object projectile) {
+        requireProjectile(projectile);
+        return RustedReflection.getBooleanField(projectile, new String[]{"impactTriggered", "bn"});
+    }
+
+    public static float getContactCollisionRadius(Object projectile) {
+        requireProjectile(projectile);
+        return RustedReflection.getFloatField(projectile, new String[]{"contactCollisionRadius", "aA"});
     }
 
     public static boolean hasExistingInterceptorForProjectile(Object projectile) {
@@ -276,5 +370,11 @@ public final class ProjectileRuntimeDiagnostics {
 
     private static void putBooleanField(Map<String, Object> result, Object owner, String key, String[] fieldNames) {
         result.put(key, Boolean.valueOf(RustedReflection.getBooleanField(owner, fieldNames)));
+    }
+
+    private static void putSnapshotSizeField(Map<String, Object> result, Object owner, String key,
+                                             String[] fieldNames) {
+        result.put(key, Integer.valueOf(RustedReflection.snapshotIterable(
+                RustedReflection.getFieldValue(owner, fieldNames)).size()));
     }
 }
