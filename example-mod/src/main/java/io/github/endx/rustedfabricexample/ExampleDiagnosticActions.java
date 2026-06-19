@@ -165,6 +165,8 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allProjectileEffectRuntimeRows().size()
                             + " projMotionRows="
                             + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticRows().size()
+                            + " animRuntimeRows="
+                            + MappingEvidenceDiagnostics.allCustomAnimationConstructionConversionRows().size()
                             + " builderHotfix="
                             + MappingEvidenceDiagnostics.allIsBuilderUseAsBuilderHotfixUpdatedRows().size()
                             + " ids=" + MappingEvidenceDiagnostics.evidenceResourceIds().size(),
@@ -275,6 +277,12 @@ final class ExampleDiagnosticActions {
                     "Selected queuedActionDelta="
                             + summarizeResourceAmount(resources.get("queuedActionResourceDelta")),
                     selectedUnit);
+
+            if (CustomUnitDiagnostics.isCustomUnit(selectedUnit)) {
+                ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                        "Selected custom runtime " + summarizeCustomUnitRuntime(selectedUnit),
+                        selectedUnit);
+            }
         } catch (Throwable t) {
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
                     "Resource snapshot failed: " + t.getClass().getSimpleName()
@@ -414,6 +422,21 @@ final class ExampleDiagnosticActions {
                             + MappingEvidenceDiagnostics.allProjectileMotionLaserBallisticPartialCoverageRows().size()
                             + " fieldCollisions="
                             + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV083().size(),
+                    modManager);
+
+            ExampleDebugOverlay.enqueueOverlayMessage(stage,
+                    "Animation/construction/conversion evidence rows="
+                            + MappingEvidenceDiagnostics.allCustomAnimationConstructionConversionRows().size()
+                            + " updated="
+                            + MappingEvidenceDiagnostics.allCustomAnimationConstructionConversionUpdatedRows().size()
+                            + " flow="
+                            + MappingEvidenceDiagnostics.allCustomAnimationConstructionConversionFlowMap().size()
+                            + " skipped="
+                            + MappingEvidenceDiagnostics.allCustomAnimationConstructionConversionSkippedRows().size()
+                            + " partial="
+                            + MappingEvidenceDiagnostics.allCustomAnimationConstructionConversionPartialCoverageRows().size()
+                            + " fieldCollisions="
+                            + MappingEvidenceDiagnostics.allNamedFieldCollisionRowsV084().size(),
                     modManager);
 
             int limit = Math.min(mods.size(), 3);
@@ -1305,6 +1328,27 @@ final class ExampleDiagnosticActions {
                     + ", ratio=" + details.get("lifeProgressRatio") + "}";
         } catch (RuntimeException e) {
             return ExampleDebugOverlay.describeObject(projectile);
+        }
+    }
+
+    private static String summarizeCustomUnitRuntime(Object customUnit) {
+        if (customUnit == null || !CustomUnitDiagnostics.isCustomUnit(customUnit)) {
+            return ExampleDebugOverlay.describeObject(customUnit);
+        }
+        try {
+            Map<String, Object> details = CustomUnitDiagnostics.describeCustomUnitActionRuntime(customUnit);
+            return ExampleDebugOverlay.describeObject(customUnit)
+                    + "{buildFx=" + details.get("metadataHasBuildQueueRuntimeEffects")
+                    + "/" + details.get("revertMetadataHasBuildQueueRuntimeEffects")
+                    + ", blockMove=" + details.get("currentBuildQueueActionBlocksMovement")
+                    + ", createdPending=" + details.get("createdEventPending")
+                    + ", activePending=" + details.get("completeAndActiveEventPending")
+                    + ", autoCd=" + details.get("autoTriggerCooldownTimer")
+                    + ", legBase=" + details.get("lastLegBaseX") + "," + details.get("lastLegBaseY")
+                    + "," + details.get("lastLegBaseHeight") + "," + details.get("lastLegBaseDir")
+                    + ", legs=" + details.get("legRuntimeStatesSize") + "}";
+        } catch (RuntimeException e) {
+            return ExampleDebugOverlay.describeObject(customUnit);
         }
     }
 

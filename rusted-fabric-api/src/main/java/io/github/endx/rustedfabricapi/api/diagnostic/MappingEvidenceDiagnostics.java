@@ -1138,6 +1138,34 @@ public final class MappingEvidenceDiagnostics {
         return allEvidenceRows("named_method_collisions_v0_83");
     }
 
+    public static List<MappingEvidenceRow> allCustomAnimationConstructionConversionRows() {
+        return allEvidenceRows("custom_animation_construction_conversion_added_rows_v0_84");
+    }
+
+    public static List<MappingEvidenceRow> allCustomAnimationConstructionConversionUpdatedRows() {
+        return allEvidenceRows("custom_animation_construction_conversion_updated_rows_v0_84");
+    }
+
+    public static List<MappingEvidenceRow> allCustomAnimationConstructionConversionFlowMap() {
+        return allEvidenceRows("custom_animation_construction_conversion_flow_map_v0_84");
+    }
+
+    public static List<MappingEvidenceRow> allCustomAnimationConstructionConversionSkippedRows() {
+        return allEvidenceRows("custom_animation_construction_conversion_skipped_rows_v0_84");
+    }
+
+    public static List<MappingEvidenceRow> allCustomAnimationConstructionConversionPartialCoverageRows() {
+        return allEvidenceRows("custom_animation_construction_conversion_partial_coverage_after_v0_84");
+    }
+
+    public static List<MappingEvidenceRow> allNamedFieldCollisionRowsV084() {
+        return allEvidenceRows("named_field_collisions_v0_84");
+    }
+
+    public static List<MappingEvidenceRow> allNamedMethodCollisionRowsV084() {
+        return allEvidenceRows("named_method_collisions_v0_84");
+    }
+
     public static List<String> evidenceResourceIds() {
         return Holder.EVIDENCE_RESOURCE_IDS;
     }
@@ -1469,6 +1497,14 @@ public final class MappingEvidenceDiagnostics {
 
     public static List<MappingEvidenceRow> findProjectileMotionLaserBallisticUpdatedRows(String text) {
         return findByText(allProjectileMotionLaserBallisticUpdatedRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomAnimationConstructionConversionRows(String text) {
+        return findByText(allCustomAnimationConstructionConversionRows(), text);
+    }
+
+    public static List<MappingEvidenceRow> findCustomAnimationConstructionConversionUpdatedRows(String text) {
+        return findByText(allCustomAnimationConstructionConversionUpdatedRows(), text);
     }
 
     public static List<MappingEvidenceRow> findAudioUtilityRows(String text) {

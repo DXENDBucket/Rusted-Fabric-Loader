@@ -4658,17 +4658,25 @@ c	com/corrodinggames/rts/game/units/custom/j	rw/custom/CustomUnit	rustedwarfare/
 	f	Landroid/graphics/PointF;	dM	field_j_currentActionTargetPoint	currentActionTargetPoint
 	f	Lcom/corrodinggames/rts/game/units/am;	dN	field_j_currentActionTargetUnit	currentActionTargetUnit
 	f	I	dO	field_j_currentActionRepeatedCount	currentActionRepeatedCount
+	f	F	dP	field_j_lastLegBaseX	lastLegBaseX
+	f	F	dQ	field_j_lastLegBaseY	lastLegBaseY
+	f	F	dR	field_j_lastLegBaseHeight	lastLegBaseHeight
+	f	F	dS	field_j_lastLegBaseDir	lastLegBaseDir
 	f	[Lcom/corrodinggames/rts/game/units/custom/b/i;	dT	field_CustomUnit_legRuntimeStates	legRuntimeStates
 	f	Ljava/util/ArrayList;	dU	field_j_upgradeActionScratchList	upgradeActionScratchList
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	dW	field_CustomUnit_pendingEventContexts	pendingEventContexts
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	dX	field_CustomUnit_recycledEventContexts	recycledEventContexts
 	f	Lcom/corrodinggames/rts/game/units/custom/h;	ed	field_j_ed_runtimeTags	runtimeTags
 	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	eg	field_j_attachedUnitActionBuffer	attachedUnitActionBuffer
+	f	Z	g	field_j_currentBuildQueueActionBlocksMovement	currentBuildQueueActionBlocksMovement
+	f	Z	h	field_j_completeAndActiveEventPending	completeAndActiveEventPending
+	f	Z	i	field_j_createdEventPending	createdEventPending
 	f	F	m	field_CustomUnit_transportUnloadTimer	transportUnloadTimer
 	f	Z	n	field_CustomUnit_transportUnloading	transportUnloading
 	f	F	o	field_j_generationDelayTimer	generationDelayTimer
 	f	Z	p	field_j_generationResourcesActive	generationResourcesActive
 	f	F	q	field_j_updateUnitMemoryTimer	updateUnitMemoryTimer
+	f	F	w	field_j_autoTriggerCooldownTimer	autoTriggerCooldownTimer
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	x	field_0900_metadata	unitMetadata
 	f	Lcom/corrodinggames/rts/game/units/custom/as;	y	field_j_y_mutableStats	mutableStats
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	z	field_0901_previousMetadata	revertMetadata
@@ -4936,6 +4944,7 @@ c	com/corrodinggames/rts/game/units/custom/l	rw/custom/CustomUnitMetadata	rusted
 	f	F	bd	field_l_bd_resourceReclaimMultiplier	resourceReclaimMultiplier
 	f	F	be	field_l_nanoUnbuildSpeed	nanoUnbuildSpeed
 	f	F	bf	field_l_bf_nanoBuildSpeed	nanoBuildSpeed
+	f	Z	bg	field_l_hasBuildQueueRuntimeEffects	hasBuildQueueRuntimeEffects
 	f	F	bh	field_l_bh_selfBuildRate	selfBuildRate
 	f	Z	bi	field_l_bi_dieOnConstruct	dieOnConstruct
 	f	Z	bj	field_l_bj_dieOnAttack	dieOnAttack

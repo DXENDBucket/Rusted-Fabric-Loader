@@ -132,6 +132,11 @@ public final class CustomUnitDiagnostics {
         putIntField(result, metadata, "generationDelay", new String[]{"generationDelay", "cr"});
         putBooleanField(result, metadata, "hasPeriodicResourceGeneration",
                 new String[]{"hasPeriodicResourceGeneration", "cn"});
+        putFloatField(result, metadata, "autoTriggerCooldownTime",
+                new String[]{"autoTriggerCooldownTime", "ca"});
+        putField(result, metadata, "autoTriggerCheckRate", new String[]{"autoTriggerCheckRate", "cb"});
+        putBooleanField(result, metadata, "autoTriggerCheckWhileNotBuilt",
+                new String[]{"autoTriggerCheckWhileNotBuilt", "cd"});
         putField(result, metadata, "generationResourcesPerSecond",
                 new String[]{"generationResourcesPerSecond", "cp"});
         putField(result, metadata, "globalGenerationResourcesPerSecond",
@@ -147,6 +152,8 @@ public final class CustomUnitDiagnostics {
                 new String[]{"showActionsWithMixedSelectionIfOtherUnitsHaveTag", "fO"});
         putField(result, metadata, "canOnlyBeAttackedByUnitsWithTags",
                 new String[]{"canOnlyBeAttackedByUnitsWithTags", "aS"});
+        putBooleanField(result, metadata, "hasBuildQueueRuntimeEffects",
+                new String[]{"hasBuildQueueRuntimeEffects", "bg"});
         putField(result, metadata, "unitsSpawnedOnDeath", new String[]{"unitsSpawnedOnDeath", "bC"});
         putBooleanField(result, metadata, "hasLaserDefenceTurrets",
                 new String[]{"hasLaserDefenceTurrets", "bE"});
@@ -294,6 +301,16 @@ public final class CustomUnitDiagnostics {
     public static boolean metadataUsesCreditResources(Object metadata) {
         requireCustomUnitMetadata(metadata);
         return invokeBooleanOrFalse(metadata, new String[]{"usesCreditResources", "y"});
+    }
+
+    public static boolean metadataHasBuildQueueRuntimeEffects(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return RustedReflection.getBooleanField(metadata, new String[]{"hasBuildQueueRuntimeEffects", "bg"});
+    }
+
+    public static float metadataAutoTriggerCooldownTime(Object metadata) {
+        requireCustomUnitMetadata(metadata);
+        return RustedReflection.getFloatField(metadata, new String[]{"autoTriggerCooldownTime", "ca"});
     }
 
     public static List<Object> legOrArmTemplates(Object metadata) {
@@ -572,14 +589,47 @@ public final class CustomUnitDiagnostics {
         return Collections.unmodifiableMap(result);
     }
 
+    public static Object getUnitMetadata(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.getFieldValue(customUnit, new String[]{"unitMetadata", "x"});
+    }
+
+    public static Object getRevertMetadata(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.getFieldValue(customUnit, new String[]{"revertMetadata", "z"});
+    }
+
     public static Map<String, Object> describeCustomUnitActionRuntime(Object customUnit) {
         requireCustomUnit(customUnit);
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.putAll(describeCurrentActionContext());
+        Object metadata = getUnitMetadata(customUnit);
+        Object revertMetadata = getRevertMetadata(customUnit);
+        result.put("unitMetadata", metadata);
+        result.put("revertMetadata", revertMetadata);
+        result.put("metadataHasBuildQueueRuntimeEffects",
+                Boolean.valueOf(metadata != null && isCustomUnitMetadata(metadata)
+                        && metadataHasBuildQueueRuntimeEffects(metadata)));
+        result.put("revertMetadataHasBuildQueueRuntimeEffects",
+                Boolean.valueOf(revertMetadata != null && isCustomUnitMetadata(revertMetadata)
+                        && metadataHasBuildQueueRuntimeEffects(revertMetadata)));
+        putBooleanField(result, customUnit, "currentBuildQueueActionBlocksMovement",
+                new String[]{"currentBuildQueueActionBlocksMovement", "g"});
+        putBooleanField(result, customUnit, "completeAndActiveEventPending",
+                new String[]{"completeAndActiveEventPending", "h"});
+        putBooleanField(result, customUnit, "createdEventPending", new String[]{"createdEventPending", "i"});
         putFloatField(result, customUnit, "generationDelayTimer", new String[]{"generationDelayTimer", "o"});
         putBooleanField(result, customUnit, "generationResourcesActive",
                 new String[]{"generationResourcesActive", "p"});
         putFloatField(result, customUnit, "updateUnitMemoryTimer", new String[]{"updateUnitMemoryTimer", "q"});
+        putFloatField(result, customUnit, "autoTriggerCooldownTimer",
+                new String[]{"autoTriggerCooldownTimer", "w"});
+        putFloatField(result, customUnit, "lastLegBaseX", new String[]{"lastLegBaseX", "dP"});
+        putFloatField(result, customUnit, "lastLegBaseY", new String[]{"lastLegBaseY", "dQ"});
+        putFloatField(result, customUnit, "lastLegBaseHeight", new String[]{"lastLegBaseHeight", "dR"});
+        putFloatField(result, customUnit, "lastLegBaseDir", new String[]{"lastLegBaseDir", "dS"});
+        putField(result, customUnit, "buildQueue", new String[]{"buildQueue", "dL"});
+        result.put("legRuntimeStatesSize", Integer.valueOf(legRuntimeStates(customUnit).size()));
         putField(result, customUnit, "upgradeActionScratchList",
                 new String[]{"upgradeActionScratchList", "dU"});
         result.put("actionsForCurrentMetadataSize",
@@ -589,6 +639,31 @@ public final class CustomUnitDiagnostics {
         result.put("secondaryUpgradeActionIdsSize",
                 Integer.valueOf(collectSecondaryUpgradeActionIds(customUnit).size()));
         return Collections.unmodifiableMap(result);
+    }
+
+    public static boolean isCustomUnitMetadata(Object value) {
+        return value != null && RustedReflection.isAnyClass(value.getClass(), CUSTOM_UNIT_METADATA_CLASSES);
+    }
+
+    public static boolean currentBuildQueueActionBlocksMovement(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.getBooleanField(customUnit,
+                new String[]{"currentBuildQueueActionBlocksMovement", "g"});
+    }
+
+    public static boolean createdEventPending(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.getBooleanField(customUnit, new String[]{"createdEventPending", "i"});
+    }
+
+    public static boolean completeAndActiveEventPending(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.getBooleanField(customUnit, new String[]{"completeAndActiveEventPending", "h"});
+    }
+
+    public static float autoTriggerCooldownTimer(Object customUnit) {
+        requireCustomUnit(customUnit);
+        return RustedReflection.getFloatField(customUnit, new String[]{"autoTriggerCooldownTimer", "w"});
     }
 
     public static List<Object> getActionsForCurrentMetadata(Object customUnit) {

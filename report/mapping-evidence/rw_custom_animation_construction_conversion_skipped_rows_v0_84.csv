@@ -1,0 +1,7 @@
+area,candidate,reason
+custom-unit-motion-draw-scratch,CustomUnit.d/e/f/j/k/l/r/s/t/u/v/D,These fields are visible around draw/movement/update code but their contracts need a dedicated animation/render scratch pass; v0.84 only maps construction/conversion and leg-base snapshots with direct evidence.
+custom-unit-auto-trigger-branch,"CustomUnit.b(float, boolean) / CustomUnit.a(float, r[])","The auto-trigger timer field is clear, but the surrounding helper method names mix scheduling, filters, and action dispatch; full method naming should wait for an auto-trigger/action-effect pass."
+custom-action-generic-flag,CustomAction.F() / UnitAction.F(),Still no stable non-proxy runtime consumer beyond delegate forwarding; leaving this skipped from v0.80.
+construction-animation-deep,CustomUnitMetadata.em/en/ex and CustomUnitMetadata.bg-adjacent residuals,These remain tied to construction animation/conversion branches but lack a precise field-level contract in current evidence.
+resource-conversion-action-effect-fields,ResourceConversionActionEffect private fields,"INI keys are visible, but this v0.84 pass focuses on unit runtime latches and metadata gates; resource conversion internals should be audited with action-effect resource branches."
+animation-definition-static-machinery,AnimationDefinition/AnimationTrack constructors and static init,Already has meaningful class/field/method names from earlier passes; constructors/static initialization add little semantic value.
