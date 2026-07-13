@@ -130,7 +130,7 @@ public final class PathingDiagnostics {
 
     public static Object pathEngineFromGameEngine(Object gameEngine) {
         requireAny(gameEngine, GAME_ENGINE_CLASSES, "GameEngine");
-        return RustedReflection.getFieldValue(gameEngine, new String[]{"pathEngine", "bU"});
+        return RustedReflection.getFieldValue(gameEngine, new String[]{"pathfindingEngine", "bU"});
     }
 
     public static Map<String, Object> describePathEngine(Object pathEngine) {

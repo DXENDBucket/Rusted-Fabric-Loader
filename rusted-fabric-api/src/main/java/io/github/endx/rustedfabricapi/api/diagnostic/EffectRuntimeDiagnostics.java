@@ -36,7 +36,7 @@ public final class EffectRuntimeDiagnostics {
             "com.corrodinggames.rts.gameFramework.d.b"
     };
     private static final String[] GAME_OBJECT_CLASSES = {
-            "rustedwarfare.game.GameObject",
+            "rustedwarfare.framework.GameObject",
             "com.corrodinggames.rts.gameFramework.w"
     };
 
@@ -64,7 +64,7 @@ public final class EffectRuntimeDiagnostics {
 
     public static Object effectEngineFromGameEngine(Object gameEngine) {
         requireAny(gameEngine, GAME_ENGINE_CLASSES, "GameEngine");
-        return RustedReflection.getFieldValue(gameEngine, new String[]{"effectEngine", "bR"});
+        return RustedReflection.getFieldValue(gameEngine, new String[]{"effectManager", "bR"});
     }
 
     public static Map<String, Object> describeEffectEngine(Object engine) {

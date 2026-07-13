@@ -45,7 +45,7 @@ public final class ApiContractVerification {
         source.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, Integer.valueOf(2));
         source.put(RustedFabricAPIKeys.K_LOADER_VERSION, "0.1.0");
         source.put(RustedFabricAPIKeys.K_GAME_VERSION, "1.15");
-        source.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "1.0-RC1");
+        source.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "1.1");
         source.put(RustedFabricAPIKeys.K_GAME_DIR, Paths.get("game"));
         source.put(RustedFabricAPIKeys.K_GAME_ARGS, sourceArgs);
         source.put(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE, "named");
@@ -59,7 +59,7 @@ public final class ApiContractVerification {
         require(context.contextVersion() == 2, "context version missing");
         require("0.1.0".equals(context.loaderVersion()), "loader version missing");
         require("1.15".equals(context.gameVersion()), "game version missing");
-        require("1.0-RC1".equals(context.mappingsVersion()), "mappings version missing");
+        require("1.1".equals(context.mappingsVersion()), "mappings version missing");
         require("one".equals(context.gameArgs()[0]), "constructor must copy launch arguments");
         require("two".equals(context.gameArgs()[1]), "gameArgs must return a defensive copy");
         require("named".equals(context.runtimeNamespace()), "runtime namespace missing");

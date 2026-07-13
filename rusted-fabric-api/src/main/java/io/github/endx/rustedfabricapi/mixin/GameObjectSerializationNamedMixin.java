@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "rustedwarfare.game.GameObject", remap = false)
+@Mixin(targets = "rustedwarfare.framework.GameObject", remap = false)
 public abstract class GameObjectSerializationNamedMixin {
     @Inject(method = "serialize(Lrustedwarfare/io/GameOutputStream;)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeGameObjectSerialize(@Coerce Object outputStream, CallbackInfo ci) {

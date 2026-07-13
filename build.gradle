@@ -7,7 +7,7 @@ version = '0.1.0'
 
 ext {
     rustedGameVersion = '1.15'
-    rustedMappingsVersion = '1.0-RC1'
+    rustedMappingsVersion = '1.1'
 }
 
 repositories {
@@ -129,7 +129,7 @@ tasks.register('validateMappings') {
             }
         }
 
-        if (classCount < 1406 || fieldCount < 5255 || methodCount < 7521) {
+        if (classCount < 1440 || fieldCount < 5470 || methodCount < 7880) {
             throw new GradleException("Mapping coverage regressed: classes=${classCount}, fields=${fieldCount}, methods=${methodCount}")
         }
 

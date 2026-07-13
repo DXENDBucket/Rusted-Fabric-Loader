@@ -56,7 +56,7 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
             return;
         }
 
-        SettingsEngine settings = engine.settings;
+        SettingsEngine settings = engine.settingsEngine;
         ModManager modManager = engine.modManager;
         log(stage + " engine=" + engine.getClass().getName()
                 + ", showFps=" + (settings != null && settings.showFps)
@@ -99,8 +99,8 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
         for (int attempt = 1; !settingsApplied; attempt++) {
             try {
                 GameEngine engine = GameEngine.getInstance();
-                if (engine != null && engine.settings != null) {
-                    applyVisibleSettingsTweaks(stage, engine.settings);
+                if (engine != null && engine.settingsEngine != null) {
+                    applyVisibleSettingsTweaks(stage, engine.settingsEngine);
                     settingsApplied = true;
                 }
 

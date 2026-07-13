@@ -8,7 +8,7 @@ import java.util.Map;
 
 public final class GameObjectDiagnostics {
     private static final String[] GAME_OBJECT_CLASSES = {
-            "rustedwarfare.game.GameObject",
+            "rustedwarfare.framework.GameObject",
             "com.corrodinggames.rts.gameFramework.w"
     };
 

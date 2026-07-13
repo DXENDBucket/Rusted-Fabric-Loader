@@ -1,16 +1,20 @@
 package io.github.endx.rustedfabricloader.tools;
 
-import net.fabricmc.loader.impl.lib.mappingio.MappingReader;
-import net.fabricmc.loader.impl.lib.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.loader.impl.lib.tinyremapper.InputTag;
-import net.fabricmc.loader.impl.lib.tinyremapper.NonClassCopyMode;
-import net.fabricmc.loader.impl.lib.tinyremapper.OutputConsumerPath;
-import net.fabricmc.loader.impl.lib.tinyremapper.TinyRemapper;
-import net.fabricmc.loader.impl.lib.tinyremapper.TinyUtils;
-import net.fabricmc.loader.impl.lib.tinyremapper.api.TrLogger;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.RecordComponentVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.AnnotationRemapper;
+import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.FieldRemapper;
+import org.objectweb.asm.commons.MethodRemapper;
+import org.objectweb.asm.commons.RecordComponentRemapper;
+import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -29,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -39,7 +44,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -77,7 +81,7 @@ public final class RemapJar {
     }
 
     private static void remap(Path input, Path output, Path mappings, String fromNamespace, String toNamespace, List<Path> classpath)
-            throws IOException, ExecutionException, InterruptedException {
+            throws IOException {
         if (!Files.isRegularFile(input)) {
             throw new IOException("Input jar does not exist: " + input);
         }
@@ -97,36 +101,251 @@ public final class RemapJar {
                 output.getFileName().toString(), ".classes.jar");
         Files.deleteIfExists(remappedClassesOutput);
 
-        MemoryMappingTree tree = new MemoryMappingTree();
-        MappingReader.read(mappings, tree);
         MixinMetadataRemapper metadataRemapper = MixinMetadataRemapper.read(mappings, fromNamespace, toNamespace);
 
-        TinyRemapper remapper = TinyRemapper.newRemapper(new ConsoleLogger())
-                .withMappings(TinyUtils.createMappingProvider(tree, fromNamespace, toNamespace))
-                .renameInvalidLocals(false)
-                .rebuildSourceFilenames(true)
-                .build();
-
-        try {
-            InputTag inputTag = remapper.createInputTag();
-
-            if (!classpath.isEmpty()) {
-                remapper.readClassPathAsync(classpath.toArray(new Path[0])).get();
-            }
-            remapper.readInputsAsync(inputTag, input).get();
-
-            try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(remappedClassesOutput).assumeArchive(true).build()) {
-                outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper);
-                remapper.apply(outputConsumer, inputTag);
-            }
-        } finally {
-            remapper.finish();
-        }
+        remapClassesExact(input, remappedClassesOutput, metadataRemapper, classpath);
 
         try {
             rewriteMixinMetadata(remappedClassesOutput, output, metadataRemapper);
         } finally {
             Files.deleteIfExists(remappedClassesOutput);
+        }
+    }
+
+    private static void remapClassesExact(Path input, Path output, MixinMetadataRemapper mappings,
+                                          List<Path> classpath) throws IOException {
+        Map<String, ClassInfo> hierarchy = new HashMap<String, ClassInfo>();
+        for (Path classpathEntry : classpath) {
+            readClassHierarchy(classpathEntry, hierarchy, false);
+        }
+        readClassHierarchy(input, hierarchy, true);
+        DefinitionRemapper definitions = new DefinitionRemapper(mappings);
+        ReferenceRemapper references = new ReferenceRemapper(mappings, hierarchy);
+        Set<String> outputNames = new HashSet<String>();
+
+        try (JarFile jarFile = new JarFile(input.toFile(), false);
+             JarOutputStream jarOutput = new JarOutputStream(Files.newOutputStream(output))) {
+            List<JarEntry> entries = new ArrayList<JarEntry>();
+            Enumeration<JarEntry> enumeration = jarFile.entries();
+            while (enumeration.hasMoreElements()) {
+                JarEntry entry = enumeration.nextElement();
+                if (!entry.isDirectory()) {
+                    entries.add(entry);
+                }
+            }
+            entries.sort(Comparator.comparing(JarEntry::getName));
+            for (JarEntry entry : entries) {
+                String name = entry.getName();
+                byte[] bytes;
+                try (InputStream stream = jarFile.getInputStream(entry)) {
+                    bytes = readAllBytes(stream, new byte[8192]);
+                }
+                if (name.endsWith(".class")) {
+                    ClassReader reader = new ClassReader(bytes);
+                    ClassWriter writer = new ClassWriter(0);
+                    reader.accept(new StrictClassRemapper(writer, definitions, references), 0);
+                    bytes = writer.toByteArray();
+                    name = definitions.map(reader.getClassName()) + ".class";
+                }
+                if (!outputNames.add(name)) {
+                    throw new IOException("Remapped output entry collision: " + name);
+                }
+                JarEntry outputEntry = new JarEntry(name);
+                outputEntry.setTime(315532800000L);
+                jarOutput.putNextEntry(outputEntry);
+                jarOutput.write(bytes);
+                jarOutput.closeEntry();
+            }
+        }
+        if (!references.ambiguous.isEmpty()) {
+            throw new IOException("Ambiguous hierarchy mapping: " + references.ambiguous.iterator().next());
+        }
+    }
+
+    private static void readClassHierarchy(Path input, Map<String, ClassInfo> result, boolean overwrite) throws IOException {
+        try (JarFile jarFile = new JarFile(input.toFile(), false)) {
+            Enumeration<JarEntry> entries = jarFile.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
+                    continue;
+                }
+                try (InputStream stream = jarFile.getInputStream(entry)) {
+                    ClassReader reader = new ClassReader(stream);
+                    final ClassInfo info = new ClassInfo(reader.getClassName(), reader.getSuperName(), reader.getInterfaces());
+                    reader.accept(new ClassVisitor(Opcodes.ASM9) {
+                        @Override
+                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                            info.fields.put(ClassInfo.signature(name, descriptor), Integer.valueOf(access));
+                            return null;
+                        }
+
+                        @Override
+                        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                            info.methods.put(ClassInfo.signature(name, descriptor), Integer.valueOf(access));
+                            return null;
+                        }
+                    }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+                    if (overwrite || !result.containsKey(info.name)) {
+                        result.put(info.name, info);
+                    }
+                }
+            }
+        }
+    }
+
+    private static class DefinitionRemapper extends Remapper {
+        final MixinMetadataRemapper mappings;
+
+        DefinitionRemapper(MixinMetadataRemapper mappings) {
+            this.mappings = mappings;
+        }
+
+        @Override
+        public String map(String internalName) {
+            String mapped = mappings.anyClassToTo.get(internalName);
+            return mapped != null ? mapped : internalName;
+        }
+
+        @Override
+        public String mapFieldName(String owner, String name, String descriptor) {
+            MemberMapping mapping = mappings.fields.get(new MemberKey(owner, name, descriptor));
+            return mapping != null ? mapping.name : name;
+        }
+
+        @Override
+        public String mapMethodName(String owner, String name, String descriptor) {
+            if ("<init>".equals(name) || "<clinit>".equals(name)) {
+                return name;
+            }
+            MemberMapping mapping = mappings.methods.get(new MemberKey(owner, name, descriptor));
+            return mapping != null ? mapping.name : name;
+        }
+
+        @Override
+        public String mapRecordComponentName(String owner, String name, String descriptor) {
+            return mapFieldName(owner, name, descriptor);
+        }
+    }
+
+    private static final class ReferenceRemapper extends DefinitionRemapper {
+        private final Map<String, ClassInfo> hierarchy;
+        final Set<String> ambiguous = new java.util.TreeSet<String>();
+
+        ReferenceRemapper(MixinMetadataRemapper mappings, Map<String, ClassInfo> hierarchy) {
+            super(mappings);
+            this.hierarchy = hierarchy;
+        }
+
+        @Override
+        public String mapFieldName(String owner, String name, String descriptor) {
+            MemberMapping direct = mappings.fields.get(new MemberKey(owner, name, descriptor));
+            return direct != null ? direct.name : resolve(false, owner, name, descriptor);
+        }
+
+        @Override
+        public String mapMethodName(String owner, String name, String descriptor) {
+            if ("<init>".equals(name) || "<clinit>".equals(name)) {
+                return name;
+            }
+            MemberMapping direct = mappings.methods.get(new MemberKey(owner, name, descriptor));
+            return direct != null ? direct.name : resolve(true, owner, name, descriptor);
+        }
+
+        private String resolve(boolean method, String owner, String name, String descriptor) {
+            ClassInfo start = hierarchy.get(owner);
+            if (start == null) {
+                return name;
+            }
+            Integer ownAccess = (method ? start.methods : start.fields).get(ClassInfo.signature(name, descriptor));
+            if (ownAccess != null && (!method || (ownAccess.intValue() & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) != 0)) {
+                return name;
+            }
+            ArrayDeque<HierarchyNode> queue = new ArrayDeque<HierarchyNode>();
+            if (start.superName != null) queue.add(new HierarchyNode(start.superName, 1));
+            for (String interfaceName : start.interfaces) queue.add(new HierarchyNode(interfaceName, 1));
+            Set<String> seen = new HashSet<String>();
+            Set<String> found = new LinkedHashSet<String>();
+            int bestDepth = Integer.MAX_VALUE;
+            while (!queue.isEmpty()) {
+                HierarchyNode node = queue.removeFirst();
+                if (node.depth > bestDepth || !seen.add(node.name)) continue;
+                MemberMapping mapping = (method ? mappings.methods : mappings.fields)
+                        .get(new MemberKey(node.name, name, descriptor));
+                if (mapping != null) {
+                    bestDepth = node.depth;
+                    found.add(mapping.name);
+                    continue;
+                }
+                ClassInfo info = hierarchy.get(node.name);
+                if (info == null) continue;
+                Integer access = (method ? info.methods : info.fields).get(ClassInfo.signature(name, descriptor));
+                if (access != null && (!method || (access.intValue() & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) != 0)) {
+                    continue;
+                }
+                if (info.superName != null) queue.add(new HierarchyNode(info.superName, node.depth + 1));
+                for (String interfaceName : info.interfaces) queue.add(new HierarchyNode(interfaceName, node.depth + 1));
+            }
+            if (found.size() == 1) return found.iterator().next();
+            if (found.size() > 1) ambiguous.add((method ? "method " : "field ") + owner + "." + name + descriptor + " -> " + found);
+            return name;
+        }
+    }
+
+    private static final class StrictClassRemapper extends ClassRemapper {
+        private final Remapper referenceRemapper;
+
+        StrictClassRemapper(ClassVisitor visitor, Remapper definitionRemapper, Remapper referenceRemapper) {
+            super(visitor, definitionRemapper);
+            this.referenceRemapper = referenceRemapper;
+        }
+
+        @Override
+        protected MethodVisitor createMethodRemapper(MethodVisitor methodVisitor) {
+            return new MethodRemapper(methodVisitor, referenceRemapper);
+        }
+
+        @Override
+        protected FieldVisitor createFieldRemapper(FieldVisitor fieldVisitor) {
+            return new FieldRemapper(fieldVisitor, referenceRemapper);
+        }
+
+        @Override
+        protected AnnotationVisitor createAnnotationRemapper(AnnotationVisitor annotationVisitor) {
+            return new AnnotationRemapper(annotationVisitor, referenceRemapper);
+        }
+
+        @Override
+        protected RecordComponentVisitor createRecordComponentRemapper(RecordComponentVisitor recordComponentVisitor) {
+            return new RecordComponentRemapper(recordComponentVisitor, referenceRemapper);
+        }
+    }
+
+    private static final class ClassInfo {
+        final String name;
+        final String superName;
+        final String[] interfaces;
+        final Map<String, Integer> fields = new HashMap<String, Integer>();
+        final Map<String, Integer> methods = new HashMap<String, Integer>();
+
+        ClassInfo(String name, String superName, String[] interfaces) {
+            this.name = name;
+            this.superName = superName;
+            this.interfaces = interfaces != null ? interfaces : new String[0];
+        }
+
+        static String signature(String name, String descriptor) {
+            return name + "\u0000" + descriptor;
+        }
+    }
+
+    private static final class HierarchyNode {
+        final String name;
+        final int depth;
+
+        HierarchyNode(String name, int depth) {
+            this.name = name;
+            this.depth = depth;
         }
     }
 
@@ -207,17 +426,6 @@ public final class RemapJar {
         String upper = entryName.toUpperCase(Locale.ROOT);
         return upper.startsWith("META-INF/")
                 && (upper.endsWith(".SF") || upper.endsWith(".RSA") || upper.endsWith(".DSA"));
-    }
-
-    private static final class ConsoleLogger implements TrLogger {
-        @Override
-        public void log(TrLogger.Level level, String message) {
-            if (level == TrLogger.Level.ERROR || level == TrLogger.Level.WARN) {
-                System.err.println("[" + level + "] " + message);
-            } else {
-                System.out.println("[" + level + "] " + message);
-            }
-        }
     }
 
     private static final class MixinMetadataRemapper {

@@ -9,7 +9,7 @@ import java.util.Map;
 
 public final class BuildQueueDiagnostics {
     private static final String[] BUILD_QUEUE_CLASSES = {
-            "rustedwarfare.unit.build.BuildQueue",
+            "rustedwarfare.unit.build.FactoryQueueManager",
             "com.corrodinggames.rts.game.units.d.k"
     };
     private static final String[] BUILD_QUEUE_ITEM_CLASSES = {

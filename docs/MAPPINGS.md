@@ -6,9 +6,9 @@ The canonical mapping file is `src/main/resources/mappings/mappings.tiny`. It us
 official -> intermediary -> named
 ```
 
-The current mapping baseline is `1.0-RC1` (Semantic + Executable Gate): 1406 classes, 5255 fields, and 7521 methods, for 14182 rows in total. First-party class coverage is 1406/1453 (96.77%), or 98.81% after the handoff's documented generated/legacy exclusions. These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
+The current mapping baseline is `1.1 FINAL` (mapping-only completion + executable gate): 1440 classes, 5470 fields, and 7880 methods, for 14790 rows in total. Effective non-generated class coverage is 1440/1440 (100%) after excluding 13 generated Android `R` classes. These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
 
-The v1.0-RC1 baseline was imported byte-for-byte from the validated mapping handoff. Its release audit reports zero orphan mappings, duplicate keys, named collisions, override-family conflicts, inherited missing warnings, CSV/Tiny drift, or named-Jar verifier failures. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
+The v1.1 baseline was imported byte-for-byte from the validated mapping handoff and is based on v1.0 FINAL. Its release audit reports a passing static and executable gate. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
 
 ## Required checks
 
@@ -28,7 +28,7 @@ gradlew.bat verifyDistribution
 - non-empty and structurally valid class/member rows;
 - no orphan or duplicate member keys;
 - constructors remain named `<init>`;
-- mapping coverage does not fall below the v1.0-RC1 baseline;
+- mapping coverage does not fall below the v1.1 FINAL baseline;
 - every named Mixin source is configured exactly once;
 - no hand-maintained official Mixin copy remains;
 - strict Mixin failure settings remain enabled.

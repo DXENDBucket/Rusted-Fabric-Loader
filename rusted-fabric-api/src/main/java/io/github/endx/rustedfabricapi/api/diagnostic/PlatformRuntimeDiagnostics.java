@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Namespace-neutral access to the platform and file-change infrastructure named in mappings v1.0-RC1.
+ * Namespace-neutral access to the platform and file-change infrastructure available in mappings v1.1.
  */
 public final class PlatformRuntimeDiagnostics {
     private static final String[] OPERATING_SYSTEM_DETECTOR_CLASSES = {

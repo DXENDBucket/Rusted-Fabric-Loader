@@ -635,7 +635,7 @@ public final class CustomUnitDiagnostics {
         result.put("actionsForCurrentMetadataSize",
                 Integer.valueOf(getActionsForCurrentMetadata(customUnit).size()));
         result.put("upgradeActionsSize", Integer.valueOf(getUpgradeActions(customUnit).size()));
-        result.put("firstUpgradeActionId", getFirstUpgradeActionId(customUnit));
+        result.put("noneActionId", getNoneActionId(customUnit));
         result.put("secondaryUpgradeActionIdsSize",
                 Integer.valueOf(collectSecondaryUpgradeActionIds(customUnit).size()));
         return Collections.unmodifiableMap(result);
@@ -708,9 +708,9 @@ public final class CustomUnitDiagnostics {
                 RustedReflection.invokeInstance(customUnit, new String[]{"getUpgradeActions", "dC"})));
     }
 
-    public static Object getFirstUpgradeActionId(Object customUnit) {
+    public static Object getNoneActionId(Object customUnit) {
         requireCustomUnit(customUnit);
-        return RustedReflection.invokeInstance(customUnit, new String[]{"getFirstUpgradeActionId", "cm"});
+        return RustedReflection.invokeInstance(customUnit, new String[]{"getNoneActionId", "cm"});
     }
 
     public static List<Object> collectSecondaryUpgradeActionIds(Object customUnit) {

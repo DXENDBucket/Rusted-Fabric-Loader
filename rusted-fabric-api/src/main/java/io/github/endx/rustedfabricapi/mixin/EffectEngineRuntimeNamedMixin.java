@@ -34,7 +34,7 @@ public abstract class EffectEngineRuntimeNamedMixin {
     }
 
     @Inject(
-            method = "createAttachedLightEffect(Lrustedwarfare/game/GameObject;I)Lrustedwarfare/render/effect/EffectInstance;",
+            method = "createAttachedLightEffect(Lrustedwarfare/framework/GameObject;I)Lrustedwarfare/render/effect/EffectInstance;",
             at = @At("RETURN"),
             require = 1
     )
@@ -45,7 +45,7 @@ public abstract class EffectEngineRuntimeNamedMixin {
     }
 
     @Inject(
-            method = "createAttachedLightEffect(Lrustedwarfare/game/GameObject;IF)Lrustedwarfare/render/effect/EffectInstance;",
+            method = "createAttachedLightEffect(Lrustedwarfare/framework/GameObject;IF)Lrustedwarfare/render/effect/EffectInstance;",
             at = @At("RETURN"),
             require = 1
     )

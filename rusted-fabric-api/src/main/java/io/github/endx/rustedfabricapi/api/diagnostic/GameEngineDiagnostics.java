@@ -48,48 +48,52 @@ public final class GameEngineDiagnostics {
         requireGameEngine(engine);
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("className", engine.getClass().getName());
-        putBooleanField(result, engine, "noResources", new String[]{"noResources", "aB"});
-        putBooleanField(result, engine, "disableTextureAtlas", new String[]{"disableTextureAtlas", "aC"});
-        putBooleanField(result, engine, "useCanvasGl", new String[]{"useCanvasGl", "aD"});
-        putBooleanField(result, engine, "printUnits", new String[]{"printUnits", "aE"});
-        putBooleanField(result, engine, "outputUnitImages", new String[]{"outputUnitImages", "aF"});
-        putBooleanField(result, engine, "oldReplays", new String[]{"oldReplays", "aG"});
-        putBooleanField(result, engine, "steamEnabled", new String[]{"steamEnabled", "aH"});
-        putBooleanField(result, engine, "sandboxMode", new String[]{"sandboxMode", "aI"});
-        putBooleanField(result, engine, "disableMods", new String[]{"disableMods", "aJ"});
-        putStringField(result, engine, "pendingConnectLobby", new String[]{"pendingConnectLobby", "aK"});
-        putBooleanField(result, engine, "postProcessing", new String[]{"postProcessing", "aM"});
-        putBooleanField(result, engine, "teamShaders", new String[]{"teamShaders", "aN"});
-        putBooleanField(result, engine, "safeMode", new String[]{"safeMode", "aO"});
-        putBooleanField(result, engine, "extraSafeMode", new String[]{"extraSafeMode", "aP"});
-        putStringField(result, engine, "devDebug", new String[]{"devDebug", "aQ"});
-        putBooleanField(result, engine, "desktopRuntime", new String[]{"desktopRuntime", "aU"});
-        putBooleanField(result, engine, "useHardwareRendering", new String[]{"useHardwareRendering", "aW"});
-        putBooleanField(result, engine, "useDesktopOpenGL", new String[]{"useDesktopOpenGL", "aX"});
-        putBooleanField(result, engine, "replayDebug", new String[]{"replayDebug", "aw"});
-        putBooleanField(result, engine, "logColorEnabled", new String[]{"logColorEnabled", "ax"});
-        putBooleanField(result, engine, "noBackgroundMode", new String[]{"noBackgroundMode", "ay"});
-        putBooleanField(result, engine, "gameEngineInitStarted", new String[]{"gameEngineInitStarted", "bb"});
-        putField(result, engine, "graphicsEngine", new String[]{"graphicsEngine", "bO"});
-        putField(result, engine, "mapEngine", new String[]{"mapEngine", "bL"});
-        putField(result, engine, "settings", new String[]{"settings", "bQ"});
-        putField(result, engine, "interfaceEngine", new String[]{"interfaceEngine", "bS"});
-        putField(result, engine, "pathEngine", new String[]{"pathEngine", "bU"});
+        putBooleanField(result, engine, "isHeadlessMode", new String[]{"isHeadlessMode", "aB"});
+        putBooleanField(result, engine, "isTextureAtlasDisabled", new String[]{"isTextureAtlasDisabled", "aC"});
+        putBooleanField(result, engine, "isCanvasGLEnabled", new String[]{"isCanvasGLEnabled", "aD"});
+        putBooleanField(result, engine, "isUnitImageGenerationMode", new String[]{"isUnitImageGenerationMode", "aE"});
+        putBooleanField(result, engine, "isUnitValidationMode", new String[]{"isUnitValidationMode", "aF"});
+        putBooleanField(result, engine, "isOldReplayMode", new String[]{"isOldReplayMode", "aG"});
+        putBooleanField(result, engine, "isSteamModeEnabled", new String[]{"isSteamModeEnabled", "aH"});
+        putBooleanField(result, engine, "isLaunchSandbox", new String[]{"isLaunchSandbox", "aI"});
+        putBooleanField(result, engine, "isModsDisabled", new String[]{"isModsDisabled", "aJ"});
+        putStringField(result, engine, "pendingSteamLobbyId", new String[]{"pendingSteamLobbyId", "aK"});
+        putBooleanField(result, engine, "isPostProcessingEnabled", new String[]{"isPostProcessingEnabled", "aM"});
+        putBooleanField(result, engine, "isTeamShadersEnabled", new String[]{"isTeamShadersEnabled", "aN"});
+        putBooleanField(result, engine, "isCommandLineMode", new String[]{"isCommandLineMode", "aO"});
+        putBooleanField(result, engine, "isAutomatedTesting", new String[]{"isAutomatedTesting", "aP"});
+        putStringField(result, engine, "platformName", new String[]{"platformName", "aQ"});
+        putBooleanField(result, engine, "isNonAndroidVersion", new String[]{"isNonAndroidVersion", "aU"});
+        putBooleanField(result, engine, "isPCOrIOSVersion", new String[]{"isPCOrIOSVersion", "aW"});
+        putBooleanField(result, engine, "isJavaDesktopVersion", new String[]{"isJavaDesktopVersion", "aX"});
+        putBooleanField(result, engine, "isReplayDebugMode", new String[]{"isReplayDebugMode", "aw"});
+        putBooleanField(result, engine, "isLogColorEnabled", new String[]{"isLogColorEnabled", "ax"});
+        putBooleanField(result, engine, "isMenuBackgroundDisabled", new String[]{"isMenuBackgroundDisabled", "ay"});
+        putBooleanField(result, engine, "isDesktopInitialized", new String[]{"isDesktopInitialized", "bb"});
+        putBooleanField(result, engine, "isSafeMode", new String[]{"isSafeMode", "ee"});
+        putBooleanField(result, engine, "isExtraSafeMode", new String[]{"isExtraSafeMode", "eh"});
+        putBooleanField(result, engine, "isExtraSafeModeLevel2", new String[]{"isExtraSafeModeLevel2", "ei"});
+        putField(result, engine, "graphicsEngine", new String[]{"graphicsEngine", "bh"});
+        putField(result, engine, "renderGraphicsEngine", new String[]{"renderGraphicsEngine", "bO"});
+        putField(result, engine, "tileMap", new String[]{"tileMap", "bL"});
+        putField(result, engine, "settingsEngine", new String[]{"settingsEngine", "bQ"});
+        putField(result, engine, "gameUI", new String[]{"gameUI", "bS"});
+        putField(result, engine, "pathfindingEngine", new String[]{"pathfindingEngine", "bU"});
         putField(result, engine, "minimap", new String[]{"minimap", "bW"});
         putField(result, engine, "networkEngine", new String[]{"networkEngine", "bX"});
-        putField(result, engine, "statsEngine", new String[]{"statsEngine", "bY"});
+        putField(result, engine, "gameStatistics", new String[]{"gameStatistics", "bY"});
         putField(result, engine, "modManager", new String[]{"modManager", "bZ"});
-        putField(result, engine, "rendererClass", new String[]{"rendererClass", "bg"});
+        putField(result, engine, "gameEngineClass", new String[]{"gameEngineClass", "bg"});
         putField(result, engine, "gameSaver", new String[]{"gameSaver", "ca"});
         putField(result, engine, "replayEngine", new String[]{"replayEngine", "cb"});
         putField(result, engine, "unitSpatialIndex", new String[]{"unitSpatialIndex", "cc"});
         putField(result, engine, "missionEngine", new String[]{"missionEngine", "ce"});
         putField(result, engine, "commandController", new String[]{"commandController", "cf"});
-        putField(result, engine, "initialScreenSize", new String[]{"initialScreenSize", "ck"});
+        putField(result, engine, "screenSize", new String[]{"screenSize", "ck"});
         putStringField(result, engine, "currentMapPath", new String[]{"currentMapPath", "dl"});
-        putField(result, engine, "currentMapInputStream", new String[]{"currentMapInputStream", "dm"});
-        putStringField(result, engine, "buildNumber", new String[]{"buildNumber", "dz"});
-        putField(result, engine, "effectEngine", new String[]{"effectEngine", "bR"});
+        putField(result, engine, "remoteMapStream", new String[]{"remoteMapStream", "dm"});
+        putStringField(result, engine, "buildVersion", new String[]{"buildVersion", "dz"});
+        putField(result, engine, "effectManager", new String[]{"effectManager", "bR"});
         result.put("currentMapPathMethod", invokeStringOrEmpty(engine, new String[]{"getCurrentMapPath", "ak"}));
         result.put("currentMapDisplayName", invokeStringOrEmpty(engine, new String[]{"getCurrentMapDisplayName", "al"}));
         result.put("currentMapBaseName", invokeStringOrEmpty(engine, new String[]{"getCurrentMapBaseName", "am"}));
@@ -102,38 +106,62 @@ public final class GameEngineDiagnostics {
     }
 
     public static Object currentInterfaceEngine() {
-        Object engine = currentEngineOrNull();
-        return engine != null ? interfaceEngine(engine) : null;
+        return currentGameUI();
     }
 
     public static Object currentStatsEngine() {
+        return currentGameStatistics();
+    }
+
+    public static Object currentGameUI() {
         Object engine = currentEngineOrNull();
-        return engine != null ? statsEngine(engine) : null;
+        return engine != null ? gameUI(engine) : null;
+    }
+
+    public static Object currentGameStatistics() {
+        Object engine = currentEngineOrNull();
+        return engine != null ? gameStatistics(engine) : null;
     }
 
     public static Object graphicsEngine(Object engine) {
         requireGameEngine(engine);
-        return RustedReflection.getFieldValue(engine, new String[]{"graphicsEngine", "bO"});
+        return RustedReflection.getFieldValue(engine, new String[]{"graphicsEngine", "bh"});
     }
 
     public static Object interfaceEngine(Object engine) {
-        requireGameEngine(engine);
-        return RustedReflection.getFieldValue(engine, new String[]{"interfaceEngine", "bS"});
+        return gameUI(engine);
     }
 
     public static Object statsEngine(Object engine) {
+        return gameStatistics(engine);
+    }
+
+    public static Object gameUI(Object engine) {
         requireGameEngine(engine);
-        return RustedReflection.getFieldValue(engine, new String[]{"statsEngine", "bY"});
+        return RustedReflection.getFieldValue(engine, new String[]{"gameUI", "bS"});
+    }
+
+    public static Object gameStatistics(Object engine) {
+        requireGameEngine(engine);
+        return RustedReflection.getFieldValue(engine, new String[]{"gameStatistics", "bY"});
     }
 
     public static Object settings(Object engine) {
+        return settingsEngine(engine);
+    }
+
+    public static Object settingsEngine(Object engine) {
         requireGameEngine(engine);
-        return RustedReflection.getFieldValue(engine, new String[]{"settings", "bQ"});
+        return RustedReflection.getFieldValue(engine, new String[]{"settingsEngine", "bQ"});
     }
 
     public static Object mapEngine(Object engine) {
+        return tileMap(engine);
+    }
+
+    public static Object tileMap(Object engine) {
         requireGameEngine(engine);
-        return RustedReflection.getFieldValue(engine, new String[]{"mapEngine", "bL"});
+        return RustedReflection.getFieldValue(engine, new String[]{"tileMap", "bL"});
     }
 
     public static Object minimap(Object engine) {

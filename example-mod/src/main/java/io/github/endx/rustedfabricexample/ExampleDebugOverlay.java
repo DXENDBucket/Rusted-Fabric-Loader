@@ -166,11 +166,11 @@ final class ExampleDebugOverlay {
 
     static void drawDebugPanelFromFrameUnchecked(Object frameRenderer) throws ReflectiveOperationException {
         GameEngine engine = GameEngine.getInstance();
-        if (engine == null || engine.bO == null) {
+        if (engine == null || engine.renderGraphicsEngine == null) {
             return;
         }
 
-        Object graphics = getSlickGraphics(engine.bO);
+        Object graphics = getSlickGraphics(engine.renderGraphicsEngine);
         Object gameContainer = getSlickGameContainer(frameRenderer);
         if (graphics == null || gameContainer == null) {
             return;
@@ -539,7 +539,7 @@ final class ExampleDebugOverlay {
 
     static void drawOverlayMessagesUnchecked(Object frameRenderer) throws ReflectiveOperationException {
         GameEngine engine = GameEngine.getInstance();
-        if (engine == null || engine.bO == null) {
+        if (engine == null || engine.renderGraphicsEngine == null) {
             return;
         }
 
@@ -548,7 +548,7 @@ final class ExampleDebugOverlay {
             return;
         }
 
-        GraphicsEngine renderer = engine.bO;
+        GraphicsEngine renderer = engine.renderGraphicsEngine;
         int[] surfaceSize = getOverlaySurfaceSize(frameRenderer, engine);
         int screenWidth = surfaceSize[0];
         int screenHeight = surfaceSize[1];
@@ -594,15 +594,15 @@ final class ExampleDebugOverlay {
         }
 
         if (screenWidth <= 0) {
-            screenWidth = engine.bA > 0 ? engine.bA : 1280;
+            screenWidth = engine.currentScreenWidthPixels > 0 ? (int) engine.currentScreenWidthPixels : 1280;
         }
         if (screenHeight <= 0) {
-            screenHeight = engine.bB > 0 ? engine.bB : 720;
+            screenHeight = engine.currentScreenHeightPixels > 0 ? (int) engine.currentScreenHeightPixels : 720;
         }
 
         if (OVERLAY_DIMENSIONS_LOGGED.compareAndSet(false, true)) {
             ExampleMod.log("green overlay dimensions: surface=" + screenWidth + "x" + screenHeight
-                    + ", engine=" + engine.bA + "x" + engine.bB
+                    + ", engine=" + engine.currentScreenWidthPixels + "x" + engine.currentScreenHeightPixels
                     + ", frameRenderer=" + (frameRenderer != null ? frameRenderer.getClass().getName() : "null")
                     + ", gameContainer=" + (gameContainer != null ? gameContainer.getClass().getName() : "null"));
         }
@@ -855,14 +855,14 @@ final class ExampleDebugOverlay {
 
         overlayBorderPaint = new Paint();
         overlayBorderPaint.a(Paint$Style.b);
-        overlayBorderPaint.setAntiAlias(true);
+        overlayBorderPaint.a(true);
         overlayBorderPaint.b(OVERLAY_BORDER_COLOR);
         overlayBorderPaint.a(2.0f);
 
         overlayTextPaint = new Paint();
-        overlayTextPaint.setAntiAlias(true);
+        overlayTextPaint.a(true);
         overlayTextPaint.b(OVERLAY_TEXT_COLOR);
-        overlayTextPaint.setTextSize(13.0f);
+        overlayTextPaint.b(13.0f);
     }
 
     static String fitOverlayText(GraphicsEngine renderer, String text, int maxWidth) {

@@ -60,13 +60,13 @@ final class ExampleDiagnosticActions {
             Map<String, Object> engine = GameEngineDiagnostics.describeCurrentEngine();
             Object graphicsEngine = GameEngineDiagnostics.currentGraphicsEngine();
             ExampleDebugOverlay.enqueueOverlayMessage(stage,
-                    "Render engine hw=" + engine.get("useHardwareRendering")
-                            + " desktopGl=" + engine.get("useDesktopOpenGL")
-                            + " canvasGl=" + engine.get("useCanvasGl")
+                    "Render engine pcOrIos=" + engine.get("isPCOrIOSVersion")
+                            + " javaDesktop=" + engine.get("isJavaDesktopVersion")
+                            + " canvasGl=" + engine.get("isCanvasGLEnabled")
                             + " graphics=" + ExampleDebugOverlay.describeObject(graphicsEngine),
                     graphicsEngine);
 
-            Object effectEngine = engine.get("effectEngine");
+            Object effectEngine = engine.get("effectManager");
             if (effectEngine != null && EffectRuntimeDiagnostics.isEffectEngine(effectEngine)) {
                 Map<String, Object> effects = EffectRuntimeDiagnostics.describeEffectEngine(effectEngine);
                 List<Object> activeEffects = EffectRuntimeDiagnostics.activeEffectsSnapshot(effectEngine);

@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(targets = "rustedwarfare.unit.build.BuildQueue", remap = false)
+@Mixin(targets = "rustedwarfare.unit.build.FactoryQueueManager", remap = false)
 public abstract class BuildQueueNamedMixin {
     @Inject(
             method = "applyQueueActionWithTarget(Lrustedwarfare/unit/action/UnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)Lrustedwarfare/unit/build/BuildQueueItem;",
