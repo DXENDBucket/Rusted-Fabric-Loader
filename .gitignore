@@ -43,6 +43,8 @@ bin/
 
 ### Rusted Warfare game-lib ###
 /libs/game-lib.jar
+/libs/*.apk
+/libs/**/*.apk
 
 ### Reports ###
 /report/*
