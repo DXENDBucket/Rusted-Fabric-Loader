@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = rootProject.version
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('verifyBootstrapContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies target filtering, one-shot diagnostics, and the no-game-dependency contract.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.bootstrap.BootstrapContractVerification')
+    args '--xposed-root', file('../xposed').absolutePath
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Rejects game class payloads and Android package payloads from the bootstrap core JAR.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+
+    doLast {
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def name = entry.name.toLowerCase(Locale.ROOT)
+                if (name.endsWith('.apk') || name.endsWith('.dex')
+                        || name.startsWith('com/corrodinggames/')) {
+                    forbidden.add(entry.name)
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Bootstrap core contains forbidden game payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyBootstrapContracts')
+check.dependsOn tasks.named('verifyNoGamePayload')

@@ -47,6 +47,7 @@ bin/
 /libs/**/*.apk
 *.apk
 *.dex
+local.properties
 
 ### Reports ###
 /report/*

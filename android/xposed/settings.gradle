@@ -1,0 +1,33 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // API 102 is currently published by libxposed as an official release AAR.
+        ivy {
+            url = uri('https://github.com/libxposed/api/releases/download')
+            patternLayout {
+                artifact('[revision]/[artifact]-[revision].[ext]')
+            }
+            metadataSources {
+                artifact()
+            }
+            content {
+                includeModule('io.github.libxposed', 'api')
+            }
+        }
+    }
+}
+
+rootProject.name = 'rusted-fabric-android-xposed'
+include ':module'
+include ':bootstrap-core'
+project(':bootstrap-core').projectDir = file('../bootstrap-core')

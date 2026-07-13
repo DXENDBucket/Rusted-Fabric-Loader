@@ -1,0 +1,81 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.endx.rustedfabric.android.xposed'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.github.endx.rustedfabric.android.xposed'
+        minSdk 27
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0-bootstrap'
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        resources {
+            merges += ['META-INF/xposed/*']
+        }
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+dependencies {
+    implementation project(':bootstrap-core')
+    compileOnly 'io.github.libxposed:api:102.0.0@aar'
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Scans the debug module APK for Rusted Warfare class descriptors and packaged game files.'
+    dependsOn 'assembleDebug'
+
+    doLast {
+        def apk = fileTree(layout.buildDirectory.dir('outputs/apk/debug')) {
+            include '*.apk'
+        }.singleFile
+        def forbidden = []
+        new java.util.zip.ZipFile(apk).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                if (lower.startsWith('com/corrodinggames/') || lower.endsWith('.game-apk')) {
+                    forbidden.add(entry.name)
+                }
+                if (lower.endsWith('.dex')) {
+                    def bytes
+                    zip.getInputStream(entry).withCloseable { input ->
+                        bytes = input.bytes
+                    }
+                    def dexText = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (dexText.contains('Lcom/corrodinggames/rts/')) {
+                        forbidden.add("${entry.name}: game class descriptor")
+                    }
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Xposed APK contains forbidden game payloads: ${forbidden}")
+        }
+    }
+}

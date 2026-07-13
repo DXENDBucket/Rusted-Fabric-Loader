@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="module_name">Rusted Fabric Loader</string>
+    <string name="module_description">用于已安装铁锈战争进程的加载器引导与诊断模块。</string>
+</resources>

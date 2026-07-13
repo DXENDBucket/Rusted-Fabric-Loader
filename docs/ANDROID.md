@@ -63,6 +63,12 @@ The root backend and distributable module. It owns:
 - Android mod DEX loading;
 - per-feature compatibility and failure isolation.
 
+The Phase 1 scaffold now lives in the isolated `android/xposed` Android build. It targets Modern
+Xposed API 102, uses `META-INF/xposed` entry metadata, and has a static official-package scope.
+The shared `android:bootstrap-core` remains buildable without an Android SDK. The first hook calls
+the original `Application.attach(Context)` unchanged, then captures ClassLoader diagnostics without
+retaining Android or game objects. Mapping and mod loading are deliberately absent.
+
 ### Shared loader core
 
 Mapping selection, mod metadata, event implementation, diagnostics, and compatibility reporting should be extracted from desktop-specific launch code only when the Android prototype demonstrates a real shared boundary. The existing desktop GameProvider remains unchanged during the bootstrap phase.
@@ -108,11 +114,12 @@ Exit gate: the inspector identifies the reference APK, its Android entrypoints, 
 
 ### Phase 1: process bootstrap
 
-- Scaffold the smallest possible LSPosed-compatible module.
-- Scope it to an explicitly selected Rusted Warfare installation.
-- Hook `RWApplication` through `Application.attach(Context)` before game core initialization.
-- Record only package/version/profile and target class-loader diagnostics.
-- Start the unmodified installed game successfully with the module enabled and disabled.
+- [x] Scaffold the smallest possible Modern Xposed-compatible module.
+- [x] Statically scope the first prototype to the official Rusted Warfare package.
+- [x] Hook the base `Application.attach(Context)` boundary without referencing game classes.
+- [x] Record only package/process, application class, pending profile, and ClassLoader class.
+- [ ] Build and install the APK after an Android SDK is configured.
+- [ ] Validate startup on a rooted test device with the module enabled and disabled.
 
 Exit gate: enabling the module adds one diagnostic log entry and changes no game behavior, APK, signature, files, or save data.
 
