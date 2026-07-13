@@ -6,7 +6,9 @@ The canonical mapping file is `src/main/resources/mappings/mappings.tiny`. It us
 official -> intermediary -> named
 ```
 
-The current mapping baseline is `0.84`: 1159 classes, 5106 fields, and 7197 methods. These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
+The current mapping baseline is `0.90` (Accelerated Completion RC): 1372 classes, 5190 fields, and 7457 methods, for 14019 rows in total. First-party class coverage is 1372/1453 (94.43%). These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
+
+The v0.90 baseline was imported from the validated mapping handoff. Its release audit reports zero orphan mappings, duplicate keys, named collisions, override-family conflicts, inherited missing warnings, and CSV/Tiny drift. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
 
 ## Required checks
 
@@ -26,7 +28,7 @@ gradlew.bat verifyDistribution
 - non-empty and structurally valid class/member rows;
 - no orphan or duplicate member keys;
 - constructors remain named `<init>`;
-- mapping coverage does not fall below the v0.84 baseline;
+- mapping coverage does not fall below the v0.90 baseline;
 - every named Mixin source is configured exactly once;
 - no hand-maintained official Mixin copy remains;
 - strict Mixin failure settings remain enabled.

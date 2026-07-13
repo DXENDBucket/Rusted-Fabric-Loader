@@ -7,7 +7,11 @@ public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
     @Override
     protected void onRustedFabricAPI(RustedFabricAPIContext ctx) {
         ExampleMod.log(ctx.entrypointKey()
-                + " runtimeNamespace=" + ctx.runtimeNamespace()
+                + " contextVersion=" + ctx.contextVersion()
+                + ", loaderVersion=" + ctx.loaderVersion()
+                + ", gameVersion=" + ctx.gameVersion()
+                + ", mappingsVersion=" + ctx.mappingsVersion()
+                + ", runtimeNamespace=" + ctx.runtimeNamespace()
                 + ", androidRuntime=" + ctx.androidRuntime()
                 + ", gameDir=" + ctx.gameDir()
                 + ", gameJar=" + ctx.gameJar());

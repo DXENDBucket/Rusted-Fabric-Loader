@@ -21,7 +21,7 @@ Two Rusted-specific Fabric entrypoints are available:
 - `rustedfabricloader:classpath_ready`: the game Jar and libraries are on the launch classpath, before standard Fabric initializers run.
 - `rustedfabricloader:before_game`: standard `main` and `client` initializers have completed, immediately before the game main method is invoked.
 
-Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an immutable snapshot; its launch-argument array is defensively copied. `contextVersion()` is currently `1`.
+Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an immutable snapshot; its launch-argument array is defensively copied. `contextVersion()` is currently `2`. Version 2 adds `loaderVersion()`, `gameVersion()`, and `mappingsVersion()` so a mod can report or guard its runtime compatibility without inspecting Jar metadata.
 
 ## Event behavior
 

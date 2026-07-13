@@ -615,7 +615,10 @@ public class RustedWarfareGameProvider implements GameProvider {
     private void runRustedFabricAPIStage(String key) {
         Map<String, Object> ctx = new HashMap<>();
 
-        ctx.put("rustedfabricapi.ctxVersion", 1);
+        ctx.put("rustedfabricapi.ctxVersion", 2);
+        ctx.put("rustedfabricapi.loaderVersion", BUILD_PROPERTIES.getProperty("loaderVersion", ""));
+        ctx.put("rustedfabricapi.gameVersion", getRawGameVersion());
+        ctx.put("rustedfabricapi.mappingsVersion", BUILD_PROPERTIES.getProperty("mappingsVersion", ""));
 
         ctx.put("gameDir", gameDir);
         ctx.put("gameJar", gameLibJar);

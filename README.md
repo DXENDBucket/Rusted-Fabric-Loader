@@ -6,7 +6,7 @@ Current compatibility baseline:
 
 - Rusted Warfare `1.15`
 - Rusted Fabric Loader/API `0.1.0`
-- mappings `0.84`
+- mappings `0.90` (Accelerated Completion RC)
 - Java bytecode level `13`
 
 The public API is still experimental while mappings are being completed. See [API.md](docs/API.md) for lifecycle, threading, cancellation, and compatibility rules.
@@ -164,7 +164,7 @@ gradlew.bat :example-mod:build
 This creates:
 
 ```text
-example-mod/build/libs/rusted-fabric-example-mod-1.0-SNAPSHOT.jar
+example-mod/build/libs/rusted-fabric-example-mod-0.1.0.jar
 ```
 
 Use that jar in a named development launch with `-Drusted.devNamed=true` and `game-lib-named.jar`.
@@ -178,7 +178,7 @@ gradlew.bat :example-mod:remapJarToOfficial
 This creates:
 
 ```text
-example-mod/build/libs/rusted-fabric-example-mod-1.0-SNAPSHOT-official.jar
+example-mod/build/libs/rusted-fabric-example-mod-0.1.0-official.jar
 ```
 
 Use the official jar with the normal `game-lib.jar` runtime.

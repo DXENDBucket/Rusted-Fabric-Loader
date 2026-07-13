@@ -855,14 +855,14 @@ final class ExampleDebugOverlay {
 
         overlayBorderPaint = new Paint();
         overlayBorderPaint.a(Paint$Style.b);
-        overlayBorderPaint.a(true);
+        overlayBorderPaint.setAntiAlias(true);
         overlayBorderPaint.b(OVERLAY_BORDER_COLOR);
         overlayBorderPaint.a(2.0f);
 
         overlayTextPaint = new Paint();
-        overlayTextPaint.a(true);
+        overlayTextPaint.setAntiAlias(true);
         overlayTextPaint.b(OVERLAY_TEXT_COLOR);
-        overlayTextPaint.b(13.0f);
+        overlayTextPaint.setTextSize(13.0f);
     }
 
     static String fitOverlayText(GraphicsEngine renderer, String text, int maxWidth) {

@@ -24,6 +24,18 @@ public final class RustedFabricAPIContext {
         return value instanceof Number ? ((Number) value).intValue() : 0;
     }
 
+    public String loaderVersion() {
+        return stringValue(RustedFabricAPIKeys.K_LOADER_VERSION);
+    }
+
+    public String gameVersion() {
+        return stringValue(RustedFabricAPIKeys.K_GAME_VERSION);
+    }
+
+    public String mappingsVersion() {
+        return stringValue(RustedFabricAPIKeys.K_MAPPINGS_VERSION);
+    }
+
     public Path gameDir() {
         return (Path) raw.get(RustedFabricAPIKeys.K_GAME_DIR);
     }
@@ -52,5 +64,10 @@ public final class RustedFabricAPIContext {
 
     public Map<String, Object> asMap() {
         return raw;
+    }
+
+    private String stringValue(String key) {
+        Object value = raw.get(key);
+        return value != null ? value.toString() : "";
     }
 }

@@ -42,7 +42,10 @@ public final class ApiContractVerification {
     private static void verifiesContextDefensiveCopies() {
         String[] sourceArgs = new String[] { "one", "two" };
         Map<String, Object> source = new HashMap<String, Object>();
-        source.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, Integer.valueOf(1));
+        source.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, Integer.valueOf(2));
+        source.put(RustedFabricAPIKeys.K_LOADER_VERSION, "0.1.0");
+        source.put(RustedFabricAPIKeys.K_GAME_VERSION, "1.15");
+        source.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "0.90");
         source.put(RustedFabricAPIKeys.K_GAME_DIR, Paths.get("game"));
         source.put(RustedFabricAPIKeys.K_GAME_ARGS, sourceArgs);
         source.put(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE, "named");
@@ -53,7 +56,10 @@ public final class ApiContractVerification {
         String[] returnedArgs = context.gameArgs();
         returnedArgs[1] = "changed-by-caller";
 
-        require(context.contextVersion() == 1, "context version missing");
+        require(context.contextVersion() == 2, "context version missing");
+        require("0.1.0".equals(context.loaderVersion()), "loader version missing");
+        require("1.15".equals(context.gameVersion()), "game version missing");
+        require("0.90".equals(context.mappingsVersion()), "mappings version missing");
         require("one".equals(context.gameArgs()[0]), "constructor must copy launch arguments");
         require("two".equals(context.gameArgs()[1]), "gameArgs must return a defensive copy");
         require("named".equals(context.runtimeNamespace()), "runtime namespace missing");
@@ -77,9 +83,9 @@ public final class ApiContractVerification {
             }
         };
         Map<String, Object> raw = new HashMap<String, Object>();
-        raw.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, Integer.valueOf(1));
+        raw.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, Integer.valueOf(2));
         entrypoint.accept(raw);
-        require(observedVersion[0] == 1, "entrypoint adapter did not expose the typed context");
+        require(observedVersion[0] == 2, "entrypoint adapter did not expose the typed context");
     }
 
     private static void require(boolean condition, String message) {
