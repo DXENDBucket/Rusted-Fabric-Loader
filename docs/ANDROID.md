@@ -118,7 +118,8 @@ Exit gate: the inspector identifies the reference APK, its Android entrypoints, 
 - [x] Statically scope the first prototype to the official Rusted Warfare package.
 - [x] Hook the base `Application.attach(Context)` boundary without referencing game classes.
 - [x] Record only package/process, application class, pending profile, and ClassLoader class.
-- [ ] Build and install the APK after an Android SDK is configured.
+- [x] Build and audit the debug APK with the configured Android SDK.
+- [ ] Install the APK on a rooted test device with a Modern Xposed API 102-compatible framework.
 - [ ] Validate startup on a rooted test device with the module enabled and disabled.
 
 Exit gate: enabling the module adds one diagnostic log entry and changes no game behavior, APK, signature, files, or save data.
