@@ -31,25 +31,25 @@ public abstract class SlickGraphicsBackendImageNamedMixin {
     }
 
     @Inject(method = "flushPendingImageDataDiscards()V", at = @At("HEAD"), require = 1)
-    private void rustedfabricapi$beforeFlushPendingImageDataDiscards(CallbackInfo ci) {
-        RenderImageLifecycleEvents.BEFORE_FLUSH_PENDING_IMAGE_DATA_DISCARDS.invoker().onEvent(this);
+    private static void rustedfabricapi$beforeFlushPendingImageDataDiscards(CallbackInfo ci) {
+        RenderImageLifecycleEvents.BEFORE_FLUSH_PENDING_IMAGE_DATA_DISCARDS.invoker().onEvent(null);
     }
 
     @Inject(method = "flushPendingImageDataDiscards()V", at = @At("RETURN"), require = 1)
-    private void rustedfabricapi$afterFlushPendingImageDataDiscards(CallbackInfo ci) {
-        RenderImageLifecycleEvents.AFTER_FLUSH_PENDING_IMAGE_DATA_DISCARDS.invoker().onEvent(this);
+    private static void rustedfabricapi$afterFlushPendingImageDataDiscards(CallbackInfo ci) {
+        RenderImageLifecycleEvents.AFTER_FLUSH_PENDING_IMAGE_DATA_DISCARDS.invoker().onEvent(null);
     }
 
     @Inject(method = "queueImageDataDiscard(Lrustedwarfare/client/render/SlickBitmapOrTexture;)V",
             at = @At("HEAD"), require = 1)
-    private void rustedfabricapi$beforeQueueImageDataDiscard(@Coerce Object image, CallbackInfo ci) {
-        RenderImageLifecycleEvents.BEFORE_QUEUE_IMAGE_DATA_DISCARD.invoker().onEvent(this, image);
+    private static void rustedfabricapi$beforeQueueImageDataDiscard(@Coerce Object image, CallbackInfo ci) {
+        RenderImageLifecycleEvents.BEFORE_QUEUE_IMAGE_DATA_DISCARD.invoker().onEvent(null, image);
     }
 
     @Inject(method = "queueImageDataDiscard(Lrustedwarfare/client/render/SlickBitmapOrTexture;)V",
             at = @At("RETURN"), require = 1)
-    private void rustedfabricapi$afterQueueImageDataDiscard(@Coerce Object image, CallbackInfo ci) {
-        RenderImageLifecycleEvents.AFTER_QUEUE_IMAGE_DATA_DISCARD.invoker().onEvent(this, image);
+    private static void rustedfabricapi$afterQueueImageDataDiscard(@Coerce Object image, CallbackInfo ci) {
+        RenderImageLifecycleEvents.AFTER_QUEUE_IMAGE_DATA_DISCARD.invoker().onEvent(null, image);
     }
 
     @Inject(method = "loadImageByResourceId(I)Lrustedwarfare/client/render/GameImage;",
@@ -86,34 +86,34 @@ public abstract class SlickGraphicsBackendImageNamedMixin {
 
     @Inject(method = "loadSlickImageByResourceId(IZ)Lrustedwarfare/client/render/SlickBitmapOrTexture;",
             at = @At("HEAD"), require = 1)
-    private void rustedfabricapi$beforeLoadSlickImageByResourceId(int resourceId, boolean smooth,
-                                                                  CallbackInfoReturnable<Object> cir) {
+    private static void rustedfabricapi$beforeLoadSlickImageByResourceId(int resourceId, boolean smooth,
+                                                                         CallbackInfoReturnable<Object> cir) {
         RenderImageLifecycleEvents.BEFORE_LOAD_SLICK_IMAGE_BY_RESOURCE_ID.invoker()
-                .onEvent(this, resourceId, smooth);
+                .onEvent(null, resourceId, smooth);
     }
 
     @Inject(method = "loadSlickImageByResourceId(IZ)Lrustedwarfare/client/render/SlickBitmapOrTexture;",
             at = @At("RETURN"), require = 1)
-    private void rustedfabricapi$afterLoadSlickImageByResourceId(int resourceId, boolean smooth,
-                                                                 CallbackInfoReturnable<Object> cir) {
+    private static void rustedfabricapi$afterLoadSlickImageByResourceId(int resourceId, boolean smooth,
+                                                                        CallbackInfoReturnable<Object> cir) {
         RenderImageLifecycleEvents.AFTER_LOAD_SLICK_IMAGE_BY_RESOURCE_ID.invoker()
-                .onEvent(this, resourceId, smooth, cir.getReturnValue());
+                .onEvent(null, resourceId, smooth, cir.getReturnValue());
     }
 
     @Inject(method = "loadSlickImageData(Ljava/io/InputStream;)Lorg/newdawn/slick/opengl/ImageData;",
             at = @At("HEAD"), require = 1)
-    private void rustedfabricapi$beforeLoadSlickImageData(@Coerce Object inputStream,
-                                                          CallbackInfoReturnable<Object> cir) {
+    private static void rustedfabricapi$beforeLoadSlickImageData(@Coerce Object inputStream,
+                                                                 CallbackInfoReturnable<Object> cir) {
         RenderImageLifecycleEvents.BEFORE_LOAD_SLICK_IMAGE_DATA.invoker()
-                .onEvent(this, inputStream);
+                .onEvent(null, inputStream);
     }
 
     @Inject(method = "loadSlickImageData(Ljava/io/InputStream;)Lorg/newdawn/slick/opengl/ImageData;",
             at = @At("RETURN"), require = 1)
-    private void rustedfabricapi$afterLoadSlickImageData(@Coerce Object inputStream,
-                                                         CallbackInfoReturnable<Object> cir) {
+    private static void rustedfabricapi$afterLoadSlickImageData(@Coerce Object inputStream,
+                                                                CallbackInfoReturnable<Object> cir) {
         RenderImageLifecycleEvents.AFTER_LOAD_SLICK_IMAGE_DATA.invoker()
-                .onEvent(this, inputStream, cir.getReturnValue());
+                .onEvent(null, inputStream, cir.getReturnValue());
     }
 
     @Inject(method = "loadImageFromStream(Ljava/io/InputStream;Z)Lrustedwarfare/client/render/GameImage;",
@@ -134,18 +134,18 @@ public abstract class SlickGraphicsBackendImageNamedMixin {
 
     @Inject(method = "createSlickImageFromData(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;)Lrustedwarfare/client/render/SlickBitmapOrTexture;",
             at = @At("HEAD"), require = 1)
-    private void rustedfabricapi$beforeCreateSlickImageFromData(@Coerce Object imageData, String name,
-                                                                CallbackInfoReturnable<Object> cir) {
+    private static void rustedfabricapi$beforeCreateSlickImageFromData(@Coerce Object imageData, String name,
+                                                                       CallbackInfoReturnable<Object> cir) {
         RenderImageLifecycleEvents.BEFORE_CREATE_SLICK_IMAGE_FROM_DATA.invoker()
-                .onEvent(this, imageData, name);
+                .onEvent(null, imageData, name);
     }
 
     @Inject(method = "createSlickImageFromData(Lorg/newdawn/slick/opengl/ImageData;Ljava/lang/String;)Lrustedwarfare/client/render/SlickBitmapOrTexture;",
             at = @At("RETURN"), require = 1)
-    private void rustedfabricapi$afterCreateSlickImageFromData(@Coerce Object imageData, String name,
-                                                               CallbackInfoReturnable<Object> cir) {
+    private static void rustedfabricapi$afterCreateSlickImageFromData(@Coerce Object imageData, String name,
+                                                                      CallbackInfoReturnable<Object> cir) {
         RenderImageLifecycleEvents.AFTER_CREATE_SLICK_IMAGE_FROM_DATA.invoker()
-                .onEvent(this, imageData, name, cir.getReturnValue());
+                .onEvent(null, imageData, name, cir.getReturnValue());
     }
 
     @Inject(method = "createImage(IIZ)Lrustedwarfare/client/render/GameImage;", at = @At("HEAD"), require = 1)

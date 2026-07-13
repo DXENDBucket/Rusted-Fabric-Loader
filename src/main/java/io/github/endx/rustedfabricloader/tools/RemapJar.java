@@ -15,8 +15,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,6 +44,7 @@ import java.util.jar.JarOutputStream;
 
 public final class RemapJar {
     private static final String MIXIN_DESC = "Lorg/spongepowered/asm/mixin/Mixin;";
+    private static final String SHADOW_DESC = "Lorg/spongepowered/asm/mixin/Shadow;";
     private static final String AT_DESC = "Lorg/spongepowered/asm/mixin/injection/At;";
 
     private RemapJar() {
@@ -336,7 +340,20 @@ public final class RemapJar {
             boolean changed = false;
             changed |= rewriteAnnotations(classNode.visibleAnnotations, mixinTargets);
             changed |= rewriteAnnotations(classNode.invisibleAnnotations, mixinTargets);
+            Map<MemberKey, MemberMapping> shadowFieldRenames = new HashMap<MemberKey, MemberMapping>();
+            Map<MemberKey, MemberMapping> shadowMethodRenames = new HashMap<MemberKey, MemberMapping>();
             for (FieldNode fieldNode : classNode.fields) {
+                if (hasAnnotation(fieldNode.visibleAnnotations, SHADOW_DESC)
+                        || hasAnnotation(fieldNode.invisibleAnnotations, SHADOW_DESC)) {
+                    String oldName = fieldNode.name;
+                    String oldDescriptor = fieldNode.desc;
+                    MemberMapping mapping = findMixinMemberMapping(
+                            fields, oldName, oldDescriptor, mixinTargets, "@Shadow field");
+                    shadowFieldRenames.put(new MemberKey(classNode.name, oldName, oldDescriptor), mapping);
+                    fieldNode.name = mapping.name;
+                    fieldNode.desc = mapping.descriptor;
+                    changed = true;
+                }
                 if (fieldNode.value instanceof String) {
                     String remapped = remapClassNameText((String) fieldNode.value);
                     if (!remapped.equals(fieldNode.value)) {
@@ -346,10 +363,39 @@ public final class RemapJar {
                 }
             }
             for (MethodNode methodNode : classNode.methods) {
+                if (hasAnnotation(methodNode.visibleAnnotations, SHADOW_DESC)
+                        || hasAnnotation(methodNode.invisibleAnnotations, SHADOW_DESC)) {
+                    String oldName = methodNode.name;
+                    String oldDescriptor = methodNode.desc;
+                    MemberMapping mapping = findMixinMemberMapping(
+                            methods, oldName, oldDescriptor, mixinTargets, "@Shadow method");
+                    shadowMethodRenames.put(new MemberKey(classNode.name, oldName, oldDescriptor), mapping);
+                    methodNode.name = mapping.name;
+                    methodNode.desc = mapping.descriptor;
+                    changed = true;
+                }
                 changed |= rewriteAnnotations(methodNode.visibleAnnotations, mixinTargets);
                 changed |= rewriteAnnotations(methodNode.invisibleAnnotations, mixinTargets);
                 for (AbstractInsnNode instruction : methodNode.instructions) {
-                    if (instruction instanceof LdcInsnNode) {
+                    if (instruction instanceof FieldInsnNode) {
+                        FieldInsnNode fieldInsn = (FieldInsnNode) instruction;
+                        MemberMapping mapping = shadowFieldRenames.get(
+                                new MemberKey(fieldInsn.owner, fieldInsn.name, fieldInsn.desc));
+                        if (mapping != null) {
+                            fieldInsn.name = mapping.name;
+                            fieldInsn.desc = mapping.descriptor;
+                            changed = true;
+                        }
+                    } else if (instruction instanceof MethodInsnNode) {
+                        MethodInsnNode methodInsn = (MethodInsnNode) instruction;
+                        MemberMapping mapping = shadowMethodRenames.get(
+                                new MemberKey(methodInsn.owner, methodInsn.name, methodInsn.desc));
+                        if (mapping != null) {
+                            methodInsn.name = mapping.name;
+                            methodInsn.desc = mapping.descriptor;
+                            changed = true;
+                        }
+                    } else if (instruction instanceof LdcInsnNode) {
                         LdcInsnNode ldcInsnNode = (LdcInsnNode) instruction;
                         if (ldcInsnNode.cst instanceof String) {
                             String remapped = remapClassNameText((String) ldcInsnNode.cst);
@@ -369,6 +415,45 @@ public final class RemapJar {
             ClassWriter classWriter = new ClassWriter(0);
             classNode.accept(classWriter);
             return classWriter.toByteArray();
+        }
+
+        private MemberMapping findMixinMemberMapping(Map<MemberKey, MemberMapping> mappings,
+                                                     String memberName,
+                                                     String descriptor,
+                                                     List<String> mixinTargets,
+                                                     String memberKind) {
+            String descriptorFrom = remapDescriptor(descriptor, anyClassToFrom);
+            MemberMapping selected = null;
+            for (String target : mixinTargets) {
+                MemberMapping candidate = mappings.get(
+                        new MemberKey(toFromClass(target), memberName, descriptorFrom));
+                if (candidate == null) {
+                    continue;
+                }
+                if (selected != null && (!selected.name.equals(candidate.name)
+                        || !selected.descriptor.equals(candidate.descriptor))) {
+                    throw new IllegalStateException(memberKind + " maps differently across targets; split the mixin: "
+                            + memberName + descriptor + " targets=" + mixinTargets);
+                }
+                selected = candidate;
+            }
+            if (selected == null) {
+                throw new IllegalStateException("No target mapping found for " + memberKind + " "
+                        + memberName + descriptor + " targets=" + mixinTargets);
+            }
+            return selected;
+        }
+
+        private static boolean hasAnnotation(List<AnnotationNode> annotations, String descriptor) {
+            if (annotations == null) {
+                return false;
+            }
+            for (AnnotationNode annotation : annotations) {
+                if (descriptor.equals(annotation.desc)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         byte[] rewriteMixinConfig(byte[] bytes) {
@@ -510,29 +595,40 @@ public final class RemapJar {
             String methodName = selector.substring(0, descriptorStart);
             String descriptor = selector.substring(descriptorStart);
             String descriptorFrom = remapDescriptor(descriptor, anyClassToFrom);
+            LinkedHashSet<String> mappedSelectors = new LinkedHashSet<String>();
             for (String target : mixinTargets) {
                 MemberMapping mapping = methods.get(new MemberKey(toFromClass(target), methodName, descriptorFrom));
                 if (mapping != null) {
-                    return mapping.name + mapping.descriptor;
+                    mappedSelectors.add(mapping.name + mapping.descriptor);
                 }
             }
 
-            return methodName + remapDescriptor(descriptor, anyClassToTo);
+            if (mappedSelectors.isEmpty()) {
+                return methodName + remapDescriptor(descriptor, anyClassToTo);
+            }
+            if (mappedSelectors.size() > 1) {
+                throw new IllegalStateException("Mixin selector maps differently across targets; split the mixin: "
+                        + selector + " -> " + mappedSelectors + " targets=" + mixinTargets);
+            }
+            return mappedSelectors.iterator().next();
         }
 
         private String remapMethodName(String methodName, List<String> mixinTargets) {
-            String mappedName = null;
+            LinkedHashSet<String> mappedNames = new LinkedHashSet<String>();
             for (String target : mixinTargets) {
                 String targetMappedName = methodNames.get(new NameKey(toFromClass(target), methodName));
-                if (targetMappedName == null) {
-                    continue;
+                if (targetMappedName != null) {
+                    mappedNames.add(targetMappedName);
                 }
-                if (mappedName != null && !mappedName.equals(targetMappedName)) {
-                    return methodName;
-                }
-                mappedName = targetMappedName;
             }
-            return mappedName != null ? mappedName : methodName;
+            if (mappedNames.isEmpty()) {
+                return methodName;
+            }
+            if (mappedNames.size() > 1) {
+                throw new IllegalStateException("Mixin method name maps differently across targets; split the mixin: "
+                        + methodName + " -> " + mappedNames + " targets=" + mixinTargets);
+            }
+            return mappedNames.iterator().next();
         }
 
         private String remapAtTarget(String target) {

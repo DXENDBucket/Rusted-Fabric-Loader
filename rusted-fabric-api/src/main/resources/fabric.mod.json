@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
   "id": "rustedfabricapi",
-  "version": "0.1.0",
+  "version": "${version}",
   "name": "Rusted Fabric API",
   "description": "Base API for Rusted Fabric Loader",
   "environment": "*",
   "mixins": [
     "rustedfabricapi.mixins.json"
-  ]
+  ],
+  "custom": {
+    "rustedfabricapi:api_stability": "experimental",
+    "rustedfabricapi:mappings_version": "${mappingsVersion}"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "required": false,
+  "required": true,
   "minVersion": "0.8",
   "package": "io.github.endx.rustedfabricapi.mixin",
   "compatibilityLevel": "JAVA_13",
@@ -10,6 +10,7 @@
     "BuildQueueHostNamedMixin",
     "BuildQueueNamedMixin",
     "BuildQueueResourceDeltaNamedMixin",
+    "BuiltinTransportUnloadingNamedMixin",
     "CommandIssueNamedMixin",
     "ConfigVariableProcessorNamedMixin",
     "CurrentMapLifecycleNamedMixin",
@@ -89,6 +90,6 @@
     "UnitConfigIniNamedMixin"
   ],
   "injectors": {
-    "defaultRequire": 0
+    "defaultRequire": 1
   }
 }

@@ -1,13 +1,27 @@
 package io.github.endx.rustedfabricapi.api;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public final class RustedFabricAPIContext {
     private final Map<String, Object> raw;
 
     public RustedFabricAPIContext(Map<String, Object> raw) {
-        this.raw = raw;
+        Objects.requireNonNull(raw, "raw");
+        Map<String, Object> copy = new HashMap<String, Object>(raw);
+        Object args = copy.get(RustedFabricAPIKeys.K_GAME_ARGS);
+        if (args instanceof String[]) {
+            copy.put(RustedFabricAPIKeys.K_GAME_ARGS, ((String[]) args).clone());
+        }
+        this.raw = Collections.unmodifiableMap(copy);
+    }
+
+    public int contextVersion() {
+        Object value = raw.get(RustedFabricAPIKeys.K_CONTEXT_VERSION);
+        return value instanceof Number ? ((Number) value).intValue() : 0;
     }
 
     public Path gameDir() {
@@ -19,7 +33,8 @@ public final class RustedFabricAPIContext {
     }
 
     public String[] gameArgs() {
-        return (String[]) raw.get(RustedFabricAPIKeys.K_GAME_ARGS);
+        String[] args = (String[]) raw.get(RustedFabricAPIKeys.K_GAME_ARGS);
+        return args != null ? args.clone() : new String[0];
     }
 
     public String runtimeNamespace() {
@@ -33,5 +48,9 @@ public final class RustedFabricAPIContext {
     public boolean androidRuntime() {
         Object v = raw.get(RustedFabricAPIKeys.K_ANDROID);
         return v instanceof Boolean && (Boolean) v;
+    }
+
+    public Map<String, Object> asMap() {
+        return raw;
     }
 }

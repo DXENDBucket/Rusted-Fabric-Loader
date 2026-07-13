@@ -3,12 +3,21 @@ plugins {
 }
 
 group = 'io.github.endx'
-version = '1.0-SNAPSHOT'
+version = '0.1.0'
+
+ext {
+    rustedGameVersion = '1.15'
+    rustedMappingsVersion = '0.84'
+}
 
 repositories {
-    mavenCentral()
-    maven { url = "https://maven.fabricmc.net/" }
-    maven { url "https://repo.spongepowered.org/maven/" }
+    if (project.hasProperty('offlineRuntimeJars')) {
+        flatDir { dirs rootProject.file(project.property('offlineRuntimeJars')) }
+    } else {
+        mavenCentral()
+        maven { url = "https://maven.fabricmc.net/" }
+        maven { url = "https://repo.spongepowered.org/maven/" }
+    }
 }
 
 def gameLibJarFile = {
@@ -32,11 +41,11 @@ dependencies {
     implementation "com.google.code.gson:gson:2.8.7"
 
     // ASM
-    implementation "org.ow2.asm:asm:9.2"
-    implementation "org.ow2.asm:asm-analysis:9.2"
-    implementation "org.ow2.asm:asm-commons:9.2"
-    implementation "org.ow2.asm:asm-tree:9.2"
-    implementation "org.ow2.asm:asm-util:9.2"
+    implementation "org.ow2.asm:asm:9.6"
+    implementation "org.ow2.asm:asm-analysis:9.6"
+    implementation "org.ow2.asm:asm-commons:9.6"
+    implementation "org.ow2.asm:asm-tree:9.6"
+    implementation "org.ow2.asm:asm-util:9.6"
 
     // sponge-mixin
     implementation "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
@@ -56,6 +65,97 @@ test {
     useJUnitPlatform()
 }
 
+tasks.register('validateMappings') {
+    group = 'verification'
+    description = 'Validates Tiny mappings and the Rusted Fabric API mixin configuration.'
+
+    def tinyFile = mappingsTinyFile()
+    def mixinConfigFile = project(':rusted-fabric-api').file('src/main/resources/rustedfabricapi.mixins.json')
+    def mixinSourceDir = project(':rusted-fabric-api').file('src/main/java/io/github/endx/rustedfabricapi/mixin')
+    inputs.file tinyFile
+    inputs.file mixinConfigFile
+    inputs.dir mixinSourceDir
+
+    doLast {
+        def lines = tinyFile.readLines('UTF-8')
+        if (lines.isEmpty() || lines[0] != 'tiny\t2\t0\tofficial\tintermediary\tnamed') {
+            throw new GradleException("Unexpected Tiny v2 header in ${tinyFile}")
+        }
+
+        def currentClass = null
+        def mappingKeys = new HashSet<String>()
+        def classNames = new HashSet<String>()
+        int classCount = 0
+        int fieldCount = 0
+        int methodCount = 0
+
+        lines.drop(1).eachWithIndex { line, index ->
+            int lineNumber = index + 2
+            if (line.startsWith('c\t')) {
+                def parts = line.split('\t', -1)
+                if (parts.length != 4 || parts.drop(1).any { it.isEmpty() }) {
+                    throw new GradleException("Malformed class mapping at line ${lineNumber}")
+                }
+                currentClass = parts[1]
+                if (!classNames.add(currentClass)) {
+                    throw new GradleException("Duplicate class mapping for ${currentClass}")
+                }
+                classCount++
+                return
+            }
+
+            if (line.startsWith('\tf\t') || line.startsWith('\tm\t')) {
+                if (currentClass == null) {
+                    throw new GradleException("Orphan member mapping at line ${lineNumber}")
+                }
+                def parts = line.split('\t', -1)
+                if (parts.length != 6 || parts.drop(2).any { it.isEmpty() }) {
+                    throw new GradleException("Malformed member mapping at line ${lineNumber}")
+                }
+                def kind = parts[1]
+                def key = "${kind}\t${currentClass}\t${parts[3]}\t${parts[2]}"
+                if (!mappingKeys.add(key)) {
+                    throw new GradleException("Duplicate member mapping at line ${lineNumber}: ${key}")
+                }
+                if (parts[3] == '<init>' && parts[5] != '<init>') {
+                    throw new GradleException("Constructor renamed in the named namespace at line ${lineNumber}")
+                }
+                if (kind == 'f') fieldCount++ else methodCount++
+                return
+            }
+
+            if (!line.trim().isEmpty()) {
+                throw new GradleException("Unsupported Tiny row at line ${lineNumber}")
+            }
+        }
+
+        if (classCount < 1159 || fieldCount < 5106 || methodCount < 7197) {
+            throw new GradleException("Mapping coverage regressed: classes=${classCount}, fields=${fieldCount}, methods=${methodCount}")
+        }
+
+        def config = new groovy.json.JsonSlurper().parse(mixinConfigFile)
+        if (config.required != true || config.injectors?.defaultRequire != 1) {
+            throw new GradleException('Rusted Fabric API mixins must use strict required/defaultRequire settings')
+        }
+
+        def configured = config.mixins as Set
+        def namedSources = fileTree(mixinSourceDir) { include '*NamedMixin.java' }.files.collect {
+            it.name.substring(0, it.name.length() - '.java'.length())
+        } as Set
+        def officialSources = fileTree(mixinSourceDir) { include '*OfficialMixin.java' }.files
+        if (configured != namedSources) {
+            throw new GradleException("Mixin config/source mismatch: missing=${namedSources - configured}, stale=${configured - namedSources}")
+        }
+        if (!officialSources.isEmpty()) {
+            throw new GradleException("Legacy official mixin sources remain: ${officialSources*.name}")
+        }
+
+        logger.lifecycle("Validated mappings v${rustedMappingsVersion}: ${classCount} classes, ${fieldCount} fields, ${methodCount} methods; ${configured.size()} mixins")
+    }
+}
+
+check.dependsOn tasks.named('validateMappings')
+
 tasks.withType(JavaCompile).configureEach {
     options.release = 13 // RW:13
 }
@@ -64,7 +164,23 @@ jar {
     manifest {
         attributes(
                 'Game-Id': 'rusted_warfare',
-                'Game-Version': 'unknown'
+                'Game-Version': rustedGameVersion,
+                'Mappings-Version': rustedMappingsVersion,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+processResources {
+    inputs.property 'loaderVersion', project.version
+    inputs.property 'gameVersion', rustedGameVersion
+    inputs.property 'mappingsVersion', rustedMappingsVersion
+
+    filesMatching('rusted-fabric-loader.properties') {
+        expand(
+                loaderVersion: project.version,
+                gameVersion: rustedGameVersion,
+                mappingsVersion: rustedMappingsVersion
         )
     }
 }
@@ -157,6 +273,84 @@ tasks.register('copyFabricRuntime', Copy) {
     into layout.buildDirectory.dir("fabric-runtime")
 }
 
+tasks.register('verifyDistribution') {
+    group = 'verification'
+    description = 'Builds and validates provider, official API, and official example-mod artifacts.'
+    dependsOn check, jar, ':rusted-fabric-api:verifyApiContracts',
+            ':rusted-fabric-api:remapJarToOfficial', ':example-mod:remapJarToOfficial'
+
+    doLast {
+        def providerJar = tasks.jar.archiveFile.get().asFile
+        def apiJar = project(':rusted-fabric-api').layout.buildDirectory
+                .file("libs/official/rusted-fabric-api-${project.version}.jar").get().asFile
+        def exampleJar = project(':example-mod').layout.buildDirectory
+                .file("libs/rusted-fabric-example-mod-${project.version}-official.jar").get().asFile
+
+        [providerJar, apiJar, exampleJar].each { artifact ->
+            if (!artifact.isFile() || artifact.length() == 0L) {
+                throw new GradleException("Missing distribution artifact: ${artifact}")
+            }
+        }
+
+        def readZipText = { java.util.zip.ZipFile zip, String entryName ->
+            def entry = zip.getEntry(entryName)
+            if (entry == null) throw new GradleException("Missing ${entryName} in ${zip.name}")
+            zip.getInputStream(entry).getText('UTF-8')
+        }
+
+        new java.util.zip.ZipFile(providerJar).withCloseable { zip ->
+            def manifest = new java.util.jar.Manifest(zip.getInputStream(zip.getEntry('META-INF/MANIFEST.MF')))
+            def attributes = manifest.mainAttributes
+            if (attributes.getValue('Game-Version') != rustedGameVersion.toString()
+                    || attributes.getValue('Mappings-Version') != rustedMappingsVersion.toString()
+                    || attributes.getValue('Implementation-Version') != project.version.toString()) {
+                throw new GradleException('Provider manifest version metadata is inconsistent')
+            }
+            def properties = new Properties()
+            properties.load(zip.getInputStream(zip.getEntry('rusted-fabric-loader.properties')))
+            if (properties.getProperty('gameVersion') != rustedGameVersion.toString()
+                    || properties.getProperty('mappingsVersion') != rustedMappingsVersion.toString()) {
+                throw new GradleException('Provider runtime version metadata is inconsistent')
+            }
+        }
+
+        new java.util.zip.ZipFile(apiJar).withCloseable { zip ->
+            def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
+            def mixins = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'rustedfabricapi.mixins.json'))
+            if (mod.version != project.version.toString()
+                    || mod.custom?.get('rustedfabricapi:mappings_version') != rustedMappingsVersion.toString()) {
+                throw new GradleException('Official API metadata version is inconsistent')
+            }
+            def expectedMixinCount = fileTree(project(':rusted-fabric-api').file('src/main/java/io/github/endx/rustedfabricapi/mixin')) {
+                include '*NamedMixin.java'
+            }.files.size()
+            if (mixins.required != true || mixins.injectors?.defaultRequire != 1
+                    || mixins.mixins.size() != expectedMixinCount) {
+                throw new GradleException('Official API Mixin configuration is not strict or complete')
+            }
+            mixins.mixins.each { mixin ->
+                def entryName = "io/github/endx/rustedfabricapi/mixin/${mixin}.class"
+                def entry = zip.getEntry(entryName)
+                if (entry == null) throw new GradleException("Missing remapped Mixin class ${entryName}")
+                byte[] bytes = zip.getInputStream(entry).bytes
+                def constants = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                if (constants.contains('rustedwarfare/') || constants.contains('rustedwarfare.')) {
+                    throw new GradleException("Named game target remains in official Mixin ${mixin}")
+                }
+            }
+        }
+
+        new java.util.zip.ZipFile(exampleJar).withCloseable { zip ->
+            def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
+            if (mod.version != project.version.toString()) {
+                throw new GradleException('Official example-mod metadata version is inconsistent')
+            }
+        }
+
+        logger.lifecycle("Verified distribution ${project.version} for Rusted Warfare ${rustedGameVersion} / mappings ${rustedMappingsVersion}")
+    }
+}
+
 def installGameDirFile = {
     project.hasProperty('gameDir') ? file(project.property('gameDir')) : null
 }
@@ -168,7 +362,7 @@ def installExampleModEnabled = {
 tasks.register('installToGameDir') {
     group = 'rusted fabric'
     description = 'Installs Fabric runtime jars, the GameProvider, API jar, optional example mod, and the launch script into a Rusted Warfare game directory. Use -PgameDir=... [-PinstallExampleMod=false].'
-    dependsOn 'jar', 'copyFabricRuntime', ':rusted-fabric-api:remapJarToOfficial'
+    dependsOn 'verifyDistribution', 'copyFabricRuntime'
 
     if (installExampleModEnabled()) {
         dependsOn ':example-mod:remapJarToOfficial'
@@ -209,11 +403,23 @@ tasks.register('installToGameDir') {
             from tasks.jar.archiveFile.get().asFile
             into providerDir
         }
+        def installedProviderJar = new File(providerDir, tasks.jar.archiveFile.get().asFile.name).canonicalFile
+        providerDir.eachFileMatch(~/rusted-fabric-loader-.*\.jar/) { candidate ->
+            if (candidate.canonicalFile != installedProviderJar) {
+                candidate.delete()
+            }
+        }
 
         def apiRemapTask = project(':rusted-fabric-api').tasks.named('remapJarToOfficial').get()
         copy {
             from apiRemapTask.outputs.files.singleFile
             into javaModsDir
+        }
+        def installedApiJar = new File(javaModsDir, apiRemapTask.outputs.files.singleFile.name).canonicalFile
+        javaModsDir.eachFileMatch(~/rusted-fabric-api-.*\.jar/) { candidate ->
+            if (candidate.canonicalFile != installedApiJar) {
+                candidate.delete()
+            }
         }
 
         if (installExampleModEnabled()) {
@@ -221,6 +427,12 @@ tasks.register('installToGameDir') {
             copy {
                 from exampleRemapTask.outputs.files.singleFile
                 into javaModsDir
+            }
+            def installedExampleJar = new File(javaModsDir, exampleRemapTask.outputs.files.singleFile.name).canonicalFile
+            javaModsDir.eachFileMatch(~/rusted-fabric-example-mod-.*\.jar/) { candidate ->
+                if (candidate.canonicalFile != installedExampleJar) {
+                    candidate.delete()
+                }
             }
         }
 

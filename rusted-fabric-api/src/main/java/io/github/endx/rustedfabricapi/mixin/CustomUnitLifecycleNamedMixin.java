@@ -5,10 +5,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import rustedwarfare.custom.CustomUnitMetadata;
+import rustedwarfare.custom.stats.MutableStatAccessor;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitLifecycleNamedMixin {
@@ -19,13 +19,13 @@ public abstract class CustomUnitLifecycleNamedMixin {
     private Object rustedfabricapi$metadataBeforeApply;
 
     @Inject(method = "applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/stats/MutableStatAccessor;)V", at = @At("HEAD"), require = 1)
-    private void rustedfabricapi$beforeUnitMetadataApply(@Coerce Object metadata, boolean conversion, boolean initial, @Coerce Object statOverrides, CallbackInfo ci) {
+    private void rustedfabricapi$beforeUnitMetadataApply(CustomUnitMetadata metadata, boolean conversion, boolean initial, MutableStatAccessor[] statOverrides, CallbackInfo ci) {
         rustedfabricapi$metadataBeforeApply = unitMetadata;
         CustomUnitLifecycleEvents.BEFORE_UNIT_METADATA_APPLY.invoker().beforeUnitMetadataApply(this, rustedfabricapi$metadataBeforeApply, metadata, conversion, initial, statOverrides);
     }
 
     @Inject(method = "applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/stats/MutableStatAccessor;)V", at = @At("RETURN"), require = 1)
-    private void rustedfabricapi$afterUnitMetadataApply(@Coerce Object metadata, boolean conversion, boolean initial, @Coerce Object statOverrides, CallbackInfo ci) {
+    private void rustedfabricapi$afterUnitMetadataApply(CustomUnitMetadata metadata, boolean conversion, boolean initial, MutableStatAccessor[] statOverrides, CallbackInfo ci) {
         CustomUnitLifecycleEvents.AFTER_UNIT_METADATA_APPLY.invoker().afterUnitMetadataApply(this, rustedfabricapi$metadataBeforeApply, metadata, conversion, initial, statOverrides);
         rustedfabricapi$metadataBeforeApply = null;
     }

@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
         targets = {
                 "rustedwarfare.custom.CustomUnit",
                 "rustedwarfare.unit.OrderableUnit",
-                "rustedwarfare.unit.building.internal.Obf_d_r",
-                "rustedwarfare.unit.land.internal.Obf_e_b",
+                "rustedwarfare.unit.building.RepairBayUnit",
+                "rustedwarfare.unit.land.BuilderUnit",
                 "rustedwarfare.unit.land.internal.Obf_g",
-                "rustedwarfare.unit.land.internal.Obf_h",
-                "rustedwarfare.unit.water.internal.Obf_h_b"
+                "rustedwarfare.unit.special.EditorOrBuilderUnit",
+                "rustedwarfare.unit.water.BuilderShipUnit"
         },
         remap = false
 )

@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
         targets = {
                 "rustedwarfare.unit.Unit",
                 "rustedwarfare.custom.CustomUnit",
-                "rustedwarfare.unit.air.internal.Obf_b_d",
-                "rustedwarfare.unit.land.internal.Obf_e_i"
+                "rustedwarfare.unit.air.DropshipUnit",
+                "rustedwarfare.unit.land.HovercraftUnit"
         },
         remap = false
 )

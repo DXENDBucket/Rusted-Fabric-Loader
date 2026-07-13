@@ -2,6 +2,15 @@
 
 This repository provides the Rusted Fabric Loader GameProvider along with supporting build scripts. The loader expects the Fabric runtime libraries and the compiled GameProvider jars to be available at launch time.
 
+Current compatibility baseline:
+
+- Rusted Warfare `1.15`
+- Rusted Fabric Loader/API `0.1.0`
+- mappings `0.84`
+- Java bytecode level `13`
+
+The public API is still experimental while mappings are being completed. See [API.md](docs/API.md) for lifecycle, threading, cancellation, and compatibility rules.
+
 ## Launching with a custom script
 The following Windows batch script demonstrates how to start the client using prebuilt artifacts from the repository. It assumes the `clean build copyFabricRuntime` Gradle task has been run so that all required Fabric jars are available.
 
@@ -60,7 +69,7 @@ By default it also builds and installs the official-runtime example mod. To avoi
 gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampleMod=false
 ```
 
-This does not delete existing files in `javamods`.
+This preserves unrelated files in `javamods`. After copying a successful build, the installer removes older versioned `rusted-fabric-api-*.jar`, `rusted-fabric-example-mod-*.jar`, and provider jars so Fabric does not discover duplicate versions of loader-owned components.
 
 ## Mappings
 The `src/main/resources/mappings/mappings.tiny` file is packaged into the GameProvider jar at `mappings/mappings.tiny`, the resource path Fabric Loader checks by default.
@@ -120,6 +129,20 @@ gradlew.bat remapNamedJarToOfficial -PremapInput=path\to\named-mod.jar -PremapOu
 Use the same `-PmappingsTiny=...` value when remapping a mod that was compiled with custom mappings.
 
 Mapping coverage is still partial: only classes, methods, and fields present in `mappings.tiny` receive named identifiers. Unmapped game symbols remain in their original names.
+
+Run the repository verification checks after changing mappings or mixins:
+
+```bat
+gradlew.bat check
+```
+
+`validateMappings` rejects malformed/orphan/duplicate Tiny rows, mapping-count regressions, constructor renames, stale mixin configuration entries, legacy official mixin sources, and non-strict Mixin settings. Semantic evidence and the remaining mapping work are documented under `report/mapping-evidence/`; see [MAPPINGS.md](docs/MAPPINGS.md) for the expected workflow.
+
+For an offline build, point `offlineRuntimeJars` at a directory containing the already resolved Fabric runtime jars. This path is supplied locally and is never stored by the project:
+
+```bat
+gradlew.bat build --offline -PofflineRuntimeJars=C:\path\to\fabric-libs
+```
 
 Mixin classes should be authored against the named development jar. `RemapJar` remaps both bytecode references and mixin metadata strings in annotations such as `@Mixin(targets)`, `@Inject(method)`, `@Redirect(method)`, and nested `@At(target)` values. The Rusted Fabric API is installed as a remapped official-runtime jar by `installToGameDir`, so its mixin config only lists `*NamedMixin` classes.
 

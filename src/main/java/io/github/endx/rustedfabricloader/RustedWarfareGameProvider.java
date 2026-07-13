@@ -5,6 +5,7 @@ import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
+import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
@@ -34,6 +35,8 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     private static final String FABRIC_ADD_MODS = "fabric.addMods";
     private static final String FABRIC_RUNTIME_MAPPING_NAMESPACE = "fabric.runtimeMappingNamespace";
+    private static final String GAME_VERSION_PROPERTY = "rusted.gameVersion";
+    private static final String DEFAULT_GAME_VERSION = "1.15";
     private static final String OFFICIAL_NAMESPACE = "official";
     private static final String NAMED_NAMESPACE = "named";
 
@@ -94,7 +97,8 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public String getRawGameVersion() {
-        return "unknown";
+        return System.getProperty(GAME_VERSION_PROPERTY,
+                BUILD_PROPERTIES.getProperty("gameVersion", DEFAULT_GAME_VERSION));
     }
 
     @Override
@@ -114,7 +118,16 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public Collection<BuiltinMod> getBuiltinMods() {
-        return Collections.emptyList();
+        if (gameLibJar == null) {
+            return Collections.emptyList();
+        }
+
+        BuiltinModMetadata.Builder metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
+                .setName(getGameName())
+                .setDescription("Rusted Warfare game runtime provided by Rusted Fabric Loader");
+        return Collections.singletonList(new BuiltinMod(
+                Collections.singletonList(gameLibJar),
+                metadata.build()));
     }
 
     @Override
@@ -482,6 +495,20 @@ public class RustedWarfareGameProvider implements GameProvider {
         return vmName.contains("dalvik") || runtimeName.contains("android");
     }
 
+    private static final Properties BUILD_PROPERTIES = loadBuildProperties();
+
+    private static Properties loadBuildProperties() {
+        Properties properties = new Properties();
+        try (InputStream input = RustedWarfareGameProvider.class.getResourceAsStream("/rusted-fabric-loader.properties")) {
+            if (input != null) {
+                properties.load(input);
+            }
+        } catch (IOException e) {
+            Log.warn(LOG_CATEGORY, "Unable to read Rusted Fabric Loader build metadata", e);
+        }
+        return properties;
+    }
+
     private static String getRequestedRuntimeNamespace() {
         return isNamedRuntimeRequested() ? NAMED_NAMESPACE : OFFICIAL_NAMESPACE;
     }
@@ -602,7 +629,7 @@ public class RustedWarfareGameProvider implements GameProvider {
                 Consumer.class,
                 ep -> {
                     try {
-                        ((Consumer<Map<String, Object>>) ep).accept(ctx);
+                        ((Consumer<Map<String, Object>>) ep).accept(Collections.unmodifiableMap(ctx));
                     } catch (Throwable t) {
                         throw new RuntimeException("Entrypoint failed for key=" + key + " ep=" + ep.getClass().getName(), t);
                     }

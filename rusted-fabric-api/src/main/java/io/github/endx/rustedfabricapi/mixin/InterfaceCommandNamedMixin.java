@@ -79,7 +79,7 @@ public abstract class InterfaceCommandNamedMixin {
                 .afterWorldCommand(this, worldX, worldY);
     }
 
-    @Inject(method = "sendMapPingAtWorldPosition(FFLandroid/graphics/Point;Lrustedwarfare/unit/action/internal/Obf_a_j;)V",
+    @Inject(method = "sendMapPingAtWorldPosition(FFLandroid/graphics/Point;Lrustedwarfare/unit/action/PingMapAction;)V",
             at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeSendMapPingAtWorldPosition(
             float worldX, float worldY, @Coerce Object screenPoint, @Coerce Object pingAction, CallbackInfo ci) {
@@ -89,7 +89,7 @@ public abstract class InterfaceCommandNamedMixin {
         }
     }
 
-    @Inject(method = "sendMapPingAtWorldPosition(FFLandroid/graphics/Point;Lrustedwarfare/unit/action/internal/Obf_a_j;)V",
+    @Inject(method = "sendMapPingAtWorldPosition(FFLandroid/graphics/Point;Lrustedwarfare/unit/action/PingMapAction;)V",
             at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterSendMapPingAtWorldPosition(
             float worldX, float worldY, @Coerce Object screenPoint, @Coerce Object pingAction, CallbackInfo ci) {
@@ -97,7 +97,7 @@ public abstract class InterfaceCommandNamedMixin {
                 .afterSendMapPing(this, worldX, worldY, screenPoint, pingAction);
     }
 
-    @Inject(method = "showMapPingEffect(FFLrustedwarfare/game/Team;Lrustedwarfare/unit/action/internal/Obf_a_j;)V",
+    @Inject(method = "showMapPingEffect(FFLrustedwarfare/game/Team;Lrustedwarfare/unit/action/PingMapAction;)V",
             at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeShowMapPingEffect(
             float worldX, float worldY, @Coerce Object team, @Coerce Object pingAction, CallbackInfo ci) {
@@ -107,7 +107,7 @@ public abstract class InterfaceCommandNamedMixin {
         }
     }
 
-    @Inject(method = "showMapPingEffect(FFLrustedwarfare/game/Team;Lrustedwarfare/unit/action/internal/Obf_a_j;)V",
+    @Inject(method = "showMapPingEffect(FFLrustedwarfare/game/Team;Lrustedwarfare/unit/action/PingMapAction;)V",
             at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterShowMapPingEffect(
             float worldX, float worldY, @Coerce Object team, @Coerce Object pingAction, CallbackInfo ci) {
