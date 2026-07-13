@@ -37,6 +37,16 @@ A JVM command-line tool that reads a user-supplied or installed APK and emits a 
 - variant capability reports;
 - checks that reports contain no game bytecode, resource payloads, or local paths.
 
+Phase 0 implementation is available. For the ignored local reference APK, run:
+
+```powershell
+./gradlew :android:apk-inspector:inspectReferenceApk
+```
+
+The deterministic report is written under the module's ignored `build/reports` directory. Run
+`:android:apk-inspector:check` to verify the synthetic manifest/DEX parser contracts and confirm
+that the inspector JAR contains no APK, DEX, or game-class payload.
+
 ### `android:rusted-fabric-android-api`
 
 Android-safe API and context definitions shared by the hook backend and Android mods. It must not depend on desktop-only Slick, LWJGL, Swing, Knot launch classes, or Java desktop entrypoints.
@@ -89,10 +99,10 @@ Every Android hook declares its required mapping anchors, supported structural p
 
 ### Phase 0: reproducible inspection
 
-- Add the APK inspector without adding an Android SDK dependency.
-- Produce a deterministic compatibility JSON report for the local reference APK.
-- Add artifact and Git gates that reject `.apk`, `.dex`, game assets, and embedded game class bodies.
-- Accept the Android mapping handoff as a separate versioned profile when available.
+- [x] Add the APK inspector without adding an Android SDK dependency.
+- [x] Produce a deterministic compatibility JSON report for the local reference APK.
+- [x] Add artifact and Git gates that reject `.apk`, `.dex`, and embedded game class bodies.
+- [x] Reserve a separate versioned profile for the Android mapping handoff.
 
 Exit gate: the inspector identifies the reference APK, its Android entrypoints, all required core anchors, and produces no copyrighted payload.
 

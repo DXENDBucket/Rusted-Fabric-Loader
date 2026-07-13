@@ -45,6 +45,8 @@ bin/
 /libs/game-lib.jar
 /libs/*.apk
 /libs/**/*.apk
+*.apk
+*.dex
 
 ### Reports ###
 /report/*

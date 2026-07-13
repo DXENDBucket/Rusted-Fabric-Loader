@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'io.github.endx'
+version = rootProject.version
+
+application {
+    mainClass.set('io.github.endx.rustedfabric.android.inspector.ApkInspectorMain')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('verifyInspectorContracts', JavaExec) {
+    group = 'verification'
+    description = 'Runs dependency-free APK inspector parser, determinism, and privacy checks.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.inspector.InspectorContractVerification')
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Rejects APK, DEX, and Rusted Warfare game class payloads from inspector artifacts.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+
+    doLast {
+        def archive = tasks.jar.archiveFile.get().asFile
+        def forbidden = []
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def name = entry.name.toLowerCase(Locale.ROOT)
+                if (name.endsWith('.apk') || name.endsWith('.dex')
+                        || name.startsWith('com/corrodinggames/')) {
+                    forbidden.add(entry.name)
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Inspector artifact contains forbidden game payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyInspectorContracts')
+check.dependsOn tasks.named('verifyNoGamePayload')
+
+tasks.register('inspectReferenceApk', JavaExec) {
+    group = 'rusted fabric android'
+    description = 'Inspects the ignored local Android reference APK without embedding it in any artifact.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set(application.mainClass)
+
+    def apk = rootProject.file('libs/android/rusted-warfare-1.15-code176-base.apk')
+    def profiles = rootProject.file('android/mappings')
+    def report = layout.buildDirectory.file('reports/reference-apk-compatibility.json')
+    inputs.file(apk)
+    inputs.dir(profiles)
+    outputs.file(report)
+
+    doFirst {
+        if (!apk.isFile()) {
+            throw new GradleException("Missing ignored local reference APK: ${apk}")
+        }
+        args = [
+                '--apk', apk.absolutePath,
+                '--profiles', profiles.absolutePath,
+                '--output', report.get().asFile.absolutePath
+        ]
+    }
+}
