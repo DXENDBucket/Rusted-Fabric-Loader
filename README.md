@@ -6,7 +6,7 @@ Current compatibility baseline:
 
 - Rusted Warfare `1.15`
 - Rusted Fabric Loader/API `0.1.0`
-- mappings `0.90` (Accelerated Completion RC)
+- mappings `1.0-RC1` (Semantic + Executable Gate)
 - Java bytecode level `13`
 
 The public API is still experimental while mappings are being completed. See [API.md](docs/API.md) for lifecycle, threading, cancellation, and compatibility rules.

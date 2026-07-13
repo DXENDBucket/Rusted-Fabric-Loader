@@ -20,6 +20,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +43,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 public final class RemapJar {
     private static final String MIXIN_DESC = "Lorg/spongepowered/asm/mixin/Mixin;";
@@ -132,9 +136,13 @@ public final class RemapJar {
 
         try (JarFile jarFile = new JarFile(input.toFile(), false);
              JarOutputStream jarOutput = new JarOutputStream(Files.newOutputStream(output))) {
-            Enumeration<JarEntry> entries = jarFile.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
+            List<JarEntry> entries = new ArrayList<JarEntry>();
+            Enumeration<JarEntry> enumeration = jarFile.entries();
+            while (enumeration.hasMoreElements()) {
+                entries.add(enumeration.nextElement());
+            }
+            entries.sort(Comparator.comparing(JarEntry::getName));
+            for (JarEntry entry : entries) {
                 String name = entry.getName();
                 if (name == null || name.isEmpty() || isSignatureFile(name)) {
                     continue;
@@ -159,11 +167,13 @@ public final class RemapJar {
                     bytes = metadataRemapper.rewriteClass(bytes);
                 } else if (name.endsWith(".mixins.json")) {
                     bytes = metadataRemapper.rewriteMixinConfig(bytes);
+                } else if ("META-INF/MANIFEST.MF".equalsIgnoreCase(name)) {
+                    bytes = metadataRemapper.rewriteManifest(bytes);
                 }
 
                 if (writtenEntries.add(name)) {
                     JarEntry newEntry = new JarEntry(name);
-                    newEntry.setTime(entry.getTime());
+                    newEntry.setTime(0L);
                     jarOutput.putNextEntry(newEntry);
                     jarOutput.write(bytes);
                     jarOutput.closeEntry();
@@ -187,6 +197,7 @@ public final class RemapJar {
         String directoryName = name.endsWith("/") ? name : name + "/";
         if (writtenEntries.add(directoryName)) {
             JarEntry directoryEntry = new JarEntry(directoryName);
+            directoryEntry.setTime(0L);
             jarOutput.putNextEntry(directoryEntry);
             jarOutput.closeEntry();
         }
@@ -458,6 +469,27 @@ public final class RemapJar {
 
         byte[] rewriteMixinConfig(byte[] bytes) {
             return bytes;
+        }
+
+        byte[] rewriteManifest(byte[] bytes) throws IOException {
+            Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
+            Attributes attributes = manifest.getMainAttributes();
+            rewriteManifestClassAttribute(attributes, Attributes.Name.MAIN_CLASS.toString());
+            rewriteManifestClassAttribute(attributes, "Launcher-Agent-Class");
+            rewriteManifestClassAttribute(attributes, "Premain-Class");
+            rewriteManifestClassAttribute(attributes, "Agent-Class");
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            manifest.write(output);
+            return output.toByteArray();
+        }
+
+        private void rewriteManifestClassAttribute(Attributes attributes, String name) {
+            String className = attributes.getValue(name);
+            if (className == null || className.isEmpty()) {
+                return;
+            }
+            attributes.putValue(name, remapClassNameText(className));
         }
 
         private List<String> findMixinTargets(ClassNode classNode) {

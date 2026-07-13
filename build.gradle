@@ -7,7 +7,7 @@ version = '0.1.0'
 
 ext {
     rustedGameVersion = '1.15'
-    rustedMappingsVersion = '0.90'
+    rustedMappingsVersion = '1.0-RC1'
 }
 
 repositories {
@@ -129,7 +129,7 @@ tasks.register('validateMappings') {
             }
         }
 
-        if (classCount < 1372 || fieldCount < 5190 || methodCount < 7457) {
+        if (classCount < 1406 || fieldCount < 5255 || methodCount < 7521) {
             throw new GradleException("Mapping coverage regressed: classes=${classCount}, fields=${fieldCount}, methods=${methodCount}")
         }
 
@@ -275,8 +275,8 @@ tasks.register('copyFabricRuntime', Copy) {
 
 tasks.register('verifyDistribution') {
     group = 'verification'
-    description = 'Builds and validates provider, official API, and official example-mod artifacts.'
-    dependsOn check, jar, ':rusted-fabric-api:verifyApiContracts',
+    description = 'Builds and validates the named game Jar, provider, official API, and official example-mod artifacts.'
+    dependsOn check, jar, generateNamedGameJar, ':rusted-fabric-api:verifyApiContracts',
             ':rusted-fabric-api:remapJarToOfficial', ':example-mod:remapJarToOfficial'
 
     doLast {
@@ -285,8 +285,9 @@ tasks.register('verifyDistribution') {
                 .file("libs/official/rusted-fabric-api-${project.version}.jar").get().asFile
         def exampleJar = project(':example-mod').layout.buildDirectory
                 .file("libs/rusted-fabric-example-mod-${project.version}-official.jar").get().asFile
+        def namedGameJar = namedGameJarFile()
 
-        [providerJar, apiJar, exampleJar].each { artifact ->
+        [providerJar, apiJar, exampleJar, namedGameJar].each { artifact ->
             if (!artifact.isFile() || artifact.length() == 0L) {
                 throw new GradleException("Missing distribution artifact: ${artifact}")
             }
@@ -311,6 +312,19 @@ tasks.register('verifyDistribution') {
             if (properties.getProperty('gameVersion') != rustedGameVersion.toString()
                     || properties.getProperty('mappingsVersion') != rustedMappingsVersion.toString()) {
                 throw new GradleException('Provider runtime version metadata is inconsistent')
+            }
+        }
+
+        new java.util.zip.ZipFile(namedGameJar).withCloseable { zip ->
+            def manifestEntry = zip.getEntry('META-INF/MANIFEST.MF')
+            if (manifestEntry == null) {
+                throw new GradleException('Named game Jar is missing its manifest')
+            }
+            def manifest = new java.util.jar.Manifest(zip.getInputStream(manifestEntry))
+            def mainClass = manifest.mainAttributes.getValue(java.util.jar.Attributes.Name.MAIN_CLASS)
+            if (mainClass != 'rustedwarfare.client.RustedWarfareMain'
+                    || zip.getEntry(mainClass.replace('.', '/') + '.class') == null) {
+                throw new GradleException("Named game Jar has an invalid Main-Class: ${mainClass}")
             }
         }
 

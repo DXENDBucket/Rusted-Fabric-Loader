@@ -37,7 +37,7 @@ Events under `io.github.endx.rustedfabricapi.api.event` invoke listeners synchro
 
 - `api.event`: public experimental event surface for mods.
 - `api.asset`, `api.ini`, and `api.logic`: higher-level experimental helpers backed by current mappings.
-- `api.diagnostic`: development diagnostics. Output and reflected member coverage are not a stable compatibility contract.
+- `api.diagnostic`: development diagnostics. Output and reflected member coverage are not a stable compatibility contract. Mapping v1.0-RC1 adds `PlatformRuntimeDiagnostics` for operating-system, platform-extension, and file-change-engine state.
 - `api.util.RustedReflection`: low-level compatibility support; prefer higher-level APIs when one exists.
 - `mixin`: internal implementation. Mods must not reference these classes.
 

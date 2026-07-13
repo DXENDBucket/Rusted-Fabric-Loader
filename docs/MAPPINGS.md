@@ -6,9 +6,9 @@ The canonical mapping file is `src/main/resources/mappings/mappings.tiny`. It us
 official -> intermediary -> named
 ```
 
-The current mapping baseline is `0.90` (Accelerated Completion RC): 1372 classes, 5190 fields, and 7457 methods, for 14019 rows in total. First-party class coverage is 1372/1453 (94.43%). These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
+The current mapping baseline is `1.0-RC1` (Semantic + Executable Gate): 1406 classes, 5255 fields, and 7521 methods, for 14182 rows in total. First-party class coverage is 1406/1453 (96.77%), or 98.81% after the handoff's documented generated/legacy exclusions. These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
 
-The v0.90 baseline was imported from the validated mapping handoff. Its release audit reports zero orphan mappings, duplicate keys, named collisions, override-family conflicts, inherited missing warnings, and CSV/Tiny drift. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
+The v1.0-RC1 baseline was imported byte-for-byte from the validated mapping handoff. Its release audit reports zero orphan mappings, duplicate keys, named collisions, override-family conflicts, inherited missing warnings, CSV/Tiny drift, or named-Jar verifier failures. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
 
 ## Required checks
 
@@ -28,7 +28,7 @@ gradlew.bat verifyDistribution
 - non-empty and structurally valid class/member rows;
 - no orphan or duplicate member keys;
 - constructors remain named `<init>`;
-- mapping coverage does not fall below the v0.90 baseline;
+- mapping coverage does not fall below the v1.0-RC1 baseline;
 - every named Mixin source is configured exactly once;
 - no hand-maintained official Mixin copy remains;
 - strict Mixin failure settings remain enabled.

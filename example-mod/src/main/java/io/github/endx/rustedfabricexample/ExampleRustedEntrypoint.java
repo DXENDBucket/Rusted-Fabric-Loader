@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIEntrypoint;
+import io.github.endx.rustedfabricapi.api.diagnostic.PlatformRuntimeDiagnostics;
 
 public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
     @Override
@@ -15,6 +16,11 @@ public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
                 + ", androidRuntime=" + ctx.androidRuntime()
                 + ", gameDir=" + ctx.gameDir()
                 + ", gameJar=" + ctx.gameJar());
+        try {
+            ExampleMod.log(ctx.entrypointKey() + " platform=" + PlatformRuntimeDiagnostics.describePlatform());
+        } catch (RuntimeException e) {
+            ExampleMod.log(ctx.entrypointKey() + " platform diagnostics unavailable: " + e.getMessage());
+        }
         ExampleMod.rememberGameDir(ctx.gameDir());
         ExampleMod.logNamedGameTypes(ctx.entrypointKey());
         ExampleMod.startVisibleSettingsTweaks(ctx.entrypointKey());

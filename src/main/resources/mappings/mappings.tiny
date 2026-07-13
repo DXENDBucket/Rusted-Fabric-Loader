@@ -1578,7 +1578,25 @@ c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/co
 	m	(ZLcom/corrodinggames/rts/gameFramework/s;)V	a	method_RustedWarfareGameEngine_loadNewGame	loadNewGame
 	m	(ZZLcom/corrodinggames/rts/gameFramework/s;)V	a	method_RustedWarfareGameEngine_loadCurrentMapAndStartGame	loadCurrentMapAndStartGame
 	m	()V	x	method_RustedWarfareGameEngine_loadMenuMap	loadMenuMap
-c	com/corrodinggames/rts/game/l	rw/internal/game/l	rustedwarfare/internal/game/l
+c	com/corrodinggames/rts/game/i$a	rw/v100rc1/core/RustedWarfareGameEngine$NextLevelThread	rustedwarfare/core/RustedWarfareGameEngine$NextLevelThread
+	f	Lcom/corrodinggames/rts/game/i;	a	v100rc1_field_i$a_a_engine	engine
+c	com/corrodinggames/rts/game/j	rw/v100rc1/render/PostProcessingRenderTarget	rustedwarfare/render/PostProcessingRenderTarget
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	a	v100rc1_field_j_a_renderTargetImage	renderTargetImage
+	f	Lcom/corrodinggames/rts/gameFramework/m/y;	b	v100rc1_field_j_b_renderTargetBackend	renderTargetBackend
+	f	Lcom/corrodinggames/rts/gameFramework/m/ag;	c	v100rc1_field_j_c_compositePaint	compositePaint
+	f	Lcom/corrodinggames/rts/gameFramework/m/ae;	d	v100rc1_field_j_d_shader	shader
+	f	Landroid/graphics/Paint;	e	v100rc1_field_j_e_clearPaint	clearPaint
+	f	Landroid/graphics/Rect;	f	v100rc1_field_j_f_clearRect	clearRect
+	f	Z	g	v100rc1_field_j_g_unavailable	unavailable
+	m	()Z	a	v100rc1_method_j_a_isUnavailable	isUnavailable
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;)V	a	v100rc1_method_j_a_ensureCreated	ensureCreated
+	m	(Lcom/corrodinggames/rts/gameFramework/m/y;III)V	a	v100rc1_method_j_a_ensureSize	ensureSize
+	m	()V	b	v100rc1_method_j_b_compositeToScreen	compositeToScreen
+c	com/corrodinggames/rts/game/k	rw/v100rc1/game/FrameCaptureSaveTask	rustedwarfare/game/FrameCaptureSaveTask
+	f	Landroid/graphics/Bitmap;	a	v100rc1_field_k_a_bitmap	bitmap
+	f	I	b	v100rc1_field_k_b_frameIndex	frameIndex
+	f	Lcom/corrodinggames/rts/game/i;	c	v100rc1_field_k_c_engine	engine
+c	com/corrodinggames/rts/game/l	rw/v100rc1/render/ScorchMark	rustedwarfare/render/ScorchMark
 	m	(F)V	a	method_l_update	update
 	m	(FZ)V	a	method_l_drawStatusOverlayLayer	drawStatusOverlayLayer
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_com_corrodinggames_rts_game_l_serialize	serialize
@@ -1588,6 +1606,9 @@ c	com/corrodinggames/rts/game/l	rw/internal/game/l	rustedwarfare/internal/game/l
 	m	(F)V	d	method_l_drawPreMainLayer	drawPreMainLayer
 	m	(F)V	e	method_l_drawHighlightLayer	drawHighlightLayer
 	m	(F)Z	f	method_l_drawZoomedOutIconLayer	drawZoomedOutIconLayer
+c	com/corrodinggames/rts/game/m	rw/v100rc1/render/ScorchMarkType	rustedwarfare/render/ScorchMarkType
+	f	Lcom/corrodinggames/rts/game/m;	a	v100rc1_field_m_a_NORMAL	NORMAL
+	f	Lcom/corrodinggames/rts/game/m;	b	v100rc1_field_m_b_NUKE	NUKE
 c	com/corrodinggames/rts/game/n	rw/game/Team	rustedwarfare/game/Team
 	f	I	L	field_n_fogMapWidth	fogMapWidth
 	f	I	M	field_n_fogMapHeight	fogMapHeight
@@ -1662,6 +1683,9 @@ c	com/corrodinggames/rts/game/q	rw/game/TeamRelation	rustedwarfare/game/TeamRela
 	f	Lcom/corrodinggames/rts/game/q;	f	field_q_f_ANY	ANY
 	f	Lcom/corrodinggames/rts/game/q;	g	field_q_g_NOT_OWN	NOT_OWN
 	f	[Lcom/corrodinggames/rts/game/q;	h	field_q_h_$VALUES	$VALUES
+c	com/corrodinggames/rts/game/r	rw/v100rc1/team/UnitTypeCount	rustedwarfare/team/UnitTypeCount
+	f	Lcom/corrodinggames/rts/game/units/as;	a	v100rc1_field_r_a_unitType	unitType
+	f	I	b	v100rc1_field_r_b_count	count
 c	com/corrodinggames/rts/game/s	rw/game/TeamStats	rustedwarfare/game/TeamStats
 	f	I	a	field_s_a_maxUnitCount	maxUnitCount
 	f	I	b	field_s_b_nonBuildingUnitCountIncludingQueued	nonBuildingUnitCountIncludingQueued
@@ -2117,6 +2141,12 @@ c	com/corrodinggames/rts/game/units/a/z	rw/unit/action/GroupedUnitInfoAction	rus
 	m	()F	m_	method_Obf_a_z_getSortOrder	getSortOrder
 	m	()Z	u	method_Obf_a_z_isQueuedAction	isQueuedAction
 	m	(Lcom/corrodinggames/rts/game/units/am;)Ljava/lang/String;	w	method_Obf_a_z_getTextForTooltip	getTextForTooltip
+c	com/corrodinggames/rts/game/units/aa	rw/v100rc1/unit/WeaponSummary	rustedwarfare/unit/WeaponSummary
+	f	F	a	v100rc1_field_aa_a_damage	damage
+	f	F	b	v100rc1_field_aa_b_reloadTime	reloadTime
+	f	F	c	v100rc1_field_aa_c_additionalDelay	additionalDelay
+	f	I	d	v100rc1_field_aa_d_weaponCount	weaponCount
+	m	()F	a	v100rc1_method_aa_a_getCycleTimeSeconds	getCycleTimeSeconds
 c	com/corrodinggames/rts/game/units/ab	rw/unit/UnitDeathEffectType	rustedwarfare/unit/UnitDeathEffectType
 	f	Lcom/corrodinggames/rts/game/units/ab;	a	field_ab_a_verySmall	verySmall
 	f	Lcom/corrodinggames/rts/game/units/ab;	b	field_ab_b_small	small
@@ -7746,6 +7776,9 @@ c	com/corrodinggames/rts/game/units/r$3	rw/v090/unit/editor/TerrainType$Sand	rus
 c	com/corrodinggames/rts/game/units/r$4	rw/v090/unit/editor/TerrainType$Dust	rustedwarfare/unit/editor/TerrainType$Dust
 	m	()Ljava/lang/String;	a	v090_method_r$4_a_getTransitionTilesetPath	getTransitionTilesetPath
 	m	()Ljava/lang/String;	b	v090_method_r$4_b_getBaseTilesetPath	getBaseTilesetPath
+c	com/corrodinggames/rts/game/units/s	rw/v100rc1/unit/editor/TileOffset	rustedwarfare/unit/editor/TileOffset
+	f	I	a	v100rc1_field_s_a_x	x
+	f	I	b	v100rc1_field_s_b_y	y
 c	com/corrodinggames/rts/game/units/t	rw/unit/special/DummyNonUnitWithTeam	rustedwarfare/unit/special/DummyNonUnitWithTeam
 c	com/corrodinggames/rts/game/units/u	rw/unit/special/FogRevealerUnit	rustedwarfare/unit/special/FogRevealerUnit
 	m	(F)V	a	method_u_update	update
@@ -7958,6 +7991,9 @@ c	com/corrodinggames/rts/game/units/z	rw/unit/action/ActionExecutionResult	ruste
 	f	Lcom/corrodinggames/rts/game/units/a/s;	d	field_z_d_action	action
 	m	()Lcom/corrodinggames/rts/game/units/z;	a	method_z_reset	reset
 c	com/corrodinggames/rts/gameFramework/SettingsEngine	rw/core/SettingsEngine	rustedwarfare/core/SettingsEngine
+c	com/corrodinggames/rts/gameFramework/a	rw/v100rc1/collision/CollisionEngine	rustedwarfare/collision/CollisionEngine
+	f	Ljava/util/ArrayList;	n	v100rc1_field_a_n_collisionGroups	collisionGroups
+	m	(B)Lcom/corrodinggames/rts/gameFramework/b;	a	v100rc1_method_a_a_getOrCreateCollisionGroup	getOrCreateCollisionGroup
 c	com/corrodinggames/rts/gameFramework/a/a	rw/client/audio/AndroidSoundFactory	rustedwarfare/client/audio/AndroidSoundFactory
 	f	Ljava/util/concurrent/LinkedBlockingQueue;	a	field_AndroidSoundFactory_playQueue	playQueue
 	f	I	b	field_AndroidSoundFactory_soundPoolSize	soundPoolSize
@@ -8404,6 +8440,10 @@ c	com/corrodinggames/rts/gameFramework/ay	rw/v090/game/SpriteGameObject	rustedwa
 c	com/corrodinggames/rts/gameFramework/az	rw/game/RenderedGameObject	rustedwarfare/game/RenderedGameObject
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_RenderedGameObject_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_RenderedGameObject_deserialize	deserialize
+c	com/corrodinggames/rts/gameFramework/b	rw/v100rc1/collision/CollisionGroup	rustedwarfare/collision/CollisionGroup
+	f	B	a	v100rc1_field_b_a_id	id
+	f	Ljava/util/HashMap;	b	v100rc1_field_b_b_compatibleGroups	compatibleGroups
+	m	(Lcom/corrodinggames/rts/gameFramework/b;)V	a	v100rc1_method_b_a_addCompatibleGroup	addCompatibleGroup
 c	com/corrodinggames/rts/gameFramework/b/a	rw/render/gl/ShapeShaderSource	rustedwarfare/render/gl/ShapeShaderSource
 	m	()Ljava/lang/String;	a	method_a_a_getVertexShaderSource	getVertexShaderSource
 	m	()Ljava/lang/String;	b	method_a_b_getFragmentShaderSource	getFragmentShaderSource
@@ -9065,6 +9105,18 @@ c	com/corrodinggames/rts/gameFramework/c	rw/command/CommandController	rustedwarf
 	m	()V	c	method_c_c_processPendingCommands	processPendingCommands
 	m	()V	d	method_c_d_processLocalCommands	processLocalCommands
 	m	()V	e	method_c_e_processServerQueuedCommands	processServerQueuedCommands
+c	com/corrodinggames/rts/gameFramework/c/a	rw/v100rc1/debug/DebugSocketServer	rustedwarfare/debug/DebugSocketServer
+	f	Ljava/net/ServerSocket;	h	v100rc1_field_a_h_serverSocket	serverSocket
+	f	Z	i	v100rc1_field_a_i_running	running
+	m	()V	a	v100rc1_method_a_a_initializeIfEnabled	initializeIfEnabled
+	m	(ILjava/lang/String;)V	a	v100rc1_method_a_a_createDebugSocket	createDebugSocket
+	m	(Ljava/lang/String;)Ljava/lang/String;	a	v100rc1_method_a_a_handleCommand	handleCommand
+	m	()V	b	v100rc1_method_a_b_start	start
+c	com/corrodinggames/rts/gameFramework/c/b	rw/v100rc1/debug/DebugSocketConnection	rustedwarfare/debug/DebugSocketConnection
+	f	Ljava/net/Socket;	a	v100rc1_field_b_a_socket	socket
+	f	Lcom/corrodinggames/rts/gameFramework/c/a;	b	v100rc1_field_b_b_server	server
+c	com/corrodinggames/rts/gameFramework/c/c	rw/v100rc1/debug/DebugRuntimeTickTask	rustedwarfare/debug/DebugRuntimeTickTask
+	f	Lcom/corrodinggames/rts/gameFramework/c/a;	a	v100rc1_field_c_a_server	server
 c	com/corrodinggames/rts/gameFramework/d	rw/path/SharedPathCacheEntry	rustedwarfare/path/SharedPathCacheEntry
 	f	Lcom/corrodinggames/rts/gameFramework/k/k;	a	field_d_a_pathRequest	pathRequest
 	f	J	b	field_d_b_createdTime	createdTime
@@ -10362,6 +10414,52 @@ c	com/corrodinggames/rts/gameFramework/f/y	rw/ui/stats/StatsChartRenderer	rusted
 c	com/corrodinggames/rts/gameFramework/f/z	rw/ui/stats/StatsChartScaleMode	rustedwarfare/ui/stats/StatsChartScaleMode
 	f	Lcom/corrodinggames/rts/gameFramework/f/z;	a	field_z_a_ABSOLUTE	ABSOLUTE
 	f	Lcom/corrodinggames/rts/gameFramework/f/z;	b	field_z_b_RELATIVE	RELATIVE
+c	com/corrodinggames/rts/gameFramework/g	rw/v100rc1/platform/OperatingSystemDetector	rustedwarfare/platform/OperatingSystemDetector
+	f	Lcom/corrodinggames/rts/gameFramework/h;	a	v100rc1_field_g_a_cachedOperatingSystem	cachedOperatingSystem
+	m	()Lcom/corrodinggames/rts/gameFramework/h;	a	v100rc1_method_g_a_getOperatingSystem	getOperatingSystem
+c	com/corrodinggames/rts/gameFramework/g/a	rw/v100rc1/stats/LeaderboardData	rustedwarfare/stats/LeaderboardData
+	f	Lcom/corrodinggames/rts/gameFramework/g/f;	a	v100rc1_field_a_a_valueSource	valueSource
+	f	Lcom/corrodinggames/rts/gameFramework/g/c;	b	v100rc1_field_a_b_grouping	grouping
+	f	Ljava/util/ArrayList;	c	v100rc1_field_a_c_entries	entries
+	m	()V	a	v100rc1_method_a_a_buildEntries	buildEntries
+	m	(Lcom/corrodinggames/rts/gameFramework/g/d;)Ljava/lang/String;	a	v100rc1_method_a_a_formatEntryValue	formatEntryValue
+	m	(Lcom/corrodinggames/rts/gameFramework/g/f;I)Ljava/lang/String;	a	v100rc1_method_a_a_formatValue	formatValue
+	m	()V	b	v100rc1_method_a_b_refreshValues	refreshValues
+	m	()V	c	v100rc1_method_a_c_cycleValueSource	cycleValueSource
+	m	()Ljava/util/ArrayList;	d	v100rc1_method_a_d_getEntries	getEntries
+	m	()Lcom/corrodinggames/rts/gameFramework/g/f;	e	v100rc1_method_a_e_getValueSource	getValueSource
+	m	()Lcom/corrodinggames/rts/gameFramework/g/c;	f	v100rc1_method_a_f_getGrouping	getGrouping
+c	com/corrodinggames/rts/gameFramework/g/a$1	rw/v100rc1/stats/LeaderboardData$1	rustedwarfare/stats/LeaderboardData$1
+c	com/corrodinggames/rts/gameFramework/g/b	rw/v100rc1/stats/AllyGroupLeaderboardEntry	rustedwarfare/stats/AllyGroupLeaderboardEntry
+	f	Ljava/lang/String;	a	v100rc1_field_b_a_label	label
+	f	I	b	v100rc1_field_b_b_allyGroupId	allyGroupId
+	f	Ljava/util/ArrayList;	c	v100rc1_field_b_c_teams	teams
+	m	()Z	a	v100rc1_method_b_a_isGroup	isGroup
+	m	(Lcom/corrodinggames/rts/gameFramework/g/f;)I	a	v100rc1_method_b_a_computeValue	computeValue
+	m	()Ljava/lang/String;	b	v100rc1_method_b_b_getLabel	getLabel
+	m	()I	c	v100rc1_method_b_c_getPrimaryColor	getPrimaryColor
+	m	()I	d	v100rc1_method_b_d_getSecondaryColor	getSecondaryColor
+c	com/corrodinggames/rts/gameFramework/g/c	rw/v100rc1/stats/LeaderboardGrouping	rustedwarfare/stats/LeaderboardGrouping
+	f	Lcom/corrodinggames/rts/gameFramework/g/c;	a	v100rc1_field_c_a_PLAYER	PLAYER
+	f	Lcom/corrodinggames/rts/gameFramework/g/c;	b	v100rc1_field_c_b_ALLY_GROUP	ALLY_GROUP
+	f	Lcom/corrodinggames/rts/gameFramework/g/c;	c	v100rc1_field_c_c_COMBINED_PLAYER_AND_GROUP	COMBINED_PLAYER_AND_GROUP
+c	com/corrodinggames/rts/gameFramework/g/d	rw/v100rc1/stats/LeaderboardEntry	rustedwarfare/stats/LeaderboardEntry
+	f	I	a	v100rc1_field_d_a_cachedValue	cachedValue
+	m	()Z	a	v100rc1_method_d_a_isGroup	isGroup
+	m	(Lcom/corrodinggames/rts/gameFramework/g/d;)I	a	v100rc1_method_d_a_compareToEntry	compareToEntry
+	m	(Lcom/corrodinggames/rts/gameFramework/g/f;)I	a	v100rc1_method_d_a_computeValue	computeValue
+	m	()Ljava/lang/String;	b	v100rc1_method_d_b_getLabel	getLabel
+	m	(Lcom/corrodinggames/rts/gameFramework/g/d;)I	b	v100rc1_method_d_b_getCachedValue	getCachedValue
+	m	(Lcom/corrodinggames/rts/gameFramework/g/f;)V	b	v100rc1_method_d_b_refreshValue	refreshValue
+	m	()I	c	v100rc1_method_d_c_getPrimaryColor	getPrimaryColor
+	m	()I	d	v100rc1_method_d_d_getSecondaryColor	getSecondaryColor
+c	com/corrodinggames/rts/gameFramework/g/e	rw/v100rc1/stats/PlayerLeaderboardEntry	rustedwarfare/stats/PlayerLeaderboardEntry
+	f	Lcom/corrodinggames/rts/game/n;	a	v100rc1_field_e_a_team	team
+	m	()Z	a	v100rc1_method_e_a_isGroup	isGroup
+	m	(Lcom/corrodinggames/rts/gameFramework/g/f;)I	a	v100rc1_method_e_a_computeValue	computeValue
+	m	()Ljava/lang/String;	b	v100rc1_method_e_b_getLabel	getLabel
+	m	()I	c	v100rc1_method_e_c_getPrimaryColor	getPrimaryColor
+	m	()I	d	v100rc1_method_e_d_getSecondaryColor	getSecondaryColor
 c	com/corrodinggames/rts/gameFramework/g/f	rw/stats/TeamStatValueSource	rustedwarfare/stats/TeamStatValueSource
 	f	Lcom/corrodinggames/rts/gameFramework/g/f;	a	field_f_NONE	NONE
 	f	Lcom/corrodinggames/rts/gameFramework/g/f;	b	field_f_INCOME	INCOME
@@ -10370,8 +10468,16 @@ c	com/corrodinggames/rts/gameFramework/g/f	rw/stats/TeamStatValueSource	rustedwa
 	f	Lcom/corrodinggames/rts/gameFramework/g/f;	e	field_f_TOTAL_VALUE	TOTAL_VALUE
 	f	Lcom/corrodinggames/rts/gameFramework/g/f;	f	field_f_CREDITS	CREDITS
 	m	(Lcom/corrodinggames/rts/game/n;)I	a	method_f_getValueForTeam	getValueForTeam
+c	com/corrodinggames/rts/gameFramework/h	rw/v100rc1/platform/OperatingSystem	rustedwarfare/platform/OperatingSystem
+	f	Lcom/corrodinggames/rts/gameFramework/h;	a	v100rc1_field_h_a_WINDOWS	WINDOWS
+	f	Lcom/corrodinggames/rts/gameFramework/h;	b	v100rc1_field_h_b_MACOS	MACOS
+	f	Lcom/corrodinggames/rts/gameFramework/h;	c	v100rc1_field_h_c_LINUX	LINUX
+	f	Lcom/corrodinggames/rts/gameFramework/h;	d	v100rc1_field_h_d_OTHER	OTHER
 c	com/corrodinggames/rts/gameFramework/h/a	rw/core/LanguageSettings	rustedwarfare/core/LanguageSettings
 	f	Ljava/lang/String;	d	field_LanguageSettings_d_forcedLanguage	forcedLanguage
+c	com/corrodinggames/rts/gameFramework/h/b	rw/v100rc1/i18n/MultipleResourceBundle	rustedwarfare/i18n/MultipleResourceBundle
+	f	Ljava/util/ResourceBundle;	a	v100rc1_field_b_a_primaryBundle	primaryBundle
+	f	Ljava/util/ResourceBundle;	b	v100rc1_field_b_b_fallbackBundle	fallbackBundle
 c	com/corrodinggames/rts/gameFramework/i	rw/debug/GameUncaughtExceptionHandler	rustedwarfare/debug/GameUncaughtExceptionHandler
 	f	Ljava/lang/Thread$UncaughtExceptionHandler;	a	field_i_defaultHandler	defaultHandler
 	m	(Ljava/lang/Thread$UncaughtExceptionHandler;)V	<init>	<init>	<init>
@@ -10478,6 +10584,14 @@ c	com/corrodinggames/rts/gameFramework/i/c	rw/mod/ExtraMapRecord	rustedwarfare/m
 	f	Ljava/lang/String;	b	field_ExtraMapRecord_relativePath	relativePath
 	f	Lcom/corrodinggames/rts/gameFramework/i/b;	c	field_ExtraMapRecord_modInfo	modInfo
 	f	Lcom/corrodinggames/rts/gameFramework/i/a;	d	field_ExtraMapRecord_modManager	modManager
+c	com/corrodinggames/rts/gameFramework/j	rw/v100rc1/io/FileChangeEngine	rustedwarfare/io/FileChangeEngine
+	f	Ljava/util/concurrent/ConcurrentHashMap;	a	v100rc1_field_j_a_lastModifiedCache	lastModifiedCache
+	f	Lcom/corrodinggames/rts/gameFramework/k;	b	v100rc1_field_j_b_pollThread	pollThread
+	m	()V	a	v100rc1_method_j_a_updateFromSettings	updateFromSettings
+	m	(Ljava/lang/String;)J	a	v100rc1_method_j_a_queryLastModified	queryLastModified
+	m	(Ljava/lang/String;Z)J	a	v100rc1_method_j_a_getLastModified	getLastModified
+	m	(Z)V	a	v100rc1_method_j_a_setEnabled	setEnabled
+	m	()V	b	v100rc1_method_j_b_scanForChanges	scanForChanges
 c	com/corrodinggames/rts/gameFramework/j/a	rw/network/NetworkChatHistory	rustedwarfare/network/NetworkChatHistory
 	f	Ljava/util/concurrent/ConcurrentLinkedQueue;	a	field_a_messages	messages
 	m	()Ljava/lang/String;	a	method_a_toPlainTextLog	toPlainTextLog
@@ -11261,6 +11375,8 @@ c	com/corrodinggames/rts/gameFramework/j/x	rw/network/MasterServerConnectionInfo
 	f	[Lcom/corrodinggames/rts/gameFramework/j/x;	c	field_x_VALUES	VALUES
 c	com/corrodinggames/rts/gameFramework/j/y	rw/network/MasterServerCreateRunnable	rustedwarfare/network/MasterServerCreateRunnable
 c	com/corrodinggames/rts/gameFramework/j/z	rw/network/MasterServerRemoveRunnable	rustedwarfare/network/MasterServerRemoveRunnable
+c	com/corrodinggames/rts/gameFramework/k	rw/v100rc1/io/FileChangePollThread	rustedwarfare/io/FileChangePollThread
+	f	Z	a	v100rc1_field_k_a_running	running
 c	com/corrodinggames/rts/gameFramework/k/a	rw/path/PathOpenNodeArrayList	rustedwarfare/path/PathOpenNodeArrayList
 c	com/corrodinggames/rts/gameFramework/k/a$1	rw/v090/path/PathOpenNodeArrayList$1	rustedwarfare/path/PathOpenNodeArrayList$1
 c	com/corrodinggames/rts/gameFramework/k/b	rw/path/PathOpenNodeArrayList$Iterator	rustedwarfare/path/PathOpenNodeArrayList$Iterator
@@ -11531,6 +11647,25 @@ c	com/corrodinggames/rts/gameFramework/l$2$2	rw/v090/core/GameEngine$2$2	rustedw
 c	com/corrodinggames/rts/gameFramework/l$3	rw/v090/core/GameEngine$3	rustedwarfare/core/GameEngine$3
 c	com/corrodinggames/rts/gameFramework/l$4	rw/v090/core/GameEngine$4	rustedwarfare/core/GameEngine$4
 	m	(Lcom/corrodinggames/rts/gameFramework/utility/a;)V	a	v090_method_l$4_a_onAppNotResponding	onAppNotResponding
+c	com/corrodinggames/rts/gameFramework/l/a	rw/v100rc1/platform/PlatformExtension	rustedwarfare/platform/PlatformExtension
+	f	Lcom/corrodinggames/rts/gameFramework/l/c;	a	v100rc1_field_a_a_backend	backend
+	m	()Ljava/lang/String;	a	v100rc1_method_a_a_getPlatformDescription	getPlatformDescription
+	m	(Lcom/corrodinggames/rts/gameFramework/l/b;)V	a	v100rc1_method_a_a_showFilePicker	showFilePicker
+	m	(Ljava/io/File;)V	a	v100rc1_method_a_a_shareFile	shareFile
+	m	()Z	b	v100rc1_method_a_b_supportsFilePicker	supportsFilePicker
+	m	()F	c	v100rc1_method_a_c_getSafeAreaInset	getSafeAreaInset
+c	com/corrodinggames/rts/gameFramework/l/b	rw/v100rc1/platform/FileSelectionCallback	rustedwarfare/platform/FileSelectionCallback
+c	com/corrodinggames/rts/gameFramework/l/c	rw/v100rc1/platform/PlatformExtensionBackend	rustedwarfare/platform/PlatformExtensionBackend
+	m	()Ljava/lang/String;	a	v100rc1_method_c_a_getPlatformDescription	getPlatformDescription
+	m	(Lcom/corrodinggames/rts/gameFramework/l/b;)V	a	v100rc1_method_c_a_showFilePicker	showFilePicker
+	m	(Ljava/io/File;)V	a	v100rc1_method_c_a_shareFile	shareFile
+	m	()Z	b	v100rc1_method_c_b_supportsFilePicker	supportsFilePicker
+	m	()F	c	v100rc1_method_c_c_getSafeAreaInset	getSafeAreaInset
+c	com/corrodinggames/rts/gameFramework/m	rw/v100rc1/render/UiTextPaintScaler	rustedwarfare/render/UiTextPaintScaler
+	f	F	a	v100rc1_field_m_a_baseTextSize	baseTextSize
+	f	Landroid/graphics/Paint;	b	v100rc1_field_m_b_paint	paint
+	f	Lcom/corrodinggames/rts/gameFramework/l;	c	v100rc1_field_m_c_engine	engine
+	m	()V	a	v100rc1_method_m_a_updateTextSize	updateTextSize
 c	com/corrodinggames/rts/gameFramework/m/a	rw/v090/render/AndroidGlRenderer	rustedwarfare/render/AndroidGlRenderer
 	f	Z	a	v090_field_a_a_surfaceReady	surfaceReady
 	f	Ljavax/microedition/khronos/opengles/GL10;	b	v090_field_a_b_gl	gl
@@ -11546,6 +11681,19 @@ c	com/corrodinggames/rts/gameFramework/m/a	rw/v090/render/AndroidGlRenderer	rust
 	f	Ljava/lang/String;	o	v090_field_a_o_fpsText	fpsText
 	f	J	p	v090_field_a_p_lastFrameMillis	lastFrameMillis
 	f	Landroid/graphics/BitmapFactory$Options;	q	v090_field_a_q_bitmapOptions	bitmapOptions
+c	com/corrodinggames/rts/gameFramework/m/aa	rw/v100rc1/render/RenderUtils	rustedwarfare/render/RenderUtils
+	m	(I)I	a	v100rc1_method_aa_a_getAlpha	getAlpha
+	m	(Landroid/graphics/Paint;)V	a	v100rc1_method_aa_a_applyDesktopLightingColorFilter	applyDesktopLightingColorFilter
+	m	(Lcom/corrodinggames/rts/gameFramework/m/e;)Landroid/graphics/Bitmap;	a	v100rc1_method_aa_a_getBitmap	getBitmap
+	m	(I)I	b	v100rc1_method_aa_b_getRed	getRed
+	m	(I)I	c	v100rc1_method_aa_c_getGreen	getGreen
+	m	(I)I	d	v100rc1_method_aa_d_getBlue	getBlue
+c	com/corrodinggames/rts/gameFramework/m/ab	rw/v100rc1/render/CircleImageCacheEntry	rustedwarfare/render/CircleImageCacheEntry
+	f	I	a	v100rc1_field_ab_a_strokeWidth	strokeWidth
+	f	I	b	v100rc1_field_ab_b_radius	radius
+	f	Z	c	v100rc1_field_ab_c_filled	filled
+	f	Lcom/corrodinggames/rts/gameFramework/m/e;	d	v100rc1_field_ab_d_image	image
+	m	()Lcom/corrodinggames/rts/gameFramework/m/ab;	a	v100rc1_method_ab_a_copy	copy
 c	com/corrodinggames/rts/gameFramework/m/ac	rw/v090/render/GlMesh	rustedwarfare/render/GlMesh
 c	com/corrodinggames/rts/gameFramework/m/ad	rw/client/render/MutableBitmapOrTexture	rustedwarfare/client/render/MutableBitmapOrTexture
 	f	Lcom/corrodinggames/rts/gameFramework/m/e;	x	field_ad_wrappedImage	wrappedImage
@@ -12499,10 +12647,23 @@ c	com/corrodinggames/rts/gameFramework/o/a	rw/steam/SteamEngine	rustedwarfare/st
 	m	()V	k	method_a_refreshWorkshopItemDetails	refreshWorkshopItemDetails
 	m	()V	l	method_a_loadWorkshopMods	loadWorkshopMods
 	m	()V	m	method_a_showWorkshop	showWorkshop
+c	com/corrodinggames/rts/gameFramework/p	rw/v100rc1/input/InputEventRecord	rustedwarfare/input/InputEventRecord
+	f	J	a	v100rc1_field_p_a_timestampMillis	timestampMillis
+	f	Lcom/corrodinggames/rts/gameFramework/l;	b	v100rc1_field_p_b_engine	engine
+c	com/corrodinggames/rts/gameFramework/q	rw/v100rc1/util/RunnableBatchQueue	rustedwarfare/util/RunnableBatchQueue
+	f	Lcom/corrodinggames/rts/gameFramework/utility/m;	a	v100rc1_field_q_a_queue	queue
+	m	()V	a	v100rc1_method_q_a_runAll	runAll
+	m	(Ljava/lang/Runnable;)V	a	v100rc1_method_q_a_add	add
+	m	()V	b	v100rc1_method_q_b_runAllAndClear	runAllAndClear
+c	com/corrodinggames/rts/gameFramework/r	rw/v100rc1/input/KeyStateEvent	rustedwarfare/input/KeyStateEvent
+	f	I	c	v100rc1_field_r_c_keyCode	keyCode
+	f	Z	d	v100rc1_field_r_d_released	released
 c	com/corrodinggames/rts/gameFramework/s	rw/v090/game/GameLoadMode	rustedwarfare/game/GameLoadMode
 	f	Lcom/corrodinggames/rts/gameFramework/s;	a	v090_field_s_a_menu	menu
 	f	Lcom/corrodinggames/rts/gameFramework/s;	b	v090_field_s_b_normal	normal
 	f	Lcom/corrodinggames/rts/gameFramework/s;	c	v090_field_s_c_normalSave	normalSave
+c	com/corrodinggames/rts/gameFramework/t	rw/v100rc1/input/ScrollDeltaEvent	rustedwarfare/input/ScrollDeltaEvent
+	f	I	c	v100rc1_field_t_c_delta	delta
 c	com/corrodinggames/rts/gameFramework/u	rw/v090/game/OutOfMemorySource	rustedwarfare/game/OutOfMemorySource
 	f	Lcom/corrodinggames/rts/gameFramework/u;	a	v090_field_u_a_gameImage	gameImage
 	f	Lcom/corrodinggames/rts/gameFramework/u;	b	v090_field_u_b_gameImageCreate	gameImageCreate
@@ -12813,6 +12974,8 @@ c	com/corrodinggames/rts/gameFramework/utility/j	rw/io/NamedInputStream	rustedwa
 	m	()Ljava/io/FileDescriptor;	b	method_NamedInputStream_getFileDescriptor	getFileDescriptor
 	m	()J	c	method_NamedInputStream_getEstimatedSize	getEstimatedSize
 	m	()Ljava/lang/String;	d	method_0600_getResolvedPath	getResolvedPath
+c	com/corrodinggames/rts/gameFramework/utility/k	rw/v100rc1/util/MutableBoolean	rustedwarfare/util/MutableBoolean
+	f	Z	a	v100rc1_field_k_a_value	value
 c	com/corrodinggames/rts/gameFramework/utility/l	rw/v090/io/FastBufferedReader	rustedwarfare/io/FastBufferedReader
 	f	Ljava/io/Reader;	a	v090_field_l_a_reader	reader
 	f	[C	b	v090_field_l_b_buffer	buffer
