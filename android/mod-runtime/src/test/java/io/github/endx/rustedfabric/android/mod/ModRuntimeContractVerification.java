@@ -29,6 +29,7 @@ public final class ModRuntimeContractVerification {
             verifyForbiddenEntriesAreRejected(temporary);
             verifyTraversalIsRejected(temporary);
             verifyClassLoaderRouting();
+            verifyPrivateRegistry(temporary);
             System.out.println("Android mod runtime contracts passed");
         } finally {
             deleteTree(temporary);
@@ -98,6 +99,26 @@ public final class ModRuntimeContractVerification {
         expectClassNotFound(bridge, "io.github.endx.rustedfabric.android.mod.RustedFabricModVerifier");
         require(api.requests.size() == apiCalls && game.requests.size() == gameCalls,
                 "loader implementation classes must be hidden from mods");
+    }
+
+    private static void verifyPrivateRegistry(Path temporary) throws Exception {
+        Path archive = createArchive(temporary.resolve("registry-source.rfmod"),
+                metadata(ENTRYPOINT), dex(ENTRYPOINT), null);
+        VerifiedModArchive verified = new RustedFabricModVerifier().verify(archive);
+        ModRegistry registry = new ModRegistry(temporary.resolve("private-registry"));
+        ModRegistry.Record installed = registry.install(verified);
+        require(!installed.isEnabled(), "new mods must default to disabled");
+        require(Files.isRegularFile(registry.archivePath(installed)),
+                "private archive was not installed");
+        require(registry.list().size() == 1, "installed mod is missing from registry");
+        require(registry.setEnabled(installed.getId(), true).isEnabled(),
+                "enabled state was not persisted");
+        ModRegistry reopened = new ModRegistry(temporary.resolve("private-registry"));
+        require(reopened.find(installed.getId()).orElseThrow().isEnabled(),
+                "registry did not survive reopen");
+        require(reopened.remove(installed.getId()), "mod removal failed");
+        require(reopened.list().isEmpty(), "removed mod remains registered");
+        require(!Files.exists(registry.archivePath(installed)), "orphan archive remains");
     }
 
     private static Path createArchive(Path target, String metadata, byte[] dex,

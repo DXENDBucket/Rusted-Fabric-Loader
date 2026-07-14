@@ -13,11 +13,18 @@ The intended first release keeps the installed Rusted Warfare APK and signature 
 5. Force-stop and reopen Rusted Warfare after any change. Live reload is intentionally excluded
    from v1.
 
-The management app will keep the imported source archive in its own private storage. A narrowly
-scoped, read-only provider will make only enabled, verified archives available to the supported game
-process. The injected backend will copy each archive by SHA-256 into the game's private code cache
-before loading it. The provider/UI and cache transfer are the next implementation layer; the archive
-verifier and DEX loader already exist.
+Mod distributors may also serve or share files as `application/vnd.rustedfabric.mod`; Android then
+offers **Open with Rusted Fabric Loader**, which enters the same verification/import path without
+manual directory copying.
+
+The management app keeps the imported source archive in its own private storage. A narrowly scoped,
+read-only provider makes only enabled, verified archives available to the supported game process.
+The provider accepts only the official game UID while the installed package still matches the exact
+mapping profile. The injected backend copies each archive by SHA-256 into the game's private code
+cache before loading it.
+
+This management path is implemented in the `0.5.0-mod-management` scaffold. It still requires a
+rooted test device and a real external probe `.rfmod` before it can be called device-validated.
 
 Neither installation path patches, resigns, or redistributes the game APK. The Loader distribution
 contains only Loader code, mappings, API contracts, and user-installed mods.
@@ -79,6 +86,10 @@ The bridge ClassLoader resolves:
 This class separation prevents accidental payload embedding and common class-identity conflicts. It
 is not a security boundary: enabled mod code runs inside the game process and should be treated as
 trusted native-to-the-process code.
+
+The Loader may ship built-in management and diagnostic functions. Game-affecting features should be
+ordinary first-party `.rfmod` packages so users can disable or replace them. The Loader does not add
+an in-game mod list; a mod may provide one independently on either platform.
 
 ## Windows and Android builds
 

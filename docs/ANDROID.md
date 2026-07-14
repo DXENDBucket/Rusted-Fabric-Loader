@@ -71,7 +71,8 @@ Xposed API 102, uses `META-INF/xposed` entry metadata, and has a static official
 The shared `android:bootstrap-core` remains buildable without an Android SDK. The first hook calls
 the original `Application.attach(Context)` unchanged, then captures ClassLoader diagnostics without
 retaining Android or game objects. Exact mapping selection, the first lifecycle events, and the
-verified Android mod DEX loader are present. Import UI and private-storage transfer are not wired yet.
+verified Android mod DEX loader are present. The standalone management activity, private registry,
+caller-authorized provider, game-code-cache transfer, and enabled-mod startup discovery are wired.
 
 ### Shared loader core
 
@@ -150,14 +151,14 @@ Exit gate: the official reference APK reaches the menu and a skirmish with all t
 - [x] Define a strict Android `.rfmod` archive containing metadata plus one prebuilt DEX, without
   game class definitions.
 - [x] Validate archive paths/limits, DEX definitions, entrypoint ownership, and SHA-256 before load.
-- [ ] Import mods through the Storage Access Framework and copy them to application-private storage.
-- [ ] Expose enabled verified archives through a game-authorized, read-only provider and copy them
+- [x] Import mods through the Storage Access Framework and copy them to application-private storage.
+- [x] Expose enabled verified archives through a game-authorized, read-only provider and copy them
   into the game code cache by hash.
 - [x] Load mod DEX through a bridge ClassLoader that resolves the common API from the module loader and
   mapped game types from the game ClassLoader.
 - [x] Enforce API, mapping profile, and capability requirements before executing entrypoints.
 - [x] Define a platform-neutral `RustedFabricModEntrypoint` shared with Windows source.
-- [ ] Wire enabled archive discovery and entrypoint initialization into the verified package hook.
+- [x] Wire enabled archive discovery and entrypoint initialization into the verified package hook.
 - [x] Require restart for install, update, enable, or disable operations in the first version design.
 
 See [`ANDROID_MODS.md`](ANDROID_MODS.md) for the v1 archive contract and planned user flow.
@@ -182,9 +183,9 @@ Exit gate: each migrated feature has an independent compatibility probe and can 
 
 ## Immediate implementation order
 
-1. Add the management activity, Storage Access Framework importer, and private mod registry.
-2. Add the read-only enabled-mod provider and game-code-cache transfer protocol.
-3. Wire verified enabled mods into `AndroidDexModLoader` before the first lifecycle dispatch.
-4. Install the build on a rooted test device and validate bootstrap plus a minimal external probe mod.
+1. Add a reproducible Android probe-mod build that emits a valid `.rfmod` without game payload.
+2. Install the Loader build on a rooted test device and validate management UI/provider access.
+3. Validate DEX loading and before/after lifecycle delivery with that external probe mod.
+4. Add an in-app diagnostic history and capability status view without adding UI to the game.
 
 No step should require committing, publishing, or embedding the local reference APK.

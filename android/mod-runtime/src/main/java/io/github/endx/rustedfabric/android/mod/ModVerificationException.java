@@ -14,12 +14,12 @@ public final class ModVerificationException extends Exception {
 
     private final Reason reason;
 
-    ModVerificationException(Reason reason, String message) {
+    public ModVerificationException(Reason reason, String message) {
         super(message);
         this.reason = reason;
     }
 
-    ModVerificationException(Reason reason, String message, Throwable cause) {
+    public ModVerificationException(Reason reason, String message, Throwable cause) {
         super(message, cause);
         this.reason = reason;
     }

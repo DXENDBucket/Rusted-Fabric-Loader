@@ -67,7 +67,7 @@ public final class BootstrapContractVerification {
         try (java.io.InputStream input = Files.newInputStream(metadata.resolve("module.prop"))) {
             properties.load(input);
         }
-        require("101".equals(properties.getProperty("minApiVersion")), "Unexpected minimum Xposed API");
+        require("102".equals(properties.getProperty("minApiVersion")), "Unexpected minimum Xposed API");
         require("102".equals(properties.getProperty("targetApiVersion")), "Unexpected target Xposed API");
         require("true".equals(properties.getProperty("staticScope")), "Scope must remain static");
         require(!Files.exists(xposedRoot.resolve("module/src/main/assets/xposed_init")),
@@ -89,6 +89,8 @@ public final class BootstrapContractVerification {
                 "Portable after-initialization event is not dispatched");
         require(source.contains("RustedFabricRuntime.installContext"),
                 "Android API context is not installed for portable mods");
+        require(source.contains("new EnabledModClient().loadAll"),
+                "Enabled private mods are not discovered before lifecycle dispatch");
     }
 
     private static void verifyMappingProfile(Path profilePath) throws Exception {

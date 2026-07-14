@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="module_name">Rusted Fabric Loader</string>
-    <string name="module_description">用于已安装铁锈战争进程的加载器引导与诊断模块。</string>
+    <string name="module_description">用于已安装铁锈战争的加载器、模组管理和诊断模块。</string>
+    <string name="manager_title">Rusted Fabric Loader</string>
+    <string name="manager_boundary">这是独立管理器：不会修改游戏 APK，也不会向游戏本体添加模组列表界面。</string>
+    <string name="game_status_checking">正在检查已安装游戏…</string>
+    <string name="game_status_verified">铁锈战争 %1$s：验证通过</string>
+    <string name="game_status_unsupported">已安装游戏不可用或暂不支持（%1$s）</string>
+    <string name="restart_hint">修改后请强行停止并重新打开游戏。</string>
+    <string name="import_mod">导入 .rfmod</string>
+    <string name="trusted_code_warning">启用的模组会在游戏进程中执行。请只安装你信任的作者提供的代码。</string>
+    <string name="importing_mod">正在验证并导入模组…</string>
+    <string name="loading_mods">正在读取私有模组注册表…</string>
+    <string name="import_succeeded">已导入 %1$s；手动启用前不会加载。</string>
+    <string name="import_failed">导入失败：%1$s</string>
+    <string name="operation_failed">操作失败：%1$s</string>
+    <string name="registry_failed">无法读取私有注册表：%1$s</string>
+    <plurals name="mod_count_restart">
+        <item quantity="other">已安装 %1$d 个模组。修改后请重启游戏。</item>
+    </plurals>
+    <string name="no_mods">尚未安装 Android 模组。</string>
+    <string name="mod_details">ID：%1$s · %2$s · SHA-256：%3$s…</string>
+    <string name="compatible">兼容</string>
+    <string name="incompatible">映射不兼容</string>
+    <string name="enable_mod">启用</string>
+    <string name="remove_mod">移除</string>
+    <string name="remove_confirmation">从 Loader 私有目录移除 %1$s？</string>
 </resources>

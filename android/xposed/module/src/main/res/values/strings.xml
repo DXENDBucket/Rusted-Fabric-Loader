@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="module_name">Rusted Fabric Loader</string>
-    <string name="module_description">Bootstrap diagnostics for the installed Rusted Warfare process.</string>
+    <string name="module_description">Loader, mod manager, and diagnostics for an installed Rusted Warfare process.</string>
+    <string name="manager_title">Rusted Fabric Loader</string>
+    <string name="manager_boundary">This standalone manager does not modify the game APK or add a mod-list screen to the game.</string>
+    <string name="game_status_checking">Checking installed game…</string>
+    <string name="game_status_verified">Rusted Warfare %1$s: verified</string>
+    <string name="game_status_unsupported">Installed game: unavailable or unsupported (%1$s)</string>
+    <string name="restart_hint">Changes take effect after force-stopping and reopening the game.</string>
+    <string name="import_mod">Import .rfmod</string>
+    <string name="trusted_code_warning">Enabled mods execute inside the game process. Install code only from authors you trust.</string>
+    <string name="importing_mod">Verifying and importing mod…</string>
+    <string name="loading_mods">Loading private mod registry…</string>
+    <string name="import_succeeded">Imported %1$s. It is disabled until you enable it.</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="operation_failed">Operation failed: %1$s</string>
+    <string name="registry_failed">Private registry could not be read: %1$s</string>
+    <plurals name="mod_count_restart">
+        <item quantity="one">%1$d installed mod. Restart the game after changes.</item>
+        <item quantity="other">%1$d installed mods. Restart the game after changes.</item>
+    </plurals>
+    <string name="no_mods">No Android mods are installed.</string>
+    <string name="mod_details">ID: %1$s · %2$s · SHA-256: %3$s…</string>
+    <string name="compatible">compatible</string>
+    <string name="incompatible">incompatible mapping</string>
+    <string name="enable_mod">Enabled</string>
+    <string name="remove_mod">Remove</string>
+    <string name="remove_confirmation">Remove %1$s from private Loader storage?</string>
 </resources>

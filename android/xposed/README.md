@@ -16,10 +16,12 @@ For the verified profile, the module hooks the mapped
 failures are isolated and the original method is always called. The API and events retain no
 Context/game objects, access no saves, and do not change the installed APK.
 
-Version `0.4.0-mod-runtime` also compiles the strict `.rfmod` verifier, common/game bridge
-ClassLoader, and Android DEX entrypoint loader into the module. They are not invoked yet: the
-management UI, read-only provider, and private cache transfer must land before a user mod path is
-handed to the game process. See `../../docs/ANDROID_MODS.md` for the format and planned flow.
+Version `0.5.0-mod-management` includes the strict `.rfmod` verifier, standalone management
+activity, app-private atomic registry, official-game-authorized read-only provider, game-code-cache
+transfer, common/game bridge ClassLoader, and Android DEX entrypoint loader. Enabled mods initialize
+before the first lifecycle dispatch; one failed mod is logged without stopping other mods or game
+startup. The end-to-end path is build-validated but still needs a rooted-device probe test. See
+`../../docs/ANDROID_MODS.md` for the format and flow.
 
 The same common API classes and `RuntimeLifecycleEvents` are embedded into the Windows Fabric API
 Jar. Mod source can therefore share initialization listeners, while its final Windows Jar and

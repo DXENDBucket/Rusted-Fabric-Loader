@@ -16,6 +16,7 @@ import io.github.endx.rustedfabric.android.bootstrap.AndroidMappingProfile;
 import io.github.endx.rustedfabric.android.bootstrap.BootstrapDiagnostics;
 import io.github.endx.rustedfabric.android.bootstrap.BootstrapPolicy;
 import io.github.endx.rustedfabric.android.bootstrap.Sha256;
+import io.github.endx.rustedfabric.android.xposed.mod.EnabledModClient;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
@@ -44,7 +45,8 @@ public final class RustedFabricXposedModule extends XposedModule {
     }
 
     @Override
-    @SuppressLint("NewApi") // getDefaultClassLoader is libxposed API 102, not Android SDK 29.
+    @SuppressLint({"NewApi", "DiscouragedPrivateApi"})
+    // getDefaultClassLoader is libxposed API 102; Application.attach is the intentional hook boundary.
     public void onPackageLoaded(PackageLoadedParam param) {
         String packageName = param.getPackageName();
         if (!BootstrapPolicy.shouldInstall(packageName, param.isFirstPackage())) {
@@ -82,6 +84,18 @@ public final class RustedFabricXposedModule extends XposedModule {
                                     + " verificationMs=" + elapsedMillis(verificationStarted));
                             if (selection.isVerified()) {
                                 RustedFabricAPIContext apiContext = createApiContext(packageName);
+                                EnabledModClient.LoadSummary mods = new EnabledModClient().loadAll(
+                                        context, targetLoader, apiContext,
+                                        (modId, failure) -> log(LOG_ERROR, TAG,
+                                                "mod-load-failed id=" + modId, failure));
+                                if (mods.getDiscoveryFailure() != null) {
+                                    log(LOG_ERROR, TAG, "mod-discovery-failed",
+                                            mods.getDiscoveryFailure());
+                                } else {
+                                    log(LOG_INFO, TAG, "mods-loaded discovered="
+                                            + mods.getDiscovered() + " loaded=" + mods.getLoaded()
+                                            + " failed=" + mods.getFailed());
+                                }
                                 if (installGameEngineInitHook(targetLoader, contextClass, apiContext)) {
                                     RustedFabricRuntime.installContext(apiContext);
                                     log(LOG_INFO, TAG, "api-context-ready platform="
@@ -138,7 +152,8 @@ public final class RustedFabricXposedModule extends XposedModule {
         values.put(RustedFabricAPIKeys.K_PROCESS_NAME, processName);
         values.put(RustedFabricAPIKeys.K_GAME_ARGS, new String[0]);
         values.put(RustedFabricAPIKeys.K_CAPABILITIES, Arrays.asList(
-                "event.engine.init", "mapping.profile.exact", "platform.android.xposed"));
+                "event.engine.init", "mapping.profile.exact", "mod.dex.v1",
+                "platform.android.xposed"));
         return new RustedFabricAPIContext(values);
     }
 

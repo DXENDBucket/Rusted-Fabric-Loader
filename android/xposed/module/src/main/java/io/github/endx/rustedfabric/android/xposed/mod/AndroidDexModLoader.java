@@ -33,6 +33,16 @@ public final class AndroidDexModLoader {
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(gameClassLoader, "gameClassLoader");
         VerifiedModArchive verified = verify(installedArchive);
+        return loadVerified(verified, optimizedDirectory, context, gameClassLoader);
+    }
+
+    public LoadedAndroidMod loadVerified(VerifiedModArchive verified, File optimizedDirectory,
+                                         RustedFabricAPIContext context,
+                                         ClassLoader gameClassLoader)
+            throws AndroidModLoadException {
+        Objects.requireNonNull(verified, "verified");
+        Objects.requireNonNull(context, "context");
+        Objects.requireNonNull(gameClassLoader, "gameClassLoader");
         RustedFabricModMetadata metadata = verified.getMetadata();
         validateCompatibility(metadata, context);
         ensureCacheDirectory(optimizedDirectory);
