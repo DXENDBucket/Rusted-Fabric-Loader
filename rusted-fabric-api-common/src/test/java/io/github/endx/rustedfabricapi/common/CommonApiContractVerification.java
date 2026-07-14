@@ -7,6 +7,10 @@ import io.github.endx.rustedfabricapi.api.RustedFabricModEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricPlatform;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerCompatibility;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,8 +27,50 @@ public final class CommonApiContractVerification {
         verifyContext(context);
         verifySafeEvents(context);
         verifyPortableModEntrypoint(context);
+        verifyMultiplayerCompatibility();
         verifyEntrypointInstallsContext();
         System.out.println("Cross-platform Rusted Fabric API contracts passed");
+    }
+
+    private static void verifyMultiplayerCompatibility() {
+        String hash = repeat('a', 64);
+        MultiplayerManifest windows = new MultiplayerManifest("windows", Arrays.asList(
+                MultiplayerMod.required("shared_units", "1.2.0", "units-v1", hash),
+                MultiplayerMod.clientOnly("desktop_hud", "2.0.0")));
+        MultiplayerManifest android = new MultiplayerManifest("android", Arrays.asList(
+                MultiplayerMod.required("shared_units", "1.2.0", "units-v1", hash),
+                MultiplayerMod.clientOnly("touch_controls", "3.0.0")));
+        MultiplayerManifest decoded = MultiplayerManifest.decode(windows.encode());
+        require(decoded.encode().equals(windows.encode()), "manifest encoding is not canonical");
+        require(decoded.fingerprint().equals(windows.fingerprint()),
+                "manifest fingerprint changed after decoding");
+
+        final int[] evaluations = {0};
+        MultiplayerCompatibilityEvents.Registration registration =
+                MultiplayerCompatibilityEvents.COMPATIBILITY_EVALUATED.register(report -> {
+                    evaluations[0]++;
+                    throw new IllegalStateException("synthetic multiplayer listener failure");
+                });
+        MultiplayerCompatibility.Report compatible =
+                MultiplayerCompatibility.evaluate(windows, android);
+        require(compatible.compatible(), "platform-specific client mods must be ignored");
+        require(evaluations[0] == 1, "compatibility event was not delivered");
+        registration.close();
+
+        MultiplayerManifest mismatch = new MultiplayerManifest("android", Arrays.asList(
+                MultiplayerMod.required("shared_units", "1.2.0", "units-v1", repeat('b', 64))));
+        MultiplayerCompatibility.Report rejected =
+                MultiplayerCompatibility.evaluate(windows, mismatch);
+        require(!rejected.compatible()
+                        && rejected.issues().stream().anyMatch(issue ->
+                        issue.problem() == MultiplayerCompatibility.Problem.SYNC_HASH_MISMATCH),
+                "synchronized content mismatch was accepted");
+        require(!MultiplayerCompatibility.evaluateVanillaPeer(windows).compatible(),
+                "vanilla peer was accepted with a required mod");
+        MultiplayerManifest clientOnly = new MultiplayerManifest("android",
+                Arrays.asList(MultiplayerMod.clientOnly("touch_controls", "1.0")));
+        require(MultiplayerCompatibility.evaluateVanillaPeer(clientOnly).compatible(),
+                "client-only mod should remain compatible with vanilla peers");
     }
 
     private static void verifyPortableModEntrypoint(RustedFabricAPIContext context) {
@@ -46,6 +92,8 @@ public final class CommonApiContractVerification {
         raw.put(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE, "official");
         raw.put(RustedFabricAPIKeys.K_CAPABILITIES,
                 new ArrayList<>(Arrays.asList("mapping.profile.exact", "event.engine.init")));
+        raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
+                MultiplayerManifest.empty("android").encode());
         return new RustedFabricAPIContext(raw);
     }
 
@@ -56,6 +104,9 @@ public final class CommonApiContractVerification {
         require(context.hasCapability("event.engine.init"), "capability missing");
         require("rw-android-1.15-code176-v1.0".equals(context.mappingProfileId()),
                 "mapping profile missing");
+        require(context.multiplayerManifest().isPresent()
+                        && "android".equals(context.multiplayerManifest().get().platform()),
+                "multiplayer manifest missing");
         boolean immutable = false;
         try {
             context.capabilities().add("unexpected");
@@ -111,5 +162,11 @@ public final class CommonApiContractVerification {
         if (!condition) {
             throw new AssertionError(message);
         }
+    }
+
+    private static String repeat(char value, int count) {
+        char[] result = new char[count];
+        Arrays.fill(result, value);
+        return new String(result);
     }
 }

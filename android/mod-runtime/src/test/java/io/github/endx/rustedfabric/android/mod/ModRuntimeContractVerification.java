@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
+
 public final class ModRuntimeContractVerification {
     private static final String ENTRYPOINT = "example.mod.PortableEntrypoint";
     private static final String PROFILE = "rw-android-1.15-code176-v1.0";
@@ -42,6 +44,9 @@ public final class ModRuntimeContractVerification {
         VerifiedModArchive verified = new RustedFabricModVerifier().verify(archive);
         require("portable_probe".equals(verified.getMetadata().getId()), "mod id missing");
         require(verified.getMetadata().supportsMappingProfile(PROFILE), "profile missing");
+        require(verified.getMetadata().getMultiplayer().mode()
+                        == MultiplayerMod.Mode.CLIENT_ONLY,
+                "multiplayer declaration missing");
         require(verified.getDefinedClasses().contains(ENTRYPOINT), "DEX definition missing");
         require(verified.getArchiveSha256().length() == 64, "archive hash is invalid");
         require(verified.getDexSha256().length() == 64, "DEX hash is invalid");
@@ -116,6 +121,9 @@ public final class ModRuntimeContractVerification {
         ModRegistry reopened = new ModRegistry(temporary.resolve("private-registry"));
         require(reopened.find(installed.getId()).orElseThrow().isEnabled(),
                 "registry did not survive reopen");
+        require(reopened.find(installed.getId()).orElseThrow().getMultiplayer().mode()
+                        == MultiplayerMod.Mode.CLIENT_ONLY,
+                "multiplayer declaration did not survive registry reopen");
         require(reopened.remove(installed.getId()), "mod removal failed");
         require(reopened.list().isEmpty(), "removed mod remains registered");
         require(!Files.exists(registry.archivePath(installed)), "orphan archive remains");
@@ -151,6 +159,7 @@ public final class ModRuntimeContractVerification {
                 + "apiVersion=0.1\n"
                 + "mappingProfiles=" + PROFILE + "\n"
                 + "capabilities=event.engine.init\n"
+                + "multiplayerMode=client_only\n"
                 + "platform=android\n"
                 + "dex=classes.dex\n";
     }

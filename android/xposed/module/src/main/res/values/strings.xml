@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="module_name">Rusted Fabric Loader</string>
-    <string name="module_description">Loader, mod manager, and diagnostics for an installed Rusted Warfare process.</string>
+    <string name="module_description">Loader, mod manager, and diagnostics for Rusted Warfare.</string>
     <string name="manager_title">Rusted Fabric Loader</string>
-    <string name="manager_boundary">No-root mode patches only an APK selected by you, signs it with a private on-device key, and asks Android before installation. The Loader never distributes the game APK.</string>
+    <string name="manager_boundary">No-root mode processes only an APK you select, signs the copy with a private on-device key, and lets Android confirm installation. The Loader never distributes the game APK.</string>
     <string name="game_status_checking">Checking installed game…</string>
     <string name="game_status_verified">Rusted Warfare %1$s: verified</string>
     <string name="game_status_patch_verified">No-root Rusted Fabric game copy: verified</string>
@@ -13,9 +13,15 @@
     <string name="create_local_patch">Create no-root game copy</string>
     <string name="patch_source_hint">Select your original base APK. The current profile creates a side-by-side app and leaves the official installation untouched.</string>
     <string name="patching_apk">Verifying, patching, and signing locally…</string>
+    <string name="patch_stage_preparing">Preparing private workspace…</string>
+    <string name="patch_stage_copying">Copying the selected APK into private temporary storage…</string>
+    <string name="patch_stage_weaving">Verifying the exact game profile and weaving Loader events…</string>
+    <string name="patch_stage_signing">Aligning and signing with this Loader installation’s private key…</string>
+    <string name="patch_stage_installing">Opening Android’s installation confirmation…</string>
+    <string name="patch_stage_complete">Local patch completed.</string>
     <string name="patch_queued">Patch complete. Android installation session %1$d is ready.</string>
     <string name="patch_failed">Local patch failed: %1$s</string>
-    <string name="allow_installs">Allow this Loader to request app installation, then tap the patch button again.</string>
+    <string name="allow_installs">Allow this Loader to request app installation. The APK picker will open when you return.</string>
     <string name="patch_install_succeeded">Rusted Fabric game copy installed.</string>
     <string name="patch_install_failed">Patched game installation failed: %1$s</string>
     <string name="trusted_code_warning">Enabled mods execute inside the game process. Install code only from authors you trust.</string>
@@ -24,6 +30,7 @@
     <string name="import_succeeded">Imported %1$s. It is disabled until you enable it.</string>
     <string name="import_failed">Import failed: %1$s</string>
     <string name="operation_failed">Operation failed: %1$s</string>
+    <string name="operation_failed_title">Operation failed</string>
     <string name="registry_failed">Private registry could not be read: %1$s</string>
     <plurals name="mod_count_restart">
         <item quantity="one">%1$d installed mod. Restart the game after changes.</item>
@@ -36,4 +43,20 @@
     <string name="enable_mod">Enabled</string>
     <string name="remove_mod">Remove</string>
     <string name="remove_confirmation">Remove %1$s from private Loader storage?</string>
+    <string name="multiplayer_status_checking">Checking multiplayer compatibility…</string>
+    <string name="multiplayer_ready">Multiplayer manifest ready: %1$d required, %2$d client-only mods.</string>
+    <string name="multiplayer_blocked">Multiplayer is not safe: %1$d enabled mod(s) have no reviewed declaration.</string>
+    <string name="mod_multiplayer">Multiplayer: %1$s</string>
+    <string name="multiplayer_mode_required">required on every peer</string>
+    <string name="multiplayer_mode_client_only">client-only; may differ</string>
+    <string name="multiplayer_mode_unsafe">undeclared; do not use in modded multiplayer</string>
+    <string name="error_apk_profile_mismatch">This APK is not the supported exact Rusted Warfare 1.15 base APK. Community variants need their own compatibility profile.</string>
+    <string name="error_dex_weave">The mapped engine method did not match the safe patch profile. No APK was installed.</string>
+    <string name="error_signing">The local signing key or generated APK signature could not be verified.</string>
+    <string name="error_input_missing">The selected file could not be opened. Please select the base APK again.</string>
+    <string name="error_input_too_large">The selected file exceeds the Loader’s safety limit.</string>
+    <string name="error_patch_invalid">The selected APK is invalid or cannot be patched safely.</string>
+    <string name="error_mod_invalid">The mod package is invalid: %1$s</string>
+    <string name="error_permission">Android denied access required for this operation.</string>
+    <string name="unknown_error">unknown error</string>
 </resources>

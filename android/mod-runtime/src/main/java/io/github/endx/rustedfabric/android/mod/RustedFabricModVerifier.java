@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
+
 /** Strict verifier for a code-only Android Rusted Fabric mod archive. */
 public final class RustedFabricModVerifier {
     public static final String METADATA_PATH = "META-INF/rusted-fabric.mod.properties";
@@ -172,7 +174,8 @@ public final class RustedFabricModVerifier {
         }
         Set<String> allowed = new LinkedHashSet<>();
         Collections.addAll(allowed, "schemaVersion", "id", "version", "name", "entrypoint",
-                "apiVersion", "mappingProfiles", "capabilities", "platform", "dex");
+                "apiVersion", "mappingProfiles", "capabilities", "platform", "dex",
+                "multiplayerMode", "multiplayerProtocol", "multiplayerSyncHash");
         for (String key : values.keySet()) {
             if (!allowed.contains(key)) {
                 throw metadata("Unknown metadata key: " + key);
@@ -206,8 +209,18 @@ public final class RustedFabricModVerifier {
         List<String> capabilities = values.containsKey("capabilities")
                 ? csv(values.get("capabilities"), CAPABILITY, "capability")
                 : Collections.emptyList();
+        MultiplayerMod multiplayer;
+        try {
+            MultiplayerMod.Mode mode = MultiplayerMod.Mode.parse(
+                    values.getOrDefault("multiplayerMode", "unsafe"));
+            multiplayer = new MultiplayerMod(id, version, mode,
+                    values.getOrDefault("multiplayerProtocol", ""),
+                    values.getOrDefault("multiplayerSyncHash", ""));
+        } catch (IllegalArgumentException invalidMultiplayer) {
+            throw metadata("Invalid multiplayer declaration: " + invalidMultiplayer.getMessage());
+        }
         return new RustedFabricModMetadata(schemaVersion, id, version, name, entrypoint,
-                apiVersion, profiles, capabilities);
+                apiVersion, profiles, capabilities, multiplayer);
     }
 
     private static List<String> csv(String value, Pattern pattern, String label)

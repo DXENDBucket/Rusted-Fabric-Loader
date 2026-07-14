@@ -8,10 +8,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Platform-neutral process events available to both JVM Jar and Android DEX mods. */
 public final class RuntimeLifecycleEvents {
+    /** Mods are loaded and the immutable cross-platform runtime context is available. */
+    public static final EngineInitializationEvent LOADER_READY = new EngineInitializationEvent();
     public static final EngineInitializationEvent BEFORE_ENGINE_INITIALIZATION =
             new EngineInitializationEvent();
     public static final EngineInitializationEvent AFTER_ENGINE_INITIALIZATION =
             new EngineInitializationEvent();
+    /** The mapped game engine completed its first successful initialization. */
+    public static final EngineInitializationEvent GAME_READY = new EngineInitializationEvent();
 
     private RuntimeLifecycleEvents() {
     }

@@ -5,6 +5,10 @@ plugins {
 group = 'io.github.endx'
 version = '0.1.0'
 
+dependencies {
+    implementation project(':rusted-fabric-api-common')
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.release = 13
     options.encoding = 'UTF-8'

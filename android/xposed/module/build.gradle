@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.xposed'
         minSdk 27
         targetSdk 35
-        versionCode 6
-        versionName '0.7.0-local-patcher'
+        versionCode 7
+        versionName '0.8.0-cross-platform'
     }
 
     buildTypes {

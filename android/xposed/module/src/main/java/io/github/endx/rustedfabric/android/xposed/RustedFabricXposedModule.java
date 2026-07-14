@@ -3,6 +3,7 @@ package io.github.endx.rustedfabric.android.xposed;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
+import android.database.Cursor;
 import android.os.Build;
 
 import java.io.FileInputStream;
@@ -11,16 +12,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.github.endx.rustedfabric.android.bootstrap.AndroidMappingProfile;
 import io.github.endx.rustedfabric.android.bootstrap.BootstrapDiagnostics;
 import io.github.endx.rustedfabric.android.bootstrap.BootstrapPolicy;
 import io.github.endx.rustedfabric.android.bootstrap.Sha256;
 import io.github.endx.rustedfabric.android.xposed.mod.EnabledModClient;
+import io.github.endx.rustedfabric.android.xposed.storage.ModContentProvider;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 import io.github.libxposed.api.XposedModule;
 
 /** Modern Xposed entrypoint for exact profile selection and the first diagnostic-only game hook. */
@@ -83,7 +90,9 @@ public final class RustedFabricXposedModule extends XposedModule {
                                     + " mapping=" + snapshot.getMappingProfileStatus()
                                     + " verificationMs=" + elapsedMillis(verificationStarted));
                             if (selection.isVerified()) {
-                                RustedFabricAPIContext apiContext = createApiContext(packageName);
+                                RustedFabricAPIContext apiContext = createApiContext(
+                                        context, packageName);
+                                RustedFabricRuntime.installContext(apiContext);
                                 EnabledModClient.LoadSummary mods = new EnabledModClient().loadAll(
                                         context, targetLoader, apiContext,
                                         (modId, failure) -> log(LOG_ERROR, TAG,
@@ -96,8 +105,10 @@ public final class RustedFabricXposedModule extends XposedModule {
                                             + mods.getDiscovered() + " loaded=" + mods.getLoaded()
                                             + " failed=" + mods.getFailed());
                                 }
+                                RuntimeLifecycleEvents.LOADER_READY.dispatch(apiContext);
+                                apiContext.multiplayerManifest().ifPresent(
+                                        MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY::dispatch);
                                 if (installGameEngineInitHook(targetLoader, contextClass, apiContext)) {
-                                    RustedFabricRuntime.installContext(apiContext);
                                     log(LOG_INFO, TAG, "api-context-ready platform="
                                             + apiContext.platform() + " capabilities="
                                             + apiContext.capabilities().size());
@@ -137,9 +148,9 @@ public final class RustedFabricXposedModule extends XposedModule {
         return AndroidMappingProfile.select(packageName, packageInfo.versionName, versionCode, apkSha256);
     }
 
-    private RustedFabricAPIContext createApiContext(String packageName) {
+    private RustedFabricAPIContext createApiContext(Context context, String packageName) {
         Map<String, Object> values = new HashMap<>();
-        values.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 3);
+        values.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 4);
         values.put(RustedFabricAPIKeys.K_LOADER_VERSION, BuildConfig.VERSION_NAME);
         values.put(RustedFabricAPIKeys.K_GAME_VERSION, AndroidMappingProfile.VERSION_NAME);
         values.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "android-1.15-v1.0");
@@ -151,10 +162,39 @@ public final class RustedFabricXposedModule extends XposedModule {
         values.put(RustedFabricAPIKeys.K_PACKAGE_NAME, packageName);
         values.put(RustedFabricAPIKeys.K_PROCESS_NAME, processName);
         values.put(RustedFabricAPIKeys.K_GAME_ARGS, new String[0]);
+        values.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
+                readMultiplayerManifest(context).encode());
         values.put(RustedFabricAPIKeys.K_CAPABILITIES, Arrays.asList(
-                "event.engine.init", "mapping.profile.exact", "mod.dex.v1",
+                "event.engine.init", "event.runtime.ready", "mapping.profile.exact",
+                "mod.dex.v1", "multiplayer.compat.v1",
                 "platform.android.xposed"));
         return new RustedFabricAPIContext(values);
+    }
+
+    private MultiplayerManifest readMultiplayerManifest(Context context) {
+        String[] columns = {ModContentProvider.COLUMN_ID, ModContentProvider.COLUMN_VERSION,
+                ModContentProvider.COLUMN_MULTIPLAYER_MODE,
+                ModContentProvider.COLUMN_MULTIPLAYER_PROTOCOL,
+                ModContentProvider.COLUMN_MULTIPLAYER_SYNC_HASH};
+        List<MultiplayerMod> mods = new ArrayList<>();
+        try (Cursor cursor = context.getContentResolver().query(
+                ModContentProvider.ENABLED_MODS_URI, columns, null, null, null)) {
+            if (cursor == null) return MultiplayerManifest.empty("android");
+            int id = cursor.getColumnIndexOrThrow(columns[0]);
+            int version = cursor.getColumnIndexOrThrow(columns[1]);
+            int mode = cursor.getColumnIndexOrThrow(columns[2]);
+            int protocol = cursor.getColumnIndexOrThrow(columns[3]);
+            int hash = cursor.getColumnIndexOrThrow(columns[4]);
+            while (cursor.moveToNext()) {
+                mods.add(new MultiplayerMod(cursor.getString(id), cursor.getString(version),
+                        MultiplayerMod.Mode.parse(cursor.getString(mode)),
+                        cursor.getString(protocol), cursor.getString(hash)));
+            }
+        } catch (RuntimeException unavailable) {
+            log(LOG_ERROR, TAG, "multiplayer manifest unavailable", unavailable);
+            return MultiplayerManifest.empty("android");
+        }
+        return new MultiplayerManifest("android", mods);
     }
 
     private boolean installGameEngineInitHook(ClassLoader targetLoader, Class<?> contextClass,
@@ -180,6 +220,8 @@ public final class RustedFabricXposedModule extends XposedModule {
                         if (gameEngineInitialized.compareAndSet(false, true)) {
                             logDispatch("after-engine-initialization",
                                     RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch(apiContext));
+                            logDispatch("game-ready",
+                                    RuntimeLifecycleEvents.GAME_READY.dispatch(apiContext));
                             log(LOG_INFO, TAG, "game-engine-initialized profile="
                                     + AndroidMappingProfile.ID + " event=after-"
                                     + AndroidMappingProfile.GAME_ENGINE_INIT_NAMED);

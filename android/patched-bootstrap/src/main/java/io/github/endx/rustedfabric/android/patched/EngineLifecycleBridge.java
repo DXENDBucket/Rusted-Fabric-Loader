@@ -13,6 +13,7 @@ public final class EngineLifecycleBridge {
     private static final String TAG = "RustedFabric/Local";
     private static final AtomicBoolean BEFORE_SENT = new AtomicBoolean();
     private static final AtomicBoolean AFTER_SENT = new AtomicBoolean();
+    private static final AtomicBoolean GAME_READY_SENT = new AtomicBoolean();
 
     private EngineLifecycleBridge() {
     }
@@ -23,6 +24,7 @@ public final class EngineLifecycleBridge {
 
     public static void afterEngineInitialization() {
         dispatchOnce(AFTER_SENT, RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION, "after");
+        dispatchOnce(GAME_READY_SENT, RuntimeLifecycleEvents.GAME_READY, "game-ready");
     }
 
     private static void dispatchOnce(AtomicBoolean guard,

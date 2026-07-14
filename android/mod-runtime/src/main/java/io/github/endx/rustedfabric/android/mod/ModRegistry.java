@@ -22,6 +22,8 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
+
 /** Atomic app-private registry for imported Android mod archives. */
 public final class ModRegistry {
     private static final Object PROCESS_LOCK = new Object();
@@ -67,6 +69,7 @@ public final class ModRegistry {
             Record record = new Record(metadata.getId(), metadata.getName(), metadata.getVersion(),
                     metadata.getEntrypoint(), metadata.getApiVersion(),
                     metadata.getMappingProfiles(), metadata.getCapabilities(),
+                    metadata.getMultiplayer(),
                     verified.getArchiveSha256(), verified.getDexSha256(),
                     previous != null && previous.isEnabled(), System.currentTimeMillis());
             writeRecord(record);
@@ -176,6 +179,11 @@ public final class ModRegistry {
         values.setProperty("apiVersion", record.getApiVersion());
         values.setProperty("mappingProfiles", String.join(",", record.getMappingProfiles()));
         values.setProperty("capabilities", String.join(",", record.getCapabilities()));
+        values.setProperty("multiplayerMode", record.getMultiplayer().mode().wireName());
+        if (record.getMultiplayer().mode() == MultiplayerMod.Mode.REQUIRED) {
+            values.setProperty("multiplayerProtocol", record.getMultiplayer().protocol());
+            values.setProperty("multiplayerSyncHash", record.getMultiplayer().syncHash());
+        }
         values.setProperty("archiveSha256", record.getArchiveSha256());
         values.setProperty("dexSha256", record.getDexSha256());
         values.setProperty("enabled", Boolean.toString(record.isEnabled()));
@@ -215,10 +223,15 @@ public final class ModRegistry {
                     || !SHA256.matcher(dexSha).matches()) {
                 return null;
             }
-            return new Record(id, required(values, "name"), required(values, "version"),
+            String version = required(values, "version");
+            MultiplayerMod multiplayer = new MultiplayerMod(id, version,
+                    MultiplayerMod.Mode.parse(values.getProperty("multiplayerMode", "unsafe")),
+                    values.getProperty("multiplayerProtocol", ""),
+                    values.getProperty("multiplayerSyncHash", ""));
+            return new Record(id, required(values, "name"), version,
                     required(values, "entrypoint"), required(values, "apiVersion"),
                     csv(required(values, "mappingProfiles")),
-                    csv(values.getProperty("capabilities", "")), archiveSha, dexSha,
+                    csv(values.getProperty("capabilities", "")), multiplayer, archiveSha, dexSha,
                     Boolean.parseBoolean(values.getProperty("enabled", "false")),
                     Long.parseLong(values.getProperty("installedAt", "0")));
         } catch (IllegalArgumentException malformed) {
@@ -271,6 +284,7 @@ public final class ModRegistry {
         private final String apiVersion;
         private final List<String> mappingProfiles;
         private final List<String> capabilities;
+        private final MultiplayerMod multiplayer;
         private final String archiveSha256;
         private final String dexSha256;
         private final boolean enabled;
@@ -278,7 +292,8 @@ public final class ModRegistry {
 
         private Record(String id, String name, String version, String entrypoint,
                        String apiVersion, List<String> mappingProfiles,
-                       List<String> capabilities, String archiveSha256, String dexSha256,
+                       List<String> capabilities, MultiplayerMod multiplayer,
+                       String archiveSha256, String dexSha256,
                        boolean enabled, long installedAt) {
             this.id = id;
             this.name = name;
@@ -287,6 +302,7 @@ public final class ModRegistry {
             this.apiVersion = apiVersion;
             this.mappingProfiles = immutable(mappingProfiles);
             this.capabilities = immutable(capabilities);
+            this.multiplayer = multiplayer;
             this.archiveSha256 = archiveSha256;
             this.dexSha256 = dexSha256;
             this.enabled = enabled;
@@ -295,7 +311,7 @@ public final class ModRegistry {
 
         private Record withEnabled(boolean value) {
             return new Record(id, name, version, entrypoint, apiVersion, mappingProfiles,
-                    capabilities, archiveSha256, dexSha256, value, installedAt);
+                    capabilities, multiplayer, archiveSha256, dexSha256, value, installedAt);
         }
 
         public String getId() { return id; }
@@ -305,6 +321,7 @@ public final class ModRegistry {
         public String getApiVersion() { return apiVersion; }
         public List<String> getMappingProfiles() { return mappingProfiles; }
         public List<String> getCapabilities() { return capabilities; }
+        public MultiplayerMod getMultiplayer() { return multiplayer; }
         public String getArchiveSha256() { return archiveSha256; }
         public String getDexSha256() { return dexSha256; }
         public boolean isEnabled() { return enabled; }

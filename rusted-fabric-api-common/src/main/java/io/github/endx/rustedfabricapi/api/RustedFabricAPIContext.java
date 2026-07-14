@@ -8,6 +8,9 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Optional;
+
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
 
 /** Immutable context shared by Windows Fabric mods and Android DEX mods. */
 public final class RustedFabricAPIContext {
@@ -88,6 +91,19 @@ public final class RustedFabricAPIContext {
 
     public String entrypointKey() {
         return stringValue(RustedFabricAPIKeys.K_ENTRYPOINT_KEY);
+    }
+
+    /** Enabled-mod compatibility data; the same wire format is used on Windows and Android. */
+    public Optional<MultiplayerManifest> multiplayerManifest() {
+        Object encoded = raw.get(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST);
+        if (!(encoded instanceof String) || ((String) encoded).isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(MultiplayerManifest.decode((String) encoded));
+        } catch (IllegalArgumentException invalid) {
+            return Optional.empty();
+        }
     }
 
     public boolean androidRuntime() {

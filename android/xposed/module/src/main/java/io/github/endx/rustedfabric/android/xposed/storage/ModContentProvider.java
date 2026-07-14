@@ -31,10 +31,14 @@ public final class ModContentProvider extends ContentProvider {
     public static final String COLUMN_DEX_SHA256 = "dex_sha256";
     public static final String COLUMN_API_VERSION = "api_version";
     public static final String COLUMN_MAPPING_PROFILES = "mapping_profiles";
+    public static final String COLUMN_MULTIPLAYER_MODE = "multiplayer_mode";
+    public static final String COLUMN_MULTIPLAYER_PROTOCOL = "multiplayer_protocol";
+    public static final String COLUMN_MULTIPLAYER_SYNC_HASH = "multiplayer_sync_hash";
 
     private static final String[] COLUMNS = {COLUMN_ID, COLUMN_NAME, COLUMN_VERSION,
             COLUMN_ARCHIVE_SHA256, COLUMN_DEX_SHA256, COLUMN_API_VERSION,
-            COLUMN_MAPPING_PROFILES};
+            COLUMN_MAPPING_PROFILES, COLUMN_MULTIPLAYER_MODE,
+            COLUMN_MULTIPLAYER_PROTOCOL, COLUMN_MULTIPLAYER_SYNC_HASH};
 
     private ModRegistry registry;
 
@@ -61,7 +65,10 @@ public final class ModContentProvider extends ContentProvider {
                 if (record.isEnabled()) {
                     cursor.addRow(new Object[]{record.getId(), record.getName(), record.getVersion(),
                             record.getArchiveSha256(), record.getDexSha256(),
-                            record.getApiVersion(), String.join(",", record.getMappingProfiles())});
+                            record.getApiVersion(), String.join(",", record.getMappingProfiles()),
+                            record.getMultiplayer().mode().wireName(),
+                            record.getMultiplayer().protocol(),
+                            record.getMultiplayer().syncHash()});
                 }
             }
             cursor.setNotificationUri(getContext().getContentResolver(), ENABLED_MODS_URI);

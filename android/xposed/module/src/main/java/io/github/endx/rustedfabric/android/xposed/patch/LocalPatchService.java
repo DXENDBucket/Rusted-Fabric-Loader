@@ -24,6 +24,13 @@ public final class LocalPatchService {
     }
 
     public static Result patchAndEnqueue(Context context, Uri source) throws Exception {
+        return patchAndEnqueue(context, source, stage -> { });
+    }
+
+    public static Result patchAndEnqueue(Context context, Uri source,
+                                         ProgressListener progress) throws Exception {
+        if (progress == null) throw new NullPointerException("progress");
+        progress.onStage(Stage.PREPARING);
         Path work = context.getCacheDir().toPath().resolve("local-patcher");
         Files.createDirectories(work);
         Path input = work.resolve("user-input.apk");
@@ -31,11 +38,14 @@ public final class LocalPatchService {
         Path unsigned = work.resolve("patched-unsigned.apk");
         Path signed = work.resolve("rusted-fabric-patched.apk");
         try {
+            progress.onStage(Stage.COPYING_SOURCE);
             copyUri(context, source, input, LocalApkPatcher.MAX_SOURCE_APK_BYTES);
             copyAsset(context, bootstrap);
+            progress.onStage(Stage.VERIFYING_AND_WEAVING);
             PatchReport report = new LocalApkPatcher().patchUnsigned(new PatchRequest(
                     input, bootstrap, unsigned, PatchProfile.officialAndroid115(),
                     PatchProfile.DEFAULT_CLONE_PACKAGE));
+            progress.onStage(Stage.SIGNING);
             LocalPatchKeyStore.SigningIdentity identity = LocalPatchKeyStore.loadOrCreate();
             LocalApkSigner.SigningResult signature = new LocalApkSigner().sign(
                     unsigned, signed, "Rusted Fabric local patch",
@@ -44,7 +54,9 @@ public final class LocalPatchService {
             Files.write(context.getFilesDir().toPath().resolve("last-local-patch-report.json"),
                     report.toJson().getBytes(StandardCharsets.UTF_8),
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            progress.onStage(Stage.REQUESTING_INSTALL);
             int sessionId = LocalPatchInstaller.enqueue(context, signed);
+            progress.onStage(Stage.COMPLETE);
             return new Result(sessionId, signature.getCertificateSha256());
         } finally {
             Files.deleteIfExists(input);
@@ -52,6 +64,20 @@ public final class LocalPatchService {
             Files.deleteIfExists(unsigned);
             Files.deleteIfExists(signed);
         }
+    }
+
+    public enum Stage {
+        PREPARING,
+        COPYING_SOURCE,
+        VERIFYING_AND_WEAVING,
+        SIGNING,
+        REQUESTING_INSTALL,
+        COMPLETE
+    }
+
+    @FunctionalInterface
+    public interface ProgressListener {
+        void onStage(Stage stage);
     }
 
     private static void copyUri(Context context, Uri source, Path target, long limit)

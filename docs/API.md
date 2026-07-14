@@ -23,7 +23,8 @@ Two Rusted-specific Fabric entrypoints are available:
 
 Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an
 immutable snapshot; its launch-argument array and capabilities are defensively copied.
-`contextVersion()` is currently `3`. Version 3 adds `platform()`, `mappingProfileId()`,
+`contextVersion()` is currently `4`. Version 4 adds the canonical multiplayer manifest and the
+`multiplayer.compat.v1` capability. Version 3 added `platform()`, `mappingProfileId()`,
 `capabilities()`, `packageName()`, and `processName()`. The older `androidRuntime()` accessor remains
 available.
 
@@ -40,6 +41,11 @@ RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.register(context -> {
     }
 });
 ```
+
+`LOADER_READY` fires after enabled mods are loaded, and `GAME_READY` fires after the first successful
+engine initialization. Both are exception-isolated and available on Windows and Android. Portable
+multiplayer manifests, evaluation, and events live under `api.multiplayer` and
+`MultiplayerCompatibilityEvents`; see [`MULTIPLAYER.md`](MULTIPLAYER.md).
 
 The distributed binary is still platform-specific: Windows uses a Fabric Jar containing JVM class
 files, while Android requires a DEX mod package. Keep portable logic in a common source set and put

@@ -22,5 +22,10 @@
   "depends": {
     "fabricloader": ">=0.18.1",
     "rustedfabricapi": "*"
+  },
+  "custom": {
+    "rustedfabric:multiplayer": {
+      "mode": "client_only"
+    }
   }
 }

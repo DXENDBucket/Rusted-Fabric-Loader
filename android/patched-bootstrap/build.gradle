@@ -11,7 +11,7 @@ android {
         minSdk 27
         targetSdk 35
         versionCode 1
-        versionName '0.7.0-local-patcher'
+        versionName '0.8.0-cross-platform'
     }
 
     buildTypes {

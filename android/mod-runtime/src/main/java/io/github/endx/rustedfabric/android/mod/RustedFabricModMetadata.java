@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
+
 public final class RustedFabricModMetadata {
     private final int schemaVersion;
     private final String id;
@@ -13,10 +15,11 @@ public final class RustedFabricModMetadata {
     private final String apiVersion;
     private final List<String> mappingProfiles;
     private final List<String> capabilities;
+    private final MultiplayerMod multiplayer;
 
     RustedFabricModMetadata(int schemaVersion, String id, String version, String name,
                             String entrypoint, String apiVersion, List<String> mappingProfiles,
-                            List<String> capabilities) {
+                            List<String> capabilities, MultiplayerMod multiplayer) {
         this.schemaVersion = schemaVersion;
         this.id = id;
         this.version = version;
@@ -25,6 +28,7 @@ public final class RustedFabricModMetadata {
         this.apiVersion = apiVersion;
         this.mappingProfiles = immutableCopy(mappingProfiles);
         this.capabilities = immutableCopy(capabilities);
+        this.multiplayer = multiplayer;
     }
 
     public int getSchemaVersion() {
@@ -57,6 +61,10 @@ public final class RustedFabricModMetadata {
 
     public List<String> getCapabilities() {
         return capabilities;
+    }
+
+    public MultiplayerMod getMultiplayer() {
+        return multiplayer;
     }
 
     public boolean supportsMappingProfile(String profileId) {

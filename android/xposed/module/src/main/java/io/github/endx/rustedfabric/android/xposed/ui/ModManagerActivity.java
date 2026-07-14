@@ -3,6 +3,7 @@ package io.github.endx.rustedfabric.android.xposed.ui;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.PackageInstaller;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
@@ -11,6 +12,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -25,13 +27,16 @@ import java.util.concurrent.Executors;
 import io.github.endx.rustedfabric.android.bootstrap.AndroidMappingProfile;
 import io.github.endx.rustedfabric.android.mod.ModRegistry;
 import io.github.endx.rustedfabric.android.mod.ModVerificationException;
+import io.github.endx.rustedfabric.android.patcher.PatchException;
 import io.github.endx.rustedfabric.android.xposed.R;
 import io.github.endx.rustedfabric.android.xposed.patch.LocalPatchService;
+import io.github.endx.rustedfabric.android.xposed.patch.PatchInstallReceiver;
 import io.github.endx.rustedfabric.android.xposed.storage.InstalledGameVerifier;
 import io.github.endx.rustedfabric.android.xposed.storage.InstalledPatchedGameVerifier;
 import io.github.endx.rustedfabric.android.xposed.storage.ModContentProvider;
 import io.github.endx.rustedfabric.android.xposed.storage.ModImportService;
 import io.github.endx.rustedfabric.android.xposed.storage.ModStorage;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 
 /** Standalone Loader UI. It deliberately adds no screen or control to the game process. */
 public final class ModManagerActivity extends Activity {
@@ -43,7 +48,13 @@ public final class ModManagerActivity extends Activity {
     private LinearLayout modList;
     private TextView gameStatus;
     private TextView operationStatus;
+    private TextView multiplayerStatus;
+    private ProgressBar progress;
+    private Button patchButton;
+    private Button importButton;
     private ModRegistry registry;
+    private volatile boolean busy;
+    private boolean firstResume = true;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -64,6 +75,16 @@ public final class ModManagerActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (firstResume) {
+            firstResume = false;
+        } else if (!busy) {
+            refresh();
+        }
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_IMPORT_MOD && resultCode == RESULT_OK
@@ -72,6 +93,10 @@ public final class ModManagerActivity extends Activity {
         } else if (requestCode == REQUEST_PATCH_APK && resultCode == RESULT_OK
                 && data != null && data.getData() != null) {
             createLocalPatch(data.getData());
+        } else if (requestCode == REQUEST_INSTALL_PERMISSION
+                && (Build.VERSION.SDK_INT < 26
+                || getPackageManager().canRequestPackageInstalls())) {
+            choosePatchApk();
         }
     }
 
@@ -101,8 +126,16 @@ public final class ModManagerActivity extends Activity {
         operationStatus = text(getString(R.string.restart_hint), 14, false);
         operationStatus.setPadding(0, dp(8), 0, dp(12));
         content.addView(operationStatus);
+        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress.setIndeterminate(true);
+        progress.setVisibility(View.GONE);
+        content.addView(progress, matchWidth());
 
-        Button patchButton = new Button(this);
+        multiplayerStatus = text(getString(R.string.multiplayer_status_checking), 14, true);
+        multiplayerStatus.setPadding(0, dp(8), 0, dp(12));
+        content.addView(multiplayerStatus);
+
+        patchButton = new Button(this);
         patchButton.setText(R.string.create_local_patch);
         patchButton.setOnClickListener(ignored -> choosePatchApk());
         content.addView(patchButton, matchWidth());
@@ -110,7 +143,7 @@ public final class ModManagerActivity extends Activity {
         patchHint.setPadding(0, dp(6), 0, dp(12));
         content.addView(patchHint);
 
-        Button importButton = new Button(this);
+        importButton = new Button(this);
         importButton.setText(R.string.import_mod);
         importButton.setOnClickListener(ignored -> chooseMod());
         content.addView(importButton, matchWidth());
@@ -141,14 +174,16 @@ public final class ModManagerActivity extends Activity {
     }
 
     private void createLocalPatch(Uri source) {
-        operationStatus.setText(R.string.patching_apk);
+        setBusy(true, getString(R.string.patch_stage_preparing));
         worker.execute(() -> {
             try {
-                LocalPatchService.Result result = LocalPatchService.patchAndEnqueue(this, source);
-                runOnUiThread(() -> operationStatus.setText(
+                LocalPatchService.Result result = LocalPatchService.patchAndEnqueue(
+                        this, source, stage -> runOnUiThread(() ->
+                                setBusy(true, patchStageText(stage))));
+                runOnUiThread(() -> setBusy(false,
                         getString(R.string.patch_queued, result.getSessionId())));
             } catch (Exception failure) {
-                showFailure(getString(R.string.patch_failed, safeMessage(failure)));
+                showFailure(getString(R.string.patch_failed, friendlyMessage(failure)));
             }
         });
     }
@@ -177,26 +212,27 @@ public final class ModManagerActivity extends Activity {
     }
 
     private void importMod(Uri source) {
-        operationStatus.setText(R.string.importing_mod);
+        setBusy(true, getString(R.string.importing_mod));
         worker.execute(() -> {
             try {
                 ModRegistry.Record record = ModImportService.importUri(this, source);
                 notifyRegistryChanged();
                 runOnUiThread(() -> {
+                    setBusy(false, getString(R.string.import_succeeded, record.getName()));
                     Toast.makeText(this, getString(R.string.import_succeeded, record.getName()),
                             Toast.LENGTH_LONG).show();
                     refresh();
                 });
             } catch (IOException | ModVerificationException failure) {
-                showFailure(getString(R.string.import_failed, safeMessage(failure)));
+                showFailure(getString(R.string.import_failed, friendlyMessage(failure)));
             } catch (RuntimeException failure) {
-                showFailure(getString(R.string.import_failed, safeMessage(failure)));
+                showFailure(getString(R.string.import_failed, friendlyMessage(failure)));
             }
         });
     }
 
     private void refresh() {
-        operationStatus.setText(R.string.loading_mods);
+        if (!busy) operationStatus.setText(R.string.loading_mods);
         worker.execute(() -> {
             InstalledGameVerifier.Result game = InstalledGameVerifier.verify(this);
             InstalledPatchedGameVerifier.Result patchedGame =
@@ -226,10 +262,14 @@ public final class ModManagerActivity extends Activity {
                         ? getString(R.string.game_status_patch_verified)
                         : getString(R.string.game_status_unsupported,
                                 game.getStatus() + "/" + patchedGame.getStatus()));
-        operationStatus.setText(failure == null
-                ? getResources().getQuantityString(R.plurals.mod_count_restart,
-                        records.size(), records.size())
-                : getString(R.string.registry_failed, failure));
+        if (!busy) {
+            String installStatus = consumeInstallStatus();
+            operationStatus.setText(installStatus != null ? installStatus : failure == null
+                    ? getResources().getQuantityString(R.plurals.mod_count_restart,
+                            records.size(), records.size())
+                    : getString(R.string.registry_failed, failure));
+        }
+        renderMultiplayerStatus(records);
         modList.removeAllViews();
         if (records.isEmpty()) {
             TextView empty = text(getString(R.string.no_mods), 16, false);
@@ -256,6 +296,9 @@ public final class ModManagerActivity extends Activity {
                 record.getArchiveSha256().substring(0, 12)), 13, false);
         details.setPadding(0, dp(4), 0, dp(6));
         card.addView(details);
+        TextView network = text(getString(R.string.mod_multiplayer,
+                multiplayerModeText(record.getMultiplayer().mode())), 13, false);
+        card.addView(network);
 
         Switch enabled = new Switch(this);
         enabled.setText(R.string.enable_mod);
@@ -310,10 +353,101 @@ public final class ModManagerActivity extends Activity {
 
     private void showFailure(String message) {
         runOnUiThread(() -> {
-            operationStatus.setText(message);
+            setBusy(false, message);
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-            refresh();
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.operation_failed_title)
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
         });
+    }
+
+    private void setBusy(boolean value, String message) {
+        busy = value;
+        operationStatus.setText(message);
+        progress.setVisibility(value ? View.VISIBLE : View.GONE);
+        patchButton.setEnabled(!value);
+        importButton.setEnabled(!value);
+    }
+
+    private String patchStageText(LocalPatchService.Stage stage) {
+        switch (stage) {
+            case COPYING_SOURCE: return getString(R.string.patch_stage_copying);
+            case VERIFYING_AND_WEAVING: return getString(R.string.patch_stage_weaving);
+            case SIGNING: return getString(R.string.patch_stage_signing);
+            case REQUESTING_INSTALL: return getString(R.string.patch_stage_installing);
+            case COMPLETE: return getString(R.string.patch_stage_complete);
+            case PREPARING:
+            default: return getString(R.string.patch_stage_preparing);
+        }
+    }
+
+    private void renderMultiplayerStatus(List<ModRegistry.Record> records) {
+        int required = 0;
+        int clientOnly = 0;
+        int unsafe = 0;
+        for (ModRegistry.Record record : records) {
+            if (!record.isEnabled()) continue;
+            switch (record.getMultiplayer().mode()) {
+                case REQUIRED: required++; break;
+                case CLIENT_ONLY: clientOnly++; break;
+                case UNSAFE: unsafe++; break;
+                default: break;
+            }
+        }
+        multiplayerStatus.setText(unsafe > 0
+                ? getString(R.string.multiplayer_blocked, unsafe)
+                : getString(R.string.multiplayer_ready, required, clientOnly));
+    }
+
+    private String multiplayerModeText(MultiplayerMod.Mode mode) {
+        switch (mode) {
+            case REQUIRED: return getString(R.string.multiplayer_mode_required);
+            case CLIENT_ONLY: return getString(R.string.multiplayer_mode_client_only);
+            case UNSAFE:
+            default: return getString(R.string.multiplayer_mode_unsafe);
+        }
+    }
+
+    private String consumeInstallStatus() {
+        android.content.SharedPreferences preferences = getSharedPreferences(
+                PatchInstallReceiver.PREFS, MODE_PRIVATE);
+        if (!preferences.getBoolean(PatchInstallReceiver.PREF_UNREAD, false)) return null;
+        int status = preferences.getInt(PatchInstallReceiver.PREF_STATUS,
+                PackageInstaller.STATUS_FAILURE);
+        String detail = preferences.getString(PatchInstallReceiver.PREF_DETAIL, "");
+        preferences.edit().putBoolean(PatchInstallReceiver.PREF_UNREAD, false).apply();
+        return status == PackageInstaller.STATUS_SUCCESS
+                ? getString(R.string.patch_install_succeeded)
+                : getString(R.string.patch_install_failed,
+                detail == null || detail.isEmpty() ? getString(R.string.unknown_error) : detail);
+    }
+
+    private String friendlyMessage(Throwable failure) {
+        Throwable current = failure;
+        while (current.getCause() != null && current.getCause() != current) {
+            if (current instanceof PatchException
+                    || current instanceof ModVerificationException) break;
+            current = current.getCause();
+        }
+        if (current instanceof PatchException) {
+            PatchException.Reason reason = ((PatchException) current).getReason();
+            switch (reason) {
+                case PROFILE_MISMATCH: return getString(R.string.error_apk_profile_mismatch);
+                case DEX_WEAVE_FAILED: return getString(R.string.error_dex_weave);
+                case SIGNING_FAILED:
+                case SIGNATURE_INVALID: return getString(R.string.error_signing);
+                case INPUT_MISSING: return getString(R.string.error_input_missing);
+                case INPUT_TOO_LARGE: return getString(R.string.error_input_too_large);
+                default: return getString(R.string.error_patch_invalid);
+            }
+        }
+        if (current instanceof ModVerificationException) {
+            return getString(R.string.error_mod_invalid, safeMessage(current));
+        }
+        if (current instanceof SecurityException) return getString(R.string.error_permission);
+        return safeMessage(current);
     }
 
     private TextView text(String value, int sp, boolean bold) {

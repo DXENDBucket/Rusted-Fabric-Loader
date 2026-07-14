@@ -1,5 +1,8 @@
 package io.github.endx.rustedfabricloader;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.fabricmc.loader.impl.game.GameProvider;
@@ -16,7 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -615,14 +620,15 @@ public class RustedWarfareGameProvider implements GameProvider {
     private void runRustedFabricAPIStage(String key) {
         Map<String, Object> ctx = new HashMap<>();
 
-        ctx.put("rustedfabricapi.ctxVersion", 3);
+        ctx.put("rustedfabricapi.ctxVersion", 4);
         ctx.put("rustedfabricapi.loaderVersion", BUILD_PROPERTIES.getProperty("loaderVersion", ""));
         ctx.put("rustedfabricapi.gameVersion", getRawGameVersion());
         ctx.put("rustedfabricapi.mappingsVersion", BUILD_PROPERTIES.getProperty("mappingsVersion", ""));
         ctx.put("rustedfabricapi.mappingProfileId", "rw-pc-1.15-v1.1");
         ctx.put("rustedfabricapi.platform", isAndroidRuntime() ? "android" : "windows");
         ctx.put("rustedfabricapi.capabilities", Arrays.asList(
-                "event.engine.init", "mapping.named", "platform.windows.fabric"));
+                "event.engine.init", "event.runtime.ready", "mapping.named",
+                "multiplayer.compat.v1", "platform.windows.fabric"));
         ctx.put("rustedfabricapi.processName", "rusted-warfare-client");
 
         ctx.put("gameDir", gameDir);
@@ -631,6 +637,7 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("androidRuntime", isAndroidRuntime());
         ctx.put("runtimeNamespace", getRequestedRuntimeNamespace());
         ctx.put("entrypointKey", key);
+        ctx.put("rustedfabricapi.multiplayerManifest", buildMultiplayerManifest());
 
         FabricLoader.getInstance().invokeEntrypoints(
                 key,
@@ -644,5 +651,93 @@ public class RustedWarfareGameProvider implements GameProvider {
                 }
         );
 
+    }
+
+    /** Reads only mod metadata; platform binaries are deliberately excluded from the sync hash. */
+    private String buildMultiplayerManifest() {
+        Path directory = resolveJavaModsDir();
+        if (directory == null || !Files.isDirectory(directory)) return "RFM1\twindows\n";
+        SortedMap<String, MultiplayerRow> rows = new TreeMap<>();
+        try (java.nio.file.DirectoryStream<Path> jars = Files.newDirectoryStream(directory, "*.jar")) {
+            for (Path path : jars) {
+                try (JarFile jar = new JarFile(path.toFile())) {
+                    JarEntry entry = jar.getJarEntry("fabric.mod.json");
+                    if (entry == null) continue;
+                    JsonObject metadata;
+                    try (InputStreamReader reader = new InputStreamReader(
+                            jar.getInputStream(entry), StandardCharsets.UTF_8)) {
+                        metadata = new JsonParser().parse(reader).getAsJsonObject();
+                    }
+                    String id = jsonString(metadata, "id");
+                    String version = jsonString(metadata, "version");
+                    if ("rustedfabricapi".equals(id)
+                            || !id.matches("[a-z][a-z0-9_-]{0,63}")
+                            || !safeToken(version, 64)) continue;
+                    MultiplayerRow row = readMultiplayerRow(id, version, metadata);
+                    rows.put(id, row);
+                } catch (RuntimeException | IOException malformed) {
+                    Log.warn(LOG_CATEGORY, "Could not read multiplayer metadata from %s", path);
+                }
+            }
+        } catch (IOException unavailable) {
+            Log.warn(LOG_CATEGORY, "Could not scan Java mods for multiplayer metadata");
+        }
+        StringBuilder result = new StringBuilder("RFM1\twindows\n");
+        for (MultiplayerRow row : rows.values()) {
+            result.append(row.id).append('\t').append(row.version).append('\t')
+                    .append(row.mode).append('\t').append(row.protocol).append('\t')
+                    .append(row.hash).append('\n');
+        }
+        return result.toString();
+    }
+
+    private static MultiplayerRow readMultiplayerRow(String id, String version,
+                                                      JsonObject metadata) {
+        JsonObject declaration = null;
+        JsonElement custom = metadata.get("custom");
+        if (custom != null && custom.isJsonObject()) {
+            JsonElement value = custom.getAsJsonObject().get("rustedfabric:multiplayer");
+            if (value != null && value.isJsonObject()) declaration = value.getAsJsonObject();
+        }
+        if (declaration == null) return new MultiplayerRow(id, version, "unsafe", "-", "-");
+        String mode = jsonString(declaration, "mode");
+        if ("client_only".equals(mode)) {
+            return new MultiplayerRow(id, version, mode, "-", "-");
+        }
+        if ("required".equals(mode)) {
+            String protocol = jsonString(declaration, "protocol");
+            String hash = jsonString(declaration, "syncHash").toLowerCase(Locale.ROOT);
+            if (safeToken(protocol, 64) && hash.matches("[0-9a-f]{64}")) {
+                return new MultiplayerRow(id, version, mode, protocol, hash);
+            }
+        }
+        return new MultiplayerRow(id, version, "unsafe", "-", "-");
+    }
+
+    private static String jsonString(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()
+                ? value.getAsString().trim() : "";
+    }
+
+    private static boolean safeToken(String value, int maximum) {
+        return value != null && !value.isEmpty() && value.length() <= maximum
+                && value.matches("[0-9A-Za-z][0-9A-Za-z._+\\-]*");
+    }
+
+    private static final class MultiplayerRow {
+        final String id;
+        final String version;
+        final String mode;
+        final String protocol;
+        final String hash;
+
+        MultiplayerRow(String id, String version, String mode, String protocol, String hash) {
+            this.id = id;
+            this.version = version;
+            this.mode = mode;
+            this.protocol = protocol;
+            this.hash = hash;
+        }
     }
 }

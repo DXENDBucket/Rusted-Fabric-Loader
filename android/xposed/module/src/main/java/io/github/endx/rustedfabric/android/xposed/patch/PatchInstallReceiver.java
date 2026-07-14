@@ -11,6 +11,10 @@ import io.github.endx.rustedfabric.android.xposed.R;
 
 /** Handles the final system confirmation/result without requiring the manager to stay open. */
 public final class PatchInstallReceiver extends BroadcastReceiver {
+    public static final String PREFS = "local_patch_status";
+    public static final String PREF_STATUS = "status";
+    public static final String PREF_DETAIL = "detail";
+    public static final String PREF_UNREAD = "unread";
     static final String ACTION_STATUS =
             "io.github.endx.rustedfabric.android.xposed.LOCAL_PATCH_INSTALL_STATUS";
 
@@ -35,6 +39,11 @@ public final class PatchInstallReceiver extends BroadcastReceiver {
         int message = status == PackageInstaller.STATUS_SUCCESS
                 ? R.string.patch_install_succeeded : R.string.patch_install_failed;
         String detail = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putInt(PREF_STATUS, status)
+                .putString(PREF_DETAIL, detail == null ? "" : detail)
+                .putBoolean(PREF_UNREAD, true)
+                .apply();
         Toast.makeText(context, status == PackageInstaller.STATUS_SUCCESS
                         ? context.getString(message)
                         : context.getString(message, detail == null ? "unknown" : detail),
