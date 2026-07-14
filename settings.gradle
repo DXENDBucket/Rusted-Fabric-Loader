@@ -1,5 +1,6 @@
 rootProject.name = 'rusted-fabric-loader'
 include 'rusted-fabric-api'
+include 'rusted-fabric-api-common'
 include 'example-mod'
 include 'android:apk-inspector'
 include 'android:bootstrap-core'

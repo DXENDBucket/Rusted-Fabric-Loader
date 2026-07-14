@@ -37,6 +37,24 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 13
 }
 
+tasks.register('verifyPortableExample') {
+    group = 'verification'
+    description = 'Ensures the portable example listener has no platform or game implementation imports.'
+    def source = file('src/main/java/io/github/endx/rustedfabricexample/PortableInitializationProbe.java')
+    inputs.file(source)
+    doLast {
+        def text = source.getText('UTF-8')
+        def forbidden = ['net.fabricmc', 'org.spongepowered', 'android.', 'com.corrodinggames',
+                         'rustedwarfare.', 'org.newdawn.slick', 'io.github.libxposed']
+        def found = forbidden.findAll { text.contains(it) }
+        if (!found.isEmpty()) {
+            throw new GradleException("Portable example has platform/game dependencies: ${found}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyPortableExample')
+
 processResources {
     inputs.property "version", project.version
 

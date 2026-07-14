@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.xposed'
         minSdk 27
         targetSdk 35
-        versionCode 2
-        versionName '0.2.0-profile-probe'
+        versionCode 3
+        versionName '0.3.0-common-api'
     }
 
     buildTypes {
@@ -29,6 +29,10 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    buildFeatures {
+        buildConfig true
+    }
+
     packaging {
         resources {
             merges += ['META-INF/xposed/*']
@@ -43,6 +47,7 @@ android {
 
 dependencies {
     implementation project(':bootstrap-core')
+    implementation project(':rusted-fabric-api-common')
     compileOnly 'io.github.libxposed:api:102.0.0@aar'
 }
 
@@ -56,6 +61,8 @@ tasks.register('verifyNoGamePayload') {
             include '*.apk'
         }.singleFile
         def forbidden = []
+        def commonContextFound = false
+        def commonEventsFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -71,8 +78,20 @@ tasks.register('verifyNoGamePayload') {
                     if (dexText.contains('Lcom/corrodinggames/rts/')) {
                         forbidden.add("${entry.name}: game class descriptor")
                     }
+                    if (dexText.contains('Lnet/fabricmc/')
+                            || dexText.contains('Lorg/spongepowered/')
+                            || dexText.contains('Lorg/newdawn/slick/')) {
+                        forbidden.add("${entry.name}: desktop platform descriptor")
+                    }
+                    commonContextFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/RustedFabricAPIContext;')
+                    commonEventsFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/event/RuntimeLifecycleEvents;')
                 }
             }
+        }
+        if (!commonContextFound || !commonEventsFound) {
+            throw new GradleException('Xposed APK is missing the portable common API context/events')
         }
         if (!forbidden.isEmpty()) {
             throw new GradleException("Xposed APK contains forbidden game payloads: ${forbidden}")

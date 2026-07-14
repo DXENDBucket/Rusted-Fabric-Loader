@@ -1,9 +1,11 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 group = 'io.github.endx'
 version = rootProject.version
+
+evaluationDependsOn(':rusted-fabric-api-common')
 
 repositories {
     if (rootProject.hasProperty('offlineRuntimeJars')) {
@@ -30,10 +32,17 @@ def mappingsTinyFile = {
 }
 
 dependencies {
+    api project(':rusted-fabric-api-common')
     implementation "net.fabricmc:fabric-loader:0.18.1"
     compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
     compileOnly files({ gameLibJarFile() })
     compileOnly files({ namedGameJarFile() })
+}
+
+jar {
+    dependsOn project(':rusted-fabric-api-common').tasks.named('classes')
+    from project(':rusted-fabric-api-common').sourceSets.main.output
+    duplicatesStrategy = DuplicatesStrategy.FAIL
 }
 
 test {

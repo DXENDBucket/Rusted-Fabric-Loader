@@ -134,11 +134,13 @@ Exit gate: enabling the module adds one diagnostic log entry and changes no game
 ### Phase 2: first API events
 
 - [x] Select the official profile by installed APK package/version/SHA-256 without copying the APK.
-- [x] Hook the stable `RustedWarfareGameEngine.init(Context)` boundary as an after-only probe.
+- [x] Hook the stable `RustedWarfareGameEngine.init(Context)` boundary.
+- [x] Build the shared `RustedFabricAPIContext` with `platform=ANDROID` and `androidRuntime=true`.
+- [x] Dispatch the same exception-isolated before/after initialization events as Windows Fabric.
 - [ ] Validate the profile selection and initialization probe on a rooted test device.
-- Build `RustedFabricAPIContext` with `androidRuntime=true`.
-- Implement three low-risk events: before engine initialization, after engine initialization, and activity foreground/background.
-- Add hook timeouts, exception isolation, and a capability status screen.
+- [ ] Implement activity foreground/background events.
+- [x] Isolate each portable listener so failures cannot escape into the game call.
+- [ ] Add hook timeouts and a capability status screen.
 
 Exit gate: the official reference APK reaches the menu and a skirmish with all three events observed and no startup regression.
 
@@ -146,7 +148,8 @@ Exit gate: the official reference APK reaches the menu and a skirmish with all t
 
 - Define an Android mod archive containing metadata plus prebuilt DEX, without game classes.
 - Import mods through the Storage Access Framework and copy them to application-private storage.
-- Load mod DEX with the game class loader as parent.
+- Load mod DEX through a bridge ClassLoader that resolves the common API from the module loader and
+  mapped game types from the game ClassLoader.
 - Enforce API and mapping version requirements before executing entrypoints.
 - Require restart for install, update, enable, or disable operations in the first version.
 

@@ -342,6 +342,15 @@ tasks.register('verifyDistribution') {
                     || mixins.mixins.size() != expectedMixinCount) {
                 throw new GradleException('Official API Mixin configuration is not strict or complete')
             }
+            [
+                    'io/github/endx/rustedfabricapi/api/RustedFabricAPIContext.class',
+                    'io/github/endx/rustedfabricapi/api/RustedFabricRuntime.class',
+                    'io/github/endx/rustedfabricapi/api/event/RuntimeLifecycleEvents.class'
+            ].each { commonEntry ->
+                if (zip.getEntry(commonEntry) == null) {
+                    throw new GradleException("Portable common API is missing from desktop API: ${commonEntry}")
+                }
+            }
             mixins.mixins.each { mixin ->
                 def entryName = "io/github/endx/rustedfabricapi/mixin/${mixin}.class"
                 def entry = zip.getEntry(entryName)

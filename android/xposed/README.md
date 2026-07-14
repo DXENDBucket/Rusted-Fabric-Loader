@@ -11,9 +11,14 @@ The module has one static scope: `com.corrodinggames.rts`. After the original
 exactly select `rw-android-1.15-code176-v1.0`; otherwise all game hooks stay disabled.
 
 For the verified profile, the module hooks the mapped
-`RustedWarfareGameEngine.init(Context)` boundary and records one after-initialization event. Both
-hooks always call the original implementation first and do not modify arguments or results, retain
-Context/game objects, access saves, load mods, or change the installed APK.
+`RustedWarfareGameEngine.init(Context)` boundary, installs a platform-neutral
+`RustedFabricAPIContext`, and dispatches one before/after initialization event pair. Listener
+failures are isolated and the original method is always called. The API and events retain no
+Context/game objects, access no saves, load no mods, and do not change the installed APK.
+
+The same common API classes and `RuntimeLifecycleEvents` are embedded into the Windows Fabric API
+Jar. Mod source can therefore share initialization listeners, while its final Windows Jar and
+Android DEX remain separate builds.
 
 ## Build prerequisites
 
@@ -31,7 +36,8 @@ Create an ignored `local.properties` containing `sdk.dir=...`, then run from the
 The libxposed API is compile-only and resolves from its official API 102 release AAR. It is not
 embedded in the module APK. Install the generated debug APK, enable it in an API 102-compatible
 Xposed framework, select Rusted Warfare, and force-stop/start the game. The expected log tags are
-`module-loaded`, `application-attached`, `hook-installed`, and `game-engine-initialized` under
+`module-loaded`, `application-attached`, `api-context-ready`, `before-engine-initialization`,
+`after-engine-initialization`, `hook-installed`, and `game-engine-initialized` under
 `RustedFabric/Bootstrap`. A non-matching installation logs `game-hook-skipped` instead.
 
 This phase is successful only if the game reaches its menu both with the module enabled and

@@ -83,6 +83,12 @@ public final class BootstrapContractVerification {
                 "Installed APK identity must be checked before installing game hooks");
         require(source.contains("installGameEngineInitHook"),
                 "The first mapped GameEngine initialization probe is missing");
+        require(source.contains("RuntimeLifecycleEvents.BEFORE_ENGINE_INITIALIZATION.dispatch"),
+                "Portable before-initialization event is not dispatched");
+        require(source.contains("RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch"),
+                "Portable after-initialization event is not dispatched");
+        require(source.contains("RustedFabricRuntime.installContext"),
+                "Android API context is not installed for portable mods");
     }
 
     private static void verifyMappingProfile(Path profilePath) throws Exception {

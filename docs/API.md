@@ -21,21 +21,49 @@ Two Rusted-specific Fabric entrypoints are available:
 - `rustedfabricloader:classpath_ready`: the game Jar and libraries are on the launch classpath, before standard Fabric initializers run.
 - `rustedfabricloader:before_game`: standard `main` and `client` initializers have completed, immediately before the game main method is invoked.
 
-Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an immutable snapshot; its launch-argument array is defensively copied. `contextVersion()` is currently `2`. Version 2 adds `loaderVersion()`, `gameVersion()`, and `mappingsVersion()` so a mod can report or guard its runtime compatibility without inspecting Jar metadata.
+Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an
+immutable snapshot; its launch-argument array and capabilities are defensively copied.
+`contextVersion()` is currently `3`. Version 3 adds `platform()`, `mappingProfileId()`,
+`capabilities()`, `packageName()`, and `processName()`. The older `androidRuntime()` accessor remains
+available.
+
+## Windows and Android portability
+
+`rusted-fabric-api-common` contains the platform-neutral context, runtime holder, and lifecycle
+events. Its classes are embedded in the Windows API Jar and compiled into the Android loader DEX,
+so a mod can use the same imports and listener source on both platforms:
+
+```java
+RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.register(context -> {
+    if (context.hasCapability("event.engine.init")) {
+        // portable initialization logic
+    }
+});
+```
+
+The distributed binary is still platform-specific: Windows uses a Fabric Jar containing JVM class
+files, while Android requires a DEX mod package. Keep portable logic in a common source set and put
+Slick/LWJGL, desktop Mixins, Android UI/storage, and other platform APIs behind separate adapters.
 
 ## Event behavior
 
 Events under `io.github.endx.rustedfabricapi.api.event` invoke listeners synchronously in registration order on the thread that reached the corresponding game method. They do not switch to a render, update, or network thread.
 
-- Listener exceptions propagate to the intercepted game call. A listener should catch failures it can recover from.
+- Existing game-object events propagate listener exceptions to the intercepted game call. A listener should catch failures it can recover from.
 - Registration is intended for initialization time. There is currently no unregister operation.
 - `BEFORE_*` callbacks returning `true` generally cancel the operation, but the callback interface remains the source of truth.
 - `MODIFY_*` callbacks are chained in registration order; each listener receives the value produced by the previous listener.
 - Game objects are commonly exposed as `Object`. This keeps the public API Jar namespace-neutral across named development and official runtime. Mods may cast to mapped game types when they are compiled and remapped through the supported pipeline.
 
+`RuntimeLifecycleEvents` is the cross-platform exception: each listener is isolated, failures are
+counted in `DispatchResult`, registrations can be unregistered, and no game or platform object is
+exposed. The before/after engine initialization events are one-shot on both backends.
+
 ## API layers
 
 - `api.event`: public experimental event surface for mods.
+- `rusted-fabric-api-common`: cross-platform context and lifecycle contracts with no Fabric, Xposed,
+  Android, Slick, or game implementation dependency.
 - `api.asset`, `api.ini`, and `api.logic`: higher-level experimental helpers backed by current mappings.
 - `api.diagnostic`: development diagnostics. Output and reflected member coverage are not a stable compatibility contract. Mapping v1.1 includes `PlatformRuntimeDiagnostics` for operating-system, platform-extension, and file-change-engine state.
 - `api.util.RustedReflection`: low-level compatibility support; prefer higher-level APIs when one exists.

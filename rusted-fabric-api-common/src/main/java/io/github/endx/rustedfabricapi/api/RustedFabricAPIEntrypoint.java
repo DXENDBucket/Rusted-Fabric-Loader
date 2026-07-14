@@ -6,8 +6,10 @@ import java.util.function.Consumer;
 public abstract class RustedFabricAPIEntrypoint implements Consumer<Map<String, Object>> {
     @Override
     public final void accept(Map<String, Object> raw) {
-        onRustedFabricAPI(new RustedFabricAPIContext(raw));
+        RustedFabricAPIContext context = new RustedFabricAPIContext(raw);
+        RustedFabricRuntime.installContext(context);
+        onRustedFabricAPI(context);
     }
 
-    protected abstract void onRustedFabricAPI(RustedFabricAPIContext ctx);
+    protected abstract void onRustedFabricAPI(RustedFabricAPIContext context);
 }

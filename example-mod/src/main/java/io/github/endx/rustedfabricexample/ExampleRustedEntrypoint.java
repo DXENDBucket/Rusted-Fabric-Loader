@@ -7,13 +7,17 @@ import io.github.endx.rustedfabricapi.api.diagnostic.PlatformRuntimeDiagnostics;
 public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
     @Override
     protected void onRustedFabricAPI(RustedFabricAPIContext ctx) {
+        PortableInitializationProbe.register(ExampleMod::log);
         ExampleMod.log(ctx.entrypointKey()
                 + " contextVersion=" + ctx.contextVersion()
                 + ", loaderVersion=" + ctx.loaderVersion()
                 + ", gameVersion=" + ctx.gameVersion()
                 + ", mappingsVersion=" + ctx.mappingsVersion()
+                + ", mappingProfile=" + ctx.mappingProfileId()
+                + ", platform=" + ctx.platform()
                 + ", runtimeNamespace=" + ctx.runtimeNamespace()
                 + ", androidRuntime=" + ctx.androidRuntime()
+                + ", capabilities=" + ctx.capabilities()
                 + ", gameDir=" + ctx.gameDir()
                 + ", gameJar=" + ctx.gameJar());
         try {

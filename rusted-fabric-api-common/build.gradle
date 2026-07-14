@@ -1,0 +1,67 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+// Keep standalone Android and root desktop builds on the same binary API identity.
+version = '0.1.0'
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    archiveBaseName.set('rusted-fabric-api-common')
+}
+
+tasks.register('verifyCommonApiContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies cross-platform context, runtime, event ordering, and listener isolation.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricapi.common.CommonApiContractVerification')
+}
+
+tasks.register('verifyNoPlatformPayload') {
+    group = 'verification'
+    description = 'Rejects Android, Fabric, desktop backend, and game implementation dependencies.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+
+    doLast {
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def name = entry.name.toLowerCase(Locale.ROOT)
+                if (name.endsWith('.apk') || name.endsWith('.dex')
+                        || name.startsWith('com/corrodinggames/')
+                        || name.startsWith('android/')
+                        || name.startsWith('net/fabricmc/')
+                        || name.startsWith('org/spongepowered/')
+                        || name.startsWith('org/newdawn/slick/')) {
+                    forbidden.add(entry.name)
+                }
+                if (name.endsWith('.class')) {
+                    def constants = new String(zip.getInputStream(entry).bytes,
+                            java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (constants.contains('Landroid/')
+                            || constants.contains('android/content/')
+                            || constants.contains('com/corrodinggames/')
+                            || constants.contains('net/fabricmc/')
+                            || constants.contains('org/spongepowered/')
+                            || constants.contains('org/newdawn/slick/')
+                            || constants.contains('io/github/libxposed/')) {
+                        forbidden.add("${entry.name}: platform/game class reference")
+                    }
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Common API contains platform/game payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyCommonApiContracts')
+check.dependsOn tasks.named('verifyNoPlatformPayload')

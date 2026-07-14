@@ -615,10 +615,15 @@ public class RustedWarfareGameProvider implements GameProvider {
     private void runRustedFabricAPIStage(String key) {
         Map<String, Object> ctx = new HashMap<>();
 
-        ctx.put("rustedfabricapi.ctxVersion", 2);
+        ctx.put("rustedfabricapi.ctxVersion", 3);
         ctx.put("rustedfabricapi.loaderVersion", BUILD_PROPERTIES.getProperty("loaderVersion", ""));
         ctx.put("rustedfabricapi.gameVersion", getRawGameVersion());
         ctx.put("rustedfabricapi.mappingsVersion", BUILD_PROPERTIES.getProperty("mappingsVersion", ""));
+        ctx.put("rustedfabricapi.mappingProfileId", "rw-pc-1.15-v1.1");
+        ctx.put("rustedfabricapi.platform", isAndroidRuntime() ? "android" : "windows");
+        ctx.put("rustedfabricapi.capabilities", Arrays.asList(
+                "event.engine.init", "mapping.named", "platform.windows.fabric"));
+        ctx.put("rustedfabricapi.processName", "rusted-warfare-client");
 
         ctx.put("gameDir", gameDir);
         ctx.put("gameJar", gameLibJar);
