@@ -1,5 +1,6 @@
 package io.github.endx.rustedfabric.android.xposed;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.os.Build;
@@ -43,6 +44,7 @@ public final class RustedFabricXposedModule extends XposedModule {
     }
 
     @Override
+    @SuppressLint("NewApi") // getDefaultClassLoader is libxposed API 102, not Android SDK 29.
     public void onPackageLoaded(PackageLoadedParam param) {
         String packageName = param.getPackageName();
         if (!BootstrapPolicy.shouldInstall(packageName, param.isFirstPackage())) {

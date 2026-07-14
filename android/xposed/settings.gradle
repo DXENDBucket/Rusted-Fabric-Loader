@@ -31,5 +31,7 @@ rootProject.name = 'rusted-fabric-android-xposed'
 include ':module'
 include ':bootstrap-core'
 project(':bootstrap-core').projectDir = file('../bootstrap-core')
+include ':mod-runtime'
+project(':mod-runtime').projectDir = file('../mod-runtime')
 include ':rusted-fabric-api-common'
 project(':rusted-fabric-api-common').projectDir = file('../../rusted-fabric-api-common')

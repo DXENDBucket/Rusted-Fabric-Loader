@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricapi.common;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
+import io.github.endx.rustedfabricapi.api.RustedFabricModEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricPlatform;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
@@ -21,8 +22,16 @@ public final class CommonApiContractVerification {
         RustedFabricAPIContext context = androidContext();
         verifyContext(context);
         verifySafeEvents(context);
+        verifyPortableModEntrypoint(context);
         verifyEntrypointInstallsContext();
         System.out.println("Cross-platform Rusted Fabric API contracts passed");
+    }
+
+    private static void verifyPortableModEntrypoint(RustedFabricAPIContext context) {
+        final RustedFabricAPIContext[] received = new RustedFabricAPIContext[1];
+        RustedFabricModEntrypoint entrypoint = value -> received[0] = value;
+        entrypoint.onInitialize(context);
+        require(received[0] == context, "portable mod entrypoint did not receive context");
     }
 
     private static RustedFabricAPIContext androidContext() {

@@ -14,7 +14,12 @@ For the verified profile, the module hooks the mapped
 `RustedWarfareGameEngine.init(Context)` boundary, installs a platform-neutral
 `RustedFabricAPIContext`, and dispatches one before/after initialization event pair. Listener
 failures are isolated and the original method is always called. The API and events retain no
-Context/game objects, access no saves, load no mods, and do not change the installed APK.
+Context/game objects, access no saves, and do not change the installed APK.
+
+Version `0.4.0-mod-runtime` also compiles the strict `.rfmod` verifier, common/game bridge
+ClassLoader, and Android DEX entrypoint loader into the module. They are not invoked yet: the
+management UI, read-only provider, and private cache transfer must land before a user mod path is
+handed to the game process. See `../../docs/ANDROID_MODS.md` for the format and planned flow.
 
 The same common API classes and `RuntimeLifecycleEvents` are embedded into the Windows Fabric API
 Jar. Mod source can therefore share initialization listeners, while its final Windows Jar and

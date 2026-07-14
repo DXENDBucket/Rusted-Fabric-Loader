@@ -66,11 +66,12 @@ The root backend and distributable module. It owns:
 - Android mod DEX loading;
 - per-feature compatibility and failure isolation.
 
-The Phase 1 scaffold now lives in the isolated `android/xposed` Android build. It targets Modern
+The Xposed backend lives in the isolated `android/xposed` Android build. It targets Modern
 Xposed API 102, uses `META-INF/xposed` entry metadata, and has a static official-package scope.
 The shared `android:bootstrap-core` remains buildable without an Android SDK. The first hook calls
 the original `Application.attach(Context)` unchanged, then captures ClassLoader diagnostics without
-retaining Android or game objects. Mapping and mod loading are deliberately absent.
+retaining Android or game objects. Exact mapping selection, the first lifecycle events, and the
+verified Android mod DEX loader are present. Import UI and private-storage transfer are not wired yet.
 
 ### Shared loader core
 
@@ -146,12 +147,20 @@ Exit gate: the official reference APK reaches the menu and a skirmish with all t
 
 ### Phase 3: Android mod loading
 
-- Define an Android mod archive containing metadata plus prebuilt DEX, without game classes.
-- Import mods through the Storage Access Framework and copy them to application-private storage.
-- Load mod DEX through a bridge ClassLoader that resolves the common API from the module loader and
+- [x] Define a strict Android `.rfmod` archive containing metadata plus one prebuilt DEX, without
+  game class definitions.
+- [x] Validate archive paths/limits, DEX definitions, entrypoint ownership, and SHA-256 before load.
+- [ ] Import mods through the Storage Access Framework and copy them to application-private storage.
+- [ ] Expose enabled verified archives through a game-authorized, read-only provider and copy them
+  into the game code cache by hash.
+- [x] Load mod DEX through a bridge ClassLoader that resolves the common API from the module loader and
   mapped game types from the game ClassLoader.
-- Enforce API and mapping version requirements before executing entrypoints.
-- Require restart for install, update, enable, or disable operations in the first version.
+- [x] Enforce API, mapping profile, and capability requirements before executing entrypoints.
+- [x] Define a platform-neutral `RustedFabricModEntrypoint` shared with Windows source.
+- [ ] Wire enabled archive discovery and entrypoint initialization into the verified package hook.
+- [x] Require restart for install, update, enable, or disable operations in the first version design.
+
+See [`ANDROID_MODS.md`](ANDROID_MODS.md) for the v1 archive contract and planned user flow.
 
 Exit gate: a minimal external mod receives the Phase 2 events and can be removed without modifying the game installation.
 
@@ -173,9 +182,9 @@ Exit gate: each migrated feature has an independent compatibility probe and can 
 
 ## Immediate implementation order
 
-1. Install the profile-probe APK on a rooted test device and capture the bootstrap logs.
-2. Build the first Android API context with `androidRuntime=true`.
-3. Add before/after engine initialization events around the verified probe.
-4. Produce an inventory of the existing 84 Mixins by hook category before porting more hooks.
+1. Add the management activity, Storage Access Framework importer, and private mod registry.
+2. Add the read-only enabled-mod provider and game-code-cache transfer protocol.
+3. Wire verified enabled mods into `AndroidDexModLoader` before the first lifecycle dispatch.
+4. Install the build on a rooted test device and validate bootstrap plus a minimal external probe mod.
 
 No step should require committing, publishing, or embedding the local reference APK.

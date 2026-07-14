@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.xposed'
         minSdk 27
         targetSdk 35
-        versionCode 3
-        versionName '0.3.0-common-api'
+        versionCode 4
+        versionName '0.4.0-mod-runtime'
     }
 
     buildTypes {
@@ -47,6 +47,7 @@ android {
 
 dependencies {
     implementation project(':bootstrap-core')
+    implementation project(':mod-runtime')
     implementation project(':rusted-fabric-api-common')
     compileOnly 'io.github.libxposed:api:102.0.0@aar'
 }
@@ -63,6 +64,8 @@ tasks.register('verifyNoGamePayload') {
         def forbidden = []
         def commonContextFound = false
         def commonEventsFound = false
+        def commonModEntrypointFound = false
+        def androidModLoaderFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -87,11 +90,16 @@ tasks.register('verifyNoGamePayload') {
                             'Lio/github/endx/rustedfabricapi/api/RustedFabricAPIContext;')
                     commonEventsFound |= dexText.contains(
                             'Lio/github/endx/rustedfabricapi/api/event/RuntimeLifecycleEvents;')
+                    commonModEntrypointFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/RustedFabricModEntrypoint;')
+                    androidModLoaderFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabric/android/xposed/mod/AndroidDexModLoader;')
                 }
             }
         }
-        if (!commonContextFound || !commonEventsFound) {
-            throw new GradleException('Xposed APK is missing the portable common API context/events')
+        if (!commonContextFound || !commonEventsFound || !commonModEntrypointFound
+                || !androidModLoaderFound) {
+            throw new GradleException('Xposed APK is missing the portable API or Android mod loader')
         }
         if (!forbidden.isEmpty()) {
             throw new GradleException("Xposed APK contains forbidden game payloads: ${forbidden}")

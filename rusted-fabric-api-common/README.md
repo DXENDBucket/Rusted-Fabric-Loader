@@ -8,6 +8,7 @@ It currently provides:
 
 - immutable `RustedFabricAPIContext` version 3 with platform, mapping profile, and capabilities;
 - the process-wide `RustedFabricRuntime` context holder;
+- the platform-neutral `RustedFabricModEntrypoint` contract;
 - exception-isolated, one-shot engine initialization event contracts;
 - the existing typed API entrypoint adapter and compatibility keys.
 

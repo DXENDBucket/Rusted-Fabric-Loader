@@ -1,0 +1,45 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = '0.1.0'
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('verifyModRuntimeContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies .rfmod parsing, DEX definitions, limits, and ClassLoader routing.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.mod.ModRuntimeContractVerification')
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Rejects packaged game, Android backend, and mod payloads from the verifier Jar.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+    doLast {
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.rfmod')
+                        || lower.startsWith('com/corrodinggames/')
+                        || lower.startsWith('android/') || lower.startsWith('dalvik/')) {
+                    forbidden.add(entry.name)
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Mod runtime verifier contains forbidden payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyModRuntimeContracts')
+check.dependsOn tasks.named('verifyNoGamePayload')

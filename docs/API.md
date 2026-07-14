@@ -44,6 +44,8 @@ RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.register(context -> {
 The distributed binary is still platform-specific: Windows uses a Fabric Jar containing JVM class
 files, while Android requires a DEX mod package. Keep portable logic in a common source set and put
 Slick/LWJGL, desktop Mixins, Android UI/storage, and other platform APIs behind separate adapters.
+Android entrypoint classes implement `RustedFabricModEntrypoint`; the `.rfmod` v1 format and loading
+rules are documented in [`ANDROID_MODS.md`](ANDROID_MODS.md).
 
 ## Event behavior
 
