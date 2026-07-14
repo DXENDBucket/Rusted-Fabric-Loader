@@ -5,7 +5,9 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -24,7 +26,9 @@ import io.github.endx.rustedfabric.android.bootstrap.AndroidMappingProfile;
 import io.github.endx.rustedfabric.android.mod.ModRegistry;
 import io.github.endx.rustedfabric.android.mod.ModVerificationException;
 import io.github.endx.rustedfabric.android.xposed.R;
+import io.github.endx.rustedfabric.android.xposed.patch.LocalPatchService;
 import io.github.endx.rustedfabric.android.xposed.storage.InstalledGameVerifier;
+import io.github.endx.rustedfabric.android.xposed.storage.InstalledPatchedGameVerifier;
 import io.github.endx.rustedfabric.android.xposed.storage.ModContentProvider;
 import io.github.endx.rustedfabric.android.xposed.storage.ModImportService;
 import io.github.endx.rustedfabric.android.xposed.storage.ModStorage;
@@ -32,6 +36,8 @@ import io.github.endx.rustedfabric.android.xposed.storage.ModStorage;
 /** Standalone Loader UI. It deliberately adds no screen or control to the game process. */
 public final class ModManagerActivity extends Activity {
     private static final int REQUEST_IMPORT_MOD = 1001;
+    private static final int REQUEST_PATCH_APK = 1002;
+    private static final int REQUEST_INSTALL_PERMISSION = 1003;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private LinearLayout modList;
@@ -63,6 +69,9 @@ public final class ModManagerActivity extends Activity {
         if (requestCode == REQUEST_IMPORT_MOD && resultCode == RESULT_OK
                 && data != null && data.getData() != null) {
             importMod(data.getData());
+        } else if (requestCode == REQUEST_PATCH_APK && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
+            createLocalPatch(data.getData());
         }
     }
 
@@ -93,6 +102,14 @@ public final class ModManagerActivity extends Activity {
         operationStatus.setPadding(0, dp(8), 0, dp(12));
         content.addView(operationStatus);
 
+        Button patchButton = new Button(this);
+        patchButton.setText(R.string.create_local_patch);
+        patchButton.setOnClickListener(ignored -> choosePatchApk());
+        content.addView(patchButton, matchWidth());
+        TextView patchHint = text(getString(R.string.patch_source_hint), 13, false);
+        patchHint.setPadding(0, dp(6), 0, dp(12));
+        content.addView(patchHint);
+
         Button importButton = new Button(this);
         importButton.setText(R.string.import_mod);
         importButton.setOnClickListener(ignored -> chooseMod());
@@ -106,6 +123,34 @@ public final class ModManagerActivity extends Activity {
         modList.setOrientation(LinearLayout.VERTICAL);
         content.addView(modList, matchWidth());
         return scroll;
+    }
+
+    private void choosePatchApk() {
+        if (Build.VERSION.SDK_INT >= 26
+                && !getPackageManager().canRequestPackageInstalls()) {
+            operationStatus.setText(R.string.allow_installs);
+            Intent permission = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:" + getPackageName()));
+            startActivityForResult(permission, REQUEST_INSTALL_PERMISSION);
+            return;
+        }
+        Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        picker.addCategory(Intent.CATEGORY_OPENABLE);
+        picker.setType("application/vnd.android.package-archive");
+        startActivityForResult(picker, REQUEST_PATCH_APK);
+    }
+
+    private void createLocalPatch(Uri source) {
+        operationStatus.setText(R.string.patching_apk);
+        worker.execute(() -> {
+            try {
+                LocalPatchService.Result result = LocalPatchService.patchAndEnqueue(this, source);
+                runOnUiThread(() -> operationStatus.setText(
+                        getString(R.string.patch_queued, result.getSessionId())));
+            } catch (Exception failure) {
+                showFailure(getString(R.string.patch_failed, safeMessage(failure)));
+            }
+        });
     }
 
     private void chooseMod() {
@@ -154,6 +199,8 @@ public final class ModManagerActivity extends Activity {
         operationStatus.setText(R.string.loading_mods);
         worker.execute(() -> {
             InstalledGameVerifier.Result game = InstalledGameVerifier.verify(this);
+            InstalledPatchedGameVerifier.Result patchedGame =
+                    InstalledPatchedGameVerifier.verify(this);
             List<ModRegistry.Record> records;
             String failure = null;
             try {
@@ -164,15 +211,21 @@ public final class ModManagerActivity extends Activity {
             }
             List<ModRegistry.Record> finalRecords = records;
             String finalFailure = failure;
-            runOnUiThread(() -> render(game, finalRecords, finalFailure));
+            runOnUiThread(() -> render(game, patchedGame, finalRecords, finalFailure));
         });
     }
 
-    private void render(InstalledGameVerifier.Result game, List<ModRegistry.Record> records,
+    private void render(InstalledGameVerifier.Result game,
+                        InstalledPatchedGameVerifier.Result patchedGame,
+                        List<ModRegistry.Record> records,
                         String failure) {
+        boolean runnableGame = game.isVerified() || patchedGame.isVerified();
         gameStatus.setText(game.isVerified()
                 ? getString(R.string.game_status_verified, AndroidMappingProfile.VERSION_NAME)
-                : getString(R.string.game_status_unsupported, game.getStatus()));
+                : patchedGame.isVerified()
+                        ? getString(R.string.game_status_patch_verified)
+                        : getString(R.string.game_status_unsupported,
+                                game.getStatus() + "/" + patchedGame.getStatus()));
         operationStatus.setText(failure == null
                 ? getResources().getQuantityString(R.plurals.mod_count_restart,
                         records.size(), records.size())
@@ -185,7 +238,7 @@ public final class ModManagerActivity extends Activity {
             return;
         }
         for (ModRegistry.Record record : records) {
-            modList.addView(createModCard(record, game.isVerified()), matchWidth());
+            modList.addView(createModCard(record, runnableGame), matchWidth());
         }
     }
 

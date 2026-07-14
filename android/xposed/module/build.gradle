@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.xposed'
         minSdk 27
         targetSdk 35
-        versionCode 5
-        versionName '0.5.0-mod-management'
+        versionCode 6
+        versionName '0.6.0-local-patcher'
     }
 
     buildTypes {
@@ -49,7 +49,23 @@ dependencies {
     implementation project(':bootstrap-core')
     implementation project(':mod-runtime')
     implementation project(':rusted-fabric-api-common')
+    implementation project(':local-patcher-core')
     compileOnly 'io.github.libxposed:api:102.0.0@aar'
+}
+
+def generatedPatcherAssets = layout.buildDirectory.dir('generated/localPatcherAssets')
+
+android.sourceSets.main.assets.srcDir(generatedPatcherAssets)
+
+tasks.register('preparePatchedBootstrapAsset', Copy) {
+    dependsOn ':patched-bootstrap:exportBootstrapDex'
+    from(project(':patched-bootstrap').layout.buildDirectory
+            .file('outputs/rusted-fabric/patched-bootstrap.dex'))
+    into(generatedPatcherAssets.map { it.dir('rusted-fabric') })
+}
+
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('preparePatchedBootstrapAsset')
 }
 
 tasks.register('verifyNoGamePayload') {
@@ -69,6 +85,8 @@ tasks.register('verifyNoGamePayload') {
         def modManagerFound = false
         def modProviderFound = false
         def enabledModClientFound = false
+        def patcherCoreFound = false
+        def bootstrapAssetFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -81,8 +99,13 @@ tasks.register('verifyNoGamePayload') {
                         bytes = input.bytes
                     }
                     def dexText = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
-                    if (dexText.contains('Lcom/corrodinggames/rts/')) {
+                    def auditedDexText = dexText.replace(
+                            'Lcom/corrodinggames/rts/appFramework/RWApplication;', '')
+                    if (auditedDexText.contains('Lcom/corrodinggames/rts/')) {
                         forbidden.add("${entry.name}: game class descriptor")
+                    }
+                    if (dexText.contains('RWApplication.java')) {
+                        forbidden.add("${entry.name}: compile-only game stub definition")
                     }
                     if (dexText.contains('Lnet/fabricmc/')
                             || dexText.contains('Lorg/spongepowered/')
@@ -103,12 +126,18 @@ tasks.register('verifyNoGamePayload') {
                             'Lio/github/endx/rustedfabric/android/xposed/storage/ModContentProvider;')
                     enabledModClientFound |= dexText.contains(
                             'Lio/github/endx/rustedfabric/android/xposed/mod/EnabledModClient;')
+                    patcherCoreFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabric/android/patcher/LocalApkPatcher;')
+                    if (entry.name == 'assets/rusted-fabric/patched-bootstrap.dex') {
+                        bootstrapAssetFound = dexText.contains(
+                                'Lio/github/endx/rustedfabric/android/patched/PatchedApplication;')
+                    }
                 }
             }
         }
         if (!commonContextFound || !commonEventsFound || !commonModEntrypointFound
                 || !androidModLoaderFound || !modManagerFound || !modProviderFound
-                || !enabledModClientFound) {
+                || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound) {
             throw new GradleException('Xposed APK is missing the portable API or mod management path')
         }
         if (!forbidden.isEmpty()) {

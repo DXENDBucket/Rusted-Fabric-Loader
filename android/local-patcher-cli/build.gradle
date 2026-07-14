@@ -1,0 +1,38 @@
+plugins {
+    id 'application'
+}
+
+group = 'io.github.endx'
+version = '0.1.0'
+
+dependencies {
+    implementation project(':android:local-patcher-core')
+}
+
+application {
+    mainClass.set('io.github.endx.rustedfabric.android.patcher.cli.LocalPatcherMain')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    dependsOn jar
+    doLast {
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            def forbidden = zip.entries().findAll { entry ->
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                lower.endsWith('.apk') || lower.endsWith('.dex')
+                        || lower.startsWith('com/corrodinggames/')
+            }*.name
+            if (!forbidden.isEmpty()) {
+                throw new GradleException("Patcher CLI contains forbidden payloads: ${forbidden}")
+            }
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyNoGamePayload')

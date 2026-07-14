@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <queries>
         <package android:name="com.corrodinggames.rts" />
+        <package android:name="io.github.endx.rwpatch" />
     </queries>
 
     <application
@@ -42,5 +44,9 @@
             android:exported="true"
             android:grantUriPermissions="false"
             tools:ignore="ExportedContentProvider" />
+
+        <receiver
+            android:name=".patch.PatchInstallReceiver"
+            android:exported="false" />
     </application>
 </manifest>

@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'io.github.endx.rustedfabric.android.gameapistubs'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 27
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.register('verifyStubBoundary') {
+    group = 'verification'
+    description = 'Ensures the compile-only game API stub remains a single signature-only type.'
+    doLast {
+        def sources = fileTree('src/main/java') { include '**/*.java' }.files
+        if (sources.size() != 1) {
+            throw new GradleException('Game API stubs must contain exactly one source file')
+        }
+        def text = sources.iterator().next().getText('UTF-8')
+        if (!text.contains('class RWApplication extends Application')
+                || text.contains('onCreate(') || text.contains('onTrimMemory(')) {
+            throw new GradleException('RWApplication stub must remain signature-only')
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyStubBoundary')

@@ -1,0 +1,48 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = '0.1.0'
+
+dependencies {
+    api 'com.android.tools.build:apksig:8.10.1'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('verifyLocalPatcherContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies binary XML, DEX string, APK rebuild, and privacy contracts.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.patcher.LocalPatcherContractVerification')
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Rejects packaged APK, DEX, game classes, and local patch outputs.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+    doLast {
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.rfmod')
+                        || lower.startsWith('com/corrodinggames/')) {
+                    forbidden.add(entry.name)
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Local patcher contains forbidden payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyLocalPatcherContracts')
+check.dependsOn tasks.named('verifyNoGamePayload')

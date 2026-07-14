@@ -1,0 +1,93 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.endx.rustedfabric.android.patched'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.github.endx.rustedfabric.android.patched.bootstrapartifact'
+        minSdk 27
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+dependencies {
+    implementation project(':mod-runtime')
+    implementation project(':rusted-fabric-api-common')
+    compileOnly project(':game-api-stubs')
+}
+
+def bootstrapDex = layout.buildDirectory.file('outputs/rusted-fabric/patched-bootstrap.dex')
+
+tasks.register('exportBootstrapDex') {
+    group = 'build'
+    description = 'Exports the code-only bootstrap DEX consumed by the local APK patcher.'
+    dependsOn 'assembleRelease'
+    outputs.file(bootstrapDex)
+
+    doLast {
+        def apk = fileTree(layout.buildDirectory.dir('outputs/apk/release')) {
+            include '*.apk'
+        }.singleFile
+        def output = bootstrapDex.get().asFile
+        output.parentFile.mkdirs()
+        new java.util.zip.ZipFile(apk).withCloseable { zip ->
+            def dexEntries = zip.entries().findAll { !it.directory && it.name ==~ /classes\d*\.dex/ }
+            if (dexEntries.size() != 1 || dexEntries[0].name != 'classes.dex') {
+                throw new GradleException('Bootstrap artifact must contain exactly one classes.dex')
+            }
+            zip.getInputStream(dexEntries[0]).withCloseable { input ->
+                output.withOutputStream { it << input }
+            }
+        }
+    }
+}
+
+tasks.register('verifyBootstrapArtifact') {
+    group = 'verification'
+    description = 'Rejects packaged game implementations and checks the patched Application entrypoint.'
+    dependsOn tasks.named('exportBootstrapDex')
+    inputs.file(bootstrapDex)
+
+    doLast {
+        byte[] bytes = bootstrapDex.get().asFile.bytes
+        def text = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+        if (!text.contains('Lio/github/endx/rustedfabric/android/patched/PatchedApplication;')) {
+            throw new GradleException('Bootstrap DEX is missing PatchedApplication')
+        }
+        // The superclass descriptor is expected, but a stub class definition would also bring
+        // its distinctive source file name into the DEX. compileOnly must keep that source out.
+        if (text.contains('RWApplication.java')) {
+            throw new GradleException('Compile-only game API stub leaked into bootstrap DEX')
+        }
+        if (text.contains('Lio/github/libxposed/') || text.contains('XposedModule')) {
+            throw new GradleException('Bootstrap DEX contains Xposed-only code')
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyBootstrapArtifact')

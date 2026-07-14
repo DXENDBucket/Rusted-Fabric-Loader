@@ -35,3 +35,9 @@ include ':mod-runtime'
 project(':mod-runtime').projectDir = file('../mod-runtime')
 include ':rusted-fabric-api-common'
 project(':rusted-fabric-api-common').projectDir = file('../../rusted-fabric-api-common')
+include ':patched-bootstrap'
+project(':patched-bootstrap').projectDir = file('../patched-bootstrap')
+include ':game-api-stubs'
+project(':game-api-stubs').projectDir = file('../game-api-stubs')
+include ':local-patcher-core'
+project(':local-patcher-core').projectDir = file('../local-patcher-core')

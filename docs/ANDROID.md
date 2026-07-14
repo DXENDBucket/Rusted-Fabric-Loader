@@ -2,7 +2,7 @@
 
 ## Goals and boundaries
 
-The Android loader must operate on a user's installed copy of Rusted Warfare without distributing game classes, resources, native libraries, or a rebuilt game APK. The first backend is root-first and targets an ART hook framework such as LSPosed/Zygisk. A non-root local patch backend can be added later, but it is not part of the first prototype.
+The Android loader must operate on a user-supplied copy of Rusted Warfare without distributing game classes, resources, native libraries, or a rebuilt game APK. The primary consumer path is now a no-root local patcher: the user selects an APK, the Loader produces and signs a side-by-side copy entirely on-device, and Android confirms installation. The Modern Xposed backend remains available for rooted testing and method hooks.
 
 Game APKs are local development inputs only. They must remain under ignored paths and must never be copied into build outputs, reports, fixtures, or Git history.
 
@@ -73,6 +73,13 @@ the original `Application.attach(Context)` unchanged, then captures ClassLoader 
 retaining Android or game objects. Exact mapping selection, the first lifecycle events, and the
 verified Android mod DEX loader are present. The standalone management activity, private registry,
 caller-authorized provider, game-code-cache transfer, and enabled-mod startup discovery are wired.
+
+### Local no-root patch backend
+
+`android:local-patcher-core`, `android:local-patcher-cli`, `android/game-api-stubs`, and
+`android/patched-bootstrap` implement the verified rewrite/sign/injection pipeline. The management
+APK embeds only the code-only bootstrap DEX, generates a per-install Android Keystore identity, and
+hands the signed result to `PackageInstaller`. See [`ANDROID_LOCAL_PATCHER.md`](ANDROID_LOCAL_PATCHER.md).
 
 ### Shared loader core
 

@@ -2,6 +2,15 @@ plugins {
     id 'java'
 }
 
+subprojects {
+    if (path == ':android:local-patcher-core' || path == ':android:local-patcher-cli') {
+        repositories {
+            google()
+            mavenCentral()
+        }
+    }
+}
+
 group = 'io.github.endx'
 version = '0.1.0'
 
