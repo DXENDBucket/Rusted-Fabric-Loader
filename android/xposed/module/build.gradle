@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.xposed'
         minSdk 27
         targetSdk 35
-        versionCode 7
-        versionName '0.8.0-cross-platform'
+        versionCode 8
+        versionName '0.9.0-rfh1'
     }
 
     buildTypes {
@@ -87,6 +87,8 @@ tasks.register('verifyNoGamePayload') {
         def enabledModClientFound = false
         def patcherCoreFound = false
         def bootstrapAssetFound = false
+        def handshakeBridgeFound = false
+        def sessionApiFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -128,6 +130,10 @@ tasks.register('verifyNoGamePayload') {
                             'Lio/github/endx/rustedfabric/android/xposed/mod/EnabledModClient;')
                     patcherCoreFound |= dexText.contains(
                             'Lio/github/endx/rustedfabric/android/patcher/LocalApkPatcher;')
+                    handshakeBridgeFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/multiplayer/MultiplayerNetworkBridge;')
+                    sessionApiFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/session/GameSession;')
                     if (entry.name == 'assets/rusted-fabric/patched-bootstrap.dex') {
                         bootstrapAssetFound = dexText.contains(
                                 'Lio/github/endx/rustedfabric/android/patched/PatchedApplication;')
@@ -137,7 +143,8 @@ tasks.register('verifyNoGamePayload') {
         }
         if (!commonContextFound || !commonEventsFound || !commonModEntrypointFound
                 || !androidModLoaderFound || !modManagerFound || !modProviderFound
-                || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound) {
+                || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound
+                || !handshakeBridgeFound || !sessionApiFound) {
             throw new GradleException('Xposed APK is missing the portable API or mod management path')
         }
         if (!forbidden.isEmpty()) {

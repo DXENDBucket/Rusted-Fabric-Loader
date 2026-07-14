@@ -69,7 +69,11 @@ requirements: the Loader rejects the mod if any declared capability is unavailab
 matching is exact in the experimental `0.1` format.
 
 `multiplayerMode` is optional for archive compatibility but defaults to `unsafe`. Use `client_only`
-only when the mod cannot affect synchronized game state. Content/gameplay mods use `required` and
+only when the mod cannot affect synchronized game state. Use `server_only` only for host behavior
+that requires no client code, assets, or synchronized state; vanilla clients may then join.
+Use `optional` when either side can run independently and peer presence only enables optional,
+backward-compatible enhancements. A missing optional mod never blocks a connection.
+Content/gameplay mods use `required` and
 must provide the same protocol and platform-neutral synchronized-content SHA-256 in their Windows
 and Android packages. The hash is not the JAR, DEX, APK, or `.rfmod` archive hash. See
 [`MULTIPLAYER.md`](MULTIPLAYER.md).

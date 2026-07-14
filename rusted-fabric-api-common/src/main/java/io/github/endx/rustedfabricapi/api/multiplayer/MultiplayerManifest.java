@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-/** Canonical cross-platform mod list suitable for a future network handshake payload. */
+/** Canonical cross-platform mod list carried by the RFH1 network handshake. */
 public final class MultiplayerManifest {
     public static final String WIRE_VERSION = "RFM1";
     private static final Pattern PLATFORM = Pattern.compile("[a-z][a-z0-9._-]{0,31}");

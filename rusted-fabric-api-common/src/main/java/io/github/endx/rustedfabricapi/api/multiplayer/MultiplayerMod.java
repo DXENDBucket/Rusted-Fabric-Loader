@@ -14,6 +14,10 @@ public final class MultiplayerMod implements Comparable<MultiplayerMod> {
     public enum Mode {
         /** May change presentation or controls, but must not change synchronized game state. */
         CLIENT_ONLY("client_only"),
+        /** Runs only on the host and requires no code, assets, or synchronized state on clients. */
+        SERVER_ONLY("server_only"),
+        /** Works independently on either side; peer presence may enable extra optional features. */
+        OPTIONAL("optional"),
         /** Every peer must provide the same protocol and platform-neutral synchronized-data hash. */
         REQUIRED("required"),
         /** Has not declared a safe cross-platform contract; modded multiplayer must be blocked. */
@@ -64,6 +68,14 @@ public final class MultiplayerMod implements Comparable<MultiplayerMod> {
 
     public static MultiplayerMod clientOnly(String id, String version) {
         return new MultiplayerMod(id, version, Mode.CLIENT_ONLY, "", "");
+    }
+
+    public static MultiplayerMod serverOnly(String id, String version) {
+        return new MultiplayerMod(id, version, Mode.SERVER_ONLY, "", "");
+    }
+
+    public static MultiplayerMod optional(String id, String version) {
+        return new MultiplayerMod(id, version, Mode.OPTIONAL, "", "");
     }
 
     public static MultiplayerMod unsafe(String id, String version) {

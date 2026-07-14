@@ -620,7 +620,7 @@ public class RustedWarfareGameProvider implements GameProvider {
     private void runRustedFabricAPIStage(String key) {
         Map<String, Object> ctx = new HashMap<>();
 
-        ctx.put("rustedfabricapi.ctxVersion", 4);
+        ctx.put("rustedfabricapi.ctxVersion", 5);
         ctx.put("rustedfabricapi.loaderVersion", BUILD_PROPERTIES.getProperty("loaderVersion", ""));
         ctx.put("rustedfabricapi.gameVersion", getRawGameVersion());
         ctx.put("rustedfabricapi.mappingsVersion", BUILD_PROPERTIES.getProperty("mappingsVersion", ""));
@@ -628,7 +628,8 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("rustedfabricapi.platform", isAndroidRuntime() ? "android" : "windows");
         ctx.put("rustedfabricapi.capabilities", Arrays.asList(
                 "event.engine.init", "event.runtime.ready", "mapping.named",
-                "multiplayer.compat.v1", "platform.windows.fabric"));
+                "session.v1", "multiplayer.compat.v1", "multiplayer.handshake.rfh1",
+                "platform.windows.fabric"));
         ctx.put("rustedfabricapi.processName", "rusted-warfare-client");
 
         ctx.put("gameDir", gameDir);
@@ -701,7 +702,8 @@ public class RustedWarfareGameProvider implements GameProvider {
         }
         if (declaration == null) return new MultiplayerRow(id, version, "unsafe", "-", "-");
         String mode = jsonString(declaration, "mode");
-        if ("client_only".equals(mode)) {
+        if ("client_only".equals(mode) || "server_only".equals(mode)
+                || "optional".equals(mode)) {
             return new MultiplayerRow(id, version, mode, "-", "-");
         }
         if ("required".equals(mode)) {

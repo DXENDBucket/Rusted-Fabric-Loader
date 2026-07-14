@@ -60,7 +60,8 @@ public final class LocalApkPatcher {
                     request.getClonePackage(), bootstrapEntry, false, Arrays.asList(
                     "manifest-package-rewrite", "manifest-application-rewrite",
                     "provider-authority-rewrite", "loader-provider-query-declaration",
-                    "engine-init-lifecycle-weave", "equal-width-dex-string-rewrite",
+                    "engine-init-lifecycle-weave", "rfh1-network-handshake-weave",
+                    "equal-width-dex-string-rewrite",
                     "legacy-signature-removal", "bootstrap-secondary-dex-injection",
                     "stored-entry-alignment"));
         } catch (PatchException expected) {

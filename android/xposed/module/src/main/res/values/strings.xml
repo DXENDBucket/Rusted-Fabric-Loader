@@ -44,11 +44,13 @@
     <string name="remove_mod">Remove</string>
     <string name="remove_confirmation">Remove %1$s from private Loader storage?</string>
     <string name="multiplayer_status_checking">Checking multiplayer compatibility…</string>
-    <string name="multiplayer_ready">Multiplayer manifest ready: %1$d required, %2$d client-only mods.</string>
-    <string name="multiplayer_blocked">Multiplayer is not safe: %1$d enabled mod(s) have no reviewed declaration.</string>
+    <string name="multiplayer_ready">RFH1 checks ready: %1$d required, %2$d client-only, %3$d server-only, %4$d optional mods.</string>
+    <string name="multiplayer_blocked">RFH1 will reject unsafe play: %1$d enabled mod(s) have no reviewed declaration.</string>
     <string name="mod_multiplayer">Multiplayer: %1$s</string>
     <string name="multiplayer_mode_required">required on every peer</string>
     <string name="multiplayer_mode_client_only">client-only; may differ</string>
+    <string name="multiplayer_mode_server_only">server-only; vanilla clients allowed</string>
+    <string name="multiplayer_mode_optional">optional on both sides; peer presence can add features</string>
     <string name="multiplayer_mode_unsafe">undeclared; do not use in modded multiplayer</string>
     <string name="error_apk_profile_mismatch">This APK is not the supported exact Rusted Warfare 1.15 base APK. Community variants need their own compatibility profile.</string>
     <string name="error_dex_weave">The mapped engine method did not match the safe patch profile. No APK was installed.</string>

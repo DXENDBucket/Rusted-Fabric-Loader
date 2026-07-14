@@ -51,7 +51,7 @@ final class PatchedRuntime {
 
     private static RustedFabricAPIContext createContext(Application application) {
         Map<String, Object> values = new HashMap<>();
-        values.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 4);
+        values.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 5);
         values.put(RustedFabricAPIKeys.K_LOADER_VERSION, BuildConfig.VERSION_NAME);
         values.put(RustedFabricAPIKeys.K_GAME_VERSION, "1.15");
         values.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "android-1.15-v1.0");
@@ -68,7 +68,8 @@ final class PatchedRuntime {
                 readMultiplayerManifest(application).encode());
         values.put(RustedFabricAPIKeys.K_CAPABILITIES, Arrays.asList(
                 "event.engine.init", "event.runtime.ready", "mapping.profile.exact",
-                "mod.dex.v1", "multiplayer.compat.v1",
+                "mod.dex.v1", "session.v1", "multiplayer.compat.v1",
+                "multiplayer.handshake.rfh1",
                 "platform.android.local-patch"));
         return new RustedFabricAPIContext(values);
     }

@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricexample;
 
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
+import io.github.endx.rustedfabricapi.api.event.GameSessionEvents;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,5 +35,12 @@ public final class PortableInitializationProbe {
         MultiplayerCompatibilityEvents.COMPATIBILITY_EVALUATED.register(report ->
                 checkedLogger.accept("portable multiplayer-compatible=" + report.compatible()
                         + " issues=" + report.issues().size()));
+        MultiplayerCompatibilityEvents.PEER_EVALUATED.register(peer ->
+                checkedLogger.accept("portable peer=" + peer.peerId()
+                        + " type=" + peer.peerType()
+                        + " compatible=" + peer.compatible()));
+        GameSessionEvents.SESSION_STARTED.register(session ->
+                checkedLogger.accept("portable session=" + session.kind()
+                        + " multiplayer=" + session.multiplayer()));
     }
 }

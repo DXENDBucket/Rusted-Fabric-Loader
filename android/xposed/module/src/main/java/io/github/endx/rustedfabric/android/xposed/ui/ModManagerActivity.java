@@ -386,25 +386,31 @@ public final class ModManagerActivity extends Activity {
     private void renderMultiplayerStatus(List<ModRegistry.Record> records) {
         int required = 0;
         int clientOnly = 0;
+        int serverOnly = 0;
+        int optional = 0;
         int unsafe = 0;
         for (ModRegistry.Record record : records) {
             if (!record.isEnabled()) continue;
             switch (record.getMultiplayer().mode()) {
                 case REQUIRED: required++; break;
                 case CLIENT_ONLY: clientOnly++; break;
+                case SERVER_ONLY: serverOnly++; break;
+                case OPTIONAL: optional++; break;
                 case UNSAFE: unsafe++; break;
                 default: break;
             }
         }
         multiplayerStatus.setText(unsafe > 0
                 ? getString(R.string.multiplayer_blocked, unsafe)
-                : getString(R.string.multiplayer_ready, required, clientOnly));
+                : getString(R.string.multiplayer_ready, required, clientOnly, serverOnly, optional));
     }
 
     private String multiplayerModeText(MultiplayerMod.Mode mode) {
         switch (mode) {
             case REQUIRED: return getString(R.string.multiplayer_mode_required);
             case CLIENT_ONLY: return getString(R.string.multiplayer_mode_client_only);
+            case SERVER_ONLY: return getString(R.string.multiplayer_mode_server_only);
+            case OPTIONAL: return getString(R.string.multiplayer_mode_optional);
             case UNSAFE:
             default: return getString(R.string.multiplayer_mode_unsafe);
         }

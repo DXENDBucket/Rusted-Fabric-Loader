@@ -54,6 +54,13 @@ public final class RuntimeLifecycleEvents {
         public boolean succeeded() {
             return failureCount == 0;
         }
+
+        public static DispatchResult of(int listenerCount, int failureCount) {
+            if (listenerCount < 0 || failureCount < 0 || failureCount > listenerCount) {
+                throw new IllegalArgumentException("Invalid dispatch counts");
+            }
+            return new DispatchResult(listenerCount, failureCount);
+        }
     }
 
     public static final class EngineInitializationEvent {

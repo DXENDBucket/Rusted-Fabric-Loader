@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.NetworkPacketEvents;
+import io.github.endx.rustedfabricapi.api.multiplayer.DesktopMultiplayerTransport;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -18,6 +19,7 @@ public abstract class NetworkPacketNamedMixin {
     @Inject(method = "resetNetworkState(Z)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterResetNetworkState(boolean chatOnly, CallbackInfo ci) {
         NetworkPacketEvents.AFTER_RESET_NETWORK_STATE.invoker().onEvent(this, chatOnly);
+        if (!chatOnly) DesktopMultiplayerTransport.resetToSinglePlayer();
     }
 
     @Inject(method = "disconnectWithReason(Ljava/lang/String;)V", at = @At("HEAD"), require = 1)

@@ -21,6 +21,8 @@ import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.Opcodes;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction10x;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.iface.ClassDef;
@@ -71,6 +73,7 @@ public final class LocalPatcherContractVerification {
                         && callbackName(instructions.get(instructions.size() - 2))
                         .equals(DexLifecycleWeaver.AFTER_METHOD),
                 "after engine callback was not inserted before normal return");
+        verifyNetworkCallbacks(woven);
         try {
             DexLifecycleWeaver.weaveEngineInitialization(woven);
             throw new AssertionError("already woven DEX was accepted");
@@ -78,6 +81,37 @@ public final class LocalPatcherContractVerification {
             require(expected.getReason() == PatchException.Reason.DEX_WEAVE_FAILED,
                     "wrong repeated weave reason: " + expected.getReason());
         }
+    }
+
+    private static void verifyNetworkCallbacks(byte[] woven) {
+        DexBackedDexFile dex = new DexBackedDexFile(null, woven);
+        int found = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            if (!DexLifecycleWeaver.NETWORK_CLASS.equals(classDef.getType())) continue;
+            for (Method method : classDef.getMethods()) {
+                String expected = null;
+                if (DexLifecycleWeaver.REGISTER_METHOD.equals(method.getName())) {
+                    expected = DexLifecycleWeaver.AFTER_REGISTER_CALLBACK;
+                } else if (DexLifecycleWeaver.SERVER_INFO_METHOD.equals(method.getName())) {
+                    expected = DexLifecycleWeaver.AFTER_SERVER_INFO_CALLBACK;
+                } else if (DexLifecycleWeaver.SYSTEM_PACKET_METHOD.equals(method.getName())) {
+                    expected = "Z".equals(method.getReturnType())
+                            ? DexLifecycleWeaver.START_GAME_CALLBACK
+                            : DexLifecycleWeaver.PACKET_TYPE.equals(
+                            method.getParameterTypes().get(0).toString())
+                            ? DexLifecycleWeaver.SYSTEM_PACKET_CALLBACK
+                            : DexLifecycleWeaver.NETWORK_RESET_CALLBACK;
+                }
+                if (expected == null) continue;
+                found++;
+                boolean callback = false;
+                for (Instruction instruction : method.getImplementation().getInstructions()) {
+                    callback |= expected.equals(callbackName(instruction));
+                }
+                require(callback, "missing RFH1 callback: " + expected);
+            }
+        }
+        require(found == 5, "expected five woven RFH1/session methods");
     }
 
     private static void verifyBinaryXmlReplacement() throws Exception {
@@ -119,6 +153,8 @@ public final class LocalPatcherContractVerification {
                 "code-free patch report is incomplete");
         require(report.toJson().contains("engine-init-lifecycle-weave"),
                 "lifecycle weave is missing from the patch report");
+        require(report.toJson().contains("rfh1-network-handshake-weave"),
+                "RFH1 network weave is missing from the patch report");
         require(!report.toJson().contains(temporary.toString()),
                 "patch report leaked a local path");
 
@@ -198,9 +234,50 @@ public final class LocalPatcherContractVerification {
                 "SyntheticEngine.java", Collections.emptySet(), Collections.emptyList(),
                 Collections.singletonList(method));
         MemoryDataStore output = new MemoryDataStore();
+        ImmutableClassDef network = networkClass();
         DexPool.writeTo(output, new ImmutableDexFile(Opcodes.getDefault(),
-                Collections.singletonList(classDef)));
+                Arrays.asList(classDef, network)));
         return output.getData();
+    }
+
+    private static ImmutableClassDef networkClass() {
+        java.util.List<ImmutableMethod> methods = new java.util.ArrayList<>();
+        methods.add(networkMethod(DexLifecycleWeaver.REGISTER_METHOD,
+                DexLifecycleWeaver.CONNECTION_TYPE, AccessFlags.PRIVATE.getValue()));
+        methods.add(networkMethod(DexLifecycleWeaver.SERVER_INFO_METHOD,
+                DexLifecycleWeaver.CONNECTION_TYPE, AccessFlags.PRIVATE.getValue()));
+        methods.add(networkMethod(DexLifecycleWeaver.SYSTEM_PACKET_METHOD,
+                DexLifecycleWeaver.PACKET_TYPE,
+                AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue()));
+        methods.add(networkMethod(DexLifecycleWeaver.SYSTEM_PACKET_METHOD,
+                "Z", AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue()));
+        methods.add(startMethod());
+        return new ImmutableClassDef(DexLifecycleWeaver.NETWORK_CLASS,
+                AccessFlags.PUBLIC.getValue(), "Ljava/lang/Object;", Collections.emptyList(),
+                "SyntheticNetwork.java", Collections.emptySet(), Collections.emptyList(), methods);
+    }
+
+    private static ImmutableMethod networkMethod(String name, String parameter, int flags) {
+        MutableMethodImplementation body = new MutableMethodImplementation(2);
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        return new ImmutableMethod(DexLifecycleWeaver.NETWORK_CLASS, name,
+                Collections.singletonList(new ImmutableMethodParameter(
+                        parameter, Collections.emptySet(), null)),
+                "V", flags, Collections.emptySet(), Collections.emptySet(), body);
+    }
+
+    private static ImmutableMethod startMethod() {
+        MutableMethodImplementation body = new MutableMethodImplementation(4);
+        body.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 1));
+        body.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
+        return new ImmutableMethod(DexLifecycleWeaver.NETWORK_CLASS,
+                DexLifecycleWeaver.SYSTEM_PACKET_METHOD,
+                Arrays.asList(
+                        new ImmutableMethodParameter(DexLifecycleWeaver.CONNECTION_TYPE,
+                                Collections.emptySet(), null),
+                        new ImmutableMethodParameter("Z", Collections.emptySet(), null)),
+                "Z", AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
     }
 
     private static Method targetMethod(byte[] dexBytes) {

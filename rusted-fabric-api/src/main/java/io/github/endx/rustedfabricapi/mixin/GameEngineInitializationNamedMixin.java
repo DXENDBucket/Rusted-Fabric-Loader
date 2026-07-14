@@ -3,6 +3,8 @@ package io.github.endx.rustedfabricapi.mixin;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.session.GameSession;
+import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -50,6 +52,7 @@ public abstract class GameEngineInitializationNamedMixin {
         }
         if (context != null && rustedfabricapi$gameReady.compareAndSet(false, true)) {
             RuntimeLifecycleEvents.GAME_READY.dispatch(context);
+            GameSessionRuntime.transition(GameSession.Kind.SINGLE_PLAYER);
         }
     }
 }

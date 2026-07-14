@@ -17,6 +17,17 @@ public final class AndroidMappingProfile {
     public static final String GAME_ENGINE_INIT_NAME = "a";
     public static final String GAME_ENGINE_INIT_DESCRIPTOR = "(Landroid/content/Context;)V";
     public static final String GAME_ENGINE_INIT_NAMED = "init";
+    public static final String NETWORK_ENGINE_OWNER =
+            "com/corrodinggames/rts/gameFramework/j/ae";
+    public static final String NETWORK_CONNECTION_OWNER =
+            "com/corrodinggames/rts/gameFramework/j/c";
+    public static final String NETWORK_PACKET_OWNER =
+            "com/corrodinggames/rts/gameFramework/j/bi";
+    public static final String NETWORK_REGISTER_NAME = "f";
+    public static final String NETWORK_SERVER_INFO_NAME = "d";
+    public static final String NETWORK_DISPATCH_NAME = "a";
+    public static final String NETWORK_RESET_NAME = "a";
+    public static final String NETWORK_START_NAME = "a";
 
     private AndroidMappingProfile() {
     }
@@ -40,6 +51,10 @@ public final class AndroidMappingProfile {
 
     public static String gameEngineInitBinaryClassName() {
         return GAME_ENGINE_INIT_OWNER.replace('/', '.');
+    }
+
+    public static String binaryName(String owner) {
+        return owner.replace('/', '.');
     }
 
     public static final class Selection {

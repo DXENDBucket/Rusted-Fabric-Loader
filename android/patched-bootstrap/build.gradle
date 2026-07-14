@@ -11,7 +11,7 @@ android {
         minSdk 27
         targetSdk 35
         versionCode 1
-        versionName '0.8.0-cross-platform'
+        versionName '0.9.0-rfh1'
     }
 
     buildTypes {
@@ -81,6 +81,11 @@ tasks.register('verifyBootstrapArtifact') {
         }
         if (!text.contains('Lio/github/endx/rustedfabric/android/patched/EngineLifecycleBridge;')) {
             throw new GradleException('Bootstrap DEX is missing EngineLifecycleBridge')
+        }
+        if (!text.contains('Lio/github/endx/rustedfabric/android/patched/AndroidMultiplayerTransport;')
+                || !text.contains('Lio/github/endx/rustedfabricapi/api/multiplayer/MultiplayerNetworkBridge;')
+                || !text.contains('Lio/github/endx/rustedfabricapi/api/session/GameSession;')) {
+            throw new GradleException('Bootstrap DEX is missing RFH1 or shared session support')
         }
         // The superclass descriptor is expected, but a stub class definition would also bring
         // its distinctive source file name into the DEX. compileOnly must keep that source out.

@@ -1,11 +1,13 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
+import io.github.endx.rustedfabricapi.api.multiplayer.DesktopMultiplayerTransport;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.network.NetworkEngine", remap = false)
 public abstract class NetworkHandshakeNamedMixin {
@@ -43,6 +45,7 @@ public abstract class NetworkHandshakeNamedMixin {
             at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterSendRegisterConnection(@Coerce Object connection, CallbackInfo ci) {
         NetworkHandshakeEvents.AFTER_SEND_REGISTER_CONNECTION.invoker().onPacket(this, connection);
+        DesktopMultiplayerTransport.afterClientRegistration(this, connection);
     }
 
     @Inject(method = "sendServerInfo(Lrustedwarfare/network/NetworkConnection;)V",
@@ -55,6 +58,22 @@ public abstract class NetworkHandshakeNamedMixin {
             at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterSendServerInfo(@Coerce Object connection, CallbackInfo ci) {
         NetworkHandshakeEvents.AFTER_SEND_SERVER_INFO.invoker().onPacket(this, connection);
+        DesktopMultiplayerTransport.afterServerInfo(this, connection);
+    }
+
+    @Inject(method = "processSystemPacket(Lrustedwarfare/network/Packet;)V",
+            at = @At("HEAD"), cancellable = true, require = 1)
+    private void rustedfabricapi$receiveHandshake(@Coerce Object packet, CallbackInfo ci) {
+        if (DesktopMultiplayerTransport.receive(this, packet)) ci.cancel();
+    }
+
+    @Inject(method = "sendStartGamePacket(Lrustedwarfare/network/NetworkConnection;Z)Z",
+            at = @At("HEAD"), cancellable = true, require = 1)
+    private void rustedfabricapi$gateGameStart(@Coerce Object connection, boolean reconnect,
+            CallbackInfoReturnable<Boolean> callback) {
+        if (!DesktopMultiplayerTransport.allowGameStart(connection)) {
+            callback.setReturnValue(false);
+        }
     }
 
     @Inject(method = "sendIncorrectPassword(Lrustedwarfare/network/NetworkConnection;)V",

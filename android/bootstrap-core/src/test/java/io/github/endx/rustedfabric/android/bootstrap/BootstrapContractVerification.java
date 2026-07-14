@@ -121,6 +121,15 @@ public final class BootstrapContractVerification {
         require(AndroidMappingProfile.GAME_ENGINE_INIT_DESCRIPTOR.equals(
                         profile.getProperty("hook.gameEngineInit.descriptor")),
                 "GameEngine init descriptor diverged from profile.properties");
+        require(AndroidMappingProfile.NETWORK_ENGINE_OWNER.equals(
+                        profile.getProperty("hook.networkEngine.owner")),
+                "NetworkEngine owner diverged from profile.properties");
+        require(AndroidMappingProfile.NETWORK_CONNECTION_OWNER.equals(
+                        profile.getProperty("hook.networkConnection.owner")),
+                "NetworkConnection owner diverged from profile.properties");
+        require(AndroidMappingProfile.NETWORK_PACKET_OWNER.equals(
+                        profile.getProperty("hook.networkPacket.owner")),
+                "Network packet owner diverged from profile.properties");
     }
 
     private static String read(Path path) throws Exception {

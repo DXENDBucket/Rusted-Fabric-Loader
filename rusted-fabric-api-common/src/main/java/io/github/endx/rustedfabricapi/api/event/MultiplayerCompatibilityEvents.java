@@ -5,11 +5,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerCompatibility;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerPeerCompatibility;
 
 /** Exception-isolated, platform-neutral multiplayer compatibility events. */
 public final class MultiplayerCompatibilityEvents {
     public static final ManifestEvent LOCAL_MANIFEST_READY = new ManifestEvent();
     public static final EvaluationEvent COMPATIBILITY_EVALUATED = new EvaluationEvent();
+    public static final PeerEvaluationEvent PEER_EVALUATED = new PeerEvaluationEvent();
 
     private MultiplayerCompatibilityEvents() {
     }
@@ -27,6 +29,11 @@ public final class MultiplayerCompatibilityEvents {
     @FunctionalInterface
     public interface EvaluationListener {
         void onEvaluation(MultiplayerCompatibility.Report report);
+    }
+
+    @FunctionalInterface
+    public interface PeerEvaluationListener {
+        void onPeerEvaluation(MultiplayerPeerCompatibility result);
     }
 
     public static final class DispatchResult {
@@ -82,6 +89,29 @@ public final class MultiplayerCompatibilityEvents {
                 try { listener.onEvaluation(report); } catch (Throwable ignored) { failures++; }
             }
             return new DispatchResult(listeners.size(), failures);
+        }
+    }
+
+    public static final class PeerEvaluationEvent {
+        private final CopyOnWriteArrayList<PeerEvaluationListener> listeners =
+                new CopyOnWriteArrayList<>();
+
+        public Registration register(PeerEvaluationListener listener) {
+            if (listener == null) throw new NullPointerException("listener");
+            listeners.add(listener);
+            AtomicBoolean active = new AtomicBoolean(true);
+            return () -> active.compareAndSet(true, false) && listeners.remove(listener);
+        }
+
+        public DispatchResult dispatch(MultiplayerPeerCompatibility result) {
+            if (result == null) throw new NullPointerException("result");
+            int count = 0;
+            int failures = 0;
+            for (PeerEvaluationListener listener : listeners) {
+                count++;
+                try { listener.onPeerEvaluation(result); } catch (Throwable ignored) { failures++; }
+            }
+            return new DispatchResult(count, failures);
         }
     }
 }

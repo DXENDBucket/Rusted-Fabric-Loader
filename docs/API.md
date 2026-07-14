@@ -23,7 +23,8 @@ Two Rusted-specific Fabric entrypoints are available:
 
 Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an
 immutable snapshot; its launch-argument array and capabilities are defensively copied.
-`contextVersion()` is currently `4`. Version 4 adds the canonical multiplayer manifest and the
+`contextVersion()` is currently `5`. Version 5 adds the shared game-session API and live `RFH1`
+handshake capability. Version 4 added the canonical multiplayer manifest and the
 `multiplayer.compat.v1` capability. Version 3 added `platform()`, `mappingProfileId()`,
 `capabilities()`, `packageName()`, and `processName()`. The older `androidRuntime()` accessor remains
 available.
@@ -47,11 +48,22 @@ engine initialization. Both are exception-isolated and available on Windows and 
 multiplayer manifests, evaluation, and events live under `api.multiplayer` and
 `MultiplayerCompatibilityEvents`; see [`MULTIPLAYER.md`](MULTIPLAYER.md).
 
+`RustedFabricRuntime.currentSession()` and `GameSessionEvents` are also common API. They are active
+for single-player as well as host/client play, so portable gameplay mods do not need separate
+offline and online entrypoints.
+
 The distributed binary is still platform-specific: Windows uses a Fabric Jar containing JVM class
 files, while Android requires a DEX mod package. Keep portable logic in a common source set and put
 Slick/LWJGL, desktop Mixins, Android UI/storage, and other platform APIs behind separate adapters.
 Android entrypoint classes implement `RustedFabricModEntrypoint`; the `.rfmod` v1 format and loading
 rules are documented in [`ANDROID_MODS.md`](ANDROID_MODS.md).
+
+The separate Gradle modules are build boundaries, not two competing APIs. `rusted-fabric-api-common`
+must not reference Fabric, Mixin, Android, Slick/LWJGL, or game implementation classes.
+`rusted-fabric-api` supplies the Windows Fabric/Mixin hooks and packages the common classes into the
+desktop API Jar. Android packages those same common classes with its own DEX hooks. They can be
+presented to mod authors as one Rusted Fabric API, but keeping the internal modules separate prevents
+desktop dependencies from entering Android and keeps portable API contracts mechanically verifiable.
 
 ## Event behavior
 

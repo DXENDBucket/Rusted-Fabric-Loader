@@ -11,6 +11,12 @@ import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerCompatibility;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerHandshake;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerPeerCompatibility;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerNetworkBridge;
+import io.github.endx.rustedfabricapi.api.event.GameSessionEvents;
+import io.github.endx.rustedfabricapi.api.session.GameSession;
+import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,13 +28,15 @@ public final class CommonApiContractVerification {
     private CommonApiContractVerification() {
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         RustedFabricAPIContext context = androidContext();
         verifyContext(context);
         verifySafeEvents(context);
         verifyPortableModEntrypoint(context);
         verifyMultiplayerCompatibility();
         verifyEntrypointInstallsContext();
+        verifySharedSessions();
+        verifyNetworkBridge();
         System.out.println("Cross-platform Rusted Fabric API contracts passed");
     }
 
@@ -40,10 +48,17 @@ public final class CommonApiContractVerification {
         MultiplayerManifest android = new MultiplayerManifest("android", Arrays.asList(
                 MultiplayerMod.required("shared_units", "1.2.0", "units-v1", hash),
                 MultiplayerMod.clientOnly("touch_controls", "3.0.0")));
+        MultiplayerManifest serverOnly = new MultiplayerManifest("windows", Arrays.asList(
+                MultiplayerMod.serverOnly("host_admin", "1.0.0")));
+        MultiplayerManifest optional = new MultiplayerManifest("windows", Arrays.asList(
+                MultiplayerMod.optional("quality_tools", "2.0.0")));
         MultiplayerManifest decoded = MultiplayerManifest.decode(windows.encode());
         require(decoded.encode().equals(windows.encode()), "manifest encoding is not canonical");
         require(decoded.fingerprint().equals(windows.fingerprint()),
                 "manifest fingerprint changed after decoding");
+        require(MultiplayerHandshake.decodeHello(MultiplayerHandshake.encodeHello(windows))
+                        .encode().equals(windows.encode()),
+                "RFH1 handshake did not preserve the canonical manifest");
 
         final int[] evaluations = {0};
         MultiplayerCompatibilityEvents.Registration registration =
@@ -71,6 +86,99 @@ public final class CommonApiContractVerification {
                 Arrays.asList(MultiplayerMod.clientOnly("touch_controls", "1.0")));
         require(MultiplayerCompatibility.evaluateVanillaPeer(clientOnly).compatible(),
                 "client-only mod should remain compatible with vanilla peers");
+        require(MultiplayerCompatibility.evaluateVanillaPeer(serverOnly).compatible(),
+                "server-only mod should allow vanilla clients");
+        require(MultiplayerManifest.decode(serverOnly.encode()).mods().get(0).mode()
+                        == MultiplayerMod.Mode.SERVER_ONLY,
+                "server-only mode was not preserved by the wire manifest");
+        require(MultiplayerCompatibility.evaluateVanillaPeer(optional).compatible(),
+                "optional mod should remain compatible when the peer has no Loader");
+        MultiplayerManifest optionalOtherVersion = new MultiplayerManifest("android", Arrays.asList(
+                MultiplayerMod.optional("quality_tools", "1.5.0")));
+        require(MultiplayerCompatibility.evaluate(optional, optionalOtherVersion).compatible(),
+                "optional peer enhancements must not require matching versions");
+        require(MultiplayerManifest.decode(optional.encode()).mods().get(0).mode()
+                        == MultiplayerMod.Mode.OPTIONAL,
+                "optional mode was not preserved by the wire manifest");
+        final int[] peerEvents = {0};
+        MultiplayerCompatibilityEvents.Registration peerRegistration =
+                MultiplayerCompatibilityEvents.PEER_EVALUATED.register(result -> peerEvents[0]++);
+        MultiplayerPeerCompatibility peer = MultiplayerPeerCompatibility.evaluate(
+                "peer-1", windows, android);
+        require(peer.compatible() && peer.remoteManifest().isPresent(),
+                "live Loader peer compatibility failed");
+        require(peerEvents[0] == 1, "live peer event was not delivered");
+        peerRegistration.close();
+    }
+
+    private static void verifySharedSessions() {
+        List<GameSession.Kind> started = new ArrayList<>();
+        GameSessionEvents.Registration registration =
+                GameSessionEvents.SESSION_STARTED.register(session -> started.add(session.kind()));
+        GameSession single = GameSessionRuntime.transition(GameSession.Kind.SINGLE_PLAYER);
+        require(!single.multiplayer() && RustedFabricRuntime.currentSession().orElse(null) == single,
+                "single-player session is not exposed through the shared API");
+        GameSession host = GameSessionRuntime.transition(GameSession.Kind.MULTIPLAYER_HOST);
+        require(host.multiplayer() && host.host(), "host session transition failed");
+        require(started.equals(Arrays.asList(GameSession.Kind.SINGLE_PLAYER,
+                        GameSession.Kind.MULTIPLAYER_HOST)),
+                "session events were not platform-neutral or ordered");
+        GameSessionRuntime.endCurrent();
+        registration.close();
+    }
+
+    private static void verifyNetworkBridge() throws InterruptedException {
+        Map<String, Object> raw = new HashMap<>();
+        raw.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 5);
+        raw.put(RustedFabricAPIKeys.K_PLATFORM, "windows");
+        raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
+                MultiplayerManifest.empty("windows").encode());
+        RustedFabricRuntime.installContext(new RustedFabricAPIContext(raw));
+        List<String> logs = new ArrayList<>();
+        MultiplayerNetworkBridge bridge = new MultiplayerNetworkBridge(
+                new MultiplayerNetworkBridge.Mapping(FakePacket.class.getName(),
+                        "type", "bytes", "connection", "send", "disconnect", "id"),
+                (message, failure) -> logs.add(message), 100L);
+        FakeEngine engine = new FakeEngine();
+        FakeConnection connection = new FakeConnection();
+        bridge.connectionReady(engine, connection, MultiplayerNetworkBridge.Side.CLIENT);
+        require(engine.sent != null && engine.sent.type == MultiplayerHandshake.GAME_PACKET_TYPE,
+                "shared network bridge did not send RFH1");
+        engine.sent.connection = connection;
+        require(bridge.receive(engine, engine.sent), "shared network bridge ignored RFH1");
+        require(connection.disconnectReason == null, "compatible RFH1 peer was disconnected");
+        require(!logs.isEmpty(), "network bridge diagnostics were not emitted");
+        bridge.resetToSinglePlayer();
+
+        raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
+                new MultiplayerManifest("windows", Arrays.asList(
+                        MultiplayerMod.serverOnly("host_admin", "1.0.0"),
+                        MultiplayerMod.optional("quality_tools", "2.0.0"))).encode());
+        RustedFabricRuntime.installContext(new RustedFabricAPIContext(raw));
+        MultiplayerNetworkBridge vanillaFriendly = new MultiplayerNetworkBridge(
+                new MultiplayerNetworkBridge.Mapping(FakePacket.class.getName(),
+                        "type", "bytes", "connection", "send", "disconnect", "id"),
+                (message, failure) -> { }, 100L);
+        FakeConnection vanilla = new FakeConnection();
+        vanillaFriendly.connectionReady(new FakeEngine(), vanilla,
+                MultiplayerNetworkBridge.Side.HOST);
+        Thread.sleep(200L);
+        require(vanilla.disconnectReason == null && vanillaFriendly.allowGameStart(vanilla),
+                "server-only/optional host rejected a vanilla client");
+
+        raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
+                new MultiplayerManifest("windows", Arrays.asList(MultiplayerMod.required(
+                        "shared", "1", "shared-v1", repeat('c', 64)))).encode());
+        RustedFabricRuntime.installContext(new RustedFabricAPIContext(raw));
+        MultiplayerNetworkBridge strict = new MultiplayerNetworkBridge(
+                new MultiplayerNetworkBridge.Mapping(FakePacket.class.getName(),
+                        "type", "bytes", "connection", "send", "disconnect", "id"),
+                (message, failure) -> { }, 100L);
+        FakeConnection legacy = new FakeConnection();
+        strict.connectionReady(new FakeEngine(), legacy, MultiplayerNetworkBridge.Side.HOST);
+        Thread.sleep(200L);
+        require(legacy.disconnectReason != null,
+                "legacy peer was not rejected when a required mod was active");
     }
 
     private static void verifyPortableModEntrypoint(RustedFabricAPIContext context) {
@@ -168,5 +276,23 @@ public final class CommonApiContractVerification {
         char[] result = new char[count];
         Arrays.fill(result, value);
         return new String(result);
+    }
+
+    public static final class FakePacket {
+        public int type;
+        public byte[] bytes;
+        public FakeConnection connection;
+        public FakePacket(int type) { this.type = type; }
+    }
+
+    public static final class FakeConnection {
+        public int id = 7;
+        public String disconnectReason;
+        public void disconnect(String reason) { disconnectReason = reason; }
+    }
+
+    public static final class FakeEngine {
+        public FakePacket sent;
+        public void send(FakeConnection connection, FakePacket packet) { sent = packet; }
     }
 }
