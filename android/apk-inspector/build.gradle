@@ -102,6 +102,28 @@ tasks.register('verifyFinalAndroidMapping') {
             throw new GradleException('Android strict API mapping row counts changed')
         }
 
+        def profile = new Properties()
+        new File(profileDir, 'profile.properties').withInputStream { profile.load(it) }
+        def hookOwner = profile.getProperty('hook.gameEngineInit.owner')
+        def hookName = profile.getProperty('hook.gameEngineInit.name')
+        def hookDescriptor = profile.getProperty('hook.gameEngineInit.descriptor')
+        def hookNamed = profile.getProperty('hook.gameEngineInit.named')
+        def currentOwner = null
+        def hookFound = false
+        new File(profileDir, 'mappings.tiny').eachLine('UTF-8') { line ->
+            if (line.startsWith('c\t')) {
+                currentOwner = line.split('\t', -1)[1]
+            } else if (currentOwner == hookOwner && line.startsWith('\tm\t')) {
+                def parts = line.split('\t', -1)
+                if (parts[2] == hookDescriptor && parts[3] == hookName && parts[5] == hookNamed) {
+                    hookFound = true
+                }
+            }
+        }
+        if (!hookFound) {
+            throw new GradleException('GameEngine initialization hook is not present in the pinned mapping')
+        }
+
         def forbidden = fileTree(profileDir) {
             include '**/*.apk', '**/*.dex', '**/*.so', '**/*.class', '**/*.jar', '**/*.xml'
         }.files

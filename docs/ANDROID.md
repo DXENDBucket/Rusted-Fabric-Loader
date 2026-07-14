@@ -124,7 +124,7 @@ Exit gate: the inspector identifies the reference APK, its Android entrypoints, 
 - [x] Scaffold the smallest possible Modern Xposed-compatible module.
 - [x] Statically scope the first prototype to the official Rusted Warfare package.
 - [x] Hook the base `Application.attach(Context)` boundary without referencing game classes.
-- [x] Record only package/process, application class, pending profile, and ClassLoader class.
+- [x] Record only package/process, application class, profile status, and ClassLoader class.
 - [x] Build and audit the debug APK with the configured Android SDK.
 - [ ] Install the APK on a rooted test device with a Modern Xposed API 102-compatible framework.
 - [ ] Validate startup on a rooted test device with the module enabled and disabled.
@@ -133,7 +133,9 @@ Exit gate: enabling the module adds one diagnostic log entry and changes no game
 
 ### Phase 2: first API events
 
-- Hook a stable `GameEngine` initialization boundary.
+- [x] Select the official profile by installed APK package/version/SHA-256 without copying the APK.
+- [x] Hook the stable `RustedWarfareGameEngine.init(Context)` boundary as an after-only probe.
+- [ ] Validate the profile selection and initialization probe on a rooted test device.
 - Build `RustedFabricAPIContext` with `androidRuntime=true`.
 - Implement three low-risk events: before engine initialization, after engine initialization, and activity foreground/background.
 - Add hook timeouts, exception isolation, and a capability status screen.
@@ -168,10 +170,9 @@ Exit gate: each migrated feature has an independent compatibility probe and can 
 
 ## Immediate implementation order
 
-1. Implement `android:apk-inspector` and commit deterministic tests using synthetic DEX/manifest fixtures only.
-2. Select the checksum-pinned Android mapping profile inside the hooked game process.
-3. Produce an inventory of the existing 84 Mixins by hook category; do not port them yet.
-4. Scaffold the root hook module and validate only `Application.attach(Context)`.
-5. Add the `GameEngine` initialization probe and the first Android API context.
+1. Install the profile-probe APK on a rooted test device and capture the bootstrap logs.
+2. Build the first Android API context with `androidRuntime=true`.
+3. Add before/after engine initialization events around the verified probe.
+4. Produce an inventory of the existing 84 Mixins by hook category before porting more hooks.
 
 No step should require committing, publishing, or embedding the local reference APK.

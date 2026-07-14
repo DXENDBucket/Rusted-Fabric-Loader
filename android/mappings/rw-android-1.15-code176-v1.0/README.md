@@ -21,6 +21,10 @@ The two colliding `a(GameInputStream)` virtual methods documented in
 `optimizer-alias-collisions.csv` intentionally remain in their official namespace in the loader-safe
 Tiny. Expose distinct adapter names outside the original hierarchy if those operations become API.
 
+The first runtime probe uses the separate high-confidence, stable mapping
+`com/corrodinggames/rts/game/i#a(Landroid/content/Context;)V -> init`. The hook descriptor is pinned
+in `profile.properties` and checked against the runtime constants during every build.
+
 ## Provenance
 
 - source archive: `rw_android_1_15_v1_0_FINAL_MAPPING_CODEX_HANDOFF.zip`

@@ -15,8 +15,15 @@ public final class BootstrapDiagnostics {
 
     public static Snapshot captureOnce(String packageName, String processName,
                                        String applicationClassName, String classLoaderClassName) {
+        return captureOnce(packageName, processName, applicationClassName, classLoaderClassName,
+                MAPPING_PROFILE_STATUS);
+    }
+
+    public static Snapshot captureOnce(String packageName, String processName,
+                                       String applicationClassName, String classLoaderClassName,
+                                       String mappingProfileStatus) {
         Snapshot candidate = new Snapshot(packageName, processName, applicationClassName,
-                classLoaderClassName, MAPPING_PROFILE_STATUS);
+                classLoaderClassName, mappingProfileStatus);
         SNAPSHOT.compareAndSet(null, candidate);
         return SNAPSHOT.get();
     }

@@ -1,13 +1,19 @@
 # Rusted Fabric Android Xposed bootstrap
 
-This standalone Android build packages the Phase 1 bootstrap as a Modern Xposed API 102 module.
+This standalone Android build packages the bootstrap and first mapped probe as a Modern Xposed API
+102 module.
 It is intentionally isolated from the desktop Gradle build so an Android SDK is not required for
 desktop development.
 
-The module has one static scope: `com.corrodinggames.rts`. It hooks
-`android.app.Application.attach(Context)` after the original call and records only the process,
-application class, ClassLoader class, and pending mapping status. It does not load mappings or
-mods, reference game classes, modify arguments/results, access saves, or change the installed APK.
+The module has one static scope: `com.corrodinggames.rts`. After the original
+`android.app.Application.attach(Context)` call, it streams the installed base APK from
+`ApplicationInfo.sourceDir` through SHA-256 without copying it. Package, version, and hash must
+exactly select `rw-android-1.15-code176-v1.0`; otherwise all game hooks stay disabled.
+
+For the verified profile, the module hooks the mapped
+`RustedWarfareGameEngine.init(Context)` boundary and records one after-initialization event. Both
+hooks always call the original implementation first and do not modify arguments or results, retain
+Context/game objects, access saves, load mods, or change the installed APK.
 
 ## Build prerequisites
 
@@ -25,7 +31,8 @@ Create an ignored `local.properties` containing `sdk.dir=...`, then run from the
 The libxposed API is compile-only and resolves from its official API 102 release AAR. It is not
 embedded in the module APK. Install the generated debug APK, enable it in an API 102-compatible
 Xposed framework, select Rusted Warfare, and force-stop/start the game. The expected log tags are
-`module-loaded`, `hook-installed`, and `application-attached` under `RustedFabric/Bootstrap`.
+`module-loaded`, `application-attached`, `hook-installed`, and `game-engine-initialized` under
+`RustedFabric/Bootstrap`. A non-matching installation logs `game-hook-skipped` instead.
 
 This phase is successful only if the game reaches its menu both with the module enabled and
 disabled and no save, game file, package signature, or gameplay behavior changes.

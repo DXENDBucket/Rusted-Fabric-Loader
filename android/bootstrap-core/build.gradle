@@ -16,7 +16,8 @@ tasks.register('verifyBootstrapContracts', JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass.set('io.github.endx.rustedfabric.android.bootstrap.BootstrapContractVerification')
-    args '--xposed-root', file('../xposed').absolutePath
+    args '--xposed-root', file('../xposed').absolutePath,
+            '--mapping-profile', file('../mappings/rw-android-1.15-code176-v1.0/profile.properties').absolutePath
 }
 
 tasks.register('verifyNoGamePayload') {
