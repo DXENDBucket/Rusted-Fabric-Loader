@@ -60,7 +60,7 @@ public final class LocalApkPatcher {
                     request.getClonePackage(), bootstrapEntry, false, Arrays.asList(
                     "manifest-package-rewrite", "manifest-application-rewrite",
                     "provider-authority-rewrite", "loader-provider-query-declaration",
-                    "equal-width-dex-string-rewrite",
+                    "engine-init-lifecycle-weave", "equal-width-dex-string-rewrite",
                     "legacy-signature-removal", "bootstrap-secondary-dex-injection",
                     "stored-entry-alignment"));
         } catch (PatchException expected) {
@@ -98,7 +98,8 @@ public final class LocalApkPatcher {
                     request.getClonePackage());
             dexReplacements.put(request.getProfile().getSourceProviderAuthority(),
                     request.cloneProviderAuthority());
-            byte[] patchedDex = DexStringRewriter.replaceEqualWidth(primaryDex, dexReplacements);
+            byte[] wovenDex = DexLifecycleWeaver.weaveEngineInitialization(primaryDex);
+            byte[] patchedDex = DexStringRewriter.replaceEqualWidth(wovenDex, dexReplacements);
             String bootstrapEntry = nextDexEntry(entries.keySet());
 
             try (OutputStream fileOutput = Files.newOutputStream(temporary,

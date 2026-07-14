@@ -79,7 +79,9 @@ caller-authorized provider, game-code-cache transfer, and enabled-mod startup di
 `android:local-patcher-core`, `android:local-patcher-cli`, `android/game-api-stubs`, and
 `android/patched-bootstrap` implement the verified rewrite/sign/injection pipeline. The management
 APK embeds only the code-only bootstrap DEX, generates a per-install Android Keystore identity, and
-hands the signed result to `PackageInstaller`. See [`ANDROID_LOCAL_PATCHER.md`](ANDROID_LOCAL_PATCHER.md).
+hands the signed result to `PackageInstaller`. The exact-profile DEX weaver now supplies the same
+engine initialization before/after API events as the Xposed backend. See
+[`ANDROID_LOCAL_PATCHER.md`](ANDROID_LOCAL_PATCHER.md).
 
 ### Shared loader core
 
@@ -191,7 +193,7 @@ Exit gate: each migrated feature has an independent compatibility probe and can 
 ## Immediate implementation order
 
 1. Add a reproducible Android probe-mod build that emits a valid `.rfmod` without game payload.
-2. Install the Loader build on a rooted test device and validate management UI/provider access.
+2. Install the Loader and generated side-by-side game copy on an unrooted test device.
 3. Validate DEX loading and before/after lifecycle delivery with that external probe mod.
 4. Add an in-app diagnostic history and capability status view without adding UI to the game.
 

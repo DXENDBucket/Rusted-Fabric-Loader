@@ -54,7 +54,8 @@ final class PatchedRuntime {
         values.put(RustedFabricAPIKeys.K_PROCESS_NAME, processName(application));
         values.put(RustedFabricAPIKeys.K_GAME_ARGS, new String[0]);
         values.put(RustedFabricAPIKeys.K_CAPABILITIES, Arrays.asList(
-                "mapping.profile.exact", "mod.dex.v1", "platform.android.local-patch"));
+                "event.engine.init", "mapping.profile.exact", "mod.dex.v1",
+                "platform.android.local-patch"));
         return new RustedFabricAPIContext(values);
     }
 

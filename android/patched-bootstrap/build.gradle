@@ -11,7 +11,7 @@ android {
         minSdk 27
         targetSdk 35
         versionCode 1
-        versionName '0.1.0'
+        versionName '0.7.0-local-patcher'
     }
 
     buildTypes {
@@ -78,6 +78,9 @@ tasks.register('verifyBootstrapArtifact') {
         def text = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
         if (!text.contains('Lio/github/endx/rustedfabric/android/patched/PatchedApplication;')) {
             throw new GradleException('Bootstrap DEX is missing PatchedApplication')
+        }
+        if (!text.contains('Lio/github/endx/rustedfabric/android/patched/EngineLifecycleBridge;')) {
+            throw new GradleException('Bootstrap DEX is missing EngineLifecycleBridge')
         }
         // The superclass descriptor is expected, but a stub class definition would also bring
         // its distinctive source file name into the DEX. compileOnly must keep that source out.

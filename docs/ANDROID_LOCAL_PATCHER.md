@@ -8,8 +8,8 @@ The Loader APK now contains the first complete no-root patch path:
 2. The Loader copies that selection into its private cache and requires an exact supported profile.
 3. It rewrites the package and provider authority to the side-by-side package
    `io.github.endx.rwpatch`, changes the manifest Application to
-   `io.github.endx.rustedfabric.android.patched.PatchedApplication`, and injects a code-only
-   secondary DEX.
+   `io.github.endx.rustedfabric.android.patched.PatchedApplication`, weaves the exact mapped
+   engine initialization method, and injects a code-only secondary DEX.
 4. It rebuilds and aligns the APK, stripping the source signature without retaining it.
 5. It creates or reuses a non-exportable RSA key in Android Keystore, signs with APK signature
    schemes v1/v2/v3, and verifies the result with `apksig`.
@@ -46,19 +46,27 @@ The first profile accepts only Android 1.15 version code 176 with APK SHA-256
 Community translations or other modified APKs are deliberately rejected until their structural
 profiles arrive; a familiar package name alone is never enough.
 
-The local backend currently exposes `mod.dex.v1`, `mapping.profile.exact`, and
-`platform.android.local-patch`. It initializes mods during `Application.onCreate`, but it does not
-yet weave the mapped engine before/after events that the Xposed backend can hook. Mods requiring
-`event.engine.init` therefore remain disabled on this backend until the DEX weaving phase.
+The local backend exposes `event.engine.init`, `mod.dex.v1`, `mapping.profile.exact`, and
+`platform.android.local-patch`. It initializes mods during `Application.onCreate`. The patcher then
+inserts a before callback at the mapped engine method entry and an after callback immediately before
+its single normal return. Listener failures are isolated and cannot escape into the game.
 
-The build and a real local reference APK have passed manifest rewrite, DEX injection, ZIP alignment,
-and v1/v2/v3 signature verification. Installation and startup still need validation on a physical
-unrooted Android device; no ADB device was attached during this implementation pass.
+Weaving is fail-closed: the full source APK hash must match, the mapped owner/name/descriptor must
+occur exactly once, the method shape and access flags must match, and an already-woven method is
+rejected. Branches and try/catch labels are rebuilt by dexlib2 instead of editing instruction bytes
+or offsets manually.
+
+The build and a real local reference APK have passed manifest rewrite, lifecycle DEX weaving,
+bootstrap injection, ZIP alignment, and v1/v2/v3 signature verification. Decompiled output confirms
+the before call at method entry and the after call immediately before the normal return. Installation,
+startup, event delivery, and mod loading still need validation on a physical unrooted Android device;
+no ADB device was attached during this implementation pass.
 
 ## Development modules
 
-- `android:local-patcher-core`: binary manifest/DEX rewrite, deterministic aligned ZIP rebuild,
-  signing and verification; contains no Android UI and no game payload.
+- `android:local-patcher-core`: binary manifest rewrite, profile-pinned DEX lifecycle weaving,
+  deterministic aligned ZIP rebuild, signing and verification; contains no Android UI or game
+  payload.
 - `android:local-patcher-cli`: developer CLI for reproducible desktop patch/sign checks.
 - `android/game-api-stubs`: one compile-only superclass signature, never packaged.
 - `android/patched-bootstrap`: builds the code-only secondary DEX.

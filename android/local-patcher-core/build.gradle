@@ -7,6 +7,8 @@ version = '0.1.0'
 
 dependencies {
     api 'com.android.tools.build:apksig:8.10.1'
+    implementation 'org.smali:dexlib2:2.5.2'
+    implementation 'com.google.guava:guava:27.1-android'
 }
 
 tasks.withType(JavaCompile).configureEach {

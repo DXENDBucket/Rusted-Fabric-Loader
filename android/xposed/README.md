@@ -16,13 +16,14 @@ For the verified profile, the module hooks the mapped
 failures are isolated and the original method is always called. The API and events retain no
 Context/game objects, access no saves, and do not change the installed APK.
 
-Version `0.6.0-local-patcher` includes the strict `.rfmod` verifier, standalone management
+Version `0.7.0-local-patcher` includes the strict `.rfmod` verifier, standalone management
 activity, app-private atomic registry, official-game-authorized read-only provider, game-code-cache
 transfer, common/game bridge ClassLoader, and Android DEX entrypoint loader. Enabled mods initialize
 before the first lifecycle dispatch; one failed mod is logged without stopping other mods or game
 startup. It also includes the no-root, user-selected APK patch/sign/PackageInstaller flow and its
-code-only `PatchedApplication` runtime. Both backends are build-validated but still need physical
-device tests. See `../../docs/ANDROID_MODS.md` for the mod format and
+code-only `PatchedApplication` runtime. The no-root backend now weaves the mapped engine method and
+dispatches the same before/after event pair. Both backends are build-validated but still need
+physical device tests. See `../../docs/ANDROID_MODS.md` for the mod format and
 `../../docs/ANDROID_LOCAL_PATCHER.md` for the no-root flow and current limitations.
 
 The same common API classes and `RuntimeLifecycleEvents` are embedded into the Windows Fabric API

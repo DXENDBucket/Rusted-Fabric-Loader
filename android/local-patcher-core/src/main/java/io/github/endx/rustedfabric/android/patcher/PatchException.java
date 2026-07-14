@@ -8,6 +8,7 @@ public final class PatchException extends Exception {
         INVALID_APK,
         MANIFEST_REWRITE_FAILED,
         DEX_REWRITE_FAILED,
+        DEX_WEAVE_FAILED,
         BOOTSTRAP_DEX_INVALID,
         SIGNING_FAILED,
         SIGNATURE_INVALID,

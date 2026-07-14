@@ -57,7 +57,18 @@ The following notices are provided for attribution and license compliance.
 - Homepage/Source: https://github.com/google/guava
 - License: Apache License 2.0
 - Used for: General-purpose utilities
-- Version used in this project: `21.0` (update if changed)
+- Versions used in this project: `21.0`, `27.1-android` (update if changed)
+
+---
+
+## dexlib2 (smali project)
+
+- Name: dexlib2
+- Homepage/Source: https://github.com/JesusFreke/smali
+- License: BSD 3-Clause License
+- Used for: Structure-aware Android DEX instruction, branch, and exception-table rewriting in the
+  no-root local patcher
+- Version used in this project: `2.5.2` (update if changed)
 
 ---
 

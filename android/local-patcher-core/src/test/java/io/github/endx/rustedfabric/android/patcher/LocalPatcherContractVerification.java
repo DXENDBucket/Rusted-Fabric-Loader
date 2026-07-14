@@ -8,12 +8,33 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+
+import org.jf.dexlib2.AccessFlags;
+import org.jf.dexlib2.Opcode;
+import org.jf.dexlib2.Opcodes;
+import org.jf.dexlib2.builder.MutableMethodImplementation;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction10x;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
+import org.jf.dexlib2.dexbacked.DexBackedDexFile;
+import org.jf.dexlib2.iface.ClassDef;
+import org.jf.dexlib2.iface.Method;
+import org.jf.dexlib2.iface.instruction.Instruction;
+import org.jf.dexlib2.iface.instruction.ReferenceInstruction;
+import org.jf.dexlib2.iface.reference.MethodReference;
+import org.jf.dexlib2.immutable.ImmutableClassDef;
+import org.jf.dexlib2.immutable.ImmutableDexFile;
+import org.jf.dexlib2.immutable.ImmutableMethod;
+import org.jf.dexlib2.immutable.ImmutableMethodParameter;
+import org.jf.dexlib2.immutable.reference.ImmutableStringReference;
+import org.jf.dexlib2.writer.io.MemoryDataStore;
+import org.jf.dexlib2.writer.pool.DexPool;
 
 public final class LocalPatcherContractVerification {
     private static final String SOURCE_PACKAGE = "com.corrodinggames.rts";
@@ -30,11 +51,32 @@ public final class LocalPatcherContractVerification {
         try {
             verifyBinaryXmlReplacement();
             verifyDexReplacement();
+            verifyLifecycleWeave();
             verifyApkRebuild(temporary);
             verifyProfileMismatch(temporary);
             System.out.println("Local APK patcher contracts passed");
         } finally {
             deleteTree(temporary);
+        }
+    }
+
+    private static void verifyLifecycleWeave() throws Exception {
+        byte[] woven = DexLifecycleWeaver.weaveEngineInitialization(weavableDex());
+        Method target = targetMethod(woven);
+        java.util.List<Instruction> instructions = new java.util.ArrayList<>();
+        target.getImplementation().getInstructions().forEach(instructions::add);
+        require(callbackName(instructions.get(0)).equals(DexLifecycleWeaver.BEFORE_METHOD),
+                "before engine callback was not inserted at method entry");
+        require(instructions.get(instructions.size() - 1).getOpcode() == Opcode.RETURN_VOID
+                        && callbackName(instructions.get(instructions.size() - 2))
+                        .equals(DexLifecycleWeaver.AFTER_METHOD),
+                "after engine callback was not inserted before normal return");
+        try {
+            DexLifecycleWeaver.weaveEngineInitialization(woven);
+            throw new AssertionError("already woven DEX was accepted");
+        } catch (PatchException expected) {
+            require(expected.getReason() == PatchException.Reason.DEX_WEAVE_FAILED,
+                    "wrong repeated weave reason: " + expected.getReason());
         }
     }
 
@@ -75,6 +117,8 @@ public final class LocalPatcherContractVerification {
         require(!report.isSigned(), "unsigned milestone must not claim a signature");
         require(report.toJson().contains("bootstrap-secondary-dex-injection"),
                 "code-free patch report is incomplete");
+        require(report.toJson().contains("engine-init-lifecycle-weave"),
+                "lifecycle weave is missing from the patch report");
         require(!report.toJson().contains(temporary.toString()),
                 "patch report leaked a local path");
 
@@ -127,13 +171,56 @@ public final class LocalPatcherContractVerification {
     private static void createApk(Path target) throws IOException {
         try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(target))) {
             putStored(zip, "AndroidManifest.xml", manifest());
-            putStored(zip, "classes.dex", dex(SOURCE_PACKAGE, SOURCE_AUTHORITY, "game.data"));
+            putStored(zip, "classes.dex", weavableDex());
             putStored(zip, "resources.arsc", new byte[]{1, 2, 3, 4, 5});
             putStored(zip, "assets/example.txt", "asset".getBytes(StandardCharsets.UTF_8));
             putStored(zip, "META-INF/MANIFEST.MF", new byte[]{1});
             putStored(zip, "META-INF/CERT.SF", new byte[]{2});
             putStored(zip, "META-INF/CERT.RSA", new byte[]{3});
         }
+    }
+
+    private static byte[] weavableDex() throws IOException {
+        MutableMethodImplementation body = new MutableMethodImplementation(2);
+        body.addInstruction(new BuilderInstruction21c(Opcode.CONST_STRING, 0,
+                new ImmutableStringReference(SOURCE_PACKAGE)));
+        body.addInstruction(new BuilderInstruction21c(Opcode.CONST_STRING, 0,
+                new ImmutableStringReference(SOURCE_AUTHORITY)));
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        ImmutableMethod method = new ImmutableMethod(DexLifecycleWeaver.TARGET_CLASS,
+                DexLifecycleWeaver.TARGET_METHOD,
+                Collections.singletonList(new ImmutableMethodParameter(
+                        DexLifecycleWeaver.TARGET_PARAMETER, Collections.emptySet(), null)),
+                "V", AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
+        ImmutableClassDef classDef = new ImmutableClassDef(DexLifecycleWeaver.TARGET_CLASS,
+                AccessFlags.PUBLIC.getValue(), "Ljava/lang/Object;", Collections.emptyList(),
+                "SyntheticEngine.java", Collections.emptySet(), Collections.emptyList(),
+                Collections.singletonList(method));
+        MemoryDataStore output = new MemoryDataStore();
+        DexPool.writeTo(output, new ImmutableDexFile(Opcodes.getDefault(),
+                Collections.singletonList(classDef)));
+        return output.getData();
+    }
+
+    private static Method targetMethod(byte[] dexBytes) {
+        DexBackedDexFile dex = new DexBackedDexFile(null, dexBytes);
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                if (DexLifecycleWeaver.TARGET_CLASS.equals(method.getDefiningClass())
+                        && DexLifecycleWeaver.TARGET_METHOD.equals(method.getName())) return method;
+            }
+        }
+        throw new AssertionError("woven target method is missing");
+    }
+
+    private static String callbackName(Instruction instruction) {
+        if (!(instruction instanceof ReferenceInstruction)) return "";
+        Object reference = ((ReferenceInstruction) instruction).getReference();
+        if (!(reference instanceof MethodReference)) return "";
+        MethodReference method = (MethodReference) reference;
+        return DexLifecycleWeaver.BRIDGE_CLASS.equals(method.getDefiningClass())
+                ? method.getName() : "";
     }
 
     private static void putStored(ZipOutputStream zip, String name, byte[] data) throws IOException {
