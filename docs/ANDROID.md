@@ -20,9 +20,12 @@ The local reference input is ignored at `libs/android/rusted-warfare-1.15-code17
 - no packaged native `.so` libraries
 - signer certificate SHA-256: `25450E9E56D2E64771E0514580AA85952C613AD4048FB3523CB1F07B65A63984`
 
-The desktop v1.1 mapping baseline directly matches 952 of 1,440 mapped class names in this APK. The lower total is expected because the APK omits desktop `java` and `librocket` classes and has a substantially different Android `appFramework`. Important core anchors are present with the same official names, including `GameEngine`, framework `GameObject`, base unit classes, `CustomUnit`, `CustomUnitMetadata`, `FactoryQueueManager`, `EffectManager`, `PathfindingEngine`, and `SettingsEngine`.
-
-This inventory is descriptive only. The Android mapping handoff remains the authority for semantic member names.
+The finalized Android v1.0 handoff is imported under
+`android/mappings/rw-android-1.15-code176-v1.0`. It covers all 1,602 first-party classes and contains
+9,213 loader-safe member mappings. Its named namespace is shared with the frozen PC v1.1 mapping,
+but Android official owners must be used: for example, Android `GameEngine` is
+`com/corrodinggames/rts/gameFramework/k`, not the PC owner. The profile therefore pins the exact APK
+and mapping SHA-256 before reporting `VERIFIED`.
 
 ## Proposed modules
 
@@ -75,7 +78,7 @@ Mapping selection, mod metadata, event implementation, diagnostics, and compatib
 
 ## Compatibility model
 
-An exact APK hash is a fast path, not a hard requirement. Compatibility is evaluated in layers:
+Compatibility is evaluated in layers:
 
 1. known APK and signer profile;
 2. manifest identity and Android entrypoints;
@@ -84,7 +87,11 @@ An exact APK hash is a fast path, not a hard requirement. Compatibility is evalu
 5. optional normalized method fingerprints for instruction-sensitive hooks;
 6. per-feature capability status.
 
-Resource-only translations should normally pass structural matching. A modified method disables only the hooks that depend on that method. Packed, encrypted, or globally re-obfuscated builds require a separate profile and may be rejected before the game starts.
+The finalized official mapping is exact-only: it must not be applied to an APK with a different hash.
+Resource-only translations and other community variants can receive a separate structural profile
+after their DEX anchors and mapped members are verified. A modified method disables only the hooks
+that depend on that method. Packed, encrypted, or globally re-obfuscated builds require a separate
+mapping and may be rejected before the game starts.
 
 Compatibility states are `VERIFIED`, `STRUCTURAL`, `PARTIAL`, `UNSUPPORTED`, and `PACKED`. Unknown variants can export a report containing hashes and structural fingerprints, never APK contents or decompiled code.
 
@@ -108,7 +115,7 @@ Every Android hook declares its required mapping anchors, supported structural p
 - [x] Add the APK inspector without adding an Android SDK dependency.
 - [x] Produce a deterministic compatibility JSON report for the local reference APK.
 - [x] Add artifact and Git gates that reject `.apk`, `.dex`, and embedded game class bodies.
-- [x] Reserve a separate versioned profile for the Android mapping handoff.
+- [x] Import and checksum-pin the finalized Android 1.15 vc176 mapping and API metadata.
 
 Exit gate: the inspector identifies the reference APK, its Android entrypoints, all required core anchors, and produces no copyrighted payload.
 
@@ -162,7 +169,7 @@ Exit gate: each migrated feature has an independent compatibility probe and can 
 ## Immediate implementation order
 
 1. Implement `android:apk-inspector` and commit deterministic tests using synthetic DEX/manifest fixtures only.
-2. Integrate the Android mapping handoff into a versioned profile when it arrives.
+2. Select the checksum-pinned Android mapping profile inside the hooked game process.
 3. Produce an inventory of the existing 84 Mixins by hook category; do not port them yet.
 4. Scaffold the root hook module and validate only `Application.attach(Context)`.
 5. Add the `GameEngine` initialization probe and the first Android API context.

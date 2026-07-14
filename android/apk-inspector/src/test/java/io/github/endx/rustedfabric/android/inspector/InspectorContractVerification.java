@@ -46,6 +46,8 @@ public final class InspectorContractVerification {
             require(first.equals(second), "Reports must be byte-for-byte deterministic");
             require(first.contains("\"level\": \"STRUCTURAL\""), "Synthetic APK should match structurally");
             require(first.contains("\"status\": \"PENDING_MAPPING\""), "Missing mapping must remain pending");
+            require(first.contains("\"matchPolicy\": \"structural\""),
+                    "Legacy/synthetic profiles should default to structural matching");
             require(first.contains("\"launcherActivity\": \"com.example.game.MainActivity\""),
                     "Launcher activity was not parsed from binary XML");
             require(first.contains("\"classDefinitions\": 10"), "DEX class definitions were not counted");
@@ -54,6 +56,31 @@ public final class InspectorContractVerification {
                 require(!first.contains(descriptor), "Report leaked a DEX class descriptor");
             }
             require(first.contains("\"reportContainsGamePayload\": false"), "Privacy contract is missing");
+
+            Path exactProfiles = directory.resolve("exact-profiles");
+            String apkSha256 = Hashing.sha256(apk);
+            createExactProfile(exactProfiles, apkSha256);
+            String exact = inspector.inspect(apk, exactProfiles).toJson();
+            require(exact.contains("\"level\": \"VERIFIED\""),
+                    "An exact APK and mapping checksum should be verified");
+            require(exact.contains("\"status\": \"READY\""), "Exact mapping should be ready");
+            require(exact.contains("\"matchPolicy\": \"exact\""), "Exact policy was not reported");
+
+            Path exactMapping = exactProfiles.resolve("synthetic/mappings.tiny");
+            Files.write(exactMapping, "corrupt".getBytes(StandardCharsets.UTF_8));
+            boolean checksumRejected = false;
+            try {
+                inspector.inspect(apk, exactProfiles);
+            } catch (IllegalArgumentException expected) {
+                checksumRejected = expected.getMessage().contains("checksum mismatch");
+            }
+            require(checksumRejected, "A corrupted mapping file must be rejected");
+
+            Path wrongHashProfiles = directory.resolve("wrong-hash-profiles");
+            createExactProfile(wrongHashProfiles, repeat('0', 64));
+            String wrongHash = inspector.inspect(apk, wrongHashProfiles).toJson();
+            require(wrongHash.contains("\"level\": \"UNSUPPORTED\""),
+                    "An exact profile must reject a modified APK hash");
             System.out.println("APK inspector parser, determinism, profile, and privacy contracts passed");
         } finally {
             deleteTree(directory);
@@ -80,6 +107,34 @@ public final class InspectorContractVerification {
             text.append("anchor.").append(anchor.getKey()).append('=').append(anchor.getValue()).append('\n');
         }
         Files.write(profile, text.toString().getBytes(StandardCharsets.ISO_8859_1));
+    }
+
+    private static void createExactProfile(Path profiles, String apkSha256) throws IOException {
+        Path directory = profiles.resolve("synthetic");
+        Files.createDirectories(directory);
+        Path mapping = directory.resolve("mappings.tiny");
+        Files.write(mapping, "tiny\t2\t0\tofficial\tintermediary\tnamed\n"
+                .getBytes(StandardCharsets.UTF_8));
+        StringBuilder text = new StringBuilder();
+        text.append("id=synthetic-exact\n")
+                .append("matchPolicy=exact\n")
+                .append("packageName=com.example.game\n")
+                .append("versionName=1.0-test\n")
+                .append("versionCode=42\n")
+                .append("apkSha256=").append(apkSha256).append('\n')
+                .append("mappingFile=mappings.tiny\n")
+                .append("mappingFileSha256=").append(Hashing.sha256(mapping)).append('\n');
+        for (Map.Entry<String, String> anchor : ANCHORS.entrySet()) {
+            text.append("anchor.").append(anchor.getKey()).append('=').append(anchor.getValue()).append('\n');
+        }
+        Files.write(directory.resolve("profile.properties"),
+                text.toString().getBytes(StandardCharsets.ISO_8859_1));
+    }
+
+    private static String repeat(char value, int count) {
+        char[] values = new char[count];
+        Arrays.fill(values, value);
+        return new String(values);
     }
 
     private static byte[] binaryManifest() throws IOException {

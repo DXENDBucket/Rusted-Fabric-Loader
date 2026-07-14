@@ -14,11 +14,18 @@ The inspector accepts a profile without `mappings.tiny` while mapping work is in
 
 ```properties
 id=rw-android-1.15-code176
+matchPolicy=structural
 packageName=com.corrodinggames.rts
 versionCode=176
 apkSha256=
 mappingFile=mappings.tiny
-anchor.gameEngine=Lcom/corrodinggames/rts/gameFramework/l;
+anchor.gameEngine=Lcom/corrodinggames/rts/gameFramework/k;
 ```
 
-`apkSha256` is an optional exact-match fast path. Package, version, and structural anchors provide the fallback for resource-only or lightly modified community builds.
+Use `matchPolicy=exact` for a finalized mapping that has only been proven against one APK. Such a
+profile requires package, version, and APK SHA-256 to match. `mappingFileSha256` can additionally pin
+the mapping file itself; a mismatch is a hard error.
+
+Use `matchPolicy=structural` only for a separately verified variant profile. Package, version, and
+every declared structural anchor must match when its APK hash is unknown. A resource-only or
+community-modified APK must not silently inherit an exact official profile.

@@ -47,8 +47,74 @@ tasks.register('verifyNoGamePayload') {
     }
 }
 
+tasks.register('verifyFinalAndroidMapping') {
+    group = 'verification'
+    description = 'Verifies the imported Android 1.15 vc176 mapping handoff and API inputs.'
+
+    def profileDir = rootProject.file('android/mappings/rw-android-1.15-code176-v1.0')
+    def expectedFiles = [
+            'mappings.tiny': '7df59d61092a7665f023242b0221baf3ba5a3e8a3f2415bfd85a247070676d07',
+            'mappings-strict.tiny': 'c336cc01392b244e026350a1d0a3bf92fd5791b6ef872dbb5d0d0334ce6b7d7b',
+            'mapping-table.csv': '814c18d8f3804f3a68e3c21109205f6ea3a4c51b9e51a40f4648253c8c586e3b',
+            'pc-android-class-crosswalk.csv': '44aeee8de31025bc7a1a2d1bf6eaaa1a48a318b3336c219267b999949b103339',
+            'optimizer-alias-collisions.csv': 'd0fd17393172179ab07e04e2ae5934db607cab4e46369d6804ef9393177a94be'
+    ]
+    inputs.files(expectedFiles.keySet().collect { new File(profileDir, it) })
+    inputs.file(new File(profileDir, 'profile.properties'))
+
+    doLast {
+        def sha256 = { File file ->
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+            file.withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                for (int read = input.read(buffer); read >= 0; read = input.read(buffer)) {
+                    if (read > 0) digest.update(buffer, 0, read)
+                }
+            }
+            digest.digest().encodeHex().toString()
+        }
+
+        expectedFiles.each { name, expected ->
+            def file = new File(profileDir, name)
+            if (!file.isFile() || sha256(file) != expected) {
+                throw new GradleException("Android mapping handoff checksum mismatch: ${name}")
+            }
+        }
+
+        def countTiny = { File file ->
+            int classes = 0
+            int members = 0
+            int lineNumber = 0
+            file.eachLine('UTF-8') { line ->
+                lineNumber++
+                if (lineNumber == 1 && line != 'tiny\t2\t0\tofficial\tintermediary\tnamed') {
+                    throw new GradleException("Unexpected Android Tiny header in ${file.name}")
+                }
+                if (line.startsWith('c\t')) classes++
+                if (line.startsWith('\tf\t') || line.startsWith('\tm\t')) members++
+            }
+            [classes, members]
+        }
+        if (countTiny(new File(profileDir, 'mappings.tiny')) != [1602, 9213]) {
+            throw new GradleException('Android runtime mapping row counts changed')
+        }
+        if (countTiny(new File(profileDir, 'mappings-strict.tiny')) != [1585, 9213]) {
+            throw new GradleException('Android strict API mapping row counts changed')
+        }
+
+        def forbidden = fileTree(profileDir) {
+            include '**/*.apk', '**/*.dex', '**/*.so', '**/*.class', '**/*.jar', '**/*.xml'
+        }.files
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Android mapping profile contains forbidden payloads: ${forbidden*.name}")
+        }
+        logger.lifecycle('Verified Android 1.15 vc176 mapping: 1602 classes / 9213 loader-safe members')
+    }
+}
+
 check.dependsOn tasks.named('verifyInspectorContracts')
 check.dependsOn tasks.named('verifyNoGamePayload')
+check.dependsOn tasks.named('verifyFinalAndroidMapping')
 
 tasks.register('inspectReferenceApk', JavaExec) {
     group = 'rusted fabric android'

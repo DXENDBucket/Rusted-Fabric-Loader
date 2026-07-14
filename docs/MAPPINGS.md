@@ -10,6 +10,22 @@ The current mapping baseline is `1.1 FINAL` (mapping-only completion + executabl
 
 The v1.1 baseline was imported byte-for-byte from the validated mapping handoff and is based on v1.0 FINAL. Its release audit reports a passing static and executable gate. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
 
+## Android mapping profile
+
+Android uses a separate official namespace and must never consume the PC Tiny directly. The finalized
+Android 1.15/vc176 profile is stored at
+`android/mappings/rw-android-1.15-code176-v1.0` and is bound to APK SHA-256
+`328f37106985a2ba424efec9ac312ede0395f3bac56e3d5db5d642dd6aecc04c`.
+
+- `mappings.tiny` is the loader-safe runtime mapping: 1,602 classes and 9,213 members.
+- `mappings-strict.tiny` and `mapping-table.csv` are the conservative API-generation inputs.
+- `pc-android-class-crosswalk.csv` preserves the shared named class namespace.
+- `optimizer-alias-collisions.csv` documents two R8-colliding methods intentionally excluded from
+  runtime member renaming.
+
+Run `gradlew.bat :android:apk-inspector:check` to verify imported hashes, row counts, profile policy,
+and the absence of APK/DEX/game implementation payloads.
+
 ## Required checks
 
 After editing mappings or named Mixins, run:

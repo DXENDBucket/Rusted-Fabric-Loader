@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * retains Android Context, Application, ClassLoader, APK path, or game objects.
  */
 public final class BootstrapDiagnostics {
-    public static final String MAPPING_PROFILE_STATUS = "PENDING_MAPPING";
+    public static final String MAPPING_PROFILE_STATUS = "PROFILE_SELECTION_PENDING";
     private static final AtomicReference<Snapshot> SNAPSHOT = new AtomicReference<>();
 
     private BootstrapDiagnostics() {

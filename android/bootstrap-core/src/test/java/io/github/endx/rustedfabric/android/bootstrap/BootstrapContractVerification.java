@@ -28,8 +28,8 @@ public final class BootstrapContractVerification {
         require(first == second, "Diagnostics must be captured only once per process");
         require("example.Application".equals(second.getApplicationClassName()),
                 "Later attach calls must not replace the first snapshot");
-        require("PENDING_MAPPING".equals(second.getMappingProfileStatus()),
-                "The mapping handoff placeholder must remain explicit");
+        require("PROFILE_SELECTION_PENDING".equals(second.getMappingProfileStatus()),
+                "Runtime profile selection must remain explicit");
         require(BootstrapDiagnostics.class.getDeclaredFields().length == 2,
                 "Diagnostics must not grow hidden Context or ClassLoader references");
         verifyXposedMetadata(argument(args, "--xposed-root"));

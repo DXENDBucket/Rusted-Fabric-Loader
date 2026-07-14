@@ -8,6 +8,7 @@ final class MappingProfileMatch {
     String id;
     String status = "UNMATCHED";
     String match = "NONE";
+    String matchPolicy = "NONE";
     String mappingSha256;
     boolean packageMatches;
     boolean versionMatches;

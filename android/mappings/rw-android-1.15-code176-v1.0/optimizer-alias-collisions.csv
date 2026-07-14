@@ -1,0 +1,2 @@
+android_owner,android_ancestor,official_name,descriptor,child_semantic,ancestor_semantic,reason,loader_policy
+com/corrodinggames/rts/game/a/a,com/corrodinggames/rts/game/p,a,(Lcom/corrodinggames/rts/gameFramework/j/j;)V,deserializeTeamStatsState,deserializeFogOfWar,R8 reused one virtual signature after eliminating/inlining sibling Team deserialization methods; bytecode/string fingerprints prove the two bodies retain different source semantics,exclude both member renames from loader-safe Tiny; keep owner-exact semantics in CSV and analysis Tiny

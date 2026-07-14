@@ -45,11 +45,22 @@ final class MappingProfileRepository {
         MappingProfileMatch result = new MappingProfileMatch();
         result.id = required(properties, "id", file);
         String expectedPackage = required(properties, "packageName", file);
-        String expectedVersion = properties.getProperty("versionCode", "").trim();
+        String expectedVersionCode = properties.getProperty("versionCode", "").trim();
+        String expectedVersionName = properties.getProperty("versionName", "").trim();
         String expectedApkSha = properties.getProperty("apkSha256", "").trim().toLowerCase(java.util.Locale.ROOT);
+        result.matchPolicy = properties.getProperty("matchPolicy", "structural")
+                .trim().toLowerCase(java.util.Locale.ROOT);
+        if (!"exact".equals(result.matchPolicy) && !"structural".equals(result.matchPolicy)) {
+            throw new IllegalArgumentException("Unsupported matchPolicy in " + file.getFileName()
+                    + ": " + result.matchPolicy);
+        }
         result.packageMatches = expectedPackage.equals(manifest.packageName);
-        result.versionMatches = expectedVersion.isEmpty()
-                || (manifest.versionCode != null && expectedVersion.equals(Long.toString(manifest.versionCode)));
+        boolean versionCodeMatches = expectedVersionCode.isEmpty()
+                || (manifest.versionCode != null
+                && expectedVersionCode.equals(Long.toString(manifest.versionCode)));
+        boolean versionNameMatches = expectedVersionName.isEmpty()
+                || expectedVersionName.equals(manifest.versionName);
+        result.versionMatches = versionCodeMatches && versionNameMatches;
 
         List<String> anchorNames = new ArrayList<>();
         for (String key : properties.stringPropertyNames()) {
@@ -68,6 +79,8 @@ final class MappingProfileRepository {
         result.match = hashMatches ? "EXACT" : "STRUCTURAL";
 
         String mappingName = properties.getProperty("mappingFile", "").trim();
+        String expectedMappingSha = properties.getProperty("mappingFileSha256", "")
+                .trim().toLowerCase(java.util.Locale.ROOT);
         Path profileDirectory = file.getParent().toAbsolutePath().normalize();
         Path mappingFile = mappingName.isEmpty() ? null
                 : profileDirectory.resolve(mappingName).toAbsolutePath().normalize();
@@ -75,16 +88,23 @@ final class MappingProfileRepository {
             throw new IllegalArgumentException("Mapping file must stay inside its profile directory");
         }
         if (mappingFile != null && Files.isRegularFile(mappingFile)) {
-            result.status = "READY";
             result.mappingSha256 = Hashing.sha256(mappingFile);
+            if (!expectedMappingSha.isEmpty() && !expectedMappingSha.equals(result.mappingSha256)) {
+                throw new IllegalArgumentException("Mapping checksum mismatch for " + mappingFile.getFileName());
+            }
+            result.status = "READY";
         } else {
             result.status = "PENDING_MAPPING";
         }
 
         int score = (hashMatches ? 1000 : 0) + (result.packageMatches ? 100 : 0)
                 + (result.versionMatches ? 50 : 0) + (allAnchors ? 25 : 0);
-        // Exact hashes accept a known community variant. Otherwise package, version and all anchors must agree.
-        boolean eligible = hashMatches || (result.packageMatches && result.versionMatches && allAnchors);
+        boolean identityMatches = result.packageMatches && result.versionMatches;
+        // A finalized exact profile must never be applied to a modified APK. Community variants get
+        // their own structural profile only after their mapping anchors have been verified.
+        boolean eligible = "exact".equals(result.matchPolicy)
+                ? identityMatches && hashMatches
+                : identityMatches && (hashMatches || allAnchors);
         return new Candidate(result, score, eligible);
     }
 

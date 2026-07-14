@@ -62,6 +62,7 @@ final class ApkInspectionResult {
         profileJson.put("id", profile.id);
         profileJson.put("status", profile.status);
         profileJson.put("match", profile.match);
+        profileJson.put("matchPolicy", profile.matchPolicy);
         profileJson.put("mappingSha256", profile.mappingSha256);
         root.put("mappingProfile", profileJson);
 
