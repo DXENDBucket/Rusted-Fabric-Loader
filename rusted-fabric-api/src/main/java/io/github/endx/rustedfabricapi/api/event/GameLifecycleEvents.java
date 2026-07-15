@@ -22,6 +22,13 @@ public final class GameLifecycleEvents {
                 }
             });
 
+    public static final RustedFabricEvent<BeforeFrameRender> BEFORE_FRAME_RENDER =
+            RustedFabricEvent.create(listeners -> (renderer, gameContainer, graphics) -> {
+                for (BeforeFrameRender listener : listeners) {
+                    listener.beforeFrameRender(renderer, gameContainer, graphics);
+                }
+            });
+
     public static final RustedFabricEvent<BeforeFrameUpdate> BEFORE_FRAME_UPDATE =
             RustedFabricEvent.create(listeners -> (renderer, gameContainer, delta) -> {
                 for (BeforeFrameUpdate listener : listeners) {
@@ -49,6 +56,10 @@ public final class GameLifecycleEvents {
 
     public interface AfterFrameRender {
         void afterFrameRender(Object renderer);
+    }
+
+    public interface BeforeFrameRender {
+        void beforeFrameRender(Object renderer, Object gameContainer, Object graphics);
     }
 
     public interface BeforeFrameUpdate {

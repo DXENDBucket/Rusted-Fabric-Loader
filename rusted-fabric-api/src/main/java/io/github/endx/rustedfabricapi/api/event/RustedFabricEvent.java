@@ -26,6 +26,40 @@ public final class RustedFabricEvent<T> {
         updateInvoker();
     }
 
+    /** Registers a listener and returns an idempotent handle suitable for try/finally cleanup. */
+    public Registration subscribe(T listener) {
+        T registered = Objects.requireNonNull(listener, "listener");
+        listeners.add(registered);
+        updateInvoker();
+        return new Registration() {
+            private boolean active = true;
+
+            @Override
+            public synchronized boolean unregister() {
+                if (!active) return false;
+                active = false;
+                return RustedFabricEvent.this.unregister(registered);
+            }
+
+            @Override
+            public void close() {
+                unregister();
+            }
+        };
+    }
+
+    /** Removes one matching listener instance. */
+    public boolean unregister(T listener) {
+        if (listener == null) return false;
+        boolean removed = listeners.remove(listener);
+        if (removed) updateInvoker();
+        return removed;
+    }
+
+    public int listenerCount() {
+        return listeners.size();
+    }
+
     public T invoker() {
         return invoker;
     }
@@ -33,5 +67,12 @@ public final class RustedFabricEvent<T> {
     private void updateInvoker() {
         List<T> snapshot = new ArrayList<T>(listeners);
         invoker = invokerFactory.apply(Collections.unmodifiableList(snapshot));
+    }
+
+    public interface Registration extends AutoCloseable {
+        boolean unregister();
+
+        @Override
+        void close();
     }
 }

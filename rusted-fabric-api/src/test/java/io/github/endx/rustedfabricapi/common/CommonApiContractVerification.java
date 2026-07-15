@@ -44,7 +44,7 @@ public final class CommonApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 35,
+        require(ApiSupportMatrix.entries().size() == 36,
                 "public API support matrix does not cover every event group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.ANDROID_LOCAL_PATCH) == ApiSupportMatrix.Level.FULL,

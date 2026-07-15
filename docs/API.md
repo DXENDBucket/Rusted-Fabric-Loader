@@ -88,7 +88,11 @@ capability row is missing.
 Events under `io.github.endx.rustedfabricapi.api.event` invoke listeners synchronously in registration order on the thread that reached the corresponding game method. They do not switch to a render, update, or network thread.
 
 - Existing game-object events propagate listener exceptions to the intercepted game call. A listener should catch failures it can recover from.
-- Registration is intended for initialization time. There is currently no unregister operation.
+- Permanent registration is intended for initialization time; runtime-toggleable features should
+  keep and close a subscription handle.
+- `register(listener)` remains the simple permanent-registration API. Use `subscribe(listener)`
+  when a feature can be disabled at runtime; its idempotent `Registration` handle implements
+  `AutoCloseable`. `unregister(listener)` and `listenerCount()` are also available.
 - `BEFORE_*` callbacks returning `true` generally cancel the operation, but the callback interface remains the source of truth.
 - `MODIFY_*` callbacks are chained in registration order; each listener receives the value produced by the previous listener.
 - Game objects are commonly exposed as `Object`. This keeps the public API Jar namespace-neutral across named development and official runtime. Mods may cast to mapped game types when they are compiled and remapped through the supported pipeline.
@@ -96,6 +100,52 @@ Events under `io.github.endx.rustedfabricapi.api.event` invoke listeners synchro
 `RuntimeLifecycleEvents` is the cross-platform exception: each listener is isolated, failures are
 counted in `DispatchResult`, registrations can be unregistered, and no game or platform object is
 exposed. The before/after engine initialization events are one-shot on both backends.
+
+## Game-thread scheduling
+
+`GameThreadScheduler` queues work for the next mapped update or render phase. It is intended for
+mod callbacks that start on a file, UI, or network thread but need to touch game/render state:
+
+```java
+GameThreadScheduler.onNextUpdate(() -> updateGameState())
+        .exceptionally(failure -> {
+            log(failure);
+            return null;
+        });
+```
+
+Tasks retain submission order. A task failure completes only its returned `CompletableFuture`
+exceptionally and does not prevent later tasks from running. Work submitted while a phase is being
+drained runs in the following phase, preventing unbounded same-frame loops. Check
+`RustedFabricCapabilities.GAME_LIFECYCLE` before using the scheduler; Android does not advertise
+this capability until its frame hooks are implemented.
+
+## Projectile development API
+
+`ProjectileEvents` exposes mapped creation, per-frame update, explosion, removal-request, and final
+removal boundaries. Update events are high-frequency and listeners should remain lightweight.
+`Projectiles.snapshot(projectile)` returns an immutable `ProjectileSnapshot` containing the common
+position, source/target, lifetime, speed, direct/area damage, ballistic, impact, and removal state:
+
+```java
+ProjectileEvents.AFTER_PROJECTILE_CREATED.subscribe((projectile, source) -> {
+    ProjectileSnapshot state = Projectiles.snapshot(projectile);
+    log("projectile=" + state.id() + " damage=" + state.directDamage());
+});
+```
+
+The snapshot distinguishes the named runtime, PC official namespace, and Android 1.15 official
+field layout without exposing a compile-time game class dependency. The lifecycle event capability is currently full on Windows
+and explicitly unavailable on Android in the support matrix; the state accessor itself remains a
+common API so the Android backend can adopt the same mod source later.
+
+`CustomUnitRuntimeSnapshot.capture(unit)` promotes the high-confidence v0.84 construction/runtime
+mapping into the same stable style. It exposes active/revert metadata build-queue-effect gates,
+`whenBuilding_cannotMove` runtime state, first CREATED/COMPLETE_AND_ACTIVE pending state,
+auto-trigger cooldown, and the previous leg-animation base transform. Android's strict mapping does
+not yet identify the leg-base X/Y fields, so `hasLastLegBasePosition()` is false and those two values
+are `Float.NaN` there; height and direction remain available. These are snapshots, not live mutable
+wrappers, so values remain consistent for the duration of a callback.
 
 ## API layers
 

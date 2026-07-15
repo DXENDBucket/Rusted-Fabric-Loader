@@ -3,13 +3,21 @@ package io.github.endx.rustedfabricapi;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
+import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
+import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
+import io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot;
+import io.github.endx.rustedfabricapi.api.game.Projectiles;
+import io.github.endx.rustedfabricapi.api.game.CustomUnitRuntimeSnapshot;
+import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 public final class ApiContractVerification {
     private ApiContractVerification() {
@@ -17,9 +25,32 @@ public final class ApiContractVerification {
 
     public static void main(String[] args) {
         verifiesListenerOrderAndSnapshotRefresh();
+        verifiesListenerCleanup();
         verifiesContextDefensiveCopies();
         verifiesEntrypointAdapter();
+        verifiesGameThreadScheduling();
+        verifiesProjectileSnapshot();
+        verifiesAndroidOfficialProjectileLayout();
+        verifiesCustomUnitRuntimeSnapshot();
+        verifiesAndroidOfficialCustomUnitLayout();
         System.out.println("Rusted Fabric API contract verification passed");
+    }
+
+    private static void verifiesListenerCleanup() {
+        List<String> calls = new ArrayList<String>();
+        RustedFabricEvent<Probe> event = RustedFabricEvent.create(listeners -> value -> {
+            for (Probe listener : listeners) listener.accept(value);
+        });
+        Probe direct = value -> calls.add("direct:" + value);
+        event.register(direct);
+        RustedFabricEvent.Registration registration =
+                event.subscribe(value -> calls.add("scoped:" + value));
+        require(event.listenerCount() == 2, "listener count did not update");
+        require(registration.unregister(), "subscription handle did not unregister");
+        require(!registration.unregister(), "subscription handle was not idempotent");
+        require(event.unregister(direct), "direct listener could not be removed");
+        event.invoker().accept("ignored");
+        require(calls.isEmpty(), "removed listener was still invoked");
     }
 
     private static void verifiesListenerOrderAndSnapshotRefresh() {
@@ -88,6 +119,91 @@ public final class ApiContractVerification {
         require(observedVersion[0] == 2, "entrypoint adapter did not expose the typed context");
     }
 
+    private static void verifiesGameThreadScheduling() {
+        Map<String, Object> raw = new HashMap<String, Object>();
+        raw.put(RustedFabricAPIKeys.K_CAPABILITIES,
+                Arrays.asList(RustedFabricCapabilities.GAME_LIFECYCLE));
+        RustedFabricRuntime.installContext(new RustedFabricAPIContext(raw));
+        List<String> calls = new ArrayList<String>();
+        CompletableFuture<Void> failed = GameThreadScheduler.onNextUpdate(() -> {
+            calls.add("failed");
+            throw new IllegalStateException("synthetic");
+        });
+        CompletableFuture<Void> succeeded = GameThreadScheduler.onNextUpdate(() -> {
+            require(GameThreadScheduler.isUpdateThread(), "update thread was not identified");
+            calls.add("succeeded");
+        });
+        CompletableFuture<Void> render = GameThreadScheduler.onNextRender(() -> {
+            require(GameThreadScheduler.isRenderThread(), "render thread was not identified");
+            calls.add("render");
+        });
+        GameThreadScheduler.executeUpdatePhase();
+        GameThreadScheduler.executeRenderPhase();
+        require(failed.isCompletedExceptionally(), "failed task did not retain its failure");
+        require(succeeded.isDone() && !succeeded.isCompletedExceptionally(),
+                "later update task did not run after an isolated failure");
+        require(render.isDone(), "render task was not drained");
+        require(calls.equals(Arrays.asList("failed", "succeeded", "render")),
+                "scheduled task order changed");
+    }
+
+    private static void verifiesProjectileSnapshot() {
+        FakeProjectile value = new FakeProjectile();
+        ProjectileSnapshot snapshot = ProjectileSnapshot.capture(value);
+        require(snapshot.id() == 42L && snapshot.sourceUnit() == value.sourceUnit,
+                "projectile identity/source snapshot failed");
+        require(snapshot.x() == 10.0F && snapshot.y() == 20.0F && snapshot.height() == 3.0F,
+                "projectile position snapshot failed");
+        require(snapshot.directDamage() == 12.0F && snapshot.areaDamage() == 6.0F,
+                "projectile damage snapshot failed");
+        require(snapshot.ballistic() && !snapshot.removalRequested(),
+                "projectile flags snapshot failed");
+        value.directDamage = 99.0F;
+        require(snapshot.directDamage() == 12.0F,
+                "projectile snapshot was not immutable");
+    }
+
+    private static void verifiesAndroidOfficialProjectileLayout() {
+        AndroidFakeProjectile value = new AndroidFakeProjectile();
+        ProjectileSnapshot snapshot = ProjectileSnapshot.capture(value);
+        require(snapshot.id() == 84L && snapshot.x() == 11.0F
+                        && snapshot.y() == 22.0F && snapshot.height() == 4.0F,
+                "Android official projectile base fields used the PC layout");
+        Projectiles.requestRemoval(value);
+        require(value.aS, "Android projectile removal flag was not set");
+    }
+
+    private static void verifiesCustomUnitRuntimeSnapshot() {
+        FakeCustomUnit value = new FakeCustomUnit();
+        CustomUnitRuntimeSnapshot snapshot = CustomUnitRuntimeSnapshot.capture(value);
+        require(snapshot.metadataHasBuildQueueRuntimeEffects()
+                        && !snapshot.revertMetadataHasBuildQueueRuntimeEffects(),
+                "custom-unit metadata runtime gates were not captured");
+        require(snapshot.currentBuildQueueActionBlocksMovement()
+                        && snapshot.createdEventPending()
+                        && !snapshot.completeAndActiveEventPending(),
+                "custom-unit construction latches were not captured");
+        require(snapshot.autoTriggerCooldownTimer() == 3.5F
+                        && snapshot.lastLegBaseDirection() == 180.0F
+                        && snapshot.hasLastLegBasePosition(),
+                "custom-unit cooldown/leg base state was not captured");
+        value.currentBuildQueueActionBlocksMovement = false;
+        require(snapshot.currentBuildQueueActionBlocksMovement(),
+                "custom-unit runtime snapshot was not immutable");
+    }
+
+    private static void verifiesAndroidOfficialCustomUnitLayout() {
+        AndroidFakeCustomUnit value = new AndroidFakeCustomUnit();
+        CustomUnitRuntimeSnapshot snapshot = CustomUnitRuntimeSnapshot.capture(value);
+        require(!snapshot.hasLastLegBasePosition()
+                        && Float.isNaN(snapshot.lastLegBaseX())
+                        && Float.isNaN(snapshot.lastLegBaseY()),
+                "unmapped Android leg-base X/Y fields exposed reused dP/dQ values");
+        require(snapshot.lastLegBaseHeight() == 6.0F
+                        && snapshot.lastLegBaseDirection() == 270.0F,
+                "mapped Android leg-base height/direction were not captured");
+    }
+
     private static void require(boolean condition, String message) {
         if (!condition) {
             throw new AssertionError(message);
@@ -96,5 +212,92 @@ public final class ApiContractVerification {
 
     private interface Probe {
         void accept(String value);
+    }
+
+    private static final class FakeProjectile {
+        long id = 42L;
+        Object sourceUnit = new Object();
+        Object targetUnit = new Object();
+        float x = 10.0F;
+        float y = 20.0F;
+        float height = 3.0F;
+        float targetX = 30.0F;
+        float targetY = 40.0F;
+        float remainingLife = 5.0F;
+        float ageTimer = 2.0F;
+        float speed = 4.0F;
+        float direction = 90.0F;
+        float directDamage = 12.0F;
+        float areaDamage = 6.0F;
+        float areaRadius = 8.0F;
+        boolean instant;
+        boolean continuousDamage;
+        boolean ballistic = true;
+        boolean impactTriggered;
+        boolean removalRequested;
+    }
+
+    private static final class AndroidFakeProjectile
+            extends com.corrodinggames.rts.gameFramework.ah {
+        Object j = new Object();
+        Object l = new Object();
+        float n = 31.0F;
+        float o = 41.0F;
+        float h = 5.0F;
+        float J = 2.0F;
+        float t = 4.0F;
+        float az = 90.0F;
+        float U = 12.0F;
+        float Y = 6.0F;
+        float Z = 8.0F;
+        boolean A;
+        boolean E;
+        boolean aH = true;
+        boolean bn;
+        boolean aS;
+
+        AndroidFakeProjectile() {
+            ej = 84L;
+            eo = 1234;
+            ep = 5678;
+            eq = 11.0F;
+            er = 22.0F;
+            es = 4.0F;
+        }
+    }
+
+    private static final class FakeCustomUnitMetadata {
+        boolean hasBuildQueueRuntimeEffects;
+
+        FakeCustomUnitMetadata(boolean value) {
+            hasBuildQueueRuntimeEffects = value;
+        }
+    }
+
+    private static final class FakeCustomUnit {
+        Object unitMetadata = new FakeCustomUnitMetadata(true);
+        Object revertMetadata = new FakeCustomUnitMetadata(false);
+        boolean currentBuildQueueActionBlocksMovement = true;
+        boolean createdEventPending = true;
+        boolean completeAndActiveEventPending;
+        float autoTriggerCooldownTimer = 3.5F;
+        float lastLegBaseX = 1.0F;
+        float lastLegBaseY = 2.0F;
+        float lastLegBaseHeight = 3.0F;
+        float lastLegBaseDir = 180.0F;
+    }
+
+    private static final class AndroidFakeCustomUnit
+            extends com.corrodinggames.rts.gameFramework.ah {
+        Object x = new FakeCustomUnitMetadata(true);
+        Object z = new FakeCustomUnitMetadata(false);
+        boolean g = true;
+        boolean h;
+        boolean i = true;
+        float w = 2.5F;
+        Object dP = new Object();
+        int dQ = 99;
+        float dR = 6.0F;
+        float dS = 270.0F;
     }
 }

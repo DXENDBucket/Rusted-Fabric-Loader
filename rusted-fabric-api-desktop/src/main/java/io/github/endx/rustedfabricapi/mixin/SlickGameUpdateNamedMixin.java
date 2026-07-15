@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -11,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class SlickGameUpdateNamedMixin {
     @Inject(method = "update(Lorg/newdawn/slick/GameContainer;I)V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeFrameUpdate(@Coerce Object gameContainer, int delta, CallbackInfo ci) {
+        GameThreadScheduler.executeUpdatePhase();
         GameLifecycleEvents.BEFORE_FRAME_UPDATE.invoker().beforeFrameUpdate(this, gameContainer, delta);
     }
 

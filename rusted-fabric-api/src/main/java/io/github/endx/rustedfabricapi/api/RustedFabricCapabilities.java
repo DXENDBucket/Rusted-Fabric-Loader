@@ -25,6 +25,7 @@ public final class RustedFabricCapabilities {
     public static final String NETWORK_CHAT = "event.network.chat.v1";
     public static final String NETWORK_PACKET = "event.network.packet.v1";
     public static final String NETWORK_SYNC = "event.network.sync.v1";
+    public static final String PROJECTILE_LIFECYCLE = "event.projectile.lifecycle.v1";
     public static final String RENDER_IMAGE = "event.render.image.v1";
     public static final String REPAIR_RECLAIM = "event.repair.reclaim.v1";
     public static final String RESOURCE_RUNTIME = "event.resource.runtime.v1";
