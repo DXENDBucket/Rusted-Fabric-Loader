@@ -1,0 +1,60 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = '0.1.0'
+
+dependencies {
+    api project(':rusted-fabric-api')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    archiveBaseName.set('rusted-fabric-api-android')
+}
+
+tasks.register('verifyAndroidBackendContracts') {
+    group = 'verification'
+    description = 'Checks that the Android adapter contains RFH1 mappings without Android/game payloads.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+
+    doLast {
+        def forbidden = []
+        def adapterFound = false
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.rfmod')
+                        || lower.startsWith('android/') || lower.startsWith('net/fabricmc/')
+                        || lower.startsWith('org/spongepowered/') || lower.startsWith('org/newdawn/slick/')) {
+                    forbidden.add(entry.name)
+                }
+                if (entry.name == 'io/github/endx/rustedfabricapi/android/AndroidMultiplayerTransport.class') {
+                    adapterFound = true
+                    def constants = new String(zip.getInputStream(entry).bytes,
+                            java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (!constants.contains('com.corrodinggames.rts.gameFramework.j.bi')) {
+                        forbidden.add("${entry.name}: missing exact Android packet mapping")
+                    }
+                    if (constants.contains('Landroid/') || constants.contains('Lio/github/libxposed/')) {
+                        forbidden.add("${entry.name}: framework dependency")
+                    }
+                }
+            }
+        }
+        if (!adapterFound) {
+            throw new GradleException('Android API backend is missing AndroidMultiplayerTransport')
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Android API backend contains forbidden payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyAndroidBackendContracts')

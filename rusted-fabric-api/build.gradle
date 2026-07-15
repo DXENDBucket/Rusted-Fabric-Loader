@@ -3,105 +3,74 @@ plugins {
 }
 
 group = 'io.github.endx'
-version = rootProject.version
+// Keep standalone Android and root desktop builds on the same binary API identity.
+version = '0.1.0'
 
-evaluationDependsOn(':rusted-fabric-api-common')
-
-repositories {
-    if (rootProject.hasProperty('offlineRuntimeJars')) {
-        flatDir { dirs rootProject.file(rootProject.property('offlineRuntimeJars')) }
-    } else {
-        mavenCentral()
-        maven { url = "https://maven.fabricmc.net/" }
-        maven { url = "https://repo.spongepowered.org/maven/" }
-    }
-}
-
-def gameLibJarFile = {
-    rootProject.hasProperty('gameLibJar') ? rootProject.file(rootProject.property('gameLibJar')) : rootProject.file("libs/game-lib.jar")
-}
-def namedGameJarFile = {
-    rootProject.hasProperty('namedGameJar')
-            ? rootProject.file(rootProject.property('namedGameJar'))
-            : rootProject.layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
-}
-def mappingsTinyFile = {
-    rootProject.hasProperty('mappingsTiny')
-            ? rootProject.file(rootProject.property('mappingsTiny'))
-            : rootProject.file("src/main/resources/mappings/mappings.tiny")
-}
-
-dependencies {
-    api project(':rusted-fabric-api-common')
-    implementation "net.fabricmc:fabric-loader:0.18.1"
-    compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
-    compileOnly files({ gameLibJarFile() })
-    compileOnly files({ namedGameJarFile() })
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
 }
 
 jar {
-    dependsOn project(':rusted-fabric-api-common').tasks.named('classes')
-    from project(':rusted-fabric-api-common').sourceSets.main.output
-    duplicatesStrategy = DuplicatesStrategy.FAIL
+    archiveBaseName.set('rusted-fabric-api')
 }
 
-test {
-    // Contract checks are a dependency-free Java main so they also run in
-    // constrained/offline development environments.
-}
-
-tasks.withType(JavaCompile).configureEach {
-    dependsOn rootProject.tasks.named('generateNamedGameJar')
-    options.release = 13 // RW:13
+tasks.register('verifyCommonApiContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies cross-platform context, runtime, event ordering, and listener isolation.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricapi.common.CommonApiContractVerification')
 }
 
 tasks.register('verifyApiContracts', JavaExec) {
     group = 'verification'
-    description = 'Runs dependency-free API event and context contract checks.'
+    description = 'Runs the complete platform-neutral public API event and context contracts.'
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass.set('io.github.endx.rustedfabricapi.ApiContractVerification')
 }
 
-check.dependsOn tasks.named('verifyApiContracts')
-
-processResources {
-    inputs.property 'version', project.version
-    inputs.property 'mappingsVersion', rootProject.rustedMappingsVersion
-
-    filesMatching('fabric.mod.json') {
-        expand(
-                version: project.version,
-                mappingsVersion: rootProject.rustedMappingsVersion
-        )
-    }
-}
-
-tasks.register('remapJarToOfficial', JavaExec) {
-    group = 'rusted fabric'
-    description = 'Remaps the Rusted Fabric API from named names to official runtime names, including mixin metadata.'
-    dependsOn jar, rootProject.tasks.named('classes'), rootProject.tasks.named('generateNamedGameJar')
-
-    classpath = rootProject.sourceSets.main.runtimeClasspath
-    mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
-
-    def outputJar = layout.buildDirectory.file("libs/official/rusted-fabric-api-${project.version}.jar")
+tasks.register('verifyNoPlatformPayload') {
+    group = 'verification'
+    description = 'Rejects Android, Fabric, desktop backend, and game implementation dependencies.'
+    dependsOn jar
     inputs.file(tasks.jar.archiveFile)
-    inputs.file(provider { mappingsTinyFile() })
-    inputs.file(provider { namedGameJarFile() })
-    outputs.file outputJar
 
-    doFirst {
-        def output = outputJar.get().asFile
-        output.parentFile.mkdirs()
-
-        setArgs([
-                tasks.jar.archiveFile.get().asFile.absolutePath,
-                output.absolutePath,
-                mappingsTinyFile().absolutePath,
-                'named',
-                'official',
-                namedGameJarFile().absolutePath
-        ] + sourceSets.main.compileClasspath.files.collect { it.absolutePath })
+    doLast {
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def name = entry.name.toLowerCase(Locale.ROOT)
+                if (name.endsWith('.apk') || name.endsWith('.dex')
+                        || name.startsWith('com/corrodinggames/')
+                        || name.startsWith('android/')
+                        || name.startsWith('net/fabricmc/')
+                        || name.startsWith('org/spongepowered/')
+                        || name.startsWith('org/newdawn/slick/')) {
+                    forbidden.add(entry.name)
+                }
+                if (name.endsWith('.class')) {
+                    def constants = new String(zip.getInputStream(entry).bytes,
+                            java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (constants.contains('Landroid/')
+                            || constants.contains('android/content/')
+                            || constants.contains('com/corrodinggames/')
+                            || constants.contains('net/fabricmc/')
+                            || constants.contains('org/spongepowered/')
+                            || constants.contains('org/newdawn/slick/')
+                            || constants.contains('io/github/libxposed/')) {
+                        forbidden.add("${entry.name}: platform/game class reference")
+                    }
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Common API contains platform/game payloads: ${forbidden}")
+        }
     }
 }
+
+check.dependsOn tasks.named('verifyCommonApiContracts')
+check.dependsOn tasks.named('verifyApiContracts')
+check.dependsOn tasks.named('verifyNoPlatformPayload')

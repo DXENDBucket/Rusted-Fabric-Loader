@@ -1,7 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.NetworkPacketEvents;
-import io.github.endx.rustedfabricapi.api.multiplayer.DesktopMultiplayerTransport;
+import io.github.endx.rustedfabricapi.desktop.DesktopMultiplayerTransport;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;

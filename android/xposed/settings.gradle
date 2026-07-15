@@ -33,8 +33,10 @@ include ':bootstrap-core'
 project(':bootstrap-core').projectDir = file('../bootstrap-core')
 include ':mod-runtime'
 project(':mod-runtime').projectDir = file('../mod-runtime')
-include ':rusted-fabric-api-common'
-project(':rusted-fabric-api-common').projectDir = file('../../rusted-fabric-api-common')
+include ':rusted-fabric-api'
+project(':rusted-fabric-api').projectDir = file('../../rusted-fabric-api')
+include ':rusted-fabric-api-android'
+project(':rusted-fabric-api-android').projectDir = file('../../rusted-fabric-api-android')
 include ':patched-bootstrap'
 project(':patched-bootstrap').projectDir = file('../patched-bootstrap')
 include ':game-api-stubs'

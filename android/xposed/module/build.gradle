@@ -48,7 +48,7 @@ android {
 dependencies {
     implementation project(':bootstrap-core')
     implementation project(':mod-runtime')
-    implementation project(':rusted-fabric-api-common')
+    implementation project(':rusted-fabric-api-android')
     implementation project(':local-patcher-core')
     compileOnly 'io.github.libxposed:api:102.0.0@aar'
 }
@@ -88,6 +88,7 @@ tasks.register('verifyNoGamePayload') {
         def patcherCoreFound = false
         def bootstrapAssetFound = false
         def handshakeBridgeFound = false
+        def androidBackendFound = false
         def sessionApiFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
@@ -132,6 +133,8 @@ tasks.register('verifyNoGamePayload') {
                             'Lio/github/endx/rustedfabric/android/patcher/LocalApkPatcher;')
                     handshakeBridgeFound |= dexText.contains(
                             'Lio/github/endx/rustedfabricapi/api/multiplayer/MultiplayerNetworkBridge;')
+                    androidBackendFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/android/AndroidMultiplayerTransport;')
                     sessionApiFound |= dexText.contains(
                             'Lio/github/endx/rustedfabricapi/api/session/GameSession;')
                     if (entry.name == 'assets/rusted-fabric/patched-bootstrap.dex') {
@@ -144,7 +147,7 @@ tasks.register('verifyNoGamePayload') {
         if (!commonContextFound || !commonEventsFound || !commonModEntrypointFound
                 || !androidModLoaderFound || !modManagerFound || !modProviderFound
                 || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound
-                || !handshakeBridgeFound || !sessionApiFound) {
+                || !handshakeBridgeFound || !androidBackendFound || !sessionApiFound) {
             throw new GradleException('Xposed APK is missing the portable API or mod management path')
         }
         if (!forbidden.isEmpty()) {

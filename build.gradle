@@ -79,8 +79,8 @@ tasks.register('validateMappings') {
     description = 'Validates Tiny mappings and the Rusted Fabric API mixin configuration.'
 
     def tinyFile = mappingsTinyFile()
-    def mixinConfigFile = project(':rusted-fabric-api').file('src/main/resources/rustedfabricapi.mixins.json')
-    def mixinSourceDir = project(':rusted-fabric-api').file('src/main/java/io/github/endx/rustedfabricapi/mixin')
+    def mixinConfigFile = project(':rusted-fabric-api-desktop').file('src/main/resources/rustedfabricapi.mixins.json')
+    def mixinSourceDir = project(':rusted-fabric-api-desktop').file('src/main/java/io/github/endx/rustedfabricapi/mixin')
     inputs.file tinyFile
     inputs.file mixinConfigFile
     inputs.dir mixinSourceDir
@@ -285,12 +285,14 @@ tasks.register('copyFabricRuntime', Copy) {
 tasks.register('verifyDistribution') {
     group = 'verification'
     description = 'Builds and validates the named game Jar, provider, official API, and official example-mod artifacts.'
-    dependsOn check, jar, generateNamedGameJar, ':rusted-fabric-api:verifyApiContracts',
-            ':rusted-fabric-api:remapJarToOfficial', ':example-mod:remapJarToOfficial'
+    dependsOn check, jar, generateNamedGameJar, ':rusted-fabric-api:check',
+            ':rusted-fabric-api-android:check',
+            ':rusted-fabric-api:verifyApiContracts',
+            ':rusted-fabric-api-desktop:remapJarToOfficial', ':example-mod:remapJarToOfficial'
 
     doLast {
         def providerJar = tasks.jar.archiveFile.get().asFile
-        def apiJar = project(':rusted-fabric-api').layout.buildDirectory
+        def apiJar = project(':rusted-fabric-api-desktop').layout.buildDirectory
                 .file("libs/official/rusted-fabric-api-${project.version}.jar").get().asFile
         def exampleJar = project(':example-mod').layout.buildDirectory
                 .file("libs/rusted-fabric-example-mod-${project.version}-official.jar").get().asFile
@@ -344,7 +346,7 @@ tasks.register('verifyDistribution') {
                     || mod.custom?.get('rustedfabricapi:mappings_version') != rustedMappingsVersion.toString()) {
                 throw new GradleException('Official API metadata version is inconsistent')
             }
-            def expectedMixinCount = fileTree(project(':rusted-fabric-api').file('src/main/java/io/github/endx/rustedfabricapi/mixin')) {
+            def expectedMixinCount = fileTree(project(':rusted-fabric-api-desktop').file('src/main/java/io/github/endx/rustedfabricapi/mixin')) {
                 include '*NamedMixin.java'
             }.files.size()
             if (mixins.required != true || mixins.injectors?.defaultRequire != 1
@@ -442,7 +444,7 @@ tasks.register('installToGameDir') {
             }
         }
 
-        def apiRemapTask = project(':rusted-fabric-api').tasks.named('remapJarToOfficial').get()
+        def apiRemapTask = project(':rusted-fabric-api-desktop').tasks.named('remapJarToOfficial').get()
         copy {
             from apiRemapTask.outputs.files.singleFile
             into javaModsDir

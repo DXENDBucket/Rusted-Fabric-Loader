@@ -149,8 +149,20 @@ Mixin classes should be authored against the named development jar. `RemapJar` r
 To build the API runtime jar directly:
 
 ```bat
-gradlew.bat :rusted-fabric-api:remapJarToOfficial
+gradlew.bat :rusted-fabric-api-desktop:remapJarToOfficial
 ```
+
+The API implementation is split into three strict modules:
+
+```text
+rusted-fabric-api          shared public mod API
+rusted-fabric-api-desktop  Windows Fabric/Mixin backend
+rusted-fabric-api-android  Android local-patch/Xposed backend
+```
+
+The desktop runtime Jar embeds the public module. Android compiles the public module and Android
+backend into DEX, so mod source uses the same `io.github.endx.rustedfabricapi.api` contracts on both
+platforms without shipping Fabric or Android framework dependencies across the boundary.
 
 ## Example Mod
 The `example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.

@@ -37,7 +37,7 @@ android {
 
 dependencies {
     implementation project(':mod-runtime')
-    implementation project(':rusted-fabric-api-common')
+    implementation project(':rusted-fabric-api-android')
     compileOnly project(':game-api-stubs')
 }
 
@@ -82,7 +82,7 @@ tasks.register('verifyBootstrapArtifact') {
         if (!text.contains('Lio/github/endx/rustedfabric/android/patched/EngineLifecycleBridge;')) {
             throw new GradleException('Bootstrap DEX is missing EngineLifecycleBridge')
         }
-        if (!text.contains('Lio/github/endx/rustedfabric/android/patched/AndroidMultiplayerTransport;')
+        if (!text.contains('Lio/github/endx/rustedfabricapi/android/AndroidMultiplayerTransport;')
                 || !text.contains('Lio/github/endx/rustedfabricapi/api/multiplayer/MultiplayerNetworkBridge;')
                 || !text.contains('Lio/github/endx/rustedfabricapi/api/session/GameSession;')) {
             throw new GradleException('Bootstrap DEX is missing RFH1 or shared session support')

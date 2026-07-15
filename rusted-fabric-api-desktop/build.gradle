@@ -1,9 +1,11 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 group = 'io.github.endx'
 version = rootProject.version
+
+evaluationDependsOn(':rusted-fabric-api')
 
 repositories {
     if (rootProject.hasProperty('offlineRuntimeJars')) {
@@ -11,15 +13,18 @@ repositories {
     } else {
         mavenCentral()
         maven { url = "https://maven.fabricmc.net/" }
+        maven { url = "https://repo.spongepowered.org/maven/" }
     }
 }
 
+def gameLibJarFile = {
+    rootProject.hasProperty('gameLibJar') ? rootProject.file(rootProject.property('gameLibJar')) : rootProject.file("libs/game-lib.jar")
+}
 def namedGameJarFile = {
     rootProject.hasProperty('namedGameJar')
             ? rootProject.file(rootProject.property('namedGameJar'))
             : rootProject.layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
 }
-
 def mappingsTinyFile = {
     rootProject.hasProperty('mappingsTiny')
             ? rootProject.file(rootProject.property('mappingsTiny'))
@@ -27,55 +32,45 @@ def mappingsTinyFile = {
 }
 
 dependencies {
-    compileOnly "net.fabricmc:fabric-loader:0.18.1"
-    compileOnly project(":rusted-fabric-api-desktop")
+    api project(':rusted-fabric-api')
+    implementation "net.fabricmc:fabric-loader:0.18.1"
+    compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
+    compileOnly files({ gameLibJarFile() })
     compileOnly files({ namedGameJarFile() })
+}
+
+jar {
+    dependsOn project(':rusted-fabric-api').tasks.named('classes')
+    from project(':rusted-fabric-api').sourceSets.main.output
+    duplicatesStrategy = DuplicatesStrategy.FAIL
 }
 
 tasks.withType(JavaCompile).configureEach {
     dependsOn rootProject.tasks.named('generateNamedGameJar')
-    options.release = 13
+    options.release = 13 // RW:13
 }
-
-tasks.register('verifyPortableExample') {
-    group = 'verification'
-    description = 'Ensures the portable example listener has no platform or game implementation imports.'
-    def source = file('src/main/java/io/github/endx/rustedfabricexample/PortableInitializationProbe.java')
-    inputs.file(source)
-    doLast {
-        def text = source.getText('UTF-8')
-        def forbidden = ['net.fabricmc', 'org.spongepowered', 'android.', 'com.corrodinggames',
-                         'rustedwarfare.', 'org.newdawn.slick', 'io.github.libxposed']
-        def found = forbidden.findAll { text.contains(it) }
-        if (!found.isEmpty()) {
-            throw new GradleException("Portable example has platform/game dependencies: ${found}")
-        }
-    }
-}
-
-check.dependsOn tasks.named('verifyPortableExample')
 
 processResources {
-    inputs.property "version", project.version
+    inputs.property 'version', project.version
+    inputs.property 'mappingsVersion', rootProject.rustedMappingsVersion
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+    filesMatching('fabric.mod.json') {
+        expand(
+                version: project.version,
+                mappingsVersion: rootProject.rustedMappingsVersion
+        )
     }
-}
-
-jar {
-    archiveBaseName.set("rusted-fabric-example-mod")
 }
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'
-    description = 'Remaps the example mod from named names to official runtime names.'
+    description = 'Remaps the Rusted Fabric API from named names to official runtime names, including mixin metadata.'
     dependsOn jar, rootProject.tasks.named('classes'), rootProject.tasks.named('generateNamedGameJar')
 
     classpath = rootProject.sourceSets.main.runtimeClasspath
     mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
 
-    def outputJar = layout.buildDirectory.file("libs/rusted-fabric-example-mod-${project.version}-official.jar")
+    def outputJar = layout.buildDirectory.file("libs/official/rusted-fabric-api-${project.version}.jar")
     inputs.file(tasks.jar.archiveFile)
     inputs.file(provider { mappingsTinyFile() })
     inputs.file(provider { namedGameJarFile() })

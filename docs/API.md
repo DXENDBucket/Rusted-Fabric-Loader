@@ -31,8 +31,9 @@ available.
 
 ## Windows and Android portability
 
-`rusted-fabric-api-common` contains the platform-neutral context, runtime holder, and lifecycle
-events. Its classes are embedded in the Windows API Jar and compiled into the Android loader DEX,
+`rusted-fabric-api` contains the complete platform-neutral public surface: context, runtime holder,
+events, helpers, sessions, and multiplayer contracts. Its classes are embedded in the Windows API
+Jar and compiled into the Android loader DEX,
 so a mod can use the same imports and listener source on both platforms:
 
 ```java
@@ -58,12 +59,18 @@ Slick/LWJGL, desktop Mixins, Android UI/storage, and other platform APIs behind 
 Android entrypoint classes implement `RustedFabricModEntrypoint`; the `.rfmod` v1 format and loading
 rules are documented in [`ANDROID_MODS.md`](ANDROID_MODS.md).
 
-The separate Gradle modules are build boundaries, not two competing APIs. `rusted-fabric-api-common`
-must not reference Fabric, Mixin, Android, Slick/LWJGL, or game implementation classes.
-`rusted-fabric-api` supplies the Windows Fabric/Mixin hooks and packages the common classes into the
-desktop API Jar. Android packages those same common classes with its own DEX hooks. They can be
-presented to mod authors as one Rusted Fabric API, but keeping the internal modules separate prevents
-desktop dependencies from entering Android and keeps portable API contracts mechanically verifiable.
+The three Gradle modules are explicit build boundaries, not competing APIs:
+
+- `rusted-fabric-api`: the public cross-platform API. It has no Fabric, Mixin, Android framework,
+  Slick/LWJGL, or game implementation class dependency.
+- `rusted-fabric-api-desktop`: Windows Fabric/Mixin hooks, named-to-official remapping, and the desktop
+  RFH1 adapter. Its distributable Jar embeds `rusted-fabric-api` so users install one API Jar.
+- `rusted-fabric-api-android`: the Android RFH1/mapping adapter shared by both local-patch and Xposed
+  backends. Android packaging compiles it and `rusted-fabric-api` into DEX.
+
+Mod source targets `rusted-fabric-api`; it uses a platform backend only for platform-specific
+integration or build tooling. This separation prevents desktop dependencies from entering Android
+while mechanically verifying that the public API remains portable.
 
 ## Event behavior
 
@@ -82,8 +89,10 @@ exposed. The before/after engine initialization events are one-shot on both back
 ## API layers
 
 - `api.event`: public experimental event surface for mods.
-- `rusted-fabric-api-common`: cross-platform context and lifecycle contracts with no Fabric, Xposed,
-  Android, Slick, or game implementation dependency.
+- `rusted-fabric-api`: all cross-platform public contracts, events, helpers, sessions, and multiplayer
+  APIs, with no Fabric, Xposed, Android framework, Slick, or game implementation class dependency.
+- `rusted-fabric-api-desktop`: internal Windows hooks and remapping support.
+- `rusted-fabric-api-android`: internal Android mapping and network transport support.
 - `api.asset`, `api.ini`, and `api.logic`: higher-level experimental helpers backed by current mappings.
 - `api.diagnostic`: development diagnostics. Output and reflected member coverage are not a stable compatibility contract. Mapping v1.1 includes `PlatformRuntimeDiagnostics` for operating-system, platform-extension, and file-change-engine state.
 - `api.util.RustedReflection`: low-level compatibility support; prefer higher-level APIs when one exists.

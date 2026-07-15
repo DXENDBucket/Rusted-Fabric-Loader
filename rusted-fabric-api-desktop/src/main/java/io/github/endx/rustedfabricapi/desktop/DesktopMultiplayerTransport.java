@@ -1,4 +1,6 @@
-package io.github.endx.rustedfabricapi.api.multiplayer;
+package io.github.endx.rustedfabricapi.desktop;
+
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerNetworkBridge;
 
 /** Named-namespace adapter; remapping rewrites no common API surface or payload format. */
 public final class DesktopMultiplayerTransport {

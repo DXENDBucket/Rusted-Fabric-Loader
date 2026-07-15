@@ -28,9 +28,9 @@ import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
-import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerNetworkBridge;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
+import io.github.endx.rustedfabricapi.android.AndroidMultiplayerTransport;
 import io.github.libxposed.api.XposedModule;
 
 /** Modern Xposed entrypoint for exact profile selection and the first diagnostic-only game hook. */
@@ -42,10 +42,7 @@ public final class RustedFabricXposedModule extends XposedModule {
     private final AtomicBoolean gameEngineInitializationStarted = new AtomicBoolean();
     private final AtomicBoolean gameEngineInitialized = new AtomicBoolean();
     private final AtomicBoolean networkHooksInstalled = new AtomicBoolean();
-    private final MultiplayerNetworkBridge networkBridge = new MultiplayerNetworkBridge(
-            new MultiplayerNetworkBridge.Mapping(
-                    AndroidMappingProfile.binaryName(AndroidMappingProfile.NETWORK_PACKET_OWNER),
-                    "b", "c", "a", "a", "a", "d"),
+    private final AndroidMultiplayerTransport networkTransport = new AndroidMultiplayerTransport(
             (message, failure) -> log(failure == null ? LOG_INFO : LOG_ERROR,
                     "RustedFabric/Network", message, failure));
     private volatile String processName = "unknown";
@@ -284,35 +281,32 @@ public final class RustedFabricXposedModule extends XposedModule {
             hook(register).setId("rusted-fabric:rfh1-client-register")
                     .setPriority(PRIORITY_LOWEST).intercept(chain -> {
                         Object result = chain.proceed();
-                        networkBridge.connectionReady(chain.getThisObject(), chain.getArg(0),
-                                MultiplayerNetworkBridge.Side.CLIENT);
+                        networkTransport.afterClientRegistration(
+                                chain.getThisObject(), chain.getArg(0));
                         return result;
                     });
             hook(serverInfo).setId("rusted-fabric:rfh1-server-info")
                     .setPriority(PRIORITY_LOWEST).intercept(chain -> {
                         Object result = chain.proceed();
-                        if (readBoolean(chain.getThisObject(), "D")) {
-                            networkBridge.connectionReady(chain.getThisObject(), chain.getArg(0),
-                                    MultiplayerNetworkBridge.Side.HOST);
-                        }
+                        networkTransport.afterServerInfo(chain.getThisObject(), chain.getArg(0));
                         return result;
                     });
             hook(systemPacket).setId("rusted-fabric:rfh1-system-packet")
                     .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
-                        if (networkBridge.receive(chain.getThisObject(), chain.getArg(0))) return null;
+                        if (networkTransport.receive(chain.getThisObject(), chain.getArg(0))) return null;
                         return chain.proceed();
                     });
             hook(reset).setId("rusted-fabric:rfh1-network-reset")
                     .setPriority(PRIORITY_LOWEST).intercept(chain -> {
                         Object result = chain.proceed();
                         if (!Boolean.TRUE.equals(chain.getArg(0))) {
-                            networkBridge.resetToSinglePlayer();
+                            networkTransport.resetToSinglePlayer();
                         }
                         return result;
                     });
             hook(start).setId("rusted-fabric:rfh1-start-gate")
                     .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
-                        if (!networkBridge.allowGameStart(chain.getArg(0))) return Boolean.FALSE;
+                        if (!networkTransport.allowGameStart(chain.getArg(0))) return Boolean.FALSE;
                         return chain.proceed();
                     });
             log(LOG_INFO, "RustedFabric/Network", "RFH1 network hooks installed");
@@ -322,12 +316,6 @@ public final class RustedFabricXposedModule extends XposedModule {
             log(LOG_ERROR, "RustedFabric/Network", "RFH1 hook installation failed", failure);
             return false;
         }
-    }
-
-    private static boolean readBoolean(Object owner, String fieldName) throws Exception {
-        java.lang.reflect.Field field = owner.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.getBoolean(owner);
     }
 
     private void logDispatch(String event, RuntimeLifecycleEvents.DispatchResult result) {
