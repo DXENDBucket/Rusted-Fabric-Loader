@@ -6,6 +6,8 @@ import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
 import io.github.endx.rustedfabricapi.api.RustedFabricModEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricPlatform;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
+import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
+import io.github.endx.rustedfabricapi.api.ApiSupportMatrix;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerCompatibility;
@@ -31,6 +33,7 @@ public final class CommonApiContractVerification {
     public static void main(String[] args) throws Exception {
         RustedFabricAPIContext context = androidContext();
         verifyContext(context);
+        verifySupportMatrix(context);
         verifySafeEvents(context);
         verifyPortableModEntrypoint(context);
         verifyMultiplayerCompatibility();
@@ -38,6 +41,16 @@ public final class CommonApiContractVerification {
         verifySharedSessions();
         verifyNetworkBridge();
         System.out.println("Cross-platform Rusted Fabric API contracts passed");
+    }
+
+    private static void verifySupportMatrix(RustedFabricAPIContext context) {
+        require(ApiSupportMatrix.entries().size() == 35,
+                "public API support matrix does not cover every event group");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
+                        ApiSupportMatrix.Backend.ANDROID_LOCAL_PATCH) == ApiSupportMatrix.Level.FULL,
+                "Android unit lifecycle support is not advertised");
+        require(ApiSupportMatrix.available(context, RustedFabricCapabilities.RUNTIME_LIFECYCLE),
+                "runtime capability and expected support matrix disagree");
     }
 
     private static void verifyMultiplayerCompatibility() {
@@ -186,6 +199,20 @@ public final class CommonApiContractVerification {
         RustedFabricModEntrypoint entrypoint = value -> received[0] = value;
         entrypoint.onInitialize(context);
         require(received[0] == context, "portable mod entrypoint did not receive context");
+
+        RustedFabricAPIEntrypoint dualPlatform = new RustedFabricAPIEntrypoint() {
+            @Override
+            protected void onRustedFabricAPI(RustedFabricAPIContext value) {
+                received[0] = value;
+            }
+        };
+        require(dualPlatform instanceof RustedFabricModEntrypoint,
+                "typed Fabric entrypoint is not also an Android mod entrypoint");
+        dualPlatform.onInitialize(context);
+        require(received[0] == context, "Android entrypoint path changed the context");
+        dualPlatform.accept(context.asMap());
+        require(received[0].platform() == context.platform(),
+                "Fabric entrypoint path did not adapt the raw context");
     }
 
     private static RustedFabricAPIContext androidContext() {
@@ -199,7 +226,8 @@ public final class CommonApiContractVerification {
         raw.put(RustedFabricAPIKeys.K_ANDROID, Boolean.TRUE);
         raw.put(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE, "official");
         raw.put(RustedFabricAPIKeys.K_CAPABILITIES,
-                new ArrayList<>(Arrays.asList("mapping.profile.exact", "event.engine.init")));
+                new ArrayList<>(Arrays.asList("mapping.profile.exact", "event.engine.init",
+                        RustedFabricCapabilities.RUNTIME_LIFECYCLE)));
         raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
                 MultiplayerManifest.empty("android").encode());
         return new RustedFabricAPIContext(raw);

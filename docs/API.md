@@ -23,6 +23,8 @@ Two Rusted-specific Fabric entrypoints are available:
 
 Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an
 immutable snapshot; its launch-argument array and capabilities are defensively copied.
+The same base class also implements Android's `RustedFabricModEntrypoint`, so one entrypoint source
+can be packaged for both platforms. See [`PORTABLE_MOD_BUILD.md`](PORTABLE_MOD_BUILD.md).
 `contextVersion()` is currently `5`. Version 5 adds the shared game-session API and live `RFH1`
 handshake capability. Version 4 added the canonical multiplayer manifest and the
 `multiplayer.compat.v1` capability. Version 3 added `platform()`, `mappingProfileId()`,
@@ -54,9 +56,10 @@ for single-player as well as host/client play, so portable gameplay mods do not 
 offline and online entrypoints.
 
 The distributed binary is still platform-specific: Windows uses a Fabric Jar containing JVM class
-files, while Android requires a DEX mod package. Keep portable logic in a common source set and put
+files, while Android requires a DEX mod package. The provided Gradle convention builds both outputs
+from one common source set. Put
 Slick/LWJGL, desktop Mixins, Android UI/storage, and other platform APIs behind separate adapters.
-Android entrypoint classes implement `RustedFabricModEntrypoint`; the `.rfmod` v1 format and loading
+Android entrypoint classes implement `RustedFabricModEntrypoint`; the `.javamod` v1 format and loading
 rules are documented in [`ANDROID_MODS.md`](ANDROID_MODS.md).
 
 The three Gradle modules are explicit build boundaries, not competing APIs:
@@ -71,6 +74,14 @@ The three Gradle modules are explicit build boundaries, not competing APIs:
 Mod source targets `rusted-fabric-api`; it uses a platform backend only for platform-specific
 integration or build tooling. This separation prevents desktop dependencies from entering Android
 while mechanically verifying that the public API remains portable.
+
+Backend coverage is machine-readable in
+`rusted-fabric-api/src/main/resources/rustedfabricapi/api-support-matrix.csv`. Each public event
+group has a versioned capability key and a `full`, `partial`, or `unavailable` level for Windows,
+Android local patch, and Android Xposed. `RustedFabricCapabilities` exposes the stable keys;
+`ApiSupportMatrix.available(context, capability)` combines expected backend coverage with the
+capabilities actually advertised by the running Loader. The build fails if a public event class or
+capability row is missing.
 
 ## Event behavior
 

@@ -3,7 +3,7 @@
 ## Current status
 
 API context version 5 defines and validates the `RFM1` cross-platform mod manifest. Windows builds
-derive it from Fabric metadata; Android builds derive it from enabled `.rfmod` metadata. The common
+derive it from Fabric metadata; Android builds derive it from enabled `.javamod` metadata. The common
 API provides deterministic encoding, SHA-256 fingerprinting, compatibility evaluation, and
 exception-isolated manifest/evaluation events. Both backends wrap it in the same `RFH1` envelope and
 carry it in game system packet `179`, which unmodified 1.15 peers safely ignore.
@@ -48,7 +48,7 @@ Windows `fabric.mod.json`:
 }
 ```
 
-Android `.rfmod` metadata:
+Android `.javamod` metadata:
 
 ```properties
 multiplayerMode=required

@@ -69,6 +69,8 @@ final class PatchedRuntime {
         values.put(RustedFabricAPIKeys.K_CAPABILITIES, Arrays.asList(
                 "event.engine.init", "event.runtime.ready", "mapping.profile.exact",
                 "mod.dex.v1", "session.v1", "multiplayer.compat.v1",
+                "event.runtime.lifecycle.v1", "event.unit.lifecycle.v1",
+                "event.command.issue.v1",
                 "multiplayer.handshake.rfh1",
                 "platform.android.local-patch"));
         return new RustedFabricAPIContext(values);

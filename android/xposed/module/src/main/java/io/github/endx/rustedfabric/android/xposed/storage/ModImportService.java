@@ -28,7 +28,7 @@ public final class ModImportService {
         }
         Path incoming = context.getCacheDir().toPath().resolve("rusted-fabric-imports");
         Files.createDirectories(incoming);
-        Path temporary = incoming.resolve(UUID.randomUUID() + ".rfmod");
+        Path temporary = incoming.resolve(UUID.randomUUID() + ".javamod");
         try {
             copyBounded(context.getContentResolver(), source, temporary,
                     RustedFabricModVerifier.MAX_ARCHIVE_BYTES);

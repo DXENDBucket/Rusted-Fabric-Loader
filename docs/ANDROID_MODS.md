@@ -5,7 +5,7 @@
 The intended first release keeps the installed Rusted Warfare APK and signature unchanged:
 
 1. Install and enable the Rusted Fabric Loader module in a compatible root/Xposed framework once.
-2. Open the Loader app, choose **Import mod**, and select a `.rfmod` file with Android's system file
+2. Open the Loader app, choose **Import mod**, and select a `.javamod` file with Android's system file
    picker.
 3. Review the mod name, version, requested capabilities, active mapping compatibility, hash, and an
    explicit trusted-code warning.
@@ -24,17 +24,17 @@ mapping profile. The injected backend copies each archive by SHA-256 into the ga
 cache before loading it.
 
 This management path is implemented in the `0.5.0-mod-management` scaffold. It still requires a
-rooted test device and a real external probe `.rfmod` before it can be called device-validated.
+rooted test device and a real external probe `.javamod` before it can be called device-validated.
 
 Neither installation path patches, resigns, or redistributes the game APK. The Loader distribution
 contains only Loader code, mappings, API contracts, and user-installed mods.
 
-## `.rfmod` v1 format
+## `.javamod` v1 format
 
 An Android mod is a ZIP-compatible, code-only archive with this layout:
 
 ```text
-example.rfmod
+example.javamod
 ├── classes.dex
 ├── META-INF/rusted-fabric.mod.properties
 ├── LICENSE                         (optional)
@@ -75,7 +75,7 @@ Use `optional` when either side can run independently and peer presence only ena
 backward-compatible enhancements. A missing optional mod never blocks a connection.
 Content/gameplay mods use `required` and
 must provide the same protocol and platform-neutral synchronized-content SHA-256 in their Windows
-and Android packages. The hash is not the JAR, DEX, APK, or `.rfmod` archive hash. See
+and Android packages. The hash is not the JAR, DEX, APK, or `.javamod` archive hash. See
 [`MULTIPLAYER.md`](MULTIPLAYER.md).
 
 ## Verification and loading rules
@@ -101,17 +101,17 @@ is not a security boundary: enabled mod code runs inside the game process and sh
 trusted native-to-the-process code.
 
 The Loader may ship built-in management and diagnostic functions. Game-affecting features should be
-ordinary first-party `.rfmod` packages so users can disable or replace them. The Loader does not add
+ordinary first-party `.javamod` packages so users can disable or replace them. The Loader does not add
 an in-game mod list; a mod may provide one independently on either platform.
 
 ## Windows and Android builds
 
-Windows and Android mods can share Java source for `RustedFabricModEntrypoint`, context checks, and
-platform-neutral lifecycle events. They cannot use one unchanged binary:
+Windows and Android mods can share one Java source set and one `RustedFabricAPIEntrypoint`. They
+cannot use one unchanged binary:
 
 - Windows ships a Fabric `.jar` containing JVM `.class` files and may use Mixins/Slick/LWJGL.
-- Android ships an `.rfmod` containing DEX and must use supported method-hook/API boundaries.
+- Android ships a `.javamod` containing DEX and must use supported method-hook/API boundaries.
 
-The recommended project layout is a common source module plus small Windows and Android packaging
-modules. Platform-specific code belongs behind adapters, guarded by `context.platform()` and
-capabilities where a shared entrypoint needs to select an implementation.
+Apply `gradle/rusted-fabric-javamod.gradle` to produce both formats and verify the Android archive;
+`portable-example-mod` is a working template. Platform-specific code belongs behind adapters,
+guarded by `context.platform()` and capabilities. See [`PORTABLE_MOD_BUILD.md`](PORTABLE_MOD_BUILD.md).

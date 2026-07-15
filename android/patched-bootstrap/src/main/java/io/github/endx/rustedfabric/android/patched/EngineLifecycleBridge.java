@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.event.CommandEvents;
+import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.android.AndroidMultiplayerTransport;
@@ -66,6 +68,30 @@ public final class EngineLifecycleBridge {
             Log.e(TAG, "Network start gate failed; refusing unsafe start", failure);
             return false;
         }
+    }
+
+    public static void beforeUnitRegister(Object unit) {
+        UnitLifecycleEvents.BEFORE_UNIT_REGISTER.invoker().beforeUnitRegister(unit);
+    }
+
+    public static void afterUnitRegister(Object unit) {
+        UnitLifecycleEvents.AFTER_UNIT_REGISTER.invoker().afterUnitRegister(unit);
+    }
+
+    public static void beforeUnitUnregister(Object unit) {
+        UnitLifecycleEvents.BEFORE_UNIT_UNREGISTER.invoker().beforeUnitUnregister(unit);
+    }
+
+    public static void afterUnitUnregister(Object unit) {
+        UnitLifecycleEvents.AFTER_UNIT_UNREGISTER.invoker().afterUnitUnregister(unit);
+    }
+
+    public static boolean beforeCommandIssue(Object command) {
+        return CommandEvents.BEFORE_COMMAND_ISSUE.invoker().beforeCommandIssue(command);
+    }
+
+    public static void afterCommandIssue(Object command) {
+        CommandEvents.AFTER_COMMAND_ISSUE.invoker().afterCommandIssue(command);
     }
 
     private static void dispatchOnce(AtomicBoolean guard,

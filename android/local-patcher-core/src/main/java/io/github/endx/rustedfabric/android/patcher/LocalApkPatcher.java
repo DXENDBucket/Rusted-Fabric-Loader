@@ -61,6 +61,7 @@ public final class LocalApkPatcher {
                     "manifest-package-rewrite", "manifest-application-rewrite",
                     "provider-authority-rewrite", "loader-provider-query-declaration",
                     "engine-init-lifecycle-weave", "rfh1-network-handshake-weave",
+                    "portable-gameplay-event-weave",
                     "equal-width-dex-string-rewrite",
                     "legacy-signature-removal", "bootstrap-secondary-dex-injection",
                     "stored-entry-alignment"));

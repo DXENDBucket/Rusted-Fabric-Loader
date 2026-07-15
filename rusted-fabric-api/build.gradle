@@ -71,6 +71,53 @@ tasks.register('verifyNoPlatformPayload') {
     }
 }
 
+tasks.register('verifyApiSupportMatrix') {
+    group = 'verification'
+    description = 'Requires every public event group to have one versioned, machine-readable backend support row.'
+    def matrixFile = file('src/main/resources/rustedfabricapi/api-support-matrix.csv')
+    def eventDirectory = file('src/main/java/io/github/endx/rustedfabricapi/api/event')
+    def capabilitySource = file('src/main/java/io/github/endx/rustedfabricapi/api/RustedFabricCapabilities.java')
+    inputs.file(matrixFile)
+    inputs.dir(eventDirectory)
+    inputs.file(capabilitySource)
+
+    doLast {
+        def lines = matrixFile.readLines('UTF-8')
+        if (lines.isEmpty() || lines[0] != 'capability,apiClass,windows,androidLocalPatch,androidXposed') {
+            throw new GradleException('Unexpected API support matrix schema')
+        }
+        def capabilities = new LinkedHashSet<String>()
+        def matrixClasses = new LinkedHashSet<String>()
+        def valid = ['full', 'partial', 'unavailable'] as Set
+        lines.drop(1).findAll { !it.trim().isEmpty() && !it.startsWith('#') }.eachWithIndex { row, index ->
+            def fields = row.split(',', -1)
+            if (fields.length != 5 || !fields[0].matches('[a-z][a-z0-9._-]*\\.v[0-9]+')) {
+                throw new GradleException("Malformed API support row ${index + 2}: ${row}")
+            }
+            if (!capabilities.add(fields[0]) || !matrixClasses.add(fields[1])) {
+                throw new GradleException("Duplicate API support row ${index + 2}: ${row}")
+            }
+            if (fields[2] != 'full' || !valid.contains(fields[3]) || !valid.contains(fields[4])) {
+                throw new GradleException("Invalid backend support level at row ${index + 2}: ${row}")
+            }
+        }
+        def eventClasses = fileTree(eventDirectory) {
+            include '*.java'
+            exclude 'RustedFabricEvent.java'
+        }.files.collect { it.name - '.java' } as Set
+        if (eventClasses != matrixClasses) {
+            throw new GradleException("API support matrix mismatch; missing=${eventClasses - matrixClasses}, stale=${matrixClasses - eventClasses}")
+        }
+        def constants = capabilitySource.getText('UTF-8')
+        capabilities.each { capability ->
+            if (!constants.contains('"' + capability + '"')) {
+                throw new GradleException("API support capability has no public constant: ${capability}")
+            }
+        }
+    }
+}
+
 check.dependsOn tasks.named('verifyCommonApiContracts')
 check.dependsOn tasks.named('verifyApiContracts')
 check.dependsOn tasks.named('verifyNoPlatformPayload')
+check.dependsOn tasks.named('verifyApiSupportMatrix')

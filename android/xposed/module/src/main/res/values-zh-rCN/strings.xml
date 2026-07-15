@@ -9,7 +9,7 @@
     <string name="game_status_patch_verified">免 Root Rusted Fabric 游戏副本：验证通过</string>
     <string name="game_status_unsupported">已安装游戏不可用或暂不支持（%1$s）</string>
     <string name="restart_hint">修改后请强行停止并重新打开游戏。</string>
-    <string name="import_mod">导入 .rfmod</string>
+    <string name="import_mod">导入 .javamod</string>
     <string name="create_local_patch">制作免 Root 游戏副本</string>
     <string name="patch_source_hint">请选择你自己的原始 base APK。当前配置会生成可并存的副本，不会覆盖官方安装。</string>
     <string name="patching_apk">正在本地验证、补丁并签名…</string>

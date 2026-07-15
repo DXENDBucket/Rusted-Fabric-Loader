@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = '1.0.0'
+
+ext.rustedFabricPortableMod = [
+        id: 'rusted_fabric_portable_example',
+        name: 'Rusted Fabric Portable Example',
+        description: 'One source set built for Windows and Android.',
+        entrypoint: 'io.github.endx.rustedfabricportableexample.PortableExampleMod',
+        apiVersion: '0.1',
+        mappingProfiles: ['rw-android-1.15-code176-v1.0'],
+        capabilities: [
+                'event.runtime.lifecycle.v1',
+                'event.unit.lifecycle.v1',
+                'event.command.issue.v1'
+        ],
+        multiplayerMode: 'optional'
+]
+
+apply from: rootProject.file('gradle/rusted-fabric-javamod.gradle')

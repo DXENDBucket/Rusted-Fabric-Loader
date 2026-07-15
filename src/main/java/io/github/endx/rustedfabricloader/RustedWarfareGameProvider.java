@@ -628,6 +628,22 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("rustedfabricapi.platform", isAndroidRuntime() ? "android" : "windows");
         ctx.put("rustedfabricapi.capabilities", Arrays.asList(
                 "event.engine.init", "event.runtime.ready", "mapping.named",
+                "event.audio.runtime.v1", "event.build.queue.v1",
+                "event.command.issue.v1", "event.core.stats.v1",
+                "event.custom.asset.v1", "event.custom.unit.load.v1",
+                "event.custom.unit.lifecycle.v1", "event.custom.unit.render.v1",
+                "event.custom.unit.runtime.v1", "event.effect.runtime.v1",
+                "event.file.system.v1", "event.game.lifecycle.v1",
+                "event.hud.command.v1", "event.map.discovery.v1",
+                "event.map.mission.v1", "event.map.spawn.v1",
+                "event.network.callback.v1", "event.network.handshake.v1",
+                "event.network.chat.v1", "event.network.packet.v1",
+                "event.network.sync.v1", "event.render.image.v1",
+                "event.repair.reclaim.v1", "event.resource.runtime.v1",
+                "event.runtime.lifecycle.v1", "event.custom.registry.v1",
+                "event.ini.v1", "event.save.sync.v1", "event.selection.v1",
+                "event.transport.v1", "event.ui.script.v1",
+                "event.unit.damage.v1", "event.unit.lifecycle.v1",
                 "session.v1", "multiplayer.compat.v1", "multiplayer.handshake.rfh1",
                 "platform.windows.fabric"));
         ctx.put("rustedfabricapi.processName", "rusted-warfare-client");

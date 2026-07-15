@@ -85,7 +85,7 @@ public final class EnabledModClient {
         Path cacheRoot = context.getCodeCacheDir().toPath().resolve("rusted-fabric");
         Path archives = cacheRoot.resolve("mods");
         Files.createDirectories(archives);
-        Path cached = archives.resolve(archiveSha256 + ".rfmod");
+        Path cached = archives.resolve(archiveSha256 + ".javamod");
         VerifiedModArchive verified = verifyExpected(cached, id, archiveSha256, dexSha256);
         if (verified == null) {
             Files.deleteIfExists(cached);

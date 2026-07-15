@@ -26,7 +26,7 @@ import org.jf.dexlib2.immutable.reference.ImmutableMethodReference;
 import org.jf.dexlib2.writer.io.MemoryDataStore;
 import org.jf.dexlib2.writer.pool.DexPool;
 
-/** Inserts fail-safe Loader lifecycle and RFH1 callbacks into the exact mapped methods. */
+/** Inserts lifecycle, multiplayer, unit, and command callbacks into exact mapped methods. */
 final class DexLifecycleWeaver {
     // Build the descriptor at runtime so the distributed Loader does not contain a game-class
     // descriptor that could be mistaken for a bundled class definition by payload audits.
@@ -50,6 +50,18 @@ final class DexLifecycleWeaver {
     static final String SYSTEM_PACKET_CALLBACK = "onSystemPacket";
     static final String NETWORK_RESET_CALLBACK = "afterNetworkReset";
     static final String START_GAME_CALLBACK = "allowGameStart";
+    static final String TEAM_CLASS = descriptor("com.corrodinggames.rts.game.p");
+    static final String UNIT_TYPE = descriptor("com.corrodinggames.rts.game.units.ce");
+    static final String TEAM_UNREGISTER_METHOD = "b";
+    static final String TEAM_REGISTER_METHOD = "c";
+    static final String COMMAND_CLASS = descriptor("com.corrodinggames.rts.gameFramework.e");
+    static final String COMMAND_ISSUE_METHOD = "h";
+    static final String BEFORE_UNIT_REGISTER_CALLBACK = "beforeUnitRegister";
+    static final String AFTER_UNIT_REGISTER_CALLBACK = "afterUnitRegister";
+    static final String BEFORE_UNIT_UNREGISTER_CALLBACK = "beforeUnitUnregister";
+    static final String AFTER_UNIT_UNREGISTER_CALLBACK = "afterUnitUnregister";
+    static final String BEFORE_COMMAND_ISSUE_CALLBACK = "beforeCommandIssue";
+    static final String AFTER_COMMAND_ISSUE_CALLBACK = "afterCommandIssue";
 
     private static final ImmutableMethodReference BEFORE = callback(BEFORE_METHOD);
     private static final ImmutableMethodReference AFTER = callback(AFTER_METHOD);
@@ -65,6 +77,18 @@ final class DexLifecycleWeaver {
     private static final ImmutableMethodReference ALLOW_GAME_START = new ImmutableMethodReference(
             BRIDGE_CLASS, START_GAME_CALLBACK,
             java.util.Arrays.asList("Ljava/lang/Object;", "Ljava/lang/Object;"), "Z");
+    private static final ImmutableMethodReference BEFORE_UNIT_REGISTER =
+            callbackWithObject(BEFORE_UNIT_REGISTER_CALLBACK, "V");
+    private static final ImmutableMethodReference AFTER_UNIT_REGISTER =
+            callbackWithObject(AFTER_UNIT_REGISTER_CALLBACK, "V");
+    private static final ImmutableMethodReference BEFORE_UNIT_UNREGISTER =
+            callbackWithObject(BEFORE_UNIT_UNREGISTER_CALLBACK, "V");
+    private static final ImmutableMethodReference AFTER_UNIT_UNREGISTER =
+            callbackWithObject(AFTER_UNIT_UNREGISTER_CALLBACK, "V");
+    private static final ImmutableMethodReference BEFORE_COMMAND_ISSUE =
+            callbackWithObject(BEFORE_COMMAND_ISSUE_CALLBACK, "Z");
+    private static final ImmutableMethodReference AFTER_COMMAND_ISSUE =
+            callbackWithObject(AFTER_COMMAND_ISSUE_CALLBACK, "V");
 
     private DexLifecycleWeaver() {
     }
@@ -77,15 +101,20 @@ final class DexLifecycleWeaver {
             int targetMethods = 0;
             int networkClasses = 0;
             int networkMethods = 0;
+            int gameplayClasses = 0;
+            int gameplayMethods = 0;
 
             for (ClassDef classDef : dex.getClasses()) {
                 if (!TARGET_CLASS.equals(classDef.getType())
-                        && !NETWORK_CLASS.equals(classDef.getType())) {
+                        && !NETWORK_CLASS.equals(classDef.getType())
+                        && !TEAM_CLASS.equals(classDef.getType())
+                        && !COMMAND_CLASS.equals(classDef.getType())) {
                     classes.add(classDef);
                     continue;
                 }
                 if (TARGET_CLASS.equals(classDef.getType())) targetClasses++;
-                else networkClasses++;
+                else if (NETWORK_CLASS.equals(classDef.getType())) networkClasses++;
+                else gameplayClasses++;
                 List<Method> methods = new ArrayList<>();
                 for (Method method : classDef.getMethods()) {
                     if (isTarget(method)) {
@@ -97,6 +126,12 @@ final class DexLifecycleWeaver {
                     } else if (isStartTarget(method)) {
                         networkMethods++;
                         methods.add(weaveStartGate(method));
+                    } else if (isTeamTarget(method)) {
+                        gameplayMethods++;
+                        methods.add(weaveUnitLifecycle(method));
+                    } else if (isCommandTarget(method)) {
+                        gameplayMethods++;
+                        methods.add(weaveCommandIssue(method));
                     } else {
                         methods.add(method);
                     }
@@ -112,8 +147,11 @@ final class DexLifecycleWeaver {
             if (networkClasses != 1 || networkMethods != 5) {
                 throw failure("Mapped RFH1 network methods were not found exactly once");
             }
+            if (gameplayClasses != 2 || gameplayMethods != 3) {
+                throw failure("Mapped portable gameplay methods were not found exactly once");
+            }
 
-            MemoryDataStore output = new MemoryDataStore(source.length + 1024);
+            MemoryDataStore output = new MemoryDataStore(source.length + 2048);
             DexPool.writeTo(output, new ImmutableDexFile(dex.getOpcodes(), classes));
             byte[] result = output.getData();
             verify(result);
@@ -124,6 +162,70 @@ final class DexLifecycleWeaver {
             throw new PatchException(PatchException.Reason.DEX_WEAVE_FAILED,
                     "Could not weave the mapped engine lifecycle method", invalidDex);
         }
+    }
+
+    private static ImmutableMethod weaveUnitLifecycle(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || implementation.getRegisterCount() < 1) {
+            throw failure("Mapped unit lifecycle method has no parameter register");
+        }
+        boolean register = TEAM_REGISTER_METHOD.equals(method.getName());
+        String beforeName = register ? BEFORE_UNIT_REGISTER_CALLBACK
+                : BEFORE_UNIT_UNREGISTER_CALLBACK;
+        String afterName = register ? AFTER_UNIT_REGISTER_CALLBACK
+                : AFTER_UNIT_UNREGISTER_CALLBACK;
+        ImmutableMethodReference before = register ? BEFORE_UNIT_REGISTER : BEFORE_UNIT_UNREGISTER;
+        ImmutableMethodReference after = register ? AFTER_UNIT_REGISTER : AFTER_UNIT_UNREGISTER;
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        List<Integer> returns = new ArrayList<>();
+        for (int index = 0; index < original.size(); index++) {
+            Instruction instruction = original.get(index);
+            if (isCallback(instruction, beforeName) || isCallback(instruction, afterName)) {
+                throw failure("Mapped unit lifecycle method is already woven");
+            }
+            if (instruction.getOpcode() == Opcode.RETURN_VOID) returns.add(index);
+        }
+        if (returns.isEmpty()) throw failure("Mapped unit lifecycle method has no normal return");
+        int unit = implementation.getRegisterCount() - 1;
+        if (unit > 15) throw failure("Mapped unit lifecycle parameter cannot use invoke-35c");
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index), invoke(after, unit));
+        }
+        mutable.addInstruction(0, invoke(before, unit));
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveCommandIssue(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || implementation.getRegisterCount() < 2
+                || AccessFlags.STATIC.isSet(method.getAccessFlags())) {
+            throw failure("Mapped command method has no cancellation scratch register");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        List<Integer> returns = new ArrayList<>();
+        for (int index = 0; index < original.size(); index++) {
+            Instruction instruction = original.get(index);
+            if (isCallback(instruction, BEFORE_COMMAND_ISSUE_CALLBACK)
+                    || isCallback(instruction, AFTER_COMMAND_ISSUE_CALLBACK)) {
+                throw failure("Mapped command method is already woven");
+            }
+            if (instruction.getOpcode() == Opcode.RETURN_VOID) returns.add(index);
+        }
+        if (returns.isEmpty()) throw failure("Mapped command method has no normal return");
+        int command = implementation.getRegisterCount() - 1;
+        if (command > 15) throw failure("Mapped command receiver cannot use invoke-35c");
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        org.jf.dexlib2.builder.Label proceed = mutable.newLabelForIndex(0);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index), invoke(AFTER_COMMAND_ISSUE, command));
+        }
+        mutable.addInstruction(0, invoke(BEFORE_COMMAND_ISSUE, command));
+        mutable.addInstruction(1, new BuilderInstruction11x(Opcode.MOVE_RESULT, 0));
+        mutable.addInstruction(2, new BuilderInstruction21t(Opcode.IF_EQZ, 0, proceed));
+        mutable.addInstruction(3, new org.jf.dexlib2.builder.instruction.BuilderInstruction10x(
+                Opcode.RETURN_VOID));
+        return copyWithImplementation(method, mutable);
     }
 
     private static ImmutableMethod weaveStartGate(Method method) throws PatchException {
@@ -255,6 +357,36 @@ final class DexLifecycleWeaver {
         }
         if (targets != 1) throw failure("Woven target verification failed");
         verifyNetwork(dex);
+        verifyGameplay(dex);
+    }
+
+    private static void verifyGameplay(DexBackedDexFile dex) throws PatchException {
+        int targets = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                if (!isTeamTarget(method) && !isCommandTarget(method)) continue;
+                targets++;
+                boolean command = isCommandTarget(method);
+                boolean register = TEAM_REGISTER_METHOD.equals(method.getName());
+                String before = command ? BEFORE_COMMAND_ISSUE_CALLBACK
+                        : register ? BEFORE_UNIT_REGISTER_CALLBACK : BEFORE_UNIT_UNREGISTER_CALLBACK;
+                String after = command ? AFTER_COMMAND_ISSUE_CALLBACK
+                        : register ? AFTER_UNIT_REGISTER_CALLBACK : AFTER_UNIT_UNREGISTER_CALLBACK;
+                List<? extends Instruction> instructions = toList(
+                        method.getImplementation().getInstructions());
+                int beforeCount = 0;
+                int afterCount = 0;
+                for (Instruction instruction : instructions) {
+                    if (isCallback(instruction, before)) beforeCount++;
+                    if (isCallback(instruction, after)) afterCount++;
+                }
+                if (beforeCount != 1 || afterCount < 1
+                        || !isCallback(instructions.get(0), before)) {
+                    throw failure("Portable gameplay callback placement is invalid");
+                }
+            }
+        }
+        if (targets != 3) throw failure("Woven portable gameplay target verification failed");
     }
 
     private static void verifyNetwork(DexBackedDexFile dex) throws PatchException {
@@ -317,6 +449,21 @@ final class DexLifecycleWeaver {
                         CONNECTION_TYPE, "Z"));
     }
 
+    private static boolean isTeamTarget(Method method) {
+        return TEAM_CLASS.equals(method.getDefiningClass())
+                && (TEAM_REGISTER_METHOD.equals(method.getName())
+                || TEAM_UNREGISTER_METHOD.equals(method.getName()))
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().equals(Collections.singletonList(UNIT_TYPE));
+    }
+
+    private static boolean isCommandTarget(Method method) {
+        return COMMAND_CLASS.equals(method.getDefiningClass())
+                && COMMAND_ISSUE_METHOD.equals(method.getName())
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().isEmpty();
+    }
+
     private static String networkCallback(Method method) {
         if (isStartTarget(method)) return START_GAME_CALLBACK;
         if (REGISTER_METHOD.equals(method.getName())) return AFTER_REGISTER_CALLBACK;
@@ -346,6 +493,11 @@ final class DexLifecycleWeaver {
                 2, first, second, 0, 0, 0, callback);
     }
 
+    private static BuilderInstruction35c invoke(MethodReference callback, int value) {
+        return new BuilderInstruction35c(Opcode.INVOKE_STATIC,
+                1, value, 0, 0, 0, 0, callback);
+    }
+
     private static ImmutableMethodReference callback(String name) {
         return new ImmutableMethodReference(BRIDGE_CLASS, name,
                 Collections.emptyList(), "V");
@@ -354,6 +506,11 @@ final class DexLifecycleWeaver {
     private static ImmutableMethodReference callbackWithObjects(String name) {
         return new ImmutableMethodReference(BRIDGE_CLASS, name,
                 java.util.Arrays.asList("Ljava/lang/Object;", "Ljava/lang/Object;"), "V");
+    }
+
+    private static ImmutableMethodReference callbackWithObject(String name, String returnType) {
+        return new ImmutableMethodReference(BRIDGE_CLASS, name,
+                Collections.singletonList("Ljava/lang/Object;"), returnType);
     }
 
     private static ImmutableMethod copyWithImplementation(Method method,

@@ -74,6 +74,7 @@ public final class LocalPatcherContractVerification {
                         .equals(DexLifecycleWeaver.AFTER_METHOD),
                 "after engine callback was not inserted before normal return");
         verifyNetworkCallbacks(woven);
+        verifyGameplayCallbacks(woven);
         try {
             DexLifecycleWeaver.weaveEngineInitialization(woven);
             throw new AssertionError("already woven DEX was accepted");
@@ -81,6 +82,42 @@ public final class LocalPatcherContractVerification {
             require(expected.getReason() == PatchException.Reason.DEX_WEAVE_FAILED,
                     "wrong repeated weave reason: " + expected.getReason());
         }
+    }
+
+    private static void verifyGameplayCallbacks(byte[] woven) {
+        DexBackedDexFile dex = new DexBackedDexFile(null, woven);
+        int found = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                String before = null;
+                String after = null;
+                if (DexLifecycleWeaver.TEAM_CLASS.equals(classDef.getType())) {
+                    if (DexLifecycleWeaver.TEAM_REGISTER_METHOD.equals(method.getName())) {
+                        before = DexLifecycleWeaver.BEFORE_UNIT_REGISTER_CALLBACK;
+                        after = DexLifecycleWeaver.AFTER_UNIT_REGISTER_CALLBACK;
+                    } else if (DexLifecycleWeaver.TEAM_UNREGISTER_METHOD.equals(method.getName())) {
+                        before = DexLifecycleWeaver.BEFORE_UNIT_UNREGISTER_CALLBACK;
+                        after = DexLifecycleWeaver.AFTER_UNIT_UNREGISTER_CALLBACK;
+                    }
+                } else if (DexLifecycleWeaver.COMMAND_CLASS.equals(classDef.getType())
+                        && DexLifecycleWeaver.COMMAND_ISSUE_METHOD.equals(method.getName())) {
+                    before = DexLifecycleWeaver.BEFORE_COMMAND_ISSUE_CALLBACK;
+                    after = DexLifecycleWeaver.AFTER_COMMAND_ISSUE_CALLBACK;
+                }
+                if (before == null) continue;
+                found++;
+                java.util.List<Instruction> instructions = new java.util.ArrayList<>();
+                method.getImplementation().getInstructions().forEach(instructions::add);
+                require(before.equals(callbackName(instructions.get(0))),
+                        "portable gameplay before callback is not first: " + before);
+                boolean afterFound = false;
+                for (Instruction instruction : instructions) {
+                    afterFound |= after.equals(callbackName(instruction));
+                }
+                require(afterFound, "portable gameplay after callback is missing: " + after);
+            }
+        }
+        require(found == 3, "expected three woven portable gameplay methods");
     }
 
     private static void verifyNetworkCallbacks(byte[] woven) {
@@ -155,6 +192,8 @@ public final class LocalPatcherContractVerification {
                 "lifecycle weave is missing from the patch report");
         require(report.toJson().contains("rfh1-network-handshake-weave"),
                 "RFH1 network weave is missing from the patch report");
+        require(report.toJson().contains("portable-gameplay-event-weave"),
+                "portable gameplay weave is missing from the patch report");
         require(!report.toJson().contains(temporary.toString()),
                 "patch report leaked a local path");
 
@@ -236,8 +275,39 @@ public final class LocalPatcherContractVerification {
         MemoryDataStore output = new MemoryDataStore();
         ImmutableClassDef network = networkClass();
         DexPool.writeTo(output, new ImmutableDexFile(Opcodes.getDefault(),
-                Arrays.asList(classDef, network)));
+                Arrays.asList(classDef, network, teamClass(), commandClass())));
         return output.getData();
+    }
+
+    private static ImmutableClassDef teamClass() {
+        java.util.List<ImmutableMethod> methods = new java.util.ArrayList<>();
+        methods.add(unitLifecycleMethod(DexLifecycleWeaver.TEAM_UNREGISTER_METHOD));
+        methods.add(unitLifecycleMethod(DexLifecycleWeaver.TEAM_REGISTER_METHOD));
+        return new ImmutableClassDef(DexLifecycleWeaver.TEAM_CLASS,
+                AccessFlags.PUBLIC.getValue(), "Ljava/lang/Object;", Collections.emptyList(),
+                "SyntheticTeam.java", Collections.emptySet(), Collections.emptyList(), methods);
+    }
+
+    private static ImmutableMethod unitLifecycleMethod(String name) {
+        MutableMethodImplementation body = new MutableMethodImplementation(1);
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        return new ImmutableMethod(DexLifecycleWeaver.TEAM_CLASS, name,
+                Collections.singletonList(new ImmutableMethodParameter(
+                        DexLifecycleWeaver.UNIT_TYPE, Collections.emptySet(), null)),
+                "V", AccessFlags.PUBLIC.getValue() | AccessFlags.STATIC.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
+    }
+
+    private static ImmutableClassDef commandClass() {
+        MutableMethodImplementation body = new MutableMethodImplementation(2);
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        ImmutableMethod method = new ImmutableMethod(DexLifecycleWeaver.COMMAND_CLASS,
+                DexLifecycleWeaver.COMMAND_ISSUE_METHOD, Collections.emptyList(), "V",
+                AccessFlags.PUBLIC.getValue(), Collections.emptySet(), Collections.emptySet(), body);
+        return new ImmutableClassDef(DexLifecycleWeaver.COMMAND_CLASS,
+                AccessFlags.PUBLIC.getValue(), "Ljava/lang/Object;", Collections.emptyList(),
+                "SyntheticCommand.java", Collections.emptySet(), Collections.emptyList(),
+                Collections.singletonList(method));
     }
 
     private static ImmutableClassDef networkClass() {

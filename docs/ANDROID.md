@@ -157,7 +157,7 @@ Exit gate: the official reference APK reaches the menu and a skirmish with all t
 
 ### Phase 3: Android mod loading
 
-- [x] Define a strict Android `.rfmod` archive containing metadata plus one prebuilt DEX, without
+- [x] Define a strict Android `.javamod` archive containing metadata plus one prebuilt DEX, without
   game class definitions.
 - [x] Validate archive paths/limits, DEX definitions, entrypoint ownership, and SHA-256 before load.
 - [x] Import mods through the Storage Access Framework and copy them to application-private storage.
@@ -192,7 +192,7 @@ Exit gate: each migrated feature has an independent compatibility probe and can 
 
 ## Immediate implementation order
 
-1. Add a reproducible Android probe-mod build that emits a valid `.rfmod` without game payload.
+1. Add a reproducible Android probe-mod build that emits a valid `.javamod` without game payload.
 2. Install the Loader and generated side-by-side game copy on an unrooted test device.
 3. Validate DEX loading and before/after lifecycle delivery with that external probe mod.
 4. Add an in-app diagnostic history and capability status view without adding UI to the game.

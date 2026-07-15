@@ -34,7 +34,7 @@ tasks.register('verifyNoGamePayload') {
         new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
-                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.rfmod')
+                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.javamod')
                         || lower.startsWith('com/corrodinggames/')) {
                     forbidden.add(entry.name)
                 }

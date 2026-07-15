@@ -16,7 +16,7 @@ For the verified profile, the module hooks the mapped
 failures are isolated and the original method is always called. The API and events retain no
 Context/game objects, access no saves, and do not change the installed APK.
 
-Version `0.9.0-rfh1` includes the strict `.rfmod` verifier, standalone management
+Version `0.9.0-rfh1` includes the strict `.javamod` verifier, standalone management
 activity, app-private atomic registry, official-game-authorized read-only provider, game-code-cache
 transfer, common/game bridge ClassLoader, and Android DEX entrypoint loader. Enabled mods initialize
 before the first lifecycle dispatch; one failed mod is logged without stopping other mods or game

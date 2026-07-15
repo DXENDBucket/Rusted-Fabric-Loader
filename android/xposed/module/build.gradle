@@ -90,6 +90,7 @@ tasks.register('verifyNoGamePayload') {
         def handshakeBridgeFound = false
         def androidBackendFound = false
         def sessionApiFound = false
+        def gameplayEventsFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -137,6 +138,10 @@ tasks.register('verifyNoGamePayload') {
                             'Lio/github/endx/rustedfabricapi/android/AndroidMultiplayerTransport;')
                     sessionApiFound |= dexText.contains(
                             'Lio/github/endx/rustedfabricapi/api/session/GameSession;')
+                    gameplayEventsFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/event/UnitLifecycleEvents;')
+                            && dexText.contains(
+                            'Lio/github/endx/rustedfabricapi/api/event/CommandEvents;')
                     if (entry.name == 'assets/rusted-fabric/patched-bootstrap.dex') {
                         bootstrapAssetFound = dexText.contains(
                                 'Lio/github/endx/rustedfabric/android/patched/PatchedApplication;')
@@ -147,7 +152,8 @@ tasks.register('verifyNoGamePayload') {
         if (!commonContextFound || !commonEventsFound || !commonModEntrypointFound
                 || !androidModLoaderFound || !modManagerFound || !modProviderFound
                 || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound
-                || !handshakeBridgeFound || !androidBackendFound || !sessionApiFound) {
+                || !handshakeBridgeFound || !androidBackendFound || !sessionApiFound
+                || !gameplayEventsFound) {
             throw new GradleException('Xposed APK is missing the portable API or mod management path')
         }
         if (!forbidden.isEmpty()) {

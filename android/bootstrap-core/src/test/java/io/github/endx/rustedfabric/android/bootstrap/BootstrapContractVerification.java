@@ -83,6 +83,10 @@ public final class BootstrapContractVerification {
                 "Installed APK identity must be checked before installing game hooks");
         require(source.contains("installGameEngineInitHook"),
                 "The first mapped GameEngine initialization probe is missing");
+        require(source.contains("installPortableGameplayHooks")
+                        && source.contains("UnitLifecycleEvents.BEFORE_UNIT_REGISTER")
+                        && source.contains("CommandEvents.BEFORE_COMMAND_ISSUE"),
+                "Portable Android unit/command hooks are missing");
         require(source.contains("RuntimeLifecycleEvents.BEFORE_ENGINE_INITIALIZATION.dispatch"),
                 "Portable before-initialization event is not dispatched");
         require(source.contains("RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch"),
@@ -130,6 +134,17 @@ public final class BootstrapContractVerification {
         require(AndroidMappingProfile.NETWORK_PACKET_OWNER.equals(
                         profile.getProperty("hook.networkPacket.owner")),
                 "Network packet owner diverged from profile.properties");
+        require(AndroidMappingProfile.TEAM_OWNER.equals(profile.getProperty("hook.team.owner"))
+                        && AndroidMappingProfile.UNIT_OWNER.equals(profile.getProperty("hook.unit.owner"))
+                        && profile.getProperty("hook.team.register").startsWith(
+                        AndroidMappingProfile.TEAM_REGISTER_NAME + "(")
+                        && profile.getProperty("hook.team.unregister").startsWith(
+                        AndroidMappingProfile.TEAM_UNREGISTER_NAME + "("),
+                "Unit lifecycle hooks diverged from profile.properties");
+        require(AndroidMappingProfile.COMMAND_OWNER.equals(profile.getProperty("hook.command.owner"))
+                        && profile.getProperty("hook.command.issue").startsWith(
+                        AndroidMappingProfile.COMMAND_ISSUE_NAME + "("),
+                "Command hook diverged from profile.properties");
     }
 
     private static String read(Path path) throws Exception {

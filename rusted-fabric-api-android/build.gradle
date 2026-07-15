@@ -30,7 +30,7 @@ tasks.register('verifyAndroidBackendContracts') {
         new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
-                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.rfmod')
+                if (lower.endsWith('.apk') || lower.endsWith('.dex') || lower.endsWith('.javamod')
                         || lower.startsWith('android/') || lower.startsWith('net/fabricmc/')
                         || lower.startsWith('org/spongepowered/') || lower.startsWith('org/newdawn/slick/')) {
                     forbidden.add(entry.name)

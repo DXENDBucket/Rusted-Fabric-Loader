@@ -24,8 +24,10 @@ import io.github.endx.rustedfabric.android.xposed.storage.ModContentProvider;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
+import io.github.endx.rustedfabricapi.api.event.CommandEvents;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
+import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
@@ -42,6 +44,7 @@ public final class RustedFabricXposedModule extends XposedModule {
     private final AtomicBoolean gameEngineInitializationStarted = new AtomicBoolean();
     private final AtomicBoolean gameEngineInitialized = new AtomicBoolean();
     private final AtomicBoolean networkHooksInstalled = new AtomicBoolean();
+    private final AtomicBoolean portableGameplayHooksInstalled = new AtomicBoolean();
     private final AndroidMultiplayerTransport networkTransport = new AndroidMultiplayerTransport(
             (message, failure) -> log(failure == null ? LOG_INFO : LOG_ERROR,
                     "RustedFabric/Network", message, failure));
@@ -117,6 +120,7 @@ public final class RustedFabricXposedModule extends XposedModule {
                                         MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY::dispatch);
                                 if (installGameEngineInitHook(targetLoader, contextClass, apiContext)) {
                                     installNetworkHooks(targetLoader);
+                                    installPortableGameplayHooks(targetLoader);
                                     log(LOG_INFO, TAG, "api-context-ready platform="
                                             + apiContext.platform() + " capabilities="
                                             + apiContext.capabilities().size());
@@ -175,6 +179,8 @@ public final class RustedFabricXposedModule extends XposedModule {
         values.put(RustedFabricAPIKeys.K_CAPABILITIES, Arrays.asList(
                 "event.engine.init", "event.runtime.ready", "mapping.profile.exact",
                 "mod.dex.v1", "session.v1", "multiplayer.compat.v1",
+                "event.runtime.lifecycle.v1", "event.unit.lifecycle.v1",
+                "event.command.issue.v1",
                 "multiplayer.handshake.rfh1",
                 "platform.android.xposed"));
         return new RustedFabricAPIContext(values);
@@ -314,6 +320,65 @@ public final class RustedFabricXposedModule extends XposedModule {
         } catch (Throwable failure) {
             networkHooksInstalled.set(false);
             log(LOG_ERROR, "RustedFabric/Network", "RFH1 hook installation failed", failure);
+            return false;
+        }
+    }
+
+    private boolean installPortableGameplayHooks(ClassLoader targetLoader) {
+        if (!portableGameplayHooksInstalled.compareAndSet(false, true)) return true;
+        try {
+            Class<?> team = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.TEAM_OWNER),
+                    false, targetLoader);
+            Class<?> unit = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.UNIT_OWNER),
+                    false, targetLoader);
+            Class<?> command = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.COMMAND_OWNER),
+                    false, targetLoader);
+            Method register = team.getDeclaredMethod(
+                    AndroidMappingProfile.TEAM_REGISTER_NAME, unit);
+            Method unregister = team.getDeclaredMethod(
+                    AndroidMappingProfile.TEAM_UNREGISTER_NAME, unit);
+            Method issue = command.getDeclaredMethod(AndroidMappingProfile.COMMAND_ISSUE_NAME);
+            register.setAccessible(true);
+            unregister.setAccessible(true);
+            issue.setAccessible(true);
+
+            hook(register).setId("rusted-fabric:unit-register")
+                    .setPriority(PRIORITY_LOWEST).intercept(chain -> {
+                        Object value = chain.getArg(0);
+                        UnitLifecycleEvents.BEFORE_UNIT_REGISTER.invoker()
+                                .beforeUnitRegister(value);
+                        Object result = chain.proceed();
+                        UnitLifecycleEvents.AFTER_UNIT_REGISTER.invoker()
+                                .afterUnitRegister(value);
+                        return result;
+                    });
+            hook(unregister).setId("rusted-fabric:unit-unregister")
+                    .setPriority(PRIORITY_LOWEST).intercept(chain -> {
+                        Object value = chain.getArg(0);
+                        UnitLifecycleEvents.BEFORE_UNIT_UNREGISTER.invoker()
+                                .beforeUnitUnregister(value);
+                        Object result = chain.proceed();
+                        UnitLifecycleEvents.AFTER_UNIT_UNREGISTER.invoker()
+                                .afterUnitUnregister(value);
+                        return result;
+                    });
+            hook(issue).setId("rusted-fabric:command-issue")
+                    .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                        Object value = chain.getThisObject();
+                        if (CommandEvents.BEFORE_COMMAND_ISSUE.invoker()
+                                .beforeCommandIssue(value)) return null;
+                        Object result = chain.proceed();
+                        CommandEvents.AFTER_COMMAND_ISSUE.invoker().afterCommandIssue(value);
+                        return result;
+                    });
+            log(LOG_INFO, TAG, "portable gameplay hooks installed: unit lifecycle, command issue");
+            return true;
+        } catch (Throwable failure) {
+            portableGameplayHooksInstalled.set(false);
+            log(LOG_ERROR, TAG, "portable gameplay hook installation failed", failure);
             return false;
         }
     }

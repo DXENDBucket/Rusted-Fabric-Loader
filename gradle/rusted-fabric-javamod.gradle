@@ -1,0 +1,214 @@
+import groovy.json.JsonOutput
+
+// Reusable convention for a single Java source set that emits a Windows Fabric Jar and
+// an Android code-only .javamod. The applying project must define rustedFabricPortableMod.
+def config = project.ext.rustedFabricPortableMod as Map
+['id', 'name', 'entrypoint'].each { key ->
+    if (!config[key]) throw new GradleException("rustedFabricPortableMod.${key} is required")
+}
+
+def modId = config.id.toString()
+def modName = config.name.toString()
+def entrypoint = config.entrypoint.toString()
+def modVersion = (config.version ?: project.version).toString()
+def apiVersion = (config.apiVersion ?: '0.1').toString()
+def mappingProfiles = (config.mappingProfiles
+        ?: ['rw-android-1.15-code176-v1.0']).collect { it.toString() }
+def capabilities = (config.capabilities ?: []).collect { it.toString() }
+def multiplayerMode = (config.multiplayerMode ?: 'unsafe').toString()
+def multiplayerProtocol = (config.multiplayerProtocol ?: '').toString()
+def multiplayerSyncHash = (config.multiplayerSyncHash ?: '').toString()
+if (apiVersion != '0.1') {
+    throw new GradleException('Android Loader currently requires apiVersion=0.1')
+}
+if (!(multiplayerMode in ['client_only', 'server_only', 'optional', 'required', 'unsafe'])) {
+    throw new GradleException("Unsupported multiplayerMode: ${multiplayerMode}")
+}
+if (multiplayerMode == 'required'
+        && (!(multiplayerProtocol ==~ /[0-9A-Za-z][0-9A-Za-z._+\-]{0,63}/)
+        || !(multiplayerSyncHash ==~ /[0-9a-f]{64}/))) {
+    throw new GradleException(
+            'required multiplayer mods need a protocol and lowercase synchronized-data SHA-256')
+}
+
+dependencies {
+    compileOnly project(':rusted-fabric-api')
+}
+
+configurations {
+    javamodVerifier
+}
+
+dependencies {
+    javamodVerifier project(':android:mod-runtime')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+def generatedMetadata = layout.buildDirectory.dir('generated/rusted-fabric-portable')
+def fabricMetadata = generatedMetadata.map { it.file('fabric.mod.json') }
+def androidMetadata = generatedMetadata.map {
+    it.file('META-INF/rusted-fabric.mod.properties')
+}
+
+tasks.register('generatePortableModMetadata') {
+    inputs.properties([
+            id: modId, name: modName, version: modVersion, entrypoint: entrypoint,
+            apiVersion: apiVersion, mappingProfiles: mappingProfiles.join(','),
+            capabilities: capabilities.join(','), multiplayerMode: multiplayerMode,
+            multiplayerProtocol: multiplayerProtocol,
+            multiplayerSyncHash: multiplayerSyncHash
+    ])
+    outputs.files(fabricMetadata, androidMetadata)
+
+    doLast {
+        def multiplayer = [mode: multiplayerMode]
+        if (multiplayerMode == 'required') {
+            multiplayer.protocol = multiplayerProtocol
+            multiplayer.syncHash = multiplayerSyncHash
+        }
+        def fabric = [
+                schemaVersion: 1,
+                id: modId,
+                version: modVersion,
+                name: modName,
+                description: (config.description ?: 'Portable Rusted Fabric mod').toString(),
+                environment: '*',
+                entrypoints: ['rustedfabricloader:before_game': [entrypoint]],
+                depends: [fabricloader: '>=0.18.1', rusted_warfare: '1.15',
+                          rustedfabricapi: '>=0.1.0'],
+                custom: ['rustedfabric:multiplayer': multiplayer,
+                         'rustedfabric:capabilities': capabilities]
+        ]
+        def fabricFile = fabricMetadata.get().asFile
+        fabricFile.parentFile.mkdirs()
+        fabricFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson(fabric)) + '\n', 'UTF-8')
+
+        def lines = [
+                'schemaVersion=1',
+                "id=${modId}",
+                "version=${modVersion}",
+                "name=${modName}",
+                "entrypoint=${entrypoint}",
+                "apiVersion=${apiVersion}",
+                "mappingProfiles=${mappingProfiles.join(',')}",
+                "platform=android",
+                'dex=classes.dex',
+                "multiplayerMode=${multiplayerMode}"
+        ]
+        if (!capabilities.isEmpty()) lines.add(7, "capabilities=${capabilities.join(',')}")
+        if (multiplayerMode == 'required') {
+            lines.add("multiplayerProtocol=${multiplayerProtocol}")
+            lines.add("multiplayerSyncHash=${multiplayerSyncHash}")
+        }
+        def androidFile = androidMetadata.get().asFile
+        androidFile.parentFile.mkdirs()
+        androidFile.setText(lines.join('\n') + '\n', 'UTF-8')
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    dependsOn tasks.named('generatePortableModMetadata')
+    archiveBaseName.set(modId)
+    archiveVersion.set(modVersion)
+    from(fabricMetadata)
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+def sdkDirectory = providers.provider {
+    def path = System.getenv('ANDROID_SDK_ROOT') ?: System.getenv('ANDROID_HOME')
+    if (!path) {
+        def propertiesFile = rootProject.file('android/xposed/local.properties')
+        if (propertiesFile.isFile()) {
+            def properties = new Properties()
+            propertiesFile.withInputStream { properties.load(it) }
+            path = properties.getProperty('sdk.dir')
+        }
+    }
+    if (!path) throw new GradleException(
+            'Android SDK not found; set ANDROID_SDK_ROOT or android/xposed/local.properties')
+    return file(path)
+}
+
+def buildToolsDirectory = providers.provider {
+    def root = new File(sdkDirectory.get(), 'build-tools')
+    def choices = root.listFiles()?.findAll { it.isDirectory() }?.sort { it.name }
+    if (!choices) throw new GradleException('No Android SDK build-tools installation found')
+    return choices.last()
+}
+
+def androidJar = providers.provider {
+    def value = new File(sdkDirectory.get(), 'platforms/android-35/android.jar')
+    if (!value.isFile()) throw new GradleException('Android SDK platform android-35 is required')
+    return value
+}
+
+def dexDirectory = layout.buildDirectory.dir('intermediates/javamod-dex')
+def dexFile = dexDirectory.map { it.file('classes.dex') }
+
+tasks.register('dexJavamod', Exec) {
+    group = 'build'
+    description = 'Compiles the portable mod Jar classes to Android DEX without bundling the API.'
+    dependsOn tasks.named('jar'), project(':rusted-fabric-api').tasks.named('jar')
+    inputs.file(tasks.named('jar', Jar).flatMap { it.archiveFile })
+    inputs.file(project(':rusted-fabric-api').tasks.named('jar', Jar).flatMap { it.archiveFile })
+    inputs.file(androidJar)
+    outputs.file(dexFile)
+
+    doFirst {
+        project.delete(dexDirectory)
+        dexDirectory.get().asFile.mkdirs()
+        def d8Name = org.gradle.internal.os.OperatingSystem.current().isWindows()
+                ? 'd8.bat' : 'd8'
+        def d8 = new File(buildToolsDirectory.get(), d8Name)
+        if (!d8.isFile()) throw new GradleException("D8 not found: ${d8}")
+        commandLine d8.absolutePath,
+                '--release', '--min-api', '27',
+                '--lib', androidJar.get().absolutePath,
+                '--classpath', project(':rusted-fabric-api').tasks.named('jar', Jar)
+                        .get().archiveFile.get().asFile.absolutePath,
+                '--output', dexDirectory.get().asFile.absolutePath,
+                tasks.named('jar', Jar).get().archiveFile.get().asFile.absolutePath
+    }
+}
+
+def javamodArchive = tasks.register('javamod', Zip) {
+    group = 'build'
+    description = 'Packages classes.dex and strict metadata as an Android .javamod.'
+    dependsOn tasks.named('dexJavamod'), tasks.named('generatePortableModMetadata')
+    destinationDirectory.set(layout.buildDirectory.dir('libs'))
+    archiveFileName.set("${modId}-${modVersion}.javamod")
+    from(dexFile)
+    from(androidMetadata) {
+        into 'META-INF'
+    }
+    def assets = file('src/main/javamodAssets')
+    if (assets.isDirectory()) from(assets) { into 'assets' }
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.register('verifyJavamod', JavaExec) {
+    group = 'verification'
+    description = 'Runs the same strict .javamod verifier used by the Android Loader.'
+    dependsOn javamodArchive
+    classpath = configurations.javamodVerifier
+    mainClass.set('io.github.endx.rustedfabric.android.mod.JavamodVerifierMain')
+    inputs.file(javamodArchive.flatMap { it.archiveFile })
+    doFirst {
+        setArgs([javamodArchive.get().archiveFile.get().asFile.absolutePath])
+    }
+}
+
+tasks.register('buildPortableMod') {
+    group = 'build'
+    description = 'Builds and verifies both the Windows Jar and Android .javamod.'
+    dependsOn tasks.named('jar'), tasks.named('verifyJavamod')
+}
+
+tasks.named('assemble').configure { dependsOn javamodArchive }
+tasks.named('check').configure { dependsOn tasks.named('verifyJavamod') }

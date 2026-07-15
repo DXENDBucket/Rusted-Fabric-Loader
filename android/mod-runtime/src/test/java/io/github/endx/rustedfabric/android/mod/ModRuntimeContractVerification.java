@@ -39,7 +39,7 @@ public final class ModRuntimeContractVerification {
     }
 
     private static void verifyValidArchive(Path temporary) throws Exception {
-        Path archive = createArchive(temporary.resolve("valid.rfmod"),
+        Path archive = createArchive(temporary.resolve("valid.javamod"),
                 metadata(ENTRYPOINT), dex(ENTRYPOINT), null);
         VerifiedModArchive verified = new RustedFabricModVerifier().verify(archive);
         require("portable_probe".equals(verified.getMetadata().getId()), "mod id missing");
@@ -56,30 +56,30 @@ public final class ModRuntimeContractVerification {
     }
 
     private static void verifyReservedDefinitionsAreRejected(Path temporary) throws Exception {
-        assertReason(createArchive(temporary.resolve("game-class.rfmod"),
+        assertReason(createArchive(temporary.resolve("game-class.javamod"),
                         metadata("com.corrodinggames.rts.gameFramework.k"),
                         dex("com.corrodinggames.rts.gameFramework.k"), null),
                 ModVerificationException.Reason.FORBIDDEN_CLASS_DEFINITION);
-        assertReason(createArchive(temporary.resolve("api-class.rfmod"),
+        assertReason(createArchive(temporary.resolve("api-class.javamod"),
                         metadata("io.github.endx.rustedfabricapi.api.Shadow"),
                         dex("io.github.endx.rustedfabricapi.api.Shadow"), null),
                 ModVerificationException.Reason.FORBIDDEN_CLASS_DEFINITION);
     }
 
     private static void verifyEntrypointMustBeDefined(Path temporary) throws Exception {
-        assertReason(createArchive(temporary.resolve("missing-entrypoint.rfmod"),
+        assertReason(createArchive(temporary.resolve("missing-entrypoint.javamod"),
                         metadata(ENTRYPOINT), dex("example.mod.AnotherClass"), null),
                 ModVerificationException.Reason.ENTRYPOINT_NOT_DEFINED);
     }
 
     private static void verifyForbiddenEntriesAreRejected(Path temporary) throws Exception {
-        assertReason(createArchive(temporary.resolve("class-file.rfmod"),
+        assertReason(createArchive(temporary.resolve("class-file.javamod"),
                         metadata(ENTRYPOINT), dex(ENTRYPOINT), "example/mod/PortableEntrypoint.class"),
                 ModVerificationException.Reason.FORBIDDEN_ENTRY);
     }
 
     private static void verifyTraversalIsRejected(Path temporary) throws Exception {
-        assertReason(createArchive(temporary.resolve("traversal.rfmod"),
+        assertReason(createArchive(temporary.resolve("traversal.javamod"),
                         metadata(ENTRYPOINT), dex(ENTRYPOINT), "assets/../escape.txt"),
                 ModVerificationException.Reason.INVALID_ARCHIVE);
     }
@@ -107,7 +107,7 @@ public final class ModRuntimeContractVerification {
     }
 
     private static void verifyPrivateRegistry(Path temporary) throws Exception {
-        Path archive = createArchive(temporary.resolve("registry-source.rfmod"),
+        Path archive = createArchive(temporary.resolve("registry-source.javamod"),
                 metadata(ENTRYPOINT), dex(ENTRYPOINT), null);
         VerifiedModArchive verified = new RustedFabricModVerifier().verify(archive);
         ModRegistry registry = new ModRegistry(temporary.resolve("private-registry"));

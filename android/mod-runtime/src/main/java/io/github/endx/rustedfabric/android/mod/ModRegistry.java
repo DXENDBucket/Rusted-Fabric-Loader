@@ -45,7 +45,7 @@ public final class ModRegistry {
         synchronized (PROCESS_LOCK) {
             ensureDirectories();
             RustedFabricModMetadata metadata = verified.getMetadata();
-            Path destination = archives.resolve(verified.getArchiveSha256() + ".rfmod");
+            Path destination = archives.resolve(verified.getArchiveSha256() + ".javamod");
             if (!isMatchingArchive(destination, verified.getArchiveSha256())) {
                 Path temporary = archives.resolve(".import-" + UUID.randomUUID() + ".tmp");
                 try {
@@ -135,7 +135,7 @@ public final class ModRegistry {
     }
 
     public Path archivePath(Record record) {
-        return archives.resolve(record.getArchiveSha256() + ".rfmod").normalize();
+        return archives.resolve(record.getArchiveSha256() + ".javamod").normalize();
     }
 
     private void ensureDirectories() throws IOException {
@@ -245,7 +245,7 @@ public final class ModRegistry {
                 return;
             }
         }
-        Files.deleteIfExists(archives.resolve(sha256 + ".rfmod"));
+        Files.deleteIfExists(archives.resolve(sha256 + ".javamod"));
     }
 
     private static void atomicMove(Path source, Path target) throws IOException {

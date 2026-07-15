@@ -9,7 +9,7 @@
     <string name="game_status_patch_verified">No-root Rusted Fabric game copy: verified</string>
     <string name="game_status_unsupported">Installed game: unavailable or unsupported (%1$s)</string>
     <string name="restart_hint">Changes take effect after force-stopping and reopening the game.</string>
-    <string name="import_mod">Import .rfmod</string>
+    <string name="import_mod">Import .javamod</string>
     <string name="create_local_patch">Create no-root game copy</string>
     <string name="patch_source_hint">Select your original base APK. The current profile creates a side-by-side app and leaves the official installation untouched.</string>
     <string name="patching_apk">Verifying, patching, and signing locally…</string>

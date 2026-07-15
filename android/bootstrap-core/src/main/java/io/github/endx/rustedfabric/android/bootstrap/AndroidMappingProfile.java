@@ -28,6 +28,12 @@ public final class AndroidMappingProfile {
     public static final String NETWORK_DISPATCH_NAME = "a";
     public static final String NETWORK_RESET_NAME = "a";
     public static final String NETWORK_START_NAME = "a";
+    public static final String TEAM_OWNER = "com/corrodinggames/rts/game/p";
+    public static final String UNIT_OWNER = "com/corrodinggames/rts/game/units/ce";
+    public static final String TEAM_UNREGISTER_NAME = "b";
+    public static final String TEAM_REGISTER_NAME = "c";
+    public static final String COMMAND_OWNER = "com/corrodinggames/rts/gameFramework/e";
+    public static final String COMMAND_ISSUE_NAME = "h";
 
     private AndroidMappingProfile() {
     }

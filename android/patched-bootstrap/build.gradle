@@ -82,6 +82,10 @@ tasks.register('verifyBootstrapArtifact') {
         if (!text.contains('Lio/github/endx/rustedfabric/android/patched/EngineLifecycleBridge;')) {
             throw new GradleException('Bootstrap DEX is missing EngineLifecycleBridge')
         }
+        if (!text.contains('Lio/github/endx/rustedfabricapi/api/event/UnitLifecycleEvents;')
+                || !text.contains('Lio/github/endx/rustedfabricapi/api/event/CommandEvents;')) {
+            throw new GradleException('Bootstrap DEX is missing portable gameplay events')
+        }
         if (!text.contains('Lio/github/endx/rustedfabricapi/android/AndroidMultiplayerTransport;')
                 || !text.contains('Lio/github/endx/rustedfabricapi/api/multiplayer/MultiplayerNetworkBridge;')
                 || !text.contains('Lio/github/endx/rustedfabricapi/api/session/GameSession;')) {
