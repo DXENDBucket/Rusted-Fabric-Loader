@@ -49,6 +49,15 @@ public final class CommonApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.ANDROID_LOCAL_PATCH) == ApiSupportMatrix.Level.FULL,
                 "Android unit lifecycle support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.GAME_LIFECYCLE,
+                        ApiSupportMatrix.Backend.ANDROID_LOCAL_PATCH) == ApiSupportMatrix.Level.FULL,
+                "Android frame lifecycle support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
+                        ApiSupportMatrix.Backend.ANDROID_LOCAL_PATCH) == ApiSupportMatrix.Level.FULL
+                        && ApiSupportMatrix.expectedSupport(
+                        RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
+                        ApiSupportMatrix.Backend.ANDROID_XPOSED) == ApiSupportMatrix.Level.PARTIAL,
+                "Android projectile backend levels are incorrect");
         require(ApiSupportMatrix.available(context, RustedFabricCapabilities.RUNTIME_LIFECYCLE),
                 "runtime capability and expected support matrix disagree");
     }

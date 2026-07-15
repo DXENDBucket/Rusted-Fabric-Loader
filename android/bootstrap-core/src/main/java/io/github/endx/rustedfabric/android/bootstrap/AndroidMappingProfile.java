@@ -34,6 +34,11 @@ public final class AndroidMappingProfile {
     public static final String TEAM_REGISTER_NAME = "c";
     public static final String COMMAND_OWNER = "com/corrodinggames/rts/gameFramework/e";
     public static final String COMMAND_ISSUE_NAME = "h";
+    public static final String FRAME_LOOP_OWNER = GAME_ENGINE_INIT_OWNER;
+    public static final String FRAME_LOOP_NAME = "a";
+    public static final String FRAME_CANVAS_OWNER = "com/corrodinggames/rts/gameFramework/m/l";
+    public static final String PROJECTILE_OWNER = "com/corrodinggames/rts/game/f";
+    public static final String PROJECTILE_METHOD_NAME = "a";
 
     private AndroidMappingProfile() {
     }

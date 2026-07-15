@@ -9,6 +9,7 @@ import org.jf.dexlib2.AccessFlags;
 import org.jf.dexlib2.Opcode;
 import org.jf.dexlib2.builder.MutableMethodImplementation;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
@@ -17,7 +18,11 @@ import org.jf.dexlib2.iface.ClassDef;
 import org.jf.dexlib2.iface.Method;
 import org.jf.dexlib2.iface.MethodImplementation;
 import org.jf.dexlib2.iface.instruction.Instruction;
+import org.jf.dexlib2.iface.instruction.NarrowLiteralInstruction;
+import org.jf.dexlib2.iface.instruction.OneRegisterInstruction;
 import org.jf.dexlib2.iface.instruction.ReferenceInstruction;
+import org.jf.dexlib2.iface.instruction.TwoRegisterInstruction;
+import org.jf.dexlib2.iface.reference.FieldReference;
 import org.jf.dexlib2.iface.reference.MethodReference;
 import org.jf.dexlib2.immutable.ImmutableClassDef;
 import org.jf.dexlib2.immutable.ImmutableDexFile;
@@ -26,7 +31,7 @@ import org.jf.dexlib2.immutable.reference.ImmutableMethodReference;
 import org.jf.dexlib2.writer.io.MemoryDataStore;
 import org.jf.dexlib2.writer.pool.DexPool;
 
-/** Inserts lifecycle, multiplayer, unit, and command callbacks into exact mapped methods. */
+/** Inserts lifecycle, multiplayer, gameplay, frame, and projectile callbacks into exact methods. */
 final class DexLifecycleWeaver {
     // Build the descriptor at runtime so the distributed Loader does not contain a game-class
     // descriptor that could be mistaken for a bundled class definition by payload audits.
@@ -62,6 +67,22 @@ final class DexLifecycleWeaver {
     static final String AFTER_UNIT_UNREGISTER_CALLBACK = "afterUnitUnregister";
     static final String BEFORE_COMMAND_ISSUE_CALLBACK = "beforeCommandIssue";
     static final String AFTER_COMMAND_ISSUE_CALLBACK = "afterCommandIssue";
+    static final String FRAME_LOOP_METHOD = "a";
+    static final String FRAME_CANVAS_TYPE = descriptor("com.corrodinggames.rts.gameFramework.m.l");
+    static final String BEFORE_FRAME_UPDATE_CALLBACK = "beforeFrameUpdate";
+    static final String AFTER_FRAME_UPDATE_CALLBACK = "afterFrameUpdate";
+    static final String BEFORE_FRAME_RENDER_CALLBACK = "beforeFrameRender";
+    static final String AFTER_FRAME_RENDER_CALLBACK = "afterFrameRender";
+    static final String PROJECTILE_CLASS = descriptor("com.corrodinggames.rts.game.f");
+    static final String PROJECTILE_UNIT_TYPE = UNIT_TYPE;
+    static final String PROJECTILE_METHOD = "a";
+    static final String PROJECTILE_IMPACT_FIELD = "bn";
+    static final String AFTER_PROJECTILE_CREATED_CALLBACK = "afterProjectileCreated";
+    static final String BEFORE_PROJECTILE_UPDATE_CALLBACK = "beforeProjectileUpdate";
+    static final String AFTER_PROJECTILE_UPDATE_CALLBACK = "afterProjectileUpdate";
+    static final String BEFORE_PROJECTILE_EXPLOSION_CALLBACK = "beforeProjectileExplosion";
+    static final String BEFORE_PROJECTILE_REMOVAL_CALLBACK = "beforeProjectileRemoval";
+    static final String AFTER_PROJECTILE_REMOVAL_CALLBACK = "afterProjectileRemoval";
 
     private static final ImmutableMethodReference BEFORE = callback(BEFORE_METHOD);
     private static final ImmutableMethodReference AFTER = callback(AFTER_METHOD);
@@ -89,6 +110,26 @@ final class DexLifecycleWeaver {
             callbackWithObject(BEFORE_COMMAND_ISSUE_CALLBACK, "Z");
     private static final ImmutableMethodReference AFTER_COMMAND_ISSUE =
             callbackWithObject(AFTER_COMMAND_ISSUE_CALLBACK, "V");
+    private static final ImmutableMethodReference BEFORE_FRAME_UPDATE =
+            callbackWithObjectAndInt(BEFORE_FRAME_UPDATE_CALLBACK);
+    private static final ImmutableMethodReference AFTER_FRAME_UPDATE =
+            callbackWithObject(AFTER_FRAME_UPDATE_CALLBACK, "V");
+    private static final ImmutableMethodReference BEFORE_FRAME_RENDER =
+            callbackWithObjects(BEFORE_FRAME_RENDER_CALLBACK);
+    private static final ImmutableMethodReference AFTER_FRAME_RENDER =
+            callbackWithObject(AFTER_FRAME_RENDER_CALLBACK, "V");
+    private static final ImmutableMethodReference AFTER_PROJECTILE_CREATED =
+            callbackWithObjects(AFTER_PROJECTILE_CREATED_CALLBACK);
+    private static final ImmutableMethodReference BEFORE_PROJECTILE_UPDATE =
+            callbackWithObjectAndFloat(BEFORE_PROJECTILE_UPDATE_CALLBACK);
+    private static final ImmutableMethodReference AFTER_PROJECTILE_UPDATE =
+            callbackWithObjectAndFloat(AFTER_PROJECTILE_UPDATE_CALLBACK);
+    private static final ImmutableMethodReference BEFORE_PROJECTILE_EXPLOSION =
+            callbackWithObject(BEFORE_PROJECTILE_EXPLOSION_CALLBACK, "V");
+    private static final ImmutableMethodReference BEFORE_PROJECTILE_REMOVAL =
+            callbackWithObject(BEFORE_PROJECTILE_REMOVAL_CALLBACK, "V");
+    private static final ImmutableMethodReference AFTER_PROJECTILE_REMOVAL =
+            callbackWithObject(AFTER_PROJECTILE_REMOVAL_CALLBACK, "V");
 
     private DexLifecycleWeaver() {
     }
@@ -103,23 +144,34 @@ final class DexLifecycleWeaver {
             int networkMethods = 0;
             int gameplayClasses = 0;
             int gameplayMethods = 0;
+            int frameMethods = 0;
+            int projectileClasses = 0;
+            int projectileMethods = 0;
 
             for (ClassDef classDef : dex.getClasses()) {
                 if (!TARGET_CLASS.equals(classDef.getType())
                         && !NETWORK_CLASS.equals(classDef.getType())
                         && !TEAM_CLASS.equals(classDef.getType())
-                        && !COMMAND_CLASS.equals(classDef.getType())) {
+                        && !COMMAND_CLASS.equals(classDef.getType())
+                        && !PROJECTILE_CLASS.equals(classDef.getType())) {
                     classes.add(classDef);
                     continue;
                 }
                 if (TARGET_CLASS.equals(classDef.getType())) targetClasses++;
                 else if (NETWORK_CLASS.equals(classDef.getType())) networkClasses++;
+                else if (PROJECTILE_CLASS.equals(classDef.getType())) projectileClasses++;
                 else gameplayClasses++;
                 List<Method> methods = new ArrayList<>();
                 for (Method method : classDef.getMethods()) {
                     if (isTarget(method)) {
                         targetMethods++;
                         methods.add(weave(method));
+                    } else if (isFrameLoopTarget(method)) {
+                        frameMethods++;
+                        methods.add(weaveFrameLoop(method));
+                    } else if (isFrameRenderTarget(method)) {
+                        frameMethods++;
+                        methods.add(weaveFrameRender(method));
                     } else if (isNetworkTarget(method)) {
                         networkMethods++;
                         methods.add(weaveNetwork(method));
@@ -132,6 +184,15 @@ final class DexLifecycleWeaver {
                     } else if (isCommandTarget(method)) {
                         gameplayMethods++;
                         methods.add(weaveCommandIssue(method));
+                    } else if (isProjectileFactory(method)) {
+                        projectileMethods++;
+                        methods.add(weaveProjectileFactory(method));
+                    } else if (isProjectileUpdate(method)) {
+                        projectileMethods++;
+                        methods.add(weaveProjectileUpdate(method));
+                    } else if (isProjectileRemoval(method)) {
+                        projectileMethods++;
+                        methods.add(weaveProjectileRemoval(method));
                     } else {
                         methods.add(method);
                     }
@@ -150,8 +211,14 @@ final class DexLifecycleWeaver {
             if (gameplayClasses != 2 || gameplayMethods != 3) {
                 throw failure("Mapped portable gameplay methods were not found exactly once");
             }
+            if (frameMethods != 2) {
+                throw failure("Mapped Android frame methods were not found exactly once");
+            }
+            if (projectileClasses != 1 || projectileMethods != 4) {
+                throw failure("Mapped Android projectile methods were not found exactly once");
+            }
 
-            MemoryDataStore output = new MemoryDataStore(source.length + 2048);
+            MemoryDataStore output = new MemoryDataStore(source.length + 4096);
             DexPool.writeTo(output, new ImmutableDexFile(dex.getOpcodes(), classes));
             byte[] result = output.getData();
             verify(result);
@@ -162,6 +229,129 @@ final class DexLifecycleWeaver {
             throw new PatchException(PatchException.Reason.DEX_WEAVE_FAILED,
                     "Could not weave the mapped engine lifecycle method", invalidDex);
         }
+    }
+
+    private static ImmutableMethod weaveFrameLoop(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())
+                || implementation.getRegisterCount() < 3) {
+            throw failure("Mapped Android frame loop has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        List<Integer> returns = normalReturns(original);
+        rejectCallbacks(original, BEFORE_FRAME_UPDATE_CALLBACK, AFTER_FRAME_UPDATE_CALLBACK);
+        if (returns.isEmpty()) throw failure("Mapped Android frame loop has no normal return");
+        int receiver = implementation.getRegisterCount() - 3;
+        int delta = implementation.getRegisterCount() - 1;
+        if (receiver > 15 || delta > 15) {
+            throw failure("Mapped Android frame loop parameters cannot use invoke-35c");
+        }
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index), invoke(AFTER_FRAME_UPDATE, receiver));
+        }
+        mutable.addInstruction(0, invoke(BEFORE_FRAME_UPDATE, receiver, delta));
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveFrameRender(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())
+                || implementation.getRegisterCount() < 3) {
+            throw failure("Mapped Android render method has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        List<Integer> returns = normalReturns(original);
+        rejectCallbacks(original, BEFORE_FRAME_RENDER_CALLBACK, AFTER_FRAME_RENDER_CALLBACK);
+        if (returns.isEmpty()) throw failure("Mapped Android render method has no normal return");
+        int receiver = implementation.getRegisterCount() - 3;
+        int graphics = implementation.getRegisterCount() - 2;
+        if (receiver > 15 || graphics > 15) {
+            throw failure("Mapped Android render parameters cannot use invoke-35c");
+        }
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index), invoke(AFTER_FRAME_RENDER, receiver));
+        }
+        mutable.addInstruction(0, invoke(BEFORE_FRAME_RENDER, receiver, graphics));
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveProjectileFactory(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || !AccessFlags.STATIC.isSet(method.getAccessFlags())) {
+            throw failure("Mapped projectile factory has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        rejectCallbacks(original, AFTER_PROJECTILE_CREATED_CALLBACK);
+        int source = implementation.getRegisterCount() - parameterWords(method);
+        if (source < 0 || source > 15) {
+            throw failure("Mapped projectile factory source cannot use invoke-35c");
+        }
+        List<Integer> returns = new ArrayList<>();
+        for (int index = 0; index < original.size(); index++) {
+            if (original.get(index).getOpcode() == Opcode.RETURN_OBJECT) returns.add(index);
+        }
+        if (returns.isEmpty()) throw failure("Mapped projectile factory has no object return");
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            Instruction instruction = original.get(returns.get(index));
+            int projectile = ((OneRegisterInstruction) instruction).getRegisterA();
+            if (projectile > 15) {
+                throw failure("Mapped projectile factory result cannot use invoke-35c");
+            }
+            mutable.addInstruction(returns.get(index),
+                    invoke(AFTER_PROJECTILE_CREATED, projectile, source));
+        }
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveProjectileUpdate(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())
+                || implementation.getRegisterCount() < 2) {
+            throw failure("Mapped projectile update has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        rejectCallbacks(original, BEFORE_PROJECTILE_UPDATE_CALLBACK,
+                AFTER_PROJECTILE_UPDATE_CALLBACK, BEFORE_PROJECTILE_EXPLOSION_CALLBACK);
+        List<Integer> returns = normalReturns(original);
+        if (returns.isEmpty()) throw failure("Mapped projectile update has no normal return");
+        int receiver = implementation.getRegisterCount() - 2;
+        int delta = implementation.getRegisterCount() - 1;
+        int impact = findImpactTrigger(original);
+        if (impact < 0) throw failure("Mapped projectile impact trigger was not found exactly once");
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index),
+                    invokeRange(AFTER_PROJECTILE_UPDATE, receiver, 2));
+        }
+        mutable.addInstruction(impact, invokeRange(BEFORE_PROJECTILE_EXPLOSION, receiver, 1));
+        mutable.addInstruction(0, invokeRange(BEFORE_PROJECTILE_UPDATE, receiver, 2));
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveProjectileRemoval(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())) {
+            throw failure("Mapped projectile removal has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        rejectCallbacks(original, BEFORE_PROJECTILE_REMOVAL_CALLBACK,
+                AFTER_PROJECTILE_REMOVAL_CALLBACK);
+        List<Integer> returns = normalReturns(original);
+        if (returns.isEmpty()) throw failure("Mapped projectile removal has no normal return");
+        int receiver = implementation.getRegisterCount() - 1;
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index),
+                    receiver <= 15 ? invoke(AFTER_PROJECTILE_REMOVAL, receiver)
+                            : invokeRange(AFTER_PROJECTILE_REMOVAL, receiver, 1));
+        }
+        mutable.addInstruction(0,
+                receiver <= 15 ? invoke(BEFORE_PROJECTILE_REMOVAL, receiver)
+                        : invokeRange(BEFORE_PROJECTILE_REMOVAL, receiver, 1));
+        return copyWithImplementation(method, mutable);
     }
 
     private static ImmutableMethod weaveUnitLifecycle(Method method) throws PatchException {
@@ -358,6 +548,61 @@ final class DexLifecycleWeaver {
         if (targets != 1) throw failure("Woven target verification failed");
         verifyNetwork(dex);
         verifyGameplay(dex);
+        verifyFramesAndProjectiles(dex);
+    }
+
+    private static void verifyFramesAndProjectiles(DexBackedDexFile dex) throws PatchException {
+        int frameTargets = 0;
+        int projectileTargets = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                if (!isFrameLoopTarget(method) && !isFrameRenderTarget(method)
+                        && !isProjectileFactory(method) && !isProjectileUpdate(method)
+                        && !isProjectileRemoval(method)) continue;
+                List<? extends Instruction> instructions = toList(
+                        method.getImplementation().getInstructions());
+                if (isFrameLoopTarget(method)) {
+                    frameTargets++;
+                    requireCallbackShape(instructions, BEFORE_FRAME_UPDATE_CALLBACK,
+                            AFTER_FRAME_UPDATE_CALLBACK, Opcode.RETURN_VOID);
+                } else if (isFrameRenderTarget(method)) {
+                    frameTargets++;
+                    requireCallbackShape(instructions, BEFORE_FRAME_RENDER_CALLBACK,
+                            AFTER_FRAME_RENDER_CALLBACK, Opcode.RETURN_VOID);
+                } else if (isProjectileFactory(method)) {
+                    projectileTargets++;
+                    int callbacks = callbackCount(instructions, AFTER_PROJECTILE_CREATED_CALLBACK);
+                    int returns = opcodeCount(instructions, Opcode.RETURN_OBJECT);
+                    if (callbacks != returns || returns == 0) {
+                        throw failure("Projectile factory callback count does not match returns");
+                    }
+                } else if (isProjectileUpdate(method)) {
+                    projectileTargets++;
+                    requireCallbackShape(instructions, BEFORE_PROJECTILE_UPDATE_CALLBACK,
+                            AFTER_PROJECTILE_UPDATE_CALLBACK, Opcode.RETURN_VOID);
+                    if (callbackCount(instructions, BEFORE_PROJECTILE_EXPLOSION_CALLBACK) != 1) {
+                        throw failure("Projectile explosion callback count is invalid");
+                    }
+                } else {
+                    projectileTargets++;
+                    requireCallbackShape(instructions, BEFORE_PROJECTILE_REMOVAL_CALLBACK,
+                            AFTER_PROJECTILE_REMOVAL_CALLBACK, Opcode.RETURN_VOID);
+                }
+            }
+        }
+        if (frameTargets != 2 || projectileTargets != 4) {
+            throw failure("Woven Android frame/projectile target verification failed");
+        }
+    }
+
+    private static void requireCallbackShape(List<? extends Instruction> instructions,
+            String before, String after, Opcode returnOpcode) throws PatchException {
+        int returns = opcodeCount(instructions, returnOpcode);
+        if (callbackCount(instructions, before) != 1
+                || callbackCount(instructions, after) != returns || returns == 0
+                || !isCallback(instructions.get(0), before)) {
+            throw failure("Android callback placement is invalid for " + before);
+        }
     }
 
     private static void verifyGameplay(DexBackedDexFile dex) throws PatchException {
@@ -430,6 +675,46 @@ final class DexLifecycleWeaver {
                 && method.getParameterTypes().equals(Collections.singletonList(TARGET_PARAMETER));
     }
 
+    private static boolean isFrameLoopTarget(Method method) {
+        return TARGET_CLASS.equals(method.getDefiningClass())
+                && FRAME_LOOP_METHOD.equals(method.getName())
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().equals(java.util.Arrays.asList("F", "I"));
+    }
+
+    private static boolean isFrameRenderTarget(Method method) {
+        return TARGET_CLASS.equals(method.getDefiningClass())
+                && FRAME_LOOP_METHOD.equals(method.getName())
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().equals(java.util.Arrays.asList(
+                        FRAME_CANVAS_TYPE, "F"));
+    }
+
+    private static boolean isProjectileFactory(Method method) {
+        if (!PROJECTILE_CLASS.equals(method.getDefiningClass())
+                || !PROJECTILE_METHOD.equals(method.getName())
+                || !PROJECTILE_CLASS.equals(method.getReturnType())) return false;
+        List<? extends CharSequence> parameters = method.getParameterTypes();
+        return parameters.equals(java.util.Arrays.asList(PROJECTILE_UNIT_TYPE, "F", "F"))
+                || parameters.equals(java.util.Arrays.asList(
+                        PROJECTILE_UNIT_TYPE, "F", "F", "F", "I"));
+    }
+
+    private static boolean isProjectileUpdate(Method method) {
+        return PROJECTILE_CLASS.equals(method.getDefiningClass())
+                && PROJECTILE_METHOD.equals(method.getName())
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().equals(Collections.singletonList("F"));
+    }
+
+    private static boolean isProjectileRemoval(Method method) {
+        return PROJECTILE_CLASS.equals(method.getDefiningClass())
+                && PROJECTILE_METHOD.equals(method.getName())
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().isEmpty()
+                && !AccessFlags.STATIC.isSet(method.getAccessFlags());
+    }
+
     private static boolean isNetworkTarget(Method method) {
         if (!NETWORK_CLASS.equals(method.getDefiningClass())
                 || !"V".equals(method.getReturnType())
@@ -474,6 +759,7 @@ final class DexLifecycleWeaver {
 
     private static boolean isCallback(Instruction instruction, String name) {
         if (instruction.getOpcode() != Opcode.INVOKE_STATIC
+                && instruction.getOpcode() != Opcode.INVOKE_STATIC_RANGE
                 || !(instruction instanceof ReferenceInstruction)) return false;
         Object reference = ((ReferenceInstruction) instruction).getReference();
         if (!(reference instanceof MethodReference)) return false;
@@ -491,6 +777,12 @@ final class DexLifecycleWeaver {
     private static BuilderInstruction35c invoke(MethodReference callback, int first, int second) {
         return new BuilderInstruction35c(Opcode.INVOKE_STATIC,
                 2, first, second, 0, 0, 0, callback);
+    }
+
+    private static BuilderInstruction3rc invokeRange(MethodReference callback,
+            int startRegister, int registerCount) {
+        return new BuilderInstruction3rc(Opcode.INVOKE_STATIC_RANGE,
+                startRegister, registerCount, callback);
     }
 
     private static BuilderInstruction35c invoke(MethodReference callback, int value) {
@@ -511,6 +803,93 @@ final class DexLifecycleWeaver {
     private static ImmutableMethodReference callbackWithObject(String name, String returnType) {
         return new ImmutableMethodReference(BRIDGE_CLASS, name,
                 Collections.singletonList("Ljava/lang/Object;"), returnType);
+    }
+
+    private static ImmutableMethodReference callbackWithObjectAndInt(String name) {
+        return new ImmutableMethodReference(BRIDGE_CLASS, name,
+                java.util.Arrays.asList("Ljava/lang/Object;", "I"), "V");
+    }
+
+    private static ImmutableMethodReference callbackWithObjectAndFloat(String name) {
+        return new ImmutableMethodReference(BRIDGE_CLASS, name,
+                java.util.Arrays.asList("Ljava/lang/Object;", "F"), "V");
+    }
+
+    private static List<Integer> normalReturns(List<? extends Instruction> instructions) {
+        List<Integer> returns = new ArrayList<>();
+        for (int index = 0; index < instructions.size(); index++) {
+            if (instructions.get(index).getOpcode() == Opcode.RETURN_VOID) returns.add(index);
+        }
+        return returns;
+    }
+
+    private static void rejectCallbacks(List<? extends Instruction> instructions,
+            String... callbackNames) throws PatchException {
+        for (Instruction instruction : instructions) {
+            for (String callbackName : callbackNames) {
+                if (isCallback(instruction, callbackName)) {
+                    throw failure("Mapped method is already woven: " + callbackName);
+                }
+            }
+        }
+    }
+
+    private static int findImpactTrigger(List<? extends Instruction> instructions)
+            throws PatchException {
+        int match = -1;
+        for (int index = 0; index < instructions.size(); index++) {
+            Instruction instruction = instructions.get(index);
+            if (instruction.getOpcode() != Opcode.IPUT_BOOLEAN
+                    || !(instruction instanceof ReferenceInstruction)
+                    || !(instruction instanceof TwoRegisterInstruction)) continue;
+            Object reference = ((ReferenceInstruction) instruction).getReference();
+            if (!(reference instanceof FieldReference)) continue;
+            FieldReference field = (FieldReference) reference;
+            if (!PROJECTILE_CLASS.equals(field.getDefiningClass())
+                    || !PROJECTILE_IMPACT_FIELD.equals(field.getName())
+                    || !"Z".equals(field.getType())) continue;
+            int valueRegister = ((TwoRegisterInstruction) instruction).getRegisterA();
+            boolean writesTrue = false;
+            for (int previous = index - 1; previous >= 0 && previous >= index - 4; previous--) {
+                Instruction candidate = instructions.get(previous);
+                if (candidate instanceof OneRegisterInstruction
+                        && candidate instanceof NarrowLiteralInstruction
+                        && ((OneRegisterInstruction) candidate).getRegisterA() == valueRegister
+                        && ((NarrowLiteralInstruction) candidate).getNarrowLiteral() == 1) {
+                    writesTrue = true;
+                    break;
+                }
+            }
+            if (!writesTrue) continue;
+            if (match >= 0) throw failure("Mapped projectile has multiple impact trigger writes");
+            match = index;
+        }
+        return match;
+    }
+
+    private static int parameterWords(Method method) {
+        int count = 0;
+        for (CharSequence parameter : method.getParameterTypes()) {
+            String type = parameter.toString();
+            count += "J".equals(type) || "D".equals(type) ? 2 : 1;
+        }
+        return count;
+    }
+
+    private static int callbackCount(List<? extends Instruction> instructions, String name) {
+        int count = 0;
+        for (Instruction instruction : instructions) {
+            if (isCallback(instruction, name)) count++;
+        }
+        return count;
+    }
+
+    private static int opcodeCount(List<? extends Instruction> instructions, Opcode opcode) {
+        int count = 0;
+        for (Instruction instruction : instructions) {
+            if (instruction.getOpcode() == opcode) count++;
+        }
+        return count;
     }
 
     private static ImmutableMethod copyWithImplementation(Method method,

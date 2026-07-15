@@ -57,4 +57,13 @@ tasks.register('verifyAndroidBackendContracts') {
     }
 }
 
+tasks.register('verifyAndroidGameEventBridge', JavaExec) {
+    group = 'verification'
+    description = 'Checks Android frame scheduling and projectile callback ordering.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricapi.android.AndroidGameEventBridgeVerification')
+}
+
 check.dependsOn tasks.named('verifyAndroidBackendContracts')
+check.dependsOn tasks.named('verifyAndroidGameEventBridge')

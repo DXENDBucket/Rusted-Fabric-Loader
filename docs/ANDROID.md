@@ -80,7 +80,9 @@ caller-authorized provider, game-code-cache transfer, and enabled-mod startup di
 `android/patched-bootstrap` implement the verified rewrite/sign/injection pipeline. The management
 APK embeds only the code-only bootstrap DEX, generates a per-install Android Keystore identity, and
 hands the signed result to `PackageInstaller`. The exact-profile DEX weaver now supplies the same
-engine/session events and RFH1 handshake/start gate as the Xposed backend. See
+engine/session events, update/render scheduling, projectile lifecycle, and RFH1 handshake/start
+gate as the Xposed backend. The local patch additionally provides exact in-method projectile
+explosion boundaries. See
 [`ANDROID_LOCAL_PATCHER.md`](ANDROID_LOCAL_PATCHER.md).
 
 ### Shared loader core

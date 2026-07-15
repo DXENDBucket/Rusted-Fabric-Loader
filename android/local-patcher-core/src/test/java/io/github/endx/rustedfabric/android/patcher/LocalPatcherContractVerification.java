@@ -24,6 +24,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction10x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21c;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction22c;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.iface.ClassDef;
 import org.jf.dexlib2.iface.Method;
@@ -35,6 +36,7 @@ import org.jf.dexlib2.immutable.ImmutableDexFile;
 import org.jf.dexlib2.immutable.ImmutableMethod;
 import org.jf.dexlib2.immutable.ImmutableMethodParameter;
 import org.jf.dexlib2.immutable.reference.ImmutableStringReference;
+import org.jf.dexlib2.immutable.reference.ImmutableFieldReference;
 import org.jf.dexlib2.writer.io.MemoryDataStore;
 import org.jf.dexlib2.writer.pool.DexPool;
 
@@ -75,6 +77,7 @@ public final class LocalPatcherContractVerification {
                 "after engine callback was not inserted before normal return");
         verifyNetworkCallbacks(woven);
         verifyGameplayCallbacks(woven);
+        verifyFrameAndProjectileCallbacks(woven);
         try {
             DexLifecycleWeaver.weaveEngineInitialization(woven);
             throw new AssertionError("already woven DEX was accepted");
@@ -82,6 +85,27 @@ public final class LocalPatcherContractVerification {
             require(expected.getReason() == PatchException.Reason.DEX_WEAVE_FAILED,
                     "wrong repeated weave reason: " + expected.getReason());
         }
+    }
+
+    private static void verifyFrameAndProjectileCallbacks(byte[] woven) {
+        DexBackedDexFile dex = new DexBackedDexFile(null, woven);
+        int frame = 0;
+        int projectile = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                if (DexLifecycleWeaver.TARGET_CLASS.equals(classDef.getType())
+                        && (method.getParameterTypes().equals(Arrays.asList("F", "I"))
+                        || method.getParameterTypes().equals(Arrays.asList(
+                        DexLifecycleWeaver.FRAME_CANVAS_TYPE, "F")))) {
+                    frame++;
+                }
+                if (DexLifecycleWeaver.PROJECTILE_CLASS.equals(classDef.getType())) {
+                    projectile++;
+                }
+            }
+        }
+        require(frame == 2, "expected two woven Android frame methods");
+        require(projectile == 4, "expected four woven projectile methods");
     }
 
     private static void verifyGameplayCallbacks(byte[] woven) {
@@ -194,6 +218,9 @@ public final class LocalPatcherContractVerification {
                 "RFH1 network weave is missing from the patch report");
         require(report.toJson().contains("portable-gameplay-event-weave"),
                 "portable gameplay weave is missing from the patch report");
+        require(report.toJson().contains("game-frame-lifecycle-weave")
+                        && report.toJson().contains("projectile-lifecycle-weave"),
+                "Android frame/projectile weave is missing from the patch report");
         require(!report.toJson().contains(temporary.toString()),
                 "patch report leaked a local path");
 
@@ -271,12 +298,92 @@ public final class LocalPatcherContractVerification {
         ImmutableClassDef classDef = new ImmutableClassDef(DexLifecycleWeaver.TARGET_CLASS,
                 AccessFlags.PUBLIC.getValue(), "Ljava/lang/Object;", Collections.emptyList(),
                 "SyntheticEngine.java", Collections.emptySet(), Collections.emptyList(),
-                Collections.singletonList(method));
+                Arrays.asList(method, frameLoopMethod(), frameRenderMethod()));
         MemoryDataStore output = new MemoryDataStore();
         ImmutableClassDef network = networkClass();
         DexPool.writeTo(output, new ImmutableDexFile(Opcodes.getDefault(),
-                Arrays.asList(classDef, network, teamClass(), commandClass())));
+                Arrays.asList(classDef, network, teamClass(), commandClass(), projectileClass())));
         return output.getData();
+    }
+
+    private static ImmutableMethod frameLoopMethod() {
+        MutableMethodImplementation body = new MutableMethodImplementation(3);
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        return new ImmutableMethod(DexLifecycleWeaver.TARGET_CLASS,
+                DexLifecycleWeaver.FRAME_LOOP_METHOD,
+                Arrays.asList(
+                        new ImmutableMethodParameter("F", Collections.emptySet(), null),
+                        new ImmutableMethodParameter("I", Collections.emptySet(), null)),
+                "V", AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
+    }
+
+    private static ImmutableMethod frameRenderMethod() {
+        MutableMethodImplementation body = new MutableMethodImplementation(3);
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        return new ImmutableMethod(DexLifecycleWeaver.TARGET_CLASS,
+                DexLifecycleWeaver.FRAME_LOOP_METHOD,
+                Arrays.asList(
+                        new ImmutableMethodParameter(DexLifecycleWeaver.FRAME_CANVAS_TYPE,
+                                Collections.emptySet(), null),
+                        new ImmutableMethodParameter("F", Collections.emptySet(), null)),
+                "V", AccessFlags.PRIVATE.getValue(), Collections.emptySet(),
+                Collections.emptySet(), body);
+    }
+
+    private static ImmutableClassDef projectileClass() {
+        java.util.List<ImmutableMethod> methods = new java.util.ArrayList<>();
+        methods.add(projectileFactory(false));
+        methods.add(projectileFactory(true));
+        methods.add(projectileUpdate());
+        methods.add(projectileRemoval());
+        return new ImmutableClassDef(DexLifecycleWeaver.PROJECTILE_CLASS,
+                AccessFlags.PUBLIC.getValue(), "Ljava/lang/Object;", Collections.emptyList(),
+                "SyntheticProjectile.java", Collections.emptySet(), Collections.emptyList(), methods);
+    }
+
+    private static ImmutableMethod projectileFactory(boolean extended) {
+        java.util.List<ImmutableMethodParameter> parameters = new java.util.ArrayList<>();
+        parameters.add(new ImmutableMethodParameter(DexLifecycleWeaver.PROJECTILE_UNIT_TYPE,
+                Collections.emptySet(), null));
+        parameters.add(new ImmutableMethodParameter("F", Collections.emptySet(), null));
+        parameters.add(new ImmutableMethodParameter("F", Collections.emptySet(), null));
+        if (extended) {
+            parameters.add(new ImmutableMethodParameter("F", Collections.emptySet(), null));
+            parameters.add(new ImmutableMethodParameter("I", Collections.emptySet(), null));
+        }
+        MutableMethodImplementation body = new MutableMethodImplementation(parameters.size() + 1);
+        body.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 0));
+        body.addInstruction(new BuilderInstruction11x(Opcode.RETURN_OBJECT, 0));
+        return new ImmutableMethod(DexLifecycleWeaver.PROJECTILE_CLASS,
+                DexLifecycleWeaver.PROJECTILE_METHOD, parameters,
+                DexLifecycleWeaver.PROJECTILE_CLASS,
+                AccessFlags.PUBLIC.getValue() | AccessFlags.STATIC.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
+    }
+
+    private static ImmutableMethod projectileUpdate() {
+        MutableMethodImplementation body = new MutableMethodImplementation(4);
+        body.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 1));
+        body.addInstruction(new BuilderInstruction22c(Opcode.IPUT_BOOLEAN, 0, 2,
+                new ImmutableFieldReference(DexLifecycleWeaver.PROJECTILE_CLASS,
+                        DexLifecycleWeaver.PROJECTILE_IMPACT_FIELD, "Z")));
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        return new ImmutableMethod(DexLifecycleWeaver.PROJECTILE_CLASS,
+                DexLifecycleWeaver.PROJECTILE_METHOD,
+                Collections.singletonList(new ImmutableMethodParameter(
+                        "F", Collections.emptySet(), null)),
+                "V", AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
+    }
+
+    private static ImmutableMethod projectileRemoval() {
+        MutableMethodImplementation body = new MutableMethodImplementation(1);
+        body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+        return new ImmutableMethod(DexLifecycleWeaver.PROJECTILE_CLASS,
+                DexLifecycleWeaver.PROJECTILE_METHOD, Collections.emptyList(), "V",
+                AccessFlags.PUBLIC.getValue() | AccessFlags.FINAL.getValue(),
+                Collections.emptySet(), Collections.emptySet(), body);
     }
 
     private static ImmutableClassDef teamClass() {
@@ -355,7 +462,9 @@ public final class LocalPatcherContractVerification {
         for (ClassDef classDef : dex.getClasses()) {
             for (Method method : classDef.getMethods()) {
                 if (DexLifecycleWeaver.TARGET_CLASS.equals(method.getDefiningClass())
-                        && DexLifecycleWeaver.TARGET_METHOD.equals(method.getName())) return method;
+                        && DexLifecycleWeaver.TARGET_METHOD.equals(method.getName())
+                        && method.getParameterTypes().equals(Collections.singletonList(
+                        DexLifecycleWeaver.TARGET_PARAMETER))) return method;
             }
         }
         throw new AssertionError("woven target method is missing");

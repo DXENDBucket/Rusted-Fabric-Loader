@@ -117,8 +117,8 @@ GameThreadScheduler.onNextUpdate(() -> updateGameState())
 Tasks retain submission order. A task failure completes only its returned `CompletableFuture`
 exceptionally and does not prevent later tasks from running. Work submitted while a phase is being
 drained runs in the following phase, preventing unbounded same-frame loops. Check
-`RustedFabricCapabilities.GAME_LIFECYCLE` before using the scheduler; Android does not advertise
-this capability until its frame hooks are implemented.
+`RustedFabricCapabilities.GAME_LIFECYCLE` before using the scheduler. Windows, the Android local
+patch backend, and the Android Xposed backend now advertise it.
 
 ## Projectile development API
 
@@ -135,9 +135,10 @@ ProjectileEvents.AFTER_PROJECTILE_CREATED.subscribe((projectile, source) -> {
 ```
 
 The snapshot distinguishes the named runtime, PC official namespace, and Android 1.15 official
-field layout without exposing a compile-time game class dependency. The lifecycle event capability is currently full on Windows
-and explicitly unavailable on Android in the support matrix; the state accessor itself remains a
-common API so the Android backend can adopt the same mod source later.
+field layout without exposing a compile-time game class dependency. The lifecycle event capability
+is full on Windows and the Android local-patch backend. Xposed supports creation, update, and
+removal, but is marked partial because method hooks cannot observe Android 1.15's inlined explosion
+basic block; use the local-patch backend when exact explosion callbacks are required.
 
 `CustomUnitRuntimeSnapshot.capture(unit)` promotes the high-confidence v0.84 construction/runtime
 mapping into the same stable style. It exposes active/revert metadata build-queue-effect gates,

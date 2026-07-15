@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.endx.rustedfabricapi.api.event.ProjectileEvents;
 import io.github.endx.rustedfabricapi.api.util.RustedReflection;
 
 /** Stable accessors for the mapped Projectile runtime without compile-time game classes. */
@@ -38,8 +39,12 @@ public final class Projectiles {
         if (projectile == null) throw new IllegalArgumentException("projectile must not be null");
         if (hasTypeInHierarchy(projectile, "com.corrodinggames.rts.gameFramework.ah")) {
             // Android 1.15 inlines the PC requestRemoval() body; its d() method is getDrawPaint().
+            ProjectileEvents.BEFORE_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
+                    projectile, ProjectileEvents.RemovalReason.REQUESTED);
             RustedReflection.setFieldValue(projectile,
                     new String[]{"removalRequested", "aS"}, Boolean.TRUE);
+            ProjectileEvents.AFTER_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
+                    projectile, ProjectileEvents.RemovalReason.REQUESTED);
             return;
         }
         RustedReflection.invokeInstance(projectile, new String[]{"requestRemoval", "d"});

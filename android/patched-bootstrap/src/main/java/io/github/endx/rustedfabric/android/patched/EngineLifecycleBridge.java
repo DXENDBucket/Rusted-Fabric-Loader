@@ -12,6 +12,7 @@ import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.android.AndroidMultiplayerTransport;
+import io.github.endx.rustedfabricapi.android.AndroidGameEventBridge;
 
 /** Stable, zero-argument targets called from the woven game DEX. */
 public final class EngineLifecycleBridge {
@@ -92,6 +93,46 @@ public final class EngineLifecycleBridge {
 
     public static void afterCommandIssue(Object command) {
         CommandEvents.AFTER_COMMAND_ISSUE.invoker().afterCommandIssue(command);
+    }
+
+    public static void beforeFrameUpdate(Object engine, int delta) {
+        AndroidGameEventBridge.beforeFrameUpdate(engine, delta);
+    }
+
+    public static void afterFrameUpdate(Object engine) {
+        AndroidGameEventBridge.afterFrameUpdate(engine);
+    }
+
+    public static void beforeFrameRender(Object engine, Object graphics) {
+        AndroidGameEventBridge.beforeFrameRender(engine, graphics);
+    }
+
+    public static void afterFrameRender(Object engine) {
+        AndroidGameEventBridge.afterFrameRender(engine);
+    }
+
+    public static void afterProjectileCreated(Object projectile, Object sourceUnit) {
+        AndroidGameEventBridge.afterProjectileCreated(projectile, sourceUnit);
+    }
+
+    public static void beforeProjectileUpdate(Object projectile, float delta) {
+        AndroidGameEventBridge.beforeProjectileUpdate(projectile, delta);
+    }
+
+    public static void afterProjectileUpdate(Object projectile, float delta) {
+        AndroidGameEventBridge.afterProjectileUpdate(projectile, delta);
+    }
+
+    public static void beforeProjectileExplosion(Object projectile) {
+        AndroidGameEventBridge.beforeProjectileExplosion(projectile);
+    }
+
+    public static void beforeProjectileRemoval(Object projectile) {
+        AndroidGameEventBridge.beforeProjectileRemoval(projectile);
+    }
+
+    public static void afterProjectileRemoval(Object projectile) {
+        AndroidGameEventBridge.afterProjectileRemoval(projectile);
     }
 
     private static void dispatchOnce(AtomicBoolean guard,

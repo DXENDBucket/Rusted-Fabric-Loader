@@ -12,7 +12,8 @@ exactly select `rw-android-1.15-code176-v1.0`; otherwise all game hooks stay dis
 
 For the verified profile, the module hooks the mapped
 `RustedWarfareGameEngine.init(Context)` boundary, installs a platform-neutral
-`RustedFabricAPIContext`, and dispatches one before/after initialization event pair. Listener
+`RustedFabricAPIContext`, dispatches one before/after initialization event pair, and hooks the
+mapped frame loop, render method, and projectile create/update/remove methods. Listener
 failures are isolated and the original method is always called. The API and events retain no
 Context/game objects, access no saves, and do not change the installed APK.
 
@@ -21,8 +22,9 @@ activity, app-private atomic registry, official-game-authorized read-only provid
 transfer, common/game bridge ClassLoader, and Android DEX entrypoint loader. Enabled mods initialize
 before the first lifecycle dispatch; one failed mod is logged without stopping other mods or game
 startup. It also includes the no-root, user-selected APK patch/sign/PackageInstaller flow and its
-code-only `PatchedApplication` runtime. The no-root backend now weaves the mapped engine method and
-dispatches the same before/after event pair. Both backends are build-validated but still need
+code-only `PatchedApplication` runtime. The no-root backend weaves the mapped engine, frame, and
+projectile methods, including the inlined projectile impact boundary that Xposed cannot observe.
+Both backends are build-validated but still need
 physical device tests. See `../../docs/ANDROID_MODS.md` for the mod format and
 `../../docs/ANDROID_LOCAL_PATCHER.md` for the no-root flow and current limitations.
 
@@ -31,9 +33,9 @@ and each enabled mod's multiplayer declaration. Cross-platform `RFH1` handshake 
 compatibility enforcement, vanilla/client-only fallback, and the shared single-player/multiplayer
 session API are present in both the Xposed and no-root backends.
 
-The same common API classes and `RuntimeLifecycleEvents` are embedded into the Windows Fabric API
-Jar. Mod source can therefore share initialization listeners, while its final Windows Jar and
-Android DEX remain separate builds.
+The same common API classes, lifecycle events, `GameThreadScheduler`, and projectile snapshots are
+embedded into the Windows Fabric API Jar. Mod source can therefore share gameplay code while its
+final Windows Jar and Android DEX remain separate builds.
 
 ## Build prerequisites
 

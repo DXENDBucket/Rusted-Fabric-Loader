@@ -10,7 +10,7 @@ event.custom.unit.render.v1,CustomUnitRenderEvents,full,unavailable,unavailable
 event.custom.unit.runtime.v1,CustomUnitRuntimeEvents,full,unavailable,unavailable
 event.effect.runtime.v1,EffectRuntimeEvents,full,unavailable,unavailable
 event.file.system.v1,FileSystemEvents,full,unavailable,unavailable
-event.game.lifecycle.v1,GameLifecycleEvents,full,unavailable,unavailable
+event.game.lifecycle.v1,GameLifecycleEvents,full,full,full
 session.v1,GameSessionEvents,full,full,full
 event.hud.command.v1,HudCommandEvents,full,unavailable,unavailable
 event.map.discovery.v1,MapDiscoveryEvents,full,unavailable,unavailable
@@ -22,7 +22,7 @@ event.network.handshake.v1,NetworkHandshakeEvents,full,unavailable,unavailable
 event.network.chat.v1,NetworkLobbyChatEvents,full,unavailable,unavailable
 event.network.packet.v1,NetworkPacketEvents,full,unavailable,unavailable
 event.network.sync.v1,NetworkSyncEvents,full,unavailable,unavailable
-event.projectile.lifecycle.v1,ProjectileEvents,full,unavailable,unavailable
+event.projectile.lifecycle.v1,ProjectileEvents,full,full,partial
 event.render.image.v1,RenderImageLifecycleEvents,full,unavailable,unavailable
 event.repair.reclaim.v1,RepairReclaimEvents,full,unavailable,unavailable
 event.resource.runtime.v1,ResourceRuntimeEvents,full,unavailable,unavailable

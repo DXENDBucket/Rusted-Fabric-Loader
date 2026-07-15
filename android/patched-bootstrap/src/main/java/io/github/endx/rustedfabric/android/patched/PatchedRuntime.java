@@ -15,6 +15,7 @@ import java.util.List;
 
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
+import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
@@ -70,7 +71,8 @@ final class PatchedRuntime {
                 "event.engine.init", "event.runtime.ready", "mapping.profile.exact",
                 "mod.dex.v1", "session.v1", "multiplayer.compat.v1",
                 "event.runtime.lifecycle.v1", "event.unit.lifecycle.v1",
-                "event.command.issue.v1",
+                "event.command.issue.v1", RustedFabricCapabilities.GAME_LIFECYCLE,
+                RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
                 "multiplayer.handshake.rfh1",
                 "platform.android.local-patch"));
         return new RustedFabricAPIContext(values);

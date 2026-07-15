@@ -23,6 +23,7 @@ import io.github.endx.rustedfabric.android.xposed.mod.EnabledModClient;
 import io.github.endx.rustedfabric.android.xposed.storage.ModContentProvider;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
+import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.CommandEvents;
 import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
@@ -33,6 +34,7 @@ import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.android.AndroidMultiplayerTransport;
+import io.github.endx.rustedfabricapi.android.AndroidGameEventBridge;
 import io.github.libxposed.api.XposedModule;
 
 /** Modern Xposed entrypoint for exact profile selection and the first diagnostic-only game hook. */
@@ -45,6 +47,8 @@ public final class RustedFabricXposedModule extends XposedModule {
     private final AtomicBoolean gameEngineInitialized = new AtomicBoolean();
     private final AtomicBoolean networkHooksInstalled = new AtomicBoolean();
     private final AtomicBoolean portableGameplayHooksInstalled = new AtomicBoolean();
+    private final AtomicBoolean frameHooksInstalled = new AtomicBoolean();
+    private final AtomicBoolean projectileHooksInstalled = new AtomicBoolean();
     private final AndroidMultiplayerTransport networkTransport = new AndroidMultiplayerTransport(
             (message, failure) -> log(failure == null ? LOG_INFO : LOG_ERROR,
                     "RustedFabric/Network", message, failure));
@@ -121,6 +125,8 @@ public final class RustedFabricXposedModule extends XposedModule {
                                 if (installGameEngineInitHook(targetLoader, contextClass, apiContext)) {
                                     installNetworkHooks(targetLoader);
                                     installPortableGameplayHooks(targetLoader);
+                                    installFrameHooks(targetLoader);
+                                    installProjectileHooks(targetLoader);
                                     log(LOG_INFO, TAG, "api-context-ready platform="
                                             + apiContext.platform() + " capabilities="
                                             + apiContext.capabilities().size());
@@ -180,7 +186,8 @@ public final class RustedFabricXposedModule extends XposedModule {
                 "event.engine.init", "event.runtime.ready", "mapping.profile.exact",
                 "mod.dex.v1", "session.v1", "multiplayer.compat.v1",
                 "event.runtime.lifecycle.v1", "event.unit.lifecycle.v1",
-                "event.command.issue.v1",
+                "event.command.issue.v1", RustedFabricCapabilities.GAME_LIFECYCLE,
+                RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
                 "multiplayer.handshake.rfh1",
                 "platform.android.xposed"));
         return new RustedFabricAPIContext(values);
@@ -379,6 +386,108 @@ public final class RustedFabricXposedModule extends XposedModule {
         } catch (Throwable failure) {
             portableGameplayHooksInstalled.set(false);
             log(LOG_ERROR, TAG, "portable gameplay hook installation failed", failure);
+            return false;
+        }
+    }
+
+    private boolean installFrameHooks(ClassLoader targetLoader) {
+        if (!frameHooksInstalled.compareAndSet(false, true)) return true;
+        try {
+            Class<?> engine = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.FRAME_LOOP_OWNER),
+                    false, targetLoader);
+            Class<?> canvas = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.FRAME_CANVAS_OWNER),
+                    false, targetLoader);
+            Method loop = engine.getDeclaredMethod(AndroidMappingProfile.FRAME_LOOP_NAME,
+                    float.class, int.class);
+            Method render = engine.getDeclaredMethod(AndroidMappingProfile.FRAME_LOOP_NAME,
+                    canvas, float.class);
+            loop.setAccessible(true);
+            render.setAccessible(true);
+            hook(loop).setId("rusted-fabric:frame-loop")
+                    .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                        Object value = chain.getThisObject();
+                        AndroidGameEventBridge.beforeFrameUpdate(value,
+                                ((Number) chain.getArg(1)).intValue());
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterFrameUpdate(value);
+                        return result;
+                    });
+            hook(render).setId("rusted-fabric:frame-render")
+                    .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                        Object value = chain.getThisObject();
+                        AndroidGameEventBridge.beforeFrameRender(value, chain.getArg(0));
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterFrameRender(value);
+                        return result;
+                    });
+            log(LOG_INFO, TAG, "Android frame update/render hooks installed");
+            return true;
+        } catch (Throwable failure) {
+            frameHooksInstalled.set(false);
+            log(LOG_ERROR, TAG, "Android frame hook installation failed", failure);
+            return false;
+        }
+    }
+
+    private boolean installProjectileHooks(ClassLoader targetLoader) {
+        if (!projectileHooksInstalled.compareAndSet(false, true)) return true;
+        try {
+            Class<?> projectile = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.PROJECTILE_OWNER),
+                    false, targetLoader);
+            Class<?> unit = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.UNIT_OWNER),
+                    false, targetLoader);
+            Method create = projectile.getDeclaredMethod(
+                    AndroidMappingProfile.PROJECTILE_METHOD_NAME,
+                    unit, float.class, float.class);
+            Method createExtended = projectile.getDeclaredMethod(
+                    AndroidMappingProfile.PROJECTILE_METHOD_NAME,
+                    unit, float.class, float.class, float.class, int.class);
+            Method update = projectile.getDeclaredMethod(
+                    AndroidMappingProfile.PROJECTILE_METHOD_NAME, float.class);
+            Method remove = projectile.getDeclaredMethod(
+                    AndroidMappingProfile.PROJECTILE_METHOD_NAME);
+            create.setAccessible(true);
+            createExtended.setAccessible(true);
+            update.setAccessible(true);
+            remove.setAccessible(true);
+            hook(create).setId("rusted-fabric:projectile-create")
+                    .setPriority(PRIORITY_LOWEST).intercept(chain -> {
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterProjectileCreated(result, chain.getArg(0));
+                        return result;
+                    });
+            hook(createExtended).setId("rusted-fabric:projectile-create-extended")
+                    .setPriority(PRIORITY_LOWEST).intercept(chain -> {
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterProjectileCreated(result, chain.getArg(0));
+                        return result;
+                    });
+            hook(update).setId("rusted-fabric:projectile-update")
+                    .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                        Object value = chain.getThisObject();
+                        float delta = ((Number) chain.getArg(0)).floatValue();
+                        AndroidGameEventBridge.beforeProjectileUpdate(value, delta);
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterProjectileUpdate(value, delta);
+                        return result;
+                    });
+            hook(remove).setId("rusted-fabric:projectile-remove")
+                    .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                        Object value = chain.getThisObject();
+                        AndroidGameEventBridge.beforeProjectileRemoval(value);
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterProjectileRemoval(value);
+                        return result;
+                    });
+            log(LOG_INFO, TAG, "Android projectile hooks installed (explosion boundary requires local patch)");
+            return true;
+        } catch (Throwable failure) {
+            projectileHooksInstalled.set(false);
+            log(LOG_ERROR, TAG, "Android projectile hook installation failed", failure);
             return false;
         }
     }

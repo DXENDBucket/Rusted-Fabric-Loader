@@ -87,6 +87,11 @@ public final class BootstrapContractVerification {
                         && source.contains("UnitLifecycleEvents.BEFORE_UNIT_REGISTER")
                         && source.contains("CommandEvents.BEFORE_COMMAND_ISSUE"),
                 "Portable Android unit/command hooks are missing");
+        require(source.contains("installFrameHooks")
+                        && source.contains("installProjectileHooks")
+                        && source.contains("AndroidGameEventBridge.beforeFrameUpdate")
+                        && source.contains("AndroidGameEventBridge.beforeProjectileUpdate"),
+                "Android frame/projectile hooks are missing");
         require(source.contains("RuntimeLifecycleEvents.BEFORE_ENGINE_INITIALIZATION.dispatch"),
                 "Portable before-initialization event is not dispatched");
         require(source.contains("RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch"),
@@ -145,6 +150,12 @@ public final class BootstrapContractVerification {
                         && profile.getProperty("hook.command.issue").startsWith(
                         AndroidMappingProfile.COMMAND_ISSUE_NAME + "("),
                 "Command hook diverged from profile.properties");
+        require(AndroidMappingProfile.FRAME_LOOP_OWNER.equals(profile.getProperty("hook.frame.owner"))
+                        && profile.getProperty("hook.frame.loop").startsWith(
+                        AndroidMappingProfile.FRAME_LOOP_NAME + "(")
+                        && AndroidMappingProfile.PROJECTILE_OWNER.equals(
+                        profile.getProperty("hook.projectile.owner")),
+                "Frame/projectile hooks diverged from profile.properties");
     }
 
     private static String read(Path path) throws Exception {
