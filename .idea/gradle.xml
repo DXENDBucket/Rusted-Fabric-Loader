@@ -6,10 +6,20 @@
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleHome" value="" />
+        <option name="gradleJvm" value="17" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/android" />
+            <option value="$PROJECT_DIR$/android/apk-inspector" />
+            <option value="$PROJECT_DIR$/android/bootstrap-core" />
+            <option value="$PROJECT_DIR$/android/local-patcher-cli" />
+            <option value="$PROJECT_DIR$/android/local-patcher-core" />
+            <option value="$PROJECT_DIR$/android/mod-runtime" />
+            <option value="$PROJECT_DIR$/example-mod" />
             <option value="$PROJECT_DIR$/rusted-fabric-api" />
+            <option value="$PROJECT_DIR$/rusted-fabric-api-android" />
+            <option value="$PROJECT_DIR$/rusted-fabric-api-desktop" />
           </set>
         </option>
       </GradleProjectSettings>
