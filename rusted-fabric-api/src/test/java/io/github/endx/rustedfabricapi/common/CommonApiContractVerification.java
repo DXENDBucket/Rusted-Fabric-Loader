@@ -58,6 +58,11 @@ public final class CommonApiContractVerification {
                         RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
                         ApiSupportMatrix.Backend.ANDROID_XPOSED) == ApiSupportMatrix.Level.PARTIAL,
                 "Android projectile backend levels are incorrect");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_DAMAGE,
+                        ApiSupportMatrix.Backend.ANDROID_LOCAL_PATCH) == ApiSupportMatrix.Level.PARTIAL
+                        && ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_DAMAGE,
+                        ApiSupportMatrix.Backend.ANDROID_XPOSED) == ApiSupportMatrix.Level.PARTIAL,
+                "Android unit damage backend levels are incorrect");
         require(ApiSupportMatrix.available(context, RustedFabricCapabilities.RUNTIME_LIFECYCLE),
                 "runtime capability and expected support matrix disagree");
     }

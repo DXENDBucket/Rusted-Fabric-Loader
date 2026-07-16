@@ -73,6 +73,7 @@ final class PatchedRuntime {
                 "event.runtime.lifecycle.v1", "event.unit.lifecycle.v1",
                 "event.command.issue.v1", RustedFabricCapabilities.GAME_LIFECYCLE,
                 RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
+                RustedFabricCapabilities.UNIT_DAMAGE,
                 "multiplayer.handshake.rfh1",
                 "platform.android.local-patch"));
         return new RustedFabricAPIContext(values);

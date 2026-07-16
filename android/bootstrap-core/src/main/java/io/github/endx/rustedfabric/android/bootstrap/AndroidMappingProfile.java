@@ -39,6 +39,37 @@ public final class AndroidMappingProfile {
     public static final String FRAME_CANVAS_OWNER = "com/corrodinggames/rts/gameFramework/m/l";
     public static final String PROJECTILE_OWNER = "com/corrodinggames/rts/game/f";
     public static final String PROJECTILE_METHOD_NAME = "a";
+    public static final String UNIT_DAMAGE_METHOD_NAME = "a";
+    public static final String[] UNIT_DAMAGE_OWNERS = {
+            "com/corrodinggames/rts/game/units/bo",
+            "com/corrodinggames/rts/game/units/ca",
+            "com/corrodinggames/rts/game/units/cd",
+            "com/corrodinggames/rts/game/units/custom/j",
+            "com/corrodinggames/rts/game/units/d/c",
+            "com/corrodinggames/rts/game/units/d/g",
+            "com/corrodinggames/rts/game/units/g",
+            "com/corrodinggames/rts/game/units/h"
+    };
+    public static final String UNIT_DEATH_EFFECTS_METHOD_NAME = "d";
+    public static final String[] UNIT_DEATH_EFFECTS_OWNERS = {
+            "com/corrodinggames/rts/game/units/b/b",
+            "com/corrodinggames/rts/game/units/b/c",
+            "com/corrodinggames/rts/game/units/c/a",
+            "com/corrodinggames/rts/game/units/custom/j",
+            "com/corrodinggames/rts/game/units/d/f",
+            "com/corrodinggames/rts/game/units/e/o",
+            "com/corrodinggames/rts/game/units/e/q",
+            "com/corrodinggames/rts/game/units/g",
+            "com/corrodinggames/rts/game/units/h",
+            "com/corrodinggames/rts/game/units/h/a",
+            "com/corrodinggames/rts/game/units/h/b",
+            "com/corrodinggames/rts/game/units/h/c",
+            "com/corrodinggames/rts/game/units/h/d",
+            "com/corrodinggames/rts/game/units/h/e"
+    };
+    public static final String CUSTOM_UNIT_OWNER =
+            "com/corrodinggames/rts/game/units/custom/j";
+    public static final String CUSTOM_UNIT_DEATH_SEQUENCE_METHOD_NAME = "be";
 
     private AndroidMappingProfile() {
     }

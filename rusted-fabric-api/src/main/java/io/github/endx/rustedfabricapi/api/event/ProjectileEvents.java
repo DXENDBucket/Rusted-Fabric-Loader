@@ -1,5 +1,7 @@
 package io.github.endx.rustedfabricapi.api.event;
 
+import io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot;
+
 /** High-frequency projectile lifecycle boundaries backed by the mapped Projectile runtime. */
 public final class ProjectileEvents {
     public static final RustedFabricEvent<AfterProjectileCreated> AFTER_PROJECTILE_CREATED =
@@ -34,6 +36,20 @@ public final class ProjectileEvents {
             RustedFabricEvent.create(listeners -> projectile -> {
                 for (ProjectileExplosion listener : listeners) {
                     listener.onProjectileExplosion(projectile);
+                }
+            });
+
+    public static final RustedFabricEvent<ProjectileImpact> BEFORE_PROJECTILE_IMPACT =
+            RustedFabricEvent.create(listeners -> (projectile, impact) -> {
+                for (ProjectileImpact listener : listeners) {
+                    listener.onProjectileImpact(projectile, impact);
+                }
+            });
+
+    public static final RustedFabricEvent<ProjectileImpact> AFTER_PROJECTILE_IMPACT =
+            RustedFabricEvent.create(listeners -> (projectile, impact) -> {
+                for (ProjectileImpact listener : listeners) {
+                    listener.onProjectileImpact(projectile, impact);
                 }
             });
 
@@ -77,6 +93,11 @@ public final class ProjectileEvents {
     @FunctionalInterface
     public interface ProjectileExplosion {
         void onProjectileExplosion(Object projectile);
+    }
+
+    @FunctionalInterface
+    public interface ProjectileImpact {
+        void onProjectileImpact(Object projectile, ProjectileImpactSnapshot impact);
     }
 
     @FunctionalInterface

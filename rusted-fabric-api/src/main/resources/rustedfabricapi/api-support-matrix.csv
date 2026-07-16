@@ -33,5 +33,5 @@ event.save.sync.v1,SaveSyncEvents,full,unavailable,unavailable
 event.selection.v1,SelectionEvents,full,unavailable,unavailable
 event.transport.v1,TransportEvents,full,unavailable,unavailable
 event.ui.script.v1,UiScriptEvents,full,unavailable,unavailable
-event.unit.damage.v1,UnitDamageEvents,full,unavailable,unavailable
+event.unit.damage.v1,UnitDamageEvents,full,partial,partial
 event.unit.lifecycle.v1,UnitLifecycleEvents,full,full,full

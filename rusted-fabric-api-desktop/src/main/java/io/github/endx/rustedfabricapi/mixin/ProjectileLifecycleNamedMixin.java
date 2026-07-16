@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.ProjectileEvents;
+import io.github.endx.rustedfabricapi.api.game.Projectiles;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -54,6 +55,8 @@ public abstract class ProjectileLifecycleNamedMixin {
 
     @Inject(method = "explodeAndRemove()V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeProjectileExplosion(CallbackInfo ci) {
+        ProjectileEvents.BEFORE_PROJECTILE_IMPACT.invoker()
+                .onProjectileImpact(this, Projectiles.impactSnapshot(this));
         ProjectileEvents.BEFORE_PROJECTILE_EXPLOSION.invoker()
                 .onProjectileExplosion(this);
     }
@@ -62,6 +65,8 @@ public abstract class ProjectileLifecycleNamedMixin {
     private void rustedfabricapi$afterProjectileExplosion(CallbackInfo ci) {
         ProjectileEvents.AFTER_PROJECTILE_EXPLOSION.invoker()
                 .onProjectileExplosion(this);
+        ProjectileEvents.AFTER_PROJECTILE_IMPACT.invoker()
+                .onProjectileImpact(this, Projectiles.impactSnapshot(this));
     }
 
     @Inject(method = "requestRemoval()V", at = @At("HEAD"), require = 1)

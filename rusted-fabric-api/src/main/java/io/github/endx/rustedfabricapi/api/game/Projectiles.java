@@ -35,6 +35,10 @@ public final class Projectiles {
         return ProjectileSnapshot.capture(projectile);
     }
 
+    public static ProjectileImpactSnapshot impactSnapshot(Object projectile) {
+        return ProjectileImpactSnapshot.capture(projectile);
+    }
+
     public static void requestRemoval(Object projectile) {
         if (projectile == null) throw new IllegalArgumentException("projectile must not be null");
         if (hasTypeInHierarchy(projectile, "com.corrodinggames.rts.gameFramework.ah")) {
@@ -48,6 +52,16 @@ public final class Projectiles {
             return;
         }
         RustedReflection.invokeInstance(projectile, new String[]{"requestRemoval", "d"});
+    }
+
+    /**
+     * Removes a projectile from the active game-object list synchronously.
+     * Use this when an explosion listener must prevent the projectile from surviving until
+     * the next update. The backend's normal removal lifecycle events are still dispatched.
+     */
+    public static void removeImmediately(Object projectile) {
+        if (projectile == null) throw new IllegalArgumentException("projectile must not be null");
+        RustedReflection.invokeInstance(projectile, new String[]{"removeFromGame", "a"});
     }
 
     private static boolean hasTypeInHierarchy(Object owner, String typeName) {

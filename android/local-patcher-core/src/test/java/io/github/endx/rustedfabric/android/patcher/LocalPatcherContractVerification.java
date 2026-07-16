@@ -78,6 +78,8 @@ public final class LocalPatcherContractVerification {
         verifyNetworkCallbacks(woven);
         verifyGameplayCallbacks(woven);
         verifyFrameAndProjectileCallbacks(woven);
+        verifyUnitDamageCallbacks(woven);
+        verifyUnitDeathCallbacks(woven);
         try {
             DexLifecycleWeaver.weaveEngineInitialization(woven);
             throw new AssertionError("already woven DEX was accepted");
@@ -106,6 +108,68 @@ public final class LocalPatcherContractVerification {
         }
         require(frame == 2, "expected two woven Android frame methods");
         require(projectile == 4, "expected four woven projectile methods");
+    }
+
+    private static void verifyUnitDamageCallbacks(byte[] woven) {
+        DexBackedDexFile dex = new DexBackedDexFile(null, woven);
+        int found = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            if (!Arrays.asList(DexLifecycleWeaver.UNIT_DAMAGE_CLASSES)
+                    .contains(classDef.getType())) continue;
+            for (Method method : classDef.getMethods()) {
+                if (!DexLifecycleWeaver.UNIT_DAMAGE_METHOD.equals(method.getName())) continue;
+                found++;
+                java.util.List<Instruction> instructions = new java.util.ArrayList<>();
+                method.getImplementation().getInstructions().forEach(instructions::add);
+                require(DexLifecycleWeaver.BEFORE_UNIT_APPLY_DAMAGE_CALLBACK.equals(
+                                callbackName(instructions.get(0))),
+                        "unit damage before callback is not first");
+                int after = 0;
+                int returns = 0;
+                for (Instruction instruction : instructions) {
+                    if (DexLifecycleWeaver.AFTER_UNIT_APPLY_DAMAGE_CALLBACK.equals(
+                            callbackName(instruction))) after++;
+                    if (instruction.getOpcode() == Opcode.RETURN) returns++;
+                }
+                require(after == returns && returns == 2,
+                        "unit damage callback/return shape is invalid");
+            }
+        }
+        require(found == DexLifecycleWeaver.UNIT_DAMAGE_CLASSES.length,
+                "expected every mapped Android unit damage method");
+    }
+
+    private static void verifyUnitDeathCallbacks(byte[] woven) {
+        DexBackedDexFile dex = new DexBackedDexFile(null, woven);
+        int effects = 0;
+        int sequence = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                java.util.List<Instruction> instructions = new java.util.ArrayList<>();
+                method.getImplementation().getInstructions().forEach(instructions::add);
+                if (Arrays.asList(DexLifecycleWeaver.UNIT_DEATH_EFFECTS_CLASSES)
+                        .contains(classDef.getType())
+                        && DexLifecycleWeaver.UNIT_DEATH_EFFECTS_METHOD.equals(method.getName())) {
+                    effects++;
+                    int callbacks = 0;
+                    for (Instruction instruction : instructions) {
+                        if (DexLifecycleWeaver.MODIFY_UNIT_DEATH_EFFECTS_CALLBACK.equals(
+                                callbackName(instruction))) callbacks++;
+                    }
+                    require(callbacks == 1, "unit death-effects callback is missing");
+                } else if (DexLifecycleWeaver.CUSTOM_UNIT_CLASS.equals(classDef.getType())
+                        && DexLifecycleWeaver.CUSTOM_UNIT_DEATH_SEQUENCE_METHOD.equals(
+                        method.getName())) {
+                    sequence++;
+                    require(DexLifecycleWeaver.BEFORE_UNIT_DEATH_SEQUENCE_CALLBACK.equals(
+                                    callbackName(instructions.get(0))),
+                            "custom-unit death before callback is not first");
+                }
+            }
+        }
+        require(effects == DexLifecycleWeaver.UNIT_DEATH_EFFECTS_CLASSES.length,
+                "expected every mapped Android unit death-effects method");
+        require(sequence == 1, "expected the mapped custom-unit death sequence");
     }
 
     private static void verifyGameplayCallbacks(byte[] woven) {
@@ -221,6 +285,10 @@ public final class LocalPatcherContractVerification {
         require(report.toJson().contains("game-frame-lifecycle-weave")
                         && report.toJson().contains("projectile-lifecycle-weave"),
                 "Android frame/projectile weave is missing from the patch report");
+        require(report.toJson().contains("unit-damage-event-weave"),
+                "Android unit damage weave is missing from the patch report");
+        require(report.toJson().contains("unit-death-event-weave"),
+                "Android unit death weave is missing from the patch report");
         require(!report.toJson().contains(temporary.toString()),
                 "patch report leaked a local path");
 
@@ -301,9 +369,56 @@ public final class LocalPatcherContractVerification {
                 Arrays.asList(method, frameLoopMethod(), frameRenderMethod()));
         MemoryDataStore output = new MemoryDataStore();
         ImmutableClassDef network = networkClass();
-        DexPool.writeTo(output, new ImmutableDexFile(Opcodes.getDefault(),
-                Arrays.asList(classDef, network, teamClass(), commandClass(), projectileClass())));
+        java.util.List<ImmutableClassDef> classes = new java.util.ArrayList<>(Arrays.asList(
+                classDef, network, teamClass(), commandClass(), projectileClass()));
+        for (String owner : DexLifecycleWeaver.UNIT_DAMAGE_CLASSES) {
+            classes.add(syntheticUnitClass(owner));
+        }
+        for (String owner : DexLifecycleWeaver.UNIT_DEATH_EFFECTS_CLASSES) {
+            if (!Arrays.asList(DexLifecycleWeaver.UNIT_DAMAGE_CLASSES).contains(owner)) {
+                classes.add(syntheticUnitClass(owner));
+            }
+        }
+        DexPool.writeTo(output, new ImmutableDexFile(Opcodes.getDefault(), classes));
         return output.getData();
+    }
+
+    private static ImmutableClassDef syntheticUnitClass(String owner) {
+        java.util.List<ImmutableMethod> methods = new java.util.ArrayList<>();
+        if (Arrays.asList(DexLifecycleWeaver.UNIT_DAMAGE_CLASSES).contains(owner)) {
+            MutableMethodImplementation body = new MutableMethodImplementation(5);
+            body.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 1));
+            body.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
+            methods.add(new ImmutableMethod(owner, DexLifecycleWeaver.UNIT_DAMAGE_METHOD,
+                    Arrays.asList(
+                        new ImmutableMethodParameter(DexLifecycleWeaver.UNIT_TYPE,
+                                Collections.emptySet(), null),
+                        new ImmutableMethodParameter("F", Collections.emptySet(), null),
+                        new ImmutableMethodParameter(DexLifecycleWeaver.PROJECTILE_CLASS,
+                                Collections.emptySet(), null)),
+                    "F", AccessFlags.PUBLIC.getValue(), Collections.emptySet(),
+                    Collections.emptySet(), body));
+        }
+        if (Arrays.asList(DexLifecycleWeaver.UNIT_DEATH_EFFECTS_CLASSES).contains(owner)) {
+            MutableMethodImplementation body = new MutableMethodImplementation(2);
+            body.addInstruction(new BuilderInstruction11n(Opcode.CONST_4, 0, 1));
+            body.addInstruction(new BuilderInstruction11x(Opcode.RETURN, 0));
+            methods.add(new ImmutableMethod(owner,
+                    DexLifecycleWeaver.UNIT_DEATH_EFFECTS_METHOD,
+                    Collections.emptyList(), "Z", AccessFlags.PUBLIC.getValue(),
+                    Collections.emptySet(), Collections.emptySet(), body));
+        }
+        if (DexLifecycleWeaver.CUSTOM_UNIT_CLASS.equals(owner)) {
+            MutableMethodImplementation body = new MutableMethodImplementation(2);
+            body.addInstruction(new BuilderInstruction10x(Opcode.RETURN_VOID));
+            methods.add(new ImmutableMethod(owner,
+                    DexLifecycleWeaver.CUSTOM_UNIT_DEATH_SEQUENCE_METHOD,
+                    Collections.emptyList(), "V", AccessFlags.PUBLIC.getValue(),
+                    Collections.emptySet(), Collections.emptySet(), body));
+        }
+        return new ImmutableClassDef(owner, AccessFlags.PUBLIC.getValue(),
+                "Ljava/lang/Object;", Collections.emptyList(), "SyntheticUnit.java",
+                Collections.emptySet(), Collections.emptyList(), methods);
     }
 
     private static ImmutableMethod frameLoopMethod() {

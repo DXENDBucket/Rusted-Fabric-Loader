@@ -135,6 +135,29 @@ public final class EngineLifecycleBridge {
         AndroidGameEventBridge.afterProjectileRemoval(projectile);
     }
 
+    public static boolean beforeUnitApplyDamage(Object unit, Object attacker, float amount,
+                                                Object projectile) {
+        return AndroidGameEventBridge.beforeUnitApplyDamage(unit, attacker, amount, projectile);
+    }
+
+    public static void afterUnitApplyDamage(float appliedAmount, Object unit, Object attacker,
+                                            float amount, Object projectile) {
+        AndroidGameEventBridge.afterUnitApplyDamage(
+                appliedAmount, unit, attacker, amount, projectile);
+    }
+
+    public static boolean beforeUnitDeathSequence(Object unit) {
+        return AndroidGameEventBridge.beforeUnitDeathSequence(unit);
+    }
+
+    public static void afterUnitDeathSequence(Object unit) {
+        AndroidGameEventBridge.afterUnitDeathSequence(unit);
+    }
+
+    public static boolean modifyUnitDeathEffectsResult(Object unit, boolean vanillaKeepObject) {
+        return AndroidGameEventBridge.modifyUnitDeathEffectsResult(unit, vanillaKeepObject);
+    }
+
     private static void dispatchOnce(AtomicBoolean guard,
             RuntimeLifecycleEvents.EngineInitializationEvent event, String phase) {
         if (!guard.compareAndSet(false, true)) return;

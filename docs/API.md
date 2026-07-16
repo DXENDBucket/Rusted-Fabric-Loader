@@ -122,8 +122,8 @@ patch backend, and the Android Xposed backend now advertise it.
 
 ## Projectile development API
 
-`ProjectileEvents` exposes mapped creation, per-frame update, explosion, removal-request, and final
-removal boundaries. Update events are high-frequency and listeners should remain lightweight.
+`ProjectileEvents` exposes mapped creation, per-frame update, impact/explosion, removal-request, and
+final removal boundaries. Update events are high-frequency and listeners should remain lightweight.
 `Projectiles.snapshot(projectile)` returns an immutable `ProjectileSnapshot` containing the common
 position, source/target, lifetime, speed, direct/area damage, ballistic, impact, and removal state:
 
@@ -134,11 +134,33 @@ ProjectileEvents.AFTER_PROJECTILE_CREATED.subscribe((projectile, source) -> {
 });
 ```
 
+`BEFORE_PROJECTILE_IMPACT` and `AFTER_PROJECTILE_IMPACT` include one immutable
+`ProjectileImpactSnapshot`. It classifies unit, ground, fixed-position, or unspecified impacts and
+captures the impact and target coordinates, target unit, unit/terrain collision flags, and contact
+radius at the boundary. On exact explosion-capable backends the order is before-impact,
+before-explosion, original game logic, after-explosion, then after-impact.
+
 The snapshot distinguishes the named runtime, PC official namespace, and Android 1.15 official
 field layout without exposing a compile-time game class dependency. The lifecycle event capability
 is full on Windows and the Android local-patch backend. Xposed supports creation, update, and
 removal, but is marked partial because method hooks cannot observe Android 1.15's inlined explosion
 basic block; use the local-patch backend when exact explosion callbacks are required.
+
+`Projectiles.requestRemoval(projectile)` retains the game's deferred-removal behavior.
+`Projectiles.removeImmediately(projectile)` instead calls the mapped game-object removal entrypoint
+synchronously; use it from an explosion callback when the projectile must not survive until its next
+update. Normal backend removal events still apply.
+
+## Unit damage development API
+
+`UnitDamageEvents` provides cancellable pre-damage and post-damage callbacks. The post callback
+reports both the requested amount and the amount returned by the game. Windows exposes the full
+damage, immunity, death-sequence, and death-effect surface. Android 1.15 R8 distributes
+`applyDamage` across eight concrete implementations; both Android backends hook all eight exact
+targets and expose the pre/post damage pair. They also expose the modifiable death-effect result for
+14 mapped unit implementations and cancellable before/after complete-death callbacks for custom
+units. Android remains `partial`: the shared immunity method and complete non-custom death
+sequences do not yet have equally reliable mapping anchors.
 
 `CustomUnitRuntimeSnapshot.capture(unit)` promotes the high-confidence v0.84 construction/runtime
 mapping into the same stable style. It exposes active/revert metadata build-queue-effect gates,

@@ -25,6 +25,12 @@ The first runtime probe uses the separate high-confidence, stable mapping
 `com/corrodinggames/rts/game/i#a(Landroid/content/Context;)V -> init`. The hook descriptor is pinned
 in `profile.properties` and checked against the runtime constants during every build.
 
+The same exact profile pins the eight R8-split `applyDamage(Unit,float,Projectile)` implementations.
+Both Android backends expose those targets through the common pre/post unit-damage events. It also
+pins 14 concrete `handleDeathEffects()Z` implementations and the custom-unit `be()V` complete death
+sequence. The shared immunity method and complete non-custom death sequences remain partial until
+equally reliable Android anchors exist.
+
 ## Provenance
 
 - source archive: `rw_android_1_15_v1_0_FINAL_MAPPING_CODEX_HANDOFF.zip`

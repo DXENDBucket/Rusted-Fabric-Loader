@@ -7,6 +7,7 @@ import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
 import io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot;
+import io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot;
 import io.github.endx.rustedfabricapi.api.game.Projectiles;
 import io.github.endx.rustedfabricapi.api.game.CustomUnitRuntimeSnapshot;
 import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
@@ -161,6 +162,12 @@ public final class ApiContractVerification {
         value.directDamage = 99.0F;
         require(snapshot.directDamage() == 12.0F,
                 "projectile snapshot was not immutable");
+        ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(value);
+        require(impact.kind() == ProjectileImpactSnapshot.Kind.UNIT_TARGET
+                        && impact.impactX() == 13.0F && impact.impactY() == 23.0F,
+                "named projectile impact snapshot failed");
+        Projectiles.removeImmediately(value);
+        require(value.removed, "named projectile was not removed immediately");
     }
 
     private static void verifiesAndroidOfficialProjectileLayout() {
@@ -171,6 +178,12 @@ public final class ApiContractVerification {
                 "Android official projectile base fields used the PC layout");
         Projectiles.requestRemoval(value);
         require(value.aS, "Android projectile removal flag was not set");
+        Projectiles.removeImmediately(value);
+        require(value.removed, "Android projectile was not removed immediately");
+        ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(value);
+        require(impact.kind() == ProjectileImpactSnapshot.Kind.UNIT_TARGET
+                        && impact.impactHeight() == 6.0F,
+                "Android projectile impact snapshot failed");
     }
 
     private static void verifiesCustomUnitRuntimeSnapshot() {
@@ -235,6 +248,19 @@ public final class ApiContractVerification {
         boolean ballistic = true;
         boolean impactTriggered;
         boolean removalRequested;
+        boolean removed;
+        boolean targetGround;
+        boolean collideWithUnits = true;
+        boolean collideWithTerrain;
+        boolean hasFixedTargetPosition;
+        float impactX = 13.0F;
+        float impactY = 23.0F;
+        float impactHeight = 4.0F;
+        float contactCollisionRadius = 2.0F;
+
+        void removeFromGame() {
+            removed = true;
+        }
     }
 
     private static final class AndroidFakeProjectile
@@ -255,6 +281,15 @@ public final class ApiContractVerification {
         boolean aH = true;
         boolean bn;
         boolean aS;
+        boolean removed;
+        boolean m;
+        boolean collideWithUnits = true;
+        boolean at;
+        boolean aC;
+        float aV = 14.0F;
+        float aW = 24.0F;
+        float aX = 6.0F;
+        float aA = 3.0F;
 
         AndroidFakeProjectile() {
             ej = 84L;
@@ -263,6 +298,10 @@ public final class ApiContractVerification {
             eq = 11.0F;
             er = 22.0F;
             es = 4.0F;
+        }
+
+        void a() {
+            removed = true;
         }
     }
 

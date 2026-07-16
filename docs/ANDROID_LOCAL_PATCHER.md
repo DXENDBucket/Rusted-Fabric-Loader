@@ -9,7 +9,8 @@ The Loader APK now contains the first complete no-root patch path:
 3. It rewrites the package and provider authority to the side-by-side package
    `io.github.endx.rwpatch`, changes the manifest Application to
    `io.github.endx.rustedfabric.android.patched.PatchedApplication`, weaves the exact mapped
-   engine initialization method, game update/render boundaries, projectile lifecycle, and the five
+   engine initialization method, game update/render boundaries, projectile lifecycle, unit
+   damage/death, and the five
    pinned RFH1 network boundaries, then injects a code-only secondary DEX.
 4. It rebuilds and aligns the APK, stripping the source signature without retaining it.
 5. It creates or reuses a non-exportable RSA key in Android Keystore, signs with APK signature
@@ -50,10 +51,15 @@ profiles arrive; a familiar package name alone is never enough.
 The local backend exposes `event.engine.init`, `mod.dex.v1`, `session.v1`,
 `multiplayer.compat.v1`, `multiplayer.handshake.rfh1`, `mapping.profile.exact`, and
 `platform.android.local-patch`, plus `event.game.lifecycle.v1` and
-`event.projectile.lifecycle.v1`. It initializes mods during `Application.onCreate`. The patcher
+`event.projectile.lifecycle.v1`, plus partial `event.unit.damage.v1`. It initializes mods during
+`Application.onCreate`. The patcher
 inserts engine lifecycle callbacks, client/server hello callbacks, the system-packet receiver,
 network-reset session transition, a cancellable start-game compatibility gate, frame scheduling,
-and projectile creation/update/impact/removal callbacks. Projectile explosion injection is tied to
+and projectile creation/update/impact/removal callbacks, plus cancellable damage-before and
+damage-after callbacks across all eight mapped Android R8 unit implementations. It also weaves the
+modifiable death-effect result into 14 concrete unit classes and cancellable before/after death
+events into the mapped custom-unit complete-death sequence. Impact callbacks receive the same
+immutable target/collision snapshot as Windows. Projectile explosion injection is tied to
 the verified `impactTriggered` write inside Android 1.15's inlined update method.
 
 Weaving is fail-closed: the full source APK hash must match, the mapped owner/name/descriptor must
@@ -62,7 +68,7 @@ rejected. Branches and try/catch labels are rebuilt by dexlib2 instead of editin
 or offsets manually.
 
 The build and a real local reference APK have passed manifest rewrite,
-lifecycle/RFH1/frame/projectile DEX weaving,
+lifecycle/RFH1/frame/projectile/unit-damage/death DEX weaving,
 bootstrap injection, ZIP alignment, and v1/v2/v3 signature verification. Decompiled output confirms
 the start-game gate before original instructions and all lifecycle/network callbacks. Installation,
 startup, event delivery, and mod loading still need validation on a physical unrooted Android device;

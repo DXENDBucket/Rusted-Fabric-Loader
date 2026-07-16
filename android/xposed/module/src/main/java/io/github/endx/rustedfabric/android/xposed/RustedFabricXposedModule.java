@@ -49,6 +49,7 @@ public final class RustedFabricXposedModule extends XposedModule {
     private final AtomicBoolean portableGameplayHooksInstalled = new AtomicBoolean();
     private final AtomicBoolean frameHooksInstalled = new AtomicBoolean();
     private final AtomicBoolean projectileHooksInstalled = new AtomicBoolean();
+    private final AtomicBoolean unitDamageHooksInstalled = new AtomicBoolean();
     private final AndroidMultiplayerTransport networkTransport = new AndroidMultiplayerTransport(
             (message, failure) -> log(failure == null ? LOG_INFO : LOG_ERROR,
                     "RustedFabric/Network", message, failure));
@@ -127,6 +128,7 @@ public final class RustedFabricXposedModule extends XposedModule {
                                     installPortableGameplayHooks(targetLoader);
                                     installFrameHooks(targetLoader);
                                     installProjectileHooks(targetLoader);
+                                    installUnitDamageHooks(targetLoader);
                                     log(LOG_INFO, TAG, "api-context-ready platform="
                                             + apiContext.platform() + " capabilities="
                                             + apiContext.capabilities().size());
@@ -188,6 +190,7 @@ public final class RustedFabricXposedModule extends XposedModule {
                 "event.runtime.lifecycle.v1", "event.unit.lifecycle.v1",
                 "event.command.issue.v1", RustedFabricCapabilities.GAME_LIFECYCLE,
                 RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
+                RustedFabricCapabilities.UNIT_DAMAGE,
                 "multiplayer.handshake.rfh1",
                 "platform.android.xposed"));
         return new RustedFabricAPIContext(values);
@@ -488,6 +491,91 @@ public final class RustedFabricXposedModule extends XposedModule {
         } catch (Throwable failure) {
             projectileHooksInstalled.set(false);
             log(LOG_ERROR, TAG, "Android projectile hook installation failed", failure);
+            return false;
+        }
+    }
+
+    private boolean installUnitDamageHooks(ClassLoader targetLoader) {
+        if (!unitDamageHooksInstalled.compareAndSet(false, true)) return true;
+        try {
+            Class<?> unit = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.UNIT_OWNER),
+                    false, targetLoader);
+            Class<?> projectile = Class.forName(
+                    AndroidMappingProfile.binaryName(AndroidMappingProfile.PROJECTILE_OWNER),
+                    false, targetLoader);
+            List<Method> targets = new ArrayList<>();
+            for (String owner : AndroidMappingProfile.UNIT_DAMAGE_OWNERS) {
+                Class<?> implementation = Class.forName(
+                        AndroidMappingProfile.binaryName(owner), false, targetLoader);
+                Method applyDamage = implementation.getDeclaredMethod(
+                        AndroidMappingProfile.UNIT_DAMAGE_METHOD_NAME,
+                        unit, float.class, projectile);
+                applyDamage.setAccessible(true);
+                targets.add(applyDamage);
+            }
+            List<Method> deathEffectsTargets = new ArrayList<>();
+            for (String owner : AndroidMappingProfile.UNIT_DEATH_EFFECTS_OWNERS) {
+                Class<?> implementation = Class.forName(
+                        AndroidMappingProfile.binaryName(owner), false, targetLoader);
+                Method deathEffects = implementation.getDeclaredMethod(
+                        AndroidMappingProfile.UNIT_DEATH_EFFECTS_METHOD_NAME);
+                deathEffects.setAccessible(true);
+                deathEffectsTargets.add(deathEffects);
+            }
+            Class<?> customUnit = Class.forName(AndroidMappingProfile.binaryName(
+                    AndroidMappingProfile.CUSTOM_UNIT_OWNER), false, targetLoader);
+            Method deathSequence = customUnit.getDeclaredMethod(
+                    AndroidMappingProfile.CUSTOM_UNIT_DEATH_SEQUENCE_METHOD_NAME);
+            deathSequence.setAccessible(true);
+            for (int index = 0; index < targets.size(); index++) {
+                Method target = targets.get(index);
+                hook(target).setId("rusted-fabric:unit-damage-" + index)
+                        .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                            Object value = chain.getThisObject();
+                            Object attacker = chain.getArg(0);
+                            float amount = ((Number) chain.getArg(1)).floatValue();
+                            Object shot = chain.getArg(2);
+                            if (AndroidGameEventBridge.beforeUnitApplyDamage(
+                                    value, attacker, amount, shot)) {
+                                AndroidGameEventBridge.afterUnitApplyDamage(
+                                        0.0F, value, attacker, amount, shot);
+                                return Float.valueOf(0.0F);
+                            }
+                            Object result = chain.proceed();
+                            float applied = result instanceof Number
+                                    ? ((Number) result).floatValue() : 0.0F;
+                            AndroidGameEventBridge.afterUnitApplyDamage(
+                                    applied, value, attacker, amount, shot);
+                            return result;
+                        });
+            }
+            for (int index = 0; index < deathEffectsTargets.size(); index++) {
+                Method target = deathEffectsTargets.get(index);
+                hook(target).setId("rusted-fabric:unit-death-effects-" + index)
+                        .setPriority(PRIORITY_LOWEST).intercept(chain -> {
+                            Object result = chain.proceed();
+                            boolean vanillaKeepObject = Boolean.TRUE.equals(result);
+                            return Boolean.valueOf(AndroidGameEventBridge
+                                    .modifyUnitDeathEffectsResult(
+                                            chain.getThisObject(), vanillaKeepObject));
+                        });
+            }
+            hook(deathSequence).setId("rusted-fabric:custom-unit-death-sequence")
+                    .setPriority(PRIORITY_HIGHEST).intercept(chain -> {
+                        Object value = chain.getThisObject();
+                        if (AndroidGameEventBridge.beforeUnitDeathSequence(value)) return null;
+                        Object result = chain.proceed();
+                        AndroidGameEventBridge.afterUnitDeathSequence(value);
+                        return result;
+                    });
+            log(LOG_INFO, TAG, "Android unit hooks installed: damage=" + targets.size()
+                    + " deathEffects=" + deathEffectsTargets.size()
+                    + " customDeathSequence=1");
+            return true;
+        } catch (Throwable failure) {
+            unitDamageHooksInstalled.set(false);
+            log(LOG_ERROR, TAG, "Android unit damage hook installation failed", failure);
             return false;
         }
     }

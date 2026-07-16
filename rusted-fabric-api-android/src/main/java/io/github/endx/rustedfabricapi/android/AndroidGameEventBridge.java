@@ -4,13 +4,15 @@ import java.util.IdentityHashMap;
 
 import io.github.endx.rustedfabricapi.api.event.GameLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.ProjectileEvents;
+import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
+import io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot;
 import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
 
 /** Namespace-neutral callbacks shared by the local-patch and Xposed Android backends. */
 public final class AndroidGameEventBridge {
     private static final ThreadLocal<FrameState> FRAME_STATE =
             ThreadLocal.withInitial(FrameState::new);
-    private static final ThreadLocal<IdentityHashMap<Object, Boolean>> PENDING_EXPLOSIONS =
+    private static final ThreadLocal<IdentityHashMap<Object, ProjectileImpactSnapshot>> PENDING_EXPLOSIONS =
             ThreadLocal.withInitial(IdentityHashMap::new);
 
     private AndroidGameEventBridge() {
@@ -59,18 +61,24 @@ public final class AndroidGameEventBridge {
     }
 
     public static void afterProjectileUpdate(Object projectile, float delta) {
-        if (PENDING_EXPLOSIONS.get().remove(projectile) != null) {
+        ProjectileImpactSnapshot impact = PENDING_EXPLOSIONS.get().remove(projectile);
+        if (impact != null) {
             ProjectileEvents.AFTER_PROJECTILE_EXPLOSION.invoker()
                     .onProjectileExplosion(projectile);
+            ProjectileEvents.AFTER_PROJECTILE_IMPACT.invoker()
+                    .onProjectileImpact(projectile, impact);
         }
         ProjectileEvents.AFTER_PROJECTILE_UPDATE.invoker()
                 .afterProjectileUpdate(projectile, delta);
     }
 
     public static void beforeProjectileExplosion(Object projectile) {
+        ProjectileImpactSnapshot impact = ProjectileImpactSnapshot.capture(projectile);
+        PENDING_EXPLOSIONS.get().put(projectile, impact);
+        ProjectileEvents.BEFORE_PROJECTILE_IMPACT.invoker()
+                .onProjectileImpact(projectile, impact);
         ProjectileEvents.BEFORE_PROJECTILE_EXPLOSION.invoker()
                 .onProjectileExplosion(projectile);
-        PENDING_EXPLOSIONS.get().put(projectile, Boolean.TRUE);
     }
 
     public static void beforeProjectileRemoval(Object projectile) {
@@ -82,6 +90,33 @@ public final class AndroidGameEventBridge {
         PENDING_EXPLOSIONS.get().remove(projectile);
         ProjectileEvents.AFTER_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
                 projectile, ProjectileEvents.RemovalReason.REMOVED_FROM_GAME);
+    }
+
+    public static boolean beforeUnitApplyDamage(Object unit, Object attacker, float amount,
+                                                Object projectile) {
+        return UnitDamageEvents.BEFORE_UNIT_APPLY_DAMAGE.invoker()
+                .beforeUnitApplyDamage(unit, attacker, amount, projectile);
+    }
+
+    public static void afterUnitApplyDamage(float appliedAmount, Object unit, Object attacker,
+                                            float amount, Object projectile) {
+        UnitDamageEvents.AFTER_UNIT_APPLY_DAMAGE.invoker()
+                .afterUnitApplyDamage(unit, attacker, amount, projectile, appliedAmount);
+    }
+
+    public static boolean beforeUnitDeathSequence(Object unit) {
+        return UnitDamageEvents.BEFORE_UNIT_DEATH_SEQUENCE.invoker()
+                .beforeUnitDeathSequence(unit);
+    }
+
+    public static void afterUnitDeathSequence(Object unit) {
+        UnitDamageEvents.AFTER_UNIT_DEATH_SEQUENCE.invoker().afterUnitDeathSequence(unit);
+    }
+
+    public static boolean modifyUnitDeathEffectsResult(Object unit, boolean vanillaKeepObject) {
+        Boolean result = UnitDamageEvents.MODIFY_UNIT_DEATH_EFFECTS_RESULT.invoker()
+                .modifyUnitDeathEffectsResult(unit, vanillaKeepObject);
+        return result != null ? result.booleanValue() : vanillaKeepObject;
     }
 
     private static final class FrameState {

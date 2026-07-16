@@ -12,6 +12,7 @@ import org.jf.dexlib2.builder.instruction.BuilderInstruction35c;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction3rc;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11n;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction11x;
+import org.jf.dexlib2.builder.instruction.BuilderInstruction12x;
 import org.jf.dexlib2.builder.instruction.BuilderInstruction21t;
 import org.jf.dexlib2.dexbacked.DexBackedDexFile;
 import org.jf.dexlib2.iface.ClassDef;
@@ -83,6 +84,42 @@ final class DexLifecycleWeaver {
     static final String BEFORE_PROJECTILE_EXPLOSION_CALLBACK = "beforeProjectileExplosion";
     static final String BEFORE_PROJECTILE_REMOVAL_CALLBACK = "beforeProjectileRemoval";
     static final String AFTER_PROJECTILE_REMOVAL_CALLBACK = "afterProjectileRemoval";
+    static final String UNIT_DAMAGE_METHOD = "a";
+    static final String[] UNIT_DAMAGE_CLASSES = {
+            descriptor("com.corrodinggames.rts.game.units.bo"),
+            descriptor("com.corrodinggames.rts.game.units.ca"),
+            descriptor("com.corrodinggames.rts.game.units.cd"),
+            descriptor("com.corrodinggames.rts.game.units.custom.j"),
+            descriptor("com.corrodinggames.rts.game.units.d.c"),
+            descriptor("com.corrodinggames.rts.game.units.d.g"),
+            descriptor("com.corrodinggames.rts.game.units.g"),
+            descriptor("com.corrodinggames.rts.game.units.h")
+    };
+    static final String BEFORE_UNIT_APPLY_DAMAGE_CALLBACK = "beforeUnitApplyDamage";
+    static final String AFTER_UNIT_APPLY_DAMAGE_CALLBACK = "afterUnitApplyDamage";
+    static final String UNIT_DEATH_EFFECTS_METHOD = "d";
+    static final String[] UNIT_DEATH_EFFECTS_CLASSES = {
+            descriptor("com.corrodinggames.rts.game.units.b.b"),
+            descriptor("com.corrodinggames.rts.game.units.b.c"),
+            descriptor("com.corrodinggames.rts.game.units.c.a"),
+            descriptor("com.corrodinggames.rts.game.units.custom.j"),
+            descriptor("com.corrodinggames.rts.game.units.d.f"),
+            descriptor("com.corrodinggames.rts.game.units.e.o"),
+            descriptor("com.corrodinggames.rts.game.units.e.q"),
+            descriptor("com.corrodinggames.rts.game.units.g"),
+            descriptor("com.corrodinggames.rts.game.units.h"),
+            descriptor("com.corrodinggames.rts.game.units.h.a"),
+            descriptor("com.corrodinggames.rts.game.units.h.b"),
+            descriptor("com.corrodinggames.rts.game.units.h.c"),
+            descriptor("com.corrodinggames.rts.game.units.h.d"),
+            descriptor("com.corrodinggames.rts.game.units.h.e")
+    };
+    static final String CUSTOM_UNIT_CLASS =
+            descriptor("com.corrodinggames.rts.game.units.custom.j");
+    static final String CUSTOM_UNIT_DEATH_SEQUENCE_METHOD = "be";
+    static final String BEFORE_UNIT_DEATH_SEQUENCE_CALLBACK = "beforeUnitDeathSequence";
+    static final String AFTER_UNIT_DEATH_SEQUENCE_CALLBACK = "afterUnitDeathSequence";
+    static final String MODIFY_UNIT_DEATH_EFFECTS_CALLBACK = "modifyUnitDeathEffectsResult";
 
     private static final ImmutableMethodReference BEFORE = callback(BEFORE_METHOD);
     private static final ImmutableMethodReference AFTER = callback(AFTER_METHOD);
@@ -130,6 +167,21 @@ final class DexLifecycleWeaver {
             callbackWithObject(BEFORE_PROJECTILE_REMOVAL_CALLBACK, "V");
     private static final ImmutableMethodReference AFTER_PROJECTILE_REMOVAL =
             callbackWithObject(AFTER_PROJECTILE_REMOVAL_CALLBACK, "V");
+    private static final ImmutableMethodReference BEFORE_UNIT_APPLY_DAMAGE =
+            new ImmutableMethodReference(BRIDGE_CLASS, BEFORE_UNIT_APPLY_DAMAGE_CALLBACK,
+                    java.util.Arrays.asList("Ljava/lang/Object;", "Ljava/lang/Object;", "F",
+                            "Ljava/lang/Object;"), "Z");
+    private static final ImmutableMethodReference AFTER_UNIT_APPLY_DAMAGE =
+            new ImmutableMethodReference(BRIDGE_CLASS, AFTER_UNIT_APPLY_DAMAGE_CALLBACK,
+                    java.util.Arrays.asList("F", "Ljava/lang/Object;", "Ljava/lang/Object;", "F",
+                            "Ljava/lang/Object;"), "V");
+    private static final ImmutableMethodReference BEFORE_UNIT_DEATH_SEQUENCE =
+            callbackWithObject(BEFORE_UNIT_DEATH_SEQUENCE_CALLBACK, "Z");
+    private static final ImmutableMethodReference AFTER_UNIT_DEATH_SEQUENCE =
+            callbackWithObject(AFTER_UNIT_DEATH_SEQUENCE_CALLBACK, "V");
+    private static final ImmutableMethodReference MODIFY_UNIT_DEATH_EFFECTS =
+            new ImmutableMethodReference(BRIDGE_CLASS, MODIFY_UNIT_DEATH_EFFECTS_CALLBACK,
+                    java.util.Arrays.asList("Ljava/lang/Object;", "Z"), "Z");
 
     private DexLifecycleWeaver() {
     }
@@ -147,20 +199,30 @@ final class DexLifecycleWeaver {
             int frameMethods = 0;
             int projectileClasses = 0;
             int projectileMethods = 0;
+            int unitDamageClasses = 0;
+            int unitDamageMethods = 0;
+            int unitDeathEffectsClasses = 0;
+            int unitDeathEffectsMethods = 0;
+            int customUnitDeathSequenceMethods = 0;
 
             for (ClassDef classDef : dex.getClasses()) {
                 if (!TARGET_CLASS.equals(classDef.getType())
                         && !NETWORK_CLASS.equals(classDef.getType())
                         && !TEAM_CLASS.equals(classDef.getType())
                         && !COMMAND_CLASS.equals(classDef.getType())
-                        && !PROJECTILE_CLASS.equals(classDef.getType())) {
+                        && !PROJECTILE_CLASS.equals(classDef.getType())
+                        && !isUnitDamageClass(classDef.getType())
+                        && !isUnitDeathEffectsClass(classDef.getType())) {
                     classes.add(classDef);
                     continue;
                 }
                 if (TARGET_CLASS.equals(classDef.getType())) targetClasses++;
                 else if (NETWORK_CLASS.equals(classDef.getType())) networkClasses++;
                 else if (PROJECTILE_CLASS.equals(classDef.getType())) projectileClasses++;
-                else gameplayClasses++;
+                else if (isUnitDamageClass(classDef.getType())) unitDamageClasses++;
+                else if (TEAM_CLASS.equals(classDef.getType())
+                        || COMMAND_CLASS.equals(classDef.getType())) gameplayClasses++;
+                if (isUnitDeathEffectsClass(classDef.getType())) unitDeathEffectsClasses++;
                 List<Method> methods = new ArrayList<>();
                 for (Method method : classDef.getMethods()) {
                     if (isTarget(method)) {
@@ -193,6 +255,15 @@ final class DexLifecycleWeaver {
                     } else if (isProjectileRemoval(method)) {
                         projectileMethods++;
                         methods.add(weaveProjectileRemoval(method));
+                    } else if (isUnitDamageTarget(method)) {
+                        unitDamageMethods++;
+                        methods.add(weaveUnitDamage(method));
+                    } else if (isUnitDeathEffectsTarget(method)) {
+                        unitDeathEffectsMethods++;
+                        methods.add(weaveUnitDeathEffects(method));
+                    } else if (isCustomUnitDeathSequenceTarget(method)) {
+                        customUnitDeathSequenceMethods++;
+                        methods.add(weaveCustomUnitDeathSequence(method));
                     } else {
                         methods.add(method);
                     }
@@ -216,6 +287,15 @@ final class DexLifecycleWeaver {
             }
             if (projectileClasses != 1 || projectileMethods != 4) {
                 throw failure("Mapped Android projectile methods were not found exactly once");
+            }
+            if (unitDamageClasses != UNIT_DAMAGE_CLASSES.length
+                    || unitDamageMethods != UNIT_DAMAGE_CLASSES.length) {
+                throw failure("Mapped Android unit damage methods were not found exactly once");
+            }
+            if (unitDeathEffectsClasses != UNIT_DEATH_EFFECTS_CLASSES.length
+                    || unitDeathEffectsMethods != UNIT_DEATH_EFFECTS_CLASSES.length
+                    || customUnitDeathSequenceMethods != 1) {
+                throw failure("Mapped Android unit death methods were not found exactly once");
             }
 
             MemoryDataStore output = new MemoryDataStore(source.length + 4096);
@@ -351,6 +431,104 @@ final class DexLifecycleWeaver {
         mutable.addInstruction(0,
                 receiver <= 15 ? invoke(BEFORE_PROJECTILE_REMOVAL, receiver)
                         : invokeRange(BEFORE_PROJECTILE_REMOVAL, receiver, 1));
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveUnitDamage(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())) {
+            throw failure("Mapped unit damage method has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        rejectCallbacks(original, BEFORE_UNIT_APPLY_DAMAGE_CALLBACK,
+                AFTER_UNIT_APPLY_DAMAGE_CALLBACK);
+        List<Integer> returns = new ArrayList<>();
+        for (int index = 0; index < original.size(); index++) {
+            if (original.get(index).getOpcode() == Opcode.RETURN) returns.add(index);
+        }
+        if (returns.isEmpty()) throw failure("Mapped unit damage method has no float return");
+        int receiver = implementation.getRegisterCount() - 4;
+        int scratch = receiver - 1;
+        if (scratch < 0) {
+            throw failure("Mapped unit damage method has no cancellation scratch register");
+        }
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        org.jf.dexlib2.builder.Label proceed = mutable.newLabelForIndex(0);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            int returnIndex = returns.get(index);
+            int result = ((OneRegisterInstruction) original.get(returnIndex)).getRegisterA();
+            if (scratch > 15 || result > 15) {
+                throw failure("Mapped unit damage return cannot use move for callback dispatch");
+            }
+            mutable.addInstruction(returnIndex,
+                    new BuilderInstruction12x(Opcode.MOVE, scratch, result));
+            mutable.addInstruction(returnIndex + 1,
+                    invokeRange(AFTER_UNIT_APPLY_DAMAGE, scratch, 5));
+        }
+        mutable.addInstruction(0, invokeRange(BEFORE_UNIT_APPLY_DAMAGE, receiver, 4));
+        mutable.addInstruction(1, new BuilderInstruction11x(Opcode.MOVE_RESULT, scratch));
+        mutable.addInstruction(2, new BuilderInstruction21t(Opcode.IF_EQZ, scratch, proceed));
+        mutable.addInstruction(3, new BuilderInstruction11n(Opcode.CONST_4, scratch, 0));
+        mutable.addInstruction(4, invokeRange(AFTER_UNIT_APPLY_DAMAGE, scratch, 5));
+        mutable.addInstruction(5, new BuilderInstruction11x(Opcode.RETURN, scratch));
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveUnitDeathEffects(Method method) throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())) {
+            throw failure("Mapped unit death-effects method has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        rejectCallbacks(original, MODIFY_UNIT_DEATH_EFFECTS_CALLBACK);
+        List<Integer> returns = new ArrayList<>();
+        for (int index = 0; index < original.size(); index++) {
+            if (original.get(index).getOpcode() == Opcode.RETURN) returns.add(index);
+        }
+        if (returns.isEmpty()) throw failure("Mapped unit death-effects method has no return");
+        int receiver = implementation.getRegisterCount() - 1;
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            int returnIndex = returns.get(index);
+            int result = ((OneRegisterInstruction) original.get(returnIndex)).getRegisterA();
+            if (receiver > 15 || result > 15) {
+                throw failure("Mapped unit death-effects return cannot use invoke-35c");
+            }
+            mutable.addInstruction(returnIndex,
+                    invoke(MODIFY_UNIT_DEATH_EFFECTS, receiver, result));
+            mutable.addInstruction(returnIndex + 1,
+                    new BuilderInstruction11x(Opcode.MOVE_RESULT, result));
+        }
+        return copyWithImplementation(method, mutable);
+    }
+
+    private static ImmutableMethod weaveCustomUnitDeathSequence(Method method)
+            throws PatchException {
+        MethodImplementation implementation = method.getImplementation();
+        if (implementation == null || AccessFlags.STATIC.isSet(method.getAccessFlags())) {
+            throw failure("Mapped custom-unit death sequence has an unexpected shape");
+        }
+        List<? extends Instruction> original = toList(implementation.getInstructions());
+        rejectCallbacks(original, BEFORE_UNIT_DEATH_SEQUENCE_CALLBACK,
+                AFTER_UNIT_DEATH_SEQUENCE_CALLBACK);
+        List<Integer> returns = normalReturns(original);
+        if (returns.isEmpty()) throw failure("Mapped custom-unit death sequence has no return");
+        int receiver = implementation.getRegisterCount() - 1;
+        int scratch = receiver - 1;
+        if (scratch < 0) {
+            throw failure("Mapped custom-unit death sequence has no cancellation scratch register");
+        }
+        MutableMethodImplementation mutable = new MutableMethodImplementation(implementation);
+        org.jf.dexlib2.builder.Label proceed = mutable.newLabelForIndex(0);
+        for (int index = returns.size() - 1; index >= 0; index--) {
+            mutable.addInstruction(returns.get(index),
+                    invokeRange(AFTER_UNIT_DEATH_SEQUENCE, receiver, 1));
+        }
+        mutable.addInstruction(0, invokeRange(BEFORE_UNIT_DEATH_SEQUENCE, receiver, 1));
+        mutable.addInstruction(1, new BuilderInstruction11x(Opcode.MOVE_RESULT, scratch));
+        mutable.addInstruction(2, new BuilderInstruction21t(Opcode.IF_EQZ, scratch, proceed));
+        mutable.addInstruction(3,
+                new org.jf.dexlib2.builder.instruction.BuilderInstruction10x(Opcode.RETURN_VOID));
         return copyWithImplementation(method, mutable);
     }
 
@@ -549,6 +727,67 @@ final class DexLifecycleWeaver {
         verifyNetwork(dex);
         verifyGameplay(dex);
         verifyFramesAndProjectiles(dex);
+        verifyUnitDamage(dex);
+        verifyUnitDeath(dex);
+    }
+
+    private static void verifyUnitDeath(DexBackedDexFile dex) throws PatchException {
+        int deathEffectsTargets = 0;
+        int deathSequenceTargets = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                if (!isUnitDeathEffectsTarget(method)
+                        && !isCustomUnitDeathSequenceTarget(method)) continue;
+                List<? extends Instruction> instructions = toList(
+                        method.getImplementation().getInstructions());
+                if (isUnitDeathEffectsTarget(method)) {
+                    deathEffectsTargets++;
+                    int returns = opcodeCount(instructions, Opcode.RETURN);
+                    if (returns == 0 || callbackCount(instructions,
+                            MODIFY_UNIT_DEATH_EFFECTS_CALLBACK) != returns) {
+                        throw failure("Android unit death-effects callback placement is invalid");
+                    }
+                } else {
+                    deathSequenceTargets++;
+                    int returns = opcodeCount(instructions, Opcode.RETURN_VOID);
+                    if (callbackCount(instructions, BEFORE_UNIT_DEATH_SEQUENCE_CALLBACK) != 1
+                            || callbackCount(instructions, AFTER_UNIT_DEATH_SEQUENCE_CALLBACK)
+                            != returns - 1
+                            || returns < 2
+                            || !isCallback(instructions.get(0),
+                            BEFORE_UNIT_DEATH_SEQUENCE_CALLBACK)) {
+                        throw failure("Android custom-unit death callback placement is invalid");
+                    }
+                }
+            }
+        }
+        if (deathEffectsTargets != UNIT_DEATH_EFFECTS_CLASSES.length
+                || deathSequenceTargets != 1) {
+            throw failure("Woven Android unit death target verification failed");
+        }
+    }
+
+    private static void verifyUnitDamage(DexBackedDexFile dex) throws PatchException {
+        int targets = 0;
+        for (ClassDef classDef : dex.getClasses()) {
+            for (Method method : classDef.getMethods()) {
+                if (!isUnitDamageTarget(method)) continue;
+                targets++;
+                List<? extends Instruction> instructions = toList(
+                        method.getImplementation().getInstructions());
+                int returns = opcodeCount(instructions, Opcode.RETURN);
+                if (callbackCount(instructions, BEFORE_UNIT_APPLY_DAMAGE_CALLBACK) != 1
+                        || callbackCount(instructions, AFTER_UNIT_APPLY_DAMAGE_CALLBACK)
+                        != returns
+                        || returns < 2
+                        || !isCallback(instructions.get(0), BEFORE_UNIT_APPLY_DAMAGE_CALLBACK)) {
+                    throw failure("Android unit damage callback placement is invalid");
+                }
+            }
+        }
+        if (targets != UNIT_DAMAGE_CLASSES.length) {
+            throw failure("Woven Android unit damage target verification failed");
+        }
     }
 
     private static void verifyFramesAndProjectiles(DexBackedDexFile dex) throws PatchException {
@@ -713,6 +952,42 @@ final class DexLifecycleWeaver {
                 && "V".equals(method.getReturnType())
                 && method.getParameterTypes().isEmpty()
                 && !AccessFlags.STATIC.isSet(method.getAccessFlags());
+    }
+
+    private static boolean isUnitDamageClass(String type) {
+        for (String target : UNIT_DAMAGE_CLASSES) {
+            if (target.equals(type)) return true;
+        }
+        return false;
+    }
+
+    private static boolean isUnitDamageTarget(Method method) {
+        return isUnitDamageClass(method.getDefiningClass())
+                && UNIT_DAMAGE_METHOD.equals(method.getName())
+                && "F".equals(method.getReturnType())
+                && method.getParameterTypes().equals(java.util.Arrays.asList(
+                        UNIT_TYPE, "F", PROJECTILE_CLASS));
+    }
+
+    private static boolean isUnitDeathEffectsClass(String type) {
+        for (String target : UNIT_DEATH_EFFECTS_CLASSES) {
+            if (target.equals(type)) return true;
+        }
+        return false;
+    }
+
+    private static boolean isUnitDeathEffectsTarget(Method method) {
+        return isUnitDeathEffectsClass(method.getDefiningClass())
+                && UNIT_DEATH_EFFECTS_METHOD.equals(method.getName())
+                && "Z".equals(method.getReturnType())
+                && method.getParameterTypes().isEmpty();
+    }
+
+    private static boolean isCustomUnitDeathSequenceTarget(Method method) {
+        return CUSTOM_UNIT_CLASS.equals(method.getDefiningClass())
+                && CUSTOM_UNIT_DEATH_SEQUENCE_METHOD.equals(method.getName())
+                && "V".equals(method.getReturnType())
+                && method.getParameterTypes().isEmpty();
     }
 
     private static boolean isNetworkTarget(Method method) {

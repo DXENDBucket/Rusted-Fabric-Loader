@@ -92,6 +92,11 @@ public final class BootstrapContractVerification {
                         && source.contains("AndroidGameEventBridge.beforeFrameUpdate")
                         && source.contains("AndroidGameEventBridge.beforeProjectileUpdate"),
                 "Android frame/projectile hooks are missing");
+        require(source.contains("installUnitDamageHooks")
+                        && source.contains("AndroidGameEventBridge.beforeUnitApplyDamage")
+                        && source.contains("AndroidGameEventBridge.beforeUnitDeathSequence")
+                        && source.contains("modifyUnitDeathEffectsResult"),
+                "Android unit damage/death hooks are missing");
         require(source.contains("RuntimeLifecycleEvents.BEFORE_ENGINE_INITIALIZATION.dispatch"),
                 "Portable before-initialization event is not dispatched");
         require(source.contains("RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch"),
@@ -156,6 +161,18 @@ public final class BootstrapContractVerification {
                         && AndroidMappingProfile.PROJECTILE_OWNER.equals(
                         profile.getProperty("hook.projectile.owner")),
                 "Frame/projectile hooks diverged from profile.properties");
+        require(String.join(",", AndroidMappingProfile.UNIT_DAMAGE_OWNERS).equals(
+                        profile.getProperty("hook.unitDamage.owners"))
+                        && profile.getProperty("hook.unitDamage.apply").startsWith(
+                        AndroidMappingProfile.UNIT_DAMAGE_METHOD_NAME + "("),
+                "Unit damage hooks diverged from profile.properties");
+        require(String.join(",", AndroidMappingProfile.UNIT_DEATH_EFFECTS_OWNERS).equals(
+                        profile.getProperty("hook.unitDeathEffects.owners"))
+                        && profile.getProperty("hook.unitDeathEffects.handle").startsWith(
+                        AndroidMappingProfile.UNIT_DEATH_EFFECTS_METHOD_NAME + "(")
+                        && profile.getProperty("hook.customUnit.deathSequence").startsWith(
+                        AndroidMappingProfile.CUSTOM_UNIT_DEATH_SEQUENCE_METHOD_NAME + "("),
+                "Unit death hooks diverged from profile.properties");
     }
 
     private static String read(Path path) throws Exception {
