@@ -43,3 +43,5 @@ include ':game-api-stubs'
 project(':game-api-stubs').projectDir = file('../game-api-stubs')
 include ':local-patcher-core'
 project(':local-patcher-core').projectDir = file('../local-patcher-core')
+include ':jvm-launcher-core'
+project(':jvm-launcher-core').projectDir = file('../jvm-launcher-core')

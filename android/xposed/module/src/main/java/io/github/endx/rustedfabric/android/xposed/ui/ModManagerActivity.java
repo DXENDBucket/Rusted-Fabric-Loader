@@ -143,6 +143,15 @@ public final class ModManagerActivity extends Activity {
         patchHint.setPadding(0, dp(6), 0, dp(12));
         content.addView(patchHint);
 
+        Button jvmButton = new Button(this);
+        jvmButton.setText(R.string.open_jvm_launcher);
+        jvmButton.setOnClickListener(ignored ->
+                startActivity(new Intent(this, JvmLauncherActivity.class)));
+        content.addView(jvmButton, matchWidth());
+        TextView jvmHint = text(getString(R.string.jvm_launcher_hint), 13, false);
+        jvmHint.setPadding(0, dp(6), 0, dp(12));
+        content.addView(jvmHint);
+
         importButton = new Button(this);
         importButton.setText(R.string.import_mod);
         importButton.setOnClickListener(ignored -> chooseMod());

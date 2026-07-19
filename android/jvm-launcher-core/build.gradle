@@ -1,0 +1,59 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = '0.1.0'
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+tasks.register('verifyJvmLauncherContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies desktop-game inspection and embedded-JVM launch planning.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.jvm.JvmLauncherCoreVerification')
+}
+
+tasks.register('inspectDesktopGame', JavaExec) {
+    group = 'verification'
+    description = 'Inspects a user-owned desktop game directory passed with -PdesktopGameDir.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.jvm.DesktopGameProbe')
+    doFirst {
+        if (!providers.gradleProperty('desktopGameDir').isPresent()) {
+            throw new GradleException('Pass -PdesktopGameDir=<Rusted Warfare directory>')
+        }
+        args providers.gradleProperty('desktopGameDir').get()
+    }
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Rejects game files and platform runtime binaries from the JVM launcher core.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+    doLast {
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def name = entry.name.toLowerCase(Locale.ROOT)
+                if (name.endsWith('.apk') || name.endsWith('.dex') || name.endsWith('.dll')
+                        || name.endsWith('.so') || name.endsWith('game-lib.jar')
+                        || name.startsWith('com/corrodinggames/')) {
+                    forbidden.add(entry.name)
+                }
+            }
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("JVM launcher core contains forbidden payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyJvmLauncherContracts')
+check.dependsOn tasks.named('verifyNoGamePayload')

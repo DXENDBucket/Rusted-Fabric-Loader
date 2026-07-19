@@ -38,6 +38,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.JvmLauncherActivity"
+            android:exported="false" />
+
         <provider
             android:name=".storage.ModContentProvider"
             android:authorities="${applicationId}.mods"

@@ -60,4 +60,20 @@
     <string name="error_mod_invalid">模组包无效：%1$s</string>
     <string name="error_permission">Android 拒绝了此操作所需的访问权限。</string>
     <string name="unknown_error">未知错误</string>
+    <string name="open_jvm_launcher">实验性桌面 JVM 后端</string>
+    <string name="jvm_launcher_hint">导入你自己的 Steam 桌面版文件，为 Windows/Android 共用 Fabric 运行时做准备。Loader 不包含游戏文件。</string>
+    <string name="jvm_title">桌面 JVM 后端</string>
+    <string name="jvm_boundary">此实验路线只从你自己的桌面版中导入可移植文件。Windows DLL、EXE、存档和模组不会被复制。所有 ARM64 运行时适配验证前不会允许启动。</string>
+    <string name="jvm_game_checking">正在检查私有桌面版导入…</string>
+    <string name="jvm_runtime_checking">正在检查内置 JVM 和平台适配层…</string>
+    <string name="jvm_import_game">导入桌面版游戏目录</string>
+    <string name="jvm_launch_game">通过 Fabric 启动</string>
+    <string name="jvm_runtime_not_ready">ARM64 JVM 后端尚未就绪。</string>
+    <string name="jvm_import_starting">正在准备私有桌面版导入…</string>
+    <string name="jvm_import_progress">已导入 %1$d 个文件（%2$s）；当前：%3$s</string>
+    <string name="jvm_import_complete">桌面版导入完成：%1$d 个文件，%2$s。</string>
+    <string name="jvm_import_failed">桌面版导入失败：%1$s</string>
+    <string name="jvm_game_ready">桌面版铁锈战争文件：验证通过</string>
+    <string name="jvm_game_missing">桌面版铁锈战争文件：未导入或不完整</string>
+    <string name="jvm_runtime_missing">仍缺少运行时适配：%1$s</string>
 </resources>

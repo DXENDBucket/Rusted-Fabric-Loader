@@ -50,6 +50,7 @@ dependencies {
     implementation project(':mod-runtime')
     implementation project(':rusted-fabric-api-android')
     implementation project(':local-patcher-core')
+    implementation project(':jvm-launcher-core')
     compileOnly 'io.github.libxposed:api:102.0.0@aar'
 }
 
@@ -92,6 +93,7 @@ tasks.register('verifyNoGamePayload') {
         def sessionApiFound = false
         def gameplayEventsFound = false
         def frameProjectileEventsFound = false
+        def jvmBackendFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -149,6 +151,8 @@ tasks.register('verifyNoGamePayload') {
                             'Lio/github/endx/rustedfabricapi/api/event/ProjectileEvents;')
                             && dexText.contains(
                             'Lio/github/endx/rustedfabricapi/api/thread/GameThreadScheduler;')
+                    jvmBackendFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabric/android/jvm/JvmLaunchPlan;')
                     if (entry.name == 'assets/rusted-fabric/patched-bootstrap.dex') {
                         bootstrapAssetFound = dexText.contains(
                                 'Lio/github/endx/rustedfabric/android/patched/PatchedApplication;')
@@ -160,7 +164,7 @@ tasks.register('verifyNoGamePayload') {
                 || !androidModLoaderFound || !modManagerFound || !modProviderFound
                 || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound
                 || !handshakeBridgeFound || !androidBackendFound || !sessionApiFound
-                || !gameplayEventsFound || !frameProjectileEventsFound) {
+                || !gameplayEventsFound || !frameProjectileEventsFound || !jvmBackendFound) {
             throw new GradleException('Xposed APK is missing the portable API or mod management path')
         }
         if (!forbidden.isEmpty()) {

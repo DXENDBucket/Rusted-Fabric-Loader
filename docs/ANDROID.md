@@ -2,7 +2,11 @@
 
 ## Goals and boundaries
 
-The Android loader must operate on a user-supplied copy of Rusted Warfare without distributing game classes, resources, native libraries, or a rebuilt game APK. The primary consumer path is now a no-root local patcher: the user selects an APK, the Loader produces and signs a side-by-side copy entirely on-device, and Android confirms installation. The Modern Xposed backend remains available for rooted testing and method hooks.
+The Android loader must operate on user-supplied Rusted Warfare files without distributing game
+classes, resources, native libraries, or a rebuilt game APK. The working consumer path is a no-root
+local APK patcher. An experimental desktop-JVM backend now imports the user's Steam files and aims
+to run the same Knot/Mixin runtime as Windows; it does not use `base.apk`. The Modern Xposed backend
+remains available for rooted testing and method hooks.
 
 Game APKs are local development inputs only. They must remain under ignored paths and must never be copied into build outputs, reports, fixtures, or Git history.
 
@@ -85,6 +89,19 @@ damage/death events, and RFH1 handshake/start
 gate as the Xposed backend. The local patch additionally provides exact in-method projectile
 explosion boundaries. See
 [`ANDROID_LOCAL_PATCHER.md`](ANDROID_LOCAL_PATCHER.md).
+
+### Experimental desktop-JVM backend
+
+`android:jvm-launcher-core` separates user-owned desktop game data from Loader-owned platform
+runtime components. It validates `game-lib.jar`, `assets`, `res`, and the required LWJGL2/Slick/JInput
+JARs, then creates an immutable Knot launch plan only when every ARM64 adapter is present. The Loader
+management APK includes a Storage Access Framework directory importer that copies only portable
+game files into app-private storage; executables, DLLs, saves, and installed mods are excluded.
+
+The launch button intentionally remains disabled while Java 13 ARM64, LWJGL2 rendering, OpenAL,
+Android input, and rocketConnector adapters are unavailable. This prevents the scaffold from being
+mistaken for a working compatibility layer. See
+[`ANDROID_JVM_BACKEND.md`](ANDROID_JVM_BACKEND.md).
 
 ### Shared loader core
 
