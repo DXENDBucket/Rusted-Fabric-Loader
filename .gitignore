@@ -1,5 +1,6 @@
 .gradle
 build/
+**/.cxx/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -45,6 +46,7 @@ bin/
 /libs/game-lib.jar
 /libs/*.apk
 /libs/**/*.apk
+/libs/android-jvm/
 *.apk
 *.dex
 local.properties

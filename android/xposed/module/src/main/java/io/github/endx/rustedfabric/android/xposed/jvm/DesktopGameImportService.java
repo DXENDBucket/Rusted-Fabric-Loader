@@ -14,12 +14,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.github.endx.rustedfabric.android.jvm.DesktopGameArchiveExtractor;
 import io.github.endx.rustedfabric.android.jvm.DesktopGameInspection;
 import io.github.endx.rustedfabric.android.jvm.DesktopGameLayout;
 
 /** Imports only portable desktop game data from a user-selected document tree. */
 public final class DesktopGameImportService {
     private static final long MAX_BYTES = 1_610_612_736L;
+    private static final long MAX_ARCHIVE_BYTES = 2_147_483_648L;
     private static final int MAX_FILES = 50_000;
     private static final int MAX_DEPTH = 32;
 
@@ -31,12 +33,8 @@ public final class DesktopGameImportService {
         if (tree == null || !DocumentsContract.isTreeUri(tree)) {
             throw new IOException("The selected location is not a document tree");
         }
-        File backend = new File(context.getFilesDir(), "desktop-jvm");
-        File staging = checkedChild(backend, "game.importing");
-        File target = checkedChild(backend, "game");
-        File previous = checkedChild(backend, "game.previous");
-        deleteTree(staging, backend);
-        if (!staging.mkdirs()) throw new IOException("Cannot create private import directory");
+        File backend = backendRoot(context);
+        File staging = prepareStaging(backend);
 
         Counter counter = new Counter();
         ContentResolver resolver = context.getContentResolver();
@@ -53,24 +51,90 @@ public final class DesktopGameImportService {
             if (!inspection.isImportable()) {
                 throw new IOException("Selected desktop game is incomplete: " + inspection.errors());
             }
-            deleteTree(previous, backend);
-            if (target.exists() && !target.renameTo(previous)) {
-                throw new IOException("Cannot replace the previous private game import");
-            }
-            if (!staging.renameTo(target)) {
-                if (previous.exists()) previous.renameTo(target);
-                throw new IOException("Cannot activate the imported desktop game");
-            }
-            deleteTree(previous, backend);
-            return new Result(target, counter.files, counter.bytes, inspection.warnings());
+            return activate(backend, staging, counter.files, counter.bytes, inspection.warnings());
         } catch (IOException | RuntimeException failure) {
             deleteTree(staging, backend);
             throw failure;
         }
     }
 
+    public static Result importArchive(Context context, Uri archiveUri,
+                                       ProgressListener listener) throws IOException {
+        if (archiveUri == null) throw new IOException("No desktop game ZIP was selected");
+        File temporaryArchive = File.createTempFile("rusted-fabric-desktop-", ".zip",
+                context.getCacheDir());
+        File backend = backendRoot(context);
+        File staging = null;
+        try {
+            copyArchive(context.getContentResolver(), archiveUri, temporaryArchive);
+            staging = prepareStaging(backend);
+            DesktopGameArchiveExtractor.Result extracted = DesktopGameArchiveExtractor.extract(
+                    temporaryArchive.toPath(), staging.toPath(), listener == null ? null
+                            : listener::onProgress);
+            return activate(backend, staging, extracted.files(), extracted.bytes(),
+                    extracted.warnings());
+        } catch (IOException | RuntimeException failure) {
+            if (staging != null) deleteTree(staging, backend);
+            throw failure;
+        } finally {
+            if (temporaryArchive.exists() && !temporaryArchive.delete()) {
+                temporaryArchive.deleteOnExit();
+            }
+        }
+    }
+
     public static File importedRoot(Context context) {
-        return new File(new File(context.getFilesDir(), "desktop-jvm"), "game");
+        return new File(backendRoot(context), "game");
+    }
+
+    private static void copyArchive(ContentResolver resolver, Uri source, File target)
+            throws IOException {
+        try (InputStream input = resolver.openInputStream(source);
+             FileOutputStream output = new FileOutputStream(target)) {
+            if (input == null) throw new IOException("Cannot open the selected desktop game ZIP");
+            byte[] buffer = new byte[64 * 1024];
+            long bytes = 0L;
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                bytes += read;
+                if (bytes > MAX_ARCHIVE_BYTES) {
+                    throw new IOException("Desktop game ZIP exceeds the archive size limit");
+                }
+                output.write(buffer, 0, read);
+            }
+        } catch (SecurityException denied) {
+            throw new IOException("Android denied access to the selected desktop game ZIP", denied);
+        }
+    }
+
+    private static File backendRoot(Context context) {
+        return new File(context.getFilesDir(), "desktop-jvm");
+    }
+
+    private static File prepareStaging(File backend) throws IOException {
+        if (!backend.isDirectory() && !backend.mkdirs()) {
+            throw new IOException("Cannot create the private JVM backend directory");
+        }
+        File staging = checkedChild(backend, "game.importing");
+        deleteTree(staging, backend);
+        if (!staging.mkdirs()) throw new IOException("Cannot create private import directory");
+        return staging;
+    }
+
+    private static Result activate(File backend, File staging, int files, long bytes,
+                                   List<String> warnings) throws IOException {
+        File target = checkedChild(backend, "game");
+        File previous = checkedChild(backend, "game.previous");
+        deleteTree(previous, backend);
+        if (target.exists() && !target.renameTo(previous)) {
+            throw new IOException("Cannot replace the previous private game import");
+        }
+        if (!staging.renameTo(target)) {
+            if (previous.exists()) previous.renameTo(target);
+            throw new IOException("Cannot activate the imported desktop game");
+        }
+        deleteTree(previous, backend);
+        return new Result(target, files, bytes, warnings);
     }
 
     private static void copyDocument(ContentResolver resolver, Uri tree, Document source,

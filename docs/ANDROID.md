@@ -95,12 +95,17 @@ explosion boundaries. See
 `android:jvm-launcher-core` separates user-owned desktop game data from Loader-owned platform
 runtime components. It validates `game-lib.jar`, `assets`, `res`, and the required LWJGL2/Slick/JInput
 JARs, then creates an immutable Knot launch plan only when every ARM64 adapter is present. The Loader
-management APK includes a Storage Access Framework directory importer that copies only portable
-game files into app-private storage; executables, DLLs, saves, and installed mods are excluded.
+management APK includes a Storage Access Framework ZIP importer, with direct directory import as an
+advanced alternative. It copies only portable game files into app-private storage; executables,
+DLLs, saves, and installed mods are excluded.
 
-The launch button intentionally remains disabled while Java 13 ARM64, LWJGL2 rendering, OpenAL,
-Android input, and rocketConnector adapters are unavailable. This prevents the scaffold from being
-mistaken for a working compatibility layer. See
+The Loader now builds an ARM64 JNI/libjvm host and accepts a separately supplied Linux/AArch64 Java
+17 runtime ZIP or TAR.XZ. Runtime metadata and the ELF architecture of both `libjvm.so` and `libjava.so` are
+checked before activation. A Loader-owned self-test JAR can create the external JVM in an isolated
+`:desktop_jvm` process, so a native crash does not terminate the management UI. The launch button
+intentionally remains disabled while LWJGL2 rendering, OpenAL, Android input, and rocketConnector
+adapters are unavailable. This prevents the scaffold from being mistaken for a working
+compatibility layer. See
 [`ANDROID_JVM_BACKEND.md`](ANDROID_JVM_BACKEND.md).
 
 ### Shared loader core

@@ -3,7 +3,8 @@ plugins {
 }
 
 subprojects {
-    if (path == ':android:local-patcher-core' || path == ':android:local-patcher-cli') {
+    if (path == ':android:local-patcher-core' || path == ':android:local-patcher-cli'
+            || path == ':android:jvm-launcher-core') {
         repositories {
             google()
             mavenCentral()

@@ -72,6 +72,26 @@ The following notices are provided for attribution and license compliance.
 
 ---
 
+## Apache Commons Compress
+
+- Name: Apache Commons Compress
+- Homepage/Source: https://commons.apache.org/proper/commons-compress/
+- License: Apache License 2.0
+- Used for: Bounded TAR parsing for user-selected Android JVM runtime archives
+- Version used in this project: `1.28.0`
+
+---
+
+## XZ for Java
+
+- Name: XZ for Java
+- Homepage/Source: https://tukaani.org/xz/java.html
+- License: BSD Zero Clause License (0BSD)
+- Used for: Streaming decompression of user-selected `.tar.xz` JVM runtime archives
+- Version used in this project: `1.12`
+
+---
+
 ## FabricMC Access Widener
 
 - Name: access-widener

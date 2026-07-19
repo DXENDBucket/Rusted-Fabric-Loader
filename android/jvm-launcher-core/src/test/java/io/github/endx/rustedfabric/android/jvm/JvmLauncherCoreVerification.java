@@ -6,6 +6,10 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+
 public final class JvmLauncherCoreVerification {
     private JvmLauncherCoreVerification() {
     }
@@ -19,7 +23,7 @@ public final class JvmLauncherCoreVerification {
             require(DesktopGameLayout.desktopClasspath(game).size() == 4,
                     "Desktop classpath did not contain the game and required libraries");
 
-            Path runtime = Files.createDirectories(temporary.resolve("runtime"));
+            Path runtime = createRuntime(temporary.resolve("runtime"));
             Path loader = Files.createDirectories(temporary.resolve("loader"));
             createJar(loader.resolve("fabric-loader.jar"), "net/fabricmc/loader/Marker.class");
             Path natives = Files.createDirectories(temporary.resolve("natives"));
@@ -28,10 +32,26 @@ public final class JvmLauncherCoreVerification {
                     game, runtime, loader, natives, ready, 1024, 1280, 720);
             require(DesktopGameLayout.FABRIC_MAIN_CLASS.equals(plan.mainClass()),
                     "Launch plan bypassed Fabric Knot");
-            require(plan.classpath().size() == 5 && plan.virtualMachineArguments().contains("-Xmx1024M"),
+            require(plan.classpath().size() == 5 && plan.virtualMachineArguments().contains("-Xmx1024M")
+                            && plan.virtualMachineArguments().stream()
+                            .anyMatch(value -> value.startsWith("-Djava.home="))
+                            && plan.workingDirectory().equals(game.toAbsolutePath().normalize()),
                     "Launch plan classpath or JVM options changed");
             require(plan.gameArguments().contains("1280") && plan.gameArguments().contains("720"),
                     "Launch surface was not forwarded");
+
+            Path smokeJar = temporary.resolve("jvm-smoke.jar");
+            createJar(smokeJar, JvmLaunchPlanFactory.SMOKE_MAIN_CLASS.replace('.', '/') + ".class");
+            Path smokeWork = Files.createDirectories(temporary.resolve("smoke-work"));
+            Path smokeResult = smokeWork.resolve("result.txt");
+            JvmLaunchPlan smokePlan = JvmLaunchPlanFactory.createSmokeTest(runtime, smokeJar,
+                    smokeWork, natives, smokeResult);
+            require(JvmLaunchPlanFactory.SMOKE_MAIN_CLASS.equals(smokePlan.mainClass())
+                            && smokePlan.gameArguments().equals(
+                            java.util.Collections.singletonList(smokeResult.toString()))
+                            && smokePlan.classpath().equals(
+                            java.util.Collections.singletonList(smokeJar.toAbsolutePath())),
+                    "External-JVM smoke-test plan changed");
 
             boolean incompleteRejected = false;
             try {
@@ -41,6 +61,92 @@ public final class JvmLauncherCoreVerification {
                 incompleteRejected = expected.getMessage().contains("rocket-connector-arm64");
             }
             require(incompleteRejected, "Incomplete platform adapters did not fail closed");
+
+            Path probedRuntime = createRuntime(temporary.resolve("probed-runtime"));
+            Path probedNatives = Files.createDirectories(temporary.resolve("probed-natives"));
+            for (String nativeName : new String[]{"librustedfabric_jvmhost.so", "liblwjgl.so",
+                    "libopenal.so", "librustedfabric_input.so", "librocketconnector.so"}) {
+                Files.write(probedNatives.resolve(nativeName), new byte[]{0});
+            }
+            require(JvmRuntimeProbe.inspect(probedRuntime, probedNatives).isLaunchReady(),
+                    "Complete Java 17 runtime and adapter layout was not detected");
+
+            Path darwinRuntime = createRuntime(temporary.resolve("darwin-runtime"));
+            Files.write(darwinRuntime.resolve("release"), runtimeRelease("Darwin"));
+            Files.write(darwinRuntime.resolve("lib/server/libjvm.so"), machOArm64());
+            require(!JvmRuntimeProbe.inspect(darwinRuntime, probedNatives).hasJava17()
+                            && JvmRuntimeProbe.runtimeIssue(darwinRuntime).contains("not Linux"),
+                    "A Darwin/Mach-O runtime was incorrectly accepted as Android-compatible");
+
+            Path runtimeArchive = temporary.resolve("runtime.zip");
+            try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(runtimeArchive))) {
+                addArchiveFile(zip, "jre17/release", runtimeRelease("Linux"));
+                addArchiveFile(zip, "jre17/lib/server/libjvm.so", aarch64Elf());
+                addArchiveFile(zip, "jre17/lib/libjava.so", aarch64Elf());
+                addArchiveFile(zip, "jre17/lib/modules", new byte[]{3});
+            }
+            Path importedRuntime = Files.createDirectories(temporary.resolve("imported-runtime"));
+            JvmRuntimeArchiveExtractor.Result runtimeResult =
+                    JvmRuntimeArchiveExtractor.extract(runtimeArchive, importedRuntime, null);
+            require("jre17".equals(runtimeResult.archiveRoot())
+                            && runtimeResult.archiveSha256().length() == 64
+                            && JvmRuntimeProbe.inspect(importedRuntime, probedNatives).isLaunchReady(),
+                    "Java 17 runtime ZIP import contract failed");
+
+            Path runtimeTarXz = temporary.resolve("runtime.tar.xz");
+            try (XZCompressorOutputStream xz = new XZCompressorOutputStream(
+                    Files.newOutputStream(runtimeTarXz));
+                 TarArchiveOutputStream tar = new TarArchiveOutputStream(xz)) {
+                addTarFile(tar, "./jre17/release", runtimeRelease("Linux"));
+                addTarFile(tar, "./jre17/lib/server/libjvm.so", aarch64Elf());
+                addTarFile(tar, "./jre17/lib/libjava.so", aarch64Elf());
+                addTarFile(tar, "./jre17/lib/modules", new byte[]{3});
+                TarArchiveEntry legalLink = new TarArchiveEntry(
+                        "./jre17/legal/java.xml/LICENSE", TarArchiveEntry.LF_SYMLINK);
+                legalLink.setLinkName("../java.base/LICENSE");
+                tar.putArchiveEntry(legalLink);
+                tar.closeArchiveEntry();
+            }
+            Path importedTarRuntime = Files.createDirectories(
+                    temporary.resolve("imported-tar-runtime"));
+            JvmRuntimeArchiveExtractor.Result tarRuntimeResult =
+                    JvmRuntimeArchiveExtractor.extract(runtimeTarXz, importedTarRuntime, null);
+            require("jre17".equals(tarRuntimeResult.archiveRoot())
+                            && tarRuntimeResult.files() == 4
+                            && !Files.exists(importedTarRuntime.resolve("legal/java.xml/LICENSE"))
+                            && JvmRuntimeProbe.runtimeIssue(importedTarRuntime).isEmpty(),
+                    "Java 17 runtime TAR.XZ import contract failed: root="
+                            + tarRuntimeResult.archiveRoot() + ", files="
+                            + tarRuntimeResult.files() + ", issue="
+                            + JvmRuntimeProbe.runtimeIssue(importedTarRuntime));
+
+            Path archive = temporary.resolve("desktop-game.zip");
+            createDesktopArchive(archive);
+            Path extracted = Files.createDirectories(temporary.resolve("extracted"));
+            DesktopGameArchiveExtractor.Result archiveResult =
+                    DesktopGameArchiveExtractor.extract(archive, extracted, null);
+            require("Rusted Warfare".equals(archiveResult.archiveRoot())
+                            && DesktopGameLayout.inspect(extracted).isImportable(),
+                    "Wrapped desktop ZIP was not imported");
+            require(!Files.exists(extracted.resolve("lwjgl64.dll"))
+                            && !Files.exists(extracted.resolve("saves/player.save")),
+                    "Non-portable desktop data escaped the ZIP filter");
+
+            Path malicious = temporary.resolve("malicious.zip");
+            try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(malicious))) {
+                zip.putNextEntry(new ZipEntry("../escaped.txt"));
+                zip.write(new byte[]{1});
+                zip.closeEntry();
+            }
+            boolean traversalRejected = false;
+            try {
+                DesktopGameArchiveExtractor.extract(malicious,
+                        Files.createDirectories(temporary.resolve("malicious-out")), null);
+            } catch (IOException expected) {
+                traversalRejected = expected.getMessage().contains("traversal");
+            }
+            require(traversalRejected && !Files.exists(temporary.resolve("escaped.txt")),
+                    "ZIP path traversal was not rejected");
 
             Files.delete(game.resolve("libs/lwjgl.jar"));
             require(!DesktopGameLayout.inspect(game).isImportable(),
@@ -62,12 +168,84 @@ public final class JvmLauncherCoreVerification {
         return root;
     }
 
+    private static Path createRuntime(Path root) throws IOException {
+        Files.createDirectories(root.resolve("lib/server"));
+        Files.write(root.resolve("release"), runtimeRelease("Linux"));
+        Files.write(root.resolve("lib/server/libjvm.so"), aarch64Elf());
+        Files.write(root.resolve("lib/libjava.so"), aarch64Elf());
+        Files.write(root.resolve("lib/modules"), new byte[]{1});
+        return root;
+    }
+
+    private static byte[] runtimeRelease(String osName) {
+        return ("JAVA_VERSION=\"17.0.12\"\nOS_ARCH=\"aarch64\"\nOS_NAME=\""
+                + osName + "\"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     private static void createJar(Path output, String entryName) throws IOException {
         try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(output))) {
             zip.putNextEntry(new ZipEntry(entryName));
             zip.write(new byte[]{0});
             zip.closeEntry();
         }
+    }
+
+    private static void createDesktopArchive(Path output) throws IOException {
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(output))) {
+            addArchiveJar(zip, "Rusted Warfare/game-lib.jar",
+                    "com/corrodinggames/rts/java/Main.class");
+            addArchiveJar(zip, "Rusted Warfare/libs/lwjgl.jar", "org/lwjgl/Marker.class");
+            addArchiveJar(zip, "Rusted Warfare/libs/slick.jar", "org/newdawn/slick/Marker.class");
+            addArchiveJar(zip, "Rusted Warfare/libs/jinput.jar", "net/java/games/input/Marker.class");
+            addArchiveFile(zip, "Rusted Warfare/assets/units/core.ini", new byte[]{1});
+            addArchiveFile(zip, "Rusted Warfare/res/values/strings.xml", new byte[]{2});
+            addArchiveFile(zip, "Rusted Warfare/lwjgl64.dll", new byte[]{3});
+            addArchiveFile(zip, "Rusted Warfare/saves/player.save", new byte[]{4});
+        }
+    }
+
+    private static void addArchiveJar(ZipOutputStream archive, String path, String classEntry)
+            throws IOException {
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        try (ZipOutputStream nested = new ZipOutputStream(bytes)) {
+            nested.putNextEntry(new ZipEntry(classEntry));
+            nested.write(new byte[]{0});
+            nested.closeEntry();
+        }
+        addArchiveFile(archive, path, bytes.toByteArray());
+    }
+
+    private static void addArchiveFile(ZipOutputStream archive, String path, byte[] bytes)
+            throws IOException {
+        archive.putNextEntry(new ZipEntry(path));
+        archive.write(bytes);
+        archive.closeEntry();
+    }
+
+    private static void addTarFile(TarArchiveOutputStream archive, String path, byte[] bytes)
+            throws IOException {
+        TarArchiveEntry entry = new TarArchiveEntry(path);
+        entry.setSize(bytes.length);
+        archive.putArchiveEntry(entry);
+        archive.write(bytes);
+        archive.closeArchiveEntry();
+    }
+
+    private static byte[] aarch64Elf() {
+        byte[] header = new byte[20];
+        header[0] = 0x7f;
+        header[1] = 'E';
+        header[2] = 'L';
+        header[3] = 'F';
+        header[4] = 2;
+        header[5] = 1;
+        header[18] = (byte) 0xb7;
+        return header;
+    }
+
+    private static byte[] machOArm64() {
+        return new byte[]{(byte) 0xcf, (byte) 0xfa, (byte) 0xed, (byte) 0xfe,
+                0x0c, 0x00, 0x00, 0x01};
     }
 
     private static void deleteRecursively(Path root) throws IOException {

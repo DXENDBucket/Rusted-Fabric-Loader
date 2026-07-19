@@ -63,10 +63,13 @@
     <string name="open_jvm_launcher">实验性桌面 JVM 后端</string>
     <string name="jvm_launcher_hint">导入你自己的 Steam 桌面版文件，为 Windows/Android 共用 Fabric 运行时做准备。Loader 不包含游戏文件。</string>
     <string name="jvm_title">桌面 JVM 后端</string>
-    <string name="jvm_boundary">此实验路线只从你自己的桌面版中导入可移植文件。Windows DLL、EXE、存档和模组不会被复制。所有 ARM64 运行时适配验证前不会允许启动。</string>
+    <string name="jvm_boundary">在电脑上直接把铁锈战争桌面版目录压缩成 ZIP，然后在这里选择。只会导入可移植游戏文件；Windows DLL、EXE、存档和模组不会被复制。所有 ARM64 运行时适配验证前不会允许启动。</string>
     <string name="jvm_game_checking">正在检查私有桌面版导入…</string>
     <string name="jvm_runtime_checking">正在检查内置 JVM 和平台适配层…</string>
-    <string name="jvm_import_game">导入桌面版游戏目录</string>
+    <string name="jvm_import_archive">导入桌面版 ZIP</string>
+    <string name="jvm_import_directory">导入目录（高级）</string>
+    <string name="jvm_import_runtime">导入 ARM64 Java 17 ZIP/TAR.XZ（开发者）</string>
+    <string name="jvm_test_runtime">在隔离进程中测试 Java 运行时</string>
     <string name="jvm_launch_game">通过 Fabric 启动</string>
     <string name="jvm_runtime_not_ready">ARM64 JVM 后端尚未就绪。</string>
     <string name="jvm_import_starting">正在准备私有桌面版导入…</string>
@@ -76,4 +79,12 @@
     <string name="jvm_game_ready">桌面版铁锈战争文件：验证通过</string>
     <string name="jvm_game_missing">桌面版铁锈战争文件：未导入或不完整</string>
     <string name="jvm_runtime_missing">仍缺少运行时适配：%1$s</string>
+    <string name="jvm_runtime_missing_detail">仍缺少运行时适配：%1$s\nJava 运行时：%2$s</string>
+    <string name="jvm_runtime_import_starting">正在验证并导入 Java 运行时…</string>
+    <string name="jvm_runtime_import_complete">Java 运行时已导入：%1$d 个文件，%2$s，SHA-256 %3$s…</string>
+    <string name="jvm_runtime_import_failed">Java 运行时导入失败：%1$s</string>
+    <string name="jvm_smoke_starting">正在启动隔离的 Java 运行时测试…</string>
+    <string name="jvm_smoke_succeeded">外部 Java 运行时测试通过：\n%1$s</string>
+    <string name="jvm_smoke_failed">外部 Java 运行时测试失败：%1$s</string>
+    <string name="jvm_smoke_last">上次外部 Java 测试：\n%1$s</string>
 </resources>

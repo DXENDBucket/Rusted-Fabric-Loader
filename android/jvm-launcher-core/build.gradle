@@ -5,6 +5,11 @@ plugins {
 group = 'io.github.endx'
 version = '0.1.0'
 
+dependencies {
+    implementation 'org.apache.commons:commons-compress:1.28.0'
+    implementation 'org.tukaani:xz:1.12'
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.release = 13
     options.encoding = 'UTF-8'
@@ -29,6 +34,36 @@ tasks.register('inspectDesktopGame', JavaExec) {
             throw new GradleException('Pass -PdesktopGameDir=<Rusted Warfare directory>')
         }
         args providers.gradleProperty('desktopGameDir').get()
+    }
+}
+
+tasks.register('inspectJvmRuntime', JavaExec) {
+    group = 'verification'
+    description = 'Validates an extracted Linux AArch64 Java 17 runtime passed with -PjvmRuntimeDir.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.jvm.JvmRuntimeProbeCli')
+    doFirst {
+        if (!providers.gradleProperty('jvmRuntimeDir').isPresent()) {
+            throw new GradleException('Pass -PjvmRuntimeDir=<extracted Java runtime directory>')
+        }
+        args providers.gradleProperty('jvmRuntimeDir').get()
+    }
+}
+
+tasks.register('importJvmRuntimeArchive', JavaExec) {
+    group = 'verification'
+    description = 'Imports a JVM ZIP/TAR.XZ into an empty directory for workstation verification.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.jvm.JvmRuntimeArchiveCli')
+    doFirst {
+        if (!providers.gradleProperty('jvmRuntimeArchive').isPresent()
+                || !providers.gradleProperty('jvmRuntimeOutput').isPresent()) {
+            throw new GradleException('Pass -PjvmRuntimeArchive=<archive> and -PjvmRuntimeOutput=<empty directory>')
+        }
+        args providers.gradleProperty('jvmRuntimeArchive').get(),
+                providers.gradleProperty('jvmRuntimeOutput').get()
     }
 }
 
