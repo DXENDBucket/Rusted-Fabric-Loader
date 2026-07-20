@@ -2,6 +2,12 @@ plugins {
     id 'java'
 }
 
+allprojects {
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}
+
 subprojects {
     if (path == ':android:local-patcher-core' || path == ':android:local-patcher-cli'
             || path == ':android:jvm-launcher-core') {
@@ -149,8 +155,13 @@ tasks.register('validateMappings') {
         }
 
         def configured = config.mixins as Set
-        def namedSources = fileTree(mixinSourceDir) { include '*NamedMixin.java' }.files.collect {
-            it.name.substring(0, it.name.length() - '.java'.length())
+        def namedSources = fileTree(mixinSourceDir) {
+            include '**/*NamedMixin.java'
+            include '**/*Accessor.java'
+        }.files.collect {
+            def relative = mixinSourceDir.toPath().relativize(it.toPath()).toString()
+            relative.substring(0, relative.length() - '.java'.length())
+                    .replace(File.separatorChar, '.' as char)
         } as Set
         def officialSources = fileTree(mixinSourceDir) { include '*OfficialMixin.java' }.files
         if (configured != namedSources) {
@@ -287,7 +298,6 @@ tasks.register('verifyDistribution') {
     group = 'verification'
     description = 'Builds and validates the named game Jar, provider, official API, and official example-mod artifacts.'
     dependsOn check, jar, generateNamedGameJar, ':rusted-fabric-api:check',
-            ':rusted-fabric-api-android:check',
             ':rusted-fabric-api:verifyApiContracts',
             ':rusted-fabric-api-desktop:remapJarToOfficial', ':example-mod:remapJarToOfficial'
 
@@ -348,7 +358,8 @@ tasks.register('verifyDistribution') {
                 throw new GradleException('Official API metadata version is inconsistent')
             }
             def expectedMixinCount = fileTree(project(':rusted-fabric-api-desktop').file('src/main/java/io/github/endx/rustedfabricapi/mixin')) {
-                include '*NamedMixin.java'
+                include '**/*NamedMixin.java'
+                include '**/*Accessor.java'
             }.files.size()
             if (mixins.required != true || mixins.injectors?.defaultRequire != 1
                     || mixins.mixins.size() != expectedMixinCount) {
@@ -357,14 +368,258 @@ tasks.register('verifyDistribution') {
             [
                     'io/github/endx/rustedfabricapi/api/RustedFabricAPIContext.class',
                     'io/github/endx/rustedfabricapi/api/RustedFabricRuntime.class',
-                    'io/github/endx/rustedfabricapi/api/event/RuntimeLifecycleEvents.class'
-            ].each { commonEntry ->
-                if (zip.getEntry(commonEntry) == null) {
-                    throw new GradleException("Portable common API is missing from desktop API: ${commonEntry}")
+                    'io/github/endx/rustedfabricapi/api/event/RuntimeLifecycleEvents.class',
+                    'io/github/endx/rustedfabricapi/api/asset/ModResource.class',
+                    'io/github/endx/rustedfabricapi/api/asset/ModResourceEvents.class',
+                    'io/github/endx/rustedfabricapi/api/asset/ModResourcePack.class',
+                    'io/github/endx/rustedfabricapi/api/asset/ModResources.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/BuiltinResourceConditions.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/ResourceCondition.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionContext.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionDecoder.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionEvaluation.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionType.class',
+                    'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditions.class',
+                    'io/github/endx/rustedfabricapi/api/asset/reload/ModResourceReloader.class',
+                    'io/github/endx/rustedfabricapi/api/asset/reload/ModResourceReloadEvents.class',
+                    'io/github/endx/rustedfabricapi/api/asset/reload/ModResourceReloaders.class',
+                    'io/github/endx/rustedfabricapi/api/asset/reload/ResourceReloadReason.class',
+                    'io/github/endx/rustedfabricapi/api/asset/reload/ResourceReloadReport.class',
+                    'io/github/endx/rustedfabricapi/api/asset/reload/ResourceReloadStatus.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/DataGenerationReport.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/DataOutput.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/DataProvider.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/DataProviderResult.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/DataProviderStatus.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/ModDataGenerator.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/ResourceConditionJson.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/provider/LanguageBuilder.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/provider/LanguageDataProvider.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/provider/RegistryTagBuilder.class',
+                    'io/github/endx/rustedfabricapi/api/datagen/provider/RegistryTagDataProvider.class',
+                    'io/github/endx/rustedfabricapi/api/client/RustedWarfareClient.class',
+                    'io/github/endx/rustedfabricapi/api/audio/SoundEvents.class',
+                    'io/github/endx/rustedfabricapi/api/audio/SoundPlayback.class',
+                    'io/github/endx/rustedfabricapi/api/audio/Sounds.class',
+                    'io/github/endx/rustedfabricapi/api/chat/ChatEvents.class',
+                    'io/github/endx/rustedfabricapi/api/chat/Chats.class',
+                    'io/github/endx/rustedfabricapi/api/chat/command/ChatCommandContext.class',
+                    'io/github/endx/rustedfabricapi/api/chat/command/ChatCommandEvents.class',
+                    'io/github/endx/rustedfabricapi/api/chat/command/ChatCommandHandler.class',
+                    'io/github/endx/rustedfabricapi/api/chat/command/ChatCommands.class',
+                    'io/github/endx/rustedfabricapi/api/client/Camera.class',
+                    'io/github/endx/rustedfabricapi/api/client/CameraSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/client/event/ClientTickEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/event/ClientLifecycleEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/Selection.class',
+                    'io/github/endx/rustedfabricapi/api/client/event/SelectionEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/event/ClientRenderEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/event/HudRenderEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/event/WorldRenderEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/KeyBindingEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/KeyBindings.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/ModKeyBinding.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/ClientInputEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/InputKeys.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/InputModifiers.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/KeyboardAction.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/KeyboardInput.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/MouseButton.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/PointerAction.class',
+                    'io/github/endx/rustedfabricapi/api/client/input/PointerInput.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/ClientScreens.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/ScreenEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/UiDocumentChange.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/UiDocumentKind.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/UiDocumentSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/dialog/ClientDialogs.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogCallback.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogChoice.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogHandle.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogResult.class',
+                    'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogSpec.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOption.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOptionChange.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOptionChangeSet.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOptionSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOptionTransaction.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOptionUpdateResult.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/ClientOptions.class',
+                    'io/github/endx/rustedfabricapi/api/client/option/event/ClientOptionEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/ArgbColor.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/ClientImage.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/ClientImages.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/DrawStyle.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/HudDrawContext.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/ScreenPosition.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/TextAlignment.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/WorldDrawContext.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/WorldViewport.class',
+                    'io/github/endx/rustedfabricapi/api/client/render/event/ClientImageEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/message/ClientMessages.class',
+                    'io/github/endx/rustedfabricapi/api/client/message/MessageEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/minimap/MinimapEvents.class',
+                    'io/github/endx/rustedfabricapi/api/client/minimap/MinimapMarkerKind.class',
+                    'io/github/endx/rustedfabricapi/api/client/minimap/MinimapSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/client/minimap/Minimaps.class',
+                    'io/github/endx/rustedfabricapi/api/client/minimap/ScreenPoint.class',
+                    'io/github/endx/rustedfabricapi/api/client/warlog/WarLog.class',
+                    'io/github/endx/rustedfabricapi/api/client/warlog/WarLogEntryKind.class',
+                    'io/github/endx/rustedfabricapi/api/client/warlog/WarLogEvents.class',
+                    'io/github/endx/rustedfabricapi/api/config/ConfigEvents.class',
+                    'io/github/endx/rustedfabricapi/api/config/ModConfigFile.class',
+                    'io/github/endx/rustedfabricapi/api/config/ModConfigFiles.class',
+                    'io/github/endx/rustedfabricapi/api/command/Commands.class',
+                    'io/github/endx/rustedfabricapi/api/command/event/CommandEvents.class',
+                    'io/github/endx/rustedfabricapi/api/custom/CustomUnits.class',
+                    'io/github/endx/rustedfabricapi/api/custom/CustomUnitTriggers.class',
+                    'io/github/endx/rustedfabricapi/api/custom/action/CustomActionEffects.class',
+                    'io/github/endx/rustedfabricapi/api/custom/action/event/CustomActionEffectEvents.class',
+                    'io/github/endx/rustedfabricapi/api/custom/attachment/Attachments.class',
+                    'io/github/endx/rustedfabricapi/api/custom/attachment/event/AttachmentEvents.class',
+                    'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitLifecycleEvents.class',
+                    'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitRegistryEvents.class',
+                    'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitTriggerEvents.class',
+                    'io/github/endx/rustedfabricapi/api/data/PersistentData.class',
+                    'io/github/endx/rustedfabricapi/api/data/PersistentDataCodec.class',
+                    'io/github/endx/rustedfabricapi/api/data/PersistentDataKey.class',
+                    'io/github/endx/rustedfabricapi/api/data/event/PersistentDataEvents.class',
+                    'io/github/endx/rustedfabricapi/api/effect/Effects.class',
+                    'io/github/endx/rustedfabricapi/api/effect/event/EffectEvents.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/GameSetupEditor.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/GameSetupSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyAiDifficulty.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyFogMode.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyGameSetup.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyGameSetupEvents.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyMapType.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyPlayerEvents.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyPlayers.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/LobbyTeamLayout.class',
+                    'io/github/endx/rustedfabricapi/api/lobby/StartingCreditsPreset.class',
+                    'io/github/endx/rustedfabricapi/api/map/Maps.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapObjectCatalog.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapObjectGroupSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapObjectSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapObjects.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapProperties.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapLayerSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapTileSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/map/MapTiles.class',
+                    'io/github/endx/rustedfabricapi/api/map/event/MapLifecycleEvents.class',
+                    'io/github/endx/rustedfabricapi/api/map/event/MapObjectEvents.class',
+                    'io/github/endx/rustedfabricapi/api/mission/Missions.class',
+                    'io/github/endx/rustedfabricapi/api/mission/MissionSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/mission/event/MissionTriggerEvents.class',
+                    'io/github/endx/rustedfabricapi/api/networking/ChannelId.class',
+                    'io/github/endx/rustedfabricapi/api/networking/ClientNetworking.class',
+                    'io/github/endx/rustedfabricapi/api/networking/Connections.class',
+                    'io/github/endx/rustedfabricapi/api/networking/NetworkingCapabilities.class',
+                    'io/github/endx/rustedfabricapi/api/networking/PacketBuffer.class',
+                    'io/github/endx/rustedfabricapi/api/networking/PacketCodec.class',
+                    'io/github/endx/rustedfabricapi/api/networking/PacketCodecs.class',
+                    'io/github/endx/rustedfabricapi/api/networking/event/ConnectionEvents.class',
+                    'io/github/endx/rustedfabricapi/api/networking/PacketPayload.class',
+                    'io/github/endx/rustedfabricapi/api/networking/ServerNetworking.class',
+                    'io/github/endx/rustedfabricapi/api/path/Pathfinding.class',
+                    'io/github/endx/rustedfabricapi/api/path/PathQuery.class',
+                    'io/github/endx/rustedfabricapi/api/path/PathRequestHandle.class',
+                    'io/github/endx/rustedfabricapi/api/path/PathResult.class',
+                    'io/github/endx/rustedfabricapi/api/path/PathStep.class',
+                    'io/github/endx/rustedfabricapi/api/path/TilePathingSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/path/event/PathEvents.class',
+                    'io/github/endx/rustedfabricapi/api/projectile/event/ProjectileEvents.class',
+                    'io/github/endx/rustedfabricapi/api/resource/Resources.class',
+                    'io/github/endx/rustedfabricapi/api/replay/Replays.class',
+                    'io/github/endx/rustedfabricapi/api/replay/ReplaySnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/replay/event/ReplayEvents.class',
+                    'io/github/endx/rustedfabricapi/api/registry/ModRegistries.class',
+                    'io/github/endx/rustedfabricapi/api/registry/ModRegistry.class',
+                    'io/github/endx/rustedfabricapi/api/registry/RegistryCodecs.class',
+                    'io/github/endx/rustedfabricapi/api/registry/RegistryComparison.class',
+                    'io/github/endx/rustedfabricapi/api/registry/RegistryEntry.class',
+                    'io/github/endx/rustedfabricapi/api/registry/RegistryEvents.class',
+                    'io/github/endx/rustedfabricapi/api/registry/RegistryKey.class',
+                    'io/github/endx/rustedfabricapi/api/registry/RegistrySnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTag.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagDefinition.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagEvents.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagJsonReloader.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagKey.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagReloaders.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTags.class',
+                    'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagValue.class',
+                    'io/github/endx/rustedfabricapi/api/save/Saves.class',
+                    'io/github/endx/rustedfabricapi/api/save/event/SaveEvents.class',
+                    'io/github/endx/rustedfabricapi/api/scheduler/GameTaskScope.class',
+                    'io/github/endx/rustedfabricapi/api/scheduler/GameTaskState.class',
+                    'io/github/endx/rustedfabricapi/api/scheduler/GameTickScheduler.class',
+                    'io/github/endx/rustedfabricapi/api/scheduler/ScheduledGameTask.class',
+                    'io/github/endx/rustedfabricapi/api/scheduler/TickExecutionReport.class',
+                    'io/github/endx/rustedfabricapi/api/stats/GameStatistics.class',
+                    'io/github/endx/rustedfabricapi/api/stats/StatisticMetric.class',
+                    'io/github/endx/rustedfabricapi/api/stats/TeamStatisticsSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/stats/event/StatisticsEvents.class',
+                    'io/github/endx/rustedfabricapi/api/text/LanguageEvents.class',
+                    'io/github/endx/rustedfabricapi/api/text/Translations.class',
+                    'io/github/endx/rustedfabricapi/api/unit/Units.class',
+                    'io/github/endx/rustedfabricapi/api/unit/Teams.class',
+                    'io/github/endx/rustedfabricapi/api/unit/TeamCreditChangeSource.class',
+                    'io/github/endx/rustedfabricapi/api/unit/TeamOutcome.class',
+                    'io/github/endx/rustedfabricapi/api/unit/TeamStateSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/unit/UnitSpawns.class',
+                    'io/github/endx/rustedfabricapi/api/unit/event/TeamStateEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/event/UnitEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/event/UnitDamageEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/event/UnitSpawnEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/event/UnitTeamEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitAction.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionBinding.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionContext.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionHandler.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionTargeting.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionTargetPredicate.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActions.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/UnitActions.class',
+                    'io/github/endx/rustedfabricapi/api/unit/action/event/JavaUnitActionEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/CustomUnitStats.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStat.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatChangeCause.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatModifier.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatOperation.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitVitals.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/UnitVitalsSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/unit/attribute/event/UnitStatEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/build/BuildQueues.class',
+                    'io/github/endx/rustedfabricapi/api/unit/build/event/BuildQueueEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/combat/CombatUnits.class',
+                    'io/github/endx/rustedfabricapi/api/unit/combat/TurretSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/unit/combat/event/CombatEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/order/UnitOrders.class',
+                    'io/github/endx/rustedfabricapi/api/unit/order/UnitOrderSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/unit/repair/RepairReclaim.class',
+                    'io/github/endx/rustedfabricapi/api/unit/repair/event/RepairReclaimEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/status/StatusEffectKind.class',
+                    'io/github/endx/rustedfabricapi/api/unit/status/StatusEffects.class',
+                    'io/github/endx/rustedfabricapi/api/unit/status/StatusEffectSnapshot.class',
+                    'io/github/endx/rustedfabricapi/api/unit/status/event/StatusEffectEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/type/UnitTypes.class',
+                    'io/github/endx/rustedfabricapi/api/unit/type/event/UnitTypeEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/tag/UnitTags.class',
+                    'io/github/endx/rustedfabricapi/api/unit/tag/event/UnitTagEvents.class',
+                    'io/github/endx/rustedfabricapi/api/unit/transport/TransportUnits.class',
+                    'io/github/endx/rustedfabricapi/api/unit/transport/event/TransportEvents.class',
+                    'io/github/endx/rustedfabricapi/api/util/Identifier.class',
+                    'io/github/endx/rustedfabricapi/api/world/GameWorld.class',
+                    'io/github/endx/rustedfabricapi/api/world/WorldPoint.class'
+            ].each { apiEntry ->
+                if (zip.getEntry(apiEntry) == null) {
+                    throw new GradleException("Expected API class is missing from desktop API: ${apiEntry}")
                 }
             }
             mixins.mixins.each { mixin ->
-                def entryName = "io/github/endx/rustedfabricapi/mixin/${mixin}.class"
+                def entryName = "io/github/endx/rustedfabricapi/mixin/${mixin.replace('.', '/')}.class"
                 def entry = zip.getEntry(entryName)
                 if (entry == null) throw new GradleException("Missing remapped Mixin class ${entryName}")
                 byte[] bytes = zip.getInputStream(entry).bytes
@@ -373,12 +628,72 @@ tasks.register('verifyDistribution') {
                     throw new GradleException("Named game target remains in official Mixin ${mixin}")
                 }
             }
+            def mappedApiPrefixes = [
+                    'io/github/endx/rustedfabricapi/api/asset/',
+                    'io/github/endx/rustedfabricapi/api/audio/',
+                    'io/github/endx/rustedfabricapi/api/chat/',
+                    'io/github/endx/rustedfabricapi/api/client/',
+                    'io/github/endx/rustedfabricapi/api/command/',
+                    'io/github/endx/rustedfabricapi/api/config/',
+                    'io/github/endx/rustedfabricapi/api/custom/',
+                    'io/github/endx/rustedfabricapi/api/datagen/',
+                    'io/github/endx/rustedfabricapi/api/effect/',
+                    'io/github/endx/rustedfabricapi/api/lobby/',
+                    'io/github/endx/rustedfabricapi/api/map/',
+                    'io/github/endx/rustedfabricapi/api/mission/',
+                    'io/github/endx/rustedfabricapi/api/networking/',
+                    'io/github/endx/rustedfabricapi/api/projectile/event/',
+                    'io/github/endx/rustedfabricapi/api/resource/',
+                    'io/github/endx/rustedfabricapi/api/replay/',
+                    'io/github/endx/rustedfabricapi/api/registry/',
+                    'io/github/endx/rustedfabricapi/api/save/',
+                    'io/github/endx/rustedfabricapi/api/scheduler/',
+                    'io/github/endx/rustedfabricapi/api/stats/',
+                    'io/github/endx/rustedfabricapi/api/text/',
+                    'io/github/endx/rustedfabricapi/api/unit/',
+                    'io/github/endx/rustedfabricapi/api/world/'
+            ]
+            zip.entries().each { entry ->
+                if (!entry.directory && entry.name.endsWith('.class')
+                        && mappedApiPrefixes.any { entry.name.startsWith(it) }) {
+                    byte[] bytes = zip.getInputStream(entry).bytes
+                    def constants = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (constants.contains('rustedwarfare/') || constants.contains('rustedwarfare.')) {
+                        throw new GradleException("Named game type remains in official API class ${entry.name}")
+                    }
+                }
+            }
         }
 
         new java.util.zip.ZipFile(exampleJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
             if (mod.version != project.version.toString()) {
                 throw new GradleException('Official example-mod metadata version is inconsistent')
+            }
+            [
+                    'assets/rustedfabricexample/lang/default.properties',
+                    'assets/rustedfabricexample/lang/en.properties',
+                    'assets/rustedfabricexample/lang/zh.properties',
+                    'assets/rustedfabricexample/lang/zh_cn.properties',
+                    'assets/rustedfabricexample/data/example.properties',
+                    'data/rustedfabricexample/tags/rustedfabricexample/modes/interactive.json',
+                    'data/rustedfabricexample/tags/rustedfabricexample/modes/generated_tools.json'
+            ].each { resource ->
+                if (zip.getEntry(resource) == null) {
+                    throw new GradleException("Official example-mod is missing resource ${resource}")
+                }
+            }
+            if (zip.getEntry('io/github/endx/rustedfabricexample/ExampleDataGeneration.class') != null) {
+                throw new GradleException('Build-time datagen entrypoint leaked into the runtime example Jar')
+            }
+            zip.entries().each { entry ->
+                if (!entry.directory && entry.name.endsWith('.class')) {
+                    byte[] bytes = zip.getInputStream(entry).bytes
+                    def constants = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (constants.contains('rustedwarfare/') || constants.contains('rustedwarfare.')) {
+                        throw new GradleException("Named game type remains in official example class ${entry.name}")
+                    }
+                }
             }
         }
 

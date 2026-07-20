@@ -1,6 +1,8 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
+import io.github.endx.rustedfabricapi.api.networking.NamedChannelTransport;
+import io.github.endx.rustedfabricapi.api.networking.event.ConnectionEvents;
 import io.github.endx.rustedfabricapi.desktop.DesktopMultiplayerTransport;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -46,6 +48,9 @@ public abstract class NetworkHandshakeNamedMixin {
     private void rustedfabricapi$afterSendRegisterConnection(@Coerce Object connection, CallbackInfo ci) {
         NetworkHandshakeEvents.AFTER_SEND_REGISTER_CONNECTION.invoker().onPacket(this, connection);
         DesktopMultiplayerTransport.afterClientRegistration(this, connection);
+        ConnectionEvents.CLIENT_CONNECTION_READY.invoker().onReady(
+                (rustedwarfare.network.NetworkEngine) (Object) this,
+                (rustedwarfare.network.NetworkConnection) connection);
     }
 
     @Inject(method = "sendServerInfo(Lrustedwarfare/network/NetworkConnection;)V",
@@ -64,7 +69,15 @@ public abstract class NetworkHandshakeNamedMixin {
     @Inject(method = "processSystemPacket(Lrustedwarfare/network/Packet;)V",
             at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$receiveHandshake(@Coerce Object packet, CallbackInfo ci) {
-        if (DesktopMultiplayerTransport.receive(this, packet)) ci.cancel();
+        if (DesktopMultiplayerTransport.receive(this, packet)) {
+            ci.cancel();
+            return;
+        }
+        if (NamedChannelTransport.receive(
+                (rustedwarfare.network.NetworkEngine) (Object) this,
+                (rustedwarfare.network.Packet) packet)) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "sendStartGamePacket(Lrustedwarfare/network/NetworkConnection;Z)Z",

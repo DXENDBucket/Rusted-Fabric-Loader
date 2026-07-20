@@ -1,10 +1,12 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.CoreDebugStatsEvents;
+import io.github.endx.rustedfabricapi.api.stats.event.StatisticsEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import rustedwarfare.stats.StatsEngine;
 
 @Mixin(targets = "rustedwarfare.stats.StatsEngine", remap = false)
 public abstract class StatsEngineNamedMixin {
@@ -18,6 +20,7 @@ public abstract class StatsEngineNamedMixin {
     @Inject(method = "reset()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterStatsEngineReset(CallbackInfo ci) {
         CoreDebugStatsEvents.AFTER_STATS_ENGINE_RESET.invoker().afterStatsEngineLifecycle(this);
+        StatisticsEvents.AFTER_RESET.invoker().onStatistics((StatsEngine) (Object) this);
     }
 
     @Inject(method = "recordPeriodicStatsSnapshot()V", at = @At("HEAD"), cancellable = true, require = 1)
@@ -30,6 +33,7 @@ public abstract class StatsEngineNamedMixin {
     @Inject(method = "recordPeriodicStatsSnapshot()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterPeriodicStatsSnapshot(CallbackInfo ci) {
         CoreDebugStatsEvents.AFTER_PERIODIC_STATS_SNAPSHOT.invoker().afterStatsEngineLifecycle(this);
+        StatisticsEvents.AFTER_PERIODIC_UPDATE.invoker().onStatistics((StatsEngine) (Object) this);
     }
 
     @Inject(method = "finalizeStatsHistory()V", at = @At("HEAD"), cancellable = true, require = 1)
@@ -42,6 +46,7 @@ public abstract class StatsEngineNamedMixin {
     @Inject(method = "finalizeStatsHistory()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterFinalizeStatsHistory(CallbackInfo ci) {
         CoreDebugStatsEvents.AFTER_FINALIZE_STATS_HISTORY.invoker().afterStatsEngineLifecycle(this);
+        StatisticsEvents.AFTER_HISTORY_FINALIZED.invoker().onStatistics((StatsEngine) (Object) this);
     }
 
     @Inject(method = "recordStatsHistorySnapshot(IZZ)V", at = @At("HEAD"), cancellable = true, require = 1)

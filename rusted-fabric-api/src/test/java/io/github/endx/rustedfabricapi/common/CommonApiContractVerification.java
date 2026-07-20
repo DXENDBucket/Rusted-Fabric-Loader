@@ -174,8 +174,20 @@ public final class CommonApiContractVerification {
         engine.sent.connection = connection;
         require(bridge.receive(engine, engine.sent), "shared network bridge ignored RFH1");
         require(connection.disconnectReason == null, "compatible RFH1 peer was disconnected");
+        require(bridge.isLoaderPeer(connection) && bridge.hasLoaderPeer(),
+                "compatible RFH1 peer was not marked as a Loader peer");
+        require(bridge.peerManifest(connection).isPresent()
+                        && bridge.firstLoaderPeerManifest().isPresent(),
+                "compatible peer manifest was not retained for optional feature discovery");
         require(!logs.isEmpty(), "network bridge diagnostics were not emitted");
+        bridge.connectionClosed(connection);
+        require(!bridge.isLoaderPeer(connection) && !bridge.peerManifest(connection).isPresent(),
+                "closed connection retained Loader peer state");
         bridge.resetToSinglePlayer();
+        require(!bridge.isLoaderPeer(connection) && !bridge.hasLoaderPeer(),
+                "Loader peer state survived a network reset");
+        require(!bridge.peerManifest(connection).isPresent(),
+                "peer manifest survived a network reset");
 
         raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
                 new MultiplayerManifest("windows", Arrays.asList(
@@ -192,6 +204,8 @@ public final class CommonApiContractVerification {
         Thread.sleep(200L);
         require(vanilla.disconnectReason == null && vanillaFriendly.allowGameStart(vanilla),
                 "server-only/optional host rejected a vanilla client");
+        require(!vanillaFriendly.isLoaderPeer(vanilla),
+                "vanilla timeout was incorrectly marked as a Loader peer");
 
         raw.put(RustedFabricAPIKeys.K_MULTIPLAYER_MANIFEST,
                 new MultiplayerManifest("windows", Arrays.asList(MultiplayerMod.required(

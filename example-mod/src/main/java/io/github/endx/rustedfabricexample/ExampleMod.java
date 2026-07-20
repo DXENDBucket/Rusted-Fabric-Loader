@@ -22,6 +22,7 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     @Override
     public void onInitialize() {
         log("main entrypoint");
+        TypedDesktopApiExample.register();
         logNamedGameTypes("main");
         startVisibleSettingsTweaks("main");
         startMainMenuPopup("main");
@@ -33,6 +34,7 @@ public final class ExampleMod implements ModInitializer, ClientModInitializer {
     @Override
     public void onInitializeClient() {
         log("client entrypoint");
+        TypedDesktopApiExample.register();
         logNamedGameTypes("client");
         startVisibleSettingsTweaks("client");
         startMainMenuPopup("client");

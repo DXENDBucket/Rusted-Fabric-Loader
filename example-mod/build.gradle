@@ -26,11 +26,36 @@ def mappingsTinyFile = {
             : rootProject.file("src/main/resources/mappings/mappings.tiny")
 }
 
+sourceSets {
+    datagen {
+        java.srcDir 'src/datagen/java'
+    }
+}
+
 dependencies {
     compileOnly "net.fabricmc:fabric-loader:0.18.1"
     compileOnly project(":rusted-fabric-api-desktop")
     compileOnly files({ namedGameJarFile() })
+    datagenImplementation project(":rusted-fabric-api-desktop")
 }
+
+def generatedDatagenDirectory = layout.buildDirectory.dir('generated/datagen')
+
+tasks.register('runDatagen', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Generates example Jar resources with the Rusted Fabric datagen API.'
+    dependsOn tasks.named('datagenClasses')
+    classpath = sourceSets.datagen.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricexample.ExampleDataGeneration')
+    args generatedDatagenDirectory.get().asFile.absolutePath
+    outputs.dir generatedDatagenDirectory
+
+    doFirst {
+        delete generatedDatagenDirectory
+    }
+}
+
+sourceSets.main.resources.srcDir(generatedDatagenDirectory)
 
 tasks.withType(JavaCompile).configureEach {
     dependsOn rootProject.tasks.named('generateNamedGameJar')
@@ -56,6 +81,7 @@ tasks.register('verifyPortableExample') {
 check.dependsOn tasks.named('verifyPortableExample')
 
 processResources {
+    dependsOn tasks.named('runDatagen')
     inputs.property "version", project.version
 
     filesMatching("fabric.mod.json") {

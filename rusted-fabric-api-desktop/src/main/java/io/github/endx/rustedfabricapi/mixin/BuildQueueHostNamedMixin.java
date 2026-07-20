@@ -18,8 +18,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class BuildQueueHostNamedMixin {
     @Inject(method = "completeBuildQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeHostBuildQueueItemComplete(@Coerce Object queueItem, CallbackInfo ci) {
-        if (BuildQueueEvents.BEFORE_HOST_BUILD_QUEUE_ITEM_COMPLETE.invoker()
-                .beforeHostBuildQueueItemComplete(this, queueItem)) {
+        boolean cancelled = BuildQueueEvents.BEFORE_HOST_BUILD_QUEUE_ITEM_COMPLETE.invoker()
+                .beforeHostBuildQueueItemComplete(this, queueItem);
+        cancelled |= io.github.endx.rustedfabricapi.api.unit.build.event.BuildQueueEvents.BEFORE_HOST_ITEM_COMPLETE
+                .invoker().beforeHostItem((rustedwarfare.unit.build.BuildQueueHost) (Object) this,
+                        (rustedwarfare.unit.build.BuildQueueItem) queueItem);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -28,18 +32,30 @@ public abstract class BuildQueueHostNamedMixin {
     private void rustedfabricapi$afterHostBuildQueueItemComplete(@Coerce Object queueItem, CallbackInfo ci) {
         BuildQueueEvents.AFTER_HOST_BUILD_QUEUE_ITEM_COMPLETE.invoker()
                 .afterHostBuildQueueItemComplete(this, queueItem);
+        io.github.endx.rustedfabricapi.api.unit.build.event.BuildQueueEvents.AFTER_HOST_ITEM_COMPLETE
+                .invoker().onHostItem((rustedwarfare.unit.build.BuildQueueHost) (Object) this,
+                        (rustedwarfare.unit.build.BuildQueueItem) queueItem);
     }
 
     @Inject(method = "triggerWhenBuildingAction(Lrustedwarfare/unit/build/BuildQueueItem;)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterHostBuildQueueItemActivate(@Coerce Object queueItem, CallbackInfo ci) {
         BuildQueueEvents.AFTER_HOST_BUILD_QUEUE_ITEM_ACTIVATE.invoker()
                 .afterHostBuildQueueItemActivate(this, queueItem);
+        io.github.endx.rustedfabricapi.api.unit.build.event.BuildQueueEvents.AFTER_HOST_ITEM_ACTIVATE
+                .invoker().onHostItem((rustedwarfare.unit.build.BuildQueueHost) (Object) this,
+                        (rustedwarfare.unit.build.BuildQueueItem) queueItem);
     }
 
     @Inject(method = "canRefundBuildQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)Z", at = @At("RETURN"), cancellable = true, require = 1)
     private void rustedfabricapi$modifyHostBuildQueueItemRefundable(@Coerce Object queueItem,
                                                                     CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(BuildQueueEvents.MODIFY_HOST_BUILD_QUEUE_ITEM_REFUNDABLE.invoker()
-                .modifyHostBuildQueueItemRefundable(this, queueItem, Boolean.TRUE.equals(cir.getReturnValue())));
+        Boolean result = BuildQueueEvents.MODIFY_HOST_BUILD_QUEUE_ITEM_REFUNDABLE.invoker()
+                .modifyHostBuildQueueItemRefundable(this, queueItem,
+                        Boolean.TRUE.equals(cir.getReturnValue()));
+        result = io.github.endx.rustedfabricapi.api.unit.build.event.BuildQueueEvents.MODIFY_HOST_ITEM_REFUNDABLE
+                .invoker().modify((rustedwarfare.unit.build.BuildQueueHost) (Object) this,
+                        (rustedwarfare.unit.build.BuildQueueItem) queueItem,
+                        Boolean.TRUE.equals(result));
+        cir.setReturnValue(result);
     }
 }

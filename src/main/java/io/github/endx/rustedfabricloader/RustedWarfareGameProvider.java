@@ -645,7 +645,8 @@ public class RustedWarfareGameProvider implements GameProvider {
                 "event.ini.v1", "event.save.sync.v1", "event.selection.v1",
                 "event.transport.v1", "event.ui.script.v1",
                 "event.unit.damage.v1", "event.unit.lifecycle.v1",
-                "session.v1", "multiplayer.compat.v1", "multiplayer.handshake.rfh1",
+                "session.v1", "game.units.v1", "multiplayer.compat.v1", "multiplayer.handshake.rfh1",
+                "network.channels.v1",
                 "platform.windows.fabric"));
         ctx.put("rustedfabricapi.processName", "rusted-warfare-client");
 

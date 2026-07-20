@@ -23,6 +23,9 @@ public abstract class ProjectileLifecycleNamedMixin {
         if (projectile != null) {
             ProjectileEvents.AFTER_PROJECTILE_CREATED.invoker()
                     .afterProjectileCreated(projectile, sourceUnit);
+            io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_CREATED.invoker()
+                    .afterCreated((rustedwarfare.game.Projectile) projectile,
+                            (rustedwarfare.unit.Unit) sourceUnit);
         }
     }
 
@@ -38,6 +41,9 @@ public abstract class ProjectileLifecycleNamedMixin {
         if (projectile != null) {
             ProjectileEvents.AFTER_PROJECTILE_CREATED.invoker()
                     .afterProjectileCreated(projectile, sourceUnit);
+            io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_CREATED.invoker()
+                    .afterCreated((rustedwarfare.game.Projectile) projectile,
+                            (rustedwarfare.unit.Unit) sourceUnit);
         }
     }
 
@@ -45,51 +51,75 @@ public abstract class ProjectileLifecycleNamedMixin {
     private void rustedfabricapi$beforeProjectileUpdate(float delta, CallbackInfo ci) {
         ProjectileEvents.BEFORE_PROJECTILE_UPDATE.invoker()
                 .beforeProjectileUpdate(this, delta);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_UPDATE.invoker()
+                .onUpdate((rustedwarfare.game.Projectile) (Object) this, delta);
     }
 
     @Inject(method = "update(F)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileUpdate(float delta, CallbackInfo ci) {
         ProjectileEvents.AFTER_PROJECTILE_UPDATE.invoker()
                 .afterProjectileUpdate(this, delta);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_UPDATE.invoker()
+                .onUpdate((rustedwarfare.game.Projectile) (Object) this, delta);
     }
 
     @Inject(method = "explodeAndRemove()V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeProjectileExplosion(CallbackInfo ci) {
-        ProjectileEvents.BEFORE_PROJECTILE_IMPACT.invoker()
-                .onProjectileImpact(this, Projectiles.impactSnapshot(this));
+        io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(this);
+        ProjectileEvents.BEFORE_PROJECTILE_IMPACT.invoker().onProjectileImpact(this, impact);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_IMPACT.invoker()
+                .onImpact((rustedwarfare.game.Projectile) (Object) this, impact);
         ProjectileEvents.BEFORE_PROJECTILE_EXPLOSION.invoker()
                 .onProjectileExplosion(this);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_EXPLOSION.invoker()
+                .onExplosion((rustedwarfare.game.Projectile) (Object) this);
     }
 
     @Inject(method = "explodeAndRemove()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileExplosion(CallbackInfo ci) {
         ProjectileEvents.AFTER_PROJECTILE_EXPLOSION.invoker()
                 .onProjectileExplosion(this);
-        ProjectileEvents.AFTER_PROJECTILE_IMPACT.invoker()
-                .onProjectileImpact(this, Projectiles.impactSnapshot(this));
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_EXPLOSION.invoker()
+                .onExplosion((rustedwarfare.game.Projectile) (Object) this);
+        io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(this);
+        ProjectileEvents.AFTER_PROJECTILE_IMPACT.invoker().onProjectileImpact(this, impact);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_IMPACT.invoker()
+                .onImpact((rustedwarfare.game.Projectile) (Object) this, impact);
     }
 
     @Inject(method = "requestRemoval()V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeProjectileRemovalRequested(CallbackInfo ci) {
         ProjectileEvents.BEFORE_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
                 this, ProjectileEvents.RemovalReason.REQUESTED);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_REMOVAL.invoker().onRemoval(
+                (rustedwarfare.game.Projectile) (Object) this,
+                io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.RemovalReason.REQUESTED);
     }
 
     @Inject(method = "requestRemoval()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileRemovalRequested(CallbackInfo ci) {
         ProjectileEvents.AFTER_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
                 this, ProjectileEvents.RemovalReason.REQUESTED);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_REMOVAL.invoker().onRemoval(
+                (rustedwarfare.game.Projectile) (Object) this,
+                io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.RemovalReason.REQUESTED);
     }
 
     @Inject(method = "removeFromGame()V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeProjectileRemovedFromGame(CallbackInfo ci) {
         ProjectileEvents.BEFORE_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
                 this, ProjectileEvents.RemovalReason.REMOVED_FROM_GAME);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_REMOVAL.invoker().onRemoval(
+                (rustedwarfare.game.Projectile) (Object) this,
+                io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.RemovalReason.REMOVED_FROM_GAME);
     }
 
     @Inject(method = "removeFromGame()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileRemovedFromGame(CallbackInfo ci) {
         ProjectileEvents.AFTER_PROJECTILE_REMOVAL.invoker().onProjectileRemoval(
                 this, ProjectileEvents.RemovalReason.REMOVED_FROM_GAME);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_REMOVAL.invoker().onRemoval(
+                (rustedwarfare.game.Projectile) (Object) this,
+                io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.RemovalReason.REMOVED_FROM_GAME);
     }
 }

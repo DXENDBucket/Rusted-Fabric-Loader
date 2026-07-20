@@ -1,6 +1,9 @@
 package io.github.endx.rustedfabricapi.desktop;
 
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerNetworkBridge;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
+
+import java.util.Optional;
 
 /** Named-namespace adapter; remapping rewrites no common API surface or payload format. */
 public final class DesktopMultiplayerTransport {
@@ -40,5 +43,25 @@ public final class DesktopMultiplayerTransport {
 
     public static boolean allowGameStart(Object connection) {
         return BRIDGE.allowGameStart(connection);
+    }
+
+    public static boolean isLoaderPeer(Object connection) {
+        return BRIDGE.isLoaderPeer(connection);
+    }
+
+    public static boolean hasLoaderPeer() {
+        return BRIDGE.hasLoaderPeer();
+    }
+
+    public static Optional<MultiplayerManifest> peerManifest(Object connection) {
+        return BRIDGE.peerManifest(connection);
+    }
+
+    public static Optional<MultiplayerManifest> firstLoaderPeerManifest() {
+        return BRIDGE.firstLoaderPeerManifest();
+    }
+
+    public static void connectionClosed(Object connection) {
+        BRIDGE.connectionClosed(connection);
     }
 }

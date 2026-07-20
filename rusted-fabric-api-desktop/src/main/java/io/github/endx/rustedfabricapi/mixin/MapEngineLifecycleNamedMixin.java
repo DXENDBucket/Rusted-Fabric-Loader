@@ -1,9 +1,10 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.MapMissionEvents;
+import io.github.endx.rustedfabricapi.api.map.MapObjects;
+import io.github.endx.rustedfabricapi.api.map.event.MapObjectEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -14,7 +15,10 @@ import java.io.InputStream;
 public abstract class MapEngineLifecycleNamedMixin {
     @Inject(method = "openMapInputStream(Ljava/lang/String;)Ljava/io/InputStream;", at = @At("HEAD"), cancellable = true, require = 1)
     private static void rustedfabricapi$beforeMapStreamOpen(String mapPath, CallbackInfoReturnable<InputStream> cir) {
-        if (MapMissionEvents.BEFORE_MAP_STREAM_OPEN.invoker().beforeMapStreamOpen(mapPath)) {
+        boolean cancelled = MapMissionEvents.BEFORE_MAP_STREAM_OPEN.invoker().beforeMapStreamOpen(mapPath);
+        cancelled |= io.github.endx.rustedfabricapi.api.map.event.MapLifecycleEvents.BEFORE_MAP_STREAM_OPEN.invoker()
+                .beforeMapStreamOpen(mapPath);
+        if (cancelled) {
             cir.setReturnValue(null);
         }
     }
@@ -26,7 +30,12 @@ public abstract class MapEngineLifecycleNamedMixin {
             require = 1
     )
     private void rustedfabricapi$beforeTmxDocumentParse(InputStream inputStream, boolean newGame, CallbackInfo ci) {
-        if (MapMissionEvents.BEFORE_TMX_DOCUMENT_PARSE.invoker().beforeTmxDocumentParse(this, inputStream, newGame)) {
+        boolean cancelled = MapMissionEvents.BEFORE_TMX_DOCUMENT_PARSE.invoker()
+                .beforeTmxDocumentParse(this, inputStream, newGame);
+        cancelled |= io.github.endx.rustedfabricapi.api.map.event.MapLifecycleEvents.BEFORE_TMX_DOCUMENT_PARSE.invoker()
+                .beforeDocumentParse((rustedwarfare.map.MapEngine) (Object) this,
+                        inputStream, newGame);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -38,6 +47,8 @@ public abstract class MapEngineLifecycleNamedMixin {
     )
     private void rustedfabricapi$afterMapAttributesRead(InputStream inputStream, boolean newGame, CallbackInfo ci) {
         MapMissionEvents.AFTER_MAP_ATTRIBUTES_READ.invoker().afterMapAttributesRead(this, inputStream, newGame);
+        io.github.endx.rustedfabricapi.api.map.event.MapLifecycleEvents.AFTER_MAP_ATTRIBUTES_READ.invoker()
+                .afterPhase((rustedwarfare.map.MapEngine) (Object) this, inputStream, newGame);
     }
 
     @Inject(
@@ -47,6 +58,8 @@ public abstract class MapEngineLifecycleNamedMixin {
     )
     private void rustedfabricapi$afterTilesetsLoaded(InputStream inputStream, boolean newGame, CallbackInfo ci) {
         MapMissionEvents.AFTER_TILESETS_LOADED.invoker().afterTilesetsLoaded(this, inputStream, newGame);
+        io.github.endx.rustedfabricapi.api.map.event.MapLifecycleEvents.AFTER_TILESETS_LOADED.invoker()
+                .afterPhase((rustedwarfare.map.MapEngine) (Object) this, inputStream, newGame);
     }
 
     @Inject(
@@ -56,6 +69,8 @@ public abstract class MapEngineLifecycleNamedMixin {
     )
     private void rustedfabricapi$afterMapLayersLoaded(InputStream inputStream, boolean newGame, CallbackInfo ci) {
         MapMissionEvents.AFTER_MAP_LAYERS_LOADED.invoker().afterMapLayersLoaded(this, inputStream, newGame);
+        io.github.endx.rustedfabricapi.api.map.event.MapLifecycleEvents.AFTER_MAP_LAYERS_LOADED.invoker()
+                .afterPhase((rustedwarfare.map.MapEngine) (Object) this, inputStream, newGame);
     }
 
     @Inject(
@@ -65,5 +80,9 @@ public abstract class MapEngineLifecycleNamedMixin {
     )
     private void rustedfabricapi$afterMapObjectGroupsLoaded(InputStream inputStream, boolean newGame, CallbackInfo ci) {
         MapMissionEvents.AFTER_MAP_OBJECT_GROUPS_LOADED.invoker().afterMapObjectGroupsLoaded(this);
+        io.github.endx.rustedfabricapi.api.map.event.MapLifecycleEvents.AFTER_MAP_OBJECT_GROUPS_LOADED.invoker()
+                .afterObjectGroupsLoaded((rustedwarfare.map.MapEngine) (Object) this);
+        MapObjectEvents.AFTER_LOAD.invoker().afterLoad(
+                MapObjects.snapshot((rustedwarfare.map.MapEngine) (Object) this));
     }
 }

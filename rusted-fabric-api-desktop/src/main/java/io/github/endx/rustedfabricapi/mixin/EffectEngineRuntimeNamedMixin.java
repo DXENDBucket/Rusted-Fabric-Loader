@@ -1,6 +1,10 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.EffectRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.effect.event.EffectEvents;
+import rustedwarfare.framework.GameObject;
+import rustedwarfare.render.effect.EffectEngine;
+import rustedwarfare.render.effect.EffectInstance;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -20,6 +24,11 @@ public abstract class EffectEngineRuntimeNamedMixin {
         EffectRuntimeEvents.AFTER_LINE_EFFECT_CREATED.invoker()
                 .afterLineEffectCreated(this, cir.getReturnValue(), startX, startY, startHeight,
                         targetX, targetY, targetHeight);
+        if (cir.getReturnValue() != null) {
+            EffectEvents.AFTER_LINE.invoker().afterLine((EffectEngine) (Object) this,
+                    (EffectInstance) cir.getReturnValue(), startX, startY, startHeight,
+                    targetX, targetY, targetHeight);
+        }
     }
 
     @Inject(
@@ -31,6 +40,10 @@ public abstract class EffectEngineRuntimeNamedMixin {
                                                          CallbackInfoReturnable<Object> cir) {
         EffectRuntimeEvents.AFTER_LIGHT_EFFECT_CREATED.invoker()
                 .afterLightEffectCreated(this, cir.getReturnValue(), x, y, height, color);
+        if (cir.getReturnValue() != null) {
+            EffectEvents.AFTER_LIGHT.invoker().afterLight((EffectEngine) (Object) this,
+                    (EffectInstance) cir.getReturnValue(), x, y, height, color);
+        }
     }
 
     @Inject(
@@ -42,6 +55,11 @@ public abstract class EffectEngineRuntimeNamedMixin {
                                                                             CallbackInfoReturnable<Object> cir) {
         EffectRuntimeEvents.AFTER_ATTACHED_LIGHT_EFFECT_CREATED.invoker()
                 .afterAttachedLightEffectCreated(this, cir.getReturnValue(), object, color, 0.5F);
+        if (cir.getReturnValue() != null) {
+            EffectEvents.AFTER_ATTACHED_LIGHT.invoker().afterAttachedLight(
+                    (EffectEngine) (Object) this, (EffectInstance) cir.getReturnValue(),
+                    (GameObject) object, color, 0.5F);
+        }
     }
 
     @Inject(
@@ -53,5 +71,10 @@ public abstract class EffectEngineRuntimeNamedMixin {
                                                                  CallbackInfoReturnable<Object> cir) {
         EffectRuntimeEvents.AFTER_ATTACHED_LIGHT_EFFECT_CREATED.invoker()
                 .afterAttachedLightEffectCreated(this, cir.getReturnValue(), object, color, size);
+        if (cir.getReturnValue() != null) {
+            EffectEvents.AFTER_ATTACHED_LIGHT.invoker().afterAttachedLight(
+                    (EffectEngine) (Object) this, (EffectInstance) cir.getReturnValue(),
+                    (GameObject) object, color, size);
+        }
     }
 }

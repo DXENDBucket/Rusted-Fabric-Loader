@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -129,6 +130,8 @@ public final class MultiplayerNetworkBridge {
                 }
                 result = MultiplayerPeerCompatibility.evaluate(
                         state.peerId, localManifest(), remote);
+                state.loaderPeer = true;
+                state.remoteManifest = remote;
                 state.compatible = result.compatible();
                 state.resolved = true;
             }
@@ -153,6 +156,14 @@ public final class MultiplayerNetworkBridge {
     public void resetToSinglePlayer() {
         peers.clear();
         GameSessionRuntime.transition(GameSession.Kind.SINGLE_PLAYER);
+    }
+
+    /** Drops all Loader state associated with a closed connection. */
+    public void connectionClosed(Object connection) {
+        if (connection == null) return;
+        synchronized (peers) {
+            peers.remove(connection);
+        }
     }
 
     /** Synchronous host-side gate used immediately before the game's start packet is sent. */
@@ -182,6 +193,52 @@ public final class MultiplayerNetworkBridge {
             logger.log("Could not check peer before game start " + state.peerId, failure);
             return false;
         }
+    }
+
+    /** Returns whether this exact connection completed RFH1 as a compatible Loader peer. */
+    public boolean isLoaderPeer(Object connection) {
+        if (connection == null) return false;
+        synchronized (peers) {
+            PeerState state = peers.get(connection);
+            return state != null && state.loaderPeer
+                    && state.resolved && Boolean.TRUE.equals(state.compatible);
+        }
+    }
+
+    /** Returns whether at least one connection completed RFH1 as a compatible Loader peer. */
+    public boolean hasLoaderPeer() {
+        synchronized (peers) {
+            for (PeerState state : peers.values()) {
+                if (state.loaderPeer && state.resolved && Boolean.TRUE.equals(state.compatible)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Returns the manifest received from this compatible Loader peer. */
+    public Optional<MultiplayerManifest> peerManifest(Object connection) {
+        if (connection == null) return Optional.empty();
+        synchronized (peers) {
+            PeerState state = peers.get(connection);
+            return state != null && state.loaderPeer
+                    && state.resolved && Boolean.TRUE.equals(state.compatible)
+                    ? Optional.ofNullable(state.remoteManifest) : Optional.empty();
+        }
+    }
+
+    /** Client-side convenience for the single compatible remote server manifest. */
+    public Optional<MultiplayerManifest> firstLoaderPeerManifest() {
+        synchronized (peers) {
+            for (PeerState state : peers.values()) {
+                if (state.loaderPeer && state.resolved && Boolean.TRUE.equals(state.compatible)
+                        && state.remoteManifest != null) {
+                    return Optional.of(state.remoteManifest);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private void finishLegacyTimeout(Object connection, PeerState expected) {
@@ -309,8 +366,10 @@ public final class MultiplayerNetworkBridge {
     private static final class PeerState {
         final String peerId;
         boolean helloSent;
+        boolean loaderPeer;
         boolean resolved;
         volatile Boolean compatible;
+        MultiplayerManifest remoteManifest;
         PeerState(String peerId) { this.peerId = peerId; }
     }
 }

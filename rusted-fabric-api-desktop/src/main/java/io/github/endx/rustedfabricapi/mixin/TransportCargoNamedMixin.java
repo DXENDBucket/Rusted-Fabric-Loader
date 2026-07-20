@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import rustedwarfare.unit.Unit;
 
 @Mixin(
         targets = {
@@ -18,8 +19,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class TransportCargoNamedMixin {
     @Inject(method = "addUnitToTransport(Lrustedwarfare/unit/Unit;)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeAddUnitToTransport(@Coerce Object transportedUnit, CallbackInfo ci) {
-        if (TransportEvents.BEFORE_ADD_UNIT_TO_TRANSPORT.invoker()
-                .beforeAddUnitToTransport(this, transportedUnit)) {
+        boolean cancelled = TransportEvents.BEFORE_ADD_UNIT_TO_TRANSPORT.invoker()
+                .beforeAddUnitToTransport(this, transportedUnit);
+        cancelled |= io.github.endx.rustedfabricapi.api.unit.transport.event.TransportEvents
+                .BEFORE_LOAD.invoker().beforeCargoChange(
+                        (Unit) (Object) this, (Unit) transportedUnit);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -28,12 +33,18 @@ public abstract class TransportCargoNamedMixin {
     private void rustedfabricapi$afterAddUnitToTransport(@Coerce Object transportedUnit, CallbackInfo ci) {
         TransportEvents.AFTER_ADD_UNIT_TO_TRANSPORT.invoker()
                 .afterAddUnitToTransport(this, transportedUnit);
+        io.github.endx.rustedfabricapi.api.unit.transport.event.TransportEvents
+                .AFTER_LOAD.invoker().onCargoChange((Unit) (Object) this, (Unit) transportedUnit);
     }
 
     @Inject(method = "removeUnitFromTransport(Lrustedwarfare/unit/Unit;)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeRemoveUnitFromTransport(@Coerce Object transportedUnit, CallbackInfo ci) {
-        if (TransportEvents.BEFORE_REMOVE_UNIT_FROM_TRANSPORT.invoker()
-                .beforeRemoveUnitFromTransport(this, transportedUnit)) {
+        boolean cancelled = TransportEvents.BEFORE_REMOVE_UNIT_FROM_TRANSPORT.invoker()
+                .beforeRemoveUnitFromTransport(this, transportedUnit);
+        cancelled |= io.github.endx.rustedfabricapi.api.unit.transport.event.TransportEvents
+                .BEFORE_REMOVE.invoker().beforeCargoChange(
+                        (Unit) (Object) this, (Unit) transportedUnit);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -42,5 +53,7 @@ public abstract class TransportCargoNamedMixin {
     private void rustedfabricapi$afterRemoveUnitFromTransport(@Coerce Object transportedUnit, CallbackInfo ci) {
         TransportEvents.AFTER_REMOVE_UNIT_FROM_TRANSPORT.invoker()
                 .afterRemoveUnitFromTransport(this, transportedUnit);
+        io.github.endx.rustedfabricapi.api.unit.transport.event.TransportEvents
+                .AFTER_REMOVE.invoker().onCargoChange((Unit) (Object) this, (Unit) transportedUnit);
     }
 }

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#contract:json_base",
+    "tag_contract:beta"
+  ]
+}

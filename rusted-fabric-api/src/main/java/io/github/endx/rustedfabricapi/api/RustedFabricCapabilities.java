@@ -15,6 +15,7 @@ public final class RustedFabricCapabilities {
     public static final String FILE_SYSTEM = "event.file.system.v1";
     public static final String GAME_LIFECYCLE = "event.game.lifecycle.v1";
     public static final String GAME_SESSION = "session.v1";
+    public static final String GAME_UNITS = "game.units.v1";
     public static final String HUD_COMMAND = "event.hud.command.v1";
     public static final String MAP_DISCOVERY = "event.map.discovery.v1";
     public static final String MAP_MISSION = "event.map.mission.v1";

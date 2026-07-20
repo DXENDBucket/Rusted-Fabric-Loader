@@ -1,0 +1,9 @@
+{
+  "rustedfabric:load_conditions": [
+    {
+      "condition": "rustedfabric:all_mods_loaded",
+      "values": ["optional_bridge"]
+    }
+  ],
+  "values": ["tag_contract:gamma"]
+}

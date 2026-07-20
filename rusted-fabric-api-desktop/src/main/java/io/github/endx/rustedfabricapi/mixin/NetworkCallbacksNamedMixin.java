@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.NetworkCallbackEvents;
+import io.github.endx.rustedfabricapi.api.networking.event.ConnectionEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -141,6 +142,8 @@ public abstract class NetworkCallbacksNamedMixin {
                                                          CallbackInfo ci) {
         NetworkCallbackEvents.AFTER_ON_PLAYER_REGISTERED.invoker()
                 .onEvent(this, connection, playerName, playerIdText);
+        ConnectionEvents.SERVER_PLAYER_REGISTERED.invoker().onRegistered(
+                (rustedwarfare.network.NetworkConnection) connection, playerName, playerIdText);
     }
 
     @Inject(method = "onPlayerAdded(Lrustedwarfare/game/Team;)V", at = @At("HEAD"), require = 1)

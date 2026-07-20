@@ -20,6 +20,8 @@ public abstract class CustomUnitLoaderNamedMixin {
     )
     private static void rustedfabricapi$beforeNativeCustomUnitLoad(CallbackInfo ci) {
         CustomUnitEvents.BEFORE_NATIVE_CUSTOM_UNIT_LOAD.invoker().beforeNativeCustomUnitLoad();
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents.BEFORE_NATIVE_LOAD
+                .invoker().onLoadPhase(io.github.endx.rustedfabricapi.api.custom.CustomUnits.pendingTypes());
     }
 
     @Inject(
@@ -32,6 +34,8 @@ public abstract class CustomUnitLoaderNamedMixin {
     )
     private static void rustedfabricapi$afterNativeCustomUnitParseBeforeEnable(CallbackInfo ci) {
         CustomUnitEvents.AFTER_NATIVE_CUSTOM_UNIT_PARSE_BEFORE_ENABLE.invoker().afterNativeCustomUnitParseBeforeEnable();
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents.AFTER_PARSE_BEFORE_ENABLE
+                .invoker().onLoadPhase(io.github.endx.rustedfabricapi.api.custom.CustomUnits.pendingTypes());
     }
 
     @Inject(
@@ -44,6 +48,9 @@ public abstract class CustomUnitLoaderNamedMixin {
     )
     private static void rustedfabricapi$beforeCustomUnitRegistryRebuild(boolean includeDisabledMods, CallbackInfoReturnable<String> cir) {
         CustomUnitEvents.BEFORE_CUSTOM_UNIT_REGISTRY_REBUILD.invoker().beforeCustomUnitRegistryRebuild(includeDisabledMods);
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents.BEFORE_REGISTRY_REBUILD
+                .invoker().beforeRebuild(includeDisabledMods,
+                        io.github.endx.rustedfabricapi.api.custom.CustomUnits.pendingTypes());
     }
 
     @Inject(
@@ -57,10 +64,14 @@ public abstract class CustomUnitLoaderNamedMixin {
     )
     private static void rustedfabricapi$afterCustomUnitOverrideAndReplace(CallbackInfo ci) {
         CustomUnitEvents.AFTER_CUSTOM_UNIT_OVERRIDE_AND_REPLACE.invoker().afterCustomUnitOverrideAndReplace();
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents.AFTER_OVERRIDE_AND_REPLACE
+                .invoker().onRegistryPhase(io.github.endx.rustedfabricapi.api.custom.CustomUnits.activeTypes());
     }
 
     @Inject(method = "rebuildCustomUnitLookupAndActionLinksInternal()V", at = @At("RETURN"), require = 1)
     private static void rustedfabricapi$afterCustomUnitLinkGraphBuilt(CallbackInfo ci) {
         CustomUnitEvents.AFTER_CUSTOM_UNIT_LINK_GRAPH_BUILT.invoker().afterCustomUnitLinkGraphBuilt();
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents.AFTER_ACTION_LINKS_BUILT
+                .invoker().onRegistryPhase(io.github.endx.rustedfabricapi.api.custom.CustomUnits.activeTypes());
     }
 }

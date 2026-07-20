@@ -6,10 +6,13 @@ import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
 import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
+import io.github.endx.rustedfabricapi.api.event.EventPhaseContractVerification;
 import io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot;
 import io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot;
 import io.github.endx.rustedfabricapi.api.game.Projectiles;
 import io.github.endx.rustedfabricapi.api.game.CustomUnitRuntimeSnapshot;
+import io.github.endx.rustedfabricapi.api.lifecycle.LifecycleScopeContractVerification;
+import io.github.endx.rustedfabricapi.api.service.ServiceRegistryContractVerification;
 import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
 
 import java.nio.file.Paths;
@@ -25,6 +28,9 @@ public final class ApiContractVerification {
     }
 
     public static void main(String[] args) {
+        ServiceRegistryContractVerification.verify();
+        LifecycleScopeContractVerification.verify();
+        EventPhaseContractVerification.verify();
         verifiesListenerOrderAndSnapshotRefresh();
         verifiesListenerCleanup();
         verifiesContextDefensiveCopies();

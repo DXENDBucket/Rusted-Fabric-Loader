@@ -38,8 +38,12 @@ public abstract class GameEngineInitializationNamedMixin {
             context.multiplayerManifest().ifPresent(
                     MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY::dispatch);
         }
-        if (context != null && rustedfabricapi$engineInitializationStarted.compareAndSet(false, true)) {
-            RuntimeLifecycleEvents.BEFORE_ENGINE_INITIALIZATION.dispatch(context);
+        if (rustedfabricapi$engineInitializationStarted.compareAndSet(false, true)) {
+            if (context != null) {
+                RuntimeLifecycleEvents.BEFORE_ENGINE_INITIALIZATION.dispatch(context);
+            }
+            io.github.endx.rustedfabricapi.api.client.event.ClientLifecycleEvents.BEFORE_ENGINE_INITIALIZATION
+                    .invoker().onEngineInitialization((rustedwarfare.core.GameEngine) (Object) this);
         }
     }
 
@@ -47,8 +51,12 @@ public abstract class GameEngineInitializationNamedMixin {
     private void rustedfabricapi$afterEngineInitialization(@Coerce Object androidContext,
                                                            CallbackInfo callback) {
         RustedFabricAPIContext context = RustedFabricRuntime.currentContext().orElse(null);
-        if (context != null && rustedfabricapi$engineInitializationCompleted.compareAndSet(false, true)) {
-            RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch(context);
+        if (rustedfabricapi$engineInitializationCompleted.compareAndSet(false, true)) {
+            if (context != null) {
+                RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.dispatch(context);
+            }
+            io.github.endx.rustedfabricapi.api.client.event.ClientLifecycleEvents.AFTER_ENGINE_INITIALIZATION
+                    .invoker().onEngineInitialization((rustedwarfare.core.GameEngine) (Object) this);
         }
         if (context != null && rustedfabricapi$gameReady.compareAndSet(false, true)) {
             RuntimeLifecycleEvents.GAME_READY.dispatch(context);

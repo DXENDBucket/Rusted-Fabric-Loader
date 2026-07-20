@@ -7,6 +7,10 @@ version = rootProject.version
 
 evaluationDependsOn(':rusted-fabric-api')
 
+java {
+    withSourcesJar()
+}
+
 repositories {
     if (rootProject.hasProperty('offlineRuntimeJars')) {
         flatDir { dirs rootProject.file(rootProject.property('offlineRuntimeJars')) }
@@ -34,15 +38,31 @@ def mappingsTinyFile = {
 dependencies {
     api project(':rusted-fabric-api')
     implementation "net.fabricmc:fabric-loader:0.18.1"
+    api "com.google.code.gson:gson:2.8.7"
     compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
     compileOnly files({ gameLibJarFile() })
     compileOnly files({ namedGameJarFile() })
+    testImplementation files({ namedGameJarFile() })
 }
 
 jar {
     dependsOn project(':rusted-fabric-api').tasks.named('classes')
     from project(':rusted-fabric-api').sourceSets.main.output
     duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn project(':rusted-fabric-api').tasks.named('classes')
+    from project(':rusted-fabric-api').sourceSets.main.allSource
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+tasks.register('verifyDesktopApiContracts', JavaExec) {
+    group = 'verification'
+    description = 'Runs dependency-light behavior checks for the mapped desktop event API.'
+    dependsOn testClasses, rootProject.tasks.named('generateNamedGameJar')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricapi.desktop.DesktopApiContractVerification')
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -90,3 +110,298 @@ tasks.register('remapJarToOfficial', JavaExec) {
         ] + sourceSets.main.compileClasspath.files.collect { it.absolutePath })
     }
 }
+
+tasks.register('verifyOfficialApiNamespace') {
+    group = 'verification'
+    description = 'Ensures mapped desktop API signatures were remapped out of the named game namespace.'
+    dependsOn tasks.named('remapJarToOfficial')
+
+    def outputJar = layout.buildDirectory.file("libs/official/rusted-fabric-api-${project.version}.jar")
+    def sourcesJarFile = tasks.named('sourcesJar', Jar).flatMap { it.archiveFile }
+    inputs.file outputJar
+    inputs.file sourcesJarFile
+
+    doLast {
+        def inspectedPrefixes = [
+                'io/github/endx/rustedfabricapi/api/asset/',
+                'io/github/endx/rustedfabricapi/api/audio/',
+                'io/github/endx/rustedfabricapi/api/chat/',
+                'io/github/endx/rustedfabricapi/api/client/',
+                'io/github/endx/rustedfabricapi/api/command/',
+                'io/github/endx/rustedfabricapi/api/config/',
+                'io/github/endx/rustedfabricapi/api/custom/',
+                'io/github/endx/rustedfabricapi/api/datagen/',
+                'io/github/endx/rustedfabricapi/api/effect/',
+                'io/github/endx/rustedfabricapi/api/lobby/',
+                'io/github/endx/rustedfabricapi/api/map/',
+                'io/github/endx/rustedfabricapi/api/mission/',
+                'io/github/endx/rustedfabricapi/api/networking/',
+                'io/github/endx/rustedfabricapi/api/path/',
+                'io/github/endx/rustedfabricapi/api/projectile/event/',
+                'io/github/endx/rustedfabricapi/api/resource/',
+                'io/github/endx/rustedfabricapi/api/replay/',
+                'io/github/endx/rustedfabricapi/api/registry/',
+                'io/github/endx/rustedfabricapi/api/save/',
+                'io/github/endx/rustedfabricapi/api/scheduler/',
+                'io/github/endx/rustedfabricapi/api/stats/',
+                'io/github/endx/rustedfabricapi/api/text/',
+                'io/github/endx/rustedfabricapi/api/unit/',
+                'io/github/endx/rustedfabricapi/api/world/'
+        ]
+        def stale = []
+        new java.util.zip.ZipFile(outputJar.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                if (entry.name.endsWith('.class')
+                        && inspectedPrefixes.any { entry.name.startsWith(it) }) {
+                    def constants = new String(zip.getInputStream(entry).bytes,
+                            java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (constants.contains('rustedwarfare/') || constants.contains('rustedwarfare.')) {
+                        stale.add(entry.name)
+                    }
+                }
+            }
+        }
+        if (!stale.isEmpty()) {
+            throw new GradleException("Named game references remain in official desktop API: ${stale}")
+        }
+
+        def requiredSources = [
+                'io/github/endx/rustedfabricapi/api/RustedFabricRuntime.java',
+                'io/github/endx/rustedfabricapi/api/asset/ModResource.java',
+                'io/github/endx/rustedfabricapi/api/asset/ModResourceEvents.java',
+                'io/github/endx/rustedfabricapi/api/asset/ModResourcePack.java',
+                'io/github/endx/rustedfabricapi/api/asset/ModResources.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/BuiltinResourceConditions.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/ResourceCondition.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionContext.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionDecoder.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionEvaluation.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditionType.java',
+                'io/github/endx/rustedfabricapi/api/asset/condition/ResourceConditions.java',
+                'io/github/endx/rustedfabricapi/api/asset/reload/ModResourceReloader.java',
+                'io/github/endx/rustedfabricapi/api/asset/reload/ModResourceReloadEvents.java',
+                'io/github/endx/rustedfabricapi/api/asset/reload/ModResourceReloaders.java',
+                'io/github/endx/rustedfabricapi/api/asset/reload/ResourceReloadReason.java',
+                'io/github/endx/rustedfabricapi/api/asset/reload/ResourceReloadReport.java',
+                'io/github/endx/rustedfabricapi/api/asset/reload/ResourceReloadStatus.java',
+                'io/github/endx/rustedfabricapi/api/datagen/DataGenerationReport.java',
+                'io/github/endx/rustedfabricapi/api/datagen/DataOutput.java',
+                'io/github/endx/rustedfabricapi/api/datagen/DataProvider.java',
+                'io/github/endx/rustedfabricapi/api/datagen/DataProviderResult.java',
+                'io/github/endx/rustedfabricapi/api/datagen/DataProviderStatus.java',
+                'io/github/endx/rustedfabricapi/api/datagen/ModDataGenerator.java',
+                'io/github/endx/rustedfabricapi/api/datagen/ResourceConditionJson.java',
+                'io/github/endx/rustedfabricapi/api/datagen/provider/LanguageBuilder.java',
+                'io/github/endx/rustedfabricapi/api/datagen/provider/LanguageDataProvider.java',
+                'io/github/endx/rustedfabricapi/api/datagen/provider/RegistryTagBuilder.java',
+                'io/github/endx/rustedfabricapi/api/datagen/provider/RegistryTagDataProvider.java',
+                'io/github/endx/rustedfabricapi/api/audio/SoundEvents.java',
+                'io/github/endx/rustedfabricapi/api/audio/SoundPlayback.java',
+                'io/github/endx/rustedfabricapi/api/audio/Sounds.java',
+                'io/github/endx/rustedfabricapi/api/chat/ChatEvents.java',
+                'io/github/endx/rustedfabricapi/api/chat/Chats.java',
+                'io/github/endx/rustedfabricapi/api/chat/command/ChatCommandContext.java',
+                'io/github/endx/rustedfabricapi/api/chat/command/ChatCommandEvents.java',
+                'io/github/endx/rustedfabricapi/api/chat/command/ChatCommandHandler.java',
+                'io/github/endx/rustedfabricapi/api/chat/command/ChatCommands.java',
+                'io/github/endx/rustedfabricapi/api/client/Camera.java',
+                'io/github/endx/rustedfabricapi/api/client/CameraSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/client/RustedWarfareClient.java',
+                'io/github/endx/rustedfabricapi/api/client/event/SelectionEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/input/KeyBindingEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/input/KeyBindings.java',
+                'io/github/endx/rustedfabricapi/api/client/input/ModKeyBinding.java',
+                'io/github/endx/rustedfabricapi/api/client/input/ClientInputEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/input/InputKeys.java',
+                'io/github/endx/rustedfabricapi/api/client/input/InputModifiers.java',
+                'io/github/endx/rustedfabricapi/api/client/input/KeyboardAction.java',
+                'io/github/endx/rustedfabricapi/api/client/input/KeyboardInput.java',
+                'io/github/endx/rustedfabricapi/api/client/input/MouseButton.java',
+                'io/github/endx/rustedfabricapi/api/client/input/PointerAction.java',
+                'io/github/endx/rustedfabricapi/api/client/input/PointerInput.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/ClientScreens.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/ScreenEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/UiDocumentChange.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/UiDocumentKind.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/UiDocumentSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/dialog/ClientDialogs.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogCallback.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogChoice.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogHandle.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogResult.java',
+                'io/github/endx/rustedfabricapi/api/client/screen/dialog/DialogSpec.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOption.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOptionChange.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOptionChangeSet.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOptionSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOptionTransaction.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOptionUpdateResult.java',
+                'io/github/endx/rustedfabricapi/api/client/option/ClientOptions.java',
+                'io/github/endx/rustedfabricapi/api/client/option/event/ClientOptionEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/render/ArgbColor.java',
+                'io/github/endx/rustedfabricapi/api/client/render/ClientImage.java',
+                'io/github/endx/rustedfabricapi/api/client/render/ClientImages.java',
+                'io/github/endx/rustedfabricapi/api/client/render/DrawStyle.java',
+                'io/github/endx/rustedfabricapi/api/client/render/HudDrawContext.java',
+                'io/github/endx/rustedfabricapi/api/client/render/ScreenPosition.java',
+                'io/github/endx/rustedfabricapi/api/client/render/TextAlignment.java',
+                'io/github/endx/rustedfabricapi/api/client/render/WorldDrawContext.java',
+                'io/github/endx/rustedfabricapi/api/client/render/WorldViewport.java',
+                'io/github/endx/rustedfabricapi/api/client/event/WorldRenderEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/render/event/ClientImageEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/message/ClientMessages.java',
+                'io/github/endx/rustedfabricapi/api/client/message/MessageEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/minimap/MinimapEvents.java',
+                'io/github/endx/rustedfabricapi/api/client/minimap/MinimapMarkerKind.java',
+                'io/github/endx/rustedfabricapi/api/client/minimap/MinimapSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/client/minimap/Minimaps.java',
+                'io/github/endx/rustedfabricapi/api/client/minimap/ScreenPoint.java',
+                'io/github/endx/rustedfabricapi/api/client/warlog/WarLog.java',
+                'io/github/endx/rustedfabricapi/api/client/warlog/WarLogEntryKind.java',
+                'io/github/endx/rustedfabricapi/api/client/warlog/WarLogEvents.java',
+                'io/github/endx/rustedfabricapi/api/config/ConfigEvents.java',
+                'io/github/endx/rustedfabricapi/api/config/ModConfigFile.java',
+                'io/github/endx/rustedfabricapi/api/config/ModConfigFiles.java',
+                'io/github/endx/rustedfabricapi/api/custom/CustomUnits.java',
+                'io/github/endx/rustedfabricapi/api/custom/CustomUnitTriggers.java',
+                'io/github/endx/rustedfabricapi/api/custom/action/CustomActionEffects.java',
+                'io/github/endx/rustedfabricapi/api/custom/action/event/CustomActionEffectEvents.java',
+                'io/github/endx/rustedfabricapi/api/custom/attachment/Attachments.java',
+                'io/github/endx/rustedfabricapi/api/custom/attachment/event/AttachmentEvents.java',
+                'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitLifecycleEvents.java',
+                'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitTriggerEvents.java',
+                'io/github/endx/rustedfabricapi/api/data/PersistentData.java',
+                'io/github/endx/rustedfabricapi/api/data/PersistentDataCodec.java',
+                'io/github/endx/rustedfabricapi/api/data/PersistentDataKey.java',
+                'io/github/endx/rustedfabricapi/api/data/event/PersistentDataEvents.java',
+                'io/github/endx/rustedfabricapi/api/effect/Effects.java',
+                'io/github/endx/rustedfabricapi/api/effect/event/EffectEvents.java',
+                'io/github/endx/rustedfabricapi/api/lobby/GameSetupEditor.java',
+                'io/github/endx/rustedfabricapi/api/lobby/GameSetupSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyAiDifficulty.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyFogMode.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyGameSetup.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyGameSetupEvents.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyMapType.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyPlayerEvents.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyPlayers.java',
+                'io/github/endx/rustedfabricapi/api/lobby/LobbyTeamLayout.java',
+                'io/github/endx/rustedfabricapi/api/lobby/StartingCreditsPreset.java',
+                'io/github/endx/rustedfabricapi/api/map/event/MapLifecycleEvents.java',
+                'io/github/endx/rustedfabricapi/api/map/MapObjectCatalog.java',
+                'io/github/endx/rustedfabricapi/api/map/MapObjectGroupSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/map/MapObjectSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/map/MapObjects.java',
+                'io/github/endx/rustedfabricapi/api/map/MapProperties.java',
+                'io/github/endx/rustedfabricapi/api/map/MapLayerSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/map/MapTileSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/map/MapTiles.java',
+                'io/github/endx/rustedfabricapi/api/map/event/MapObjectEvents.java',
+                'io/github/endx/rustedfabricapi/api/mission/Missions.java',
+                'io/github/endx/rustedfabricapi/api/mission/MissionSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/mission/event/MissionTriggerEvents.java',
+                'io/github/endx/rustedfabricapi/api/networking/ClientNetworking.java',
+                'io/github/endx/rustedfabricapi/api/networking/Connections.java',
+                'io/github/endx/rustedfabricapi/api/networking/NetworkingCapabilities.java',
+                'io/github/endx/rustedfabricapi/api/networking/PacketBuffer.java',
+                'io/github/endx/rustedfabricapi/api/networking/PacketCodec.java',
+                'io/github/endx/rustedfabricapi/api/networking/PacketCodecs.java',
+                'io/github/endx/rustedfabricapi/api/networking/event/ConnectionEvents.java',
+                'io/github/endx/rustedfabricapi/api/networking/ServerNetworking.java',
+                'io/github/endx/rustedfabricapi/api/path/Pathfinding.java',
+                'io/github/endx/rustedfabricapi/api/path/PathQuery.java',
+                'io/github/endx/rustedfabricapi/api/path/PathRequestHandle.java',
+                'io/github/endx/rustedfabricapi/api/path/PathResult.java',
+                'io/github/endx/rustedfabricapi/api/path/PathStep.java',
+                'io/github/endx/rustedfabricapi/api/path/TilePathingSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/path/event/PathEvents.java',
+                'io/github/endx/rustedfabricapi/api/resource/Resources.java',
+                'io/github/endx/rustedfabricapi/api/replay/Replays.java',
+                'io/github/endx/rustedfabricapi/api/replay/ReplaySnapshot.java',
+                'io/github/endx/rustedfabricapi/api/replay/event/ReplayEvents.java',
+                'io/github/endx/rustedfabricapi/api/registry/ModRegistries.java',
+                'io/github/endx/rustedfabricapi/api/registry/ModRegistry.java',
+                'io/github/endx/rustedfabricapi/api/registry/RegistryCodecs.java',
+                'io/github/endx/rustedfabricapi/api/registry/RegistryComparison.java',
+                'io/github/endx/rustedfabricapi/api/registry/RegistryEntry.java',
+                'io/github/endx/rustedfabricapi/api/registry/RegistryEvents.java',
+                'io/github/endx/rustedfabricapi/api/registry/RegistryKey.java',
+                'io/github/endx/rustedfabricapi/api/registry/RegistrySnapshot.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTag.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagDefinition.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagEvents.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagJsonReloader.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagKey.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagReloaders.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTags.java',
+                'io/github/endx/rustedfabricapi/api/registry/tag/RegistryTagValue.java',
+                'io/github/endx/rustedfabricapi/api/save/Saves.java',
+                'io/github/endx/rustedfabricapi/api/save/event/SaveEvents.java',
+                'io/github/endx/rustedfabricapi/api/scheduler/GameTaskScope.java',
+                'io/github/endx/rustedfabricapi/api/scheduler/GameTaskState.java',
+                'io/github/endx/rustedfabricapi/api/scheduler/GameTickScheduler.java',
+                'io/github/endx/rustedfabricapi/api/scheduler/ScheduledGameTask.java',
+                'io/github/endx/rustedfabricapi/api/scheduler/TickExecutionReport.java',
+                'io/github/endx/rustedfabricapi/api/stats/GameStatistics.java',
+                'io/github/endx/rustedfabricapi/api/stats/StatisticMetric.java',
+                'io/github/endx/rustedfabricapi/api/stats/TeamStatisticsSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/stats/event/StatisticsEvents.java',
+                'io/github/endx/rustedfabricapi/api/text/LanguageEvents.java',
+                'io/github/endx/rustedfabricapi/api/text/Translations.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitAction.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionBinding.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionContext.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionHandler.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionTargeting.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActionTargetPredicate.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/JavaUnitActions.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/UnitActions.java',
+                'io/github/endx/rustedfabricapi/api/unit/action/event/JavaUnitActionEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/CustomUnitStats.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStat.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatChangeCause.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatModifier.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatOperation.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitStatSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitVitals.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/UnitVitalsSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/unit/attribute/event/UnitStatEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/build/event/BuildQueueEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/combat/CombatUnits.java',
+                'io/github/endx/rustedfabricapi/api/unit/combat/TurretSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/unit/combat/event/CombatEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/order/UnitOrders.java',
+                'io/github/endx/rustedfabricapi/api/unit/order/UnitOrderSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/unit/repair/RepairReclaim.java',
+                'io/github/endx/rustedfabricapi/api/unit/repair/event/RepairReclaimEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/status/StatusEffectKind.java',
+                'io/github/endx/rustedfabricapi/api/unit/status/StatusEffects.java',
+                'io/github/endx/rustedfabricapi/api/unit/status/StatusEffectSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/unit/status/event/StatusEffectEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/event/UnitDamageEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/UnitSpawns.java',
+                'io/github/endx/rustedfabricapi/api/unit/TeamCreditChangeSource.java',
+                'io/github/endx/rustedfabricapi/api/unit/TeamOutcome.java',
+                'io/github/endx/rustedfabricapi/api/unit/TeamStateSnapshot.java',
+                'io/github/endx/rustedfabricapi/api/unit/event/TeamStateEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/event/UnitSpawnEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/event/UnitTeamEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/tag/UnitTags.java',
+                'io/github/endx/rustedfabricapi/api/unit/tag/event/UnitTagEvents.java',
+                'io/github/endx/rustedfabricapi/api/unit/transport/TransportUnits.java',
+                'io/github/endx/rustedfabricapi/api/unit/transport/event/TransportEvents.java',
+                'io/github/endx/rustedfabricapi/api/util/Identifier.java',
+                'io/github/endx/rustedfabricapi/api/world/GameWorld.java',
+                'io/github/endx/rustedfabricapi/api/world/WorldPoint.java'
+        ]
+        new java.util.zip.ZipFile(sourcesJarFile.get().asFile).withCloseable { zip ->
+            def missing = requiredSources.findAll { zip.getEntry(it) == null }
+            if (!missing.isEmpty()) {
+                throw new GradleException("Desktop sources Jar is incomplete: ${missing}")
+            }
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyDesktopApiContracts')
+check.dependsOn tasks.named('verifyOfficialApiNamespace')

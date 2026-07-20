@@ -10,8 +10,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class CustomUnitReclaimPriceNamedMixin {
     @Inject(method = "getReclaimPriceOverride()Lrustedwarfare/custom/resource/ResourceAmount;", at = @At("RETURN"), cancellable = true, require = 1)
     private void rustedfabricapi$modifyReclaimPriceOverride(CallbackInfoReturnable<Object> cir) {
-        cir.setReturnValue(RepairReclaimEvents.MODIFY_RECLAIM_PRICE_OVERRIDE.invoker()
-                .modifyReclaimPriceOverride(this, cir.getReturnValue()));
+        Object commonResult = RepairReclaimEvents.MODIFY_RECLAIM_PRICE_OVERRIDE.invoker()
+                .modifyReclaimPriceOverride(this, cir.getReturnValue());
+        cir.setReturnValue(io.github.endx.rustedfabricapi.api.unit.repair.event.RepairReclaimEvents
+                .MODIFY_RECLAIM_PRICE_OVERRIDE.invoker().modify(
+                        (rustedwarfare.unit.Unit) (Object) this,
+                        (rustedwarfare.custom.resource.ResourceAmount) commonResult));
     }
 
     @Inject(method = "getSimilarResourcesHaveTag()Lrustedwarfare/custom/CustomTagList;", at = @At("RETURN"), cancellable = true, require = 1)

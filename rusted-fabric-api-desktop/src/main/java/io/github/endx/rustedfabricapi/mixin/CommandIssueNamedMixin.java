@@ -10,7 +10,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CommandIssueNamedMixin {
     @Inject(method = "issueCommand()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeCommandIssue(CallbackInfo ci) {
-        if (CommandEvents.BEFORE_COMMAND_ISSUE.invoker().beforeCommandIssue(this)) {
+        boolean cancelled = CommandEvents.BEFORE_COMMAND_ISSUE.invoker().beforeCommandIssue(this);
+        cancelled |= io.github.endx.rustedfabricapi.api.command.event.CommandEvents.BEFORE_ISSUE.invoker()
+                .beforeIssue((rustedwarfare.command.Command) (Object) this);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -18,5 +21,7 @@ public abstract class CommandIssueNamedMixin {
     @Inject(method = "issueCommand()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterCommandIssue(CallbackInfo ci) {
         CommandEvents.AFTER_COMMAND_ISSUE.invoker().afterCommandIssue(this);
+        io.github.endx.rustedfabricapi.api.command.event.CommandEvents.AFTER_ISSUE.invoker()
+                .afterIssue((rustedwarfare.command.Command) (Object) this);
     }
 }

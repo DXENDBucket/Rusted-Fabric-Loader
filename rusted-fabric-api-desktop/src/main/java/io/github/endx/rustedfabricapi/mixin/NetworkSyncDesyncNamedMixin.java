@@ -1,6 +1,8 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.NetworkSyncEvents;
+import io.github.endx.rustedfabricapi.api.networking.event.ConnectionEvents;
+import io.github.endx.rustedfabricapi.desktop.DesktopMultiplayerTransport;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -137,6 +139,10 @@ public abstract class NetworkSyncDesyncNamedMixin {
             at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterRemoveConnection(@Coerce Object connection, CallbackInfo ci) {
         NetworkSyncEvents.AFTER_REMOVE_CONNECTION.invoker().onEvent(this, connection);
+        ConnectionEvents.CONNECTION_REMOVED.invoker().onRemoved(
+                (rustedwarfare.network.NetworkEngine) (Object) this,
+                (rustedwarfare.network.NetworkConnection) connection);
+        DesktopMultiplayerTransport.connectionClosed(connection);
     }
 
     @Inject(method = "pruneDisconnectedConnections()V", at = @At("HEAD"), require = 1)

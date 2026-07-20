@@ -1673,6 +1673,7 @@ c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/co
 	f	Lcom/corrodinggames/rts/gameFramework/be;	C	field_RustedWarfareGameEngine_stateEngine	stateEngine
 	m	()Z	a	method_RustedWarfareGameEngine_isMessageDisplayPersistent	isMessageDisplayPersistent
 	m	(FI)V	a	method_RustedWarfareGameEngine_gameLoop	gameLoop
+	m	(Lcom/corrodinggames/rts/gameFramework/m/l;F)V	c	method_RustedWarfareGameEngine_drawWorld	drawWorld
 	m	(Landroid/app/Activity;Lcom/corrodinggames/rts/appFramework/f;Z)V	a	method_RustedWarfareGameEngine_colorizeLogMessage	colorizeLogMessage
 	m	(Landroid/content/Context;)V	a	method_RustedWarfareGameEngine_init	init
 	m	(Z)Z	a	method_RustedWarfareGameEngine_shouldSkipUpdate	shouldSkipUpdate
@@ -1728,6 +1729,13 @@ c	com/corrodinggames/rts/game/m	rw/v100rc1/render/ScorchMarkType	rustedwarfare/r
 	f	Lcom/corrodinggames/rts/game/m;	a	v100rc1_field_m_a_NORMAL	NORMAL
 	f	Lcom/corrodinggames/rts/game/m;	b	v100rc1_field_m_b_NUKE	NUKE
 c	com/corrodinggames/rts/game/n	rw/game/Team	rustedwarfare/game/Team
+	f	I	k	field_Team_teamId	teamId
+	f	I	r	field_Team_allianceGroup	allianceGroup
+	f	Ljava/lang/String;	v	field_Team_playerName	playerName
+	f	Z	G	field_Team_defeated	defeated
+	f	Z	H	field_Team_victorious	victorious
+	f	Z	I	field_Team_sharedControlEnabled	sharedControlEnabled
+	f	Z	J	field_Team_sharedControlAutoEnabled	sharedControlAutoEnabled
 	f	I	L	field_n_fogMapWidth	fogMapWidth
 	f	I	M	field_n_fogMapHeight	fogMapHeight
 	f	[[B	N	field_n_fogOfWarMap	fogOfWarMap
@@ -1749,6 +1757,7 @@ c	com/corrodinggames/rts/game/n	rw/game/Team	rustedwarfare/game/Team
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_Team_serialize	serialize
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;)V	a	method_Team_deserializeBaseTeamState	deserializeBaseTeamState
 	m	(Lcom/corrodinggames/rts/gameFramework/j/k;Z)V	a	method_Team_deserializeTeamState	deserializeTeamState
+	m	()Z	p	method_Team_isSharingControl	isSharingControl
 	m	(ZZ)I	a	method_Team_getUnitCountWithOptions	getUnitCountWithOptions
 	m	()Z	b	method_Team_isSpectator	isSpectator
 	m	(F)V	b	method_n_b_addCreditsAndRecordIncome	addCreditsAndRecordIncome
@@ -2417,6 +2426,9 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()I	V	method_am_getTechLevel	getTechLevel
 	m	()V	a	method_Unit_removeFromGame	removeFromGame
 	m	(F)V	a	method_Unit_update	update
+	m	(Lcom/corrodinggames/rts/game/units/a/c;)Lcom/corrodinggames/rts/game/units/a/s;	a	method_Unit_findActionById	findActionById
+	m	(Lcom/corrodinggames/rts/game/units/a/s;Z)V	a	method_Unit_queueActionNoTarget	queueActionNoTarget
+	m	(Lcom/corrodinggames/rts/game/units/a/s;ZLandroid/graphics/PointF;Lcom/corrodinggames/rts/game/units/am;)V	a	method_Unit_queueAction	queueAction
 	m	(FZ)V	a	method_Unit_drawStatusOverlayLayer	drawStatusOverlayLayer
 	m	(Lcom/corrodinggames/rts/game/units/am;FLcom/corrodinggames/rts/game/f;)F	a	method_am_a_applyDamage	applyDamage
 	m	(Lcom/corrodinggames/rts/gameFramework/j/as;)V	a	method_Unit_serialize	serialize
@@ -3578,72 +3590,72 @@ c	com/corrodinggames/rts/game/units/custom/as	rw/custom/MutableUnitStats	rustedw
 	m	(Ljava/lang/String;[Lcom/corrodinggames/rts/game/units/custom/at;)[Lcom/corrodinggames/rts/game/units/custom/at;	a	method_as_parseMutableStatAccessorList	parseMutableStatAccessorList
 	m	(Ljava/util/LinkedHashMap;Lcom/corrodinggames/rts/game/units/custom/at;)V	a	method_as_registerMutableStatAccessor	registerMutableStatAccessor
 	m	()Lcom/corrodinggames/rts/game/units/custom/as;	b	method_as_b_immutableClone	immutableClone
-c	com/corrodinggames/rts/game/units/custom/as$1	rw/custom/stats/MutableStatAccessor$Mass	rustedwarfare/custom/stats/MutableStatAccessor$Mass
+c	com/corrodinggames/rts/game/units/custom/as$1	rw/custom/MutableStatAccessor$Mass	rustedwarfare/custom/MutableStatAccessor$Mass
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_1_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_1_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$10	rw/custom/stats/MutableStatAccessor$TargetHeight	rustedwarfare/custom/stats/MutableStatAccessor$TargetHeight
+c	com/corrodinggames/rts/game/units/custom/as$10	rw/custom/MutableStatAccessor$TargetHeight	rustedwarfare/custom/MutableStatAccessor$TargetHeight
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_10_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_10_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$11	rw/custom/stats/MutableStatAccessor$NanoFactorySpeed	rustedwarfare/custom/stats/MutableStatAccessor$NanoFactorySpeed
+c	com/corrodinggames/rts/game/units/custom/as$11	rw/custom/MutableStatAccessor$NanoFactorySpeed	rustedwarfare/custom/MutableStatAccessor$NanoFactorySpeed
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_11_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_11_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$12	rw/custom/stats/MutableStatAccessor$MaxEnergy	rustedwarfare/custom/stats/MutableStatAccessor$MaxEnergy
+c	com/corrodinggames/rts/game/units/custom/as$12	rw/custom/MutableStatAccessor$MaxEnergy	rustedwarfare/custom/MutableStatAccessor$MaxEnergy
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_12_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_12_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$13	rw/custom/stats/MutableStatAccessor$MaxEnergyRuntime	rustedwarfare/custom/stats/MutableStatAccessor$MaxEnergyRuntime
+c	com/corrodinggames/rts/game/units/custom/as$13	rw/custom/MutableStatAccessor$MaxEnergyRuntime	rustedwarfare/custom/MutableStatAccessor$MaxEnergyRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_MutableStatAccessor_MaxEnergyRuntime_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_MutableStatAccessor_MaxEnergyRuntime_writeRuntime	writeRuntime
-c	com/corrodinggames/rts/game/units/custom/as$14	rw/custom/stats/MutableStatAccessor$MaxHp	rustedwarfare/custom/stats/MutableStatAccessor$MaxHp
+c	com/corrodinggames/rts/game/units/custom/as$14	rw/custom/MutableStatAccessor$MaxHp	rustedwarfare/custom/MutableStatAccessor$MaxHp
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_14_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_14_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
-c	com/corrodinggames/rts/game/units/custom/as$15	rw/custom/stats/MutableStatAccessor$MaxHpRuntime	rustedwarfare/custom/stats/MutableStatAccessor$MaxHpRuntime
+c	com/corrodinggames/rts/game/units/custom/as$15	rw/custom/MutableStatAccessor$MaxHpRuntime	rustedwarfare/custom/MutableStatAccessor$MaxHpRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_MutableStatAccessor_MaxHpRuntime_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_MutableStatAccessor_MaxHpRuntime_writeRuntime	writeRuntime
-c	com/corrodinggames/rts/game/units/custom/as$16	rw/custom/stats/MutableStatAccessor$MaxShield	rustedwarfare/custom/stats/MutableStatAccessor$MaxShield
+c	com/corrodinggames/rts/game/units/custom/as$16	rw/custom/MutableStatAccessor$MaxShield	rustedwarfare/custom/MutableStatAccessor$MaxShield
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_16_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_16_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
-c	com/corrodinggames/rts/game/units/custom/as$17	rw/custom/stats/MutableStatAccessor$MaxShieldRuntime	rustedwarfare/custom/stats/MutableStatAccessor$MaxShieldRuntime
+c	com/corrodinggames/rts/game/units/custom/as$17	rw/custom/MutableStatAccessor$MaxShieldRuntime	rustedwarfare/custom/MutableStatAccessor$MaxShieldRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_MutableStatAccessor_MaxShieldRuntime_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	b	method_MutableStatAccessor_MaxShieldRuntime_writeRuntime	writeRuntime
-c	com/corrodinggames/rts/game/units/custom/as$18	rw/custom/stats/MutableStatAccessor$ShieldRegen	rustedwarfare/custom/stats/MutableStatAccessor$ShieldRegen
+c	com/corrodinggames/rts/game/units/custom/as$18	rw/custom/MutableStatAccessor$ShieldRegen	rustedwarfare/custom/MutableStatAccessor$ShieldRegen
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_18_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_18_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
-c	com/corrodinggames/rts/game/units/custom/as$19	rw/custom/stats/MutableStatAccessor$Armour	rustedwarfare/custom/stats/MutableStatAccessor$Armour
+c	com/corrodinggames/rts/game/units/custom/as$19	rw/custom/MutableStatAccessor$Armour	rustedwarfare/custom/MutableStatAccessor$Armour
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_19_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_19_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$2	rw/custom/stats/MutableStatAccessor$MaxAttackRange	rustedwarfare/custom/stats/MutableStatAccessor$MaxAttackRange
+c	com/corrodinggames/rts/game/units/custom/as$2	rw/custom/MutableStatAccessor$MaxAttackRange	rustedwarfare/custom/MutableStatAccessor$MaxAttackRange
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_2_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_2_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$3	rw/custom/stats/MutableStatAccessor$ShootDelayMultiplier	rustedwarfare/custom/stats/MutableStatAccessor$ShootDelayMultiplier
+c	com/corrodinggames/rts/game/units/custom/as$3	rw/custom/MutableStatAccessor$ShootDelayMultiplier	rustedwarfare/custom/MutableStatAccessor$ShootDelayMultiplier
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_3_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_3_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
-c	com/corrodinggames/rts/game/units/custom/as$4	rw/custom/stats/MutableStatAccessor$ShootDamageMultiplier	rustedwarfare/custom/stats/MutableStatAccessor$ShootDamageMultiplier
+c	com/corrodinggames/rts/game/units/custom/as$4	rw/custom/MutableStatAccessor$ShootDamageMultiplier	rustedwarfare/custom/MutableStatAccessor$ShootDamageMultiplier
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_4_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_4_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$5	rw/custom/stats/MutableStatAccessor$MoveSpeed	rustedwarfare/custom/stats/MutableStatAccessor$MoveSpeed
+c	com/corrodinggames/rts/game/units/custom/as$5	rw/custom/MutableStatAccessor$MoveSpeed	rustedwarfare/custom/MutableStatAccessor$MoveSpeed
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_5_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_5_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$6	rw/custom/stats/MutableStatAccessor$MaxTurnSpeed	rustedwarfare/custom/stats/MutableStatAccessor$MaxTurnSpeed
+c	com/corrodinggames/rts/game/units/custom/as$6	rw/custom/MutableStatAccessor$MaxTurnSpeed	rustedwarfare/custom/MutableStatAccessor$MaxTurnSpeed
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_6_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_6_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$7	rw/custom/stats/MutableStatAccessor$FogOfWarSightRange	rustedwarfare/custom/stats/MutableStatAccessor$FogOfWarSightRange
+c	com/corrodinggames/rts/game/units/custom/as$7	rw/custom/MutableStatAccessor$FogOfWarSightRange	rustedwarfare/custom/MutableStatAccessor$FogOfWarSightRange
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_7_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_7_a_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MutableStatAccessor_write	write
-c	com/corrodinggames/rts/game/units/custom/as$8	rw/custom/stats/MutableStatAccessor$NanoRange	rustedwarfare/custom/stats/MutableStatAccessor$NanoRange
+c	com/corrodinggames/rts/game/units/custom/as$8	rw/custom/MutableStatAccessor$NanoRange	rustedwarfare/custom/MutableStatAccessor$NanoRange
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_8_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_8_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/as$9	rw/custom/stats/MutableStatAccessor$SelfRegenRate	rustedwarfare/custom/stats/MutableStatAccessor$SelfRegenRate
+c	com/corrodinggames/rts/game/units/custom/as$9	rw/custom/MutableStatAccessor$SelfRegenRate	rustedwarfare/custom/MutableStatAccessor$SelfRegenRate
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_as_9_a_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_as_9_a_writeMetadataValue	writeMetadataValue
-c	com/corrodinggames/rts/game/units/custom/at	rw/custom/stats/MutableStatAccessor	rustedwarfare/custom/stats/MutableStatAccessor
+c	com/corrodinggames/rts/game/units/custom/at	rw/custom/MutableStatAccessor	rustedwarfare/custom/MutableStatAccessor
 	f	I	a	field_MutableStatAccessor_id	id
 	f	Ljava/lang/String;	b	field_MutableStatAccessor_name	name
 	m	()Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean$ReturnType;	a	method_MutableStatAccessor_getReturnType	getReturnType
@@ -3651,21 +3663,21 @@ c	com/corrodinggames/rts/game/units/custom/at	rw/custom/stats/MutableStatAccesso
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MutableStatAccessor_read	read
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$Operator;)V	a	method_MutableStatAccessor_applyOperatorFromLogicBoolean	applyOperatorFromLogicBoolean
 	m	()Z	b	method_MutableStatAccessor_isRuntimeField	isRuntimeField
-c	com/corrodinggames/rts/game/units/custom/au	rustedwarfare/custom/stats/MutableStatWriterFactory	rustedwarfare/custom/stats/MutableStatWriterFactory
+c	com/corrodinggames/rts/game/units/custom/au	rustedwarfare/custom/MutableStatWriterFactory	rustedwarfare/custom/MutableStatWriterFactory
 	f	Lcom/corrodinggames/rts/game/units/custom/l;	a	field_MutableStatWriterFactory_metadata	metadata
 	m	(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$WriterElement;	createWriterElement	method_MutableStatWriterFactory_createWriterElement	createWriterElement
-c	com/corrodinggames/rts/game/units/custom/av	rustedwarfare/custom/stats/MutableStatCachedWriterElement	rustedwarfare/custom/stats/MutableStatCachedWriterElement
+c	com/corrodinggames/rts/game/units/custom/av	rustedwarfare/custom/MutableStatCachedWriterElement	rustedwarfare/custom/MutableStatCachedWriterElement
 	f	Lcom/corrodinggames/rts/game/units/custom/at;	a	field_MutableStatCachedWriterElement_statAccessor	statAccessor
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/LogicBoolean;	b	field_MutableStatCachedWriterElement_valueExpression	valueExpression
 	f	Lcom/corrodinggames/rts/game/units/custom/logicBooleans/VariableScope$CachedWriter$Operator;	c	field_MutableStatCachedWriterElement_operator	operator
 	m	(Lcom/corrodinggames/rts/game/units/y;)V	writeToUnit	method_MutableStatCachedWriterElement_writeToUnit	writeToUnit
-c	com/corrodinggames/rts/game/units/custom/aw	rustedwarfare/custom/stats/MetadataMutableStatAccessor	rustedwarfare/custom/stats/MetadataMutableStatAccessor
+c	com/corrodinggames/rts/game/units/custom/aw	rustedwarfare/custom/MetadataMutableStatAccessor	rustedwarfare/custom/MetadataMutableStatAccessor
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MetadataMutableStatAccessor_readMetadataValue	readMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/as;D)V	a	method_MetadataMutableStatAccessor_writeMetadataValue	writeMetadataValue
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_MetadataMutableStatAccessor_write	write
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_MetadataMutableStatAccessor_read	read
 	m	()Z	b	method_MetadataMutableStatAccessor_isRuntimeField	isRuntimeField
-c	com/corrodinggames/rts/game/units/custom/ax	rustedwarfare/custom/stats/RuntimeMutableStatAccessor	rustedwarfare/custom/stats/RuntimeMutableStatAccessor
+c	com/corrodinggames/rts/game/units/custom/ax	rustedwarfare/custom/RuntimeMutableStatAccessor	rustedwarfare/custom/RuntimeMutableStatAccessor
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;)D	a	method_RuntimeMutableStatAccessor_readRuntime	readRuntime
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;D)V	a	method_RuntimeMutableStatAccessor_write	write
 	m	(Lcom/corrodinggames/rts/game/units/custom/j;Lcom/corrodinggames/rts/game/units/custom/as;)D	a	method_RuntimeMutableStatAccessor_read	read
@@ -8023,6 +8035,7 @@ c	com/corrodinggames/rts/game/units/s	rw/v100rc1/unit/editor/TileOffset	rustedwa
 	f	I	a	v100rc1_field_s_a_x	x
 	f	I	b	v100rc1_field_s_b_y	y
 c	com/corrodinggames/rts/game/units/t	rw/unit/special/DummyNonUnitWithTeam	rustedwarfare/unit/special/DummyNonUnitWithTeam
+	m	(Lcom/corrodinggames/rts/game/n;)Lcom/corrodinggames/rts/game/units/t;	a	method_DummyNonUnitWithTeam_createForTeam	createForTeam
 	m	()Lcom/corrodinggames/rts/game/units/as;	r	method_DummyNonUnitWithTeam_getDummyNonUnitWithTeam	getDummyNonUnitWithTeam
 c	com/corrodinggames/rts/game/units/u	rw/unit/special/FogRevealerUnit	rustedwarfare/unit/special/FogRevealerUnit
 	m	(F)V	a	method_u_update	update
@@ -8240,6 +8253,46 @@ c	com/corrodinggames/rts/game/units/z	rw/unit/action/ActionExecutionResult	ruste
 	f	Lcom/corrodinggames/rts/game/units/a/s;	d	field_z_d_action	action
 	m	()Lcom/corrodinggames/rts/game/units/z;	a	method_z_reset	reset
 c	com/corrodinggames/rts/gameFramework/SettingsEngine	rw/core/SettingsEngine	rustedwarfare/core/SettingsEngine
+	f	Z	enableSounds	field_SettingsEngine_enableSounds	enableSounds
+	f	Z	enableMouseCapture	field_SettingsEngine_enableMouseCapture	enableMouseCapture
+	f	Z	slick2dFullScreen	field_SettingsEngine_slick2dFullScreen	slick2dFullScreen
+	f	Z	slick2dBorderless	field_SettingsEngine_slick2dBorderless	slick2dBorderless
+	f	Z	autosaving	field_SettingsEngine_autosaving	autosaving
+	f	F	masterVolume	field_SettingsEngine_masterVolume	masterVolume
+	f	F	gameVolume	field_SettingsEngine_gameVolume	gameVolume
+	f	F	interfaceVolume	field_SettingsEngine_interfaceVolume	interfaceVolume
+	f	F	musicVolume	field_SettingsEngine_musicVolume	musicVolume
+	f	F	scrollSpeed	field_SettingsEngine_scrollSpeed	scrollSpeed
+	f	F	edgeScrollSpeed	field_SettingsEngine_edgeScrollSpeed	edgeScrollSpeed
+	f	F	uiRenderScale	field_SettingsEngine_uiRenderScale	uiRenderScale
+	f	Z	renderExtraShadows	field_SettingsEngine_renderExtraShadows	renderExtraShadows
+	f	Z	renderFancyWater	field_SettingsEngine_renderFancyWater	renderFancyWater
+	f	Z	renderClouds	field_SettingsEngine_renderClouds	renderClouds
+	f	Z	showActionInfoHoverNearMouse	field_SettingsEngine_showActionInfoHoverNearMouse	showActionInfoHoverNearMouse
+	f	Z	renderAntiAlias	field_SettingsEngine_renderAntiAlias	renderAntiAlias
+	f	Z	showHp	field_SettingsEngine_showHp	showHp
+	f	Z	showHpChanges	field_SettingsEngine_showHpChanges	showHpChanges
+	f	Z	showUnitIcons	field_SettingsEngine_showUnitIcons	showUnitIcons
+	f	Z	showFps	field_SettingsEngine_showFps	showFps
+	f	Z	shaderEffects	field_SettingsEngine_shaderEffects	shaderEffects
+	f	Z	teamShaders	field_SettingsEngine_teamShaders	teamShaders
+	f	Z	showUnitWaypoints	field_SettingsEngine_showUnitWaypoints	showUnitWaypoints
+	f	Z	useMinimapAllyColors	field_SettingsEngine_useMinimapAllyColors	useMinimapAllyColors
+	f	Z	showWarLogOnScreen	field_SettingsEngine_showWarLogOnScreen	showWarLogOnScreen
+	f	Z	classicInterface	field_SettingsEngine_classicInterface	classicInterface
+	f	Z	quickRally	field_SettingsEngine_quickRally	quickRally
+	f	Z	doubleClickToAttackMove	field_SettingsEngine_doubleClickToAttackMove	doubleClickToAttackMove
+	f	Z	showMapPingsOnBattlefield	field_SettingsEngine_showMapPingsOnBattlefield	showMapPingsOnBattlefield
+	f	Z	showMapPingsOnMinimap	field_SettingsEngine_showMapPingsOnMinimap	showMapPingsOnMinimap
+	f	Z	showPlayerChatInGame	field_SettingsEngine_showPlayerChatInGame	showPlayerChatInGame
+	f	Z	saveMultiplayerReplays	field_SettingsEngine_saveMultiplayerReplays	saveMultiplayerReplays
+	f	Z	highGraphics	field_SettingsEngine_highGraphics	highGraphics
+	f	Z	renderVsync	field_SettingsEngine_renderVsync	renderVsync
+	f	Z	renderSmoothDelta	field_SettingsEngine_renderSmoothDelta	renderSmoothDelta
+	f	Z	showSelectedUnitsList	field_SettingsEngine_showSelectedUnitsList	showSelectedUnitsList
+	f	Z	smartSelection_v2	field_SettingsEngine_smartSelection_v2	smartSelection_v2
+	m	(Ljava/lang/String;Ljava/lang/String;)Z	setValueDynamic	method_SettingsEngine_setValueDynamic	setValueDynamic
+	m	()Z	save	method_SettingsEngine_save	save
 c	com/corrodinggames/rts/gameFramework/a	rw/v100rc1/collision/CollisionEngine	rustedwarfare/collision/CollisionEngine
 	f	Ljava/util/ArrayList;	n	v100rc1_field_a_n_collisionGroups	collisionGroups
 	m	(B)Lcom/corrodinggames/rts/gameFramework/b;	a	v100rc1_method_a_a_getOrCreateCollisionGroup	getOrCreateCollisionGroup
@@ -13691,7 +13744,7 @@ c	com/corrodinggames/rts/gameFramework/w	rw/v100/framework/GameObject	rustedwarf
 	m	(F)V	e	method_GameObject_drawHighlightLayer	drawHighlightLayer
 	m	(F)Z	f	method_GameObject_drawZoomedOutIconLayer	drawZoomedOutIconLayer
 	m	(F)V	p	method_GameObject_drawPostOverlayLayer	drawPostOverlayLayer
-c	com/corrodinggames/rts/gameFramework/x	rw/v090/game/GameObjectDrawOrderComparator	rustedwarfare/game/GameObjectDrawOrderComparator
+c	com/corrodinggames/rts/gameFramework/x	rw/v100/framework/GameObjectDrawOrderComparator	rustedwarfare/framework/GameObjectDrawOrderComparator
 	m	(Lcom/corrodinggames/rts/gameFramework/w;Lcom/corrodinggames/rts/gameFramework/w;)I	a	v090_method_x_a_compareGameObjects	compareGameObjects
 c	com/corrodinggames/rts/gameFramework/y	rw/save/GameSaver	rustedwarfare/save/GameSaver
 	f	Z	a	field_GameSaver_debugSaveEnabled	debugSaveEnabled
@@ -14764,18 +14817,22 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	f	Z	l	field_SlickGameAdapter_l_useScalableGame	useScalableGame
 	f	Lcom/corrodinggames/rts/java/s;	m	field_SlickGameAdapter_m_loadingLogo	loadingLogo
 	f	Lcom/corrodinggames/rts/java/s;	n	field_SlickGameAdapter_n_pointerImage	pointerImage
+	f	F	P	field_SlickGame_inputScale	inputScale
 	f	Z	p	field_SlickGame_threadedLoadStarted	threadedLoadStarted
 	f	Z	q	field_SlickGame_nonThreadedLoadStarted	nonThreadedLoadStarted
 	f	Z	r	field_SlickGame_finishedInitialLoad	finishedInitialLoad
 	f	Z	s	field_SlickGameAdapter_s_loadingScreenDrawn	loadingScreenDrawn
 	f	I	t	field_1009_lastDeltaMs	lastDeltaMs
 	f	Z	v	field_SlickGame_mouseGrabbed	mouseGrabbed
+	f	F	w	field_SlickGame_pointerX	pointerX
+	f	F	x	field_SlickGame_pointerY	pointerY
 	m	()V	a	method_1001_applyRuntimeDisplaySettings	applyRuntimeDisplaySettings
 	m	(Lcom/corrodinggames/rts/java/d;)V	a	method_1004_setupWithAppFramework	setupWithAppFramework
 	m	(Lorg/newdawn/slick/GameContainer;Lorg/newdawn/slick/Graphics;)V	a	method_SlickGame_renderLoadingScreen	renderLoadingScreen
 	m	()V	b	method_1002_startLoadingThreaded	startLoadingThreaded
 	m	(Lcom/corrodinggames/rts/java/e;)V	b	method_SlickGame_restoreTransform	restoreTransform
 	m	()V	c	method_1003_startLoadingNonThreaded	startLoadingNonThreaded
+	m	()Z	d	method_SlickGame_isLibRocketInputActive	isLibRocketInputActive
 	m	()Z	closeRequested	closeRequested	closeRequested
 	m	()V	g	method_1006_applyDisplayMode	applyDisplayMode
 	m	(Lorg/newdawn/slick/GameContainer;)V	init	method_1000_init	init

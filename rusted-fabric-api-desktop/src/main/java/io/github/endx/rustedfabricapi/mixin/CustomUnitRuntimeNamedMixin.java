@@ -27,7 +27,7 @@ public abstract class CustomUnitRuntimeNamedMixin {
             method = "executeCustomAction(Lrustedwarfare/unit/action/UnitAction;Landroid/graphics/PointF;Lrustedwarfare/unit/Unit;I)Z",
             at = @At(
                     value = "INVOKE",
-                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/stats/MutableStatAccessor;)V"
+                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/MutableStatAccessor;)V"
             ),
             cancellable = true,
             require = 1
@@ -42,7 +42,7 @@ public abstract class CustomUnitRuntimeNamedMixin {
             method = "executeCustomAction(Lrustedwarfare/unit/action/UnitAction;Landroid/graphics/PointF;Lrustedwarfare/unit/Unit;I)Z",
             at = @At(
                     value = "INVOKE",
-                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/stats/MutableStatAccessor;)V",
+                    target = "Lrustedwarfare/custom/CustomUnit;applyUnitMetadataWithStatOverrides(Lrustedwarfare/custom/CustomUnitMetadata;ZZ[Lrustedwarfare/custom/MutableStatAccessor;)V",
                     shift = At.Shift.AFTER
             ),
             require = 1
@@ -87,7 +87,11 @@ public abstract class CustomUnitRuntimeNamedMixin {
 
     @Inject(method = "onKilled()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeCustomUnitKilled(CallbackInfo ci) {
-        if (CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.invoker().beforeCustomUnitKilled(this)) {
+        boolean cancelled = CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.invoker()
+                .beforeCustomUnitKilled(this);
+        cancelled |= io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.BEFORE_KILLED
+                .invoker().beforeUnit((rustedwarfare.custom.CustomUnit) (Object) this);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -96,11 +100,17 @@ public abstract class CustomUnitRuntimeNamedMixin {
     private void rustedfabricapi$afterCustomUnitKilled(CallbackInfo ci) {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_KILLED.invoker().afterCustomUnitKilled(this);
         CustomUnitLifecycleEvents.AFTER_CUSTOM_UNIT_KILLED.invoker().afterCustomUnitKilled(this);
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.AFTER_KILLED
+                .invoker().afterUnit((rustedwarfare.custom.CustomUnit) (Object) this);
     }
 
     @Inject(method = "removeFromGame()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeCustomUnitRemoved(CallbackInfo ci) {
-        if (CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.invoker().beforeCustomUnitRemoved(this)) {
+        boolean cancelled = CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.invoker()
+                .beforeCustomUnitRemoved(this);
+        cancelled |= io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.BEFORE_REMOVED
+                .invoker().beforeUnit((rustedwarfare.custom.CustomUnit) (Object) this);
+        if (cancelled) {
             ci.cancel();
         }
     }
@@ -109,6 +119,8 @@ public abstract class CustomUnitRuntimeNamedMixin {
     private void rustedfabricapi$afterCustomUnitRemoved(CallbackInfo ci) {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_REMOVED.invoker().afterCustomUnitRemoved(this);
         CustomUnitLifecycleEvents.AFTER_CUSTOM_UNIT_REMOVED.invoker().afterCustomUnitRemoved(this);
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.AFTER_REMOVED
+                .invoker().afterUnit((rustedwarfare.custom.CustomUnit) (Object) this);
     }
 
     @Inject(method = "completeBuildQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)V", at = @At("RETURN"), require = 1)

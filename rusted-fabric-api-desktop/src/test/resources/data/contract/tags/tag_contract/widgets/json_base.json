@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "tag_contract:alpha",
+    { "id": "tag_contract:missing_optional", "required": false }
+  ]
+}

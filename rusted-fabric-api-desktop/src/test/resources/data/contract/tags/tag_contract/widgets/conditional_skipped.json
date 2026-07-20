@@ -1,0 +1,8 @@
+{
+  "rustedfabric:load_conditions": [
+    {
+      "condition": "rustedfabric:false"
+    }
+  ],
+  "values": ["tag_contract:gamma"]
+}

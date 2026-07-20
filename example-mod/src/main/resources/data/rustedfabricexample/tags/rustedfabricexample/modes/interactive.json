@@ -1,0 +1,13 @@
+{
+  "rustedfabric:load_conditions": [
+    {
+      "condition": "rustedfabric:all_mods_loaded",
+      "values": ["rustedfabricexample"]
+    }
+  ],
+  "replace": false,
+  "values": [
+    "rustedfabricexample:status",
+    "rustedfabricexample:inspection"
+  ]
+}
