@@ -3,11 +3,16 @@ package io.github.endx.rustedfabricexample;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIEntrypoint;
 import io.github.endx.rustedfabricapi.api.diagnostic.PlatformRuntimeDiagnostics;
+import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 
 public final class ExampleRustedEntrypoint extends RustedFabricAPIEntrypoint {
     @Override
     protected void onRustedFabricAPI(RustedFabricAPIContext ctx) {
         PortableInitializationProbe.register(ExampleMod::log);
+        UnitLifecycleEvents.registerAfterUnitAdded(unit -> ExampleMod.log(
+                "unit added: id=" + unit.id()
+                        + ", hp=" + unit.health() + "/" + unit.maxHealth()
+                        + ", movement=" + unit.movementType()));
         ExampleMod.log(ctx.entrypointKey()
                 + " contextVersion=" + ctx.contextVersion()
                 + ", loaderVersion=" + ctx.loaderVersion()

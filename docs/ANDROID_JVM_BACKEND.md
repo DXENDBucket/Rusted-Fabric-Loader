@@ -56,6 +56,16 @@ The local desktop installation can be checked without copying it:
   -PdesktopGameDir="D:\SteamLibrary\steamapps\common\Rusted Warfare"
 ```
 
+A user-owned desktop ZIP can be exercised through the same bounded importer used by the Android
+setup screen. The output directory must be empty and should remain under an ignored local build
+directory when it contains game files:
+
+```powershell
+./gradlew :android:jvm-launcher-core:importDesktopGameArchive `
+  -PdesktopGameArchive="build\android-jvm-test\rusted-warfare.zip" `
+  -PdesktopGameOutput="build\android-jvm-test\extracted-game"
+```
+
 An extracted Android JVM can be checked separately before developer import:
 
 ```powershell
@@ -116,7 +126,8 @@ never treated as an Android runtime dependency.
 6. Validate map rendering, audio, touch controls, saves, and multiplayer before enabling the launch
    button in release builds.
 
-The native no-root APK backend remains available while these milestones are incomplete.
+The older native no-root APK backend remains in source history for reference, but it is frozen and
+is not the fallback implementation for this direction.
 
 ## Build prerequisites
 

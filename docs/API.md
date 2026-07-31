@@ -4,9 +4,9 @@
 
 Rusted Fabric API `0.1.x` is experimental and targets Rusted Warfare `1.15` with the mapping version recorded in `fabric.mod.json`. Event names and callback arguments should be treated as source-compatible within a `0.1.x` line where practical, but mapping corrections can still require signature changes.
 
-The active release target is now the Windows desktop Loader and ordinary Fabric-style Jar mods.
-The old Android backend is retained only as unmaintained historical scaffolding and is not part of
-the supported API or distribution path.
+Windows desktop remains the working Loader and ordinary Fabric-style Jar mod target. The active
+Android direction is a PC-edition port that imports the user's Steam files and aims to execute the
+same Fabric/Knot runtime in an ARM64 JVM. Native Android APK patching and Xposed hooks are frozen.
 
 Mods can declare the game dependency exposed by the GameProvider:
 
@@ -37,8 +37,8 @@ available.
 
 ## Windows and Android portability
 
-> Historical note: Android development is frozen. The module split below still explains why the
-> common API exists, but current development and release verification target Windows Jar mods only.
+> The native Android-APK backend is frozen. Current Android work targets the desktop-JVM port; until
+> its platform adapters are complete, API release verification still runs on Windows Jar mods.
 
 `rusted-fabric-api` contains the complete platform-neutral public surface: context, runtime holder,
 events, helpers, sessions, and multiplayer contracts. Its classes are embedded in the Windows API
@@ -1291,6 +1291,36 @@ basic block; use the local-patch backend when exact explosion callbacks are requ
 `Projectiles.removeImmediately(projectile)` instead calls the mapped game-object removal entrypoint
 synchronously; use it from an explosion callback when the projectile must not survive until its next
 update. Normal backend removal events still apply.
+
+## Unit and team development API
+
+For ordinary desktop Fabric Jar mods, `Units`, `UnitView`, `Teams`, and `TeamView` are the preferred
+surface for common unit logic. They hide named/official member names and avoid a compile-time game
+class dependency. A view is live: every accessor reads the current game object, while list-returning
+queries are immutable snapshots of membership.
+
+```java
+UnitLifecycleEvents.registerAfterUnitAdded(unit -> {
+    if (unit.alive() && unit.healthFraction() < 0.25f) {
+        unit.setHealth(unit.maxHealth() * 0.25f);
+    }
+});
+
+List<UnitView> nearby = Units.within(worldX, worldY, 200f);
+List<UnitView> friendly = Units.forTeam(playerTeam);
+```
+
+The stable view includes object identity and position, health/shield/energy/ammo, team, death and
+registration state, building/flying/underwater flags, movement type, recent damager and containing
+unit. `Units.active()`, `alive()`, `matching(...)`, `forTeam(...)`, `within(...)`, and `byId(...)`
+cover the usual query patterns. Explicit operations currently include health, direction,
+construction progress, team changes, and removal. Call them only from game-thread callbacks or work
+scheduled through `GameThreadScheduler`.
+
+Raw `Object` lifecycle events remain available for compatibility and uncommon mapped operations.
+`registerAfterUnitAdded`, `subscribeAfterUnitAdded`, `registerBeforeUnitRemoved`, and
+`subscribeBeforeUnitRemoved` provide the type-safe view adapters. Check
+`RustedFabricCapabilities.GAME_UNITS` when a mod may run on an older Loader.
 
 ## Unit damage development API
 

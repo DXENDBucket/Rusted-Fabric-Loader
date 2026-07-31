@@ -37,6 +37,22 @@ tasks.register('inspectDesktopGame', JavaExec) {
     }
 }
 
+tasks.register('importDesktopGameArchive', JavaExec) {
+    group = 'verification'
+    description = 'Imports a user-owned desktop game ZIP into an empty directory for workstation verification.'
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabric.android.jvm.DesktopGameArchiveCli')
+    doFirst {
+        if (!providers.gradleProperty('desktopGameArchive').isPresent()
+                || !providers.gradleProperty('desktopGameOutput').isPresent()) {
+            throw new GradleException('Pass -PdesktopGameArchive=<zip> and -PdesktopGameOutput=<empty directory>')
+        }
+        args providers.gradleProperty('desktopGameArchive').get(),
+                providers.gradleProperty('desktopGameOutput').get()
+    }
+}
+
 tasks.register('inspectJvmRuntime', JavaExec) {
     group = 'verification'
     description = 'Validates an extracted Linux AArch64 Java 17 runtime passed with -PjvmRuntimeDir.'

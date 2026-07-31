@@ -31,6 +31,14 @@ tasks.register('verifyApiContracts', JavaExec) {
     mainClass.set('io.github.endx.rustedfabricapi.ApiContractVerification')
 }
 
+tasks.register('verifyGameApiContracts', JavaExec) {
+    group = 'verification'
+    description = 'Verifies stable unit/team views, queries, operations, and typed event adapters.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricapi.common.GameApiContractVerification')
+}
+
 tasks.register('verifyNoPlatformPayload') {
     group = 'verification'
     description = 'Rejects Android, Fabric, desktop backend, and game implementation dependencies.'
@@ -119,5 +127,6 @@ tasks.register('verifyApiSupportMatrix') {
 
 check.dependsOn tasks.named('verifyCommonApiContracts')
 check.dependsOn tasks.named('verifyApiContracts')
+check.dependsOn tasks.named('verifyGameApiContracts')
 check.dependsOn tasks.named('verifyNoPlatformPayload')
 check.dependsOn tasks.named('verifyApiSupportMatrix')

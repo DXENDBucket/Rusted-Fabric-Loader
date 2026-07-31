@@ -11,6 +11,12 @@ Current compatibility baseline:
 
 The public API is still experimental while mappings are being completed. See [API.md](docs/API.md) for lifecycle, threading, cancellation, and compatibility rules.
 
+The active Android direction is the PC-edition port: import user-owned Steam files and run the same
+Fabric/Knot stack inside a Loader-owned ARM64 JVM. The older Android-APK patch/Xposed direction is
+frozen. Windows remains the reference runtime and ordinary Fabric-style Jar development target.
+See [PROJECT_STATUS.md](docs/PROJECT_STATUS.md) for maintained modules, build gates, local-only
+inputs, and the current PC-port execution boundary.
+
 ## Launching with a custom script
 The following Windows batch script demonstrates how to start the client using prebuilt artifacts from the repository. It assumes the `clean build copyFabricRuntime` Gradle task has been run so that all required Fabric jars are available.
 
@@ -49,7 +55,7 @@ Adjust `JAVA_EXE` and memory options as needed for your environment.
 Use `installToGameDir` to build and install the loader artifacts into an existing Rusted Warfare directory:
 
 ```bat
-set "JAVA_HOME=C:\Program Files\Java\jdk-21"
+set "JAVA_HOME=C:\Program Files\Java\jdk-17"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare"
 ```
@@ -79,7 +85,7 @@ The `src/main/resources/mappings/mappings.tiny` file is packaged into the GamePr
 Run `generateNamedGameJar` to create a development jar at `build/rusted-dev/game-lib-named.jar`:
 
 ```bat
-set "JAVA_HOME=C:\Program Files\Java\jdk-21"
+set "JAVA_HOME=C:\Program Files\Java\jdk-17"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 gradlew.bat generateNamedGameJar
 ```
@@ -152,21 +158,19 @@ To build the API runtime jar directly:
 gradlew.bat :rusted-fabric-api-desktop:remapJarToOfficial
 ```
 
-The API implementation is split into three strict modules:
+The maintained runtime foundation currently spans:
 
 ```text
 rusted-fabric-api          shared public mod API
 rusted-fabric-api-desktop  Windows Fabric/Mixin backend
-rusted-fabric-api-android  Android local-patch/Xposed backend
-android:jvm-launcher-core  experimental Android desktop-JVM launch planner
+android:jvm-launcher-core  PC game import, ARM64 JVM validation, and launch planning
+android/xposed:module      current Android manager UI and isolated JNI JVM host
 ```
 
-The desktop runtime Jar embeds the public module. Android compiles the public module and Android
-backend into DEX, so mod source uses the same `io.github.endx.rustedfabricapi.api` contracts on both
-platforms without shipping Fabric or Android framework dependencies across the boundary.
-The experimental desktop-JVM backend instead imports a user's Steam installation and plans a
-normal Knot launch on an embedded ARM64 JVM. It contains no game files or platform runtime binaries;
-see [`docs/ANDROID_JVM_BACKEND.md`](docs/ANDROID_JVM_BACKEND.md).
+The desktop runtime Jar embeds the public module. The Android PC-port manager does not contain the
+game or a Java runtime: it imports both from user-selected files into app-private storage. Its full
+game launch remains disabled until the LWJGL2, OpenAL, input, and rocketConnector ARM64 adapters are
+implemented. Android local-patcher and Xposed-hook code remains only as historical scaffolding.
 
 ## Example Mod
 The `example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
@@ -208,7 +212,9 @@ Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a f
   - `rustedfabricloader:classpath_ready` runs after the game classpath (game-lib.jar, libs/, filtered android.jar) is injected. Implement this with a `Consumer<Map<String, Object>>` (extend `RustedFabricAPIEntrypoint` for convenience) to inspect the provided context or register transformers.
   - `rustedfabricloader:before_game` runs immediately before the game main class is invoked. The same `Consumer<Map<String, Object>>` contract applies.
 
-Each callback receives a `RustedFabricAPIContext` describing the game directory, launch arguments, and whether the runtime is Android, enabling mods to adjust behavior for desktop vs. mobile builds.
+Each callback receives a `RustedFabricAPIContext` describing the game directory, launch arguments,
+mapping profile, and advertised capabilities. Legacy Android context fields remain for source
+compatibility, but the maintained runtime is Windows desktop.
 
 ### Java custom unit assets
 `rusted-fabric-api` includes `io.github.endx.rustedfabricapi.api.asset.JavaUnitAssetLoader` for Java-authored custom units. It is intentionally namespace-neutral: public methods accept and return `Object`, while the implementation resolves named and official game classes reflectively. The helper covers the v0.22 asset contracts:
