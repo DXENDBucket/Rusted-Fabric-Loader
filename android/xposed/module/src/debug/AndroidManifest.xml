@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- Direct ADB entry for physical-device renderer verification; release stays private. -->
+        <activity
+            android:name=".ui.JvmRenderActivity"
+            android:exported="true"
+            tools:replace="android:exported" />
+        <service
+            android:name=".jvm.JvmHostService"
+            android:exported="true"
+            tools:replace="android:exported" />
+    </application>
+</manifest>

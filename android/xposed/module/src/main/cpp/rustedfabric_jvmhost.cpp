@@ -66,6 +66,9 @@ void preload_if_present(const std::string& path) {
     if (dlopen(path.c_str(), RTLD_LAZY | RTLD_GLOBAL) == nullptr) {
         __android_log_print(ANDROID_LOG_WARN, kTag, "Optional preload failed for %s: %s",
                             path.c_str(), dlerror());
+    } else {
+        __android_log_print(ANDROID_LOG_INFO, kTag, "Optional preload succeeded for %s",
+                            path.c_str());
     }
 }
 }
@@ -110,7 +113,7 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
         return 13;
     }
     for (const char* library : {"libverify.so", "libjava.so", "libnet.so", "libnio.so",
-                                "libzip.so", "libawt.so", "libawt_headless.so",
+                                "libzip.so", "libawt.so", "libawt_headless.so", "libfreetype.so",
                                 "libfontmanager.so"}) {
         preload_if_present(runtime_lib + "/" + library);
     }

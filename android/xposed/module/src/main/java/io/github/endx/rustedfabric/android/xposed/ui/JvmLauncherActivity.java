@@ -45,6 +45,7 @@ public final class JvmLauncherActivity extends Activity {
     private Button directoryButton;
     private Button runtimeButton;
     private Button smokeButton;
+    private Button rendererButton;
     private Button launchButton;
     private boolean busy;
     private boolean smokeReady;
@@ -100,6 +101,10 @@ public final class JvmLauncherActivity extends Activity {
         String lastStatus = JvmHostService.lastStatus(this);
         if (!lastStatus.isEmpty()) {
             operationStatus.setText(getString(R.string.jvm_smoke_last, lastStatus));
+        }
+        String rendererStatus = JvmRenderActivity.lastStatus(this);
+        if (!rendererStatus.isEmpty()) {
+            operationStatus.setText(getString(R.string.jvm_renderer_last, rendererStatus));
         }
     }
 
@@ -165,6 +170,12 @@ public final class JvmLauncherActivity extends Activity {
         smokeButton.setEnabled(false);
         smokeButton.setOnClickListener(ignored -> testJavaRuntime());
         content.addView(smokeButton, matchWidth());
+
+        rendererButton = new Button(this);
+        rendererButton.setText(R.string.jvm_test_renderer);
+        rendererButton.setOnClickListener(ignored ->
+                startActivity(new Intent(this, JvmRenderActivity.class)));
+        content.addView(rendererButton, matchWidth());
 
         launchButton = new Button(this);
         launchButton.setText(R.string.jvm_launch_game);
@@ -304,6 +315,7 @@ public final class JvmLauncherActivity extends Activity {
         importButton.setEnabled(!busy);
         directoryButton.setEnabled(!busy);
         runtimeButton.setEnabled(!busy);
+        rendererButton.setEnabled(!busy);
         smokeButton.setEnabled(!busy && smokeReady);
     }
 

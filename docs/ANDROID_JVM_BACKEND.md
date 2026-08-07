@@ -48,6 +48,13 @@ artifacts.
   requires Linux/AArch64 release metadata, checks that both shared libraries are 64-bit
   little-endian AArch64 ELF, records the source ZIP SHA-256, and atomically installs it under
   Loader-private storage. Darwin/Mach-O ARM64 archives are explicitly rejected.
+- The Loader now packages a separate ARM64 Surface/EGL bridge. A landscape `SurfaceView` lives in
+  the same `:desktop_jvm` process that will host HotSpot, registers its `ANativeWindow` through a
+  reference-counted native boundary, creates an OpenGL ES context, clears the real display surface,
+  and swaps buffers. The setup screen exposes this as a renderer self-test. This verifies the
+  Android window/EGL foundation only; it does not make the LWJGL2 adapter launch-ready.
+- The JVM host preloads the imported runtime's own `libfreetype.so` before `libfontmanager.so`.
+  Neither library is copied into the Loader APK or repository.
 
 The local desktop installation can be checked without copying it:
 
@@ -97,10 +104,12 @@ running Android 16:
   Loader-owned JAR, and returned `rusted-fabric-jvm-smoke=ok`, Java `17-internal`, Linux/AArch64;
 - Android SELinux granted execution of the imported JVM libraries from app-private storage.
 
-The test also found the first renderer dependency: optional preload of `libfontmanager.so` reports
-missing `libfreetype.so`. This does not affect the bytecode smoke test, but FreeType must be supplied
-before the desktop UI and font path can be considered ready. The local full log remains under the
-Git-ignored `build/android-jvm-test/` directory.
+The same device subsequently passed the first real renderer test. The `:desktop_jvm` process
+registered a 2376x1080 Android Surface, created Android META-EGL 1.5 / OpenGL ES 3.2 on an Adreno
+750, cleared it, and completed `eglSwapBuffers`. A second HotSpot run confirmed that the imported
+runtime already supplies both `libfreetype.so` and `libfontmanager.so`; loading FreeType first fixes
+the dependency warning. The local full logs and user-owned test inputs remain under the Git-ignored
+`build/android-jvm-test/` directory.
 
 ## Runtime boundary
 
@@ -131,8 +140,9 @@ never treated as an Android runtime dependency.
 
 ## Next execution milestones
 
-1. Supply the required FreeType dependency, create an Android `Surface`-backed LWJGL2 display
-   bridge, and render the Slick2D initialization screen.
+1. Implement the LWJGL2 Java/JNI adapter on top of the verified `ANativeWindow`/EGL boundary and
+   render the Slick2D initialization screen. The existing Linux/X11 LWJGL2 classes cannot be used
+   unchanged on Android.
 2. Export the existing desktop Fabric Loader classpath into private storage and execute the
    generated `JvmLaunchPlan` through Knot.
 3. Add OpenAL and Android input adapters.

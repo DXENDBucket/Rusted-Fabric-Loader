@@ -25,10 +25,11 @@ not the current direction. Their source remains as historical evidence. Active A
 to `android:jvm-launcher-core`, the PC import UI, and the isolated JNI/HotSpot host.
 
 The PC-port scaffold can currently import and validate the desktop game, import a Linux/AArch64
-Java 17 runtime, create HotSpot in a separate Android process, and execute a Loader-owned smoke-test
-Jar. Full game launch is intentionally disabled until four runtime adapters exist:
+Java 17 runtime, create HotSpot in a separate Android process, execute a Loader-owned smoke-test
+Jar, and render through a real Android Surface/EGL context in that same future game process. Full
+game launch is intentionally disabled until four runtime adapters exist:
 
-- an Android Surface-backed LWJGL2 renderer bridge;
+- an LWJGL2 compatibility adapter on top of the completed Android Surface/EGL foundation;
 - OpenAL for ARM64 Android;
 - Android touch/keyboard/controller input through the JInput/LWJGL boundary;
 - an ARM64 `rocketConnector` implementation or compatible replacement.
@@ -36,8 +37,9 @@ Jar. Full game launch is intentionally disabled until four runtime adapters exis
 This JVM boundary is now physically verified on an ARM64 `PKG110` running Android 16. The
 2026-08-07 test imported the real desktop payload and Android OpenJDK 17, loaded the JNI host
 directly from the APK, and returned `rusted-fabric-jvm-smoke=ok` from the isolated HotSpot process.
-The next observed native dependency is FreeType for the JRE font manager; rendering and the four
-adapters above remain incomplete.
+It also completed a 2376x1080 EGL buffer swap on the phone's Adreno 750. Loading the imported JRE's
+own FreeType before its font manager resolves the first font dependency. The LWJGL2 compatibility
+surface and the remaining adapters above are still incomplete.
 
 ## Verification boundary
 
