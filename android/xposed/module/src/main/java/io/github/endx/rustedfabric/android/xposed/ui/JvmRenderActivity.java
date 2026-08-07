@@ -12,17 +12,24 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.endx.rustedfabric.android.xposed.R;
+import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlan;
+import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlanFactory;
+import io.github.endx.rustedfabric.android.xposed.jvm.NativeJvmHost;
 import io.github.endx.rustedfabric.android.xposed.jvm.NativeRenderBridge;
 
-/** Verifies an Android Surface and EGL context in the future desktop-JVM process. */
+/** Runs a real LWJGL2 call path from HotSpot into GL4ES and the Android Surface. */
 public final class JvmRenderActivity extends Activity implements SurfaceHolder.Callback {
-    private static final String STATUS_FILE = "egl-smoke-status.txt";
+    private static final String STATUS_FILE = "lwjgl2-smoke-status.txt";
+    private static final String PAYLOAD_ASSET = "rusted-fabric/jvm-host-smoke.jar";
+    private static final String LWJGL_ASSET = "rusted-fabric/lwjgl-glfw-classes.jar";
     private final AtomicBoolean running = new AtomicBoolean();
     private TextView status;
 
@@ -67,18 +74,64 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         Thread renderer = new Thread(() -> {
             String detail;
             try {
-                detail = NativeRenderBridge.smokeTest(width, height);
+                detail = runLwjglTest();
             } catch (Throwable failure) {
-                detail = "Android EGL bridge failed: " + safeMessage(failure);
+                detail = "Android LWJGL2 bridge failed: " + safeMessage(failure);
             }
             writeStatus(this, detail);
             String finalDetail = detail;
             runOnUiThread(() -> status.setText(getString(
-                    finalDetail.startsWith("rusted-fabric-egl-smoke=ok")
+                    finalDetail.startsWith("rusted-fabric-lwjgl2-smoke=ok")
                             ? R.string.jvm_renderer_succeeded : R.string.jvm_renderer_failed,
                     finalDetail)));
         }, "rusted-fabric-egl-smoke");
         renderer.start();
+    }
+
+    private String runLwjglTest() throws IOException {
+        File work = new File(new File(getFilesDir(), "desktop-jvm"), "lwjgl2-smoke");
+        if (!work.isDirectory() && !work.mkdirs()) {
+            throw new IOException("Cannot create private LWJGL2 smoke-test directory");
+        }
+        File payload = installAsset(PAYLOAD_ASSET, new File(work, "jvm-host-smoke.jar"));
+        File adapter = installAsset(LWJGL_ASSET, new File(work, "lwjgl-glfw-classes.jar"));
+        File resultFile = new File(work, "result.txt");
+        Files.deleteIfExists(resultFile.toPath());
+        File runtimeHome = new File(new File(getFilesDir(), "desktop-jvm"), "runtime");
+        File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
+        JvmLaunchPlan plan = JvmLaunchPlanFactory.createLwjglSmokeTest(
+                runtimeHome.toPath(), payload.toPath(), adapter.toPath(), work.toPath(),
+                nativeDirectory.toPath(), resultFile.toPath());
+        NativeJvmHost.Result launch = NativeJvmHost.launch(plan);
+        if (!launch.succeeded()) {
+            String jvmDetail = resultFile.isFile() ? new String(
+                    Files.readAllBytes(resultFile.toPath()), StandardCharsets.UTF_8).trim() : "";
+            throw new IOException("Native JVM host code " + launch.code() + ": "
+                    + launch.detail() + (jvmDetail.isEmpty() ? "" : "\n" + jvmDetail));
+        }
+        if (!resultFile.isFile()) {
+            throw new IOException("HotSpot LWJGL2 smoke test did not create its result");
+        }
+        String detail = new String(
+                Files.readAllBytes(resultFile.toPath()), StandardCharsets.UTF_8).trim();
+        if (!detail.startsWith("rusted-fabric-lwjgl2-smoke=ok")) {
+            throw new IOException("HotSpot LWJGL2 smoke test returned an invalid result");
+        }
+        return detail;
+    }
+
+    private File installAsset(String assetPath, File target) throws IOException {
+        File staging = new File(target.getParentFile(), target.getName() + ".importing");
+        Files.deleteIfExists(staging.toPath());
+        try (InputStream input = getAssets().open(assetPath);
+             FileOutputStream output = new FileOutputStream(staging)) {
+            byte[] buffer = new byte[32 * 1024];
+            int read;
+            while ((read = input.read(buffer)) >= 0) output.write(buffer, 0, read);
+        }
+        Files.deleteIfExists(target.toPath());
+        if (!staging.renameTo(target)) throw new IOException("Cannot install " + assetPath);
+        return target;
     }
 
     @Override

@@ -13,6 +13,8 @@ import java.util.zip.ZipFile;
 public final class JvmLaunchPlanFactory {
     public static final String SMOKE_MAIN_CLASS =
             "io.github.endx.rustedfabric.android.jvm.JvmHostSmokeMain";
+    public static final String LWJGL_SMOKE_MAIN_CLASS =
+            "io.github.endx.rustedfabric.android.jvm.JvmLwjglSmokeMain";
 
     private JvmLaunchPlanFactory() {
     }
@@ -95,6 +97,56 @@ public final class JvmLaunchPlanFactory {
                 Collections.singletonList(payloadJar.toAbsolutePath().normalize()), vmArguments,
                 SMOKE_MAIN_CLASS,
                 Collections.singletonList(resultFile.toAbsolutePath().normalize().toString()));
+    }
+
+    public static JvmLaunchPlan createLwjglSmokeTest(Path runtimeHome, Path payloadJar,
+                                                     Path lwjglAdapterJar,
+                                                     Path workingDirectory,
+                                                     Path nativeLibraryDirectory,
+                                                     Path resultFile) throws IOException {
+        requireUsableRuntime(runtimeHome);
+        requireDirectory(workingDirectory, "workingDirectory");
+        requireDirectory(nativeLibraryDirectory, "nativeLibraryDirectory");
+        requireJarEntry(payloadJar, LWJGL_SMOKE_MAIN_CLASS.replace('.', '/') + ".class",
+                "LWJGL smoke-test payload");
+        requireJarEntry(lwjglAdapterJar, "org/lwjgl/opengl/Display.class",
+                "LWJGL Android adapter");
+        if (resultFile == null || resultFile.getParent() == null
+                || !resultFile.toAbsolutePath().normalize().getParent()
+                .equals(workingDirectory.toAbsolutePath().normalize())) {
+            throw new IOException("LWJGL smoke-test result must remain in its working directory");
+        }
+        Path nativeDirectory = nativeLibraryDirectory.toAbsolutePath().normalize();
+        Path gl4es = nativeDirectory.resolve("libgl4es_114.so");
+        if (!Files.isRegularFile(gl4es)) {
+            throw new IOException("GL4ES is not packaged for this ABI");
+        }
+        List<String> vmArguments = Arrays.asList(
+                "-Xms32M", "-Xmx128M",
+                "-Dfile.encoding=UTF-8",
+                "-Djava.home=" + runtimeHome.toAbsolutePath().normalize(),
+                "-Djava.library.path=" + nativeDirectory,
+                "-Dorg.lwjgl.librarypath=" + nativeDirectory,
+                "-Dorg.lwjgl.opengl.libname=" + gl4es,
+                "-Drustedfabric.platform=android-jvm-lwjgl2-smoke");
+        return new JvmLaunchPlan(workingDirectory.toAbsolutePath().normalize(),
+                runtimeHome.toAbsolutePath().normalize(), nativeDirectory,
+                Arrays.asList(payloadJar.toAbsolutePath().normalize(),
+                        lwjglAdapterJar.toAbsolutePath().normalize()),
+                vmArguments, LWJGL_SMOKE_MAIN_CLASS,
+                Collections.singletonList(resultFile.toAbsolutePath().normalize().toString()));
+    }
+
+    private static void requireJarEntry(Path jarPath, String entry, String label)
+            throws IOException {
+        if (jarPath == null || !Files.isRegularFile(jarPath)) {
+            throw new IOException(label + " JAR is unavailable");
+        }
+        try (ZipFile jar = new ZipFile(jarPath.toFile())) {
+            if (jar.getEntry(entry) == null) {
+                throw new IOException(label + " does not contain " + entry);
+            }
+        }
     }
 
     private static void requireUsableRuntime(Path runtimeHome) throws IOException {

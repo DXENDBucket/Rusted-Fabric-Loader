@@ -92,6 +92,50 @@ The following notices are provided for attribution and license compliance.
 
 ---
 
+## PojavLauncher Android LWJGL bridge
+
+- Name: PojavLauncher Android GLFW/LWJGL class bundle
+- Homepage/Source: https://github.com/PojavLauncherTeam/PojavLauncher
+- License: GNU Lesser General Public License 3.0
+- Used for: Loader-owned LWJGL2-compatible Java API and Android-aware GLFW boundary in the desktop
+  JVM port
+- Revision used: `b12ad048157b3aa255d078c235dd4571e1900309`
+
+The Android build fetches this component by immutable revision and verifies its SHA-256. Its full
+license text is packaged in the APK under `assets/rusted-fabric/licenses/`.
+
+---
+
+## GL4ES
+
+- Name: GL4ES
+- Homepage/Source: https://github.com/PojavLauncherTeam/gl4es
+- License: MIT License
+- Used for: Translating the desktop OpenGL 1.x/2.1 calls used by LWJGL2 and Slick2D to Android
+  OpenGL ES
+- Revision represented by the packaged Pojav binary: PojavLauncher revision
+  `b12ad048157b3aa255d078c235dd4571e1900309`; upstream source audited at
+  `3d8906d46a93066f21ea01aeaf1a36ec972efd15`
+
+The full MIT license text is packaged in the APK.
+
+---
+
+## LWJGL 3 / LWJGLX
+
+- Name: LWJGL 3 and the LWJGLX LWJGL2 compatibility layer
+- Homepage/Source:
+    - https://github.com/LWJGL/lwjgl3
+    - https://github.com/PojavLauncherTeam/lwjglx
+- License: BSD 3-Clause (LWJGL); compatibility changes are distributed through the Pojav bundle
+  described above
+- Used for: Native Java/OpenGL binding and the desktop game's `org.lwjgl` compatibility surface
+- LWJGL baseline in the Pojav bundle: `3.2.3`
+
+The LWJGL BSD license text is packaged in the APK.
+
+---
+
 ## FabricMC Access Widener
 
 - Name: access-widener

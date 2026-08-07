@@ -55,6 +55,11 @@ android {
         resources {
             merges += ['META-INF/xposed/*']
         }
+        jniLibs {
+            // The embedded HotSpot VM resolves LWJGL/GL4ES from java.library.path and cannot
+            // dlopen libraries directly from an APK zip entry.
+            useLegacyPackaging true
+        }
     }
 
     lint {
@@ -74,9 +79,84 @@ dependencies {
 
 def generatedPatcherAssets = layout.buildDirectory.dir('generated/localPatcherAssets')
 def generatedJvmSmokeAssets = layout.buildDirectory.dir('generated/jvmSmokeAssets')
+def generatedLwjglAssets = layout.buildDirectory.dir('generated/lwjglAssets')
+def generatedLwjglNatives = layout.buildDirectory.dir('generated/lwjglNatives')
+
+def lwjglAndroidRevision = 'b12ad048157b3aa255d078c235dd4571e1900309'
+def lwjglAndroidBase = "https://raw.githubusercontent.com/PojavLauncherTeam/PojavLauncher/${lwjglAndroidRevision}/"
+def lwjglAndroidArtifacts = [
+        [path: 'app_pojavlauncher/src/main/assets/components/lwjgl3/lwjgl-glfw-classes.jar',
+         name: 'lwjgl-glfw-classes.jar',
+         sha256: '1BF89A90CBCC0BB4BD07511AFC92E8345FF221D2A7AB1A04F2FCBC1BD09A3FFD',
+         asset: true],
+        [path: 'app_pojavlauncher/src/main/jniLibs/arm64-v8a/libgl4es_114.so',
+         name: 'libgl4es_114.so',
+         sha256: '3DBCC87BAAE1436F2AFFB923EDA053D7E256F0AA032654452E2B2092566F6B24'],
+        [path: 'app_pojavlauncher/src/main/jniLibs/arm64-v8a/liblwjgl.so',
+         name: 'liblwjgl.so',
+         sha256: '7CD38E1550505F47A941476A8BA8BE0E2341822D1D66309FC7C8AFB8B6AB5C37'],
+        [path: 'app_pojavlauncher/src/main/jniLibs/arm64-v8a/liblwjgl_opengl.so',
+         name: 'liblwjgl_opengl.so',
+         sha256: '2E5B83ED440507A928306F955DB73D48261A33D55F131D665DF329ECB7B664E7'],
+        [path: 'LICENSE', name: 'licenses/PojavLauncher-LGPL-3.0.txt',
+         sha256: 'E3A994D82E644B03A792A930F574002658412F62407F5FEE083F2555C5F23118',
+         asset: true],
+        [url: 'https://raw.githubusercontent.com/PojavLauncherTeam/gl4es/3d8906d46a93066f21ea01aeaf1a36ec972efd15/LICENSE',
+         name: 'licenses/GL4ES-MIT.txt',
+         sha256: '69A3049C77ABD88658F6AD7CF6A5B6CEB5CF03B80E60F7C4657D90322CFAB7BD',
+         asset: true],
+        [url: 'https://raw.githubusercontent.com/LWJGL/lwjgl3/3.2.3/LICENSE.md',
+         name: 'licenses/LWJGL-BSD-3-Clause.md',
+         sha256: '4C2F770897D0CFDA4D9A65BB4D6D6983DCCFD57D4C7EB74EA5DED0762CBC0E75',
+         asset: true]
+]
 
 android.sourceSets.main.assets.srcDir(generatedPatcherAssets)
 android.sourceSets.main.assets.srcDir(generatedJvmSmokeAssets)
+android.sourceSets.main.assets.srcDir(generatedLwjglAssets)
+android.sourceSets.main.jniLibs.srcDir(generatedLwjglNatives)
+
+tasks.register('prepareLwjglAndroidRuntime') {
+    group = 'build setup'
+    description = 'Fetches SHA-256-pinned open-source LWJGLX/GL4ES Android artifacts.'
+    outputs.dir(generatedLwjglAssets)
+    outputs.dir(generatedLwjglNatives)
+    doLast {
+        lwjglAndroidArtifacts.each { artifact ->
+            File destination = artifact.asset
+                    ? generatedLwjglAssets.get().file("rusted-fabric/${artifact.name}").asFile
+                    : generatedLwjglNatives.get().file("arm64-v8a/${artifact.name}").asFile
+            destination.parentFile.mkdirs()
+            boolean valid = destination.isFile() && java.security.MessageDigest
+                    .getInstance('SHA-256').digest(destination.bytes).encodeHex()
+                    .toString().equalsIgnoreCase(artifact.sha256)
+            if (!valid) {
+                File staging = new File(destination.parentFile, destination.name + '.downloading')
+                staging.delete()
+                String curl = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('win')
+                        ? 'curl.exe' : 'curl'
+                Process download = new ProcessBuilder(curl, '--fail', '--location', '--retry', '3',
+                        '--connect-timeout', '30', '--max-time', '180',
+                        '--user-agent', 'Rusted-Fabric-Loader-Gradle',
+                        '--output', staging.absolutePath,
+                        artifact.url ?: lwjglAndroidBase + artifact.path)
+                        .inheritIO().start()
+                if (download.waitFor() != 0) {
+                    staging.delete()
+                    throw new GradleException("Could not download ${artifact.name}")
+                }
+                String actual = java.security.MessageDigest.getInstance('SHA-256')
+                        .digest(staging.bytes).encodeHex().toString()
+                if (!actual.equalsIgnoreCase(artifact.sha256)) {
+                    staging.delete()
+                    throw new GradleException("SHA-256 mismatch for ${artifact.name}: ${actual}")
+                }
+                java.nio.file.Files.move(staging.toPath(), destination.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
+    }
+}
 
 tasks.register('preparePatchedBootstrapAsset', Copy) {
     dependsOn ':patched-bootstrap:exportBootstrapDex'
@@ -97,6 +177,7 @@ tasks.register('prepareJvmSmokeAsset', Copy) {
 tasks.named('preBuild').configure {
     dependsOn tasks.named('preparePatchedBootstrapAsset')
     dependsOn tasks.named('prepareJvmSmokeAsset')
+    dependsOn tasks.named('prepareLwjglAndroidRuntime')
 }
 
 tasks.register('verifyNoGamePayload') {
@@ -127,6 +208,12 @@ tasks.register('verifyNoGamePayload') {
         def jvmHostFound = false
         def renderBridgeFound = false
         def jvmSmokeAssetFound = false
+        def lwjglAdapterFound = false
+        def gl4esFound = false
+        def lwjglNativeFound = false
+        def lwjglOpenGlNativeFound = false
+        def pojavExecFound = false
+        def rendererLicensesFound = 0
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -141,6 +228,14 @@ tasks.register('verifyNoGamePayload') {
                 }
                 if (entry.name == 'assets/rusted-fabric/jvm-host-smoke.jar') {
                     jvmSmokeAssetFound = true
+                }
+                lwjglAdapterFound |= entry.name == 'assets/rusted-fabric/lwjgl-glfw-classes.jar'
+                gl4esFound |= entry.name == 'lib/arm64-v8a/libgl4es_114.so'
+                lwjglNativeFound |= entry.name == 'lib/arm64-v8a/liblwjgl.so'
+                lwjglOpenGlNativeFound |= entry.name == 'lib/arm64-v8a/liblwjgl_opengl.so'
+                pojavExecFound |= entry.name == 'lib/arm64-v8a/libpojavexec.so'
+                if (entry.name.startsWith('assets/rusted-fabric/licenses/')) {
+                    rendererLicensesFound++
                 }
                 if (lower.endsWith('.dex')) {
                     def bytes
@@ -207,7 +302,9 @@ tasks.register('verifyNoGamePayload') {
                 || !enabledModClientFound || !patcherCoreFound || !bootstrapAssetFound
                 || !handshakeBridgeFound || !androidBackendFound || !sessionApiFound
                 || !gameplayEventsFound || !frameProjectileEventsFound || !jvmBackendFound
-                || !jvmHostFound || !renderBridgeFound || !jvmSmokeAssetFound) {
+                || !jvmHostFound || !renderBridgeFound || !jvmSmokeAssetFound
+                || !lwjglAdapterFound || !gl4esFound || !lwjglNativeFound
+                || !lwjglOpenGlNativeFound || !pojavExecFound || rendererLicensesFound < 3) {
             throw new GradleException('Xposed APK is missing the portable API or mod management path')
         }
         if (!forbidden.isEmpty()) {

@@ -87,4 +87,9 @@
     <string name="jvm_smoke_succeeded">外部 Java 运行时测试通过：\n%1$s</string>
     <string name="jvm_smoke_failed">外部 Java 运行时测试失败：%1$s</string>
     <string name="jvm_smoke_last">上次外部 Java 测试：\n%1$s</string>
+    <string name="jvm_test_renderer">测试 HotSpot LWJGL2 + GL4ES 渲染</string>
+    <string name="jvm_renderer_waiting">正在等待 Android Surface，随后将由 HotSpot 执行真实 LWJGL2 调用……点击此区域可关闭。</string>
+    <string name="jvm_renderer_succeeded">HotSpot LWJGL2 + GL4ES 渲染验证通过。点击此区域可关闭。\n%1$s</string>
+    <string name="jvm_renderer_failed">HotSpot LWJGL2 + GL4ES 渲染失败。点击此区域可关闭。\n%1$s</string>
+    <string name="jvm_renderer_last">上次 Android 渲染测试：\n%1$s</string>
 </resources>

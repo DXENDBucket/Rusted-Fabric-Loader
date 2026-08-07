@@ -43,6 +43,25 @@ void fail(const std::string& message) {
     __android_log_print(ANDROID_LOG_ERROR, kTag, "%s", message.c_str());
 }
 
+std::string exception_message(JNIEnv* env) {
+    jthrowable failure = env->ExceptionOccurred();
+    if (failure == nullptr) return "unknown Java exception";
+    env->ExceptionClear();
+    jclass throwable_type = env->FindClass("java/lang/Throwable");
+    jmethodID to_string = throwable_type == nullptr ? nullptr
+            : env->GetMethodID(throwable_type, "toString", "()Ljava/lang/String;");
+    std::string detail = "Java exception";
+    if (to_string != nullptr) {
+        auto text = static_cast<jstring>(env->CallObjectMethod(failure, to_string));
+        if (!env->ExceptionCheck() && text != nullptr) detail = utf(env, text);
+        if (text != nullptr) env->DeleteLocalRef(text);
+    }
+    if (env->ExceptionCheck()) env->ExceptionClear();
+    if (throwable_type != nullptr) env->DeleteLocalRef(throwable_type);
+    env->DeleteLocalRef(failure);
+    return detail;
+}
+
 void update_linker_library_path(const std::string& value) {
     void* libdl = dlopen("libdl.so", RTLD_NOW | RTLD_LOCAL);
     if (libdl == nullptr) return;
@@ -100,6 +119,9 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
             + ":" + native_library_directory;
     setenv("JAVA_HOME", runtime_home.c_str(), 1);
     setenv("LD_LIBRARY_PATH", library_path.c_str(), 1);
+    setenv("POJAV_RENDERER", "opengles2", 1);
+    setenv("LIBGL_ES", "2", 1);
+    setenv("LIBGL_GL", "21", 1);
     update_linker_library_path(library_path);
 
     const std::string vm_path = server_lib + "/libjvm.so";
@@ -174,9 +196,8 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
     game_env->CallStaticVoidMethod(main_type, main_method, java_arguments);
     const bool failed = game_env->ExceptionCheck();
     if (failed) {
-        game_env->ExceptionDescribe();
-        game_env->ExceptionClear();
-        fail("Java main class terminated with an uncaught exception");
+        fail("Java main class terminated with an uncaught exception: "
+                + exception_message(game_env));
     }
     game_env->DeleteLocalRef(java_arguments);
     game_env->DeleteLocalRef(string_type);

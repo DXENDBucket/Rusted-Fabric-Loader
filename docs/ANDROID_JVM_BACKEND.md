@@ -111,6 +111,12 @@ runtime already supplies both `libfreetype.so` and `libfontmanager.so`; loading 
 the dependency warning. The local full logs and user-owned test inputs remain under the Git-ignored
 `build/android-jvm-test/` directory.
 
+The next renderer layer is now implemented and passed on that device as well. HotSpot loaded the
+SHA-256-pinned Pojav LWJGLX/LWJGL3 ARM64 components, `Display.create()` obtained the Loader-owned
+Surface through `libpojavexec.so`, and real LWJGL2 `GL11.glClearColor`, `glClear`, `glGetString`, and
+buffer-swap calls ran through GL4ES 1.1.5. The visible framebuffer was purple and reported the real
+Adreno 750 renderer. The APK audit still rejects every Rusted Warfare class or game payload.
+
 ## Runtime boundary
 
 User-owned portable game data:
@@ -140,11 +146,10 @@ never treated as an Android runtime dependency.
 
 ## Next execution milestones
 
-1. Implement the LWJGL2 Java/JNI adapter on top of the verified `ANativeWindow`/EGL boundary and
-   render the Slick2D initialization screen. The existing Linux/X11 LWJGL2 classes cannot be used
-   unchanged on Android.
-2. Export the existing desktop Fabric Loader classpath into private storage and execute the
+1. Export the existing desktop Fabric Loader classpath into private storage and execute the
    generated `JvmLaunchPlan` through Knot.
+2. Run the imported game's Slick2D initialization against the verified LWJGL2/GL4ES path and fill
+   any missing display calls it reveals.
 3. Add OpenAL and Android input adapters.
 4. Determine whether `rocketConnector` can be rebuilt for ARM64 or must be replaced, then reach the
    main menu with Steam integration disabled.

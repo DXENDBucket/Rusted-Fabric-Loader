@@ -8,3 +8,7 @@ target_link_libraries(rustedfabric_jvmhost PRIVATE android log dl)
 add_library(rustedfabric_renderbridge SHARED rustedfabric_renderbridge.cpp)
 target_compile_features(rustedfabric_renderbridge PRIVATE cxx_std_17)
 target_link_libraries(rustedfabric_renderbridge PRIVATE android log EGL GLESv2)
+
+add_library(pojavexec SHARED rustedfabric_pojavexec.cpp)
+target_compile_features(pojavexec PRIVATE cxx_std_17)
+target_link_libraries(pojavexec PRIVATE rustedfabric_renderbridge android log EGL)

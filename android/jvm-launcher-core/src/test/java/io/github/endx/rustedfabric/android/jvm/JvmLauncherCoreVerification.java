@@ -53,6 +53,18 @@ public final class JvmLauncherCoreVerification {
                             java.util.Collections.singletonList(smokeJar.toAbsolutePath())),
                     "External-JVM smoke-test plan changed");
 
+            Path lwjglAdapter = temporary.resolve("lwjgl-android.jar");
+            createJar(lwjglAdapter, "org/lwjgl/opengl/Display.class");
+            Files.write(natives.resolve("libgl4es_114.so"), new byte[]{0});
+            JvmLaunchPlan lwjglPlan = JvmLaunchPlanFactory.createLwjglSmokeTest(runtime,
+                    smokeJarWithLwjglMain(temporary), lwjglAdapter, smokeWork, natives,
+                    smokeWork.resolve("lwjgl-result.txt"));
+            require(JvmLaunchPlanFactory.LWJGL_SMOKE_MAIN_CLASS.equals(lwjglPlan.mainClass())
+                            && lwjglPlan.classpath().size() == 2
+                            && lwjglPlan.virtualMachineArguments().stream()
+                            .anyMatch(value -> value.startsWith("-Dorg.lwjgl.opengl.libname=")),
+                    "LWJGL2 Android smoke-test plan changed");
+
             boolean incompleteRejected = false;
             try {
                 JvmLaunchPlanFactory.create(game, runtime, loader, natives,
@@ -194,6 +206,13 @@ public final class JvmLauncherCoreVerification {
             zip.write(new byte[]{0});
             zip.closeEntry();
         }
+    }
+
+    private static Path smokeJarWithLwjglMain(Path temporary) throws IOException {
+        Path output = temporary.resolve("lwjgl-smoke.jar");
+        createJar(output,
+                JvmLaunchPlanFactory.LWJGL_SMOKE_MAIN_CLASS.replace('.', '/') + ".class");
+        return output;
     }
 
     private static void createDesktopArchive(Path output) throws IOException {

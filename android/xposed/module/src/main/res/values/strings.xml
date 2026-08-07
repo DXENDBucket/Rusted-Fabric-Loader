@@ -71,10 +71,10 @@
     <string name="jvm_import_directory">Import directory (advanced)</string>
     <string name="jvm_import_runtime">Import ARM64 Java 17 ZIP/TAR.XZ (developer)</string>
     <string name="jvm_test_runtime">Test Java runtime in isolated process</string>
-    <string name="jvm_test_renderer">Test Android Surface/EGL bridge</string>
-    <string name="jvm_renderer_waiting">Waiting for the Android rendering surface... Tap this panel to close.</string>
-    <string name="jvm_renderer_succeeded">Android Surface/EGL bridge passed. This is not yet full LWJGL2 compatibility. Tap this panel to close.\n%1$s</string>
-    <string name="jvm_renderer_failed">Android Surface/EGL bridge failed. Tap this panel to close.\n%1$s</string>
+    <string name="jvm_test_renderer">Test HotSpot LWJGL2 + GL4ES renderer</string>
+    <string name="jvm_renderer_waiting">Waiting for the Android surface, then HotSpot will run real LWJGL2 calls... Tap this panel to close.</string>
+    <string name="jvm_renderer_succeeded">HotSpot LWJGL2 + GL4ES rendering passed. Tap this panel to close.\n%1$s</string>
+    <string name="jvm_renderer_failed">HotSpot LWJGL2 + GL4ES rendering failed. Tap this panel to close.\n%1$s</string>
     <string name="jvm_renderer_last">Last Android renderer test:\n%1$s</string>
     <string name="jvm_launch_game">Launch through Fabric</string>
     <string name="jvm_runtime_not_ready">The ARM64 JVM backend is not ready yet.</string>
