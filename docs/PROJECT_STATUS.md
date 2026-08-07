@@ -33,6 +33,12 @@ Jar. Full game launch is intentionally disabled until four runtime adapters exis
 - Android touch/keyboard/controller input through the JInput/LWJGL boundary;
 - an ARM64 `rocketConnector` implementation or compatible replacement.
 
+This JVM boundary is now physically verified on an ARM64 `PKG110` running Android 16. The
+2026-08-07 test imported the real desktop payload and Android OpenJDK 17, loaded the JNI host
+directly from the APK, and returned `rusted-fabric-jvm-smoke=ok` from the isolated HotSpot process.
+The next observed native dependency is FreeType for the JRE font manager; rendering and the four
+adapters above remain incomplete.
+
 ## Verification boundary
 
 The repository can mechanically verify compilation, mappings, named-to-official remapping, API

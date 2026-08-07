@@ -28,6 +28,7 @@ import io.github.endx.rustedfabric.android.xposed.R;
 import io.github.endx.rustedfabric.android.xposed.jvm.DesktopGameImportService;
 import io.github.endx.rustedfabric.android.xposed.jvm.JvmHostService;
 import io.github.endx.rustedfabric.android.xposed.jvm.JvmRuntimeImportService;
+import io.github.endx.rustedfabric.android.xposed.jvm.NativeJvmHost;
 
 /** Experimental FCL-style backend setup. Native JVM execution is intentionally fail-closed. */
 public final class JvmLauncherActivity extends Activity {
@@ -285,7 +286,7 @@ public final class JvmLauncherActivity extends Activity {
         File runtimeHome = new File(new File(getFilesDir(), "desktop-jvm"), "runtime");
         File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
         JvmBackendCapabilities capabilities = JvmRuntimeProbe.inspect(
-                runtimeHome.toPath(), nativeDirectory.toPath());
+                runtimeHome.toPath(), nativeDirectory.toPath(), NativeJvmHost.isPackaged());
         String missing = android.text.TextUtils.join(", ", capabilities.missing());
         String runtimeIssue = JvmRuntimeProbe.runtimeIssue(runtimeHome.toPath());
         runtimeStatus.setText(runtimeIssue.isEmpty()

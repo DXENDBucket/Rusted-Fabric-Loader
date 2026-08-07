@@ -13,8 +13,19 @@ public final class JvmRuntimeProbe {
     }
 
     public static JvmBackendCapabilities inspect(Path runtimeHome, Path packagedNativeDirectory) {
+        return inspect(runtimeHome, packagedNativeDirectory, false);
+    }
+
+    /**
+     * Inspects runtime adapters while allowing the Android host to report a library that was
+     * loaded directly from the APK. Modern Android installs can set extractNativeLibs=false, in
+     * which case a successfully loadable JNI library has no regular file in nativeLibraryDir.
+     */
+    public static JvmBackendCapabilities inspect(Path runtimeHome, Path packagedNativeDirectory,
+                                                  boolean jvmHostLoadedFromPackage) {
         boolean java17 = isJava17Runtime(runtimeHome);
-        boolean host = nativeFile(packagedNativeDirectory, "librustedfabric_jvmhost.so");
+        boolean host = jvmHostLoadedFromPackage
+                || nativeFile(packagedNativeDirectory, "librustedfabric_jvmhost.so");
         boolean lwjgl2 = nativeFile(packagedNativeDirectory, "liblwjgl.so");
         boolean openAl = nativeFile(packagedNativeDirectory, "libopenal.so");
         boolean jinput = nativeFile(packagedNativeDirectory, "librustedfabric_input.so");

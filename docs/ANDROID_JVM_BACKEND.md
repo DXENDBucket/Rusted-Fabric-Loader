@@ -85,6 +85,23 @@ The complete bounded archive importer can also be exercised on a workstation:
   -PjvmRuntimeOutput="C:\path\to\empty-output"
 ```
 
+## Physical-device verification
+
+The JVM boundary passed its first physical-device test on 2026-08-07 using an ARM64 `PKG110`
+running Android 16:
+
+- the user-owned desktop ZIP imported and validated 1,222 files (108 MB);
+- the Pojav Android OpenJDK 17 archive imported and validated 144 files (169 MB);
+- `librustedfabric_jvmhost.so` loaded directly from the APK with `extractNativeLibs=false`;
+- the isolated `:desktop_jvm` process loaded the private `libjvm.so`, created HotSpot, executed the
+  Loader-owned JAR, and returned `rusted-fabric-jvm-smoke=ok`, Java `17-internal`, Linux/AArch64;
+- Android SELinux granted execution of the imported JVM libraries from app-private storage.
+
+The test also found the first renderer dependency: optional preload of `libfontmanager.so` reports
+missing `libfreetype.so`. This does not affect the bytecode smoke test, but FreeType must be supplied
+before the desktop UI and font path can be considered ready. The local full log remains under the
+Git-ignored `build/android-jvm-test/` directory.
+
 ## Runtime boundary
 
 User-owned portable game data:
@@ -114,16 +131,14 @@ never treated as an Android runtime dependency.
 
 ## Next execution milestones
 
-1. Run the implemented isolated-process self-test on a physical ARM64 device and document any
-   remaining Android linker-namespace adjustments required by the chosen OpenJDK build.
-2. Create an Android `Surface`-backed LWJGL2 display bridge and render the Slick2D initialization
-   screen.
+1. Supply the required FreeType dependency, create an Android `Surface`-backed LWJGL2 display
+   bridge, and render the Slick2D initialization screen.
+2. Export the existing desktop Fabric Loader classpath into private storage and execute the
+   generated `JvmLaunchPlan` through Knot.
 3. Add OpenAL and Android input adapters.
 4. Determine whether `rocketConnector` can be rebuilt for ARM64 or must be replaced, then reach the
    main menu with Steam integration disabled.
-5. Export the existing desktop Fabric loader classpath into private storage and execute the generated
-   `JvmLaunchPlan` through Knot.
-6. Validate map rendering, audio, touch controls, saves, and multiplayer before enabling the launch
+5. Validate map rendering, audio, touch controls, saves, and multiplayer before enabling the launch
    button in release builds.
 
 The older native no-root APK backend remains in source history for reference, but it is frozen and

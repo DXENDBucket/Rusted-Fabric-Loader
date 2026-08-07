@@ -70,6 +70,12 @@ public final class JvmLauncherCoreVerification {
             }
             require(JvmRuntimeProbe.inspect(probedRuntime, probedNatives).isLaunchReady(),
                     "Complete Java 17 runtime and adapter layout was not detected");
+            Path apkMappedNatives = Files.createDirectories(
+                    temporary.resolve("apk-mapped-natives"));
+            require(JvmRuntimeProbe.inspect(probedRuntime, apkMappedNatives, true).hasJvmHost(),
+                    "APK-mapped native JVM host was not detected");
+            require(!JvmRuntimeProbe.inspect(probedRuntime, apkMappedNatives, false).hasJvmHost(),
+                    "Missing native JVM host was accepted without a successful package load");
 
             Path darwinRuntime = createRuntime(temporary.resolve("darwin-runtime"));
             Files.write(darwinRuntime.resolve("release"), runtimeRelease("Darwin"));
