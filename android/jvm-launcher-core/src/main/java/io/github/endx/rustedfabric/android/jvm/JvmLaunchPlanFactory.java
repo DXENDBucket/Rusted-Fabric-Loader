@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipFile;
 
-/** Builds a launch request only after game files and every platform adapter are verified. */
+/** Builds launch requests for the imported desktop game without packaging any game payload. */
 public final class JvmLaunchPlanFactory {
     public static final String SMOKE_MAIN_CLASS =
             "io.github.endx.rustedfabric.android.jvm.JvmHostSmokeMain";
@@ -27,6 +27,31 @@ public final class JvmLaunchPlanFactory {
             throw new IllegalStateException("JVM backend is incomplete: "
                     + (capabilities == null ? "capabilities unavailable" : capabilities.missing()));
         }
+        return createGamePlan(gameRoot, runtimeHome, loaderClasspath, nativeLibraryDirectory,
+                maximumHeapMiB, width, height);
+    }
+
+    /**
+     * Runs the real Fabric/game entrypoint once Java, the JVM host and rendering are present.
+     * Missing audio/input/Steam adapters are reported by the game as the next compatibility
+     * failure instead of preventing development from reaching that code path.
+     */
+    public static JvmLaunchPlan createCompatibilityProbe(
+            Path gameRoot, Path runtimeHome, Path loaderClasspath,
+            Path nativeLibraryDirectory, JvmBackendCapabilities capabilities,
+            int maximumHeapMiB, int width, int height) throws IOException {
+        if (capabilities == null || !capabilities.hasJava17() || !capabilities.hasJvmHost()
+                || !capabilities.hasLwjgl2()) {
+            throw new IllegalStateException("JVM game probe requires Java, JVM host, and LWJGL2");
+        }
+        return createGamePlan(gameRoot, runtimeHome, loaderClasspath, nativeLibraryDirectory,
+                maximumHeapMiB, width, height);
+    }
+
+    private static JvmLaunchPlan createGamePlan(
+            Path gameRoot, Path runtimeHome, Path loaderClasspath,
+            Path nativeLibraryDirectory, int maximumHeapMiB, int width, int height)
+            throws IOException {
         if (maximumHeapMiB < 256 || maximumHeapMiB > 8192) {
             throw new IllegalArgumentException("maximumHeapMiB must be between 256 and 8192");
         }
@@ -49,20 +74,78 @@ public final class JvmLaunchPlanFactory {
         if (classpath.isEmpty()) {
             throw new IOException("Loader classpath contains no JAR files");
         }
-        classpath.addAll(DesktopGameLayout.desktopClasspath(gameRoot));
+        DesktopGameInspection game = DesktopGameLayout.inspect(gameRoot);
+        if (!game.isImportable()) {
+            throw new IOException("Desktop game layout is incomplete: " + game.errors());
+        }
+        Path launcherJar = findJarEntry(classpath,
+                "net/fabricmc/loader/impl/launch/knot/KnotClient.class");
+        if (launcherJar == null) {
+            throw new IOException("Loader classpath does not contain Fabric KnotClient");
+        }
+        Path lwjglAdapter = findJarEntry(classpath, "org/lwjgl/opengl/Display.class");
+        if (lwjglAdapter == null) {
+            throw new IOException("Loader classpath does not contain the Android LWJGL adapter");
+        }
+        Path lwjglCompat = findNamedJar(classpath, "lwjgl2-compat");
+        if (lwjglCompat == null) {
+            throw new IOException("Loader classpath does not contain the LWJGL2 compatibility layer");
+        }
+        requireJarEntry(lwjglCompat, "org/lwjgl/Sys.class", "LWJGL2 compatibility layer");
+        Path nativeDirectory = nativeLibraryDirectory.toAbsolutePath().normalize();
+        Path temporaryDirectory = gameRoot.toAbsolutePath().normalize()
+                .resolve(".rustedfabricloader").resolve("tmp");
+        Files.createDirectories(temporaryDirectory);
+        Path gl4es = nativeDirectory.resolve("libgl4es_114.so");
+        if (!Files.isRegularFile(gl4es)) {
+            throw new IOException("GL4ES is not packaged for this ABI");
+        }
         List<String> vmArguments = Arrays.asList(
+                "-XX:+UseSerialGC",
                 "-Xmx" + maximumHeapMiB + "M",
                 "-Dfile.encoding=UTF-8",
+                "-Djava.io.tmpdir=" + temporaryDirectory,
                 "-Djava.home=" + runtimeHome.toAbsolutePath().normalize(),
-                "-Djava.library.path=" + nativeLibraryDirectory.toAbsolutePath().normalize(),
+                "-Djava.library.path=" + nativeDirectory,
+                "-Dorg.lwjgl.librarypath=" + nativeDirectory,
+                "-Dorg.lwjgl.opengl.libname=" + gl4es,
+                "-Dorg.lwjgl.util.Debug=true",
+                "-Dorg.lwjgl.util.DebugLoader=true",
                 "-Drustedfabric.platform=android-jvm",
-                "-Drustedfabric.gameDir=" + gameRoot.toAbsolutePath().normalize());
+                "-Drusted.gameDir=" + gameRoot.toAbsolutePath().normalize(),
+                "-Drusted.android.lwjglJar=" + lwjglAdapter.toAbsolutePath().normalize(),
+                "-Drusted.android.lwjglCompatJar="
+                        + lwjglCompat.toAbsolutePath().normalize(),
+                "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+                "--add-opens=java.base/java.net=ALL-UNNAMED",
+                "--add-opens=java.base/java.nio=ALL-UNNAMED",
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED");
         List<String> gameArguments = Arrays.asList(
                 "-width", Integer.toString(width), "-height", Integer.toString(height));
         return new JvmLaunchPlan(gameRoot.toAbsolutePath().normalize(),
                 runtimeHome.toAbsolutePath().normalize(),
                 nativeLibraryDirectory.toAbsolutePath().normalize(), classpath, vmArguments,
                 DesktopGameLayout.FABRIC_MAIN_CLASS, gameArguments);
+    }
+
+    private static Path findJarEntry(List<Path> jars, String entry) throws IOException {
+        for (Path path : jars) {
+            try (ZipFile jar = new ZipFile(path.toFile())) {
+                if (jar.getEntry(entry) != null) return path;
+            }
+        }
+        return null;
+    }
+
+    private static Path findNamedJar(List<Path> jars, String namePart) {
+        for (Path path : jars) {
+            if (path.getFileName().toString().toLowerCase(java.util.Locale.ROOT)
+                    .contains(namePart.toLowerCase(java.util.Locale.ROOT))) {
+                return path;
+            }
+        }
+        return null;
     }
 
     public static JvmLaunchPlan createSmokeTest(Path runtimeHome, Path payloadJar,

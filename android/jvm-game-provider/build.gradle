@@ -1,0 +1,93 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = '0.1.0'
+
+dependencies {
+    implementation 'net.fabricmc:fabric-loader:0.18.1'
+    implementation 'net.fabricmc:access-widener:2.1.0'
+    implementation 'net.fabricmc:tiny-mappings-parser:0.2.2.14'
+    implementation 'com.google.guava:guava:21.0'
+    implementation 'com.google.code.gson:gson:2.8.7'
+    implementation 'org.ow2.asm:asm:9.6'
+    implementation 'org.ow2.asm:asm-analysis:9.6'
+    implementation 'org.ow2.asm:asm-commons:9.6'
+    implementation 'org.ow2.asm:asm-tree:9.6'
+    implementation 'org.ow2.asm:asm-util:9.6'
+    implementation 'net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir '../../src/main/java'
+            include 'io/github/endx/rustedfabricloader/RustedWarfareGameProvider.java'
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    inputs.property 'loaderVersion', project.version
+    filesMatching('rusted-fabric-loader.properties') {
+        expand(loaderVersion: project.version, gameVersion: '1.15', mappingsVersion: '1.1')
+    }
+}
+
+jar {
+    archiveFileName = 'rusted-fabric-android-jvm-launcher.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA'
+    manifest {
+        attributes(
+                'Game-Id': 'rusted_warfare',
+                'Game-Version': '1.15',
+                'Mappings-Version': '1.1',
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+tasks.register('verifyAndroidJvmLauncher') {
+    group = 'verification'
+    description = 'Checks that the self-contained Fabric launcher has no Rusted Warfare payload.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+    doLast {
+        def required = [
+                'net/fabricmc/loader/impl/launch/knot/KnotClient.class',
+                'io/github/endx/rustedfabricloader/RustedWarfareGameProvider.class',
+                'META-INF/services/net.fabricmc.loader.impl.game.GameProvider'
+        ] as Set
+        def found = [] as Set
+        def forbidden = []
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                found.add(entry.name)
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                if (lower.startsWith('com/corrodinggames/') || lower.endsWith('game-lib.jar')
+                        || lower.endsWith('.apk') || lower.endsWith('.dex')
+                        || lower.endsWith('.dll') || lower.endsWith('.so')) {
+                    forbidden.add(entry.name)
+                }
+            }
+        }
+        if (!found.containsAll(required)) {
+            throw new GradleException("Android JVM launcher is incomplete: ${required - found}")
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Android JVM launcher contains forbidden payloads: ${forbidden}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyAndroidJvmLauncher')

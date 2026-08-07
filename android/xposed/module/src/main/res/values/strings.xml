@@ -76,7 +76,11 @@
     <string name="jvm_renderer_succeeded">HotSpot LWJGL2 + GL4ES rendering passed. Tap this panel to close.\n%1$s</string>
     <string name="jvm_renderer_failed">HotSpot LWJGL2 + GL4ES rendering failed. Tap this panel to close.\n%1$s</string>
     <string name="jvm_renderer_last">Last Android renderer test:\n%1$s</string>
-    <string name="jvm_launch_game">Launch through Fabric</string>
+    <string name="jvm_launch_game">Launch through Fabric (compatibility probe)</string>
+    <string name="jvm_game_probe_waiting">Waiting for the Android surface before starting Fabric and your imported game files. Tap this panel to close.</string>
+    <string name="jvm_game_probe_starting">Fabric is starting the imported desktop game. This panel will hide automatically; tap it to close.</string>
+    <string name="jvm_game_probe_finished">The Fabric/game process returned normally. Tap this panel to close.\n%1$s</string>
+    <string name="jvm_game_probe_failed">Fabric reached a compatibility failure. Tap this panel to close.\n%1$s</string>
     <string name="jvm_runtime_not_ready">The ARM64 JVM backend is not ready yet.</string>
     <string name="jvm_import_starting">Preparing private desktop game import…</string>
     <string name="jvm_import_progress">Imported %1$d files (%2$s); current: %3$s</string>

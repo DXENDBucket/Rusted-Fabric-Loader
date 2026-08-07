@@ -9,6 +9,7 @@
 
     <application
         android:allowBackup="false"
+        android:allowNativeHeapPointerTagging="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:description="@string/module_description"
         android:hasCode="true"
@@ -45,6 +46,7 @@
         <activity
             android:name=".ui.JvmRenderActivity"
             android:exported="false"
+            android:hardwareAccelerated="false"
             android:process=":desktop_jvm"
             android:screenOrientation="landscape" />
 

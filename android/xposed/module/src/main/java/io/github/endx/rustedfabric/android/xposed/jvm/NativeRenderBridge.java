@@ -36,6 +36,15 @@ public final class NativeRenderBridge {
         if (PACKAGED) nativeDetachSurface();
     }
 
+    /** Queues a desktop cursor event; buttonAction is -1 for move, 0 for release, 1 for press. */
+    public static boolean sendPointer(float x, float y, int buttonAction) {
+        return PACKAGED && nativeSendPointer(x, y, buttonAction);
+    }
+
+    public static boolean sendScroll(double x, double y) {
+        return PACKAGED && nativeSendScroll(x, y);
+    }
+
     public static String smokeTest(int width, int height) {
         if (!PACKAGED) return "Android EGL bridge is not packaged for this ABI";
         return nativeSmokeTest(width, height);
@@ -43,5 +52,7 @@ public final class NativeRenderBridge {
 
     private static native void nativeAttachSurface(Surface surface);
     private static native void nativeDetachSurface();
+    private static native boolean nativeSendPointer(float x, float y, int buttonAction);
+    private static native boolean nativeSendScroll(double x, double y);
     private static native String nativeSmokeTest(int width, int height);
 }

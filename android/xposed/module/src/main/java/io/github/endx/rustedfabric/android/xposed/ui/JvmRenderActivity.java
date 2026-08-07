@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
@@ -24,27 +25,36 @@ import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlan;
 import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlanFactory;
 import io.github.endx.rustedfabric.android.xposed.jvm.NativeJvmHost;
 import io.github.endx.rustedfabric.android.xposed.jvm.NativeRenderBridge;
+import io.github.endx.rustedfabric.android.xposed.jvm.DesktopGameImportService;
 
 /** Runs a real LWJGL2 call path from HotSpot into GL4ES and the Android Surface. */
 public final class JvmRenderActivity extends Activity implements SurfaceHolder.Callback {
+    public static final String EXTRA_GAME_PROBE = "rusted-fabric.game-probe";
     private static final String STATUS_FILE = "lwjgl2-smoke-status.txt";
     private static final String PAYLOAD_ASSET = "rusted-fabric/jvm-host-smoke.jar";
     private static final String LWJGL_ASSET = "rusted-fabric/lwjgl-glfw-classes.jar";
+    private static final String LAUNCHER_ASSET = "rusted-fabric/android-jvm-launcher.jar";
+    private static final String LWJGL_COMPAT_ASSET =
+            "rusted-fabric/rusted-fabric-lwjgl2-compat.jar";
     private final AtomicBoolean running = new AtomicBoolean();
     private TextView status;
+    private boolean gameProbe;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        gameProbe = getIntent().getBooleanExtra(EXTRA_GAME_PROBE, false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         FrameLayout root = new FrameLayout(this);
         SurfaceView surface = new SurfaceView(this);
         surface.getHolder().addCallback(this);
+        surface.setOnTouchListener((view, event) -> handleTouch(event));
+        surface.setOnGenericMotionListener((view, event) -> handleGenericMotion(event));
         root.addView(surface, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         status = new TextView(this);
-        status.setText(R.string.jvm_renderer_waiting);
+        status.setText(gameProbe ? R.string.jvm_game_probe_waiting : R.string.jvm_renderer_waiting);
         status.setTextColor(Color.WHITE);
         status.setTextSize(14);
         status.setPadding(dp(16), dp(12), dp(16), dp(12));
@@ -55,6 +65,38 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                 Gravity.TOP);
         root.addView(status, overlay);
         setContentView(root);
+    }
+
+    private boolean handleTouch(MotionEvent event) {
+        int buttonAction = -1;
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                buttonAction = 1;
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                buttonAction = 0;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            default:
+                return true;
+        }
+        NativeRenderBridge.sendPointer(event.getX(), event.getY(), buttonAction);
+        return true;
+    }
+
+    private boolean handleGenericMotion(MotionEvent event) {
+        if (event.getActionMasked() == MotionEvent.ACTION_HOVER_MOVE) {
+            return NativeRenderBridge.sendPointer(event.getX(), event.getY(), -1);
+        }
+        if (event.getActionMasked() == MotionEvent.ACTION_SCROLL) {
+            NativeRenderBridge.sendPointer(event.getX(), event.getY(), -1);
+            return NativeRenderBridge.sendScroll(
+                    event.getAxisValue(MotionEvent.AXIS_HSCROLL),
+                    event.getAxisValue(MotionEvent.AXIS_VSCROLL));
+        }
+        return false;
     }
 
     @Override
@@ -74,18 +116,59 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         Thread renderer = new Thread(() -> {
             String detail;
             try {
-                detail = runLwjglTest();
+                detail = gameProbe ? runGameProbe(width, height) : runLwjglTest();
             } catch (Throwable failure) {
-                detail = "Android LWJGL2 bridge failed: " + safeMessage(failure);
+                detail = (gameProbe ? "Android Fabric game launch failed: "
+                        : "Android LWJGL2 bridge failed: ") + safeMessage(failure);
             }
             writeStatus(this, detail);
             String finalDetail = detail;
-            runOnUiThread(() -> status.setText(getString(
-                    finalDetail.startsWith("rusted-fabric-lwjgl2-smoke=ok")
-                            ? R.string.jvm_renderer_succeeded : R.string.jvm_renderer_failed,
-                    finalDetail)));
+            runOnUiThread(() -> {
+                status.setVisibility(android.view.View.VISIBLE);
+                boolean succeeded = finalDetail.startsWith("rusted-fabric-lwjgl2-smoke=ok")
+                        || finalDetail.startsWith("rusted-fabric-game-probe=ok");
+                status.setText(getString(succeeded
+                                ? (gameProbe ? R.string.jvm_game_probe_finished
+                                : R.string.jvm_renderer_succeeded)
+                                : (gameProbe ? R.string.jvm_game_probe_failed
+                                : R.string.jvm_renderer_failed),
+                        finalDetail));
+            });
         }, "rusted-fabric-egl-smoke");
         renderer.start();
+    }
+
+    private String runGameProbe(int width, int height) throws IOException {
+        File desktopRoot = DesktopGameImportService.importedRoot(this);
+        File launcherDirectory = new File(new File(getFilesDir(), "desktop-jvm"), "launcher");
+        if (!launcherDirectory.isDirectory() && !launcherDirectory.mkdirs()) {
+            throw new IOException("Cannot create private Fabric launcher directory");
+        }
+        installAsset(LAUNCHER_ASSET, new File(launcherDirectory, "android-jvm-launcher.jar"));
+        installAsset(LWJGL_ASSET, new File(launcherDirectory, "lwjgl-glfw-classes.jar"));
+        installAsset(LWJGL_COMPAT_ASSET,
+                new File(launcherDirectory, "rusted-fabric-lwjgl2-compat.jar"));
+        File runtimeHome = new File(new File(getFilesDir(), "desktop-jvm"), "runtime");
+        File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
+        io.github.endx.rustedfabric.android.jvm.JvmBackendCapabilities capabilities =
+                io.github.endx.rustedfabric.android.jvm.JvmRuntimeProbe.inspect(
+                        runtimeHome.toPath(), nativeDirectory.toPath(), NativeJvmHost.isPackaged());
+        JvmLaunchPlan plan = JvmLaunchPlanFactory.createCompatibilityProbe(
+                desktopRoot.toPath(), runtimeHome.toPath(), launcherDirectory.toPath(),
+                nativeDirectory.toPath(), capabilities, 1024,
+                Math.max(width, 320), Math.max(height, 240));
+        runOnUiThread(() -> {
+            status.setText(R.string.jvm_game_probe_starting);
+            status.postDelayed(() -> {
+                if (running.get()) status.setVisibility(android.view.View.GONE);
+            }, 5000);
+        });
+        NativeJvmHost.Result launch = NativeJvmHost.launch(plan);
+        if (!launch.succeeded()) {
+            throw new IOException("Native JVM host code " + launch.code() + ": "
+                    + launch.detail() + ". See logcat tag RustedFabricJvm for the Java stack.");
+        }
+        return "rusted-fabric-game-probe=ok\nFabric/game main returned normally";
     }
 
     private String runLwjglTest() throws IOException {

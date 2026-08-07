@@ -49,6 +49,7 @@ public final class JvmLauncherActivity extends Activity {
     private Button launchButton;
     private boolean busy;
     private boolean smokeReady;
+    private boolean gameProbeReady;
     private boolean receiverRegistered;
     private final BroadcastReceiver smokeReceiver = new BroadcastReceiver() {
         @Override
@@ -180,8 +181,15 @@ public final class JvmLauncherActivity extends Activity {
         launchButton = new Button(this);
         launchButton.setText(R.string.jvm_launch_game);
         launchButton.setEnabled(false);
-        launchButton.setOnClickListener(ignored -> Toast.makeText(this,
-                R.string.jvm_runtime_not_ready, Toast.LENGTH_LONG).show());
+        launchButton.setOnClickListener(ignored -> {
+            if (!gameProbeReady) {
+                Toast.makeText(this, R.string.jvm_runtime_not_ready, Toast.LENGTH_LONG).show();
+                return;
+            }
+            Intent launch = new Intent(this, JvmRenderActivity.class);
+            launch.putExtra(JvmRenderActivity.EXTRA_GAME_PROBE, true);
+            startActivity(launch);
+        });
         content.addView(launchButton, matchWidth());
         return scroll;
     }
@@ -304,8 +312,9 @@ public final class JvmLauncherActivity extends Activity {
                 ? getString(R.string.jvm_runtime_missing, missing)
                 : getString(R.string.jvm_runtime_missing_detail, missing, runtimeIssue));
         smokeReady = capabilities.hasJava17() && capabilities.hasJvmHost();
+        gameProbeReady = inspection.isImportable() && smokeReady && capabilities.hasLwjgl2();
         smokeButton.setEnabled(!busy && smokeReady);
-        launchButton.setEnabled(inspection.isImportable() && capabilities.isLaunchReady());
+        launchButton.setEnabled(!busy && gameProbeReady);
     }
 
     private void setBusy(boolean busy, String message) {
@@ -317,6 +326,7 @@ public final class JvmLauncherActivity extends Activity {
         runtimeButton.setEnabled(!busy);
         rendererButton.setEnabled(!busy);
         smokeButton.setEnabled(!busy && smokeReady);
+        launchButton.setEnabled(!busy && gameProbeReady);
     }
 
     private TextView text(String value, int sp) {

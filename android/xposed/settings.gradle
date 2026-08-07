@@ -2,6 +2,8 @@ pluginManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri('https://maven.fabricmc.net/') }
+        maven { url = uri('https://repo.spongepowered.org/maven/') }
         gradlePluginPortal()
     }
 }
@@ -11,6 +13,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri('https://maven.fabricmc.net/') }
+        maven { url = uri('https://repo.spongepowered.org/maven/') }
         // API 102 is currently published by libxposed as an official release AAR.
         ivy {
             url = uri('https://github.com/libxposed/api/releases/download')
@@ -45,3 +49,7 @@ include ':local-patcher-core'
 project(':local-patcher-core').projectDir = file('../local-patcher-core')
 include ':jvm-launcher-core'
 project(':jvm-launcher-core').projectDir = file('../jvm-launcher-core')
+include ':jvm-game-provider'
+project(':jvm-game-provider').projectDir = file('../jvm-game-provider')
+include ':lwjgl2-compat'
+project(':lwjgl2-compat').projectDir = file('../lwjgl2-compat')

@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
+#include <dlfcn.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
@@ -13,6 +14,7 @@
 namespace {
 std::mutex window_mutex;
 ANativeWindow* attached_window = nullptr;
+uint64_t window_generation = 0;
 
 std::string egl_error(const char* operation) {
     std::ostringstream message;
@@ -29,16 +31,37 @@ std::string gl_string(GLenum name) {
 jstring result(JNIEnv* env, const std::string& value) {
     return env->NewStringUTF(value.c_str());
 }
+
+template<typename Function, typename... Arguments>
+bool call_pojav_input(const char* symbol, Arguments... arguments) {
+    void* library = dlopen("libpojavexec.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return false;
+    auto function = reinterpret_cast<Function>(dlsym(library, symbol));
+    if (function != nullptr) function(arguments...);
+    dlclose(library);
+    return function != nullptr;
+}
 }
 
 extern "C" ANativeWindow* rustedfabric_acquire_native_window(void) {
+    return rustedfabric_acquire_native_window_for_generation(nullptr);
+}
+
+extern "C" ANativeWindow* rustedfabric_acquire_native_window_for_generation(
+        uint64_t* generation) {
     std::lock_guard<std::mutex> lock(window_mutex);
+    if (generation != nullptr) *generation = window_generation;
     if (attached_window != nullptr) ANativeWindow_acquire(attached_window);
     return attached_window;
 }
 
 extern "C" void rustedfabric_release_native_window(ANativeWindow* window) {
     if (window != nullptr) ANativeWindow_release(window);
+}
+
+extern "C" uint64_t rustedfabric_native_window_generation(void) {
+    std::lock_guard<std::mutex> lock(window_mutex);
+    return window_generation;
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -49,6 +72,7 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeAtt
     std::lock_guard<std::mutex> lock(window_mutex);
     ANativeWindow* previous = attached_window;
     attached_window = replacement;
+    ++window_generation;
     if (previous != nullptr) ANativeWindow_release(previous);
 }
 
@@ -58,7 +82,28 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeDet
     std::lock_guard<std::mutex> lock(window_mutex);
     ANativeWindow* previous = attached_window;
     attached_window = nullptr;
+    ++window_generation;
     if (previous != nullptr) ANativeWindow_release(previous);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendPointer(
+        JNIEnv*, jclass, jfloat x, jfloat y, jint button_action) {
+    const bool cursor_sent = call_pojav_input<void (*)(float, float)>(
+            "rustedfabric_queue_cursor_pos", x, y);
+    bool button_sent = true;
+    if (button_action >= 0) {
+        button_sent = call_pojav_input<void (*)(int, int, int)>(
+                "rustedfabric_queue_mouse_button", 0, button_action, 0);
+    }
+    return cursor_sent && button_sent ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendScroll(
+        JNIEnv*, jclass, jdouble x, jdouble y) {
+    return call_pojav_input<void (*)(double, double)>(
+            "rustedfabric_queue_scroll", x, y) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jstring JNICALL

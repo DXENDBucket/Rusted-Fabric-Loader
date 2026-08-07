@@ -6,12 +6,19 @@ import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.fabricmc.loader.impl.game.GameProvider;
+import net.fabricmc.loader.impl.game.patch.GamePatch;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -27,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -61,6 +69,11 @@ public class RustedWarfareGameProvider implements GameProvider {
     // Optional: -Drusted.gameDir=...
     private static final String GAME_DIR_PROPERTY = "rusted.gameDir";
 
+    // Optional Android-HotSpot replacement for the desktop LWJGL implementation.
+    private static final String ANDROID_LWJGL_JAR_PROPERTY = "rusted.android.lwjglJar";
+    private static final String ANDROID_LWJGL_COMPAT_JAR_PROPERTY =
+            "rusted.android.lwjglCompatJar";
+
     private static final String GAME_LIB_JAR_NAME = "game-lib.jar";
     private static final String NAMED_GAME_LIB_JAR_NAME = "game-lib-named.jar";
     private static final String LIBS_DIR_NAME = "libs";
@@ -76,12 +89,58 @@ public class RustedWarfareGameProvider implements GameProvider {
             "org/xml/"
     };
 
-    private final GameTransformer transformer = new GameTransformer() {
+    private final GameTransformer transformer = new GameTransformer(new AndroidLwjglMemoryPatch());
+
+    /**
+     * Pojav's LWJGL classes discover the {@code Buffer.address} field by constructing a native
+     * probe buffer. That assumption does not hold for every desktop JRE bundled by Android
+     * launchers and can produce address zero for typed direct-buffer views. Route the single
+     * primitive used by all LWJGL buffer overloads through JNI's supported direct-buffer API.
+     */
+    private static final class AndroidLwjglMemoryPatch extends GamePatch {
+        private static final String MEMORY_UTIL = "org.lwjgl.system.MemoryUtil";
+        private static final String MEMORY_ADDRESS_DESCRIPTOR = "(Ljava/nio/Buffer;)J";
+
         @Override
-        public byte[] transform(String className) {
-            return null;
+        public void process(FabricLauncher launcher,
+                            Function<String, ClassNode> classSource,
+                            Consumer<ClassNode> classEmitter) {
+            if (!isAndroidRuntime()) {
+                return;
+            }
+
+            ClassNode memoryUtil = classSource.apply(MEMORY_UTIL);
+            if (memoryUtil == null) {
+                throw new IllegalStateException("Android LWJGL MemoryUtil class is unavailable");
+            }
+
+            MethodNode addressMethod = findMethod(memoryUtil, method ->
+                    method.name.equals("memAddress0")
+                            && method.desc.equals(MEMORY_ADDRESS_DESCRIPTOR));
+            if (addressMethod == null) {
+                throw new IllegalStateException("Unsupported Android LWJGL MemoryUtil ABI");
+            }
+
+            addressMethod.instructions.clear();
+            addressMethod.tryCatchBlocks.clear();
+            if (addressMethod.localVariables != null) {
+                addressMethod.localVariables.clear();
+            }
+            addressMethod.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            addressMethod.instructions.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "org/lwjgl/system/RustedFabricMemory",
+                    "address",
+                    MEMORY_ADDRESS_DESCRIPTOR,
+                    false));
+            addressMethod.instructions.add(new InsnNode(Opcodes.LRETURN));
+            addressMethod.maxStack = 2;
+            addressMethod.maxLocals = 1;
+            classEmitter.accept(memoryUtil);
+            Log.info(LOG_CATEGORY,
+                    "Patched Android LWJGL direct-buffer JNI bridge.");
         }
-    };
+    }
 
     private Arguments loaderArgs;
     private String[] gameArgs;
@@ -184,7 +243,11 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public void initialize(FabricLauncher launcher) {
-        // no-op
+        try {
+            transformer.locateEntrypoints(launcher, buildOrderedGameClasspath());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize Rusted Warfare bytecode patches", e);
+        }
     }
 
     private Path resolveGameLibJar() {
@@ -286,6 +349,23 @@ public class RustedWarfareGameProvider implements GameProvider {
             Log.error(LOG_CATEGORY, "Missing game jar: " + gameLibJar);
         }
 
+        // Android uses LWJGLX/GL4ES. It must live in Knot's target class loader, ahead of
+        // lwjgl_util.jar and Slick, while the imported desktop lwjgl.jar stays untouched.
+        if (isAndroidRuntime()) {
+            Path lwjglCompatJar = resolvePathProperty(
+                    ANDROID_LWJGL_COMPAT_JAR_PROPERTY, gameDir);
+            if (lwjglCompatJar == null || !Files.isRegularFile(lwjglCompatJar)) {
+                throw new IOException("Android LWJGL2 compatibility layer is unavailable: "
+                        + lwjglCompatJar);
+            }
+            Path androidLwjglJar = resolvePathProperty(ANDROID_LWJGL_JAR_PROPERTY, gameDir);
+            if (androidLwjglJar == null || !Files.isRegularFile(androidLwjglJar)) {
+                throw new IOException("Android LWJGL adapter is unavailable: " + androidLwjglJar);
+            }
+            addIfExists(out, seen, lwjglCompatJar);
+            addIfExists(out, seen, androidLwjglJar);
+        }
+
         // 2) libs/*.jar (sorted)
         List<Path> libs = new ArrayList<Path>();
         if (libsDir == null || !Files.isDirectory(libsDir)) {
@@ -300,6 +380,11 @@ public class RustedWarfareGameProvider implements GameProvider {
                 for (Path p : (Iterable<Path>) stream::iterator) {
                     String name = p.getFileName().toString().toLowerCase(Locale.ROOT);
                     if (name.equalsIgnoreCase(GAME_LIB_JAR_NAME) || name.equalsIgnoreCase(NAMED_GAME_LIB_JAR_NAME)) {
+                        continue;
+                    }
+                    if (isAndroidRuntime() && (name.equals("lwjgl.jar")
+                            || name.equals("natives-linux.jar"))) {
+                        Log.info(LOG_CATEGORY, "Android runtime excludes desktop library: " + name);
                         continue;
                     }
                     if (name.endsWith(".jar")) {
@@ -332,13 +417,14 @@ public class RustedWarfareGameProvider implements GameProvider {
             }
         }
 
-        // 3) android.jar last (desktop only)
+        // 3) android.jar last. Android HotSpot is a separate VM and cannot see ART's
+        // boot classes, so it also needs the game's Android compatibility stubs. In both
+        // environments filter XML packages that would shadow Java 17 modules.
         if (isAndroidRuntime()) {
-            Log.info(LOG_CATEGORY, "Android runtime detected; skipping desktop android.jar handling.");
-        } else {
-            Path desktopAndroid = prepareDesktopAndroidJar(androidJar);
-            addIfExists(out, seen, desktopAndroid);
+            Log.info(LOG_CATEGORY, "Android HotSpot runtime detected; adding filtered Android stubs.");
         }
+        Path portableAndroid = prepareDesktopAndroidJar(androidJar);
+        addIfExists(out, seen, portableAndroid);
 
         return out;
     }
@@ -495,9 +581,12 @@ public class RustedWarfareGameProvider implements GameProvider {
     }
 
     private static boolean isAndroidRuntime() {
+        String platform = String.valueOf(System.getProperty("rustedfabric.platform", ""))
+                .toLowerCase(Locale.ROOT);
         String vmName = String.valueOf(System.getProperty("java.vm.name", "")).toLowerCase(Locale.ROOT);
         String runtimeName = String.valueOf(System.getProperty("java.runtime.name", "")).toLowerCase(Locale.ROOT);
-        return vmName.contains("dalvik") || runtimeName.contains("android");
+        return platform.startsWith("android") || vmName.contains("dalvik")
+                || runtimeName.contains("android");
     }
 
     private static final Properties BUILD_PROPERTIES = loadBuildProperties();
@@ -647,7 +736,7 @@ public class RustedWarfareGameProvider implements GameProvider {
                 "event.unit.damage.v1", "event.unit.lifecycle.v1",
                 "session.v1", "game.units.v1", "multiplayer.compat.v1", "multiplayer.handshake.rfh1",
                 "network.channels.v1",
-                "platform.windows.fabric"));
+                isAndroidRuntime() ? "platform.android.fabric" : "platform.windows.fabric"));
         ctx.put("rustedfabricapi.processName", "rusted-warfare-client");
 
         ctx.put("gameDir", gameDir);
@@ -675,7 +764,8 @@ public class RustedWarfareGameProvider implements GameProvider {
     /** Reads only mod metadata; platform binaries are deliberately excluded from the sync hash. */
     private String buildMultiplayerManifest() {
         Path directory = resolveJavaModsDir();
-        if (directory == null || !Files.isDirectory(directory)) return "RFM1\twindows\n";
+        String platform = isAndroidRuntime() ? "android" : "windows";
+        if (directory == null || !Files.isDirectory(directory)) return "RFM1\t" + platform + "\n";
         SortedMap<String, MultiplayerRow> rows = new TreeMap<>();
         try (java.nio.file.DirectoryStream<Path> jars = Files.newDirectoryStream(directory, "*.jar")) {
             for (Path path : jars) {
@@ -701,7 +791,7 @@ public class RustedWarfareGameProvider implements GameProvider {
         } catch (IOException unavailable) {
             Log.warn(LOG_CATEGORY, "Could not scan Java mods for multiplayer metadata");
         }
-        StringBuilder result = new StringBuilder("RFM1\twindows\n");
+        StringBuilder result = new StringBuilder("RFM1\t").append(platform).append('\n');
         for (MultiplayerRow row : rows.values()) {
             result.append(row.id).append('\t').append(row.version).append('\t')
                     .append(row.mode).append('\t').append(row.protocol).append('\t')

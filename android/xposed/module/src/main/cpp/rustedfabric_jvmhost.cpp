@@ -4,7 +4,9 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <string>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
 
@@ -50,13 +52,37 @@ std::string exception_message(JNIEnv* env) {
     jclass throwable_type = env->FindClass("java/lang/Throwable");
     jmethodID to_string = throwable_type == nullptr ? nullptr
             : env->GetMethodID(throwable_type, "toString", "()Ljava/lang/String;");
-    std::string detail = "Java exception";
-    if (to_string != nullptr) {
-        auto text = static_cast<jstring>(env->CallObjectMethod(failure, to_string));
-        if (!env->ExceptionCheck() && text != nullptr) detail = utf(env, text);
-        if (text != nullptr) env->DeleteLocalRef(text);
+    jmethodID get_cause = throwable_type == nullptr ? nullptr
+            : env->GetMethodID(throwable_type, "getCause", "()Ljava/lang/Throwable;");
+    std::string detail;
+    jobject current = failure;
+    for (int depth = 0; current != nullptr && depth < 16; ++depth) {
+        auto text = to_string == nullptr ? nullptr
+                : static_cast<jstring>(env->CallObjectMethod(current, to_string));
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+            break;
+        }
+        if (text != nullptr) {
+            if (!detail.empty()) detail += "\nCaused by: ";
+            detail += utf(env, text);
+            env->DeleteLocalRef(text);
+        }
+        jobject cause = get_cause == nullptr ? nullptr
+                : env->CallObjectMethod(current, get_cause);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+            cause = nullptr;
+        }
+        if (cause == nullptr || env->IsSameObject(current, cause)) {
+            if (cause != nullptr) env->DeleteLocalRef(cause);
+            break;
+        }
+        if (current != failure) env->DeleteLocalRef(current);
+        current = cause;
     }
-    if (env->ExceptionCheck()) env->ExceptionClear();
+    if (current != nullptr && current != failure) env->DeleteLocalRef(current);
+    if (detail.empty()) detail = "Java exception";
     if (throwable_type != nullptr) env->DeleteLocalRef(throwable_type);
     env->DeleteLocalRef(failure);
     return detail;
@@ -111,6 +137,16 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
         fail("Cannot enter game working directory: " + std::string(std::strerror(errno)));
         return 11;
     }
+    // Android does not route an embedded HotSpot VM's stdout/stderr through logcat.
+    // Preserve Fabric and game diagnostics even if the desktop main calls System.exit.
+    mkdir(".rustedfabricloader", 0700);
+    const int log_fd = open(".rustedfabricloader/android-jvm.log",
+            O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+    if (log_fd >= 0) {
+        dup2(log_fd, STDOUT_FILENO);
+        dup2(log_fd, STDERR_FILENO);
+        close(log_fd);
+    }
 
     const std::string runtime_lib = runtime_home + "/lib";
     const std::string server_lib = runtime_lib + "/server";
@@ -119,9 +155,17 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
             + ":" + native_library_directory;
     setenv("JAVA_HOME", runtime_home.c_str(), 1);
     setenv("LD_LIBRARY_PATH", library_path.c_str(), 1);
-    setenv("POJAV_RENDERER", "opengles2", 1);
+    // LWJGLX treats the exact legacy value "opengles2" as a request to create GL
+    // capabilities during Display's static initialization, before any EGL context exists.
+    // Keep the renderer family prefix while deferring capability creation to ContextGL.
+    setenv("POJAV_RENDERER", "opengles2_rustedfabric", 1);
     setenv("LIBGL_ES", "2", 1);
     setenv("LIBGL_GL", "21", 1);
+    // Rusted Warfare's Slick renderer changes fixed-function state frequently between
+    // immediate-mode blocks.  GL4ES' default cross-glBegin/glEnd merge keeps client data
+    // alive until a later state change and is unsafe with this workload on 64-bit Adreno
+    // drivers.  Submit each block at glEnd instead of taking that delayed flush path.
+    setenv("LIBGL_BEGINEND", "0", 1);
     update_linker_library_path(library_path);
 
     const std::string vm_path = server_lib + "/libjvm.so";
@@ -173,14 +217,12 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
         game_env->ExceptionDescribe();
         game_env->ExceptionClear();
         fail("Java main class was not found: " + main_class);
-        vm->DestroyJavaVM();
         return 21;
     }
     jmethodID main_method = game_env->GetStaticMethodID(main_type, "main", "([Ljava/lang/String;)V");
     if (main_method == nullptr) {
         game_env->ExceptionClear();
         fail("Java main(String[]) method was not found");
-        vm->DestroyJavaVM();
         return 22;
     }
 
@@ -202,11 +244,9 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeJvmHost_nativeLaunch(
     game_env->DeleteLocalRef(java_arguments);
     game_env->DeleteLocalRef(string_type);
     game_env->DeleteLocalRef(main_type);
-    const jint destroy_result = vm->DestroyJavaVM();
-    if (destroy_result != JNI_OK && !failed) {
-        fail("DestroyJavaVM failed with code " + std::to_string(destroy_result));
-        return 24;
-    }
+    // Rusted Warfare may return from main while Slick's rendering thread remains alive.
+    // DestroyJavaVM would tear down HotSpot underneath that thread. The dedicated Android
+    // process owns exactly one VM, so process termination is its lifecycle boundary.
     return failed ? 23 : 0;
 }
 

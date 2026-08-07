@@ -70,7 +70,11 @@
     <string name="jvm_import_directory">导入目录（高级）</string>
     <string name="jvm_import_runtime">导入 ARM64 Java 17 ZIP/TAR.XZ（开发者）</string>
     <string name="jvm_test_runtime">在隔离进程中测试 Java 运行时</string>
-    <string name="jvm_launch_game">通过 Fabric 启动</string>
+    <string name="jvm_launch_game">通过 Fabric 启动（兼容性探测）</string>
+    <string name="jvm_game_probe_waiting">正在等待 Android Surface，随后将通过 Fabric 启动已导入的游戏文件。点击此区域可关闭。</string>
+    <string name="jvm_game_probe_starting">Fabric 正在启动已导入的桌面游戏。此提示稍后会自动隐藏；点击可关闭。</string>
+    <string name="jvm_game_probe_finished">Fabric/游戏进程已正常返回。点击此区域可关闭。\n%1$s</string>
+    <string name="jvm_game_probe_failed">Fabric 已到达一处兼容性错误。点击此区域可关闭。\n%1$s</string>
     <string name="jvm_runtime_not_ready">ARM64 JVM 后端尚未就绪。</string>
     <string name="jvm_import_starting">正在准备私有桌面版导入…</string>
     <string name="jvm_import_progress">已导入 %1$d 个文件（%2$s）；当前：%3$s</string>

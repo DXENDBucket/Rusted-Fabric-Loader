@@ -10,10 +10,12 @@ allprojects {
 
 subprojects {
     if (path == ':android:local-patcher-core' || path == ':android:local-patcher-cli'
-            || path == ':android:jvm-launcher-core') {
+            || path == ':android:jvm-launcher-core' || path == ':android:jvm-game-provider') {
         repositories {
             google()
             mavenCentral()
+            maven { url = "https://maven.fabricmc.net/" }
+            maven { url = "https://repo.spongepowered.org/maven/" }
         }
     }
 }

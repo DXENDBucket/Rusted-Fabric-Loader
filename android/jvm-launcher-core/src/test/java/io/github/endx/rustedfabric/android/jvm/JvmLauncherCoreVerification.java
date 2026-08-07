@@ -25,18 +25,34 @@ public final class JvmLauncherCoreVerification {
 
             Path runtime = createRuntime(temporary.resolve("runtime"));
             Path loader = Files.createDirectories(temporary.resolve("loader"));
-            createJar(loader.resolve("fabric-loader.jar"), "net/fabricmc/loader/Marker.class");
+            createJar(loader.resolve("fabric-loader.jar"),
+                    "net/fabricmc/loader/impl/launch/knot/KnotClient.class");
+            createJar(loader.resolve("lwjgl-android.jar"), "org/lwjgl/opengl/Display.class");
+            createJar(loader.resolve("rusted-fabric-lwjgl2-compat.jar"),
+                    "org/lwjgl/Sys.class");
             Path natives = Files.createDirectories(temporary.resolve("natives"));
+            Files.write(natives.resolve("libgl4es_114.so"), new byte[]{0});
             JvmBackendCapabilities ready = new JvmBackendCapabilities(true, true, true, true, true);
             JvmLaunchPlan plan = JvmLaunchPlanFactory.create(
                     game, runtime, loader, natives, ready, 1024, 1280, 720);
             require(DesktopGameLayout.FABRIC_MAIN_CLASS.equals(plan.mainClass()),
                     "Launch plan bypassed Fabric Knot");
-            require(plan.classpath().size() == 5 && plan.virtualMachineArguments().contains("-Xmx1024M")
+            require(plan.classpath().size() == 3 && plan.virtualMachineArguments().contains("-Xmx1024M")
+                            && plan.virtualMachineArguments().contains("-XX:+UseSerialGC")
                             && plan.virtualMachineArguments().stream()
                             .anyMatch(value -> value.startsWith("-Djava.home="))
+                            && plan.virtualMachineArguments().contains("-Djava.io.tmpdir="
+                            + game.toAbsolutePath().resolve(".rustedfabricloader/tmp"))
+                            && plan.virtualMachineArguments().stream()
+                            .anyMatch(value -> value.startsWith("-Drusted.gameDir="))
+                            && plan.virtualMachineArguments().stream()
+                            .anyMatch(value -> value.startsWith("-Drusted.android.lwjglJar="))
+                            && plan.virtualMachineArguments().stream()
+                            .anyMatch(value -> value.startsWith("-Drusted.android.lwjglCompatJar="))
                             && plan.workingDirectory().equals(game.toAbsolutePath().normalize()),
                     "Launch plan classpath or JVM options changed");
+            require(Files.isDirectory(game.resolve(".rustedfabricloader/tmp")),
+                    "Launch plan did not create its private Java temporary directory");
             require(plan.gameArguments().contains("1280") && plan.gameArguments().contains("720"),
                     "Launch surface was not forwarded");
 
@@ -55,7 +71,6 @@ public final class JvmLauncherCoreVerification {
 
             Path lwjglAdapter = temporary.resolve("lwjgl-android.jar");
             createJar(lwjglAdapter, "org/lwjgl/opengl/Display.class");
-            Files.write(natives.resolve("libgl4es_114.so"), new byte[]{0});
             JvmLaunchPlan lwjglPlan = JvmLaunchPlanFactory.createLwjglSmokeTest(runtime,
                     smokeJarWithLwjglMain(temporary), lwjglAdapter, smokeWork, natives,
                     smokeWork.resolve("lwjgl-result.txt"));
@@ -64,6 +79,12 @@ public final class JvmLauncherCoreVerification {
                             && lwjglPlan.virtualMachineArguments().stream()
                             .anyMatch(value -> value.startsWith("-Dorg.lwjgl.opengl.libname=")),
                     "LWJGL2 Android smoke-test plan changed");
+
+            JvmBackendCapabilities probeOnly = new JvmBackendCapabilities(
+                    true, true, true, false, false, false);
+            require(JvmLaunchPlanFactory.createCompatibilityProbe(game, runtime, loader,
+                            natives, probeOnly, 768, 960, 540).classpath().size() == 3,
+                    "Compatibility probe did not accept the implemented renderer path");
 
             boolean incompleteRejected = false;
             try {
