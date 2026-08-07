@@ -44,4 +44,4 @@ target_compile_features(rocketConnector PRIVATE cxx_std_17)
 target_compile_options(rocketConnector PRIVATE -Wno-error=unused-parameter)
 target_include_directories(rocketConnector PRIVATE
         "${RUSTED_FABRIC_ROCKET_SOURCE}/Include")
-target_link_libraries(rocketConnector PRIVATE RocketCore RocketControls android log)
+target_link_libraries(rocketConnector PRIVATE RocketCore RocketControls android log dl)

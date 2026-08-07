@@ -47,7 +47,7 @@ std::atomic<uintptr_t> framebuffer_size_callback{0};
 std::atomic<uintptr_t> window_size_callback{0};
 std::atomic<bool> input_ready{false};
 
-enum class InputKind { Cursor, MouseButton, Scroll };
+enum class InputKind { Cursor, MouseButton, Scroll, Key };
 struct InputEvent {
     InputKind kind;
     double first;
@@ -360,6 +360,13 @@ extern "C" __attribute__((visibility("default"))) void pojavPumpEvents(void* win
                 if (callback != nullptr) callback(window, event.first, event.second);
                 break;
             }
+            case InputKind::Key: {
+                KeyCallback callback = key_callback.load();
+                if (callback != nullptr) {
+                    callback(window, event.button, 0, event.action, event.modifiers);
+                }
+                break;
+            }
         }
     }
 }
@@ -380,6 +387,11 @@ rustedfabric_queue_mouse_button(int button, int action, int modifiers) {
 extern "C" __attribute__((visibility("default"))) void
 rustedfabric_queue_scroll(double x, double y) {
     queue_input({InputKind::Scroll, x, y, 0, 0, 0});
+}
+
+extern "C" __attribute__((visibility("default"))) void
+rustedfabric_queue_key(int key, int action, int modifiers) {
+    queue_input({InputKind::Key, 0.0, 0.0, key, action, modifiers});
 }
 
 extern "C" __attribute__((visibility("default"))) void pojavTerminate() {

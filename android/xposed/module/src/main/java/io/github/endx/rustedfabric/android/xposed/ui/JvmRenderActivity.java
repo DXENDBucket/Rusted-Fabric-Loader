@@ -2,13 +2,20 @@ package io.github.endx.rustedfabric.android.xposed.ui;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.window.OnBackInvokedDispatcher;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -36,15 +43,37 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private static final String LAUNCHER_ASSET = "rusted-fabric/android-jvm-launcher.jar";
     private static final String LWJGL_COMPAT_ASSET =
             "rusted-fabric/rusted-fabric-lwjgl2-compat.jar";
+    private static final int GLFW_MOUSE_BUTTON_RIGHT = 1;
+    private static final int GLFW_KEY_ESCAPE = 256;
+    private static final int GLFW_RELEASE = 0;
+    private static final int GLFW_PRESS = 1;
+    private static final long TWO_FINGER_TAP_MILLIS = 500L;
     private final AtomicBoolean running = new AtomicBoolean();
     private TextView status;
     private boolean gameProbe;
+    private int touchSlop;
+    private int primaryPointerId = -1;
+    private float primaryDownX;
+    private float primaryDownY;
+    private boolean leftButtonDown;
+    private boolean multiTouch;
+    private boolean multiGesture;
+    private long multiTouchStarted;
+    private float multiStartX;
+    private float multiStartY;
+    private float previousSpan;
+    private double pendingScroll;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         gameProbe = getIntent().getBooleanExtra(EXTRA_GAME_PROBE, false);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
+        configureGameWindow();
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::sendEscape);
+        }
         FrameLayout root = new FrameLayout(this);
         SurfaceView surface = new SurfaceView(this);
         surface.getHolder().addCallback(this);
@@ -65,25 +94,198 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                 Gravity.TOP);
         root.addView(status, overlay);
         setContentView(root);
+        applyImmersiveMode();
     }
 
     private boolean handleTouch(MotionEvent event) {
-        int buttonAction = -1;
         switch (event.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
-                buttonAction = 1;
-                break;
-            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_DOWN: {
+                resetTouchState();
+                primaryPointerId = event.getPointerId(0);
+                primaryDownX = event.getX(0);
+                primaryDownY = event.getY(0);
+                NativeRenderBridge.sendPointer(primaryDownX, primaryDownY, -1);
+                return true;
+            }
+            case MotionEvent.ACTION_POINTER_DOWN: {
+                if (leftButtonDown) {
+                    NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
+                    leftButtonDown = false;
+                    multiGesture = true;
+                }
+                multiTouch = true;
+                multiTouchStarted = event.getEventTime();
+                multiStartX = pointerCenterX(event);
+                multiStartY = pointerCenterY(event);
+                previousSpan = pointerSpan(event);
+                pendingScroll = 0.0;
+                NativeRenderBridge.sendPointer(multiStartX, multiStartY, -1);
+                return true;
+            }
+            case MotionEvent.ACTION_MOVE: {
+                if (multiTouch || event.getPointerCount() > 1) {
+                    float centerX = pointerCenterX(event);
+                    float centerY = pointerCenterY(event);
+                    NativeRenderBridge.sendPointer(centerX, centerY, -1);
+                    float span = pointerSpan(event);
+                    if (previousSpan > 0.0f && span > 0.0f) {
+                        pendingScroll += Math.log(span / previousSpan) * 8.0;
+                        if (Math.abs(pendingScroll) >= 0.15) {
+                            NativeRenderBridge.sendScroll(0.0, pendingScroll);
+                            pendingScroll = 0.0;
+                            multiGesture = true;
+                        }
+                    }
+                    previousSpan = span;
+                    if (distance(centerX, centerY, multiStartX, multiStartY) > touchSlop) {
+                        multiGesture = true;
+                    }
+                    return true;
+                }
+                int index = event.findPointerIndex(primaryPointerId);
+                if (index < 0) return true;
+                float x = event.getX(index);
+                float y = event.getY(index);
+                if (!leftButtonDown
+                        && distance(x, y, primaryDownX, primaryDownY) > touchSlop) {
+                    NativeRenderBridge.sendPointer(primaryDownX, primaryDownY, GLFW_PRESS);
+                    leftButtonDown = true;
+                }
+                NativeRenderBridge.sendPointer(x, y, -1);
+                return true;
+            }
+            case MotionEvent.ACTION_POINTER_UP: {
+                if (multiTouch && event.getPointerCount() == 2 && !multiGesture
+                        && event.getEventTime() - multiTouchStarted <= TWO_FINGER_TAP_MILLIS) {
+                    float x = pointerCenterX(event);
+                    float y = pointerCenterY(event);
+                    NativeRenderBridge.sendPointer(x, y, -1);
+                    NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS);
+                    NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE);
+                }
+                multiGesture = true;
+                return true;
+            }
+            case MotionEvent.ACTION_UP: {
+                if (!multiTouch) {
+                    float x = event.getX(0);
+                    float y = event.getY(0);
+                    if (leftButtonDown) {
+                        NativeRenderBridge.sendPointer(x, y, -1);
+                        NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
+                    } else {
+                        NativeRenderBridge.sendPointer(x, y, GLFW_PRESS);
+                        NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
+                    }
+                }
+                resetTouchState();
+                return true;
+            }
             case MotionEvent.ACTION_CANCEL:
-                buttonAction = 0;
-                break;
-            case MotionEvent.ACTION_MOVE:
-                break;
+                if (leftButtonDown) NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
+                resetTouchState();
+                return true;
             default:
                 return true;
         }
-        NativeRenderBridge.sendPointer(event.getX(), event.getY(), buttonAction);
-        return true;
+    }
+
+    private void resetTouchState() {
+        primaryPointerId = -1;
+        leftButtonDown = false;
+        multiTouch = false;
+        multiGesture = false;
+        previousSpan = 0.0f;
+        pendingScroll = 0.0;
+    }
+
+    private static float pointerCenterX(MotionEvent event) {
+        float total = 0.0f;
+        for (int index = 0; index < event.getPointerCount(); index++) total += event.getX(index);
+        return total / event.getPointerCount();
+    }
+
+    private static float pointerCenterY(MotionEvent event) {
+        float total = 0.0f;
+        for (int index = 0; index < event.getPointerCount(); index++) total += event.getY(index);
+        return total / event.getPointerCount();
+    }
+
+    private static float pointerSpan(MotionEvent event) {
+        if (event.getPointerCount() < 2) return 0.0f;
+        return distance(event.getX(0), event.getY(0), event.getX(1), event.getY(1));
+    }
+
+    private static float distance(float firstX, float firstY, float secondX, float secondY) {
+        return (float) Math.hypot(firstX - secondX, firstY - secondY);
+    }
+
+    private void configureGameWindow() {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= 28) {
+            WindowManager.LayoutParams attributes = getWindow().getAttributes();
+            attributes.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(attributes);
+        }
+    }
+
+    private void applyImmersiveMode() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
+    }
+
+    private void sendEscape() {
+        NativeRenderBridge.sendKey(GLFW_KEY_ESCAPE, GLFW_PRESS);
+        NativeRenderBridge.sendKey(GLFW_KEY_ESCAPE, GLFW_RELEASE);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+            NativeRenderBridge.sendKey(GLFW_KEY_ESCAPE, GLFW_PRESS);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            NativeRenderBridge.sendKey(GLFW_KEY_ESCAPE, GLFW_RELEASE);
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onBackPressed() {
+        sendEscape();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) applyImmersiveMode();
     }
 
     private boolean handleGenericMotion(MotionEvent event) {

@@ -1,5 +1,7 @@
 #include <jni.h>
 #include <android/log.h>
+#include <dlfcn.h>
+#include <GLES2/gl2.h>
 
 #include <Rocket/Core.h>
 #include <Rocket/Core/ElementDocument.h>
@@ -10,6 +12,7 @@
 #include <Rocket/Core/FontDatabase.h>
 #include <Rocket/Controls.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdint>
@@ -23,7 +26,32 @@ constexpr const char* kTag = "RustedFabricRocket";
 JavaVM* java_vm = nullptr;
 jobject java_rocket = nullptr;
 Rocket::Core::Context* rocket_context = nullptr;
+int rocket_width = 1;
+int rocket_height = 1;
 const auto start_time = std::chrono::steady_clock::now();
+
+struct Gl4esScissor {
+    using Toggle = void (*)(GLenum);
+    using Set = void (*)(GLint, GLint, GLsizei, GLsizei);
+
+    void* library = nullptr;
+    Toggle enable = nullptr;
+    Toggle disable = nullptr;
+    Set set = nullptr;
+
+    bool load() {
+        if (library != nullptr) return enable != nullptr && disable != nullptr && set != nullptr;
+        library = dlopen("libgl4es_114.so", RTLD_NOW | RTLD_NOLOAD);
+        if (library == nullptr) library = dlopen("libgl4es_114.so", RTLD_NOW);
+        if (library == nullptr) return false;
+        enable = reinterpret_cast<Toggle>(dlsym(library, "glEnable"));
+        disable = reinterpret_cast<Toggle>(dlsym(library, "glDisable"));
+        set = reinterpret_cast<Set>(dlsym(library, "glScissor"));
+        return enable != nullptr && disable != nullptr && set != nullptr;
+    }
+};
+
+Gl4esScissor gl4es_scissor;
 
 JNIEnv* current_env() {
     if (java_vm == nullptr) return nullptr;
@@ -192,16 +220,26 @@ public:
     }
 
     void EnableScissorRegion(bool enable) override {
-        call_void("EnableScissorRegion", "(Z)V", static_cast<jboolean>(enable));
+        scissor_enabled_ = enable;
+        if (!gl4es_scissor.load()) {
+            __android_log_print(ANDROID_LOG_ERROR, kTag,
+                    "Unable to resolve GL4ES scissor functions");
+            return;
+        }
+        if (enable) {
+            gl4es_scissor.enable(GL_SCISSOR_TEST);
+            apply_scissor();
+        } else {
+            gl4es_scissor.disable(GL_SCISSOR_TEST);
+        }
     }
 
     void SetScissorRegion(int x, int y, int width, int height) override {
-        JNIEnv* env = current_env();
-        if (env == nullptr || java_rocket == nullptr) return;
-        jclass type = env->GetObjectClass(java_rocket);
-        jmethodID method = env->GetMethodID(type, "SetScissorRegion", "(IIII)V");
-        env->CallVoidMethod(java_rocket, method, x, y, width, height);
-        env->DeleteLocalRef(type);
+        scissor_x_ = x;
+        scissor_y_ = y;
+        scissor_width_ = width;
+        scissor_height_ = height;
+        if (scissor_enabled_ && gl4es_scissor.load()) apply_scissor();
     }
 
     bool LoadTexture(Rocket::Core::TextureHandle& texture,
@@ -270,14 +308,21 @@ public:
     }
 
 private:
-    void call_void(const char* name, const char* signature, jboolean argument) {
-        JNIEnv* env = current_env();
-        if (env == nullptr || java_rocket == nullptr) return;
-        jclass type = env->GetObjectClass(java_rocket);
-        jmethodID method = env->GetMethodID(type, name, signature);
-        env->CallVoidMethod(java_rocket, method, argument);
-        env->DeleteLocalRef(type);
+    void apply_scissor() const {
+        const int x = std::max(scissor_x_, 0);
+        const int y = std::max(scissor_y_, 0);
+        const int right = std::min(scissor_x_ + scissor_width_, rocket_width);
+        const int bottom = std::min(scissor_y_ + scissor_height_, rocket_height);
+        const int width = std::max(right - x, 0);
+        const int height = std::max(bottom - y, 0);
+        gl4es_scissor.set(x, std::max(rocket_height - bottom, 0), width, height);
     }
+
+    bool scissor_enabled_ = false;
+    int scissor_x_ = 0;
+    int scissor_y_ = 0;
+    int scissor_width_ = 0;
+    int scissor_height_ = 0;
 };
 
 class JavaEventListener final : public Rocket::Core::EventListener {
@@ -356,6 +401,8 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_setup(JNIEnv* env, jobject 
     jclass type = env->GetObjectClass(instance);
     const int width = env->GetIntField(instance, env->GetFieldID(type, "width", "I"));
     const int height = env->GetIntField(instance, env->GetFieldID(type, "height", "I"));
+    rocket_width = std::max(width, 1);
+    rocket_height = std::max(height, 1);
     env->DeleteLocalRef(type);
     rocket_context = Rocket::Core::CreateContext(
             "rusted-warfare", Rocket::Core::Vector2i(width, height), render_interface.get());
@@ -378,6 +425,8 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_render(JNIEnv*, jobject) {
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_setDimensions(
         JNIEnv*, jobject, jint width, jint height) {
+    rocket_width = std::max(static_cast<int>(width), 1);
+    rocket_height = std::max(static_cast<int>(height), 1);
     if (rocket_context != nullptr) rocket_context->SetDimensions({width, height});
 }
 

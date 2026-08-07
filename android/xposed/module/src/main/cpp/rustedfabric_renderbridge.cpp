@@ -106,6 +106,20 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSen
             "rustedfabric_queue_scroll", x, y) ? JNI_TRUE : JNI_FALSE;
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendMouseButton(
+        JNIEnv*, jclass, jint button, jint action) {
+    return call_pojav_input<void (*)(int, int, int)>(
+            "rustedfabric_queue_mouse_button", button, action, 0) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendKey(
+        JNIEnv*, jclass, jint key, jint action) {
+    return call_pojav_input<void (*)(int, int, int)>(
+            "rustedfabric_queue_key", key, action, 0) ? JNI_TRUE : JNI_FALSE;
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSmokeTest(
         JNIEnv* env, jclass, jint requested_width, jint requested_height) {

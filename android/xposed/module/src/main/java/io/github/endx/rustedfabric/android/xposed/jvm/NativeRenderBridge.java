@@ -45,6 +45,14 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeSendScroll(x, y);
     }
 
+    public static boolean sendMouseButton(int button, int action) {
+        return PACKAGED && nativeSendMouseButton(button, action);
+    }
+
+    public static boolean sendKey(int key, int action) {
+        return PACKAGED && nativeSendKey(key, action);
+    }
+
     public static String smokeTest(int width, int height) {
         if (!PACKAGED) return "Android EGL bridge is not packaged for this ABI";
         return nativeSmokeTest(width, height);
@@ -54,5 +62,7 @@ public final class NativeRenderBridge {
     private static native void nativeDetachSurface();
     private static native boolean nativeSendPointer(float x, float y, int buttonAction);
     private static native boolean nativeSendScroll(double x, double y);
+    private static native boolean nativeSendMouseButton(int button, int action);
+    private static native boolean nativeSendKey(int key, int action);
     private static native String nativeSmokeTest(int width, int height);
 }
