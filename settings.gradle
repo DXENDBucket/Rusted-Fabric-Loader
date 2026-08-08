@@ -1,16 +1,7 @@
 rootProject.name = 'rusted-fabric-loader'
 include 'rusted-fabric-api'
-include 'rusted-fabric-api-desktop'
-include 'rusted-fabric-api-android'
 include 'example-mod'
-include 'portable-example-mod'
-// Android projects include the active desktop-JVM port as well as frozen native-APK experiments.
-// Desktop release tasks do not depend on them. See docs/PROJECT_STATUS.md.
-include 'android:apk-inspector'
-include 'android:bootstrap-core'
-include 'android:mod-runtime'
-include 'android:local-patcher-core'
-include 'android:local-patcher-cli'
+// Only the desktop-JVM Android port remains active. Retired native-APK experiments live in legacy/.
 include 'android:jvm-launcher-core'
 include 'android:jvm-game-provider'
 include 'android:lwjgl2-compat'

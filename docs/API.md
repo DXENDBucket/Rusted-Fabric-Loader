@@ -4,9 +4,9 @@
 
 Rusted Fabric API `0.1.x` is experimental and targets Rusted Warfare `1.15` with the mapping version recorded in `fabric.mod.json`. Event names and callback arguments should be treated as source-compatible within a `0.1.x` line where practical, but mapping corrections can still require signature changes.
 
-Windows desktop remains the working Loader and ordinary Fabric-style Jar mod target. The active
-Android direction is a PC-edition port that imports the user's Steam files and aims to execute the
-same Fabric/Knot runtime in an ARM64 JVM. Native Android APK patching and Xposed hooks are frozen.
+Windows and the Android desktop-JVM port execute the same desktop game, Fabric/Knot runtime, API
+Jar, Mixins, and ordinary Fabric-style Jar mods. Retired native Android APK backends are archived
+under `legacy/` and are not supported targets.
 
 Mods can declare the game dependency exposed by the GameProvider:
 
@@ -27,8 +27,7 @@ Two Rusted-specific Fabric entrypoints are available:
 
 Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an
 immutable snapshot; its launch-argument array and capabilities are defensively copied.
-The same base class also implements Android's `RustedFabricModEntrypoint`, so one entrypoint source
-can be packaged for both platforms. See [`PORTABLE_MOD_BUILD.md`](PORTABLE_MOD_BUILD.md).
+The same Jar and entrypoint run on Windows and through the Android desktop-JVM launcher.
 `contextVersion()` is currently `5`. Version 5 adds the shared game-session API and live `RFH1`
 handshake capability. Version 4 added the canonical multiplayer manifest and the
 `multiplayer.compat.v1` capability. Version 3 added `platform()`, `mappingProfileId()`,
@@ -37,13 +36,9 @@ available.
 
 ## Windows and Android portability
 
-> The native Android-APK backend is frozen. Current Android work targets the desktop-JVM port; until
-> its platform adapters are complete, API release verification still runs on Windows Jar mods.
-
-`rusted-fabric-api` contains the complete platform-neutral public surface: context, runtime holder,
-events, helpers, sessions, and multiplayer contracts. Its classes are embedded in the Windows API
-Jar and compiled into the Android loader DEX,
-so a mod can use the same imports and listener source on both platforms:
+`rusted-fabric-api` is the sole API module. It contains public contracts, mapped game-facing
+implementations, Fabric/Mixin integration, resources, and remapping. A mod uses the same imports,
+Jar, and listener source on Windows and Android:
 
 ```java
 RuntimeLifecycleEvents.AFTER_ENGINE_INITIALIZATION.register(context -> {
@@ -62,33 +57,15 @@ multiplayer manifests, evaluation, and events live under `api.multiplayer` and
 for single-player as well as host/client play, so portable gameplay mods do not need separate
 offline and online entrypoints.
 
-The distributed binary is still platform-specific: Windows uses a Fabric Jar containing JVM class
-files, while Android requires a DEX mod package. The provided Gradle convention builds both outputs
-from one common source set. Put
-Slick/LWJGL, desktop Mixins, Android UI/storage, and other platform APIs behind separate adapters.
-Android entrypoint classes implement `RustedFabricModEntrypoint`; the `.javamod` v1 format and loading
-rules are documented in [`ANDROID_MODS.md`](ANDROID_MODS.md).
+The Android launcher supplies only the ARM64 JVM, graphics, audio, and input compatibility layers;
+the game-visible Java runtime is intentionally the same one used on Windows. Platform-sensitive
+features should still check `RustedFabricAPIContext` capabilities where documented.
 
-The three Gradle modules are explicit build boundaries, not competing APIs:
-
-- `rusted-fabric-api`: the public cross-platform API. It has no Fabric, Mixin, Android framework,
-  Slick/LWJGL, or game implementation class dependency.
-- `rusted-fabric-api-desktop`: Windows Fabric/Mixin hooks, named-to-official remapping, and the desktop
-  RFH1 adapter. Its distributable Jar embeds `rusted-fabric-api` so users install one API Jar.
-- `rusted-fabric-api-android`: the Android RFH1/mapping adapter shared by both local-patch and Xposed
-  backends. Android packaging compiles it and `rusted-fabric-api` into DEX.
-
-Mod source targets `rusted-fabric-api`; it uses a platform backend only for platform-specific
-integration or build tooling. This separation prevents desktop dependencies from entering Android
-while mechanically verifying that the public API remains portable.
-
-Backend coverage is machine-readable in
-`rusted-fabric-api/src/main/resources/rustedfabricapi/api-support-matrix.csv`. Each public event
-group has a versioned capability key and a `full`, `partial`, or `unavailable` level for Windows,
-Android local patch, and Android Xposed. `RustedFabricCapabilities` exposes the stable keys;
-`ApiSupportMatrix.available(context, capability)` combines expected backend coverage with the
-capabilities actually advertised by the running Loader. The build fails if a public event class or
-capability row is missing.
+The public capability catalog is machine-readable in
+`rusted-fabric-api/src/main/resources/rustedfabricapi/api-support-matrix.csv`. Every event group has
+one versioned capability key. `ApiSupportMatrix.available(context, capability)` combines catalog
+membership with capabilities advertised by the running Loader, and the build fails if a public
+event class or capability row is missing.
 
 ## Event behavior
 
@@ -140,11 +117,11 @@ immutable snapshot: adding or removing a listener from inside a callback affects
 never the callback loop already in progress. Phase IDs and listener ordering are local runtime
 state and are not automatically part of a multiplayer content fingerprint.
 
-## Desktop typed API
+## Mapped game API
 
-Ordinary Windows Fabric Jar mods should prefer the mapped API in `rusted-fabric-api-desktop` when
-they need game objects. It provides IDE-visible `GameEngine`, `Team`, `Unit`, `Projectile`, and
-`Command` types instead of requiring casts from `Object`:
+Ordinary Fabric Jar mods can use the mapped API in `rusted-fabric-api` when they need game objects.
+It provides IDE-visible `GameEngine`, `Team`, `Unit`, `Projectile`, and `Command` types instead of
+requiring casts from `Object`:
 
 ```java
 import io.github.endx.rustedfabricapi.api.client.event.ClientTickEvents;
@@ -312,8 +289,8 @@ Compile against `game-lib-named.jar` and the named desktop API Jar. Both the mod
 be remapped to the official namespace for a normal game installation. The existing
 `api.event` callbacks remain available as the namespace-neutral compatibility layer.
 
-`rusted-fabric-api-desktop:build` also creates a named `-sources.jar` containing both the portable
-and mapped desktop source trees, so IDE navigation and documentation work from a single dependency.
+`rusted-fabric-api:build` also creates a named `-sources.jar` containing the complete API source
+tree, so IDE navigation and documentation work from a single dependency.
 
 State-changing helpers such as `UnitSpawns.spawn`, `CustomUnits.create`, `BuildQueues.clear`,
 `TransportUnits.tryLoad`, `Attachments.attach`, `UnitTags.set`, `CustomUnitTriggers.trigger`,
@@ -867,7 +844,7 @@ because callers may point it at a directory containing hand-written resources.
 
 ```groovy
 sourceSets { datagen { java.srcDir 'src/datagen/java' } }
-dependencies { datagenImplementation project(':rusted-fabric-api-desktop') }
+dependencies { datagenImplementation project(':rusted-fabric-api') }
 
 tasks.register('runDatagen', JavaExec) {
     dependsOn datagenClasses
@@ -1281,11 +1258,9 @@ captures the impact and target coordinates, target unit, unit/terrain collision 
 radius at the boundary. On exact explosion-capable backends the order is before-impact,
 before-explosion, original game logic, after-explosion, then after-impact.
 
-The snapshot distinguishes the named runtime, PC official namespace, and Android 1.15 official
-field layout without exposing a compile-time game class dependency. The lifecycle event capability
-is full on Windows and the Android local-patch backend. Xposed supports creation, update, and
-removal, but is marked partial because method hooks cannot observe Android 1.15's inlined explosion
-basic block; use the local-patch backend when exact explosion callbacks are required.
+The snapshot distinguishes the named development runtime and official runtime namespace without
+exposing a compile-time game class dependency. Projectile creation, update, impact, explosion, and
+removal callbacks use the same Mixin implementation on both active host platforms.
 
 `Projectiles.requestRemoval(projectile)` retains the game's deferred-removal behavior.
 `Projectiles.removeImmediately(projectile)` instead calls the mapped game-object removal entrypoint
@@ -1336,19 +1311,14 @@ sequences do not yet have equally reliable mapping anchors.
 `CustomUnitRuntimeSnapshot.capture(unit)` promotes the high-confidence v0.84 construction/runtime
 mapping into the same stable style. It exposes active/revert metadata build-queue-effect gates,
 `whenBuilding_cannotMove` runtime state, first CREATED/COMPLETE_AND_ACTIVE pending state,
-auto-trigger cooldown, and the previous leg-animation base transform. Android's strict mapping does
-not yet identify the leg-base X/Y fields, so `hasLastLegBasePosition()` is false and those two values
-are `Float.NaN` there; height and direction remain available. These are snapshots, not live mutable
-wrappers, so values remain consistent for the duration of a callback.
+auto-trigger cooldown, and the previous leg-animation base transform. These are snapshots, not live
+mutable wrappers, so values remain consistent for the duration of a callback.
 
 ## API layers
 
 - `api.event`: public experimental event surface for mods.
-- `rusted-fabric-api`: all cross-platform public contracts, events, helpers, sessions, and multiplayer
-  APIs, with no Fabric, Xposed, Android framework, Slick, or game implementation class dependency.
-- `rusted-fabric-api-desktop`: public mapped Windows API, internal Windows hooks, and remapping
-  support.
-- `rusted-fabric-api-android`: internal Android mapping and network transport support.
+- `rusted-fabric-api`: the complete public API, mapped game helpers, Fabric/Mixin implementation,
+  resources, capability catalog, tests, and named-to-official remapping.
 - `api.asset`, `api.ini`, and `api.logic`: higher-level experimental helpers backed by current mappings.
 - `api.diagnostic`: development diagnostics. Output and reflected member coverage are not a stable compatibility contract. Mapping v1.1 includes `PlatformRuntimeDiagnostics` for operating-system, platform-extension, and file-change-engine state.
 - `api.util.RustedReflection`: low-level compatibility support; prefer higher-level APIs when one exists.

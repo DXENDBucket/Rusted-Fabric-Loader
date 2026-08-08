@@ -34,9 +34,9 @@ sourceSets {
 
 dependencies {
     compileOnly "net.fabricmc:fabric-loader:0.18.1"
-    compileOnly project(":rusted-fabric-api-desktop")
+    compileOnly project(":rusted-fabric-api")
     compileOnly files({ namedGameJarFile() })
-    datagenImplementation project(":rusted-fabric-api-desktop")
+    datagenImplementation project(":rusted-fabric-api")
 }
 
 def generatedDatagenDirectory = layout.buildDirectory.dir('generated/datagen')

@@ -1,225 +1,69 @@
-# Android loader development plan
+# Android launcher
 
-## Goals and boundaries
+## Supported architecture
 
-The Android loader must operate on user-supplied Rusted Warfare files without distributing game
-classes, resources, native libraries, or a rebuilt game APK. The working consumer path is a no-root
-local APK patcher. An experimental desktop-JVM backend now imports the user's Steam files and aims
-to run the same Knot/Mixin runtime as Windows; it does not use `base.apk`. The Modern Xposed backend
-remains available for rooted testing and method hooks.
+Android support is a no-root port of the desktop Java game. The user imports their own Rusted
+Warfare desktop directory or ZIP and a Linux/AArch64 Java 17 runtime. The launcher starts the same
+Fabric/Knot GameProvider, API, Mixins, and Java mods used on Windows.
 
-Game APKs are local development inputs only. They must remain under ignored paths and must never be copied into build outputs, reports, fixtures, or Git history.
+The launcher does not inspect, patch, sign, install, or bundle an Android game APK. Xposed and
+LSPosed are not used. The retired native-APK experiments and their Android-only mappings are frozen
+under `legacy/`.
 
-## Current local reference APK
+## Active modules
 
-The local reference input is ignored at `libs/android/rusted-warfare-1.15-code176-base.apk`.
+- `android/launcher/app`: setup UI, isolated JVM process, Android Surface, JNI bridges, runtime
+  assets, and the final APK.
+- `android/jvm-launcher-core`: bounded desktop import, Java runtime validation, and launch plans.
+- `android/jvm-game-provider`: self-contained Fabric/Knot launcher Jar without game payloads.
+- `android/lwjgl2-compat`: Java-side LWJGL2, input, memory, and touch compatibility.
+- `rusted-fabric-api`: the sole API and Mixin implementation used by both Windows and Android.
 
-- APK SHA-256: `328F37106985A2BA424EFEC9AC312EDE0395F3BAC56E3D5DB5D642DD6AECC04C`
-- package: `com.corrodinggames.rts`
-- version: `1.15`, version code `176`
-- application: `com.corrodinggames.rts.appFramework.RWApplication`
-- launcher activity: `com.corrodinggames.rts.appFramework.IntroScreen`
-- compile SDK: `29`; target SDK: `30`; minimum SDK: `8`
-- one `classes.dex`: 1,641 class definitions, 10,847 field IDs, and 14,167 method IDs
-- no packaged native `.so` libraries
-- signer certificate SHA-256: `25450E9E56D2E64771E0514580AA85952C613AD4048FB3523CB1F07B65A63984`
+See [ANDROID_JVM_BACKEND.md](ANDROID_JVM_BACKEND.md) for the runtime boundary and implementation
+details.
 
-The finalized Android v1.0 handoff is imported under
-`android/mappings/rw-android-1.15-code176-v1.0`. It covers all 1,602 first-party classes and contains
-9,213 loader-safe member mappings. Its named namespace is shared with the frozen PC v1.1 mapping,
-but Android official owners must be used: for example, Android `GameEngine` is
-`com/corrodinggames/rts/gameFramework/k`, not the PC owner. The profile therefore pins the exact APK
-and mapping SHA-256 before reporting `VERIFIED`.
+## User-owned inputs
 
-## Proposed modules
+Portable desktop game data accepted by the importer:
 
-### `android:apk-inspector`
-
-A JVM command-line tool that reads a user-supplied or installed APK and emits a code-free compatibility report. It owns:
-
-- binary Android manifest inspection;
-- DEX header, class, field, and method inventory;
-- APK and signer fingerprints;
-- structural anchor matching;
-- variant capability reports;
-- checks that reports contain no game bytecode, resource payloads, or local paths.
-
-Phase 0 implementation is available. For the ignored local reference APK, run:
-
-```powershell
-./gradlew :android:apk-inspector:inspectReferenceApk
+```text
+game-lib.jar
+assets/
+res/
+libs/*.jar
+font/ (optional)
 ```
 
-The deterministic report is written under the module's ignored `build/reports` directory. Run
-`:android:apk-inspector:check` to verify the synthetic manifest/DEX parser contracts and confirm
-that the inspector JAR contains no APK, DEX, or game-class payload.
+The importer rejects executables, DLLs, saves, existing mods, path traversal, ambiguous roots, and
+oversized archives. Writable `mods`, `saves`, `replays`, `screenshots`, and cache directories are
+created privately after validation.
 
-### `android:rusted-fabric-android-api`
+The Java importer accepts ZIP or TAR.XZ and requires Linux/AArch64 Java 17 metadata plus valid
+AArch64 ELF builds of `libjvm.so` and `libjava.so`.
 
-Android-safe API and context definitions shared by the hook backend and Android mods. It must not depend on desktop-only Slick, LWJGL, Swing, Knot launch classes, or Java desktop entrypoints.
+## Build
 
-### `android:rusted-fabric-android-xposed`
+Requirements:
 
-The root backend and distributable module. It owns:
+- JDK 17
+- Android SDK platform/build tools 35
+- NDK 27.2.12479018
+- CMake 3.22.1
 
-- target-package scoping and explicit user binding for package-renamed community builds;
-- the earliest safe hook at `Application.attach(Context)`;
-- acquisition of the game's `ClassLoader`;
-- version and structural-profile selection;
-- method hooks and event dispatch;
-- Android mod DEX loading;
-- per-feature compatibility and failure isolation.
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-17'
+./gradlew.bat -p android/launcher :app:assembleDebug :app:verifyNoGamePayload
+```
 
-The Xposed backend lives in the isolated `android/xposed` Android build. It targets Modern
-Xposed API 102, uses `META-INF/xposed` entry metadata, and has a static official-package scope.
-The shared `android:bootstrap-core` remains buildable without an Android SDK. The first hook calls
-the original `Application.attach(Context)` unchanged, then captures ClassLoader diagnostics without
-retaining Android or game objects. Exact mapping selection, the first lifecycle events, and the
-verified Android mod DEX loader are present. The standalone management activity, private registry,
-caller-authorized provider, game-code-cache transfer, and enabled-mod startup discovery are wired.
+The output is `android/launcher/app/build/outputs/apk/debug/app-debug.apk`. The payload audit checks
+that the launcher contains its required JVM/render components and no Rusted Warfare classes or game
+files.
 
-### Local no-root patch backend
+## Testing boundary
 
-`android:local-patcher-core`, `android:local-patcher-cli`, `android/game-api-stubs`, and
-`android/patched-bootstrap` implement the verified rewrite/sign/injection pipeline. The management
-APK embeds only the code-only bootstrap DEX, generates a per-install Android Keystore identity, and
-hands the signed result to `PackageInstaller`. The exact-profile DEX weaver now supplies the same
-engine/session events, update/render scheduling, projectile impact context, partial unit
-damage/death events, and RFH1 handshake/start
-gate as the Xposed backend. The local patch additionally provides exact in-method projectile
-explosion boundaries. See
-[`ANDROID_LOCAL_PATCHER.md`](ANDROID_LOCAL_PATCHER.md).
+Build success verifies Java/native compilation and packaging. Physical-device testing is still
+required for touch behavior, UI layout, audio, saves, maps, multiplayer, background/foreground
+transitions, device cutouts, and long-running stability.
 
-### Experimental desktop-JVM backend
-
-`android:jvm-launcher-core` separates user-owned desktop game data from Loader-owned platform
-runtime components. It validates `game-lib.jar`, `assets`, `res`, and the required LWJGL2/Slick/JInput
-JARs, then creates an immutable Knot launch plan only when every ARM64 adapter is present. The Loader
-management APK includes a Storage Access Framework ZIP importer, with direct directory import as an
-advanced alternative. It copies only portable game files into app-private storage; executables,
-DLLs, saves, and installed mods are excluded.
-
-The Loader now builds an ARM64 JNI/libjvm host and accepts a separately supplied Linux/AArch64 Java
-17 runtime ZIP or TAR.XZ. Runtime metadata and the ELF architecture of both `libjvm.so` and `libjava.so` are
-checked before activation. A Loader-owned self-test JAR can create the external JVM in an isolated
-`:desktop_jvm` process, so a native crash does not terminate the management UI. The launch button
-intentionally remains disabled while LWJGL2 rendering, OpenAL, Android input, and rocketConnector
-adapters are unavailable. This prevents the scaffold from being mistaken for a working
-compatibility layer. See
-[`ANDROID_JVM_BACKEND.md`](ANDROID_JVM_BACKEND.md).
-
-### Shared loader core
-
-Mapping selection, mod metadata, event implementation, diagnostics, and compatibility reporting should be extracted from desktop-specific launch code only when the Android prototype demonstrates a real shared boundary. The existing desktop GameProvider remains unchanged during the bootstrap phase.
-
-## Compatibility model
-
-Compatibility is evaluated in layers:
-
-1. known APK and signer profile;
-2. manifest identity and Android entrypoints;
-3. DEX class and inheritance anchors;
-4. mapped member presence and descriptors;
-5. optional normalized method fingerprints for instruction-sensitive hooks;
-6. per-feature capability status.
-
-The finalized official mapping is exact-only: it must not be applied to an APK with a different hash.
-Resource-only translations and other community variants can receive a separate structural profile
-after their DEX anchors and mapped members are verified. A modified method disables only the hooks
-that depend on that method. Packed, encrypted, or globally re-obfuscated builds require a separate
-mapping and may be rejected before the game starts.
-
-Compatibility states are `VERIFIED`, `STRUCTURAL`, `PARTIAL`, `UNSUPPORTED`, and `PACKED`. Unknown variants can export a report containing hashes and structural fingerprints, never APK contents or decompiled code.
-
-## Mixin migration policy
-
-Desktop Mixin classes are not loaded directly on Android. Each existing hook is classified before migration:
-
-- `HEAD` injection -> before-method hook;
-- `RETURN` injection -> after-method hook;
-- cancellable injection -> early result or exception control;
-- return-value modification -> after-method result replacement;
-- argument modification -> before-method argument replacement;
-- field/invoke ordinal, local capture, redirect, and instruction-level injection -> manual redesign or deferred DEX weaving.
-
-Every Android hook declares its required mapping anchors, supported structural profiles, criticality, and fallback behavior. Optional hook failure must never abort game startup.
-
-## Delivery phases
-
-### Phase 0: reproducible inspection
-
-- [x] Add the APK inspector without adding an Android SDK dependency.
-- [x] Produce a deterministic compatibility JSON report for the local reference APK.
-- [x] Add artifact and Git gates that reject `.apk`, `.dex`, and embedded game class bodies.
-- [x] Import and checksum-pin the finalized Android 1.15 vc176 mapping and API metadata.
-
-Exit gate: the inspector identifies the reference APK, its Android entrypoints, all required core anchors, and produces no copyrighted payload.
-
-### Phase 1: process bootstrap
-
-- [x] Scaffold the smallest possible Modern Xposed-compatible module.
-- [x] Statically scope the first prototype to the official Rusted Warfare package.
-- [x] Hook the base `Application.attach(Context)` boundary without referencing game classes.
-- [x] Record only package/process, application class, profile status, and ClassLoader class.
-- [x] Build and audit the debug APK with the configured Android SDK.
-- [ ] Install the APK on a rooted test device with a Modern Xposed API 102-compatible framework.
-- [ ] Validate startup on a rooted test device with the module enabled and disabled.
-
-Exit gate: enabling the module adds one diagnostic log entry and changes no game behavior, APK, signature, files, or save data.
-
-### Phase 2: first API events
-
-- [x] Select the official profile by installed APK package/version/SHA-256 without copying the APK.
-- [x] Hook the stable `RustedWarfareGameEngine.init(Context)` boundary.
-- [x] Build the shared `RustedFabricAPIContext` with `platform=ANDROID` and `androidRuntime=true`.
-- [x] Dispatch the same exception-isolated before/after initialization events as Windows Fabric.
-- [ ] Validate the profile selection and initialization probe on a rooted test device.
-- [ ] Implement activity foreground/background events.
-- [x] Isolate each portable listener so failures cannot escape into the game call.
-- [ ] Add hook timeouts and a capability status screen.
-
-Exit gate: the official reference APK reaches the menu and a skirmish with all three events observed and no startup regression.
-
-### Phase 3: Android mod loading
-
-- [x] Define a strict Android `.javamod` archive containing metadata plus one prebuilt DEX, without
-  game class definitions.
-- [x] Validate archive paths/limits, DEX definitions, entrypoint ownership, and SHA-256 before load.
-- [x] Import mods through the Storage Access Framework and copy them to application-private storage.
-- [x] Expose enabled verified archives through a game-authorized, read-only provider and copy them
-  into the game code cache by hash.
-- [x] Load mod DEX through a bridge ClassLoader that resolves the common API from the module loader and
-  mapped game types from the game ClassLoader.
-- [x] Enforce API, mapping profile, and capability requirements before executing entrypoints.
-- [x] Define a platform-neutral `RustedFabricModEntrypoint` shared with Windows source.
-- [x] Wire enabled archive discovery and entrypoint initialization into the verified package hook.
-- [x] Require restart for install, update, enable, or disable operations in the first version design.
-
-See [`ANDROID_MODS.md`](ANDROID_MODS.md) for the v1 archive contract and planned user flow.
-
-Exit gate: a minimal external mod receives the Phase 2 events and can be removed without modifying the game installation.
-
-### Phase 4: event and API migration
-
-- Inventory all current Mixins by injection category and runtime risk.
-- Port method-boundary hooks first: lifecycle, unit registration, damage, queue actions, effects, maps, and save/replay boundaries.
-- Defer instruction-sensitive hooks until an equivalent stable method boundary is found.
-- Split desktop-only and Android-only diagnostics and examples.
-
-Exit gate: each migrated feature has an independent compatibility probe and can disable itself without disabling the loader.
-
-### Phase 5: variants and distribution
-
-- Add structural overlays for known community translations and package-renamed builds.
-- Verify resource-only variants without requiring a new full mapping profile.
-- Sign and publish only the loader module, API, inspector, metadata, mappings, and checksums.
-- Add a release audit proving no game APK, DEX, assets, native libraries, absolute local paths, or reconstructed game code are present.
-
-## Immediate implementation order
-
-1. Add a reproducible Android probe-mod build that emits a valid `.javamod` without game payload.
-2. Install the Loader and generated side-by-side game copy on an unrooted test device.
-3. Validate DEX loading and before/after lifecycle delivery with that external probe mod.
-4. Add an in-app diagnostic history and capability status view without adding UI to the game.
-
-No step should require committing, publishing, or embedding the local reference APK.
+All test game files and imported runtimes must remain in ignored local storage and must never be
+committed or published with the launcher.

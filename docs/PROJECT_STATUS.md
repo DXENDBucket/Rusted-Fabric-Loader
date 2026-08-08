@@ -2,97 +2,76 @@
 
 ## Active targets
 
-Rusted Fabric Loader has two connected active targets:
+Rusted Fabric has one game/runtime architecture on two host platforms:
 
-1. the Windows desktop Loader, which is the working reference runtime and ordinary Jar mod target;
-2. the Android PC-edition port, which imports user-owned Steam files and runs the same Fabric/Knot
-   stack in a Loader-owned Linux/AArch64 JVM.
+1. Windows launches the desktop game through Fabric/Knot directly.
+2. Android imports the user's desktop files and runs that same Fabric/Knot stack in a private
+   Linux/AArch64 JVM.
+
+Both hosts use ordinary Java/Fabric mods and the single `rusted-fabric-api` module. The discontinued
+native Android APK, Xposed, DEX-mod, and local-patcher architectures are archived under `legacy/`
+and are not part of active builds.
 
 Current baseline:
 
 - Loader/API version: `0.1.0` (experimental)
 - mappings: `1.1 FINAL`
-- development JDK: `17`
-- emitted game/mod bytecode: Java `13`
+- development JDK: 17
+- emitted game/mod bytecode: Java 13
 - mod package: ordinary Fabric-style Jar discovered from `javamods/`
 
-The maintained API path is `rusted-fabric-api` plus `rusted-fabric-api-desktop`. The desktop API Jar
-embeds the platform-neutral module, so the Windows runtime installs one API Jar. This same
-Fabric/Knot and desktop-game foundation is what the Android PC port intends to execute.
+## Android PC-port status
 
-The Android native-APK paths are frozen: local APK patching, DEX weaving, and Xposed game hooks are
-not the current direction. Their source remains as historical evidence. Active Android work belongs
-to `android:jvm-launcher-core`, the PC import UI, and the isolated JNI/HotSpot host.
+The no-root launcher can import and validate a desktop installation and Linux/AArch64 Java 17,
+start Fabric and the desktop game in an isolated HotSpot process, render through an Android Surface
+using LWJGL2/GL4ES, translate touch input, and reach/play the game on a physical ARM64 phone.
 
-The PC-port scaffold can currently import and validate the desktop game, import a Linux/AArch64
-Java 17 runtime, create HotSpot in a separate Android process, execute a Loader-owned smoke-test
-Jar, and render through a real Android Surface/EGL context in that same future game process. Full
-game launch is intentionally disabled until four runtime adapters exist:
+Current device work focuses on matching the official mobile UI/control experience and validating
+audio, saves, custom maps, multiplayer, and longer sessions. The launcher itself never contains a
+game APK, desktop game files, or a Java runtime supplied by the user.
 
-- an LWJGL2 compatibility adapter on top of the completed Android Surface/EGL foundation;
-- OpenAL for ARM64 Android;
-- Android touch/keyboard/controller input through the JInput/LWJGL boundary;
-- an ARM64 `rocketConnector` implementation or compatible replacement.
+## Verification
 
-This JVM boundary is now physically verified on an ARM64 `PKG110` running Android 16. The
-2026-08-07 test imported the real desktop payload and Android OpenJDK 17, loaded the JNI host
-directly from the APK, and returned `rusted-fabric-jvm-smoke=ok` from the isolated HotSpot process.
-It also completed a 2376x1080 EGL buffer swap on the phone's Adreno 750. Loading the imported JRE's
-own FreeType before its font manager resolves the first font dependency. The LWJGL2 compatibility
-surface and the remaining adapters above are still incomplete.
-
-## Verification boundary
-
-The repository can mechanically verify compilation, mappings, named-to-official remapping, API
-contracts, example mods, and distribution layout:
+Use JDK 17 for Gradle; JDK 25 is not supported by the current Gradle/Groovy toolchain.
 
 ```bat
 set "JAVA_HOME=C:\Program Files\Java\jdk-17"
-gradlew.bat verifyDistribution :rusted-fabric-api-desktop:check :example-mod:build
-gradlew.bat :android:jvm-launcher-core:check
-gradlew.bat -p android/xposed :module:assembleDebug :module:verifyNoGamePayload
+gradlew.bat check verifyDistribution :example-mod:build
+gradlew.bat -p android/launcher :app:assembleDebug :app:verifyNoGamePayload
 ```
 
-These checks do not replace launching the actual game. Changes touching Mixin injection points,
-rendering, synchronized commands, native status effects, saves, or multiplayer behavior still need
-an eventual desktop runtime test.
+Build checks do not replace in-game validation for changed mappings, Mixin injection points,
+rendering, synchronized commands, saves, or multiplayer behavior.
 
 ## Local-only inputs
 
-The repository intentionally does not distribute Rusted Warfare or user installations. The
-following stay outside Git:
+The following must remain outside Git:
 
-- `libs/game-lib.jar`
-- every APK, DEX, patched game, desktop-game ZIP, or extracted Android runtime under `libs/`
-- generated `game-lib-named.jar` and all Gradle build outputs
-- `local.properties` and IDE/workspace state
-- external installations such as `D:\SteamLibrary\steamapps\common\Rusted Warfare`
-
-Only mappings, code, tests, documentation, and evidence produced without bundling the game belong
-in version control.
+- `libs/game-lib.jar` and every APK/DEX;
+- desktop-game ZIPs, imported/extracted game directories, and Android Java runtimes;
+- generated named game Jars and Gradle build outputs;
+- `local.properties`, IDE state, and external installations such as
+  `D:\SteamLibrary\steamapps\common\Rusted Warfare`.
 
 ## Repository layout
 
 | Path | Status | Purpose |
 | --- | --- | --- |
 | `src/` | maintained | GameProvider, tooling, mappings, and Loader runtime |
-| `rusted-fabric-api/` | maintained | platform-neutral public contracts |
-| `rusted-fabric-api-desktop/` | maintained | Windows mapped API and Mixin implementation |
-| `example-mod/` | maintained | broad desktop API and remapping example |
-| `portable-example-mod/` | compatibility fixture | shared-source packaging example |
-| `docs/` | maintained | API, mappings, multiplayer, and historical design notes |
+| `rusted-fabric-api/` | maintained | sole public API, mapped implementation, Mixins, and remapping |
+| `example-mod/` | maintained | API and named-to-official remapping example |
+| `android/launcher/` | maintained | no-root Android application and native JVM/render host |
+| `android/jvm-launcher-core/` | maintained | desktop import, JVM validation, and launch planning |
+| `android/jvm-game-provider/` | maintained | self-contained Android Fabric launcher asset |
+| `android/lwjgl2-compat/` | maintained | Android LWJGL2/input compatibility classes |
+| `legacy/` | frozen | retired native-APK/Xposed/DEX-mod code and documentation |
 | `report/mapping-evidence/` | maintained evidence | mapping provenance and coverage records |
-| `android/jvm-launcher-core/` | active experimental | PC import validation, JVM probing, and launch plans |
-| `android/xposed/module/` | active host plus legacy code | manager UI and JNI JVM host; old Xposed hooks are frozen |
-| `rusted-fabric-api-android/` | transitional | currently packaged by the manager; not the PC game's Fabric API |
-| other `android/` paths | frozen/reference | native APK patcher, DEX weaving, and Xposed experiments |
 
 ## Current limitations
 
-- The `0.1.x` API is experimental; mapping corrections may still require source changes.
-- The mapping table names only known symbols. Unmapped game members retain their official names.
-- Gameplay-changing callbacks must be deterministic on every multiplayer participant unless an API
-  explicitly documents a server-only or optional-client contract.
-- Build success proves API and remapping consistency, not actual in-game behavior.
-- The Android PC port does not yet reach the game main class because its platform adapters are
-  deliberately fail-closed.
+- The API and mappings remain experimental and may require source changes when corrected.
+- Unmapped game members retain their official names.
+- Gameplay-changing callbacks must remain deterministic for multiplayer unless their contract
+  explicitly permits server-only, client-only, or optional behavior.
+- The Android launcher currently targets ARM64 devices and requires user-supplied desktop game and
+  compatible Java runtime inputs.

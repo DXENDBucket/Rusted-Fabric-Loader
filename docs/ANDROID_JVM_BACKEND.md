@@ -17,8 +17,7 @@ artifacts.
 
 - `android:jvm-launcher-core` validates a desktop installation and produces an immutable JVM launch
   plan without Android framework dependencies.
-- The management APK exposes an **Experimental desktop JVM backend** screen with ZIP and directory
-  import actions.
+- The launcher opens directly to desktop ZIP/directory and Java-runtime import actions.
 - A ZIP may contain the game files at its root or inside one wrapper directory such as
   `Rusted Warfare/`. The correct root is detected from the game JAR, assets, resources, and required
   libraries rather than from the folder name.
@@ -41,8 +40,8 @@ artifacts.
   separate `:desktop_jvm` Android process. The setup screen reports the external Java version and
   architecture written by that JAR. A fatal HotSpot or linker crash therefore does not terminate the
   management process. The isolated process exits after reporting its result because HotSpot does not
-  support repeatedly creating fresh VMs in one process. Full game launch remains disabled until all
-  platform adapters exist.
+  support repeatedly creating fresh VMs in one process. The game launch uses a fresh isolated
+  process for the same reason.
 - A developer runtime-import action accepts an ARM64 OpenJDK 17 ZIP or its original TAR.XZ. It
   requires `release`, `lib/server/libjvm.so`, `lib/libjava.so`, and `lib/modules`, verifies Java 17,
   requires Linux/AArch64 release metadata, checks that both shared libraries are 64-bit
@@ -146,18 +145,17 @@ never treated as an Android runtime dependency.
 
 ## Next execution milestones
 
-1. Export the existing desktop Fabric Loader classpath into private storage and execute the
-   generated `JvmLaunchPlan` through Knot.
-2. Run the imported game's Slick2D initialization against the verified LWJGL2/GL4ES path and fill
-   any missing display calls it reveals.
-3. Add OpenAL and Android input adapters.
-4. Determine whether `rocketConnector` can be rebuilt for ARM64 or must be replaced, then reach the
-   main menu with Steam integration disabled.
-5. Validate map rendering, audio, touch controls, saves, and multiplayer before enabling the launch
-   button in release builds.
+The Fabric/Knot launch, Slick2D initialization, LWJGL2/GL4ES renderer, OpenAL bridge, touch input,
+and ARM64 libRocket path are implemented, and the game reaches playable matches on a physical
+device. Current milestones are:
 
-The older native no-root APK backend remains in source history for reference, but it is frozen and
-is not the fallback implementation for this direction.
+1. finish mobile-quality menu scrolling, controls, scaling, and display-cutout behavior;
+2. validate saves, custom maps, audio, multiplayer discovery, and longer sessions;
+3. add a user-friendly Java-runtime acquisition flow with reviewed licenses and pinned hashes;
+4. add ordinary Fabric mod import/management for the shared desktop mod format;
+5. broaden device/GPU coverage beyond the current ARM64 test phone.
+
+The retired native Android APK backends are archived under `legacy/` and are not fallback paths.
 
 ## Build prerequisites
 

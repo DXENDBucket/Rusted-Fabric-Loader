@@ -9,12 +9,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-/** Machine-readable expected backend coverage; runtime capability checks remain authoritative. */
+/** Machine-readable API capability catalog; runtime capability checks remain authoritative. */
 public final class ApiSupportMatrix {
-    public enum Backend { WINDOWS, ANDROID_LOCAL_PATCH, ANDROID_XPOSED }
+    public enum Backend { RUNTIME }
     public enum Level { FULL, PARTIAL, UNAVAILABLE }
 
     private static final String RESOURCE = "/rustedfabricapi/api-support-matrix.csv";
@@ -41,11 +40,7 @@ public final class ApiSupportMatrix {
     /** Expected matrix support plus the actual capability advertised by this runtime. */
     public static boolean available(RustedFabricAPIContext context, String capability) {
         if (context == null || !context.hasCapability(capability)) return false;
-        Backend backend = context.androidRuntime()
-                ? (context.hasCapability("platform.android.xposed")
-                ? Backend.ANDROID_XPOSED : Backend.ANDROID_LOCAL_PATCH)
-                : Backend.WINDOWS;
-        return expectedSupport(capability, backend) != Level.UNAVAILABLE;
+        return expectedSupport(capability, Backend.RUNTIME) != Level.UNAVAILABLE;
     }
 
     private static List<Entry> load() {
@@ -55,25 +50,20 @@ public final class ApiSupportMatrix {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 input, StandardCharsets.UTF_8))) {
             String header = reader.readLine();
-            if (!"capability,apiClass,windows,androidLocalPatch,androidXposed".equals(header)) {
+            if (!"capability,apiClass".equals(header)) {
                 throw new IllegalStateException("Unsupported API support matrix schema");
             }
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty() || line.startsWith("#")) continue;
                 String[] fields = line.split(",", -1);
-                if (fields.length != 5) throw new IllegalStateException("Malformed API support row");
-                entries.add(new Entry(fields[0], fields[1], parse(fields[2]),
-                        parse(fields[3]), parse(fields[4])));
+                if (fields.length != 2) throw new IllegalStateException("Malformed API capability row");
+                entries.add(new Entry(fields[0], fields[1]));
             }
         } catch (IOException failure) {
             throw new IllegalStateException("Could not read API support matrix", failure);
         }
         return Collections.unmodifiableList(entries);
-    }
-
-    private static Level parse(String value) {
-        return Level.valueOf(value.toUpperCase(Locale.ROOT));
     }
 
     private static Map<String, Entry> index(List<Entry> entries) {
@@ -89,29 +79,21 @@ public final class ApiSupportMatrix {
     public static final class Entry {
         private final String capability;
         private final String apiClass;
-        private final Level windows;
-        private final Level androidLocalPatch;
-        private final Level androidXposed;
+        private final Level runtime;
 
-        private Entry(String capability, String apiClass, Level windows,
-                Level androidLocalPatch, Level androidXposed) {
+        private Entry(String capability, String apiClass) {
             this.capability = capability;
             this.apiClass = apiClass;
-            this.windows = windows;
-            this.androidLocalPatch = androidLocalPatch;
-            this.androidXposed = androidXposed;
+            this.runtime = Level.FULL;
         }
 
         public String capability() { return capability; }
         public String apiClass() { return apiClass; }
-        public Level windows() { return windows; }
-        public Level androidLocalPatch() { return androidLocalPatch; }
-        public Level androidXposed() { return androidXposed; }
+        public Level runtime() { return runtime; }
 
         public Level support(Backend backend) {
-            if (backend == Backend.WINDOWS) return windows;
-            if (backend == Backend.ANDROID_LOCAL_PATCH) return androidLocalPatch;
-            return androidXposed;
+            if (backend == null) throw new IllegalArgumentException("backend must not be null");
+            return runtime;
         }
     }
 }

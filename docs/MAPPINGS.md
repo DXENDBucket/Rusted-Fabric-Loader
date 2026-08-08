@@ -6,25 +6,14 @@ The canonical mapping file is `src/main/resources/mappings/mappings.tiny`. It us
 official -> intermediary -> named
 ```
 
-The current mapping baseline is `1.1 FINAL` (mapping-only completion + executable gate): 1440 classes, 5470 fields, and 7880 methods, for 14790 rows in total. Effective non-generated class coverage is 1440/1440 (100%) after excluding 13 generated Android `R` classes. These counts are lower bounds in the automated validator, allowing mapping coverage to grow while preventing accidental truncation.
+The current mapping baseline is `1.1 FINAL` (mapping-only completion + executable gate): 1,440
+classes, 5,518 fields, and 7,889 methods. These counts are lower bounds in the automated validator,
+allowing mapping coverage to grow while preventing accidental truncation.
 
 The v1.1 baseline was imported byte-for-byte from the validated mapping handoff and is based on v1.0 FINAL. Its release audit reports a passing static and executable gate. Structural `$N` class names must remain structural unless direct semantic evidence supports a better name.
 
-## Android mapping profile
-
-Android uses a separate official namespace and must never consume the PC Tiny directly. The finalized
-Android 1.15/vc176 profile is stored at
-`android/mappings/rw-android-1.15-code176-v1.0` and is bound to APK SHA-256
-`328f37106985a2ba424efec9ac312ede0395f3bac56e3d5db5d642dd6aecc04c`.
-
-- `mappings.tiny` is the loader-safe runtime mapping: 1,602 classes and 9,213 members.
-- `mappings-strict.tiny` and `mapping-table.csv` are the conservative API-generation inputs.
-- `pc-android-class-crosswalk.csv` preserves the shared named class namespace.
-- `optimizer-alias-collisions.csv` documents two R8-colliding methods intentionally excluded from
-  runtime member renaming.
-
-Run `gradlew.bat :android:apk-inspector:check` to verify imported hashes, row counts, profile policy,
-and the absence of APK/DEX/game implementation payloads.
+The discontinued native Android APK mapping profile is retained under `legacy/android/mappings` for
+historical reference. The active Android desktop-JVM port uses this canonical PC mapping directly.
 
 ## Required checks
 
@@ -33,7 +22,7 @@ After editing mappings or named Mixins, run:
 ```bat
 gradlew.bat check
 gradlew.bat generateNamedGameJar
-gradlew.bat :rusted-fabric-api-desktop:remapJarToOfficial
+gradlew.bat :rusted-fabric-api:remapJarToOfficial
 gradlew.bat :example-mod:remapJarToOfficial
 gradlew.bat verifyDistribution
 ```

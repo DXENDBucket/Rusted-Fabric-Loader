@@ -1,0 +1,446 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.endx.rustedfabric.android.launcher'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.github.endx.rustedfabric.android.launcher'
+        minSdk 27
+        targetSdk 35
+        versionCode 9
+        versionName '0.10.0-jvm'
+
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++17 -Wall -Wextra -Werror'
+                arguments "-DRUSTED_FABRIC_ROCKET_SOURCE=${file("$buildDir/generated/rocketSources/libRocket").absolutePath}",
+                        "-DRUSTED_FABRIC_FREETYPE_SOURCE=${file("$buildDir/generated/rocketSources/freetype").absolutePath}",
+                        "-DRUSTED_FABRIC_FREETYPE_LIBRARY=${file("$buildDir/generated/lwjglNatives/arm64-v8a/libfreetype.so").absolutePath}"
+            }
+        }
+    }
+
+    ndkVersion '27.2.12479018'
+
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    packaging {
+        jniLibs {
+            // The embedded HotSpot VM resolves LWJGL/GL4ES from java.library.path and cannot
+            // dlopen libraries directly from an APK zip entry.
+            useLegacyPackaging true
+        }
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+dependencies {
+    implementation project(':jvm-launcher-core')
+}
+
+def generatedJvmSmokeAssets = layout.buildDirectory.dir('generated/jvmSmokeAssets')
+def generatedJvmLauncherAssets = layout.buildDirectory.dir('generated/jvmLauncherAssets')
+def generatedLwjglCompatAssets = layout.buildDirectory.dir('generated/lwjglCompatAssets')
+def generatedLwjglAssets = layout.buildDirectory.dir('generated/lwjglAssets')
+def generatedLwjglNatives = layout.buildDirectory.dir('generated/lwjglNatives')
+def generatedRocketSources = layout.buildDirectory.dir('generated/rocketSources')
+
+def lwjglAndroidRevision = 'b12ad048157b3aa255d078c235dd4571e1900309'
+def lwjglAndroidBase = "https://raw.githubusercontent.com/PojavLauncherTeam/PojavLauncher/${lwjglAndroidRevision}/"
+def fclReleaseVersion = '1.3.2.4'
+def fclReleaseApk = layout.buildDirectory.file(
+        "vendorDownloads/FCL-release-${fclReleaseVersion}-arm64-v8a.apk")
+def fclReleaseUrl = "https://github.com/FCL-Team/FoldCraftLauncher/releases/download/${fclReleaseVersion}/FCL-release-${fclReleaseVersion}-arm64-v8a.apk"
+def fclReleaseSha256 = '89B5390281D0B015BC0A28DA5D18F1FDAB88001562649FDBEC8A8AFAD29C758B'
+def fclLwjglEntries = [
+        [path: 'assets/app_runtime/lwjgl/lwjgl.jar',
+         name: 'lwjgl-glfw-classes.jar',
+         sha256: '8748D3695C6B60B96A21918B353FB4AB624550DD2E85F734A24EF32C03DCC554',
+         asset: true],
+        [path: 'lib/arm64-v8a/liblwjgl.so',
+         name: 'liblwjgl.so',
+         sha256: '439ADC183B23CF7F23A3EF8D95B4CD9D39B1E982DACBDFC1E61C481C9BD65951'],
+        [path: 'lib/arm64-v8a/liblwjgl_opengl.so',
+         name: 'liblwjgl_opengl.so',
+         sha256: 'C3B456BE14C1DFD3969106C1A6E069EA2381B3044604962C97E9531086A6EB00'],
+        [path: 'lib/arm64-v8a/libopenal.so',
+         name: 'libopenal.so',
+         sha256: 'E9C9171D5832637A1E9C476FD9CC61B4E1A5EDB38DB220C96227795109FF541C'],
+        [path: 'lib/arm64-v8a/libfreetype.so',
+         name: 'libfreetype.so',
+         sha256: 'AC237B374D5D4B2190F696F38E303A3064971434F938AB5BC6224F642DBEBA95'],
+        [path: 'assets/licenses/lwjgl_license.txt',
+         name: 'licenses/LWJGL-BSD-3-Clause.txt',
+         sha256: '4C2F770897D0CFDA4D9A65BB4D6D6983DCCFD57D4C7EB74EA5DED0762CBC0E75',
+         asset: true],
+        [path: 'assets/licenses/openal_soft_license.txt',
+         name: 'licenses/OpenAL-Soft-LGPL-2.0.txt',
+         sha256: 'B7993225104D90DDD8024FD838FAF300BEA5E83D91203EAB98E29512ACEBD69C',
+         asset: true],
+        [path: 'assets/licenses/OPENAL-SOFT_GPL2',
+         name: 'licenses/OpenAL-Soft-GPL-2.0.txt',
+         sha256: 'D808CE217E5B611854DA622B57EC29FE545584C48BC5352FAE72A4B6E5074A15',
+         asset: true],
+        [path: 'assets/licenses/freetype_license.txt',
+         name: 'licenses/FreeType-FTL-GPL.txt',
+         sha256: '08C135755DD589039470F1FDBB400DAAABAAA50D0B366D19CEBFF4D22986BAA1',
+         asset: true]
+]
+def lwjglAndroidArtifacts = [
+        [path: 'app_pojavlauncher/src/main/jniLibs/arm64-v8a/libgl4es_114.so',
+         name: 'libgl4es_114.so',
+         sha256: '3DBCC87BAAE1436F2AFFB923EDA053D7E256F0AA032654452E2B2092566F6B24'],
+        [path: 'LICENSE', name: 'licenses/PojavLauncher-LGPL-3.0.txt',
+         sha256: 'E3A994D82E644B03A792A930F574002658412F62407F5FEE083F2555C5F23118',
+         asset: true],
+        [url: 'https://raw.githubusercontent.com/PojavLauncherTeam/gl4es/3d8906d46a93066f21ea01aeaf1a36ec972efd15/LICENSE',
+         name: 'licenses/GL4ES-MIT.txt',
+         sha256: '69A3049C77ABD88658F6AD7CF6A5B6CEB5CF03B80E60F7C4657D90322CFAB7BD',
+         asset: true],
+        [url: 'https://raw.githubusercontent.com/libRocket/libRocket/bd47356a678ef61b38f4b34dda8e7840bfee0983/readme.md',
+         name: 'licenses/libRocket-MIT.md',
+         sha256: '038A2C38561187F4770028B7DAFD6D74C615B27A14540E365866773AC23818AA',
+         asset: true]
+]
+
+android.sourceSets.main.assets.srcDir(generatedJvmSmokeAssets)
+android.sourceSets.main.assets.srcDir(generatedJvmLauncherAssets)
+android.sourceSets.main.assets.srcDir(generatedLwjglCompatAssets)
+android.sourceSets.main.assets.srcDir(generatedLwjglAssets)
+android.sourceSets.main.jniLibs.srcDir(generatedLwjglNatives)
+
+tasks.register('prepareLwjglAndroidRuntime') {
+    group = 'build setup'
+    description = 'Fetches a coherent SHA-256-pinned FCL LWJGL runtime and GL4ES.'
+    outputs.dir(generatedLwjglAssets)
+    outputs.dir(generatedLwjglNatives)
+    doLast {
+        def sha256 = { File file ->
+            java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(file.bytes).encodeHex().toString()
+        }
+        def download = { String url, File destination, String expectedSha256 ->
+            destination.parentFile.mkdirs()
+            if (destination.isFile() && sha256(destination).equalsIgnoreCase(expectedSha256)) {
+                return
+            }
+            File staging = new File(destination.parentFile, destination.name + '.downloading')
+            staging.delete()
+            String curl = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('win')
+                    ? 'curl.exe' : 'curl'
+            Process process = new ProcessBuilder(curl, '--fail', '--location', '--retry', '3',
+                    '--connect-timeout', '30', '--max-time', '900',
+                    '--user-agent', 'Rusted-Fabric-Loader-Gradle',
+                    '--output', staging.absolutePath, url)
+                    .inheritIO().start()
+            if (process.waitFor() != 0) {
+                staging.delete()
+                throw new GradleException("Could not download ${destination.name}")
+            }
+            String actual = sha256(staging)
+            if (!actual.equalsIgnoreCase(expectedSha256)) {
+                staging.delete()
+                throw new GradleException(
+                        "SHA-256 mismatch for ${destination.name}: ${actual}")
+            }
+            java.nio.file.Files.move(staging.toPath(), destination.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+
+        File fclApk = fclReleaseApk.get().asFile
+        download(fclReleaseUrl, fclApk, fclReleaseSha256)
+        new java.util.zip.ZipFile(fclApk).withCloseable { zip ->
+            fclLwjglEntries.each { artifact ->
+                File destination = artifact.asset
+                        ? generatedLwjglAssets.get().file("rusted-fabric/${artifact.name}").asFile
+                        : generatedLwjglNatives.get().file("arm64-v8a/${artifact.name}").asFile
+                destination.parentFile.mkdirs()
+                def entry = zip.getEntry(artifact.path)
+                if (entry == null) {
+                    throw new GradleException(
+                            "FCL ${fclReleaseVersion} is missing ${artifact.path}")
+                }
+                File staging = new File(destination.parentFile, destination.name + '.extracting')
+                staging.delete()
+                zip.getInputStream(entry).withCloseable { input ->
+                    staging.withOutputStream { output -> input.transferTo(output) }
+                }
+                String actual = sha256(staging)
+                if (!actual.equalsIgnoreCase(artifact.sha256)) {
+                    staging.delete()
+                    throw new GradleException(
+                            "SHA-256 mismatch for FCL entry ${artifact.path}: ${actual}")
+                }
+                java.nio.file.Files.move(staging.toPath(), destination.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
+
+        lwjglAndroidArtifacts.each { artifact ->
+            File destination = artifact.asset
+                    ? generatedLwjglAssets.get().file("rusted-fabric/${artifact.name}").asFile
+                    : generatedLwjglNatives.get().file("arm64-v8a/${artifact.name}").asFile
+            download(artifact.url ?: lwjglAndroidBase + artifact.path,
+                    destination, artifact.sha256)
+        }
+    }
+}
+
+tasks.register('prepareRocketSources') {
+    group = 'build setup'
+    description = 'Fetches SHA-256-pinned libRocket and FreeType source used by the ARM64 UI bridge.'
+    inputs.property('libRocketCommit', 'bd47356a678ef61b38f4b34dda8e7840bfee0983')
+    inputs.property('libRocketAbsoluteInsetsPatch', 'v1')
+    inputs.property('freetypeVersion', '2.13.3')
+    outputs.dir(generatedRocketSources)
+    doLast {
+        def sha256 = { File file ->
+            java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(file.bytes).encodeHex().toString()
+        }
+        def sources = [
+                [name: 'libRocket',
+                 url: 'https://github.com/libRocket/libRocket/archive/bd47356a678ef61b38f4b34dda8e7840bfee0983.tar.gz',
+                 archive: layout.buildDirectory.file('vendorDownloads/libRocket-bd47356.tar.gz').get().asFile,
+                 sha256: 'BA05C2D8ED1D9997F416C928505D196C13D8865EFD989A36FED08A5E07A23F23'],
+                [name: 'freetype',
+                 url: 'https://github.com/freetype/freetype/archive/refs/tags/VER-2-13-3.tar.gz',
+                 archive: layout.buildDirectory.file('vendorDownloads/freetype-2.13.3.tar.gz').get().asFile,
+                 sha256: 'BC5C898E4756D373E0D991BAB053036C5EB2AA7C0D5C67E8662DDC6DA40C4103']
+        ]
+        String curl = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('win')
+                ? 'curl.exe' : 'curl'
+        String tar = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('win')
+                ? 'tar.exe' : 'tar'
+        sources.each { source ->
+            source.archive.parentFile.mkdirs()
+            if (!source.archive.isFile()
+                    || !sha256(source.archive).equalsIgnoreCase(source.sha256)) {
+                File staging = new File(source.archive.parentFile,
+                        source.archive.name + '.downloading')
+                staging.delete()
+                Process download = new ProcessBuilder(curl, '--fail', '--location', '--retry', '3',
+                        '--connect-timeout', '30', '--max-time', '300',
+                        '--user-agent', 'Rusted-Fabric-Loader-Gradle',
+                        '--output', staging.absolutePath, source.url)
+                        .inheritIO().start()
+                if (download.waitFor() != 0) {
+                    staging.delete()
+                    throw new GradleException("Could not download ${source.name} source")
+                }
+                String actual = sha256(staging)
+                if (!actual.equalsIgnoreCase(source.sha256)) {
+                    staging.delete()
+                    throw new GradleException(
+                            "SHA-256 mismatch for ${source.name} source: ${actual}")
+                }
+                java.nio.file.Files.move(staging.toPath(), source.archive.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+            File destination = generatedRocketSources.get().dir(source.name).asFile
+            project.delete(destination)
+            destination.mkdirs()
+            Process extraction = new ProcessBuilder(tar, '-xzf', source.archive.absolutePath,
+                    '--strip-components=1', '-C', destination.absolutePath)
+                    .inheritIO().start()
+            if (extraction.waitFor() != 0) {
+                project.delete(destination)
+                throw new GradleException("Could not extract ${source.name} source")
+            }
+            if (source.name == 'libRocket') {
+                File layoutEngine = new File(destination, 'Source/Core/LayoutEngine.cpp')
+                List<String> lines = layoutEngine.readLines('UTF-8')
+                int autoHeight = lines.findIndexOf {
+                    it.contains('// If the height is set to auto, then any margins also set to auto')
+                }
+                if (autoHeight < 0) {
+                    throw new GradleException('Pinned libRocket automatic height block was not found')
+                }
+                lines.addAll(autoHeight, [
+                        '\t// CSS 2.1: an absolutely-positioned auto-height box with both vertical',
+                        '\t// insets specified fills the remaining height of its containing block.',
+                        '\t// This is required by the game UI scroll panels (top: 0; bottom: 30px).',
+                        '\tif (height_auto && (element->GetPosition() == POSITION_ABSOLUTE ||',
+                        '\t\telement->GetPosition() == POSITION_FIXED))',
+                        '\t{',
+                        '\t\tconst Property* top = element->GetLocalProperty(TOP);',
+                        '\t\tconst Property* bottom = element->GetLocalProperty(BOTTOM);',
+                        '\t\tif (top != NULL && top->unit != Property::KEYWORD &&',
+                        '\t\t\tbottom != NULL && bottom->unit != Property::KEYWORD)',
+                        '\t\t{',
+                        '\t\t\tcontent_area.y = containing_block_height',
+                        '\t\t\t\t- element->ResolveProperty(top, containing_block_height)',
+                        '\t\t\t\t- element->ResolveProperty(bottom, containing_block_height)',
+                        '\t\t\t\t- box.GetCumulativeEdge(Box::CONTENT, Box::TOP)',
+                        '\t\t\t\t- box.GetCumulativeEdge(Box::CONTENT, Box::BOTTOM);',
+                        '\t\t\tcontent_area.y = Math::Max(0.0f, content_area.y);',
+                        '\t\t\theight_auto = false;',
+                        '\t\t}',
+                        '\t}',
+                        ''
+                ])
+                layoutEngine.setText(
+                        lines.join(System.lineSeparator()) + System.lineSeparator(), 'UTF-8')
+            }
+        }
+    }
+}
+
+tasks.register('prepareJvmSmokeAsset', Copy) {
+    dependsOn ':jvm-launcher-core:verifyNoGamePayload'
+    from(provider {
+        project(':jvm-launcher-core').tasks.named('jar').get().archiveFile.get().asFile
+    })
+    into(generatedJvmSmokeAssets.map { it.dir('rusted-fabric') })
+    rename { 'jvm-host-smoke.jar' }
+}
+
+tasks.register('prepareJvmLauncherAsset', Copy) {
+    dependsOn ':jvm-game-provider:verifyAndroidJvmLauncher'
+    from(provider {
+        project(':jvm-game-provider').tasks.named('jar').get().archiveFile.get().asFile
+    })
+    into(generatedJvmLauncherAssets.map { it.dir('rusted-fabric') })
+    rename { 'android-jvm-launcher.jar' }
+}
+
+tasks.register('prepareLwjglCompatAsset', Copy) {
+    dependsOn ':lwjgl2-compat:verifyLwjgl2Compat'
+    from(provider {
+        project(':lwjgl2-compat').tasks.named('jar').get().archiveFile.get().asFile
+    })
+    into(generatedLwjglCompatAssets.map { it.dir('rusted-fabric') })
+}
+
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('prepareJvmSmokeAsset')
+    dependsOn tasks.named('prepareJvmLauncherAsset')
+    dependsOn tasks.named('prepareLwjglCompatAsset')
+    dependsOn tasks.named('prepareLwjglAndroidRuntime')
+    dependsOn tasks.named('prepareRocketSources')
+}
+
+tasks.register('verifyNoGamePayload') {
+    group = 'verification'
+    description = 'Scans the launcher APK for forbidden game payloads and required JVM components.'
+    dependsOn 'assembleDebug'
+
+    doLast {
+        def apk = fileTree(layout.buildDirectory.dir('outputs/apk/debug')) {
+            include '*.apk'
+        }.singleFile
+        def forbidden = []
+        def jvmBackendFound = false
+        def jvmHostFound = false
+        def renderBridgeFound = false
+        def jvmSmokeAssetFound = false
+        def jvmLauncherAssetFound = false
+        def lwjglCompatAssetFound = false
+        def lwjglAdapterFound = false
+        def gl4esFound = false
+        def lwjglNativeFound = false
+        def lwjglOpenGlNativeFound = false
+        def openAlNativeFound = false
+        def freetypeNativeFound = false
+        def pojavExecFound = false
+        def rocketConnectorFound = false
+        def rendererLicensesFound = 0
+        new java.util.zip.ZipFile(apk).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def lower = entry.name.toLowerCase(Locale.ROOT)
+                if (lower.startsWith('com/corrodinggames/') || lower.endsWith('.game-apk')) {
+                    forbidden.add(entry.name)
+                }
+                if (entry.name == 'lib/arm64-v8a/librustedfabric_jvmhost.so') {
+                    jvmHostFound = true
+                }
+                if (entry.name == 'lib/arm64-v8a/librustedfabric_renderbridge.so') {
+                    renderBridgeFound = true
+                }
+                if (entry.name == 'assets/rusted-fabric/jvm-host-smoke.jar') {
+                    jvmSmokeAssetFound = true
+                }
+                if (entry.name == 'assets/rusted-fabric/android-jvm-launcher.jar') {
+                    jvmLauncherAssetFound = true
+                }
+                if (entry.name == 'assets/rusted-fabric/rusted-fabric-lwjgl2-compat.jar') {
+                    lwjglCompatAssetFound = true
+                }
+                lwjglAdapterFound |= entry.name == 'assets/rusted-fabric/lwjgl-glfw-classes.jar'
+                gl4esFound |= entry.name == 'lib/arm64-v8a/libgl4es_114.so'
+                lwjglNativeFound |= entry.name == 'lib/arm64-v8a/liblwjgl.so'
+                lwjglOpenGlNativeFound |= entry.name == 'lib/arm64-v8a/liblwjgl_opengl.so'
+                openAlNativeFound |= entry.name == 'lib/arm64-v8a/libopenal.so'
+                freetypeNativeFound |= entry.name == 'lib/arm64-v8a/libfreetype.so'
+                pojavExecFound |= entry.name == 'lib/arm64-v8a/libpojavexec.so'
+                rocketConnectorFound |= entry.name == 'lib/arm64-v8a/librocketConnector.so'
+                if (entry.name.startsWith('assets/rusted-fabric/licenses/')) {
+                    rendererLicensesFound++
+                }
+                if (lower.endsWith('.dex')) {
+                    def bytes
+                    zip.getInputStream(entry).withCloseable { input ->
+                        bytes = input.bytes
+                    }
+                    def dexText = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                    if (dexText.contains('Lcom/corrodinggames/rts/')) {
+                        forbidden.add("${entry.name}: game class descriptor")
+                    }
+                    if (dexText.contains('Lnet/fabricmc/')
+                            || dexText.contains('Lorg/spongepowered/')
+                            || dexText.contains('Lorg/newdawn/slick/')) {
+                        forbidden.add("${entry.name}: desktop platform descriptor")
+                    }
+                    jvmBackendFound |= dexText.contains(
+                            'Lio/github/endx/rustedfabric/android/jvm/JvmLaunchPlan;')
+                }
+            }
+        }
+        if (!jvmBackendFound
+                || !jvmHostFound || !renderBridgeFound || !jvmSmokeAssetFound
+                || !jvmLauncherAssetFound
+                || !lwjglCompatAssetFound
+                || !lwjglAdapterFound || !gl4esFound || !lwjglNativeFound
+                || !lwjglOpenGlNativeFound || !openAlNativeFound || !freetypeNativeFound
+                || !pojavExecFound || !rocketConnectorFound || rendererLicensesFound < 7) {
+            throw new GradleException('Android launcher APK is missing a required JVM component')
+        }
+        if (!forbidden.isEmpty()) {
+            throw new GradleException("Android launcher APK contains forbidden game payloads: ${forbidden}")
+        }
+    }
+}

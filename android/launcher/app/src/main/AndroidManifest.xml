@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <application
+        android:allowBackup="false"
+        android:allowNativeHeapPointerTagging="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:description="@string/module_description"
+        android:hasCode="true"
+        android:fullBackupContent="false"
+        android:icon="@drawable/ic_loader"
+        android:label="@string/module_name"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+        <activity
+            android:name=".ui.JvmLauncherActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.JvmRenderActivity"
+            android:exported="false"
+            android:hardwareAccelerated="false"
+            android:process=":desktop_jvm"
+            android:screenOrientation="landscape" />
+
+        <service
+            android:name=".jvm.JvmHostService"
+            android:exported="false"
+            android:process=":desktop_jvm"
+            android:stopWithTask="true" />
+
+    </application>
+</manifest>

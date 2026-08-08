@@ -1,0 +1,28 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri('https://maven.fabricmc.net/') }
+        maven { url = uri('https://repo.spongepowered.org/maven/') }
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri('https://maven.fabricmc.net/') }
+        maven { url = uri('https://repo.spongepowered.org/maven/') }
+    }
+}
+
+rootProject.name = 'rusted-fabric-android-launcher'
+include ':app'
+include ':jvm-launcher-core'
+project(':jvm-launcher-core').projectDir = file('../jvm-launcher-core')
+include ':jvm-game-provider'
+project(':jvm-game-provider').projectDir = file('../jvm-game-provider')
+include ':lwjgl2-compat'
+project(':lwjgl2-compat').projectDir = file('../lwjgl2-compat')

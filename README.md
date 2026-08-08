@@ -12,8 +12,8 @@ Current compatibility baseline:
 The public API is still experimental while mappings are being completed. See [API.md](docs/API.md) for lifecycle, threading, cancellation, and compatibility rules.
 
 The active Android direction is the PC-edition port: import user-owned Steam files and run the same
-Fabric/Knot stack inside a Loader-owned ARM64 JVM. The older Android-APK patch/Xposed direction is
-frozen. Windows remains the reference runtime and ordinary Fabric-style Jar development target.
+Fabric/Knot stack inside a Loader-owned ARM64 JVM. Retired Android-APK patch/Xposed work is archived
+under `legacy/`. Both active hosts use the same API and ordinary Fabric-style Jar mods.
 See [PROJECT_STATUS.md](docs/PROJECT_STATUS.md) for maintained modules, build gates, local-only
 inputs, and the current PC-port execution boundary.
 
@@ -155,22 +155,21 @@ Mixin classes should be authored against the named development jar. `RemapJar` r
 To build the API runtime jar directly:
 
 ```bat
-gradlew.bat :rusted-fabric-api-desktop:remapJarToOfficial
+gradlew.bat :rusted-fabric-api:remapJarToOfficial
 ```
 
 The maintained runtime foundation currently spans:
 
 ```text
-rusted-fabric-api          shared public mod API
-rusted-fabric-api-desktop  Windows Fabric/Mixin backend
+rusted-fabric-api          public API, mapped implementation, Mixins, and remapping
 android:jvm-launcher-core  PC game import, ARM64 JVM validation, and launch planning
-android/xposed:module      current Android manager UI and isolated JNI JVM host
+android/launcher:app       no-root Android UI and isolated JNI JVM/render host
 ```
 
-The desktop runtime Jar embeds the public module. The Android PC-port manager does not contain the
-game or a Java runtime: it imports both from user-selected files into app-private storage. Its full
-game launch remains disabled until the LWJGL2, OpenAL, input, and rocketConnector ARM64 adapters are
-implemented. Android local-patcher and Xposed-hook code remains only as historical scaffolding.
+The Android launcher does not contain the game or a user Java runtime: it imports both from
+user-selected files into app-private storage. Windows and Android then execute the same desktop
+game, Fabric runtime, API Jar, Mixins, and mod format. Retired native-APK code is excluded from all
+active Gradle builds.
 
 ## Example Mod
 The `example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
