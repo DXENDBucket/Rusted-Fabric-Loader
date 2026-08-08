@@ -693,13 +693,12 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_Element_getAttribute(
     if (element == nullptr) return fallback == nullptr ? nullptr
             : static_cast<jstring>(env->NewLocalRef(fallback));
     const Rocket::Core::String attribute_name = string_value(env, name);
-    // libRocket's range widget keeps its live value in the form control rather than
-    // the DOM attribute. Rusted Warfare reads Element.getAttribute("value"), so expose
-    // the live control value here just like a browser DOM value property would.
-    if (attribute_name == "value"
-            && element->GetAttribute<Rocket::Core::String>("type", "") == "range") {
-        auto* control = dynamic_cast<Rocket::Controls::ElementFormControl*>(element);
-        if (control != nullptr) return java_string(env, control->GetValue());
+    // Rusted Warfare's Java Element wrapper treats getAttribute("value") as the
+    // browser DOM value property. libRocket keeps the live value inside each form
+    // control, so return that value instead of its possibly stale markup attribute.
+    auto* control = dynamic_cast<Rocket::Controls::ElementFormControl*>(element);
+    if (attribute_name == "value" && control != nullptr) {
+        return java_string(env, control->GetValue());
     }
     Rocket::Core::Variant* value = element->GetAttribute(attribute_name);
     return value == nullptr ? (fallback == nullptr ? nullptr
@@ -717,7 +716,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_Element_setAttribute(
     if (value == nullptr) {
         element->RemoveAttribute(attribute_name);
     } else {
-        element->SetAttribute(attribute_name, string_value(env, value));
+        auto* control = dynamic_cast<Rocket::Controls::ElementFormControl*>(element);
+        // Keep the matching write path browser-like as well. In particular, a select
+        // does not react to a raw value attribute; SetValue updates its selected option.
+        if (attribute_name == "value" && control != nullptr) {
+            control->SetValue(string_value(env, value));
+        } else {
+            element->SetAttribute(attribute_name, string_value(env, value));
+        }
     }
 }
 
