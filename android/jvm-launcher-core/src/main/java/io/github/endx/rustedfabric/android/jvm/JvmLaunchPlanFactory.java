@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.zip.ZipFile;
 
 /** Builds launch requests for the imported desktop game without packaging any game payload. */
@@ -28,7 +29,7 @@ public final class JvmLaunchPlanFactory {
                     + (capabilities == null ? "capabilities unavailable" : capabilities.missing()));
         }
         return createGamePlan(gameRoot, runtimeHome, loaderClasspath, nativeLibraryDirectory,
-                maximumHeapMiB, width, height);
+                maximumHeapMiB, width, height, Locale.getDefault());
     }
 
     /**
@@ -45,12 +46,25 @@ public final class JvmLaunchPlanFactory {
             throw new IllegalStateException("JVM game probe requires Java, JVM host, and LWJGL2");
         }
         return createGamePlan(gameRoot, runtimeHome, loaderClasspath, nativeLibraryDirectory,
-                maximumHeapMiB, width, height);
+                maximumHeapMiB, width, height, Locale.getDefault());
+    }
+
+    public static JvmLaunchPlan createCompatibilityProbe(
+            Path gameRoot, Path runtimeHome, Path loaderClasspath,
+            Path nativeLibraryDirectory, JvmBackendCapabilities capabilities,
+            int maximumHeapMiB, int width, int height, Locale locale) throws IOException {
+        if (capabilities == null || !capabilities.hasJava17() || !capabilities.hasJvmHost()
+                || !capabilities.hasLwjgl2()) {
+            throw new IllegalStateException("JVM game probe requires Java, JVM host, and LWJGL2");
+        }
+        return createGamePlan(gameRoot, runtimeHome, loaderClasspath, nativeLibraryDirectory,
+                maximumHeapMiB, width, height, locale);
     }
 
     private static JvmLaunchPlan createGamePlan(
             Path gameRoot, Path runtimeHome, Path loaderClasspath,
-            Path nativeLibraryDirectory, int maximumHeapMiB, int width, int height)
+            Path nativeLibraryDirectory, int maximumHeapMiB, int width, int height,
+            Locale locale)
             throws IOException {
         if (maximumHeapMiB < 256 || maximumHeapMiB > 8192) {
             throw new IllegalArgumentException("maximumHeapMiB must be between 256 and 8192");
@@ -100,7 +114,7 @@ public final class JvmLaunchPlanFactory {
         if (!Files.isRegularFile(gl4es)) {
             throw new IOException("GL4ES is not packaged for this ABI");
         }
-        List<String> vmArguments = Arrays.asList(
+        List<String> vmArguments = new ArrayList<>(Arrays.asList(
                 "-XX:+UseSerialGC",
                 "-Xmx" + maximumHeapMiB + "M",
                 "-Dfile.encoding=UTF-8",
@@ -120,7 +134,17 @@ public final class JvmLaunchPlanFactory {
                 "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
                 "--add-opens=java.base/java.net=ALL-UNNAMED",
                 "--add-opens=java.base/java.nio=ALL-UNNAMED",
-                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED");
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"));
+        Locale selectedLocale = locale == null ? Locale.getDefault() : locale;
+        if (!selectedLocale.getLanguage().isEmpty()) {
+            vmArguments.add("-Duser.language=" + selectedLocale.getLanguage());
+        }
+        if (!selectedLocale.getCountry().isEmpty()) {
+            vmArguments.add("-Duser.country=" + selectedLocale.getCountry());
+        }
+        if (!selectedLocale.getScript().isEmpty()) {
+            vmArguments.add("-Duser.script=" + selectedLocale.getScript());
+        }
         List<String> gameArguments = Arrays.asList(
                 "-width", Integer.toString(width), "-height", Integer.toString(height));
         return new JvmLaunchPlan(gameRoot.toAbsolutePath().normalize(),

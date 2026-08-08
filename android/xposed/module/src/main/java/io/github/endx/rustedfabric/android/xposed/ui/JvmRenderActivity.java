@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
+import android.view.DisplayCutout;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -27,11 +28,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.endx.rustedfabric.android.xposed.R;
 import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlan;
 import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlanFactory;
+import io.github.endx.rustedfabric.android.jvm.DesktopGameLayout;
 import io.github.endx.rustedfabric.android.xposed.jvm.NativeJvmHost;
 import io.github.endx.rustedfabric.android.xposed.jvm.NativeRenderBridge;
 import io.github.endx.rustedfabric.android.xposed.jvm.DesktopGameImportService;
@@ -103,6 +109,24 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         surface.setOnGenericMotionListener((view, event) -> handleGenericMotion(event));
         root.addView(surface, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (Build.VERSION.SDK_INT >= 28) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                DisplayCutout cutout = insets.getDisplayCutout();
+                int left = cutout == null ? 0 : cutout.getSafeInsetLeft();
+                int top = cutout == null ? 0 : cutout.getSafeInsetTop();
+                int right = cutout == null ? 0 : cutout.getSafeInsetRight();
+                int bottom = cutout == null ? 0 : cutout.getSafeInsetBottom();
+                FrameLayout.LayoutParams params =
+                        (FrameLayout.LayoutParams) surface.getLayoutParams();
+                if (params.leftMargin != left || params.topMargin != top
+                        || params.rightMargin != right || params.bottomMargin != bottom) {
+                    params.setMargins(left, top, right, bottom);
+                    surface.setLayoutParams(params);
+                }
+                return insets;
+            });
+            root.requestApplyInsets();
+        }
 
         status = new TextView(this);
         status.setText(gameProbe ? R.string.jvm_game_probe_waiting : R.string.jvm_renderer_waiting);
@@ -200,10 +224,13 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     }
                 }
                 if (singleScrolling) {
-                    pendingScroll += (y - previousTouchY) / TOUCH_SCROLL_PIXELS_PER_STEP;
-                    if (Math.abs(pendingScroll) >= 0.25) {
-                        NativeRenderBridge.sendScroll(0.0, pendingScroll);
-                        pendingScroll = 0.0;
+                    float deltaY = y - previousTouchY;
+                    if (!NativeRenderBridge.scrollUiByTouchDelta(deltaY)) {
+                        pendingScroll += deltaY / TOUCH_SCROLL_PIXELS_PER_STEP;
+                        if (Math.abs(pendingScroll) >= 0.25) {
+                            NativeRenderBridge.sendScroll(0.0, pendingScroll);
+                            pendingScroll = 0.0;
+                        }
                     }
                 }
                 previousTouchY = y;
@@ -248,26 +275,21 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     }
 
     private void publishGameTouchFrame(MotionEvent event) {
-        int excludedIndex = -1;
-        int count = event.getPointerCount();
         int action = event.getActionMasked();
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-            count = 0;
-        } else if (action == MotionEvent.ACTION_POINTER_UP) {
-            excludedIndex = event.getActionIndex();
-            count--;
+        int count = Math.min(event.getPointerCount(), gameTouchXs.length);
+        for (int index = 0; index < count; index++) {
+            gameTouchXs[index] = event.getX(index);
+            gameTouchYs[index] = event.getY(index);
+            gameTouchIds[index] = event.getPointerId(index);
         }
-        count = Math.min(count, gameTouchXs.length);
-        int output = 0;
-        for (int index = 0; index < event.getPointerCount() && output < count; index++) {
-            if (index == excludedIndex) continue;
-            gameTouchXs[output] = event.getX(index);
-            gameTouchYs[output] = event.getY(index);
-            gameTouchIds[output] = event.getPointerId(index);
-            output++;
-        }
+        // Match the official Android MultiTouchController: an UP (including POINTER_UP)
+        // ends the current gesture but retains every pointer and its final coordinates in
+        // that MotionEvent. The game needs both final corners to commit a two-finger box.
+        boolean down = action != MotionEvent.ACTION_UP
+                && action != MotionEvent.ACTION_POINTER_UP
+                && action != MotionEvent.ACTION_CANCEL;
         NativeRenderBridge.sendTouchFrame(
-                gameTouchXs, gameTouchYs, gameTouchIds, output, output > 0);
+                gameTouchXs, gameTouchYs, gameTouchIds, count, down, action);
     }
 
     private void resetTouchState() {
@@ -435,6 +457,10 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
 
     private String runGameProbe(int width, int height) throws IOException {
         File desktopRoot = DesktopGameImportService.importedRoot(this);
+        // Imports deliberately omit user saves and mods. Recreate the empty writable layout on
+        // every launch as a repair path for older imports and folders removed by the user.
+        DesktopGameLayout.prepareWritableDirectories(desktopRoot.toPath());
+        prepareAndroidGameDefaults(desktopRoot.toPath());
         File launcherDirectory = new File(new File(getFilesDir(), "desktop-jvm"), "launcher");
         if (!launcherDirectory.isDirectory() && !launcherDirectory.mkdirs()) {
             throw new IOException("Cannot create private Fabric launcher directory");
@@ -451,7 +477,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         JvmLaunchPlan plan = JvmLaunchPlanFactory.createCompatibilityProbe(
                 desktopRoot.toPath(), runtimeHome.toPath(), launcherDirectory.toPath(),
                 nativeDirectory.toPath(), capabilities, 1024,
-                Math.max(width, 320), Math.max(height, 240));
+                Math.max(width, 320), Math.max(height, 240), deviceLocale());
         runOnUiThread(() -> {
             status.setText(R.string.jvm_game_probe_starting);
             status.postDelayed(() -> {
@@ -464,6 +490,40 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     + launch.detail() + ". See logcat tag RustedFabricJvm for the Java stack.");
         }
         return "rusted-fabric-game-probe=ok\nFabric/game main returned normally";
+    }
+
+    private void prepareAndroidGameDefaults(Path desktopRoot) throws IOException {
+        Path stateDirectory = desktopRoot.resolve(".rustedfabricloader");
+        Path marker = stateDirectory.resolve("android-ui-defaults-v1");
+        if (Files.isRegularFile(marker)) return;
+        Files.createDirectories(stateDirectory);
+        Path preferences = desktopRoot.resolve("preferences.ini");
+        List<String> lines = Files.isRegularFile(preferences)
+                ? new ArrayList<>(Files.readAllLines(preferences, StandardCharsets.UTF_8))
+                : new ArrayList<>();
+        boolean densityFound = false;
+        for (int index = 0; index < lines.size(); index++) {
+            String line = lines.get(index);
+            if (!line.startsWith("renderDensity:")) continue;
+            densityFound = true;
+            String value = line.substring("renderDensity:".length()).trim();
+            if (value.isEmpty() || "1".equals(value) || "1.0".equals(value)) {
+                lines.set(index, "renderDensity:2.5");
+            }
+            break;
+        }
+        if (!densityFound) lines.add("renderDensity:2.5");
+        Files.write(preferences, lines, StandardCharsets.UTF_8);
+        Files.write(marker, java.util.Collections.singletonList("renderDensity=2.5"),
+                StandardCharsets.UTF_8);
+    }
+
+    @SuppressWarnings("deprecation")
+    private Locale deviceLocale() {
+        if (Build.VERSION.SDK_INT >= 24) {
+            return getResources().getConfiguration().getLocales().get(0);
+        }
+        return getResources().getConfiguration().locale;
     }
 
     private String runLwjglTest() throws IOException {

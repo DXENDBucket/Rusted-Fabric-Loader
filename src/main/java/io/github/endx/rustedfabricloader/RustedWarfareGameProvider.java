@@ -150,6 +150,11 @@ public class RustedWarfareGameProvider implements GameProvider {
      */
     private static final class AndroidTouchInputPatch extends GamePatch {
         private static final String SLICK_GAME = "com.corrodinggames.rts.java.u";
+        private static final String GAME_ENGINE = "com/corrodinggames/rts/gameFramework/l";
+        private static final String COMMAND_INTERFACE =
+                "com.corrodinggames.rts.gameFramework.f.a";
+        private static final String INTERFACE_ENGINE =
+                "com.corrodinggames.rts.gameFramework.f.g";
         private static final String UPDATE_DESCRIPTOR = "(Lorg/newdawn/slick/GameContainer;I)V";
 
         @Override
@@ -176,7 +181,77 @@ public class RustedWarfareGameProvider implements GameProvider {
                     false));
             update.instructions.insert(bridge);
             classEmitter.accept(slickGame);
-            Log.info(LOG_CATEGORY, "Patched Android raw multi-touch bridge.");
+
+            patchTouchUiBranches(classSource, classEmitter, COMMAND_INTERFACE);
+            patchTouchUiBranches(classSource, classEmitter, INTERFACE_ENGINE);
+            Log.info(LOG_CATEGORY,
+                    "Patched Android raw multi-touch bridge and mobile game UI branches.");
+        }
+
+        private static void patchTouchUiBranches(Function<String, ClassNode> classSource,
+                                                  Consumer<ClassNode> classEmitter,
+                                                  String className) {
+            ClassNode target = classSource.apply(className);
+            if (target == null) {
+                throw new IllegalStateException("Android touch UI target is unavailable: "
+                        + className);
+            }
+            int replacements = 0;
+            for (MethodNode method : target.methods) {
+                for (org.objectweb.asm.tree.AbstractInsnNode instruction =
+                     method.instructions.getFirst(); instruction != null;) {
+                    org.objectweb.asm.tree.AbstractInsnNode next = instruction.getNext();
+                    if (instruction instanceof org.objectweb.asm.tree.FieldInsnNode) {
+                        org.objectweb.asm.tree.FieldInsnNode field =
+                                (org.objectweb.asm.tree.FieldInsnNode) instruction;
+                        if (field.getOpcode() == Opcodes.GETFIELD
+                                && field.owner.equals(
+                                "com/corrodinggames/rts/gameFramework/SettingsEngine")
+                                && field.desc.equals("Z")
+                                && (field.name.equals("showZoomButton")
+                                || field.name.equals("showUnitGroups"))) {
+                            org.objectweb.asm.tree.InsnList enabled =
+                                    new org.objectweb.asm.tree.InsnList();
+                            enabled.add(new InsnNode(Opcodes.POP));
+                            enabled.add(new InsnNode(Opcodes.ICONST_1));
+                            method.instructions.insertBefore(field, enabled);
+                            method.instructions.remove(field);
+                            replacements++;
+                            instruction = next;
+                            continue;
+                        }
+                    }
+                    if (!(instruction instanceof MethodInsnNode)) {
+                        instruction = next;
+                        continue;
+                    }
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    if (call.getOpcode() != Opcodes.INVOKESTATIC
+                            || !call.owner.equals(GAME_ENGINE) || !call.desc.equals("()Z")) {
+                        instruction = next;
+                        continue;
+                    }
+                    String replacement = null;
+                    if (call.name.equals("at")) replacement = "isAndroidUi";
+                    if (call.name.equals("au")) replacement = "isMobileUi";
+                    if (call.name.equals("av")) replacement = "isPcUi";
+                    if (call.name.equals("aw")) replacement = "isDesktopMousePlatform";
+                    if (replacement == null) {
+                        instruction = next;
+                        continue;
+                    }
+                    call.owner = "org/lwjgl/system/RustedFabricTouch";
+                    call.name = replacement;
+                    call.itf = false;
+                    replacements++;
+                    instruction = next;
+                }
+            }
+            if (replacements == 0) {
+                throw new IllegalStateException("No touch UI platform branches found in "
+                        + className);
+            }
+            classEmitter.accept(target);
         }
     }
 

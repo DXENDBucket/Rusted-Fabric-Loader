@@ -3,6 +3,7 @@ package io.github.endx.rustedfabric.android.jvm;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -22,6 +23,11 @@ public final class JvmLauncherCoreVerification {
             require(inspection.isImportable(), "Valid desktop layout was rejected: " + inspection.errors());
             require(DesktopGameLayout.desktopClasspath(game).size() == 4,
                     "Desktop classpath did not contain the game and required libraries");
+            DesktopGameLayout.prepareWritableDirectories(game);
+            require(Files.isDirectory(game.resolve("mods/maps"))
+                            && Files.isDirectory(game.resolve("mods/units"))
+                            && Files.isDirectory(game.resolve("replays")),
+                    "Writable desktop game directories were not prepared");
 
             Path runtime = createRuntime(temporary.resolve("runtime"));
             Path loader = Files.createDirectories(temporary.resolve("loader"));
@@ -49,6 +55,8 @@ public final class JvmLauncherCoreVerification {
                             .anyMatch(value -> value.startsWith("-Drusted.android.lwjglJar="))
                             && plan.virtualMachineArguments().stream()
                             .anyMatch(value -> value.startsWith("-Drusted.android.lwjglCompatJar="))
+                            && plan.virtualMachineArguments().stream()
+                            .anyMatch(value -> value.startsWith("-Duser.language="))
                             && plan.workingDirectory().equals(game.toAbsolutePath().normalize()),
                     "Launch plan classpath or JVM options changed");
             require(Files.isDirectory(game.resolve(".rustedfabricloader/tmp")),
@@ -85,6 +93,12 @@ public final class JvmLauncherCoreVerification {
             require(JvmLaunchPlanFactory.createCompatibilityProbe(game, runtime, loader,
                             natives, probeOnly, 768, 960, 540).classpath().size() == 3,
                     "Compatibility probe did not accept the implemented renderer path");
+            JvmLaunchPlan chinesePlan = JvmLaunchPlanFactory.createCompatibilityProbe(
+                    game, runtime, loader, natives, probeOnly, 768, 960, 540,
+                    Locale.SIMPLIFIED_CHINESE);
+            require(chinesePlan.virtualMachineArguments().contains("-Duser.language=zh")
+                            && chinesePlan.virtualMachineArguments().contains("-Duser.country=CN"),
+                    "Android device locale was not forwarded to the embedded JVM");
 
             boolean incompleteRejected = false;
             try {

@@ -51,6 +51,7 @@ public final class DesktopGameImportService {
             if (!inspection.isImportable()) {
                 throw new IOException("Selected desktop game is incomplete: " + inspection.errors());
             }
+            DesktopGameLayout.prepareWritableDirectories(staging.toPath());
             return activate(backend, staging, counter.files, counter.bytes, inspection.warnings());
         } catch (IOException | RuntimeException failure) {
             deleteTree(staging, backend);
@@ -71,6 +72,7 @@ public final class DesktopGameImportService {
             DesktopGameArchiveExtractor.Result extracted = DesktopGameArchiveExtractor.extract(
                     temporaryArchive.toPath(), staging.toPath(), listener == null ? null
                             : listener::onProgress);
+            DesktopGameLayout.prepareWritableDirectories(staging.toPath());
             return activate(backend, staging, extracted.files(), extracted.bytes(),
                     extracted.warnings());
         } catch (IOException | RuntimeException failure) {

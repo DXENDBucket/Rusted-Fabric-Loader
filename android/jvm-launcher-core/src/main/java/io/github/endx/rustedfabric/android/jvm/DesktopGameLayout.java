@@ -23,6 +23,8 @@ public final class DesktopGameLayout {
             Collections.unmodifiableList(Arrays.asList("assets", "res", "libs"));
     private static final List<String> REQUIRED_LIBRARY_NAMES =
             Collections.unmodifiableList(Arrays.asList("lwjgl.jar", "slick.jar", "jinput.jar"));
+    private static final List<String> WRITABLE_DIRECTORIES = Collections.unmodifiableList(
+            Arrays.asList("mods/maps", "mods/units", "saves", "replays", "screenshots", "cache"));
 
     private DesktopGameLayout() {
     }
@@ -80,6 +82,18 @@ public final class DesktopGameLayout {
 
     public static List<String> importRoots() {
         return Collections.unmodifiableList(Arrays.asList(GAME_JAR, "assets", "res", "libs", "font"));
+    }
+
+    /** Creates empty desktop data directories that are intentionally not copied from the PC. */
+    public static void prepareWritableDirectories(Path root) throws IOException {
+        if (root == null) throw new IllegalArgumentException("root must not be null");
+        Path normalizedRoot = root.toAbsolutePath().normalize();
+        if (!Files.isDirectory(normalizedRoot)) {
+            throw new IOException("Desktop game root is not available");
+        }
+        for (String relative : WRITABLE_DIRECTORIES) {
+            Files.createDirectories(normalizedRoot.resolve(relative));
+        }
     }
 
     private static void verifyGameJar(Path gameJar, List<String> errors) {

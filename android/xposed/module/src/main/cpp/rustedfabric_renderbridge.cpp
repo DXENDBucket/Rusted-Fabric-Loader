@@ -107,6 +107,18 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSen
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeScrollUiByTouchDelta(
+        JNIEnv*, jclass, jfloat delta_y) {
+    void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return JNI_FALSE;
+    auto queue = reinterpret_cast<bool (*)(float)>(
+            dlsym(library, "rustedfabric_rocket_queue_touch_scroll"));
+    const bool accepted = queue != nullptr && queue(delta_y);
+    dlclose(library);
+    return accepted ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendMouseButton(
         JNIEnv*, jclass, jint button, jint action) {
     return call_pojav_input<void (*)(int, int, int)>(
@@ -123,7 +135,7 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSen
 extern "C" JNIEXPORT jboolean JNICALL
 Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendTouchFrame(
         JNIEnv* env, jclass, jfloatArray xs, jfloatArray ys, jintArray pointer_ids,
-        jint count, jboolean down) {
+        jint count, jboolean down, jint action) {
     if (count < 0 || count > 10 || xs == nullptr || ys == nullptr
             || pointer_ids == nullptr) {
         return JNI_FALSE;
@@ -138,9 +150,9 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSen
                                reinterpret_cast<jint*>(native_ids));
         if (env->ExceptionCheck()) return JNI_FALSE;
     }
-    return call_pojav_input<void (*)(const float*, const float*, const int*, int, bool)>(
+    return call_pojav_input<void (*)(const float*, const float*, const int*, int, bool, int)>(
             "rustedfabric_queue_touch_frame", native_xs, native_ys, native_ids,
-            count, down == JNI_TRUE) ? JNI_TRUE : JNI_FALSE;
+            count, down == JNI_TRUE, action) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL

@@ -33,6 +33,32 @@ const auto start_time = std::chrono::steady_clock::now();
 std::atomic<bool> rocket_hover_scrollable{false};
 std::atomic<bool> rocket_hover_prefers_drag{false};
 std::atomic<bool> rocket_document_active{false};
+std::atomic<int> rocket_touch_scroll_millipixels{0};
+
+void apply_touch_scroll() {
+    if (rocket_context == nullptr) {
+        rocket_touch_scroll_millipixels.store(0, std::memory_order_relaxed);
+        return;
+    }
+    const int queued = rocket_touch_scroll_millipixels.exchange(
+            0, std::memory_order_relaxed);
+    if (queued == 0) return;
+    const float finger_delta = static_cast<float>(queued) / 1000.0f;
+    for (Rocket::Core::Element* element = rocket_context->GetHoverElement();
+         element != nullptr; element = element->GetParentNode()) {
+        const int overflow_y = element->GetProperty<int>("overflow-y");
+        if ((overflow_y != Rocket::Core::OVERFLOW_AUTO
+                && overflow_y != Rocket::Core::OVERFLOW_SCROLL)
+                || element->GetScrollHeight() <= element->GetClientHeight()) {
+            continue;
+        }
+        const float previous = element->GetScrollTop();
+        // Match Android's content-under-finger convention: an upward finger movement advances
+        // the document, while a downward movement reveals earlier content.
+        element->SetScrollTop(previous - finger_delta);
+        if (element->GetScrollTop() != previous) return;
+    }
+}
 
 // Slick's setWorldClip uses the fixed-function GL_CLIP_PLANE API, which GL4ES
 // cannot reliably carry through the GLES renderer. Convert Rocket's logical
@@ -545,9 +571,11 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_setup(JNIEnv* env, jobject 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_update(JNIEnv*, jobject) {
     if (rocket_context == nullptr) {
         rocket_document_active.store(false, std::memory_order_relaxed);
+        rocket_touch_scroll_millipixels.store(0, std::memory_order_relaxed);
         return;
     }
     rocket_context->Update();
+    apply_touch_scroll();
     bool active = false;
     for (int index = 0; index < rocket_context->GetNumDocuments(); ++index) {
         Rocket::Core::ElementDocument* document = rocket_context->GetDocument(index);
@@ -654,6 +682,15 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_processMouseMove(
 
 extern "C" bool rustedfabric_rocket_hover_scrollable(void) {
     return rocket_hover_scrollable.load(std::memory_order_relaxed);
+}
+
+extern "C" bool rustedfabric_rocket_queue_touch_scroll(float delta_y) {
+    if (!std::isfinite(delta_y)) return false;
+    const float limited = std::max(-10000.0f, std::min(10000.0f, delta_y));
+    rocket_touch_scroll_millipixels.fetch_add(
+            static_cast<int>(std::lround(limited * 1000.0f)),
+            std::memory_order_relaxed);
+    return true;
 }
 
 extern "C" bool rustedfabric_rocket_hover_prefers_drag(void) {

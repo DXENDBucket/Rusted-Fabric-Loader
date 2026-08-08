@@ -45,6 +45,11 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeSendScroll(x, y);
     }
 
+    /** Queues a direct, pixel-precise scroll of the Rocket element under the finger. */
+    public static boolean scrollUiByTouchDelta(float deltaY) {
+        return PACKAGED && nativeScrollUiByTouchDelta(deltaY);
+    }
+
     public static boolean sendMouseButton(int button, int action) {
         return PACKAGED && nativeSendMouseButton(button, action);
     }
@@ -55,14 +60,14 @@ public final class NativeRenderBridge {
 
     /** Publishes one Android touch frame to the embedded desktop game core. */
     public static boolean sendTouchFrame(float[] xs, float[] ys, int[] pointerIds,
-                                         int count, boolean down) {
+                                         int count, boolean down, int action) {
         if (!PACKAGED) return false;
         if (xs == null || ys == null || pointerIds == null || count < 0
                 || count > 10 || xs.length < count || ys.length < count
                 || pointerIds.length < count) {
             throw new IllegalArgumentException("Invalid touch frame");
         }
-        return nativeSendTouchFrame(xs, ys, pointerIds, count, down);
+        return nativeSendTouchFrame(xs, ys, pointerIds, count, down, action);
     }
 
     /** True when the Rocket element below the cursor has a vertically scrollable ancestor. */
@@ -89,11 +94,12 @@ public final class NativeRenderBridge {
     private static native void nativeDetachSurface();
     private static native boolean nativeSendPointer(float x, float y, int buttonAction);
     private static native boolean nativeSendScroll(double x, double y);
+    private static native boolean nativeScrollUiByTouchDelta(float deltaY);
     private static native boolean nativeSendMouseButton(int button, int action);
     private static native boolean nativeSendKey(int key, int action);
     private static native boolean nativeSendTouchFrame(float[] xs, float[] ys,
                                                        int[] pointerIds, int count,
-                                                       boolean down);
+                                                       boolean down, int action);
     private static native boolean nativeUiWantsScroll();
     private static native boolean nativeUiPrefersDrag();
     private static native boolean nativeUiIsActive();

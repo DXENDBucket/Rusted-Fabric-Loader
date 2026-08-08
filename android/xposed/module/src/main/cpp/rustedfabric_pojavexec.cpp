@@ -2,6 +2,7 @@
 #include <android/native_window.h>
 #include <android/log.h>
 #include <EGL/egl.h>
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -64,12 +65,14 @@ struct TouchFrame {
     uint64_t sequence = 0;
     int count = 0;
     bool down = false;
+    int action = 0;
     std::array<float, 10> xs{};
     std::array<float, 10> ys{};
     std::array<int, 10> ids{};
 };
 std::mutex touch_mutex;
-TouchFrame touch_frame;
+std::deque<TouchFrame> touch_frames;
+uint64_t touch_sequence = 0;
 
 void queue_input(InputEvent event) {
     std::lock_guard<std::mutex> lock(input_mutex);
@@ -420,34 +423,58 @@ rustedfabric_queue_key(int key, int action, int modifiers) {
 
 extern "C" __attribute__((visibility("default"))) void
 rustedfabric_queue_touch_frame(const float* xs, const float* ys, const int* ids,
-                               int count, bool down) {
+                               int count, bool down, int action) {
     if (count < 0) count = 0;
     if (count > 10) count = 10;
-    std::lock_guard<std::mutex> lock(touch_mutex);
-    touch_frame.count = count;
-    touch_frame.down = down && count > 0;
+    TouchFrame frame;
+    frame.count = count;
+    frame.down = down && count > 0;
+    frame.action = action;
     for (int index = 0; index < count; ++index) {
-        touch_frame.xs[index] = xs[index];
-        touch_frame.ys[index] = ys[index];
-        touch_frame.ids[index] = ids[index];
+        frame.xs[index] = xs[index];
+        frame.ys[index] = ys[index];
+        frame.ids[index] = ids[index];
     }
-    ++touch_frame.sequence;
+    std::lock_guard<std::mutex> lock(touch_mutex);
+    frame.sequence = ++touch_sequence;
+    // Android can deliver several MOVE samples between game updates. Keep only the newest
+    // such sample, but never collapse DOWN/UP or pointer-count transitions: the game must
+    // observe those on separate updates for taps, commands, pinches and box selection.
+    constexpr int kActionMove = 2;
+    if (action == kActionMove && !touch_frames.empty()
+            && touch_frames.back().action == kActionMove) {
+        touch_frames.back() = frame;
+        return;
+    }
+    if (touch_frames.size() >= 64) {
+        auto stale_move = std::find_if(touch_frames.begin(), touch_frames.end(),
+                [](const TouchFrame& queued) { return queued.action == kActionMove; });
+        if (stale_move != touch_frames.end()) {
+            touch_frames.erase(stale_move);
+        } else {
+            touch_frames.pop_front();
+        }
+    }
+    touch_frames.push_back(frame);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_org_lwjgl_system_RustedFabricTouch_nativePoll(
         JNIEnv* env, jclass, jfloatArray xs, jfloatArray ys, jintArray ids) {
     std::lock_guard<std::mutex> lock(touch_mutex);
-    if (touch_frame.count > 0) {
-        env->SetFloatArrayRegion(xs, 0, touch_frame.count, touch_frame.xs.data());
-        env->SetFloatArrayRegion(ys, 0, touch_frame.count, touch_frame.ys.data());
-        env->SetIntArrayRegion(ids, 0, touch_frame.count,
-                               reinterpret_cast<const jint*>(touch_frame.ids.data()));
+    if (touch_frames.empty()) return 0;
+    const TouchFrame frame = touch_frames.front();
+    touch_frames.pop_front();
+    if (frame.count > 0) {
+        env->SetFloatArrayRegion(xs, 0, frame.count, frame.xs.data());
+        env->SetFloatArrayRegion(ys, 0, frame.count, frame.ys.data());
+        env->SetIntArrayRegion(ids, 0, frame.count,
+                               reinterpret_cast<const jint*>(frame.ids.data()));
         if (env->ExceptionCheck()) return 0;
     }
-    const uint64_t metadata = static_cast<uint64_t>(touch_frame.count)
-            | (touch_frame.down ? 0x80ULL : 0ULL);
-    return static_cast<jlong>((touch_frame.sequence << 8U) | metadata);
+    const uint64_t metadata = static_cast<uint64_t>(frame.count)
+            | (frame.down ? 0x80ULL : 0ULL);
+    return static_cast<jlong>((frame.sequence << 8U) | metadata);
 }
 
 extern "C" __attribute__((visibility("default"))) void pojavTerminate() {

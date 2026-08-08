@@ -15,6 +15,26 @@ public final class RustedFabricTouch {
     private RustedFabricTouch() {
     }
 
+    /** Android-only UI branch used by the game patch without changing global PC services. */
+    public static boolean isMobileUi() {
+        return true;
+    }
+
+    /** The touch-facing game UI must use its Android branches inside the desktop JVM. */
+    public static boolean isAndroidUi() {
+        return true;
+    }
+
+    /** Keep desktop services intact while disabling mouse-only behavior in the game UI. */
+    public static boolean isPcUi() {
+        return false;
+    }
+
+    /** The embedded desktop process is PC for services, but not for game-world input layout. */
+    public static boolean isDesktopMousePlatform() {
+        return false;
+    }
+
     /** Called by the Android-only game patch at the start of each Slick update. */
     public static void apply(Object slickGame) {
         if (slickGame == null || unavailable) return;
@@ -88,12 +108,20 @@ public final class RustedFabricTouch {
             float[] pressures = (float[]) pointerPressures.get(state);
             int[] stateIds = (int[]) pointerIds.get(state);
             int[] reflectedIds = (int[]) getPointerIds.invoke(state);
+            // Despite the desktop-facing accessor name, MultiTouchState#getPointerIds()
+            // returns MultiTouchReflection's mouse-button-state array. The official Android
+            // controller fills that array from MotionEvent#getButtonState(), while the real
+            // pointer ids live in MultiTouchState.e. Publishing Android ids (usually 0 and 1)
+            // here makes finger 2 look like mouse button 1, which sends box selection through
+            // the desktop drag path and leaves its first corner at a stale click position.
+            for (int index = 0; index < reflectedIds.length; ++index) {
+                reflectedIds[index] = 0;
+            }
             for (int index = 0; index < count; ++index) {
                 stateXs[index] = XS[index] / scale;
                 stateYs[index] = YS[index] / scale;
                 pressures[index] = 1.0f;
                 stateIds[index] = IDS[index];
-                reflectedIds[index] = IDS[index];
             }
             pointerCount.setInt(state, count);
             currentDown.setBoolean(state, down);
