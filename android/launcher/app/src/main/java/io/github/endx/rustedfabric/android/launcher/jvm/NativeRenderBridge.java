@@ -54,6 +54,11 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeSendMouseButton(button, action);
     }
 
+    /** Queues a positioned, complete press/release tap for atomic Rocket UI delivery. */
+    public static boolean sendMouseClick(int button, float x, float y) {
+        return PACKAGED && nativeSendMouseClick(button, x, y);
+    }
+
     public static boolean sendKey(int key, int action) {
         return PACKAGED && nativeSendKey(key, action);
     }
@@ -96,6 +101,7 @@ public final class NativeRenderBridge {
     private static native boolean nativeSendScroll(double x, double y);
     private static native boolean nativeScrollUiByTouchDelta(float deltaY);
     private static native boolean nativeSendMouseButton(int button, int action);
+    private static native boolean nativeSendMouseClick(int button, float x, float y);
     private static native boolean nativeSendKey(int key, int action);
     private static native boolean nativeSendTouchFrame(float[] xs, float[] ys,
                                                        int[] pointerIds, int count,

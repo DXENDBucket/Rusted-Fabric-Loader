@@ -55,26 +55,17 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private static final int GLFW_KEY_ESCAPE = 256;
     private static final int GLFW_RELEASE = 0;
     private static final int GLFW_PRESS = 1;
-    private static final long TAP_RELEASE_DELAY_MILLIS = 120L;
     private static final long TWO_FINGER_TAP_MILLIS = 500L;
+    private static final long SURFACE_SETTLE_DELAY_MILLIS = 400L;
     private static final float TOUCH_SCROLL_PIXELS_PER_STEP = 32.0f;
     private final AtomicBoolean running = new AtomicBoolean();
-    private final Handler inputHandler = new Handler(Looper.getMainLooper());
-    private final Runnable releaseLeftTap = () -> {
-        NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
-        leftTapReleasePending = false;
-    };
-    private final Runnable releaseRightTap = () -> {
-        NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE);
-        rightTapReleasePending = false;
-    };
+    private final Handler surfaceHandler = new Handler(Looper.getMainLooper());
+    private final Runnable startAfterSurfaceSettles = this::startRenderer;
     private TextView status;
     private boolean gameProbe;
     private int touchSlop;
     private int primaryPointerId = -1;
     private boolean leftButtonDown;
-    private boolean leftTapReleasePending;
-    private boolean rightTapReleasePending;
     private boolean singleDragging;
     private boolean singleScrolling;
     private boolean multiTouch;
@@ -91,6 +82,8 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private final float[] gameTouchXs = new float[10];
     private final float[] gameTouchYs = new float[10];
     private final int[] gameTouchIds = new int[10];
+    private int settledSurfaceWidth;
+    private int settledSurfaceHeight;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -154,7 +147,6 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
-                releasePendingTapButtons();
                 resetTouchState();
                 gameTouchInput = !NativeRenderBridge.uiIsActive();
                 if (gameTouchInput) {
@@ -242,9 +234,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     float x = pointerCenterX(event);
                     float y = pointerCenterY(event);
                     NativeRenderBridge.sendPointer(x, y, -1);
-                    NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS);
-                    rightTapReleasePending = true;
-                    inputHandler.postDelayed(releaseRightTap, TAP_RELEASE_DELAY_MILLIS);
+                    NativeRenderBridge.sendMouseClick(GLFW_MOUSE_BUTTON_RIGHT, x, y);
                 }
                 multiGesture = true;
                 return true;
@@ -257,9 +247,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     if (leftButtonDown) {
                         NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
                     } else if (!singleScrolling) {
-                        NativeRenderBridge.sendMouseButton(0, GLFW_PRESS);
-                        leftTapReleasePending = true;
-                        inputHandler.postDelayed(releaseLeftTap, TAP_RELEASE_DELAY_MILLIS);
+                        NativeRenderBridge.sendMouseClick(0, x, y);
                     }
                 }
                 resetTouchState();
@@ -301,17 +289,6 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         multiGesture = false;
         previousSpan = 0.0f;
         pendingScroll = 0.0;
-    }
-
-    private void releasePendingTapButtons() {
-        if (leftTapReleasePending) {
-            inputHandler.removeCallbacks(releaseLeftTap);
-            releaseLeftTap.run();
-        }
-        if (rightTapReleasePending) {
-            inputHandler.removeCallbacks(releaseRightTap);
-            releaseRightTap.run();
-        }
     }
 
     private static float pointerCenterX(MotionEvent event) {
@@ -429,7 +406,21 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
             status.setText(getString(R.string.jvm_renderer_failed, safeMessage(failure)));
             return;
         }
+        if (running.get()) return;
+        // Full-screen and display-cutout insets can resize the Surface shortly after its first
+        // callback. Launching the JVM from that transient size leaves libRocket laid out against
+        // stale dimensions until the settings screen forces a reflow. Debounce callbacks and
+        // launch only after the Android surface has settled.
+        settledSurfaceWidth = width;
+        settledSurfaceHeight = height;
+        surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
+        surfaceHandler.postDelayed(startAfterSurfaceSettles, SURFACE_SETTLE_DELAY_MILLIS);
+    }
+
+    private void startRenderer() {
         if (!running.compareAndSet(false, true)) return;
+        int width = settledSurfaceWidth;
+        int height = settledSurfaceHeight;
         Thread renderer = new Thread(() -> {
             String detail;
             try {
@@ -494,28 +485,50 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
 
     private void prepareAndroidGameDefaults(Path desktopRoot) throws IOException {
         Path stateDirectory = desktopRoot.resolve(".rustedfabricloader");
-        Path marker = stateDirectory.resolve("android-ui-defaults-v1");
+        Path oldMarker = stateDirectory.resolve("android-ui-defaults-v1");
+        Path marker = stateDirectory.resolve("android-ui-defaults-v2");
         if (Files.isRegularFile(marker)) return;
         Files.createDirectories(stateDirectory);
         Path preferences = desktopRoot.resolve("preferences.ini");
         List<String> lines = Files.isRegularFile(preferences)
                 ? new ArrayList<>(Files.readAllLines(preferences, StandardCharsets.UTF_8))
                 : new ArrayList<>();
-        boolean densityFound = false;
+        setDefaultSetting(lines, "uiRenderScale", "2.5");
+        if (Files.isRegularFile(oldMarker)) {
+            // v1 accidentally changed renderDensity instead of the UI scaling field. Only undo
+            // that exact migration value; preserve any other density explicitly chosen by users.
+            replaceExactSetting(lines, "renderDensity", "2.5", "1.0");
+        }
+        Files.write(preferences, lines, StandardCharsets.UTF_8);
+        Files.write(marker, java.util.Collections.singletonList("uiRenderScale=2.5"),
+                StandardCharsets.UTF_8);
+    }
+
+    private static void setDefaultSetting(List<String> lines, String name, String value) {
+        String prefix = name + ":";
         for (int index = 0; index < lines.size(); index++) {
             String line = lines.get(index);
-            if (!line.startsWith("renderDensity:")) continue;
-            densityFound = true;
-            String value = line.substring("renderDensity:".length()).trim();
-            if (value.isEmpty() || "1".equals(value) || "1.0".equals(value)) {
-                lines.set(index, "renderDensity:2.5");
+            if (!line.startsWith(prefix)) continue;
+            String current = line.substring(prefix.length()).trim();
+            if (current.isEmpty() || "1".equals(current) || "1.0".equals(current)) {
+                lines.set(index, prefix + value);
             }
-            break;
+            return;
         }
-        if (!densityFound) lines.add("renderDensity:2.5");
-        Files.write(preferences, lines, StandardCharsets.UTF_8);
-        Files.write(marker, java.util.Collections.singletonList("renderDensity=2.5"),
-                StandardCharsets.UTF_8);
+        lines.add(prefix + value);
+    }
+
+    private static void replaceExactSetting(List<String> lines, String name,
+                                            String oldValue, String newValue) {
+        String prefix = name + ":";
+        for (int index = 0; index < lines.size(); index++) {
+            String line = lines.get(index);
+            if (line.startsWith(prefix)
+                    && oldValue.equals(line.substring(prefix.length()).trim())) {
+                lines.set(index, prefix + newValue);
+                return;
+            }
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -574,12 +587,13 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
         NativeRenderBridge.detachSurface();
     }
 
     @Override
     protected void onDestroy() {
-        releasePendingTapButtons();
+        surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
         NativeRenderBridge.detachSurface();
         super.onDestroy();
     }

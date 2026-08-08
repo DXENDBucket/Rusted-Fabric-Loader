@@ -11,6 +11,9 @@ input, and libRocket compatibility layers required by the desktop game.
 The application contains only Loader-owned code and reviewed third-party runtime components.
 `verifyNoGamePayload` rejects APKs that contain Rusted Warfare classes or game payloads.
 
+The active launcher has no compatibility path for Xposed, APK patching, or Android DEX mods.
+Those retired implementations are not compiled, packaged, detected, or offered in its interface.
+
 ## Build
 
 Requirements:

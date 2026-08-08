@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="rf_accent">#E58B3A</color>
+    <color name="rf_control">#34445A</color>
+    <color name="rf_button_text">#161A20</color>
+    <color name="rf_text_primary">#F4F6F9</color>
+    <color name="rf_text_secondary">#B7C1D0</color>
+    <color name="rf_text_muted">#8290A3</color>
+    <color name="rf_divider">#34445A</color>
+    <color name="rf_status_ready">#68D391</color>
+    <color name="rf_status_warning">#F6C36B</color>
+</resources>

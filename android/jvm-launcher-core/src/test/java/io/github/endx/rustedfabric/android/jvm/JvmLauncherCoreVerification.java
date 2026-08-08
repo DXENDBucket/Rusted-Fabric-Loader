@@ -112,7 +112,8 @@ public final class JvmLauncherCoreVerification {
             Path probedRuntime = createRuntime(temporary.resolve("probed-runtime"));
             Path probedNatives = Files.createDirectories(temporary.resolve("probed-natives"));
             for (String nativeName : new String[]{"librustedfabric_jvmhost.so", "liblwjgl.so",
-                    "libopenal.so", "librustedfabric_input.so", "librocketconnector.so"}) {
+                    "libopenal.so", "librustedfabric_renderbridge.so",
+                    "librocketConnector.so"}) {
                 Files.write(probedNatives.resolve(nativeName), new byte[]{0});
             }
             require(JvmRuntimeProbe.inspect(probedRuntime, probedNatives).isLaunchReady(),

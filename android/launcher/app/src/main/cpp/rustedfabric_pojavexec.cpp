@@ -48,7 +48,7 @@ std::atomic<uintptr_t> framebuffer_size_callback{0};
 std::atomic<uintptr_t> window_size_callback{0};
 std::atomic<bool> input_ready{false};
 
-enum class InputKind { Cursor, MouseButton, Scroll, Key };
+enum class InputKind { Cursor, MouseButton, MouseClick, Scroll, Key };
 struct InputEvent {
     InputKind kind;
     double first;
@@ -382,6 +382,24 @@ extern "C" __attribute__((visibility("default"))) void pojavPumpEvents(void* win
                 }
                 break;
             }
+            case InputKind::MouseClick: {
+                // A tap must complete within one poll. Menus can become event-driven after the
+                // press callback, so leaving its release for a later poll makes the control stay
+                // red and defers the click until the next finger-down.
+                CursorEnterCallback enter = cursor_enter_callback.load();
+                if (!cursor_entered && enter != nullptr) {
+                    enter(window, 1);
+                    cursor_entered = true;
+                }
+                CursorPosCallback cursor = cursor_pos_callback.load();
+                if (cursor != nullptr) cursor(window, event.first, event.second);
+                MouseButtonCallback callback = mouse_button_callback.load();
+                if (callback != nullptr) {
+                    callback(window, event.button, 1, event.modifiers);
+                    callback(window, event.button, 0, event.modifiers);
+                }
+                break;
+            }
             case InputKind::Scroll: {
                 ScrollCallback callback = scroll_callback.load();
                 if (callback != nullptr) callback(window, event.first, event.second);
@@ -409,6 +427,11 @@ rustedfabric_queue_cursor_pos(float x, float y) {
 extern "C" __attribute__((visibility("default"))) void
 rustedfabric_queue_mouse_button(int button, int action, int modifiers) {
     queue_input({InputKind::MouseButton, 0.0, 0.0, button, action, modifiers});
+}
+
+extern "C" __attribute__((visibility("default"))) void
+rustedfabric_queue_mouse_click(float x, float y, int button, int modifiers) {
+    queue_input({InputKind::MouseClick, x, y, button, 0, modifiers});
 }
 
 extern "C" __attribute__((visibility("default"))) void

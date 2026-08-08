@@ -28,8 +28,10 @@ public final class JvmRuntimeProbe {
                 || nativeFile(packagedNativeDirectory, "librustedfabric_jvmhost.so");
         boolean lwjgl2 = nativeFile(packagedNativeDirectory, "liblwjgl.so");
         boolean openAl = nativeFile(packagedNativeDirectory, "libopenal.so");
-        boolean jinput = nativeFile(packagedNativeDirectory, "librustedfabric_input.so");
-        boolean rocket = nativeFile(packagedNativeDirectory, "librocketconnector.so");
+        // Touch input is translated by the packaged render bridge; it is not a standalone JNI
+        // library. CMake preserves the historical capital C in librocketConnector.so.
+        boolean jinput = nativeFile(packagedNativeDirectory, "librustedfabric_renderbridge.so");
+        boolean rocket = nativeFile(packagedNativeDirectory, "librocketConnector.so");
         return new JvmBackendCapabilities(java17, host, lwjgl2, openAl, jinput, rocket);
     }
 

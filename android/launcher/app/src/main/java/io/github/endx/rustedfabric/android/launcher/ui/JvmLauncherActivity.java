@@ -7,12 +7,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,16 +30,19 @@ import io.github.endx.rustedfabric.android.launcher.jvm.JvmHostService;
 import io.github.endx.rustedfabric.android.launcher.jvm.JvmRuntimeImportService;
 import io.github.endx.rustedfabric.android.launcher.jvm.NativeJvmHost;
 
-/** Main Android launcher for the imported desktop game and its ARM64 JVM runtime. */
+/** User-facing launcher for the imported desktop game and its ARM64 JVM runtime. */
 public final class JvmLauncherActivity extends Activity {
     private static final int REQUEST_GAME_ARCHIVE = 2001;
     private static final int REQUEST_GAME_TREE = 2002;
     private static final int REQUEST_JAVA_RUNTIME = 2003;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private TextView readinessBadge;
+    private TextView readinessMessage;
     private TextView gameStatus;
     private TextView runtimeStatus;
     private TextView operationStatus;
+    private TextView diagnosticStatus;
     private ProgressBar progress;
     private Button importButton;
     private Button directoryButton;
@@ -47,20 +50,25 @@ public final class JvmLauncherActivity extends Activity {
     private Button smokeButton;
     private Button rendererButton;
     private Button launchButton;
+    private Button advancedButton;
+    private LinearLayout advancedPanel;
     private boolean busy;
     private boolean smokeReady;
     private boolean gameProbeReady;
+    private boolean advancedVisible;
     private boolean receiverRegistered;
+
     private final BroadcastReceiver smokeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (!JvmHostService.ACTION_RESULT.equals(intent.getAction())) return;
             boolean succeeded = intent.getBooleanExtra(JvmHostService.EXTRA_SUCCEEDED, false);
             String detail = intent.getStringExtra(JvmHostService.EXTRA_DETAIL);
-            operationStatus.setText(getString(succeeded
+            String message = getString(succeeded
                     ? R.string.jvm_smoke_succeeded : R.string.jvm_smoke_failed,
-                    detail == null ? "" : detail));
-            setBusy(false, operationStatus.getText().toString());
+                    detail == null ? "" : detail);
+            diagnosticStatus.setText(message);
+            setBusy(false, message);
             refresh();
         }
     };
@@ -68,45 +76,71 @@ public final class JvmLauncherActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        setContentView(createContent());
+        setContentView(R.layout.activity_jvm_launcher);
+        bindViews();
+        bindActions();
+        showAdvanced(false);
         refresh();
+    }
+
+    private void bindViews() {
+        readinessBadge = findViewById(R.id.readiness_badge);
+        readinessMessage = findViewById(R.id.readiness_message);
+        gameStatus = findViewById(R.id.game_status);
+        runtimeStatus = findViewById(R.id.runtime_status);
+        operationStatus = findViewById(R.id.operation_status);
+        diagnosticStatus = findViewById(R.id.diagnostic_status);
+        progress = findViewById(R.id.operation_progress);
+        importButton = findViewById(R.id.import_game_button);
+        directoryButton = findViewById(R.id.import_directory_button);
+        runtimeButton = findViewById(R.id.import_runtime_button);
+        smokeButton = findViewById(R.id.test_runtime_button);
+        rendererButton = findViewById(R.id.test_renderer_button);
+        launchButton = findViewById(R.id.launch_button);
+        advancedButton = findViewById(R.id.advanced_button);
+        advancedPanel = findViewById(R.id.advanced_panel);
+    }
+
+    private void bindActions() {
+        importButton.setOnClickListener(ignored -> chooseDesktopArchive());
+        directoryButton.setOnClickListener(ignored -> chooseDesktopDirectory());
+        runtimeButton.setOnClickListener(ignored -> chooseJavaRuntime());
+        smokeButton.setOnClickListener(ignored -> testJavaRuntime());
+        rendererButton.setOnClickListener(ignored ->
+                startActivity(new Intent(this, JvmRenderActivity.class)));
+        advancedButton.setOnClickListener(ignored -> showAdvanced(!advancedVisible));
+        launchButton.setOnClickListener(ignored -> launchGame());
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null && data.getData() != null
-                && (requestCode == REQUEST_GAME_ARCHIVE || requestCode == REQUEST_GAME_TREE
-                || requestCode == REQUEST_JAVA_RUNTIME)) {
-            Uri source = data.getData();
-            if ((data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
-                try {
-                    getContentResolver().takePersistableUriPermission(source,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                } catch (SecurityException ignored) {
-                    // The import happens immediately; persisted access is only an optimization.
-                }
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (requestCode != REQUEST_GAME_ARCHIVE && requestCode != REQUEST_GAME_TREE
+                && requestCode != REQUEST_JAVA_RUNTIME) return;
+
+        Uri source = data.getData();
+        if ((data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
+            try {
+                getContentResolver().takePersistableUriPermission(source,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (SecurityException ignored) {
+                // Import is immediate; persisted access is only an optimization.
             }
-            if (requestCode == REQUEST_GAME_ARCHIVE) importDesktopArchive(source);
-            else if (requestCode == REQUEST_GAME_TREE) importDesktopTree(source);
-            else importJavaRuntime(source);
         }
+        if (requestCode == REQUEST_GAME_ARCHIVE) importDesktopGame(source, true);
+        else if (requestCode == REQUEST_GAME_TREE) importDesktopGame(source, false);
+        else importJavaRuntime(source);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        IntentFilter filter = new IntentFilter(JvmHostService.ACTION_RESULT);
-        registerReceiver(smokeReceiver, filter, RECEIVER_NOT_EXPORTED);
+        registerReceiver(smokeReceiver, new IntentFilter(JvmHostService.ACTION_RESULT),
+                RECEIVER_NOT_EXPORTED);
         receiverRegistered = true;
-        String lastStatus = JvmHostService.lastStatus(this);
-        if (!lastStatus.isEmpty()) {
-            operationStatus.setText(getString(R.string.jvm_smoke_last, lastStatus));
-        }
-        String rendererStatus = JvmRenderActivity.lastStatus(this);
-        if (!rendererStatus.isEmpty()) {
-            operationStatus.setText(getString(R.string.jvm_renderer_last, rendererStatus));
-        }
+        refreshDiagnostics();
+        refresh();
     }
 
     @Override
@@ -124,74 +158,36 @@ public final class JvmLauncherActivity extends Activity {
         super.onDestroy();
     }
 
-    private View createContent() {
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        int padding = dp(20);
-        content.setPadding(padding, padding, padding, padding);
-        scroll.addView(content);
+    private void launchGame() {
+        if (!gameProbeReady) {
+            Toast.makeText(this, R.string.jvm_setup_required, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent launch = new Intent(this, JvmRenderActivity.class);
+        launch.putExtra(JvmRenderActivity.EXTRA_GAME_PROBE, true);
+        startActivity(launch);
+    }
 
-        TextView title = text(getString(R.string.jvm_title), 24);
-        content.addView(title);
-        TextView explanation = text(getString(R.string.jvm_boundary), 14);
-        explanation.setPadding(0, dp(8), 0, dp(16));
-        content.addView(explanation);
+    private void showAdvanced(boolean visible) {
+        advancedVisible = visible;
+        advancedPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
+        advancedButton.setText(visible
+                ? R.string.jvm_hide_advanced : R.string.jvm_show_advanced);
+    }
 
-        gameStatus = text(getString(R.string.jvm_game_checking), 16);
-        content.addView(gameStatus);
-        runtimeStatus = text(getString(R.string.jvm_runtime_checking), 14);
-        runtimeStatus.setPadding(0, dp(8), 0, dp(8));
-        content.addView(runtimeStatus);
-        operationStatus = text("", 13);
-        content.addView(operationStatus);
-
-        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        progress.setIndeterminate(true);
-        progress.setVisibility(View.GONE);
-        content.addView(progress, matchWidth());
-
-        importButton = new Button(this);
-        importButton.setText(R.string.jvm_import_archive);
-        importButton.setOnClickListener(ignored -> chooseDesktopArchive());
-        content.addView(importButton, matchWidth());
-
-        directoryButton = new Button(this);
-        directoryButton.setText(R.string.jvm_import_directory);
-        directoryButton.setOnClickListener(ignored -> chooseDesktopDirectory());
-        content.addView(directoryButton, matchWidth());
-
-        runtimeButton = new Button(this);
-        runtimeButton.setText(R.string.jvm_import_runtime);
-        runtimeButton.setOnClickListener(ignored -> chooseJavaRuntime());
-        content.addView(runtimeButton, matchWidth());
-
-        smokeButton = new Button(this);
-        smokeButton.setText(R.string.jvm_test_runtime);
-        smokeButton.setEnabled(false);
-        smokeButton.setOnClickListener(ignored -> testJavaRuntime());
-        content.addView(smokeButton, matchWidth());
-
-        rendererButton = new Button(this);
-        rendererButton.setText(R.string.jvm_test_renderer);
-        rendererButton.setOnClickListener(ignored ->
-                startActivity(new Intent(this, JvmRenderActivity.class)));
-        content.addView(rendererButton, matchWidth());
-
-        launchButton = new Button(this);
-        launchButton.setText(R.string.jvm_launch_game);
-        launchButton.setEnabled(false);
-        launchButton.setOnClickListener(ignored -> {
-            if (!gameProbeReady) {
-                Toast.makeText(this, R.string.jvm_runtime_not_ready, Toast.LENGTH_LONG).show();
-                return;
-            }
-            Intent launch = new Intent(this, JvmRenderActivity.class);
-            launch.putExtra(JvmRenderActivity.EXTRA_GAME_PROBE, true);
-            startActivity(launch);
-        });
-        content.addView(launchButton, matchWidth());
-        return scroll;
+    private void refreshDiagnostics() {
+        String runtimeResult = JvmHostService.lastStatus(this);
+        String rendererResult = JvmRenderActivity.lastStatus(this);
+        if (runtimeResult.isEmpty() && rendererResult.isEmpty()) {
+            diagnosticStatus.setText(R.string.jvm_no_diagnostics);
+        } else if (runtimeResult.isEmpty()) {
+            diagnosticStatus.setText(getString(R.string.jvm_renderer_last, rendererResult));
+        } else if (rendererResult.isEmpty()) {
+            diagnosticStatus.setText(getString(R.string.jvm_smoke_last, runtimeResult));
+        } else {
+            diagnosticStatus.setText(getString(R.string.jvm_diagnostics_last,
+                    runtimeResult, rendererResult));
+        }
     }
 
     private void chooseDesktopArchive() {
@@ -227,36 +223,24 @@ public final class JvmLauncherActivity extends Activity {
         startActivityForResult(picker, REQUEST_JAVA_RUNTIME);
     }
 
-    private void importDesktopArchive(Uri archive) {
-        importDesktopGame(archive, true);
-    }
-
-    private void importDesktopTree(Uri tree) {
-        importDesktopGame(tree, false);
-    }
-
     private void importDesktopGame(Uri source, boolean archive) {
         setBusy(true, getString(R.string.jvm_import_starting));
         worker.execute(() -> {
             try {
-                DesktopGameImportService.ProgressListener progressListener =
-                        (files, bytes, current) -> runOnUiThread(() -> operationStatus.setText(
+                DesktopGameImportService.ProgressListener listener =
+                        (files, bytes, current) -> runOnUiThread(() -> showOperation(
                                 getString(R.string.jvm_import_progress, files,
                                         Formatter.formatFileSize(this, bytes), current)));
                 DesktopGameImportService.Result result = archive
-                        ? DesktopGameImportService.importArchive(this, source, progressListener)
-                        : DesktopGameImportService.importTree(this, source, progressListener);
+                        ? DesktopGameImportService.importArchive(this, source, listener)
+                        : DesktopGameImportService.importTree(this, source, listener);
                 runOnUiThread(() -> {
                     setBusy(false, getString(R.string.jvm_import_complete, result.files(),
                             Formatter.formatFileSize(this, result.bytes())));
                     refresh();
                 });
             } catch (Exception failure) {
-                runOnUiThread(() -> {
-                    setBusy(false, getString(R.string.jvm_import_failed,
-                            safeMessage(failure)));
-                    Toast.makeText(this, operationStatus.getText(), Toast.LENGTH_LONG).show();
-                });
+                runOnUiThread(() -> showFailure(R.string.jvm_import_failed, failure));
             }
         });
     }
@@ -266,9 +250,9 @@ public final class JvmLauncherActivity extends Activity {
         worker.execute(() -> {
             try {
                 JvmRuntimeImportService.Result result = JvmRuntimeImportService.importArchive(
-                        this, source, (files, bytes, current) -> runOnUiThread(() ->
-                                operationStatus.setText(getString(R.string.jvm_import_progress,
-                                        files, Formatter.formatFileSize(this, bytes), current))));
+                        this, source, (files, bytes, current) -> runOnUiThread(() -> showOperation(
+                                getString(R.string.jvm_import_progress, files,
+                                        Formatter.formatFileSize(this, bytes), current))));
                 runOnUiThread(() -> {
                     setBusy(false, getString(R.string.jvm_runtime_import_complete,
                             result.files(), Formatter.formatFileSize(this, result.bytes()),
@@ -276,11 +260,7 @@ public final class JvmLauncherActivity extends Activity {
                     refresh();
                 });
             } catch (Exception failure) {
-                runOnUiThread(() -> {
-                    setBusy(false, getString(R.string.jvm_runtime_import_failed,
-                            safeMessage(failure)));
-                    Toast.makeText(this, operationStatus.getText(), Toast.LENGTH_LONG).show();
-                });
+                runOnUiThread(() -> showFailure(R.string.jvm_runtime_import_failed, failure));
             }
         });
     }
@@ -296,53 +276,75 @@ public final class JvmLauncherActivity extends Activity {
         }
     }
 
+    private void showFailure(int stringResource, Throwable failure) {
+        String message = getString(stringResource, safeMessage(failure));
+        setBusy(false, message);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
     private void refresh() {
-        File root = DesktopGameImportService.importedRoot(this);
-        DesktopGameInspection inspection = DesktopGameLayout.inspect(root.toPath());
-        gameStatus.setText(inspection.isImportable()
-                ? getString(R.string.jvm_game_ready)
-                : getString(R.string.jvm_game_missing));
+        File gameRoot = DesktopGameImportService.importedRoot(this);
+        DesktopGameInspection inspection = DesktopGameLayout.inspect(gameRoot.toPath());
+        boolean gameReady = inspection.isImportable();
+
         File runtimeHome = new File(new File(getFilesDir(), "desktop-jvm"), "runtime");
         File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
         JvmBackendCapabilities capabilities = JvmRuntimeProbe.inspect(
                 runtimeHome.toPath(), nativeDirectory.toPath(), NativeJvmHost.isPackaged());
-        String missing = android.text.TextUtils.join(", ", capabilities.missing());
         String runtimeIssue = JvmRuntimeProbe.runtimeIssue(runtimeHome.toPath());
-        runtimeStatus.setText(runtimeIssue.isEmpty()
-                ? getString(R.string.jvm_runtime_missing, missing)
-                : getString(R.string.jvm_runtime_missing_detail, missing, runtimeIssue));
+        boolean runtimeReady = runtimeIssue.isEmpty()
+                && capabilities.hasJava17() && capabilities.hasJvmHost()
+                && capabilities.hasLwjgl2();
+
+        setComponentState(gameStatus, gameReady,
+                R.string.jvm_game_ready, R.string.jvm_game_missing);
+        if (runtimeReady) {
+            setComponentState(runtimeStatus, true,
+                    R.string.jvm_runtime_ready, R.string.jvm_runtime_ready);
+        } else {
+            String missing = TextUtils.join(", ", capabilities.missing());
+            runtimeStatus.setText(runtimeIssue.isEmpty()
+                    ? getString(R.string.jvm_runtime_missing, missing)
+                    : getString(R.string.jvm_runtime_missing_detail, missing, runtimeIssue));
+            runtimeStatus.setTextColor(getColor(R.color.rf_status_warning));
+        }
+
         smokeReady = capabilities.hasJava17() && capabilities.hasJvmHost();
-        gameProbeReady = inspection.isImportable() && smokeReady && capabilities.hasLwjgl2();
-        smokeButton.setEnabled(!busy && smokeReady);
+        gameProbeReady = gameReady && runtimeReady;
+        readinessBadge.setText(gameProbeReady
+                ? R.string.jvm_ready_badge : R.string.jvm_setup_badge);
+        readinessBadge.setTextColor(getColor(gameProbeReady
+                ? R.color.rf_status_ready : R.color.rf_status_warning));
+        readinessMessage.setText(gameProbeReady
+                ? R.string.jvm_ready_message : R.string.jvm_setup_message);
         launchButton.setEnabled(!busy && gameProbeReady);
+        launchButton.setText(gameProbeReady
+                ? R.string.jvm_launch_game : R.string.jvm_launch_unavailable);
+        smokeButton.setEnabled(!busy && smokeReady);
+    }
+
+    private void setComponentState(TextView view, boolean ready, int readyText, int missingText) {
+        view.setText(ready ? readyText : missingText);
+        view.setTextColor(getColor(ready ? R.color.rf_status_ready : R.color.rf_status_warning));
     }
 
     private void setBusy(boolean busy, String message) {
         this.busy = busy;
-        operationStatus.setText(message);
+        showOperation(message);
         progress.setVisibility(busy ? View.VISIBLE : View.GONE);
         importButton.setEnabled(!busy);
         directoryButton.setEnabled(!busy);
         runtimeButton.setEnabled(!busy);
         rendererButton.setEnabled(!busy);
+        advancedButton.setEnabled(!busy);
         smokeButton.setEnabled(!busy && smokeReady);
         launchButton.setEnabled(!busy && gameProbeReady);
     }
 
-    private TextView text(String value, int sp) {
-        TextView view = new TextView(this);
-        view.setText(value);
-        view.setTextSize(sp);
-        return view;
-    }
-
-    private LinearLayout.LayoutParams matchWidth() {
-        return new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+    private void showOperation(String message) {
+        operationStatus.setText(message);
+        operationStatus.setVisibility(message == null || message.isEmpty()
+                ? View.GONE : View.VISIBLE);
     }
 
     private static String safeMessage(Throwable failure) {

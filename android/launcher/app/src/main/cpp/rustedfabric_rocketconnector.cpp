@@ -19,7 +19,9 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdint>
+#include <deque>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -34,6 +36,42 @@ std::atomic<bool> rocket_hover_scrollable{false};
 std::atomic<bool> rocket_hover_prefers_drag{false};
 std::atomic<bool> rocket_document_active{false};
 std::atomic<int> rocket_touch_scroll_millipixels{0};
+std::mutex rocket_touch_click_mutex;
+struct TouchClick {
+    int button;
+    int updates_remaining;
+};
+std::deque<TouchClick> rocket_touch_clicks;
+
+void apply_touch_clicks() {
+    if (rocket_context == nullptr) {
+        std::lock_guard<std::mutex> lock(rocket_touch_click_mutex);
+        rocket_touch_clicks.clear();
+        return;
+    }
+    std::deque<TouchClick> clicks;
+    {
+        std::lock_guard<std::mutex> lock(rocket_touch_click_mutex);
+        const size_t count = rocket_touch_clicks.size();
+        for (size_t index = 0; index < count; ++index) {
+            TouchClick click = rocket_touch_clicks.front();
+            rocket_touch_clicks.pop_front();
+            if (click.updates_remaining > 0) {
+                --click.updates_remaining;
+                rocket_touch_clicks.push_back(click);
+            } else {
+                clicks.push_back(click);
+            }
+        }
+    }
+    for (const TouchClick& click : clicks) {
+        // The desktop cursor event performs the game's UI-scale conversion. Give it a full
+        // update to establish Rocket's hover element, then generate the semantic click on the
+        // Rocket thread. This also works for modal menus that stop polling after mouse-down.
+        Rocket::Core::Element* hover = rocket_context->GetHoverElement();
+        if (click.button == 0 && hover != nullptr) hover->Click();
+    }
+}
 
 void apply_touch_scroll() {
     if (rocket_context == nullptr) {
@@ -574,6 +612,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_update(JNIEnv*, jobject) {
         rocket_touch_scroll_millipixels.store(0, std::memory_order_relaxed);
         return;
     }
+    apply_touch_clicks();
     rocket_context->Update();
     apply_touch_scroll();
     bool active = false;
@@ -690,6 +729,17 @@ extern "C" bool rustedfabric_rocket_queue_touch_scroll(float delta_y) {
     rocket_touch_scroll_millipixels.fetch_add(
             static_cast<int>(std::lround(limited * 1000.0f)),
             std::memory_order_relaxed);
+    return true;
+}
+
+extern "C" bool rustedfabric_rocket_queue_touch_click(int button) {
+    // JvmRenderActivity already distinguishes Rocket UI from the game field. Accept the
+    // event unconditionally here: the document-active flag is refreshed on Rocket's next
+    // update and can otherwise be one frame stale while a modal is being opened.
+    if (button != 0) return false;
+    std::lock_guard<std::mutex> lock(rocket_touch_click_mutex);
+    if (rocket_touch_clicks.size() >= 32) rocket_touch_clicks.pop_front();
+    rocket_touch_clicks.push_back({button, 1});
     return true;
 }
 

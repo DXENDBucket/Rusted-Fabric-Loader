@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.launcher'
         minSdk 27
         targetSdk 35
-        versionCode 9
-        versionName '0.10.0-jvm'
+        versionCode 10
+        versionName '0.11.0-preview'
 
         ndk {
             abiFilters 'arm64-v8a'
