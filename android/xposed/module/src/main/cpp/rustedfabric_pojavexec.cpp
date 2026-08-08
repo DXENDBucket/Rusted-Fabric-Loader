@@ -334,7 +334,20 @@ extern "C" __attribute__((visibility("default"))) void pojavPumpEvents(void* win
     std::deque<InputEvent> pending;
     {
         std::lock_guard<std::mutex> lock(input_mutex);
-        pending.swap(input_events);
+        bool mouse_transition_seen = false;
+        bool key_transition_seen = false;
+        auto event = input_events.begin();
+        while (event != input_events.end()) {
+            const bool repeated_mouse_transition =
+                    event->kind == InputKind::MouseButton && mouse_transition_seen;
+            const bool repeated_key_transition =
+                    event->kind == InputKind::Key && key_transition_seen;
+            if (repeated_mouse_transition || repeated_key_transition) break;
+            if (event->kind == InputKind::MouseButton) mouse_transition_seen = true;
+            if (event->kind == InputKind::Key) key_transition_seen = true;
+            pending.push_back(*event);
+            event = input_events.erase(event);
+        }
     }
     for (const InputEvent& event : pending) {
         switch (event.kind) {

@@ -53,6 +53,16 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeSendKey(key, action);
     }
 
+    /** True when the Rocket element below the cursor has a vertically scrollable ancestor. */
+    public static boolean uiWantsScroll() {
+        return PACKAGED && nativeUiWantsScroll();
+    }
+
+    /** True when the Rocket element below the cursor is a slider or scrollbar control. */
+    public static boolean uiPrefersDrag() {
+        return PACKAGED && nativeUiPrefersDrag();
+    }
+
     public static String smokeTest(int width, int height) {
         if (!PACKAGED) return "Android EGL bridge is not packaged for this ABI";
         return nativeSmokeTest(width, height);
@@ -64,5 +74,7 @@ public final class NativeRenderBridge {
     private static native boolean nativeSendScroll(double x, double y);
     private static native boolean nativeSendMouseButton(int button, int action);
     private static native boolean nativeSendKey(int key, int action);
+    private static native boolean nativeUiWantsScroll();
+    private static native boolean nativeUiPrefersDrag();
     private static native String nativeSmokeTest(int width, int height);
 }

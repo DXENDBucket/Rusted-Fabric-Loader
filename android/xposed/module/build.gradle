@@ -234,6 +234,7 @@ tasks.register('prepareRocketSources') {
     group = 'build setup'
     description = 'Fetches SHA-256-pinned libRocket and FreeType source used by the ARM64 UI bridge.'
     inputs.property('libRocketCommit', 'bd47356a678ef61b38f4b34dda8e7840bfee0983')
+    inputs.property('libRocketAbsoluteInsetsPatch', 'v1')
     inputs.property('freetypeVersion', '2.13.3')
     outputs.dir(generatedRocketSources)
     doLast {
@@ -289,6 +290,41 @@ tasks.register('prepareRocketSources') {
             if (extraction.waitFor() != 0) {
                 project.delete(destination)
                 throw new GradleException("Could not extract ${source.name} source")
+            }
+            if (source.name == 'libRocket') {
+                File layoutEngine = new File(destination, 'Source/Core/LayoutEngine.cpp')
+                List<String> lines = layoutEngine.readLines('UTF-8')
+                int autoHeight = lines.findIndexOf {
+                    it.contains('// If the height is set to auto, then any margins also set to auto')
+                }
+                if (autoHeight < 0) {
+                    throw new GradleException('Pinned libRocket automatic height block was not found')
+                }
+                lines.addAll(autoHeight, [
+                        '\t// CSS 2.1: an absolutely-positioned auto-height box with both vertical',
+                        '\t// insets specified fills the remaining height of its containing block.',
+                        '\t// This is required by the game UI scroll panels (top: 0; bottom: 30px).',
+                        '\tif (height_auto && (element->GetPosition() == POSITION_ABSOLUTE ||',
+                        '\t\telement->GetPosition() == POSITION_FIXED))',
+                        '\t{',
+                        '\t\tconst Property* top = element->GetLocalProperty(TOP);',
+                        '\t\tconst Property* bottom = element->GetLocalProperty(BOTTOM);',
+                        '\t\tif (top != NULL && top->unit != Property::KEYWORD &&',
+                        '\t\t\tbottom != NULL && bottom->unit != Property::KEYWORD)',
+                        '\t\t{',
+                        '\t\t\tcontent_area.y = containing_block_height',
+                        '\t\t\t\t- element->ResolveProperty(top, containing_block_height)',
+                        '\t\t\t\t- element->ResolveProperty(bottom, containing_block_height)',
+                        '\t\t\t\t- box.GetCumulativeEdge(Box::CONTENT, Box::TOP)',
+                        '\t\t\t\t- box.GetCumulativeEdge(Box::CONTENT, Box::BOTTOM);',
+                        '\t\t\tcontent_area.y = Math::Max(0.0f, content_area.y);',
+                        '\t\t\theight_auto = false;',
+                        '\t\t}',
+                        '\t}',
+                        ''
+                ])
+                layoutEngine.setText(
+                        lines.join(System.lineSeparator()) + System.lineSeparator(), 'UTF-8')
             }
         }
     }

@@ -10,10 +10,13 @@
 #include <Rocket/Core/EventListenerInstancer.h>
 #include <Rocket/Core/Factory.h>
 #include <Rocket/Core/FontDatabase.h>
+#include <Rocket/Core/StyleSheetKeywords.h>
 #include <Rocket/Controls.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdint>
 #include <memory>
@@ -26,32 +29,48 @@ constexpr const char* kTag = "RustedFabricRocket";
 JavaVM* java_vm = nullptr;
 jobject java_rocket = nullptr;
 Rocket::Core::Context* rocket_context = nullptr;
-int rocket_width = 1;
-int rocket_height = 1;
 const auto start_time = std::chrono::steady_clock::now();
+std::atomic<bool> rocket_hover_scrollable{false};
+std::atomic<bool> rocket_hover_prefers_drag{false};
 
+// Slick's setWorldClip uses the fixed-function GL_CLIP_PLANE API, which GL4ES
+// cannot reliably carry through the GLES renderer. Convert Rocket's logical
+// clip rectangle with the active matrices and use a real framebuffer scissor.
 struct Gl4esScissor {
     using Toggle = void (*)(GLenum);
     using Set = void (*)(GLint, GLint, GLsizei, GLsizei);
+    using GetFloat = void (*)(GLenum, GLfloat*);
+    using GetInt = void (*)(GLenum, GLint*);
 
     void* library = nullptr;
     Toggle enable = nullptr;
     Toggle disable = nullptr;
     Set set = nullptr;
+    GetFloat get_float = nullptr;
+    GetInt get_int = nullptr;
 
     bool load() {
-        if (library != nullptr) return enable != nullptr && disable != nullptr && set != nullptr;
+        if (library != nullptr) {
+            return enable != nullptr && disable != nullptr && set != nullptr
+                    && get_float != nullptr && get_int != nullptr;
+        }
         library = dlopen("libgl4es_114.so", RTLD_NOW | RTLD_NOLOAD);
         if (library == nullptr) library = dlopen("libgl4es_114.so", RTLD_NOW);
         if (library == nullptr) return false;
         enable = reinterpret_cast<Toggle>(dlsym(library, "glEnable"));
         disable = reinterpret_cast<Toggle>(dlsym(library, "glDisable"));
         set = reinterpret_cast<Set>(dlsym(library, "glScissor"));
-        return enable != nullptr && disable != nullptr && set != nullptr;
+        get_float = reinterpret_cast<GetFloat>(dlsym(library, "glGetFloatv"));
+        get_int = reinterpret_cast<GetInt>(dlsym(library, "glGetIntegerv"));
+        return enable != nullptr && disable != nullptr && set != nullptr
+                && get_float != nullptr && get_int != nullptr;
     }
 };
 
 Gl4esScissor gl4es_scissor;
+
+constexpr GLenum kGlModelviewMatrix = 0x0BA6;
+constexpr GLenum kGlProjectionMatrix = 0x0BA7;
 
 JNIEnv* current_env() {
     if (java_vm == nullptr) return nullptr;
@@ -210,6 +229,11 @@ public:
         jclass type = env->GetObjectClass(java_rocket);
         jmethodID method = env->GetMethodID(type, "RenderGeometryPossiblyCompiled",
                 "([F[F[I[IIFFLcom/LibRocket$CompiledGeometry;)V");
+        // Slick can change OpenGL state while rendering a geometry batch. Re-apply the
+        // logical Rocket clip through its Java renderer so Slick performs the same
+        // scaling/translation that it applies to the geometry itself.
+        apply_java_scissor_state();
+        apply_framebuffer_scissor_state();
         env->CallVoidMethod(java_rocket, method, xy, uv, colors, index_array,
                             static_cast<jint>(texture), translation.x, translation.y, nullptr);
         env->DeleteLocalRef(type);
@@ -221,17 +245,7 @@ public:
 
     void EnableScissorRegion(bool enable) override {
         scissor_enabled_ = enable;
-        if (!gl4es_scissor.load()) {
-            __android_log_print(ANDROID_LOG_ERROR, kTag,
-                    "Unable to resolve GL4ES scissor functions");
-            return;
-        }
-        if (enable) {
-            gl4es_scissor.enable(GL_SCISSOR_TEST);
-            apply_scissor();
-        } else {
-            gl4es_scissor.disable(GL_SCISSOR_TEST);
-        }
+        call_java_scissor_enable(enable);
     }
 
     void SetScissorRegion(int x, int y, int width, int height) override {
@@ -239,7 +253,7 @@ public:
         scissor_y_ = y;
         scissor_width_ = width;
         scissor_height_ = height;
-        if (scissor_enabled_ && gl4es_scissor.load()) apply_scissor();
+        call_java_scissor_region(x, y, width, height);
     }
 
     bool LoadTexture(Rocket::Core::TextureHandle& texture,
@@ -308,14 +322,128 @@ public:
     }
 
 private:
-    void apply_scissor() const {
-        const int x = std::max(scissor_x_, 0);
-        const int y = std::max(scissor_y_, 0);
-        const int right = std::min(scissor_x_ + scissor_width_, rocket_width);
-        const int bottom = std::min(scissor_y_ + scissor_height_, rocket_height);
-        const int width = std::max(right - x, 0);
-        const int height = std::max(bottom - y, 0);
-        gl4es_scissor.set(x, std::max(rocket_height - bottom, 0), width, height);
+    void call_java_scissor_enable(bool enable) const {
+        JNIEnv* env = current_env();
+        if (env == nullptr || java_rocket == nullptr) return;
+        jclass type = env->GetObjectClass(java_rocket);
+        jmethodID method = env->GetMethodID(type, "EnableScissorRegion", "(Z)V");
+        if (method != nullptr) {
+            env->CallVoidMethod(java_rocket, method, static_cast<jboolean>(enable));
+        }
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        env->DeleteLocalRef(type);
+    }
+
+    void call_java_scissor_region(int x, int y, int width, int height) const {
+        JNIEnv* env = current_env();
+        if (env == nullptr || java_rocket == nullptr) return;
+        jclass type = env->GetObjectClass(java_rocket);
+        jmethodID method = env->GetMethodID(type, "SetScissorRegion", "(IIII)V");
+        if (method != nullptr) env->CallVoidMethod(java_rocket, method, x, y, width, height);
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        env->DeleteLocalRef(type);
+    }
+
+    void apply_java_scissor_state() const {
+        if (scissor_enabled_) {
+            call_java_scissor_region(
+                    scissor_x_, scissor_y_, scissor_width_, scissor_height_);
+        } else {
+            call_java_scissor_enable(false);
+        }
+    }
+
+    static void transform_point(const GLfloat* matrix, const float* input, float* output) {
+        for (int row = 0; row < 4; ++row) {
+            output[row] = matrix[row] * input[0]
+                    + matrix[4 + row] * input[1]
+                    + matrix[8 + row] * input[2]
+                    + matrix[12 + row] * input[3];
+        }
+    }
+
+    void apply_framebuffer_scissor_state() const {
+        if (!gl4es_scissor.load()) return;
+        if (!scissor_enabled_) {
+            gl4es_scissor.disable(GL_SCISSOR_TEST);
+            call_java_framebuffer_clip(false, 0, 0, 0, 0);
+            return;
+        }
+
+        GLfloat modelview[16];
+        GLfloat projection[16];
+        GLint viewport[4];
+        gl4es_scissor.get_float(kGlModelviewMatrix, modelview);
+        gl4es_scissor.get_float(kGlProjectionMatrix, projection);
+        gl4es_scissor.get_int(GL_VIEWPORT, viewport);
+
+        const float left = static_cast<float>(scissor_x_);
+        const float top = static_cast<float>(scissor_y_);
+        const float right = static_cast<float>(scissor_x_ + scissor_width_);
+        const float bottom = static_cast<float>(scissor_y_ + scissor_height_);
+        const float points[4][4] = {
+                {left, top, 0.0f, 1.0f},
+                {right, top, 0.0f, 1.0f},
+                {left, bottom, 0.0f, 1.0f},
+                {right, bottom, 0.0f, 1.0f}
+        };
+        float min_x = static_cast<float>(viewport[0] + viewport[2]);
+        float min_y = static_cast<float>(viewport[1] + viewport[3]);
+        float max_x = static_cast<float>(viewport[0]);
+        float max_y = static_cast<float>(viewport[1]);
+        for (const auto& point : points) {
+            float eye[4];
+            float clip[4];
+            transform_point(modelview, point, eye);
+            transform_point(projection, eye, clip);
+            if (clip[3] == 0.0f) continue;
+            const float window_x = viewport[0]
+                    + (clip[0] / clip[3] + 1.0f) * viewport[2] * 0.5f;
+            const float window_y = viewport[1]
+                    + (clip[1] / clip[3] + 1.0f) * viewport[3] * 0.5f;
+            min_x = std::min(min_x, window_x);
+            min_y = std::min(min_y, window_y);
+            max_x = std::max(max_x, window_x);
+            max_y = std::max(max_y, window_y);
+        }
+
+        const int x = std::max(viewport[0], static_cast<int>(std::floor(min_x)));
+        const int y = std::max(viewport[1], static_cast<int>(std::floor(min_y)));
+        const int right_px = std::min(
+                viewport[0] + viewport[2], static_cast<int>(std::ceil(max_x)));
+        const int top_px = std::min(
+                viewport[1] + viewport[3], static_cast<int>(std::ceil(max_y)));
+        const int width = std::max(right_px - x, 0);
+        const int height = std::max(top_px - y, 0);
+        gl4es_scissor.enable(GL_SCISSOR_TEST);
+        gl4es_scissor.set(x, y, width, height);
+        call_java_framebuffer_clip(
+                true, x, viewport[1] + viewport[3] - top_px, width, height);
+    }
+
+    void call_java_framebuffer_clip(
+            bool enable, int x, int y, int width, int height) const {
+        JNIEnv* env = current_env();
+        if (env == nullptr || java_rocket == nullptr) return;
+        jclass rocket_type = env->GetObjectClass(java_rocket);
+        jfieldID graphics_field = env->GetFieldID(
+                rocket_type, "j", "Lorg/newdawn/slick/Graphics;");
+        jobject graphics = graphics_field == nullptr
+                ? nullptr : env->GetObjectField(java_rocket, graphics_field);
+        if (graphics != nullptr) {
+            jclass graphics_type = env->GetObjectClass(graphics);
+            jmethodID method = env->GetMethodID(
+                    graphics_type, enable ? "setClip" : "clearClip",
+                    enable ? "(IIII)V" : "()V");
+            if (method != nullptr) {
+                if (enable) env->CallVoidMethod(graphics, method, x, y, width, height);
+                else env->CallVoidMethod(graphics, method);
+            }
+            env->DeleteLocalRef(graphics_type);
+            env->DeleteLocalRef(graphics);
+        }
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        env->DeleteLocalRef(rocket_type);
     }
 
     bool scissor_enabled_ = false;
@@ -401,8 +529,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_setup(JNIEnv* env, jobject 
     jclass type = env->GetObjectClass(instance);
     const int width = env->GetIntField(instance, env->GetFieldID(type, "width", "I"));
     const int height = env->GetIntField(instance, env->GetFieldID(type, "height", "I"));
-    rocket_width = std::max(width, 1);
-    rocket_height = std::max(height, 1);
     env->DeleteLocalRef(type);
     rocket_context = Rocket::Core::CreateContext(
             "rusted-warfare", Rocket::Core::Vector2i(width, height), render_interface.get());
@@ -425,8 +551,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_render(JNIEnv*, jobject) {
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_setDimensions(
         JNIEnv*, jobject, jint width, jint height) {
-    rocket_width = std::max(static_cast<int>(width), 1);
-    rocket_height = std::max(static_cast<int>(height), 1);
     if (rocket_context != nullptr) rocket_context->SetDimensions({width, height});
 }
 
@@ -486,7 +610,40 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_processKeyUp(
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_processMouseMove(
         JNIEnv*, jobject, jint x, jint y, jint modifiers) {
-    if (rocket_context != nullptr) rocket_context->ProcessMouseMove(x, y, modifiers);
+    if (rocket_context == nullptr) {
+        rocket_hover_scrollable.store(false, std::memory_order_relaxed);
+        rocket_hover_prefers_drag.store(false, std::memory_order_relaxed);
+        return;
+    }
+    rocket_context->ProcessMouseMove(x, y, modifiers);
+    bool scrollable = false;
+    bool prefers_drag = false;
+    for (Rocket::Core::Element* element = rocket_context->GetHoverElement();
+         element != nullptr; element = element->GetParentNode()) {
+        const Rocket::Core::String& tag = element->GetTagName();
+        if (tag == "sliderbar" || tag == "scrollbarvertical"
+                || tag == "scrollbarhorizontal"
+                || (tag == "input"
+                    && element->GetAttribute<Rocket::Core::String>("type", "") == "range")) {
+            prefers_drag = true;
+        }
+        const int overflow_y = element->GetProperty<int>("overflow-y");
+        if ((overflow_y == Rocket::Core::OVERFLOW_AUTO
+                || overflow_y == Rocket::Core::OVERFLOW_SCROLL)
+                && element->GetScrollHeight() > element->GetClientHeight()) {
+            scrollable = true;
+        }
+    }
+    rocket_hover_scrollable.store(scrollable, std::memory_order_relaxed);
+    rocket_hover_prefers_drag.store(prefers_drag, std::memory_order_relaxed);
+}
+
+extern "C" bool rustedfabric_rocket_hover_scrollable(void) {
+    return rocket_hover_scrollable.load(std::memory_order_relaxed);
+}
+
+extern "C" bool rustedfabric_rocket_hover_prefers_drag(void) {
+    return rocket_hover_prefers_drag.load(std::memory_order_relaxed);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_processTextInput(
@@ -535,7 +692,16 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_Element_getAttribute(
     auto* element = element_handle(env, self);
     if (element == nullptr) return fallback == nullptr ? nullptr
             : static_cast<jstring>(env->NewLocalRef(fallback));
-    Rocket::Core::Variant* value = element->GetAttribute(string_value(env, name));
+    const Rocket::Core::String attribute_name = string_value(env, name);
+    // libRocket's range widget keeps its live value in the form control rather than
+    // the DOM attribute. Rusted Warfare reads Element.getAttribute("value"), so expose
+    // the live control value here just like a browser DOM value property would.
+    if (attribute_name == "value"
+            && element->GetAttribute<Rocket::Core::String>("type", "") == "range") {
+        auto* control = dynamic_cast<Rocket::Controls::ElementFormControl*>(element);
+        if (control != nullptr) return java_string(env, control->GetValue());
+    }
+    Rocket::Core::Variant* value = element->GetAttribute(attribute_name);
     return value == nullptr ? (fallback == nullptr ? nullptr
             : static_cast<jstring>(env->NewLocalRef(fallback)))
             : java_string(env, value->Get<Rocket::Core::String>());
@@ -544,8 +710,15 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_Element_getAttribute(
 extern "C" JNIEXPORT void JNICALL Java_com_Element_setAttribute(
         JNIEnv* env, jobject self, jstring name, jstring value) {
     auto* element = element_handle(env, self);
-    if (element != nullptr) element->SetAttribute(
-            string_value(env, name), string_value(env, value));
+    if (element == nullptr) return;
+    const Rocket::Core::String attribute_name = string_value(env, name);
+    // The game's Java Element API uses a null value to remove attributes, notably
+    // checked=false while loading settings. An empty checked attribute means true.
+    if (value == nullptr) {
+        element->RemoveAttribute(attribute_name);
+    } else {
+        element->SetAttribute(attribute_name, string_value(env, value));
+    }
 }
 
 extern "C" JNIEXPORT jstring JNICALL Java_com_Element_getAttributeKey(

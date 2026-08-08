@@ -120,6 +120,30 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSen
             "rustedfabric_queue_key", key, action, 0) ? JNI_TRUE : JNI_FALSE;
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeUiWantsScroll(
+        JNIEnv*, jclass) {
+    void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return JNI_FALSE;
+    auto query = reinterpret_cast<bool (*)(void)>(
+            dlsym(library, "rustedfabric_rocket_hover_scrollable"));
+    const bool scrollable = query != nullptr && query();
+    dlclose(library);
+    return scrollable ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeUiPrefersDrag(
+        JNIEnv*, jclass) {
+    void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return JNI_FALSE;
+    auto query = reinterpret_cast<bool (*)(void)>(
+            dlsym(library, "rustedfabric_rocket_hover_prefers_drag"));
+    const bool prefers_drag = query != nullptr && query();
+    dlclose(library);
+    return prefers_drag ? JNI_TRUE : JNI_FALSE;
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSmokeTest(
         JNIEnv* env, jclass, jint requested_width, jint requested_height) {

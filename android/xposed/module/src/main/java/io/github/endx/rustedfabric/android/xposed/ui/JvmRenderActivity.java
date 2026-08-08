@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -47,20 +49,36 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private static final int GLFW_KEY_ESCAPE = 256;
     private static final int GLFW_RELEASE = 0;
     private static final int GLFW_PRESS = 1;
+    private static final long TAP_RELEASE_DELAY_MILLIS = 120L;
     private static final long TWO_FINGER_TAP_MILLIS = 500L;
+    private static final float TOUCH_SCROLL_PIXELS_PER_STEP = 32.0f;
     private final AtomicBoolean running = new AtomicBoolean();
+    private final Handler inputHandler = new Handler(Looper.getMainLooper());
+    private final Runnable releaseLeftTap = () -> {
+        NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
+        leftTapReleasePending = false;
+    };
+    private final Runnable releaseRightTap = () -> {
+        NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE);
+        rightTapReleasePending = false;
+    };
     private TextView status;
     private boolean gameProbe;
     private int touchSlop;
     private int primaryPointerId = -1;
-    private float primaryDownX;
-    private float primaryDownY;
     private boolean leftButtonDown;
+    private boolean leftTapReleasePending;
+    private boolean rightTapReleasePending;
+    private boolean singleDragging;
+    private boolean singleScrolling;
     private boolean multiTouch;
     private boolean multiGesture;
     private long multiTouchStarted;
     private float multiStartX;
     private float multiStartY;
+    private float touchDownX;
+    private float touchDownY;
+    private float previousTouchY;
     private float previousSpan;
     private double pendingScroll;
 
@@ -100,11 +118,13 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private boolean handleTouch(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
+                releasePendingTapButtons();
                 resetTouchState();
                 primaryPointerId = event.getPointerId(0);
-                primaryDownX = event.getX(0);
-                primaryDownY = event.getY(0);
-                NativeRenderBridge.sendPointer(primaryDownX, primaryDownY, -1);
+                touchDownX = event.getX(0);
+                touchDownY = event.getY(0);
+                previousTouchY = touchDownY;
+                NativeRenderBridge.sendPointer(touchDownX, touchDownY, -1);
                 return true;
             }
             case MotionEvent.ACTION_POINTER_DOWN: {
@@ -146,12 +166,30 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                 if (index < 0) return true;
                 float x = event.getX(index);
                 float y = event.getY(index);
-                if (!leftButtonDown
-                        && distance(x, y, primaryDownX, primaryDownY) > touchSlop) {
-                    NativeRenderBridge.sendPointer(primaryDownX, primaryDownY, GLFW_PRESS);
-                    leftButtonDown = true;
-                }
                 NativeRenderBridge.sendPointer(x, y, -1);
+                if (!singleDragging && !singleScrolling
+                        && distance(x, y, touchDownX, touchDownY) > touchSlop) {
+                    float deltaX = Math.abs(x - touchDownX);
+                    float deltaY = Math.abs(y - touchDownY);
+                    if (!NativeRenderBridge.uiPrefersDrag()
+                            && deltaY > deltaX && NativeRenderBridge.uiWantsScroll()) {
+                        singleScrolling = true;
+                    } else {
+                        singleDragging = true;
+                        NativeRenderBridge.sendPointer(touchDownX, touchDownY, -1);
+                        NativeRenderBridge.sendMouseButton(0, GLFW_PRESS);
+                        leftButtonDown = true;
+                        NativeRenderBridge.sendPointer(x, y, -1);
+                    }
+                }
+                if (singleScrolling) {
+                    pendingScroll += (y - previousTouchY) / TOUCH_SCROLL_PIXELS_PER_STEP;
+                    if (Math.abs(pendingScroll) >= 0.25) {
+                        NativeRenderBridge.sendScroll(0.0, pendingScroll);
+                        pendingScroll = 0.0;
+                    }
+                }
+                previousTouchY = y;
                 return true;
             }
             case MotionEvent.ACTION_POINTER_UP: {
@@ -161,7 +199,8 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     float y = pointerCenterY(event);
                     NativeRenderBridge.sendPointer(x, y, -1);
                     NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_PRESS);
-                    NativeRenderBridge.sendMouseButton(GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE);
+                    rightTapReleasePending = true;
+                    inputHandler.postDelayed(releaseRightTap, TAP_RELEASE_DELAY_MILLIS);
                 }
                 multiGesture = true;
                 return true;
@@ -170,12 +209,13 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                 if (!multiTouch) {
                     float x = event.getX(0);
                     float y = event.getY(0);
+                    NativeRenderBridge.sendPointer(x, y, -1);
                     if (leftButtonDown) {
-                        NativeRenderBridge.sendPointer(x, y, -1);
                         NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
-                    } else {
-                        NativeRenderBridge.sendPointer(x, y, GLFW_PRESS);
-                        NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
+                    } else if (!singleScrolling) {
+                        NativeRenderBridge.sendMouseButton(0, GLFW_PRESS);
+                        leftTapReleasePending = true;
+                        inputHandler.postDelayed(releaseLeftTap, TAP_RELEASE_DELAY_MILLIS);
                     }
                 }
                 resetTouchState();
@@ -193,10 +233,23 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private void resetTouchState() {
         primaryPointerId = -1;
         leftButtonDown = false;
+        singleDragging = false;
+        singleScrolling = false;
         multiTouch = false;
         multiGesture = false;
         previousSpan = 0.0f;
         pendingScroll = 0.0;
+    }
+
+    private void releasePendingTapButtons() {
+        if (leftTapReleasePending) {
+            inputHandler.removeCallbacks(releaseLeftTap);
+            releaseLeftTap.run();
+        }
+        if (rightTapReleasePending) {
+            inputHandler.removeCallbacks(releaseRightTap);
+            releaseRightTap.run();
+        }
     }
 
     private static float pointerCenterX(MotionEvent event) {
@@ -426,6 +479,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
 
     @Override
     protected void onDestroy() {
+        releasePendingTapButtons();
         NativeRenderBridge.detachSurface();
         super.onDestroy();
     }
