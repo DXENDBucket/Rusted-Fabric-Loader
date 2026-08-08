@@ -121,6 +121,29 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSen
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeSendTouchFrame(
+        JNIEnv* env, jclass, jfloatArray xs, jfloatArray ys, jintArray pointer_ids,
+        jint count, jboolean down) {
+    if (count < 0 || count > 10 || xs == nullptr || ys == nullptr
+            || pointer_ids == nullptr) {
+        return JNI_FALSE;
+    }
+    float native_xs[10]{};
+    float native_ys[10]{};
+    int native_ids[10]{};
+    if (count > 0) {
+        env->GetFloatArrayRegion(xs, 0, count, native_xs);
+        env->GetFloatArrayRegion(ys, 0, count, native_ys);
+        env->GetIntArrayRegion(pointer_ids, 0, count,
+                               reinterpret_cast<jint*>(native_ids));
+        if (env->ExceptionCheck()) return JNI_FALSE;
+    }
+    return call_pojav_input<void (*)(const float*, const float*, const int*, int, bool)>(
+            "rustedfabric_queue_touch_frame", native_xs, native_ys, native_ids,
+            count, down == JNI_TRUE) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeUiWantsScroll(
         JNIEnv*, jclass) {
     void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
@@ -142,6 +165,18 @@ Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeUiP
     const bool prefers_drag = query != nullptr && query();
     dlclose(library);
     return prefers_drag ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_xposed_jvm_NativeRenderBridge_nativeUiIsActive(
+        JNIEnv*, jclass) {
+    void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return JNI_FALSE;
+    auto query = reinterpret_cast<bool (*)(void)>(
+            dlsym(library, "rustedfabric_rocket_document_active"));
+    const bool active = query != nullptr && query();
+    dlclose(library);
+    return active ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jstring JNICALL

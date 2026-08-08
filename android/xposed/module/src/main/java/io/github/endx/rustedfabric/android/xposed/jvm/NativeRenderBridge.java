@@ -53,6 +53,18 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeSendKey(key, action);
     }
 
+    /** Publishes one Android touch frame to the embedded desktop game core. */
+    public static boolean sendTouchFrame(float[] xs, float[] ys, int[] pointerIds,
+                                         int count, boolean down) {
+        if (!PACKAGED) return false;
+        if (xs == null || ys == null || pointerIds == null || count < 0
+                || count > 10 || xs.length < count || ys.length < count
+                || pointerIds.length < count) {
+            throw new IllegalArgumentException("Invalid touch frame");
+        }
+        return nativeSendTouchFrame(xs, ys, pointerIds, count, down);
+    }
+
     /** True when the Rocket element below the cursor has a vertically scrollable ancestor. */
     public static boolean uiWantsScroll() {
         return PACKAGED && nativeUiWantsScroll();
@@ -61,6 +73,11 @@ public final class NativeRenderBridge {
     /** True when the Rocket element below the cursor is a slider or scrollbar control. */
     public static boolean uiPrefersDrag() {
         return PACKAGED && nativeUiPrefersDrag();
+    }
+
+    /** True while libRocket owns a visible menu or popup document. */
+    public static boolean uiIsActive() {
+        return PACKAGED && nativeUiIsActive();
     }
 
     public static String smokeTest(int width, int height) {
@@ -74,7 +91,11 @@ public final class NativeRenderBridge {
     private static native boolean nativeSendScroll(double x, double y);
     private static native boolean nativeSendMouseButton(int button, int action);
     private static native boolean nativeSendKey(int key, int action);
+    private static native boolean nativeSendTouchFrame(float[] xs, float[] ys,
+                                                       int[] pointerIds, int count,
+                                                       boolean down);
     private static native boolean nativeUiWantsScroll();
     private static native boolean nativeUiPrefersDrag();
+    private static native boolean nativeUiIsActive();
     private static native String nativeSmokeTest(int width, int height);
 }

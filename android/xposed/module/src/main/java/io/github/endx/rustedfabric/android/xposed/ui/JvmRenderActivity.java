@@ -73,6 +73,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private boolean singleScrolling;
     private boolean multiTouch;
     private boolean multiGesture;
+    private boolean gameTouchInput;
     private long multiTouchStarted;
     private float multiStartX;
     private float multiStartY;
@@ -81,6 +82,9 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private float previousTouchY;
     private float previousSpan;
     private double pendingScroll;
+    private final float[] gameTouchXs = new float[10];
+    private final float[] gameTouchYs = new float[10];
+    private final int[] gameTouchIds = new int[10];
 
     @Override
     protected void onCreate(Bundle state) {
@@ -116,10 +120,23 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     }
 
     private boolean handleTouch(MotionEvent event) {
+        if (gameTouchInput && event.getActionMasked() != MotionEvent.ACTION_DOWN) {
+            publishGameTouchFrame(event);
+            if (event.getActionMasked() == MotionEvent.ACTION_UP
+                    || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                gameTouchInput = false;
+            }
+            return true;
+        }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
                 releasePendingTapButtons();
                 resetTouchState();
+                gameTouchInput = !NativeRenderBridge.uiIsActive();
+                if (gameTouchInput) {
+                    publishGameTouchFrame(event);
+                    return true;
+                }
                 primaryPointerId = event.getPointerId(0);
                 touchDownX = event.getX(0);
                 touchDownY = event.getY(0);
@@ -228,6 +245,29 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
             default:
                 return true;
         }
+    }
+
+    private void publishGameTouchFrame(MotionEvent event) {
+        int excludedIndex = -1;
+        int count = event.getPointerCount();
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            count = 0;
+        } else if (action == MotionEvent.ACTION_POINTER_UP) {
+            excludedIndex = event.getActionIndex();
+            count--;
+        }
+        count = Math.min(count, gameTouchXs.length);
+        int output = 0;
+        for (int index = 0; index < event.getPointerCount() && output < count; index++) {
+            if (index == excludedIndex) continue;
+            gameTouchXs[output] = event.getX(index);
+            gameTouchYs[output] = event.getY(index);
+            gameTouchIds[output] = event.getPointerId(index);
+            output++;
+        }
+        NativeRenderBridge.sendTouchFrame(
+                gameTouchXs, gameTouchYs, gameTouchIds, output, output > 0);
     }
 
     private void resetTouchState() {

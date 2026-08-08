@@ -60,6 +60,17 @@ std::mutex input_mutex;
 std::deque<InputEvent> input_events;
 bool cursor_entered = false;
 
+struct TouchFrame {
+    uint64_t sequence = 0;
+    int count = 0;
+    bool down = false;
+    std::array<float, 10> xs{};
+    std::array<float, 10> ys{};
+    std::array<int, 10> ids{};
+};
+std::mutex touch_mutex;
+TouchFrame touch_frame;
+
 void queue_input(InputEvent event) {
     std::lock_guard<std::mutex> lock(input_mutex);
     if (event.kind == InputKind::Cursor && !input_events.empty()
@@ -405,6 +416,38 @@ rustedfabric_queue_scroll(double x, double y) {
 extern "C" __attribute__((visibility("default"))) void
 rustedfabric_queue_key(int key, int action, int modifiers) {
     queue_input({InputKind::Key, 0.0, 0.0, key, action, modifiers});
+}
+
+extern "C" __attribute__((visibility("default"))) void
+rustedfabric_queue_touch_frame(const float* xs, const float* ys, const int* ids,
+                               int count, bool down) {
+    if (count < 0) count = 0;
+    if (count > 10) count = 10;
+    std::lock_guard<std::mutex> lock(touch_mutex);
+    touch_frame.count = count;
+    touch_frame.down = down && count > 0;
+    for (int index = 0; index < count; ++index) {
+        touch_frame.xs[index] = xs[index];
+        touch_frame.ys[index] = ys[index];
+        touch_frame.ids[index] = ids[index];
+    }
+    ++touch_frame.sequence;
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_org_lwjgl_system_RustedFabricTouch_nativePoll(
+        JNIEnv* env, jclass, jfloatArray xs, jfloatArray ys, jintArray ids) {
+    std::lock_guard<std::mutex> lock(touch_mutex);
+    if (touch_frame.count > 0) {
+        env->SetFloatArrayRegion(xs, 0, touch_frame.count, touch_frame.xs.data());
+        env->SetFloatArrayRegion(ys, 0, touch_frame.count, touch_frame.ys.data());
+        env->SetIntArrayRegion(ids, 0, touch_frame.count,
+                               reinterpret_cast<const jint*>(touch_frame.ids.data()));
+        if (env->ExceptionCheck()) return 0;
+    }
+    const uint64_t metadata = static_cast<uint64_t>(touch_frame.count)
+            | (touch_frame.down ? 0x80ULL : 0ULL);
+    return static_cast<jlong>((touch_frame.sequence << 8U) | metadata);
 }
 
 extern "C" __attribute__((visibility("default"))) void pojavTerminate() {

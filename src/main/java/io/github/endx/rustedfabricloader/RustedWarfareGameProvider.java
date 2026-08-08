@@ -89,7 +89,8 @@ public class RustedWarfareGameProvider implements GameProvider {
             "org/xml/"
     };
 
-    private final GameTransformer transformer = new GameTransformer(new AndroidLwjglMemoryPatch());
+    private final GameTransformer transformer = new GameTransformer(
+            new AndroidLwjglMemoryPatch(), new AndroidTouchInputPatch());
 
     /**
      * Pojav's LWJGL classes discover the {@code Buffer.address} field by constructing a native
@@ -139,6 +140,43 @@ public class RustedWarfareGameProvider implements GameProvider {
             classEmitter.accept(memoryUtil);
             Log.info(LOG_CATEGORY,
                     "Patched Android LWJGL direct-buffer JNI bridge.");
+        }
+    }
+
+    /**
+     * Gives the desktop game build the raw multi-pointer state published by Android. The game
+     * already contains its mobile touch controller; only the desktop Slick adapter normally
+     * limits that controller to one mouse-shaped pointer.
+     */
+    private static final class AndroidTouchInputPatch extends GamePatch {
+        private static final String SLICK_GAME = "com.corrodinggames.rts.java.u";
+        private static final String UPDATE_DESCRIPTOR = "(Lorg/newdawn/slick/GameContainer;I)V";
+
+        @Override
+        public void process(FabricLauncher launcher,
+                            Function<String, ClassNode> classSource,
+                            Consumer<ClassNode> classEmitter) {
+            if (!isAndroidRuntime()) return;
+            ClassNode slickGame = classSource.apply(SLICK_GAME);
+            if (slickGame == null) {
+                throw new IllegalStateException("Android touch target SlickGame is unavailable");
+            }
+            MethodNode update = findMethod(slickGame, method ->
+                    method.name.equals("update") && method.desc.equals(UPDATE_DESCRIPTOR));
+            if (update == null) {
+                throw new IllegalStateException("Unsupported SlickGame update ABI for touch input");
+            }
+            org.objectweb.asm.tree.InsnList bridge = new org.objectweb.asm.tree.InsnList();
+            bridge.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            bridge.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "org/lwjgl/system/RustedFabricTouch",
+                    "apply",
+                    "(Ljava/lang/Object;)V",
+                    false));
+            update.instructions.insert(bridge);
+            classEmitter.accept(slickGame);
+            Log.info(LOG_CATEGORY, "Patched Android raw multi-touch bridge.");
         }
     }
 

@@ -29,6 +29,9 @@ tasks.register('verifyLwjgl2Compat') {
             if (zip.getEntry('org/lwjgl/system/RustedFabricMemory.class') == null) {
                 throw new GradleException('LWJGL2 compatibility JAR is missing the Android buffer bridge')
             }
+            if (zip.getEntry('org/lwjgl/system/RustedFabricTouch.class') == null) {
+                throw new GradleException('LWJGL2 compatibility JAR is missing the touch bridge')
+            }
         }
     }
 }

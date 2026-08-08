@@ -32,6 +32,7 @@ Rocket::Core::Context* rocket_context = nullptr;
 const auto start_time = std::chrono::steady_clock::now();
 std::atomic<bool> rocket_hover_scrollable{false};
 std::atomic<bool> rocket_hover_prefers_drag{false};
+std::atomic<bool> rocket_document_active{false};
 
 // Slick's setWorldClip uses the fixed-function GL_CLIP_PLANE API, which GL4ES
 // cannot reliably carry through the GLES renderer. Convert Rocket's logical
@@ -542,7 +543,20 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_setup(JNIEnv* env, jobject 
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_update(JNIEnv*, jobject) {
-    if (rocket_context != nullptr) rocket_context->Update();
+    if (rocket_context == nullptr) {
+        rocket_document_active.store(false, std::memory_order_relaxed);
+        return;
+    }
+    rocket_context->Update();
+    bool active = false;
+    for (int index = 0; index < rocket_context->GetNumDocuments(); ++index) {
+        Rocket::Core::ElementDocument* document = rocket_context->GetDocument(index);
+        if (document != nullptr && document->IsVisible()) {
+            active = true;
+            break;
+        }
+    }
+    rocket_document_active.store(active, std::memory_order_relaxed);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_render(JNIEnv*, jobject) {
@@ -644,6 +658,10 @@ extern "C" bool rustedfabric_rocket_hover_scrollable(void) {
 
 extern "C" bool rustedfabric_rocket_hover_prefers_drag(void) {
     return rocket_hover_prefers_drag.load(std::memory_order_relaxed);
+}
+
+extern "C" bool rustedfabric_rocket_document_active(void) {
+    return rocket_document_active.load(std::memory_order_relaxed);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_processTextInput(
