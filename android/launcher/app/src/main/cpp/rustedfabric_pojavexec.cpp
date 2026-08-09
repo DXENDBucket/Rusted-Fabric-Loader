@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <android/native_window.h>
 #include <android/log.h>
+#include <dlfcn.h>
 #include <EGL/egl.h>
 #include <algorithm>
 #include <array>
@@ -60,6 +61,16 @@ struct InputEvent {
 std::mutex input_mutex;
 std::deque<InputEvent> input_events;
 bool cursor_entered = false;
+
+bool queue_rocket_click(int button) {
+    void* rocket = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (rocket == nullptr) return false;
+    auto queue_click = reinterpret_cast<bool (*)(int)>(
+            dlsym(rocket, "rustedfabric_rocket_queue_touch_click"));
+    const bool handled = queue_click != nullptr && queue_click(button);
+    dlclose(rocket);
+    return handled;
+}
 
 struct TouchFrame {
     uint64_t sequence = 0;
@@ -393,6 +404,9 @@ extern "C" __attribute__((visibility("default"))) void pojavPumpEvents(void* win
                 }
                 CursorPosCallback cursor = cursor_pos_callback.load();
                 if (cursor != nullptr) cursor(window, event.first, event.second);
+                // Rocket resolves the cursor hover during its following update. Queue the
+                // semantic click from this poll so it targets that freshly resolved element.
+                if (event.button == 0 && queue_rocket_click(event.button)) break;
                 MouseButtonCallback callback = mouse_button_callback.load();
                 if (callback != nullptr) {
                     callback(window, event.button, 1, event.modifiers);

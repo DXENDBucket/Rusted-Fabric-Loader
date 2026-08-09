@@ -37,39 +37,21 @@ std::atomic<bool> rocket_hover_prefers_drag{false};
 std::atomic<bool> rocket_document_active{false};
 std::atomic<int> rocket_touch_scroll_millipixels{0};
 std::mutex rocket_touch_click_mutex;
-struct TouchClick {
-    int button;
-    int updates_remaining;
-};
-std::deque<TouchClick> rocket_touch_clicks;
+std::deque<int> rocket_touch_clicks;
 
 void apply_touch_clicks() {
-    if (rocket_context == nullptr) {
-        std::lock_guard<std::mutex> lock(rocket_touch_click_mutex);
-        rocket_touch_clicks.clear();
-        return;
-    }
-    std::deque<TouchClick> clicks;
+    if (rocket_context == nullptr) return;
+    std::deque<int> clicks;
     {
         std::lock_guard<std::mutex> lock(rocket_touch_click_mutex);
-        const size_t count = rocket_touch_clicks.size();
-        for (size_t index = 0; index < count; ++index) {
-            TouchClick click = rocket_touch_clicks.front();
-            rocket_touch_clicks.pop_front();
-            if (click.updates_remaining > 0) {
-                --click.updates_remaining;
-                rocket_touch_clicks.push_back(click);
-            } else {
-                clicks.push_back(click);
-            }
-        }
+        clicks.swap(rocket_touch_clicks);
     }
-    for (const TouchClick& click : clicks) {
-        // The desktop cursor event performs the game's UI-scale conversion. Give it a full
-        // update to establish Rocket's hover element, then generate the semantic click on the
-        // Rocket thread. This also works for modal menus that stop polling after mouse-down.
-        Rocket::Core::Element* hover = rocket_context->GetHoverElement();
-        if (click.button == 0 && hover != nullptr) hover->Click();
+    for (int button : clicks) {
+        // Preserve Rocket's normal control state machine. Element::Click() dispatches only the
+        // final click event and skips focus, active pseudo-classes, mouse-up handlers and form
+        // control behavior. A short tap is a real down/up pair at the resolved cursor position.
+        rocket_context->ProcessMouseButtonDown(button, 0);
+        rocket_context->ProcessMouseButtonUp(button, 0);
     }
 }
 
@@ -518,6 +500,9 @@ private:
     int scissor_height_ = 0;
 };
 
+void forget_dynamic_event_binding(Rocket::Core::Element* element,
+                                  Rocket::Core::EventListener* listener);
+
 class JavaEventListener final : public Rocket::Core::EventListener {
 public:
     explicit JavaEventListener(Rocket::Core::String value) : value_(std::move(value)) {}
@@ -540,13 +525,44 @@ public:
         env->DeleteLocalRef(type);
     }
 
-    void OnDetach(Rocket::Core::Element*) override {
+    void OnDetach(Rocket::Core::Element* element) override {
+        forget_dynamic_event_binding(element, this);
         delete this;
     }
 
 private:
     Rocket::Core::String value_;
 };
+
+struct DynamicEventBinding {
+    Rocket::Core::Element* element;
+    Rocket::Core::String event;
+    Rocket::Core::EventListener* listener;
+};
+
+std::vector<DynamicEventBinding> dynamic_event_bindings;
+
+void forget_dynamic_event_binding(Rocket::Core::Element* element,
+                                  Rocket::Core::EventListener* listener) {
+    dynamic_event_bindings.erase(std::remove_if(
+            dynamic_event_bindings.begin(), dynamic_event_bindings.end(),
+            [element, listener](const DynamicEventBinding& binding) {
+                return binding.element == element && binding.listener == listener;
+            }), dynamic_event_bindings.end());
+}
+
+void remove_dynamic_event_binding(Rocket::Core::Element* element,
+                                  const Rocket::Core::String& event) {
+    for (size_t index = 0; index < dynamic_event_bindings.size(); ++index) {
+        const DynamicEventBinding binding = dynamic_event_bindings[index];
+        if (binding.element != element || binding.event != event) continue;
+        // Remove our record first: RemoveEventListener synchronously calls OnDetach(), which
+        // deletes JavaEventListener and also attempts to forget this binding.
+        dynamic_event_bindings.erase(dynamic_event_bindings.begin() + index);
+        element->RemoveEventListener(event, binding.listener, false);
+        return;
+    }
+}
 
 class JavaEventInstancer final : public Rocket::Core::EventListenerInstancer {
 public:
@@ -612,8 +628,10 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_update(JNIEnv*, jobject) {
         rocket_touch_scroll_millipixels.store(0, std::memory_order_relaxed);
         return;
     }
-    apply_touch_clicks();
     rocket_context->Update();
+    // Mouse movement from the desktop callback is reflected in Rocket's hover state during
+    // this update. Dispatch taps afterwards so modal buttons do not remain merely hovered.
+    apply_touch_clicks();
     apply_touch_scroll();
     bool active = false;
     for (int index = 0; index < rocket_context->GetNumDocuments(); ++index) {
@@ -733,13 +751,10 @@ extern "C" bool rustedfabric_rocket_queue_touch_scroll(float delta_y) {
 }
 
 extern "C" bool rustedfabric_rocket_queue_touch_click(int button) {
-    // JvmRenderActivity already distinguishes Rocket UI from the game field. Accept the
-    // event unconditionally here: the document-active flag is refreshed on Rocket's next
-    // update and can otherwise be one frame stale while a modal is being opened.
-    if (button != 0) return false;
+    if (button != 0 || rocket_context == nullptr) return false;
     std::lock_guard<std::mutex> lock(rocket_touch_click_mutex);
     if (rocket_touch_clicks.size() >= 32) rocket_touch_clicks.pop_front();
-    rocket_touch_clicks.push_back({button, 1});
+    rocket_touch_clicks.push_back(button);
     return true;
 }
 
@@ -816,18 +831,35 @@ extern "C" JNIEXPORT void JNICALL Java_com_Element_setAttribute(
     auto* element = element_handle(env, self);
     if (element == nullptr) return;
     const Rocket::Core::String attribute_name = string_value(env, name);
+    const bool event_attribute = attribute_name.Length() > 2
+            && attribute_name.Substring(0, 2) == "on";
+    const Rocket::Core::String event_name = event_attribute
+            ? attribute_name.Substring(2) : Rocket::Core::String();
+    if (event_attribute) remove_dynamic_event_binding(element, event_name);
     // The game's Java Element API uses a null value to remove attributes, notably
     // checked=false while loading settings. An empty checked attribute means true.
     if (value == nullptr) {
         element->RemoveAttribute(attribute_name);
     } else {
+        const Rocket::Core::String attribute_value = string_value(env, value);
         auto* control = dynamic_cast<Rocket::Controls::ElementFormControl*>(element);
         // Keep the matching write path browser-like as well. In particular, a select
         // does not react to a raw value attribute; SetValue updates its selected option.
         if (attribute_name == "value" && control != nullptr) {
-            control->SetValue(string_value(env, value));
+            control->SetValue(attribute_value);
         } else {
-            element->SetAttribute(attribute_name, string_value(env, value));
+            element->SetAttribute(attribute_name, attribute_value);
+        }
+        if (event_attribute) {
+            // libRocket binds on* attributes only while parsing RML. Rusted Warfare creates
+            // popup actions later through Element.setAttribute(), so mirror the parser's
+            // Factory::InstanceEventListener + AddEventListener sequence here.
+            Rocket::Core::EventListener* listener =
+                    Rocket::Core::Factory::InstanceEventListener(attribute_value, element);
+            if (listener != nullptr) {
+                dynamic_event_bindings.push_back({element, event_name, listener});
+                element->AddEventListener(event_name, listener, false);
+            }
         }
     }
 }

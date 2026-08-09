@@ -28,9 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -451,7 +448,6 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         // Imports deliberately omit user saves and mods. Recreate the empty writable layout on
         // every launch as a repair path for older imports and folders removed by the user.
         DesktopGameLayout.prepareWritableDirectories(desktopRoot.toPath());
-        prepareAndroidGameDefaults(desktopRoot.toPath());
         File launcherDirectory = new File(new File(getFilesDir(), "desktop-jvm"), "launcher");
         if (!launcherDirectory.isDirectory() && !launcherDirectory.mkdirs()) {
             throw new IOException("Cannot create private Fabric launcher directory");
@@ -481,54 +477,6 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     + launch.detail() + ". See logcat tag RustedFabricJvm for the Java stack.");
         }
         return "rusted-fabric-game-probe=ok\nFabric/game main returned normally";
-    }
-
-    private void prepareAndroidGameDefaults(Path desktopRoot) throws IOException {
-        Path stateDirectory = desktopRoot.resolve(".rustedfabricloader");
-        Path oldMarker = stateDirectory.resolve("android-ui-defaults-v1");
-        Path marker = stateDirectory.resolve("android-ui-defaults-v2");
-        if (Files.isRegularFile(marker)) return;
-        Files.createDirectories(stateDirectory);
-        Path preferences = desktopRoot.resolve("preferences.ini");
-        List<String> lines = Files.isRegularFile(preferences)
-                ? new ArrayList<>(Files.readAllLines(preferences, StandardCharsets.UTF_8))
-                : new ArrayList<>();
-        setDefaultSetting(lines, "uiRenderScale", "2.5");
-        if (Files.isRegularFile(oldMarker)) {
-            // v1 accidentally changed renderDensity instead of the UI scaling field. Only undo
-            // that exact migration value; preserve any other density explicitly chosen by users.
-            replaceExactSetting(lines, "renderDensity", "2.5", "1.0");
-        }
-        Files.write(preferences, lines, StandardCharsets.UTF_8);
-        Files.write(marker, java.util.Collections.singletonList("uiRenderScale=2.5"),
-                StandardCharsets.UTF_8);
-    }
-
-    private static void setDefaultSetting(List<String> lines, String name, String value) {
-        String prefix = name + ":";
-        for (int index = 0; index < lines.size(); index++) {
-            String line = lines.get(index);
-            if (!line.startsWith(prefix)) continue;
-            String current = line.substring(prefix.length()).trim();
-            if (current.isEmpty() || "1".equals(current) || "1.0".equals(current)) {
-                lines.set(index, prefix + value);
-            }
-            return;
-        }
-        lines.add(prefix + value);
-    }
-
-    private static void replaceExactSetting(List<String> lines, String name,
-                                            String oldValue, String newValue) {
-        String prefix = name + ":";
-        for (int index = 0; index < lines.size(); index++) {
-            String line = lines.get(index);
-            if (line.startsWith(prefix)
-                    && oldValue.equals(line.substring(prefix.length()).trim())) {
-                lines.set(index, prefix + newValue);
-                return;
-            }
-        }
     }
 
     @SuppressWarnings("deprecation")

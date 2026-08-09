@@ -14,8 +14,13 @@ import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -90,7 +95,17 @@ public class RustedWarfareGameProvider implements GameProvider {
     };
 
     private final GameTransformer transformer = new GameTransformer(
-            new AndroidLwjglMemoryPatch(), new AndroidTouchInputPatch());
+            new AndroidLwjglMemoryPatch(), new AndroidTouchInputPatch(),
+            new AndroidDefaultSettingsPatch(), new AndroidInitialResolutionPatch());
+
+    private static AbstractInsnNode previousRealInstruction(AbstractInsnNode instruction) {
+        if (instruction == null) return null;
+        AbstractInsnNode previous = instruction.getPrevious();
+        while (previous != null && previous.getOpcode() < 0) {
+            previous = previous.getPrevious();
+        }
+        return previous;
+    }
 
     /**
      * Pojav's LWJGL classes discover the {@code Buffer.address} field by constructing a native
@@ -252,6 +267,127 @@ public class RustedWarfareGameProvider implements GameProvider {
                         + className);
             }
             classEmitter.accept(target);
+        }
+    }
+
+    private static final class AndroidInitialResolutionPatch extends GamePatch {
+        private static final String MAIN = "com.corrodinggames.rts.java.Main";
+        private static final String MAIN_INTERNAL = "com/corrodinggames/rts/java/Main";
+        private static final String GAME = "com/corrodinggames/rts/java/u";
+        private static final String GAME_DESCRIPTOR = "Lcom/corrodinggames/rts/java/u;";
+        private static final String CONTAINER = "org/newdawn/slick/GameContainer";
+        private static final String CONTAINER_DESCRIPTOR =
+                "Lorg/newdawn/slick/GameContainer;";
+
+        @Override
+        public void process(FabricLauncher launcher,
+                            Function<String, ClassNode> classSource,
+                            Consumer<ClassNode> classEmitter) {
+            if (!isAndroidRuntime()) return;
+            ClassNode main = classSource.apply(MAIN);
+            if (main == null) {
+                throw new IllegalStateException("Android initial-resolution target is unavailable");
+            }
+            MethodNode initialize = findMethod(main, method ->
+                    method.name.equals("h") && method.desc.equals("()V"));
+            if (initialize == null) {
+                throw new IllegalStateException("Unsupported Main.h ABI");
+            }
+
+            int patched = 0;
+            for (AbstractInsnNode instruction = initialize.instructions.getFirst();
+                 instruction != null; instruction = instruction.getNext()) {
+                if (!(instruction instanceof MethodInsnNode)) continue;
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                if (call.getOpcode() != Opcodes.INVOKEVIRTUAL
+                        || !call.owner.equals(GAME)
+                        || !call.name.equals("a")
+                        || !call.desc.equals("(II)V")) continue;
+                AbstractInsnNode height = previousRealInstruction(call);
+                AbstractInsnNode width = previousRealInstruction(height);
+                if (!(width instanceof IntInsnNode) || !(height instanceof IntInsnNode)
+                        || ((IntInsnNode) width).operand != 1000
+                        || ((IntInsnNode) height).operand != 800) continue;
+
+                // The desktop game intentionally performs its first resolution pass here, but
+                // hard-codes 1000x800. On Android the window has already been created at the
+                // Surface size, so preserve the original pass and supply that current size.
+                InsnList dimensions = new InsnList();
+                dimensions.add(loadContainerDimension("getWidth"));
+                dimensions.add(loadContainerDimension("getHeight"));
+                initialize.instructions.insertBefore(width, dimensions);
+                initialize.instructions.remove(width);
+                initialize.instructions.remove(height);
+                patched++;
+            }
+            if (patched != 1) {
+                throw new IllegalStateException(
+                        "Expected one Main initial 1000x800 resolution call, found " + patched);
+            }
+            classEmitter.accept(main);
+            Log.info(LOG_CATEGORY,
+                    "Patched initial Android resolution to use the current Surface size.");
+        }
+
+        private static InsnList loadContainerDimension(String getter) {
+            InsnList instructions = new InsnList();
+            instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            instructions.add(new FieldInsnNode(
+                    Opcodes.GETFIELD, MAIN_INTERNAL, "j", GAME_DESCRIPTOR));
+            instructions.add(new FieldInsnNode(
+                    Opcodes.GETFIELD, GAME, "a", CONTAINER_DESCRIPTOR));
+            instructions.add(new MethodInsnNode(
+                    Opcodes.INVOKEVIRTUAL, CONTAINER, getter, "()I", false));
+            return instructions;
+        }
+
+    }
+
+    private static final class AndroidDefaultSettingsPatch extends GamePatch {
+        private static final String SETTINGS =
+                "com.corrodinggames.rts.gameFramework.SettingsEngine";
+        private static final String SETTINGS_INTERNAL =
+                "com/corrodinggames/rts/gameFramework/SettingsEngine";
+
+        @Override
+        public void process(FabricLauncher launcher,
+                            Function<String, ClassNode> classSource,
+                            Consumer<ClassNode> classEmitter) {
+            if (!isAndroidRuntime()) return;
+            ClassNode settings = classSource.apply(SETTINGS);
+            if (settings == null) {
+                throw new IllegalStateException("Android default-settings target is unavailable");
+            }
+            MethodNode constructor = findMethod(settings, method ->
+                    method.name.equals("<init>")
+                            && method.desc.equals("(Landroid/content/Context;)V"));
+            if (constructor == null) {
+                throw new IllegalStateException("Unsupported SettingsEngine constructor ABI");
+            }
+
+            int patched = 0;
+            for (AbstractInsnNode instruction = constructor.instructions.getFirst();
+                 instruction != null; instruction = instruction.getNext()) {
+                if (!(instruction instanceof FieldInsnNode)) continue;
+                FieldInsnNode field = (FieldInsnNode) instruction;
+                if (field.getOpcode() != Opcodes.PUTFIELD
+                        || !field.owner.equals(SETTINGS_INTERNAL)
+                        || !field.name.equals("renderDensity")
+                        || !field.desc.equals("F")) continue;
+                AbstractInsnNode defaultValue = previousRealInstruction(field);
+                if (defaultValue == null || defaultValue.getOpcode() != Opcodes.FCONST_1) {
+                    throw new IllegalStateException(
+                            "Unsupported SettingsEngine.renderDensity initializer");
+                }
+                constructor.instructions.set(defaultValue, new LdcInsnNode(2.5f));
+                patched++;
+            }
+            if (patched != 1) {
+                throw new IllegalStateException(
+                        "Expected one renderDensity initializer, found " + patched);
+            }
+            classEmitter.accept(settings);
+            Log.info(LOG_CATEGORY, "Set the Android render-density default to 2.5x.");
         }
     }
 

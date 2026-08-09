@@ -128,16 +128,6 @@ Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeS
 extern "C" JNIEXPORT jboolean JNICALL
 Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeSendMouseClick(
         JNIEnv*, jclass, jint button, jfloat x, jfloat y) {
-    if (button == 0) {
-        void* rocket = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
-        if (rocket != nullptr) {
-            auto queue_rocket_click = reinterpret_cast<bool (*)(int)>(
-                    dlsym(rocket, "rustedfabric_rocket_queue_touch_click"));
-            const bool accepted = queue_rocket_click != nullptr && queue_rocket_click(button);
-            dlclose(rocket);
-            if (accepted) return JNI_TRUE;
-        }
-    }
     // Keep cursor movement and both button transitions in one desktop poll so the
     // game performs its normal UI coordinate conversion before dispatching the click.
     return call_pojav_input<void (*)(float, float, int, int)>(
