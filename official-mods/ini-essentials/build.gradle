@@ -87,7 +87,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'tan', 'smoothstep', 'pi', 'tau', 'e',
                 'event', 'phase', 'when', 'cancelEventActions',
                 'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
-                'setEventBoolean'
+                'setEventBoolean', 'cancelEvent', 'setEventValue',
+                'addEventValue', 'multiplyEventValue'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
@@ -118,8 +119,12 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
                 || !['event', 'phase', 'when', 'cancelEventActions',
                     'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
-                    'setEventBoolean'].every { eventRuleSource.contains('"' + it + '"') }
+                    'setEventBoolean', 'cancelEvent', 'setEventValue',
+                    'addEventValue', 'multiplyEventValue'].every {
+                    eventRuleSource.contains('"' + it + '"')
+                }
                 || !eventRuleSource.contains('CustomUnitTriggerEvents.PREPARE_QUEUE')
+                || !eventRuleSource.contains('CustomUnitOperationEvents.BEFORE_EVENT')
                 || !eventRuleSource.contains('CustomUnitEventEvaluation.withContext')
                 || !eventRuleSource.contains('NumericExpression.compile(')
                 || !eventRuleSource.contains('BooleanExpression.compile(')
@@ -240,7 +245,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v9'
+                || multiplayer?.protocol != 'ini_essentials_v10'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

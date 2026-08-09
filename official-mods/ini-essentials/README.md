@@ -112,9 +112,29 @@ written earlier through `eventData(...)`. Their expressions, `when`, and `cancel
 also use memory, resources, unit state, and INI Essentials math functions. `cancelEventActions`
 cancels the native handlers for the
 queued notification; it intentionally does not claim to undo damage, teleportation, queue changes,
-or other game work that already occurred. True operation cancellation and result replacement need
-event-specific synchronous `before` phases, which can be added without changing this queued phase
-or native ordering.
+or other game work that already occurred. Event-specific synchronous `before` phases remain
+separate from this queued phase and native action ordering.
+
+The first synchronous phase is available for `tookDamage`:
+
+```ini
+[event_reduceActualDamage]
+event: tookDamage
+phase: before
+when: eventData(name='damage',type='number') > 0
+setEventValue: max(0,eventData(name='damage',type='number')-self.resource.block)
+multiplyEventValue: self.resource.damageTakenMultiplier
+cancelEvent: memory.damageImmune
+```
+
+The names deliberately differ from queued notification fields. `cancelEvent` prevents the native
+damage operation itself, so no HP/shield change, attachment forwarding, or `tookDamage` action
+notification is produced. `setEventValue`, `addEventValue`, and `multiplyEventValue` change the
+actual damage passed into the untouched native pipeline. They run in that fixed order and each is a
+runtime numeric expression; later expressions see the current value as
+`eventData(name='damage',type='number')`. The before hook runs prior to native armour, immunity, and
+attachment redirection. Other event kinds reject `phase: before` until their own synchronous native
+boundary is implemented.
 
 The native `tookDamage` action event now receives typed damage context through the game's existing
 `eventData(...)` function:

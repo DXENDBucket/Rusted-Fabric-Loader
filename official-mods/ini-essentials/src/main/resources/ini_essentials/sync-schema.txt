@@ -1,4 +1,4 @@
-ini_essentials_v9
+ini_essentials_v10
 [core].allowNegativeHp|new_key|runtime_logic_boolean|default=false|gameplay_synced|negative_hp_damage_v2
 [action_*|hiddenAction_*].cameraCenterAt|new_action_effect|runtime_number_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
 [action_*|hiddenAction_*].cameraCenterBy|new_action_effect|runtime_number_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
@@ -127,10 +127,14 @@ event.newMessage.eventData.messageHasData|boolean|gameplay_synced|native_message
 [action_*|hiddenAction_*].setFogMode|new_action_effect|off_basic_los|default=omitted|gameplay_synced|initialize_missing_maps_unexplored
 logic.number_functions|runtime_logic_functions|pow_exp_ln_log10_log_cbrt_abs_floor_ceil_round_sign_clamp_lerp_inverse_lerp_hypot_atan2_atan_asin_acos_tan_smoothstep_pi_tau_e|gameplay_synced|strictmath_float_v1
 [event_*].event|new_section_key|native_custom_unit_event|required|gameplay_synced|queued_rule_v1
-[event_*].phase|new_section_key|queued|default=queued|gameplay_synced|before_native_action_list
+[event_*].phase|new_section_key|queued_before|default=queued|gameplay_synced|separate_notification_and_native_operation_stages
 [event_*].when|new_section_key|runtime_logic_boolean|default=true|gameplay_synced|rule_gate
 [event_*].cancelEventActions|new_section_key|runtime_logic_boolean|default=false|gameplay_synced|cancel_complete_native_queued_action_list
 [event_*].setEventNumber|new_section_key|ordered_named_runtime_numbers|default=omitted|gameplay_synced|shared_event_data_overwrite
 [event_*].addEventNumber|new_section_key|ordered_named_runtime_numbers|default=omitted|gameplay_synced|shared_event_data_add
 [event_*].multiplyEventNumber|new_section_key|ordered_named_runtime_numbers|default=omitted|gameplay_synced|shared_event_data_multiply
 [event_*].setEventBoolean|new_section_key|ordered_named_runtime_booleans|default=omitted|gameplay_synced|shared_event_data_overwrite
+[event_*].cancelEvent|new_section_key|runtime_logic_boolean|default=false|gameplay_synced|before_native_operation_cancel|supported=tookDamage
+[event_*].setEventValue|new_section_key|runtime_logic_number|default=omitted|gameplay_synced|before_native_primary_value_replace|supported=tookDamage
+[event_*].addEventValue|new_section_key|runtime_logic_number|default=omitted|gameplay_synced|before_native_primary_value_add|supported=tookDamage
+[event_*].multiplyEventValue|new_section_key|runtime_logic_number|default=omitted|gameplay_synced|before_native_primary_value_multiply|supported=tookDamage

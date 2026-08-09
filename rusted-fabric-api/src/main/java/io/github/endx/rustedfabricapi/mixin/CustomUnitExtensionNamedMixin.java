@@ -7,6 +7,7 @@ import io.github.endx.rustedfabricapi.api.unit.tag.event.UnitTagEvents;
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
 import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
 import io.github.endx.rustedfabricapi.impl.custom.QueuedEventActionRuntime;
+import io.github.endx.rustedfabricapi.impl.custom.CustomUnitOperationRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -96,12 +97,32 @@ public abstract class CustomUnitExtensionNamedMixin {
     }
 
     @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F",
-            at = @At("HEAD"), require = 1)
+            at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beginEnhancedDamageEvent(Unit attacker, float amount,
                                                           Projectile projectile,
                                                           CallbackInfoReturnable<Float> cir) {
+        CustomUnit unit = (CustomUnit) (Object) this;
+        if (!CustomUnitOperationRuntime.consumeDamagePreparationBypass(unit)
+                && io.github.endx.rustedfabricapi.api.custom.event.CustomUnitOperationEvents
+                        .BEFORE_EVENT.listenerCount() != 0) {
+            io.github.endx.rustedfabricapi.api.custom.event.MutableCustomUnitEventContext context =
+                    CustomUnitOperationRuntime.prepareDamage(unit, attacker, amount, projectile);
+            if (context.cancelled()) {
+                cir.setReturnValue(Float.valueOf(0.0F));
+                return;
+            }
+            float replacement = (float) context.value();
+            if (!Float.isFinite(replacement)) {
+                throw new IllegalArgumentException("prepared damage is outside finite float range");
+            }
+            if (Float.floatToIntBits(replacement) != Float.floatToIntBits(amount)) {
+                cir.setReturnValue(Float.valueOf(CustomUnitOperationRuntime.runPreparedDamage(unit,
+                        () -> Float.valueOf(unit.applyDamage(attacker, replacement, projectile)))));
+                return;
+            }
+        }
         DamageEventDataRuntime.beginCustomDamage(
-                (CustomUnit) (Object) this, attacker, amount, projectile);
+                unit, attacker, amount, projectile);
     }
 
     @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F",

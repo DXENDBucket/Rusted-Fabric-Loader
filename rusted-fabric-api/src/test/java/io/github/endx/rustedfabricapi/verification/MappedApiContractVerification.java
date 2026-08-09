@@ -27,6 +27,7 @@ import io.github.endx.rustedfabricapi.api.config.ModConfigFiles;
 import io.github.endx.rustedfabricapi.api.custom.action.event.CustomActionEffectEvents;
 import io.github.endx.rustedfabricapi.api.custom.attachment.event.AttachmentEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitOperationEvents;
 import io.github.endx.rustedfabricapi.api.data.PersistentData;
 import io.github.endx.rustedfabricapi.api.data.PersistentDataCodec;
 import io.github.endx.rustedfabricapi.api.data.PersistentDataKey;
@@ -936,6 +937,19 @@ public final class MappedApiContractVerification {
         require(CustomUnitTriggerEvents.BEFORE_TRIGGER.invoker().beforeTrigger(null, null),
                 "custom-unit trigger cancellation was not propagated");
         trigger.close();
+
+        AtomicInteger operationCalls = new AtomicInteger();
+        RustedFabricEvent.Registration operationFirst =
+                CustomUnitOperationEvents.BEFORE_EVENT.subscribe(
+                        context -> operationCalls.incrementAndGet());
+        RustedFabricEvent.Registration operationSecond =
+                CustomUnitOperationEvents.BEFORE_EVENT.subscribe(
+                        context -> operationCalls.incrementAndGet());
+        CustomUnitOperationEvents.BEFORE_EVENT.invoker().beforeEvent(null);
+        require(operationCalls.get() == 2,
+                "mutable custom-unit operation event skipped a listener");
+        operationFirst.close();
+        operationSecond.close();
     }
 
     private static void require(boolean condition, String message) {

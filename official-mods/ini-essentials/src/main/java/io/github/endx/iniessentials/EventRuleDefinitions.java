@@ -3,6 +3,8 @@ package io.github.endx.iniessentials;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventEvaluation;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitOperationEvents;
+import io.github.endx.rustedfabricapi.api.custom.event.MutableCustomUnitEventContext;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
@@ -21,12 +23,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Declarative rules applied before the native queued event action list starts. */
+/** Declarative synchronous-operation and queued-notification event rules. */
 final class EventRuleDefinitions {
     private static final String PREFIX = "event_";
     private static final Map<Object, List<Rule>> BY_METADATA = Collections.synchronizedMap(
             new WeakHashMap<Object, List<Rule>>());
+    private static final AtomicBoolean BEFORE_LISTENER_REGISTERED = new AtomicBoolean();
 
     private EventRuleDefinitions() { }
 
@@ -54,23 +58,53 @@ final class EventRuleDefinitions {
     }
 
     private static void parseAndStore(Object metadata, UnitConfig config, String section) {
-        String phase = optional(config, section, "phase");
-        if (phase != null && !"queued".equalsIgnoreCase(phase.trim())) {
+        CustomUnitEventType eventType = parseEventType(required(config, section, "event"));
+        Phase phase = parsePhase(optional(config, section, "phase"));
+        String cancelActions = optional(config, section, "cancelEventActions");
+        String setNumbers = optional(config, section, "setEventNumber");
+        String addNumbers = optional(config, section, "addEventNumber");
+        String multiplyNumbers = optional(config, section, "multiplyEventNumber");
+        String setBooleans = optional(config, section, "setEventBoolean");
+        String cancelEvent = optional(config, section, "cancelEvent");
+        String setValue = optional(config, section, "setEventValue");
+        String addValue = optional(config, section, "addEventValue");
+        String multiplyValue = optional(config, section, "multiplyEventValue");
+        if (phase == Phase.BEFORE && eventType != CustomUnitEventType.TOOK_DAMAGE) {
             throw new IllegalArgumentException(
-                    "event phase currently supports only queued; native before/after phases are event-specific");
+                    "phase before currently supports only event: tookDamage");
         }
-        Rule rule = new Rule(parseEventType(required(config, section, "event")),
+        if (phase == Phase.BEFORE && anyPresent(
+                cancelActions, setNumbers, addNumbers, multiplyNumbers, setBooleans)) {
+            throw new IllegalArgumentException(
+                    "before rules use cancelEvent/setEventValue/addEventValue/multiplyEventValue; "
+                            + "queued event-data fields cannot modify the native operation");
+        }
+        if (phase == Phase.QUEUED && anyPresent(
+                cancelEvent, setValue, addValue, multiplyValue)) {
+            throw new IllegalArgumentException(
+                    "queued rules use cancelEventActions and named event-data fields; "
+                            + "cancelEvent/event-value fields require phase: before");
+        }
+        Rule rule = new Rule(eventType, phase,
                 BooleanExpression.compile(metadata, optional(config, section, "when"), "true"),
-                BooleanExpression.compile(metadata,
-                        optional(config, section, "cancelEventActions"), "false"),
-                parseNumbers(metadata, optional(config, section, "setEventNumber")),
-                parseNumbers(metadata, optional(config, section, "addEventNumber")),
-                parseNumbers(metadata, optional(config, section, "multiplyEventNumber")),
-                parseBooleans(metadata, optional(config, section, "setEventBoolean")));
+                expression(metadata, cancelActions, false),
+                parseNumbers(metadata, setNumbers),
+                parseNumbers(metadata, addNumbers),
+                parseNumbers(metadata, multiplyNumbers),
+                parseBooleans(metadata, setBooleans),
+                expression(metadata, cancelEvent, false),
+                numberExpression(metadata, setValue),
+                numberExpression(metadata, addValue),
+                numberExpression(metadata, multiplyValue));
         synchronized (BY_METADATA) {
             List<Rule> rules = BY_METADATA.computeIfAbsent(metadata,
                     ignored -> new ArrayList<Rule>());
             rules.add(rule);
+        }
+        if (phase == Phase.BEFORE
+                && BEFORE_LISTENER_REGISTERED.compareAndSet(false, true)) {
+            CustomUnitOperationEvents.BEFORE_EVENT.register(
+                    EventRuleDefinitions::applyBeforeRules);
         }
     }
 
@@ -82,11 +116,42 @@ final class EventRuleDefinitions {
         VariableScope dataScope = scope != null ? scope : new VariableScope();
         CustomUnitEventData data = CustomUnitEventData.wrap(dataScope);
         for (Rule rule : rules) {
-            if (rule.eventType != eventType) continue;
+            if (rule.phase != Phase.QUEUED || rule.eventType != eventType) continue;
             boolean cancelled = CustomUnitEventEvaluation.withContext(
                     unit, source, tags, dataScope,
                     () -> rule.apply(unit, data));
             if (cancelled) return true;
+        }
+        return false;
+    }
+
+    private static void applyBeforeRules(MutableCustomUnitEventContext context) {
+        List<Rule> rules = BY_METADATA.get(context.unit().unitMetadata);
+        if (rules == null || rules.isEmpty()) return;
+        for (Rule rule : rules) {
+            if (rule.phase != Phase.BEFORE || rule.eventType != context.eventType()) continue;
+            CustomUnitEventEvaluation.withContext(
+                    context.unit(), context.sourceUnit().orElse(null),
+                    context.tags().orElse(null), context.data().nativeScope(),
+                    () -> {
+                        rule.applyBefore(context.unit(), context);
+                        return null;
+                    });
+            if (context.cancelled()) return;
+        }
+    }
+
+    private static BooleanExpression expression(Object metadata, String raw, boolean fallback) {
+        return BooleanExpression.compile(metadata, raw, Boolean.toString(fallback));
+    }
+
+    private static NumericExpression numberExpression(Object metadata, String raw) {
+        return raw == null || raw.trim().isEmpty() ? null : NumericExpression.compile(metadata, raw);
+    }
+
+    private static boolean anyPresent(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) return true;
         }
         return false;
     }
@@ -153,6 +218,14 @@ final class EventRuleDefinitions {
         throw new IllegalArgumentException("unknown custom-unit event: " + raw);
     }
 
+    private static Phase parsePhase(String raw) {
+        if (raw == null || raw.trim().isEmpty() || "queued".equalsIgnoreCase(raw.trim())) {
+            return Phase.QUEUED;
+        }
+        if ("before".equalsIgnoreCase(raw.trim())) return Phase.BEFORE;
+        throw new IllegalArgumentException("unknown event phase: " + raw);
+    }
+
     private static String normalize(String raw) {
         return raw.trim().toLowerCase(Locale.ROOT).replace("_", "").replace("-", "");
     }
@@ -177,24 +250,36 @@ final class EventRuleDefinitions {
 
     private static final class Rule {
         private final CustomUnitEventType eventType;
+        private final Phase phase;
         private final BooleanExpression when;
         private final BooleanExpression cancel;
         private final List<NumberAssignment> setNumbers;
         private final List<NumberAssignment> addNumbers;
         private final List<NumberAssignment> multiplyNumbers;
         private final List<BooleanAssignment> setBooleans;
+        private final BooleanExpression cancelEvent;
+        private final NumericExpression setValue;
+        private final NumericExpression addValue;
+        private final NumericExpression multiplyValue;
 
-        private Rule(CustomUnitEventType eventType, BooleanExpression when,
+        private Rule(CustomUnitEventType eventType, Phase phase, BooleanExpression when,
                      BooleanExpression cancel, List<NumberAssignment> setNumbers,
                      List<NumberAssignment> addNumbers, List<NumberAssignment> multiplyNumbers,
-                     List<BooleanAssignment> setBooleans) {
+                     List<BooleanAssignment> setBooleans, BooleanExpression cancelEvent,
+                     NumericExpression setValue, NumericExpression addValue,
+                     NumericExpression multiplyValue) {
             this.eventType = eventType;
+            this.phase = phase;
             this.when = when;
             this.cancel = cancel;
             this.setNumbers = setNumbers;
             this.addNumbers = addNumbers;
             this.multiplyNumbers = multiplyNumbers;
             this.setBooleans = setBooleans;
+            this.cancelEvent = cancelEvent;
+            this.setValue = setValue;
+            this.addValue = addValue;
+            this.multiplyValue = multiplyValue;
         }
 
         private boolean apply(CustomUnit unit, CustomUnitEventData data) {
@@ -215,7 +300,17 @@ final class EventRuleDefinitions {
             }
             return cancel.evaluate(unit);
         }
+
+        private void applyBefore(CustomUnit unit, MutableCustomUnitEventContext context) {
+            if (!when.evaluate(unit)) return;
+            if (setValue != null) context.setValue(setValue.evaluate(unit));
+            if (addValue != null) context.addValue(addValue.evaluate(unit));
+            if (multiplyValue != null) context.multiplyValue(multiplyValue.evaluate(unit));
+            if (cancelEvent.evaluate(unit)) context.cancel();
+        }
     }
+
+    private enum Phase { QUEUED, BEFORE }
 
     private static final class NumberAssignment {
         private final String name;

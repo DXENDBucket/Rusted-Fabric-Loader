@@ -1403,6 +1403,13 @@ booleans, strings, or unit references before native actions execute, while prese
 It can mutate the scope or cancel the queued handler list while keeping the relative order of every
 uncancelled native handler unchanged. The older `BEFORE_QUEUE` remains the earliest raw queue hook.
 
+`CustomUnitOperationEvents.BEFORE_EVENT` is the separate synchronous native-operation boundary.
+Listeners receive a `MutableCustomUnitEventContext` before the operation happens and can replace,
+add to, or multiply its primary value, mutate typed event data, or cancel the operation itself. The
+first wired operation is custom-unit `tookDamage`, intercepted before attachment forwarding,
+immunity, armour, and event queueing. A changed value re-enters the original native method under a
+recursion guard; the API does not duplicate the game's damage algorithm or alter action ordering.
+
 `QueuedEventActionContext.current()` exposes the active queued `autoTriggerOnEvent` handler to Java
 mods. Its mutable data view is shared by all handlers queued for the same notification, and
 `cancelRemainingActions()` skips only later handlers in that notification. It does not report an
