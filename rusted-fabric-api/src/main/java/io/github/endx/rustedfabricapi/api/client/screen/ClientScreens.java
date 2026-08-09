@@ -28,4 +28,7 @@ public final class ClientScreens {
 
     /** Clears page navigation history without closing the current page. */
     public static void clearHistory() { ScreenRuntime.clearHistory(); }
+
+    /** Opens a native, touch-scrollable list page and adds the current page to history. */
+    public static void openList(ListScreenSpec spec) { ScreenRuntime.openList(spec); }
 }

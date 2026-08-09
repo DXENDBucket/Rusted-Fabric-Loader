@@ -54,6 +54,7 @@ public final class RemapJar {
     private static final String MIXIN_DESC = "Lorg/spongepowered/asm/mixin/Mixin;";
     private static final String SHADOW_DESC = "Lorg/spongepowered/asm/mixin/Shadow;";
     private static final String AT_DESC = "Lorg/spongepowered/asm/mixin/injection/At;";
+    private static final String ACCESSOR_DESC = "Lorg/spongepowered/asm/mixin/gen/Accessor;";
 
     private RemapJar() {
     }
@@ -593,6 +594,10 @@ public final class RemapJar {
                     methodNode.desc = mapping.descriptor;
                     changed = true;
                 }
+                changed |= rewriteAccessorAnnotations(methodNode.visibleAnnotations,
+                        methodNode.desc, mixinTargets);
+                changed |= rewriteAccessorAnnotations(methodNode.invisibleAnnotations,
+                        methodNode.desc, mixinTargets);
                 changed |= rewriteAnnotations(methodNode.visibleAnnotations, mixinTargets);
                 changed |= rewriteAnnotations(methodNode.invisibleAnnotations, mixinTargets);
                 for (AbstractInsnNode instruction : methodNode.instructions) {
@@ -634,6 +639,46 @@ public final class RemapJar {
             ClassWriter classWriter = new ClassWriter(0);
             classNode.accept(classWriter);
             return classWriter.toByteArray();
+        }
+
+        private boolean rewriteAccessorAnnotations(List<AnnotationNode> annotations,
+                                                   String methodDescriptor,
+                                                   List<String> mixinTargets) {
+            if (annotations == null) return false;
+            Type methodType = Type.getMethodType(methodDescriptor);
+            Type[] arguments = methodType.getArgumentTypes();
+            Type returnType = methodType.getReturnType();
+            String fieldDescriptor;
+            if (arguments.length == 0 && returnType.getSort() != Type.VOID) {
+                fieldDescriptor = returnType.getDescriptor();
+            } else if (arguments.length == 1 && returnType.getSort() == Type.VOID) {
+                fieldDescriptor = arguments[0].getDescriptor();
+            } else {
+                fieldDescriptor = null;
+            }
+
+            boolean changed = false;
+            for (AnnotationNode annotation : annotations) {
+                if (annotation == null || !ACCESSOR_DESC.equals(annotation.desc)
+                        || annotation.values == null) continue;
+                if (fieldDescriptor == null) {
+                    throw new IllegalStateException("Unsupported @Accessor method descriptor: "
+                            + methodDescriptor);
+                }
+                for (int i = 0; i < annotation.values.size(); i += 2) {
+                    if (!"value".equals(annotation.values.get(i))
+                            || !(annotation.values.get(i + 1) instanceof String)) continue;
+                    String oldName = (String) annotation.values.get(i + 1);
+                    if (oldName.isEmpty()) continue;
+                    MemberMapping mapping = findMixinMemberMapping(fields, oldName,
+                            fieldDescriptor, mixinTargets, "@Accessor field");
+                    if (!oldName.equals(mapping.name)) {
+                        annotation.values.set(i + 1, mapping.name);
+                        changed = true;
+                    }
+                }
+            }
+            return changed;
         }
 
         private MemberMapping findMixinMemberMapping(Map<MemberKey, MemberMapping> mappings,
@@ -720,7 +765,7 @@ public final class RemapJar {
                 for (int i = 0; i < annotation.values.size(); i += 2) {
                     String name = (String) annotation.values.get(i);
                     Object value = annotation.values.get(i + 1);
-                    if ("targets".equals(name) || "target".equals(name)) {
+                    if ("value".equals(name) || "targets".equals(name) || "target".equals(name)) {
                         collectClassStringTargets(value, targets);
                     }
                 }

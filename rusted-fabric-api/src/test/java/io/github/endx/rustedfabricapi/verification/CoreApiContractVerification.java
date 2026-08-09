@@ -43,7 +43,7 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 36,
+        require(ApiSupportMatrix.entries().size() == 37,
                 "public API support matrix does not cover every event group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,

@@ -3,11 +3,15 @@ package io.github.endx.rustedfabricapi.internal.client.screen;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import com.Element;
 import com.ElementDocument;
 import io.github.endx.rustedfabricapi.api.client.screen.ScreenEvents;
+import io.github.endx.rustedfabricapi.api.client.screen.ListScreenEntry;
+import io.github.endx.rustedfabricapi.api.client.screen.ListScreenSpec;
 import io.github.endx.rustedfabricapi.api.client.screen.UiDocumentChange;
 import io.github.endx.rustedfabricapi.api.client.screen.UiDocumentKind;
 import io.github.endx.rustedfabricapi.api.client.screen.UiDocumentSnapshot;
@@ -18,6 +22,11 @@ import rustedwarfare.ui.PopupDocumentData;
 
 /** Internal bridge that is the only layer retaining native LibRocket document identities. */
 public final class ScreenRuntime {
+    private static final String LIST_SPEC_KEY = "rustedfabricapi:listSpec";
+    private static final String LIST_PAGE_KEY = "rustedfabricapi:listPage";
+    private static final String LIST_FILTER_EVENT = "__rustedfabricapi_list_filter__";
+    private static final String LIST_FILTER_ID = "rustedfabricapi-list-filter";
+    private static final String LIST_ENTRY_ID_PREFIX = "rustedfabricapi-list-entry-";
     private static final Object LOCK = new Object();
     private static final IdentityHashMap<ElementDocument, Long> IDS =
             new IdentityHashMap<ElementDocument, Long>();
@@ -35,6 +44,8 @@ public final class ScreenRuntime {
 
     public static void onPageLoaded(LibRocketUiEngine engine, ElementDocument document) {
         if (engine == null || document == null) return;
+        MainMenuRuntime.decorate(document);
+        decorateListPage(engine, document);
         UiDocumentSnapshot snapshot;
         synchronized (LOCK) {
             ensureOwner(engine);
@@ -191,6 +202,119 @@ public final class ScreenRuntime {
     public static void back() { requireEngine().backToLastDocument(); }
     public static void reloadActivePage() { requireEngine().reloadDocument(); }
     public static void clearHistory() { requireEngine().clearHistory(); }
+
+    public static void openList(ListScreenSpec spec) {
+        ListScreenSpec checked = java.util.Objects.requireNonNull(spec, "spec");
+        Map<String, Object> metadata = new LinkedHashMap<String, Object>();
+        metadata.put(LIST_PAGE_KEY, Boolean.TRUE);
+        metadata.put(LIST_SPEC_KEY, checked);
+        metadata.put("title", checked.title());
+        requireEngine().setDocument("mods.rml", new java.util.HashMap<String, Object>(metadata));
+    }
+
+    /** Handles the small set of opaque events owned by API list pages. */
+    public static boolean handleUiEvent(String event) {
+        if (event == null) return false;
+        LibRocketUiEngine engine = currentEngine();
+        ElementDocument document = engine != null ? engine.getActiveDocument() : null;
+        if (document == null || !Boolean.TRUE.equals(document.getMetadata(LIST_PAGE_KEY))) {
+            return false;
+        }
+        String value = event.trim();
+        if ("mods.loadMods()".equals(value)) return true;
+        if (!LIST_FILTER_EVENT.equals(value)) return false;
+        Object rawSpec = document.getMetadata(LIST_SPEC_KEY);
+        if (rawSpec instanceof ListScreenSpec) {
+            applyListFilter(document, (ListScreenSpec) rawSpec);
+        }
+        return true;
+    }
+
+    private static void decorateListPage(LibRocketUiEngine engine, ElementDocument document) {
+        Object rawSpec = document.getMetadata(LIST_SPEC_KEY);
+        if (!(rawSpec instanceof ListScreenSpec)) return;
+        ListScreenSpec spec = (ListScreenSpec) rawSpec;
+        com.Element body = document.getElementById("body");
+        if (body == null) return;
+        body.setInnerRML(listMarkup(spec));
+        engine.loadCharsetIfNeededOnChildren(body, true);
+    }
+
+    private static String listMarkup(ListScreenSpec spec) {
+        StringBuilder html = new StringBuilder(2048 + spec.entries().size() * 256);
+        html.append("<div class=\"background panelMainNoAlpha whiteText\">")
+                .append("<div class=\"panelCloseButton\" onclick=\"backOrClose()\" click_on_escape=\"\"/>")
+                .append("<div id=\"scrollDivWrap\"><div id=\"scrollDiv\">");
+        if (spec.filterEnabled()) {
+            html.append("<div class=\"modFilter smallForms inputDiv textinputUnicodeWrap\"><label>")
+                    .append(html(spec.filterLabel()))
+                    .append("</label> <input id=\"").append(LIST_FILTER_ID)
+                    .append("\" type=\"text\" value=\"\" onchange=\"")
+                    .append(LIST_FILTER_EVENT).append("\" onkeyup=\"")
+                    .append(LIST_FILTER_EVENT).append("\"/></div>");
+        }
+        html.append("<h2>").append(html(spec.title())).append("</h2>");
+        if (!spec.summary().isEmpty()) {
+            html.append("<p class=\"helpTextLarge\">").append(html(spec.summary())).append("</p>");
+        }
+        html.append("<div class=\"group\">");
+        if (spec.entries().isEmpty()) {
+            html.append("<p class=\"center\">").append(html(spec.emptyMessage())).append("</p>");
+        } else {
+            for (int i = 0; i < spec.entries().size(); i++) {
+                ListScreenEntry entry = spec.entries().get(i);
+                html.append("<div id=\"").append(LIST_ENTRY_ID_PREFIX).append(i)
+                        .append("\" class=\"modItem\"><div><label>")
+                        .append(html(entry.title())).append("</label></div>");
+                if (!entry.details().isEmpty()) {
+                    html.append("<p class=\"modInfo\">").append(html(entry.details())).append("</p>");
+                }
+                if (!entry.description().isEmpty()) {
+                    html.append("<p class=\"modMessage\">").append(html(entry.description())).append("</p>");
+                }
+                html.append("</div>");
+            }
+        }
+        return html.append("</div><br/></div><div class=\"mainButtons\"><button onclick=\"backOrClose()\">")
+                .append(html(spec.backButton())).append("</button></div></div></div>").toString();
+    }
+
+    private static void applyListFilter(ElementDocument document, ListScreenSpec spec) {
+        Element input = document.getElementById(LIST_FILTER_ID);
+        if (input == null) return;
+        String query = input.getValue();
+        query = query != null ? query.trim().toLowerCase(Locale.ROOT) : "";
+        for (int i = 0; i < spec.entries().size(); i++) {
+            Element element = document.getElementById(LIST_ENTRY_ID_PREFIX + i);
+            if (element == null) continue;
+            ListScreenEntry entry = spec.entries().get(i);
+            String searchable = (entry.title() + '\n' + entry.details() + '\n'
+                    + entry.description()).toLowerCase(Locale.ROOT);
+            if (query.isEmpty() || searchable.contains(query)) {
+                element.removeClass("modItemFilteredOut");
+            } else if (!element.hasClassName("modItemFilteredOut")) {
+                element.addClass("modItemFilteredOut");
+            }
+        }
+    }
+
+    private static String html(String value) {
+        StringBuilder escaped = new StringBuilder(value.length() + 16);
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '&': escaped.append("&amp;"); break;
+                case '<': escaped.append("&lt;"); break;
+                case '>': escaped.append("&gt;"); break;
+                case '"': escaped.append("&quot;"); break;
+                case '\'': escaped.append("&#39;"); break;
+                case '\n': escaped.append("<br/>"); break;
+                case '\r': break;
+                default: escaped.append(c);
+            }
+        }
+        return escaped.toString();
+    }
 
     private static Optional<UiDocumentSnapshot> current(LibRocketUiEngine engine,
             ElementDocument document, UiDocumentKind kind) {

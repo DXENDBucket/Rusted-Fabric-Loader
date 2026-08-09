@@ -1,4 +1,5 @@
 capability,apiClass
+client.screen.v1,client.screen.ClientScreens
 event.audio.runtime.v1,event.AudioRuntimeEvents
 event.build.queue.v1,unit.build.event.BuildQueueEvents
 event.command.issue.v1,command.event.CommandEvents

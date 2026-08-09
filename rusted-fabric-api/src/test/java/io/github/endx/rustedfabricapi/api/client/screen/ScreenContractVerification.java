@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
+import io.github.endx.rustedfabricapi.api.util.Identifier;
 
 public final class ScreenContractVerification {
     private ScreenContractVerification() {
@@ -69,9 +70,48 @@ public final class ScreenContractVerification {
         activeChanged.close();
         topmostChanged.close();
 
+        ListScreenSpec list = ListScreenSpec.builder("Java Mods")
+                .summary("2 loaded")
+                .emptyMessage("None")
+                .backButton("Return")
+                .filter("Filter:")
+                .add("Alpha", "1.0", "First")
+                .add(ListScreenEntry.of("Beta", "2.0", "Second"))
+                .build();
+        require(list.entries().size() == 2 && list.title().equals("Java Mods")
+                        && list.filterEnabled() && list.filterLabel().equals("Filter:")
+                        && list.entries().get(1).description().equals("Second"),
+                "list screen spec lost content");
+        try {
+            list.entries().add(ListScreenEntry.of("Other", "", ""));
+            throw new AssertionError("list screen entries were mutable");
+        } catch (UnsupportedOperationException expected) {
+            // Expected.
+        }
+
+        MainMenuButton button = MainMenuButton.dynamic(Identifier.of("contract", "menu"),
+                () -> "Contract", calls::incrementAndGet);
+        RustedFabricEvent.Registration menu = MainMenuButtons.register(button);
+        require(MainMenuButtons.registered().contains(button) && button.label().equals("Contract"),
+                "main-menu button was not registered");
+        require(menu.unregister() && !MainMenuButtons.registered().contains(button),
+                "main-menu button was not unregistered");
+
         try {
             new UiDocumentChange(null, null);
             throw new AssertionError("empty document change was accepted");
+        } catch (IllegalArgumentException expected) {
+            // Expected.
+        }
+
+        expectIllegal(() -> ListScreenSpec.builder(" ").build());
+        expectIllegal(() -> ListScreenEntry.of(" ", "", ""));
+    }
+
+    private static void expectIllegal(Runnable action) {
+        try {
+            action.run();
+            throw new AssertionError("invalid screen content was accepted");
         } catch (IllegalArgumentException expected) {
             // Expected.
         }

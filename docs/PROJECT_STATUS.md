@@ -60,6 +60,7 @@ The following must remain outside Git:
 | --- | --- | --- |
 | `src/` | maintained | GameProvider, tooling, mappings, and Loader runtime |
 | `rusted-fabric-api/` | maintained | sole public API, mapped implementation, Mixins, and remapping |
+| `mod-menu/` | maintained | localized in-game list of loaded Java mods |
 | `example-mod/` | maintained | API and named-to-official remapping example |
 | `android/launcher/` | maintained | no-root Android application and native JVM/render host |
 | `android/jvm-launcher-core/` | maintained | desktop import, JVM validation, and launch planning |

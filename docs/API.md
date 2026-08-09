@@ -560,8 +560,30 @@ contain both the previous and next snapshots.
 
 `ClientScreens` provides read-only queries for the active page, popup, alert, and topmost document.
 Its `back`, `reloadActivePage`, `clearHistory`, and `closeTopmostOverlay` methods use the game's
-normal navigation paths and should be called from the update/UI thread. Arbitrary RML document
-opening is intentionally not public yet because it requires a resource and script-isolation policy.
+normal navigation paths and should be called from the update/UI thread. `openList` opens a bounded,
+escaped `ListScreenSpec` using the native Mods-page shell, scrolling, history, and Back
+behavior. Calling `filter("Filter:")` adds the native top-right text filter; it searches
+entry titles, details, and descriptions without exposing RML or script strings to mods.
+
+`MainMenuButtons` is the safe main-menu extension point. A `MainMenuButton` has a namespaced ID,
+a fixed or locale-sensitive label, and a Java callback. Registered buttons are cloned from the
+native Mods button and inserted immediately below it whenever `mainMenu.rml` loads. Callbacks are
+dispatched directly by the API rather than evaluated by the game's script engine:
+
+```java
+MainMenuButtons.register(MainMenuButton.of(
+        Identifier.of("my_mod", "open"), "My Mod", () -> {
+            ListScreenSpec page = ListScreenSpec.builder("My Mod")
+                    .filter("Filter:")
+                    .add("Loaded item", "Version 1", "Description")
+                    .build();
+            ClientScreens.openList(page);
+        }));
+```
+
+Registration normally happens in the client initializer, before the first main menu is loaded.
+List opening and menu callbacks run on the update/UI thread. Arbitrary RML documents remain private
+because they still require a resource and script-isolation policy.
 
 `ClientDialogs` covers the common interactive case without RML or script strings. A dialog has one
 required primary button, an optional secondary button, optional text input, optional Enter-to-submit,

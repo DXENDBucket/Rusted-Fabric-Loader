@@ -162,6 +162,7 @@ The maintained runtime foundation currently spans:
 
 ```text
 rusted-fabric-api          public API, mapped implementation, Mixins, and remapping
+mod-menu                   in-game list of loaded Java mods
 android:jvm-launcher-core  PC game import, ARM64 JVM validation, and launch planning
 android/launcher:app       no-root Android UI and isolated JNI JVM/render host
 ```
@@ -201,6 +202,12 @@ example-mod/build/libs/rusted-fabric-example-mod-0.1.0-official.jar
 ```
 
 Use the official jar with the normal `game-lib.jar` runtime.
+
+## Mod Menu
+
+The `mod-menu` subproject adds a localized Java Mods button below the game's built-in Mods button.
+It opens a native scrolling page containing Fabric's loaded mod metadata. Build its official-runtime
+Jar with `gradlew.bat :mod-menu:remapJarToOfficial`; `installToGameDir` installs it by default.
 
 ## Modding with Fabric
 Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a few conveniences for Rusted Warfare:

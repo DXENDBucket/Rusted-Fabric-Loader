@@ -4,6 +4,7 @@ import com.ElementDocument;
 import io.github.endx.rustedfabricapi.api.client.screen.UiDocumentKind;
 import io.github.endx.rustedfabricapi.api.event.UiScriptEvents;
 import io.github.endx.rustedfabricapi.internal.client.screen.ScreenRuntime;
+import io.github.endx.rustedfabricapi.internal.client.screen.MainMenuRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,8 +15,13 @@ import rustedwarfare.ui.PopupDocumentData;
 
 @Mixin(targets = "rustedwarfare.ui.LibRocketUiEngine", remap = false)
 public abstract class LibRocketUiEngineNamedMixin {
-    @Inject(method = "HandleEvent(Ljava/lang/String;)V", at = @At("HEAD"), require = 1)
+    @Inject(method = "HandleEvent(Ljava/lang/String;)V", at = @At("HEAD"), cancellable = true,
+            require = 1)
     private void rustedfabricapi$beforeUiEventHandled(String event, CallbackInfo ci) {
+        if (ScreenRuntime.handleUiEvent(event) || MainMenuRuntime.handleEvent(event)) {
+            ci.cancel();
+            return;
+        }
         UiScriptEvents.BEFORE_UI_EVENT_HANDLED.invoker()
                 .beforeUiEventHandled(this, event);
     }

@@ -971,6 +971,7 @@ public class RustedWarfareGameProvider implements GameProvider {
                 "event.custom.asset.v1", "event.custom.unit.load.v1",
                 "event.custom.unit.lifecycle.v1", "event.custom.unit.render.v1",
                 "event.custom.unit.runtime.v1", "event.effect.runtime.v1",
+                "client.screen.v1",
                 "event.file.system.v1", "event.game.lifecycle.v1",
                 "event.hud.command.v1", "event.map.discovery.v1",
                 "event.map.mission.v1", "event.map.spawn.v1",
