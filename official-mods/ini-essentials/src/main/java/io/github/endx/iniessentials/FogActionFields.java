@@ -102,7 +102,8 @@ final class FogActionFields {
                 TeamSelector.parse(optional(config, section, "team", "own")),
                 Anchor.parse(optional(config, section, "anchor", "self")),
                 NumericExpression.compile(metadata, optional(config, section, "duration", "0")),
-                parseBoolean(optional(config, section, "follow", "true")));
+                BooleanExpression.compile(metadata,
+                        optional(config, section, "follow", "true")));
         Map<String, Template> definitions = BY_METADATA.get(metadata);
         if (definitions == null) {
             definitions = new LinkedHashMap<String, Template>();
@@ -137,12 +138,6 @@ final class FogActionFields {
         throw new IllegalArgumentException("unknown fog mode: " + raw);
     }
 
-    private static boolean parseBoolean(String raw) {
-        if ("true".equalsIgnoreCase(raw.trim())) return true;
-        if ("false".equalsIgnoreCase(raw.trim())) return false;
-        throw new IllegalArgumentException("expected true or false: " + raw);
-    }
-
     private static String required(UnitConfig config, String section, String key) {
         String value = config.getString(section, key, null);
         if (value == null || value.trim().isEmpty()) {
@@ -170,11 +165,12 @@ final class FogActionFields {
         private final TeamSelector teamSelector;
         private final Anchor anchor;
         private final NumericExpression duration;
-        private final boolean follow;
+        private final BooleanExpression follow;
 
         private Template(Object metadata, String name, String geometry,
                          FogOperation operation, TeamSelector teamSelector,
-                         Anchor anchor, NumericExpression duration, boolean follow) {
+                         Anchor anchor, NumericExpression duration,
+                         BooleanExpression follow) {
             this.metadata = metadata; this.name = name; this.geometry = geometry;
             this.operation = operation; this.teamSelector = teamSelector;
             this.anchor = anchor; this.duration = duration; this.follow = follow;
@@ -192,8 +188,9 @@ final class FogActionFields {
                 final GeometryMask snapshot = initial;
                 FogSources.add(team, operation,
                         seconds < 0.0F ? FogSources.PERMANENT : seconds * 60.0F,
-                        follow,
-                        () -> follow ? worldMask(context) : snapshot);
+                        !follow.isStaticFalse(),
+                        () -> follow.evaluate(context.actor())
+                                ? worldMask(context) : snapshot);
             }
         }
 

@@ -12,24 +12,27 @@ ordinary value.
 
 ```ini
 [core]
-allowNegativeHp: true
+allowNegativeHp: memory.berserk or self.resource.rage > 0
 ```
 
-`allowNegativeHp` is optional and defaults to `false`. When enabled, overkill damage can leave that
-custom unit's HP below zero. Installing INI Essentials alone remains multiplayer-optional; parsing
-an enabled synchronized field promotes it to a required matching peer dependency.
+`allowNegativeHp` is optional and defaults to `false`. It is a runtime LogicBoolean evaluated for
+the damaged unit, so memory, resources and ordinary boolean logic can control when overkill leaves
+HP below zero. Installing INI Essentials alone remains multiplayer-optional; parsing a potentially
+enabled synchronized field promotes it to a required matching peer dependency.
 
 Camera action effects are available in both visible and hidden custom actions:
 
 ```ini
 [action_focus]
-cameraCenterOn: actionTarget,0,-60
-cameraTargetZoom: 1.25
-cameraStopMovement: true
+cameraCenterOn: actionTarget,memory.cameraOffsetX,-self.resource.cameraLift
+cameraTargetZoom: clamp(memory.zoom,0.5,3)
+cameraStopMovement: memory.lockCamera
 ```
 
 `cameraCenterAt`, `cameraCenterBy`, and `cameraCenterOn` are mutually exclusive inside one action.
-`cameraCenterOn` accepts `self`, `target`, or `actionTarget`, followed by optional X/Y offsets. The
+Their coordinates, offsets and zoom are runtime numeric expressions; `cameraStopMovement` is a
+runtime LogicBoolean. `cameraCenterOn` accepts `self`, `target`, or `actionTarget`, followed by
+optional dynamic X/Y offsets. The
 effects run only on the client locally controlling the acting unit's team; they do not alter
 deterministic simulation state or another player's camera. A missing unit/action target makes the
 corresponding contextual move a safe no-op.
@@ -73,6 +76,8 @@ black unexplored shroud without hiding visible tiles, `conceal` restores explore
 the operation for that many seconds after the native LOS pass; a negative value remains active until
 the session ends. `setFogMode: off|basic|los` changes the global native mode and initializes missing
 team fog maps as unexplored.
+`duration` is a runtime number expression. `follow` is a runtime LogicBoolean checked while the
+source is active; when false, the source uses the geometry snapshot captured by its action.
 
 Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`, `cbrt`, `abs`, `floor`, `ceil`,
 `round`, `sign`, `clamp`, `lerp`, `inverse_lerp`, `hypot`, `atan2`, `atan`, `asin`, `acos`, `tan`,

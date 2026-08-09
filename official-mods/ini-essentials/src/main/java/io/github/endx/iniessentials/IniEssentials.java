@@ -28,18 +28,20 @@ public final class IniEssentials implements ModInitializer {
         DamageEventData.enable(IniEssentials::activateSynchronizedRequirement);
         NativeEventData.enable(IniEssentials::activateSynchronizedRequirement);
         IniExtensions.register(IniFieldDefinition
-                .<Boolean>builder(MOD_ID, "allow_negative_hp",
+                .<String>builder(MOD_ID, "allow_negative_hp",
                         IniSectionSelector.exact("core"), "allowNegativeHp")
-                .decoder(context -> parseBoolean(context.rawValue()))
+                .decoder(context -> context.rawValue().trim())
                 .applier(field -> {
-                    NegativeHpPolicy.configure(field.metadata(), field.value());
-                    if (field.value()) activateSynchronizedRequirement();
+                    BooleanExpression expression = BooleanExpression.compile(
+                            field.metadata(), field.value());
+                    NegativeHpPolicy.configure(field.metadata(), expression);
+                    if (!expression.isStaticFalse()) activateSynchronizedRequirement();
                 })
                 .documentation(new IniFieldDocumentation(
-                        "boolean",
+                        "runtime LogicBoolean",
                         "Allows overkill damage to leave this custom unit with HP below zero instead of clamping it to zero.",
                         "允许过量伤害使此自定义单位的生命值降到零以下，而不是夹到零。",
-                        "allowNegativeHp: true",
+                        "allowNegativeHp: memory.berserk or self.resource.rage > 0",
                         IniMultiplayerImpact.GAMEPLAY_SYNCED))
                 .build());
         UnitDamageEvents.MODIFY_LETHAL_HEALTH.register((unit, attacker, requestedAmount,
@@ -49,20 +51,13 @@ public final class IniEssentials implements ModInitializer {
         System.out.println("[INI Essentials] Registered opt-in INI fields and event data");
     }
 
-    private static Boolean parseBoolean(String raw) {
-        String value = raw.trim();
-        if ("true".equalsIgnoreCase(value)) return Boolean.TRUE;
-        if ("false".equalsIgnoreCase(value)) return Boolean.FALSE;
-        throw new IllegalArgumentException("expected true or false, got: " + raw);
-    }
-
     static void activateSynchronizedRequirement() {
         if (!SYNC_REQUIREMENT_ACTIVE.compareAndSet(false, true)) return;
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v7",
-                "152589b7245bb907f9848e2a59675b5f224d729800668e3a921ea1ad19a18dc2"));
+                MOD_ID, version, "ini_essentials_v8",
+                "85ae93fce204cbc979806a09a36880dbc1ea081b3a6dc9a1edc5d8d38caf52e3"));
     }
 }

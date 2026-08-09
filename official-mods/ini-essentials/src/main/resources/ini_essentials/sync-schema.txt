@@ -1,10 +1,10 @@
-ini_essentials_v7
-[core].allowNegativeHp|new_key|boolean|default=false|gameplay_synced|negative_hp_damage_v1
-[action_*|hiddenAction_*].cameraCenterAt|new_action_effect|finite_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
-[action_*|hiddenAction_*].cameraCenterBy|new_action_effect|finite_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
-[action_*|hiddenAction_*].cameraCenterOn|new_action_effect|self_target_actionTarget_optional_offset|default=omitted|client_only|local_actor_owner|exclusive=camera_position
-[action_*|hiddenAction_*].cameraTargetZoom|new_action_effect|positive_float|default=omitted|client_only|local_actor_owner|native_smoothing
-[action_*|hiddenAction_*].cameraStopMovement|new_action_effect|boolean|default=false|client_only|local_actor_owner|native_momentum
+ini_essentials_v8
+[core].allowNegativeHp|new_key|runtime_logic_boolean|default=false|gameplay_synced|negative_hp_damage_v2
+[action_*|hiddenAction_*].cameraCenterAt|new_action_effect|runtime_number_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraCenterBy|new_action_effect|runtime_number_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraCenterOn|new_action_effect|self_target_actionTarget_optional_runtime_number_offset|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraTargetZoom|new_action_effect|positive_runtime_number|default=omitted|client_only|local_actor_owner|native_smoothing
+[action_*|hiddenAction_*].cameraStopMovement|new_action_effect|runtime_logic_boolean|default=false|client_only|local_actor_owner|native_momentum
 event.tookDamage.eventData.damage|number|gameplay_synced|post_attachment_immunity_armour
 event.tookDamage.eventData.rawDamage|number|gameplay_synced|custom_unit_entry_amount
 event.tookDamage.eventData.hpDamage|number|gameplay_synced|actual_non_negative_hp_reduction
@@ -122,7 +122,7 @@ event.newMessage.eventData.messageHasData|boolean|gameplay_synced|native_message
 [fog_*].team|new_section_key|team_selector|default=own|gameplay_synced|deterministic_team_snapshot
 [fog_*].anchor|new_section_key|self_target_actionTarget|default=self|gameplay_synced|world_geometry_origin
 [fog_*].duration|new_section_key|runtime_seconds|default=0|gameplay_synced|negative_until_session_end
-[fog_*].follow|new_section_key|boolean|default=true|gameplay_synced|reevaluate_geometry_and_anchor
+[fog_*].follow|new_section_key|runtime_logic_boolean|default=true|gameplay_synced|reevaluate_geometry_and_anchor_or_initial_snapshot
 [action_*|hiddenAction_*].applyFog|new_action_effect|fog_name_list|default=omitted|gameplay_synced|geometry_fog_operation
 [action_*|hiddenAction_*].setFogMode|new_action_effect|off_basic_los|default=omitted|gameplay_synced|initialize_missing_maps_unexplored
 logic.number_functions|runtime_logic_functions|pow_exp_ln_log10_log_cbrt_abs_floor_ceil_round_sign_clamp_lerp_inverse_lerp_hypot_atan2_atan_asin_acos_tan_smoothstep_pi_tau_e|gameplay_synced|strictmath_float_v1

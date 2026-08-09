@@ -8,22 +8,30 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public final class NegativeHpPolicy {
-    private static final Map<Object, Boolean> ENABLED_METADATA =
-            Collections.synchronizedMap(new WeakHashMap<Object, Boolean>());
+    private static final Map<Object, BooleanExpression> POLICIES =
+            Collections.synchronizedMap(new WeakHashMap<Object, BooleanExpression>());
 
     private NegativeHpPolicy() { }
 
+    /** Retained source-compatible static configuration bridge. */
     public static void configure(Object metadata, boolean enabled) {
         if (metadata == null) return;
-        if (enabled) {
-            ENABLED_METADATA.put(metadata, Boolean.TRUE);
+        configure(metadata, enabled ? BooleanExpression.compile(metadata, "true") : null);
+    }
+
+    static void configure(Object metadata, BooleanExpression expression) {
+        if (metadata == null) return;
+        if (expression != null && !expression.isStaticFalse()) {
+            POLICIES.put(metadata, expression);
         } else {
-            ENABLED_METADATA.remove(metadata);
+            POLICIES.remove(metadata);
         }
     }
 
     public static boolean allows(Unit unit) {
-        return unit instanceof CustomUnit
-                && ENABLED_METADATA.containsKey(((CustomUnit) unit).unitMetadata);
+        if (!(unit instanceof CustomUnit)) return false;
+        CustomUnit customUnit = (CustomUnit) unit;
+        BooleanExpression expression = POLICIES.get(customUnit.unitMetadata);
+        return expression != null && expression.evaluate(customUnit);
     }
 }

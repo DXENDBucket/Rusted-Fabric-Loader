@@ -57,12 +57,14 @@ tasks.register('verifyIniEssentialsMetadata') {
     def metadata = file('src/main/resources/fabric.mod.json')
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/CameraActionFields.java')
+    def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
     def mathFields = file('src/main/java/io/github/endx/iniessentials/ExtendedMathFunctions.java')
     def referenceGenerator = file('docs/generate_reference.py')
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
+            booleanExpression,
             geometryFields, fogFields, mathFields,
             referenceGenerator, referenceWorkbook
     doLast {
@@ -102,6 +104,10 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !expectedCodes.findAll { it.startsWith('camera') }.every {
                     cameraSource.contains('"' + it + '"')
                 }
+                || !cameraSource.contains('NumericExpression.compile(')
+                || !cameraSource.contains('BooleanExpression.compile(')
+                || !initializer.getText('UTF-8').contains('BooleanExpression.compile(')
+                || !fogSource.contains('BooleanExpression.compile(')
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
@@ -221,7 +227,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v7'
+                || multiplayer?.protocol != 'ini_essentials_v8'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')
