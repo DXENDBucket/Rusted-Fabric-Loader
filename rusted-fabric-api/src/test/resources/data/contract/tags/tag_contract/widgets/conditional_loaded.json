@@ -1,7 +1,7 @@
 {
-  "rustedfabric:load_conditions": [
+  "rusted_fabric:load_conditions": [
     {
-      "condition": "rustedfabric:all_mods_loaded",
+      "condition": "rusted_fabric:all_mods_loaded",
       "values": ["optional_bridge"]
     }
   ],

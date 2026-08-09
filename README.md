@@ -162,7 +162,8 @@ The maintained runtime foundation currently spans:
 
 ```text
 rusted-fabric-api          public API, mapped implementation, Mixins, and remapping
-official-mods/mod-menu     in-game list of loaded Java mods
+official-mods/java-mod-menu  in-game list of loaded Java mods
+official-mods/example-mod    development and API contract example
 android:jvm-launcher-core  PC game import, ARM64 JVM validation, and launch planning
 android/launcher:app       no-root Android UI and isolated JNI JVM/render host
 ```
@@ -173,18 +174,18 @@ game, Fabric runtime, API Jar, Mixins, and mod format. Retired native-APK code i
 active Gradle builds.
 
 ## Example Mod
-The `example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
+The `official-mods/example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
 
 Build the named development jar:
 
 ```bat
-gradlew.bat :example-mod:build
+gradlew.bat :official-mods:example-mod:build
 ```
 
 This creates:
 
 ```text
-example-mod/build/libs/rusted-fabric-example-mod-0.1.0.jar
+official-mods/example-mod/build/libs/rusted-fabric-example-mod-0.1.0.jar
 ```
 
 Use that jar in a named development launch with `-Drusted.devNamed=true` and `game-lib-named.jar`.
@@ -192,23 +193,23 @@ Use that jar in a named development launch with `-Drusted.devNamed=true` and `ga
 Build the official-runtime jar:
 
 ```bat
-gradlew.bat :example-mod:remapJarToOfficial
+gradlew.bat :official-mods:example-mod:remapJarToOfficial
 ```
 
 This creates:
 
 ```text
-example-mod/build/libs/rusted-fabric-example-mod-0.1.0-official.jar
+official-mods/example-mod/build/libs/rusted-fabric-example-mod-0.1.0-official.jar
 ```
 
 Use the official jar with the normal `game-lib.jar` runtime.
 
-## Mod Menu
+## Java Mod Menu
 
-The `mod-menu` subproject adds a localized Java Mods button below the game's built-in Mods button.
+The `java-mod-menu` subproject adds a localized Java Mods button below the game's built-in Mods button.
 It opens a native scrolling page containing Fabric's loaded mod metadata. Build its official-runtime
-Jar with `gradlew.bat :official-mods:mod-menu:remapJarToOfficial`; `installToGameDir` installs it
-by default. Project-owned Fabric IDs use the compact `rustedfabric...` convention documented in
+Jar with `gradlew.bat :official-mods:java-mod-menu:remapJarToOfficial`; `installToGameDir` installs it
+by default. Project-owned Fabric IDs use the underscore convention documented in
 [`official-mods/README.md`](official-mods/README.md).
 
 ## Modding with Fabric
@@ -217,8 +218,8 @@ Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a f
 - **Mod search paths** – Mods are loaded from Fabric's defaults **plus** a `javamods` directory next to the game files. You can override the location with `-Drusted.javamodsDir=/path/to/dir` if you prefer a different folder layout. `-Drusted.gameDir=...` also controls where the loader looks for the game files themselves. Both values are resolved and registered as extra Fabric mod directories at startup.
 - **Game entrypoint** – The loader launches `com.corrodinggames.rts.java.Main` in official mode or `rustedwarfare.client.RustedWarfareMain` in named development mode after running Fabric's `main` and `client` entrypoints, so traditional Fabric mods continue to work before the game starts.
 - **Custom API hooks** – The bundled Rusted Fabric API exposes two additional entrypoints for mod authors:
-  - `rustedfabricloader:classpath_ready` runs after the game classpath (game-lib.jar, libs/, filtered android.jar) is injected. Implement this with a `Consumer<Map<String, Object>>` (extend `RustedFabricAPIEntrypoint` for convenience) to inspect the provided context or register transformers.
-  - `rustedfabricloader:before_game` runs immediately before the game main class is invoked. The same `Consumer<Map<String, Object>>` contract applies.
+  - `rusted_fabric_loader:classpath_ready` runs after the game classpath (game-lib.jar, libs/, filtered android.jar) is injected. Implement this with a `Consumer<Map<String, Object>>` (extend `RustedFabricAPIEntrypoint` for convenience) to inspect the provided context or register transformers.
+  - `rusted_fabric_loader:before_game` runs immediately before the game main class is invoked. The same `Consumer<Map<String, Object>>` contract applies.
 
 Each callback receives a `RustedFabricAPIContext` describing the game directory, launch arguments,
 mapping profile, and advertised capabilities. Legacy Android context fields remain for source

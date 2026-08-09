@@ -40,15 +40,15 @@ public final class ResourceConditionContractVerification {
                         && !absent.failedIndex().isPresent(),
                 "resource without conditions was not accepted as an empty condition list");
 
-        JsonObject accepted = json("{\"rustedfabric:load_conditions\":["
-                + "{\"condition\":\"rustedfabric:all_mods_loaded\","
+        JsonObject accepted = json("{\"rusted_fabric:load_conditions\":["
+                + "{\"condition\":\"rusted_fabric:all_mods_loaded\","
                 + "\"values\":[\"alpha_mod\",\"shared_api\"]},"
-                + "{\"condition\":\"rustedfabric:any_mod_loaded\","
+                + "{\"condition\":\"rusted_fabric:any_mod_loaded\","
                 + "\"values\":[\"missing_mod\",\"alpha_mod\"]},"
-                + "{\"condition\":\"rustedfabric:registry_contains\","
+                + "{\"condition\":\"rusted_fabric:registry_contains\","
                 + "\"registry\":\"condition_contract:values\","
                 + "\"value\":\"condition_contract:beta\"},"
-                + "{\"condition\":\"rustedfabric:tag_contains\","
+                + "{\"condition\":\"rusted_fabric:tag_contains\","
                 + "\"registry\":\"condition_contract:values\","
                 + "\"tag\":\"condition_contract:active\","
                 + "\"value\":\"condition_contract:alpha\"}]}" );
@@ -56,14 +56,14 @@ public final class ResourceConditionContractVerification {
         require(acceptedResult.shouldLoad() && acceptedResult.evaluatedCount() == 4,
                 "built-in mod/registry/tag conditions did not all pass");
 
-        JsonObject nested = json("{\"rustedfabric:load_conditions\":[{"
-                + "\"condition\":\"rustedfabric:all\",\"values\":["
-                + "{\"condition\":\"rustedfabric:true\"},"
-                + "{\"condition\":\"rustedfabric:not\",\"value\":{"
-                + "\"condition\":\"rustedfabric:false\"}},"
-                + "{\"condition\":\"rustedfabric:any\",\"values\":["
-                + "{\"condition\":\"rustedfabric:false\"},"
-                + "{\"condition\":\"rustedfabric:true\"}]}]}]}" );
+        JsonObject nested = json("{\"rusted_fabric:load_conditions\":[{"
+                + "\"condition\":\"rusted_fabric:all\",\"values\":["
+                + "{\"condition\":\"rusted_fabric:true\"},"
+                + "{\"condition\":\"rusted_fabric:not\",\"value\":{"
+                + "\"condition\":\"rusted_fabric:false\"}},"
+                + "{\"condition\":\"rusted_fabric:any\",\"values\":["
+                + "{\"condition\":\"rusted_fabric:false\"},"
+                + "{\"condition\":\"rusted_fabric:true\"}]}]}]}" );
         require(ResourceConditions.shouldLoad(nested, context),
                 "nested all/any/not conditions had incorrect boolean semantics");
 
@@ -84,7 +84,7 @@ public final class ResourceConditionContractVerification {
                         && ResourceConditions.find(custom.id()).orElse(null) == custom,
                 "custom condition registration did not preserve its stable identity");
 
-        JsonObject rejected = json("{\"rustedfabric:load_conditions\":["
+        JsonObject rejected = json("{\"rusted_fabric:load_conditions\":["
                 + "{\"condition\":\"condition_contract:enabled\",\"enabled\":false},"
                 + "{\"condition\":\"condition_contract:enabled\",\"enabled\":true}]}" );
         ResourceConditionEvaluation rejectedResult = ResourceConditions.evaluate(rejected, context);
@@ -95,14 +95,14 @@ public final class ResourceConditionContractVerification {
                 "condition list did not report/short-circuit at its first rejection");
 
         expectJsonFailure(() -> ResourceConditions.shouldLoad(json(
-                        "{\"rustedfabric:load_conditions\":[{"
+                        "{\"rusted_fabric:load_conditions\":[{"
                                 + "\"condition\":\"missing:type\"}]}"), context),
                 "unknown condition type was silently accepted");
         expectJsonFailure(() -> ResourceConditions.shouldLoad(json(
-                        "{\"rustedfabric:load_conditions\":{}}"), context),
+                        "{\"rusted_fabric:load_conditions\":{}}"), context),
                 "non-array condition member was silently accepted");
         expectJsonFailure(() -> ResourceConditions.shouldLoad(json(
-                        "{\"rustedfabric:load_conditions\":[{"
+                        "{\"rusted_fabric:load_conditions\":[{"
                                 + "\"condition\":\"condition_contract:enabled\"}]}"), context),
                 "custom decoder failure was not surfaced as invalid resource JSON");
         expectIllegal(() -> ResourceConditions.register(custom.id(), object -> environment -> true),

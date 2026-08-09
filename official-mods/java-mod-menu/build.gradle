@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.github.endx'
+version = rootProject.version
+
+repositories {
+    if (rootProject.hasProperty('offlineRuntimeJars')) {
+        flatDir { dirs rootProject.file(rootProject.property('offlineRuntimeJars')) }
+    } else {
+        mavenCentral()
+        maven { url = "https://maven.fabricmc.net/" }
+    }
+}
+
+def namedGameJarFile = {
+    rootProject.hasProperty('namedGameJar')
+            ? rootProject.file(rootProject.property('namedGameJar'))
+            : rootProject.layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
+}
+
+def mappingsTinyFile = {
+    rootProject.hasProperty('mappingsTiny')
+            ? rootProject.file(rootProject.property('mappingsTiny'))
+            : rootProject.file("src/main/resources/mappings/mappings.tiny")
+}
+
+dependencies {
+    compileOnly "net.fabricmc:fabric-loader:0.18.1"
+    compileOnly project(":rusted-fabric-api")
+    compileOnly files({ namedGameJarFile() })
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn rootProject.tasks.named('generateNamedGameJar')
+    options.release = 13
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+jar {
+    archiveBaseName.set("java-mod-menu")
+}
+
+tasks.register('remapJarToOfficial', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Remaps Java Mod Menu from named names to official runtime names.'
+    dependsOn jar, rootProject.tasks.named('classes'), rootProject.tasks.named('generateNamedGameJar')
+
+    classpath = rootProject.sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
+
+    def outputJar = layout.buildDirectory.file("libs/java-mod-menu-${project.version}-official.jar")
+    inputs.file(tasks.jar.archiveFile)
+    inputs.file(provider { mappingsTinyFile() })
+    inputs.file(provider { namedGameJarFile() })
+    outputs.file outputJar
+
+    doFirst {
+        def output = outputJar.get().asFile
+        output.parentFile.mkdirs()
+        setArgs([
+                tasks.jar.archiveFile.get().asFile.absolutePath,
+                output.absolutePath,
+                mappingsTinyFile().absolutePath,
+                'named',
+                'official',
+                namedGameJarFile().absolutePath
+        ] + sourceSets.main.compileClasspath.files.collect { it.absolutePath })
+    }
+}

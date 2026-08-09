@@ -40,7 +40,7 @@ Shared `fabric.mod.json` metadata:
 
 ```json
 "custom": {
-  "rustedfabric:multiplayer": {
+  "rusted_fabric:multiplayer": {
     "mode": "required",
     "protocol": "portable-units-v1",
     "syncHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

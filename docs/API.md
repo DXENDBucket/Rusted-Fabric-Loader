@@ -13,8 +13,8 @@ Mods can declare the game dependency exposed by the GameProvider:
 ```json
 "depends": {
   "fabricloader": ">=0.18.1",
-  "rustedwarfare": "1.15",
-  "rustedfabricapi": ">=0.1.0"
+  "rusted_warfare": "1.15",
+  "rusted_fabric_api": ">=0.1.0"
 }
 ```
 
@@ -22,8 +22,8 @@ Mods can declare the game dependency exposed by the GameProvider:
 
 Two Rusted-specific Fabric entrypoints are available:
 
-- `rustedfabricloader:classpath_ready`: the game Jar and libraries are on the launch classpath, before standard Fabric initializers run.
-- `rustedfabricloader:before_game`: standard `main` and `client` initializers have completed, immediately before the game main method is invoked.
+- `rusted_fabric_loader:classpath_ready`: the game Jar and libraries are on the launch classpath, before standard Fabric initializers run.
+- `rusted_fabric_loader:before_game`: standard `main` and `client` initializers have completed, immediately before the game main method is invoked.
 
 Implement `RustedFabricAPIEntrypoint` to receive a typed `RustedFabricAPIContext`. The context is an
 immutable snapshot; its launch-argument array and capabilities are defensively copied.
@@ -768,15 +768,15 @@ directory. It does not unpack into the game, project, or Git repository. Equal c
 same path; `ModResourceEvents` observes reads and can cancel API-mediated extraction.
 
 Data-driven reloaders can use `ResourceConditions` to keep optional compatibility data in the same
-Jar. A resource is unconditional when it has no `rustedfabric:load_conditions` member. When the
+Jar. A resource is unconditional when it has no `rusted_fabric:load_conditions` member. When the
 member is present, its array is evaluated in order and the first false condition skips that whole
 resource during preparation:
 
 ```json
 {
-  "rustedfabric:load_conditions": [
+  "rusted_fabric:load_conditions": [
     {
-      "condition": "rustedfabric:all_mods_loaded",
+      "condition": "rusted_fabric:all_mods_loaded",
       "values": ["economy_addon", "shared_library"]
     }
   ],
@@ -784,7 +784,7 @@ resource during preparation:
 }
 ```
 
-Built-in condition IDs are `rustedfabric:true`, `false`, `all_mods_loaded`, `any_mod_loaded`,
+Built-in condition IDs are `rusted_fabric:true`, `false`, `all_mods_loaded`, `any_mod_loaded`,
 `not`, `all`, `any`, `registry_contains`, and `tag_contains`. Boolean conditions nest through a
 condition object in `value` (`not`) or an array in `values` (`all`/`any`). Registry lookup uses
 stable IDs; `registry_contains` takes `registry` and `value`, while `tag_contains` additionally
@@ -995,9 +995,9 @@ For registry `examplemod:modes`, the file
 
 ```json
 {
-  "rustedfabric:load_conditions": [
+  "rusted_fabric:load_conditions": [
     {
-      "condition": "rustedfabric:any_mod_loaded",
+      "condition": "rusted_fabric:any_mod_loaded",
       "values": ["examplemod", "examplemod_compat"]
     }
   ],

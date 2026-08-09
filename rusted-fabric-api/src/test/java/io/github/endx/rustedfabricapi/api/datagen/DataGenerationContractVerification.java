@@ -195,7 +195,7 @@ public final class DataGenerationContractVerification {
         require(tag.get("replace").isJsonPrimitive()
                         && !tag.get("replace").getAsBoolean()
                         && tag.getAsJsonArray("values").size() == 3
-                        && tag.getAsJsonArray("rustedfabric:load_conditions").size() == 1
+                        && tag.getAsJsonArray("rusted_fabric:load_conditions").size() == 1
                         && tag.getAsJsonArray("values").get(2).getAsJsonObject()
                                 .get("required").getAsBoolean() == false,
                 "registry tag provider emitted an incompatible JSON contract");

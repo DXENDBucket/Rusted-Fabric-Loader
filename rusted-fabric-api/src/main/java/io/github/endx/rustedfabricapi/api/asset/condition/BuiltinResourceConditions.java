@@ -17,5 +17,5 @@ public final class BuiltinResourceConditions {
     private BuiltinResourceConditions() {
     }
 
-    private static Identifier id(String path) { return Identifier.of("rustedfabric", path); }
+    private static Identifier id(String path) { return Identifier.of("rusted_fabric", path); }
 }

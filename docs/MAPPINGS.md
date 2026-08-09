@@ -23,7 +23,7 @@ After editing mappings or named Mixins, run:
 gradlew.bat check
 gradlew.bat generateNamedGameJar
 gradlew.bat :rusted-fabric-api:remapJarToOfficial
-gradlew.bat :example-mod:remapJarToOfficial
+gradlew.bat :official-mods:example-mod:remapJarToOfficial
 gradlew.bat verifyDistribution
 ```
 

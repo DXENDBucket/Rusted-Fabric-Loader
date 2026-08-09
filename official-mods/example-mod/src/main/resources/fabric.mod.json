@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "rusted_fabric_example",
+  "version": "${version}",
+  "name": "Rusted Fabric Example Mod",
+  "description": "Sample mod for testing Rusted Fabric Loader named development and remapping.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.endx.rustedfabricexample.ExampleMod"
+    ],
+    "client": [
+      "io.github.endx.rustedfabricexample.ExampleMod"
+    ],
+    "rusted_fabric_loader:classpath_ready": [
+      "io.github.endx.rustedfabricexample.ExampleRustedEntrypoint"
+    ],
+    "rusted_fabric_loader:before_game": [
+      "io.github.endx.rustedfabricexample.ExampleRustedEntrypoint"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "rusted_fabric_api": "*"
+  },
+  "custom": {
+    "rusted_fabric:multiplayer": {
+      "mode": "client_only"
+    }
+  }
+}

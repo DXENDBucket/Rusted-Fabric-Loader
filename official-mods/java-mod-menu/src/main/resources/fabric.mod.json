@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "java_mod_menu",
+  "version": "${version}",
+  "name": "Java Mod Menu",
+  "description": "Adds an in-game list of loaded Java mods.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.endx.javamodmenu.JavaModMenu"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "rusted_fabric_api": "*"
+  },
+  "custom": {
+    "rusted_fabric:multiplayer": {
+      "mode": "client_only"
+    }
+  }
+}

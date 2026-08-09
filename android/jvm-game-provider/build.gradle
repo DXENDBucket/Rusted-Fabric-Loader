@@ -49,7 +49,7 @@ jar {
     exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA'
     manifest {
         attributes(
-                'Game-Id': 'rustedwarfare',
+                'Game-Id': 'rusted_warfare',
                 'Game-Version': '1.15',
                 'Mappings-Version': '1.1',
                 'Implementation-Version': project.version

@@ -37,7 +37,7 @@ Use JDK 17 for Gradle; JDK 25 is not supported by the current Gradle/Groovy tool
 
 ```bat
 set "JAVA_HOME=C:\Program Files\Java\jdk-17"
-gradlew.bat check verifyDistribution :example-mod:build
+gradlew.bat check verifyDistribution :official-mods:example-mod:build
 gradlew.bat -p android/launcher :app:assembleDebug :app:verifyNoGamePayload
 ```
 
@@ -60,8 +60,8 @@ The following must remain outside Git:
 | --- | --- | --- |
 | `src/` | maintained | GameProvider, tooling, mappings, and Loader runtime |
 | `rusted-fabric-api/` | maintained | sole public API, mapped implementation, Mixins, and remapping |
-| `official-mods/mod-menu/` | maintained | localized in-game list of loaded Java mods |
-| `example-mod/` | maintained | API and named-to-official remapping example |
+| `official-mods/java-mod-menu/` | maintained | localized in-game list of loaded Java mods |
+| `official-mods/example-mod/` | maintained | API and named-to-official remapping example |
 | `android/launcher/` | maintained | no-root Android application and native JVM/render host |
 | `android/jvm-launcher-core/` | maintained | desktop import, JVM validation, and launch planning |
 | `android/jvm-game-provider/` | maintained | self-contained Android Fabric launcher asset |

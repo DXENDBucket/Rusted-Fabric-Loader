@@ -18,7 +18,7 @@ import io.github.endx.rustedfabricapi.api.util.Identifier;
 
 /** Extensible Fabric-style condition registry and JSON evaluator. */
 public final class ResourceConditions {
-    public static final String CONDITIONS_MEMBER = "rustedfabric:load_conditions";
+    public static final String CONDITIONS_MEMBER = "rusted_fabric:load_conditions";
     public static final String TYPE_MEMBER = "condition";
 
     private static final Map<Identifier, ResourceConditionType> TYPES =

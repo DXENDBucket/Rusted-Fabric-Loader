@@ -400,7 +400,7 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public String getGameId() {
-        return "rustedwarfare";
+        return "rusted_warfare";
     }
 
     @Override
@@ -582,7 +582,7 @@ public class RustedWarfareGameProvider implements GameProvider {
 
         /*
         net.fabricmc.loader.api.FabricLoader.getInstance()
-                .invokeEntrypoints("rustedfabricloader:classpath_ready", Runnable.class, Runnable::run);
+                .invokeEntrypoints("rusted_fabric_loader:classpath_ready", Runnable.class, Runnable::run);
 
          */
 
@@ -880,14 +880,14 @@ public class RustedWarfareGameProvider implements GameProvider {
             // entrypoints
             FabricLoader fl = net.fabricmc.loader.api.FabricLoader.getInstance();
 
-            // fl.invokeEntrypoints("rustedfabricloader:before_game", Runnable.class, Runnable::run);
+            // fl.invokeEntrypoints("rusted_fabric_loader:before_game", Runnable.class, Runnable::run);
 
-            runRustedFabricAPIStage("rustedfabricloader:classpath_ready");
+            runRustedFabricAPIStage("rusted_fabric_loader:classpath_ready");
 
             fl.invokeEntrypoints("main", net.fabricmc.api.ModInitializer.class, net.fabricmc.api.ModInitializer::onInitialize);
             fl.invokeEntrypoints("client", net.fabricmc.api.ClientModInitializer.class, net.fabricmc.api.ClientModInitializer::onInitializeClient);
 
-            runRustedFabricAPIStage("rustedfabricloader:before_game");
+            runRustedFabricAPIStage("rusted_fabric_loader:before_game");
 
             // launch
             Class<?> mainClass = loader.loadClass(getEntrypoint());
@@ -958,13 +958,13 @@ public class RustedWarfareGameProvider implements GameProvider {
     private void runRustedFabricAPIStage(String key) {
         Map<String, Object> ctx = new HashMap<>();
 
-        ctx.put("rustedfabricapi.ctxVersion", 5);
-        ctx.put("rustedfabricapi.loaderVersion", BUILD_PROPERTIES.getProperty("loaderVersion", ""));
-        ctx.put("rustedfabricapi.gameVersion", getRawGameVersion());
-        ctx.put("rustedfabricapi.mappingsVersion", BUILD_PROPERTIES.getProperty("mappingsVersion", ""));
-        ctx.put("rustedfabricapi.mappingProfileId", "rw-pc-1.15-v1.1");
-        ctx.put("rustedfabricapi.platform", isAndroidRuntime() ? "android" : "windows");
-        ctx.put("rustedfabricapi.capabilities", Arrays.asList(
+        ctx.put("rusted_fabric_api.ctxVersion", 5);
+        ctx.put("rusted_fabric_api.loaderVersion", BUILD_PROPERTIES.getProperty("loaderVersion", ""));
+        ctx.put("rusted_fabric_api.gameVersion", getRawGameVersion());
+        ctx.put("rusted_fabric_api.mappingsVersion", BUILD_PROPERTIES.getProperty("mappingsVersion", ""));
+        ctx.put("rusted_fabric_api.mappingProfileId", "rw-pc-1.15-v1.1");
+        ctx.put("rusted_fabric_api.platform", isAndroidRuntime() ? "android" : "windows");
+        ctx.put("rusted_fabric_api.capabilities", Arrays.asList(
                 "event.engine.init", "event.runtime.ready", "mapping.named",
                 "event.audio.runtime.v1", "event.build.queue.v1",
                 "event.command.issue.v1", "event.core.stats.v1",
@@ -987,7 +987,7 @@ public class RustedWarfareGameProvider implements GameProvider {
                 "session.v1", "game.units.v1", "multiplayer.compat.v1", "multiplayer.handshake.rfh1",
                 "network.channels.v1",
                 isAndroidRuntime() ? "platform.android.fabric" : "platform.windows.fabric"));
-        ctx.put("rustedfabricapi.processName", "rusted-warfare-client");
+        ctx.put("rusted_fabric_api.processName", "rusted-warfare-client");
 
         ctx.put("gameDir", gameDir);
         ctx.put("gameJar", gameLibJar);
@@ -995,7 +995,7 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("androidRuntime", isAndroidRuntime());
         ctx.put("runtimeNamespace", getRequestedRuntimeNamespace());
         ctx.put("entrypointKey", key);
-        ctx.put("rustedfabricapi.multiplayerManifest", buildMultiplayerManifest());
+        ctx.put("rusted_fabric_api.multiplayerManifest", buildMultiplayerManifest());
 
         FabricLoader.getInstance().invokeEntrypoints(
                 key,
@@ -1055,7 +1055,7 @@ public class RustedWarfareGameProvider implements GameProvider {
         JsonObject declaration = null;
         JsonElement custom = metadata.get("custom");
         if (custom != null && custom.isJsonObject()) {
-            JsonElement value = custom.getAsJsonObject().get("rustedfabric:multiplayer");
+            JsonElement value = custom.getAsJsonObject().get("rusted_fabric:multiplayer");
             if (value != null && value.isJsonObject()) declaration = value.getAsJsonObject();
         }
         if (declaration == null) return new MultiplayerRow(id, version, "unsafe", "-", "-");
