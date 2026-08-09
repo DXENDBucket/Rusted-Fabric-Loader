@@ -22,6 +22,15 @@ JDK 17 and the ignored local game input described in the repository README.
 `CustomProjectileTemplate` with a unit, point, or fixed-direction target. Each real spawn passes
 through cancellable `ProjectileSpawnEvents.BEFORE_SPAWN` and then
 `ProjectileSpawnEvents.AFTER_SPAWN` after target binding and created effects are complete.
+`ProjectileCollisionSpec` can be attached to a spawn or turret-pattern plan before the first
+update. `ProjectileCollisions` deliberately exposes the native contact switches: unit contact uses
+the projectile radius plus the candidate unit's collision radius, while terrain contact tests the
+current tile against the game's `hover` path-blocking grid (including map bounds and blocking
+terrain/buildings/objects). It does not mean every ground tile or every land/water transition.
+`TerrainTransitionSpec` adds explicit `from -> to` ground-tile transitions, and
+`UnitCollisionFilterSpec` opts into deterministic contact filtering by live ground/air/underwater
+layer, native movement type, absolute height, runtime tags, and transported state. Extended matches
+set the native target and impact latch rather than applying damage themselves.
 
 `api.projectile.pattern` deterministically expands `single`, `fan`, `ring`, and `line` layouts.
 Expansion is pure and testable; `ProjectilePatternEmitter.emit` then creates the real projectiles in
@@ -34,3 +43,11 @@ provide a `TurretProjectilePatternPlan`; the runtime then replaces the selected 
 projectile creation/initialization calls without cancelling the enclosing firing method. Native
 `onShoot`, muzzle effects, sound, recoil, counters, and post-fire state therefore retain their
 original ordering and execute once per turret shot.
+
+`ProjectileRenderEvents.DRAW` exposes the native shadow, body, on-top, and pre-UI projectile render
+stages for client-side additions. It is a presentation event and must not drive synchronized
+gameplay.
+
+`CustomProjectileAssets` runs the native `[effect_*]` and `[decal_*]` loading passes for independent
+projectile-definition formats, including resolution of nested custom-effect references. This keeps
+format mods on a public API instead of exposing Mixin accessors.

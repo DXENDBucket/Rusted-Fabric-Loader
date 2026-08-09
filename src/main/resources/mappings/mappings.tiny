@@ -2412,6 +2412,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	f	Lcom/corrodinggames/rts/game/units/y;	cO	field_Unit_attachmentParentUnit	attachmentParentUnit
 	f	Lcom/corrodinggames/rts/game/units/custom/b/n;	cP	field_Unit_attachmentSlot	attachmentSlot
 	f	F	cg	field_Unit_cg_direction	direction
+	f	F	cj	field_Unit_collisionRadius	collisionRadius
 	f	F	cu	field_am_cu_hp	hp
 	f	F	cv	field_am_cv_maxHp	maxHp
 	f	F	cx	field_am_cx_shield	shield

@@ -98,7 +98,7 @@ emitProjectilePattern: example:plasma_fan/main
 5. `ProjectileSpawnEvents.BEFORE_SPAWN/AFTER_SPAWN`：前者可修改或取消一个实际弹体，后者拿到创建结果；事件顺序固定。
 6. `ProjectileRuntimeData`：仅在确有需要时提供注册过、可序列化的每弹体数据键，不能直接挂任意对象。
 
-现有 `ProjectileEvents`、`ProjectileCombatEvents` 和原版 `CustomProjectileTemplate` 继续作为底层生命周期与伤害入口，不重复建立另一套命中系统。
+现有 `ProjectileEvents`、`ProjectileCombatEvents` 和原版 `CustomProjectileTemplate` 继续作为底层生命周期与伤害入口，不重复建立另一套命中系统。`[collision]` 直接使用原版单位接触与 `hover` 寻路阻挡判定，因此撞击、伤害、爆炸和移除仍走原版流程。
 
 ## 原版接入点和当前缺口
 
@@ -133,8 +133,10 @@ emitProjectilePattern: example:plasma_fan/main
 2. 已完成：纯数据且有契约测试的 `fan`、`ring`、`line` 展开器。
 3. 已完成：独立 `class: CustomProjectile` 解析、命名空间注册表和完整 pattern 引用校验。
 4. 已完成代码路径：Action 同帧 pattern 直接创建真实弹体，不生成中间母弹；待游戏内验收。
-5. 加入带 interval 的发射任务及其存档/联机状态。
-6. 已完成代码路径：原版炮塔精确发射织入，在保留炮口效果、声音、后坐力、计数器和 onShoot Action 的同时替换弹体创建；未使用方法入口取消事件。待游戏内覆盖验证。
-7. 最后再评估自定义逐 tick 运动、碰撞过滤和高级生命周期回调；这些不进入第一版。
+5. 已完成代码路径：Action 与炮塔生成的主弹/额外弹统一应用动态 `[collision]`，包括地形转换爆炸和按层、移动类型、高度、标签的单位过滤；待游戏内碰撞矩阵验收。
+6. 已完成代码路径：原版 `[effect_NAME]` 引用和以弹体实时坐标为锚点的 `[decal_NAME]` 绘制；Decal 逻辑上下文仍为发射单位。
+7. 加入带 interval 的发射任务及其存档/联机状态。
+8. 已完成代码路径：原版炮塔精确发射织入，支持有序条件 Pattern 切换，且写有无条件 `projectilePattern` 时可省略原版 projectile；保留炮口效果、声音、后坐力、计数器和 onShoot Action。待游戏内覆盖验证。
+9. 最后再评估自定义逐 tick 运动、碰撞过滤和高级生命周期回调。
 
 第一轮验收基准：用一个动作或炮塔直接发射 30 发固定方向扇形弹幕，场上只出现 30 个实际弹体，不存在用于刷弹的母弹；PC 与 Android 的弹体顺序、角度、命中和回放结果一致。

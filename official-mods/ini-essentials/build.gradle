@@ -63,6 +63,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def customProjectileDefinitions = file('src/main/java/io/github/endx/iniessentials/CustomProjectileDefinitions.java')
     def customProjectileActionFields = file('src/main/java/io/github/endx/iniessentials/CustomProjectileActionFields.java')
     def customProjectileTurretFields = file('src/main/java/io/github/endx/iniessentials/CustomProjectileTurretFields.java')
+    def customProjectileDecalRenderer = file('src/main/java/io/github/endx/iniessentials/CustomProjectileDecalRenderer.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
     def decalMaskFields = file('src/main/java/io/github/endx/iniessentials/DecalMaskDefinitions.java')
@@ -78,7 +79,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             eventRuleFields,
             projectileRuleFields,
             customProjectileDefinitions, customProjectileActionFields,
-            customProjectileTurretFields,
+            customProjectileTurretFields, customProjectileDecalRenderer,
             booleanExpression,
             geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
             unitContextProperties, referenceGenerator, referenceWorkbook
@@ -130,7 +131,18 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'class', 'name', 'schemaVersion', 'aimMode', 'count',
                 'centerDirection', 'originSpacing', 'lineAngleOffset',
                 'originOffsetX', 'originOffsetY', 'originOffsetHeight',
-                'directionDistance', 'emitProjectilePattern', 'projectilePattern'
+                'directionDistance', 'emitProjectilePattern', 'projectilePattern',
+                'collideWithUnits', 'collideWithTerrain', 'contactCollisionRadius',
+                'terrainTransitionFrom', 'terrainTransitionTo',
+                'unitCollisionLayers', 'unitCollisionMovementTypes',
+                'unitCollisionMinHeight', 'unitCollisionMaxHeight',
+                'unitCollisionWithTags', 'unitCollisionWithoutTags',
+                'unitCollisionIncludeTransported',
+                'effect_*', 'decal_*',
+                'projectilePatternRule_NAME_pattern',
+                'projectilePatternRule_NAME_ifCondition',
+                'projectilePatternRule_NAME_ifTargetWithTags',
+                'projectilePatternRule_NAME_ifTargetWithoutTags'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
@@ -149,6 +161,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def customProjectileSource = customProjectileDefinitions.getText('UTF-8')
         def customProjectileActionSource = customProjectileActionFields.getText('UTF-8')
         def customProjectileTurretSource = customProjectileTurretFields.getText('UTF-8')
+        def customProjectileDecalSource = customProjectileDecalRenderer.getText('UTF-8')
         def initializerSource = initializer.getText('UTF-8')
         def geometryCodes = ['type', 'radius', 'radiusX', 'radiusY', 'width',
                 'height', 'innerRadius', 'startAngle', 'sweepAngle', 'rotation',
@@ -242,12 +255,24 @@ tasks.register('verifyIniEssentialsMetadata') {
                     customProjectileSource.contains('"' + it + '"')
                 }
                 || !customProjectileSource.contains('CustomProjectileTemplate.parseFromConfig')
+                || !customProjectileSource.contains('CustomProjectileAssets.parseEffects')
+                || !customProjectileSource.contains('CustomProjectileAssets.parseDecals')
+                || !['collideWithUnits', 'collideWithTerrain', 'contactCollisionRadius',
+                    'terrainTransitionFrom', 'terrainTransitionTo',
+                    'unitCollisionLayers', 'unitCollisionMovementTypes',
+                    'unitCollisionMinHeight', 'unitCollisionMaxHeight',
+                    'unitCollisionWithTags', 'unitCollisionWithoutTags',
+                    'unitCollisionIncludeTransported'].every {
+                    customProjectileSource.contains('"' + it + '"') }
                 || !customProjectileSource.contains('NumericExpression.compile(')
                 || !customProjectileActionSource.contains('"emitProjectilePattern"')
                 || !customProjectileActionSource.contains('ProjectilePatternEmitter.emit(')
                 || !customProjectileTurretSource.contains('"projectilePattern"')
                 || !customProjectileTurretSource.contains('TurretProjectilePatternEvents.PLAN')
                 || !customProjectileTurretSource.contains('TurretProjectilePatternPlan')
+                || !customProjectileTurretSource.contains('projectilePatternRule_')
+                || !customProjectileTurretSource.contains('iniEssentialsPatternPlaceholder')
+                || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
         }
@@ -372,7 +397,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v19'
+                || multiplayer?.protocol != 'ini_essentials_v21'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

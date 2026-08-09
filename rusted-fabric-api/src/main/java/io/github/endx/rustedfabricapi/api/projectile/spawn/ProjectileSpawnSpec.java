@@ -22,6 +22,7 @@ public final class ProjectileSpawnSpec {
     private final float targetY;
     private final float targetHeight;
     private final float directionDistance;
+    private final ProjectileCollisionSpec collision;
     private final int sequenceIndex;
 
     private ProjectileSpawnSpec(Builder builder) {
@@ -37,6 +38,7 @@ public final class ProjectileSpawnSpec {
         targetY = finite(builder.targetY, "targetY");
         targetHeight = finite(builder.targetHeight, "targetHeight");
         directionDistance = finite(builder.directionDistance, "directionDistance");
+        collision = Objects.requireNonNull(builder.collision, "collision");
         if (directionDistance <= 0.0F) {
             throw new IllegalArgumentException("directionDistance must be > 0");
         }
@@ -98,6 +100,7 @@ public final class ProjectileSpawnSpec {
     public float targetY() { return targetY; }
     public float targetHeight() { return targetHeight; }
     public float directionDistance() { return directionDistance; }
+    public ProjectileCollisionSpec collision() { return collision; }
     public int sequenceIndex() { return sequenceIndex; }
 
     private static float finite(float value, String name) {
@@ -122,6 +125,7 @@ public final class ProjectileSpawnSpec {
         private float targetY;
         private float targetHeight;
         private float directionDistance = DEFAULT_DIRECTION_DISTANCE;
+        private ProjectileCollisionSpec collision = ProjectileCollisionSpec.none();
         private int sequenceIndex;
 
         private Builder(ProjectileSpawnContext context, CustomProjectileTemplate template) {
@@ -154,6 +158,7 @@ public final class ProjectileSpawnSpec {
             targetY = spec.targetY;
             targetHeight = spec.targetHeight;
             directionDistance = spec.directionDistance;
+            collision = spec.collision;
             sequenceIndex = spec.sequenceIndex;
         }
 
@@ -179,6 +184,9 @@ public final class ProjectileSpawnSpec {
             return this;
         }
         public Builder directionDistance(float value) { directionDistance = value; return this; }
+        public Builder collision(ProjectileCollisionSpec value) {
+            collision = Objects.requireNonNull(value, "collision"); return this;
+        }
         public Builder sequenceIndex(int value) { sequenceIndex = value; return this; }
         public ProjectileSpawnSpec build() { return new ProjectileSpawnSpec(this); }
     }

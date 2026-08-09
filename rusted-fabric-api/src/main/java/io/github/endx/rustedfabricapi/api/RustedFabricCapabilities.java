@@ -15,6 +15,7 @@ public final class RustedFabricCapabilities {
     public static final String CLIENT_RENDER_ALPHA_MASK = "client.render.alpha_mask.v1";
     public static final String CLIENT_RENDER_BAR = "client.render.bar.v1";
     public static final String CLIENT_DECAL_LAYER = "event.client.decal_layer.v1";
+    public static final String CLIENT_PROJECTILE_RENDER = "event.client.projectile_render.v1";
     public static final String EFFECT_RUNTIME = "event.effect.runtime.v1";
     public static final String FILE_SYSTEM = "event.file.system.v1";
     public static final String GAME_LIFECYCLE = "event.game.lifecycle.v1";
@@ -26,6 +27,8 @@ public final class RustedFabricCapabilities {
     public static final String LOGIC_UNIT_PROPERTIES = "logic.unit_properties.v1";
     public static final String LOGIC_UNIT_REFERENCE = "logic.unit_reference.v1";
     public static final String PROJECTILE_SPAWN = "projectile.spawn.v1";
+    public static final String PROJECTILE_ASSETS = "projectile.assets.v1";
+    public static final String PROJECTILE_COLLISION = "projectile.collision.v1";
     public static final String TURRET_PROJECTILE_PATTERN = "projectile.turret_pattern.v1";
     public static final String HUD_COMMAND = "event.hud.command.v1";
     public static final String MAP_DISCOVERY = "event.map.discovery.v1";

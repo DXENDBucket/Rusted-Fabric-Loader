@@ -59,7 +59,7 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 52,
+        require(ApiSupportMatrix.entries().size() == 55,
                 "public API support matrix does not cover every advertised API group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_RENDER_ALPHA_MASK,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
@@ -76,6 +76,15 @@ public final class CoreApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.PROJECTILE_SPAWN,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "projectile spawn support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.PROJECTILE_COLLISION,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "projectile collision support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.PROJECTILE_ASSETS,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "projectile asset support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_PROJECTILE_RENDER,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "client projectile-render support is not advertised");
         require(ApiSupportMatrix.expectedSupport(
                         RustedFabricCapabilities.TURRET_PROJECTILE_PATTERN,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,

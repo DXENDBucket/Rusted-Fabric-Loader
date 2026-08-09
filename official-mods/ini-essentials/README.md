@@ -84,6 +84,30 @@ schemaVersion: 1
 directDamage: 20
 life: 180
 speed: 5
+effectOnCreate: CUSTOM:launch
+trailEffect: CUSTOM:trail
+explodeEffect: CUSTOM:impact
+
+[collision]
+collideWithUnits: true
+collideWithTerrain: true
+contactCollisionRadius: 4
+terrainTransitionFrom: land
+terrainTransitionTo: water
+unitCollisionLayers: ground,air,underwater
+unitCollisionMovementTypes: land,air,hover
+unitCollisionMinHeight: -5
+unitCollisionMaxHeight: 30
+unitCollisionWithoutTags: intangible
+
+[effect_launch]
+life: 12
+
+[effect_trail]
+life: 18
+
+[effect_impact]
+life: 30
 
 [pattern_main]
 type: fan
@@ -99,6 +123,8 @@ emitProjectilePattern: example:plasma_fan/main
 
 [turret_main]
 projectilePattern: example:plasma_fan/main
+projectilePatternRule_antiAir_pattern: example:anti_air/main
+projectilePatternRule_antiAir_ifCondition: eventSource.isFlying
 ```
 
 `single`, `fan`, `ring`, and `line` are deterministic same-tick layouts. A ring defaults to a full
@@ -110,7 +136,38 @@ expansion creates only its real native projectiles—there is no
 invisible parent projectile—and `count` has a hard limit of 1024. `direction` works without an
 action target; `point` and `unit` require the corresponding action or native turret target.
 
-The `[projectile]` section accepts the ordinary native projectile fields except deferred links to
+`[collision]` opts into the game's own contact collision. Its three values are evaluated once when
+the firing action or turret shot is resolved, with the firing unit as `self`; memory, resources,
+and math expressions are therefore available. `contactCollisionRadius` is added to a contacted
+unit's native collision radius. `collideWithTerrain` explodes when the projectile's current map
+tile is blocked in the native `hover` pathing layer: this includes map bounds, impassable terrain,
+and blocking building/object costs, but ordinary land and water tiles normally do not count. Unit
+eligibility, impact, damage, and friendly-fire behavior remain native.
+
+`terrainTransitionFrom` and `terrainTransitionTo` are an optional paired rule for exact ground-tile
+kind transitions such as `land -> water`; supported kinds are `any`, `land`, `water`,
+`waterBridge`, `lava`, `cliff`, `resourcePool`, and `outOfBounds`. This samples the ground tile at
+deterministic update boundaries and is separate from the native hover-blocked collision above.
+`water`, `waterBridge`, `resourcePool`, and ordinary `land` are distinct categories, so for example
+`waterBridge -> water` does not also match bridge-to-bridge movement.
+
+Writing any `unitCollision*` filter switches unit contact from the native ground-only scan to the
+extended deterministic scan. `unitCollisionLayers` classifies each live target as exactly one of
+`ground`, `air`, or `underwater` (underwater takes priority), while
+`unitCollisionMovementTypes` can additionally restrict native movement types. Absolute target
+height bounds, required/forbidden runtime tags, and transported-unit inclusion are available; the
+numeric/boolean values are resolved once at firing. A matched unit is assigned as the native
+impact target, so ordinary damage, friendly-fire, effects, and removal remain in charge afterward.
+
+Native `[effect_NAME]` sections are accepted and can be referenced from `[projectile]` with the
+ordinary `CUSTOM:NAME` syntax, including `effectOnCreate`, `trailEffect`, `explodeEffect`, and
+`explodeEffectOnShield`. Native `[decal_NAME]` sections are also accepted. Their layer is drawn at
+the live projectile world position, while `self`, visibility expressions, team context, and
+orientation still use the firing `CustomUnit`; this keeps native Decal syntax useful without
+pretending a projectile is itself a unit.
+
+The `[projectile]`, `[effect_NAME]`, and `[decal_NAME]` sections accept their ordinary native fields
+except deferred links to
 other projectile names (`spawnProjectilesOnCreate`, `spawnProjectilesOnExplode`, and
 `spawnProjectilesOnEndOfLife`), which are rejected in this first phase. Interval/sequence firing,
 and custom per-tick trajectories are planned later. `projectilePattern` uses a precise weave inside
@@ -118,6 +175,14 @@ the native firing method: native projectile selection and `onShoot` run first, o
 allocation/template initialization is replaced, and the native muzzle effects, sound, recoil,
 shot counter, and post-fire state continue once afterward. It does not use the older method-entry
 cancellation event.
+
+For turrets, `projectilePatternRule_NAME_pattern` plus one or more of `_ifCondition`,
+`_ifTargetWithTags`, and `_ifTargetWithoutTags` selects the first matching pattern in declaration
+order, then falls back to `projectilePattern`. Conditions use the same `self`/`eventSource` context
+as ordinary projectile rules. When the unconditional `projectilePattern` exists, the turret may
+omit native `projectile:`; INI Essentials installs a private zero-damage placeholder only to satisfy
+the original parser, and the exact firing weave replaces it before initialization. A rule-only
+turret still needs a native `projectile:` as its no-match fallback.
 
 ## Geometry, math, and fog
 

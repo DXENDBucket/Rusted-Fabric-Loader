@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.projectile.pattern.TurretProjectilePat
 import io.github.endx.rustedfabricapi.api.projectile.pattern.TurretProjectilePatternPlan;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.TurretProjectilePatternRequest;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisions;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileSpawnContext;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileSpawnSpec;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileSpawner;
@@ -76,6 +77,7 @@ public final class TurretProjectilePatternRuntime {
             ((Projectile) args.get(0)).setSourceAndPosition(
                     (Unit) args.get(1), firstX, firstY, frame.baseOriginHeight);
         }
+        ProjectileCollisions.apply((Projectile) args.get(0), frame.plan.collision());
         args.set(3, frame.plan.template());
         args.set(4, Float.valueOf(firstX));
         args.set(5, Float.valueOf(firstY));
@@ -148,6 +150,7 @@ public final class TurretProjectilePatternRuntime {
                         context.build(), frame.plan.template())
                 .origin(frame.baseOriginX, frame.baseOriginY, frame.baseOriginHeight)
                 .direction(frame.plan.centerDirection())
+                .collision(frame.plan.collision())
                 .directionDistance(frame.plan.directionDistance());
         switch (frame.plan.aimMode()) {
             case DIRECTION:

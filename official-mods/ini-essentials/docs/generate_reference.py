@@ -114,6 +114,12 @@ def section_key(section: str) -> str:
             return "custom_projectile_core"
         if "[pattern_" in value:
             return "custom_projectile_pattern"
+        if "[collision]" in value:
+            return "custom_projectile_collision"
+        if "[effect_" in value:
+            return "custom_projectile_effect"
+        if "[decal_" in value:
+            return "custom_projectile_decal"
         return "custom_projectile_other"
     if "overlay" in value:
         return "overlay"
@@ -173,6 +179,7 @@ def make_groups(field_rows: list[dict[str, str]],
     # fields for a section that did not previously have an Essentials group.
     established_order = [
         "core", "action", "custom_projectile_core", "custom_projectile_pattern",
+        "custom_projectile_collision", "custom_projectile_effect", "custom_projectile_decal",
         "custom_projectile_other", "geometry", "overlay", "decal", "fog", "math", "event",
         "projectile", "turret",
     ]
@@ -207,6 +214,18 @@ def make_groups(field_rows: list[dict[str, str]],
             section_en, section_zh = "[pattern_NAME]", "[pattern_NAME]"
             summary_en = "Deterministic same-tick layouts attached to this projectile asset"
             summary_zh = "附属于此弹体资源的确定性同帧弹幕排布"
+        elif key == "custom_projectile_collision":
+            section_en, section_zh = "[collision]", "[collision]"
+            summary_en = "Native unit contact and hover-path terrain collision"
+            summary_zh = "原版单位接触与 hover 寻路地形碰撞"
+        elif key == "custom_projectile_effect":
+            section_en, section_zh = "[effect_NAME]", "[effect_NAME]"
+            summary_en = "Native custom effects referenced by this projectile asset"
+            summary_zh = "供此弹体资源引用的原版自定义特效"
+        elif key == "custom_projectile_decal":
+            section_en, section_zh = "[decal_NAME]", "[decal_NAME]"
+            summary_en = "Native Decals anchored at the projectile's live world position"
+            summary_zh = "锚定在弹体实时世界坐标的原版 Decal"
         elif key == "custom_projectile_other":
             section_en, section_zh = "CustomProjectile extensions", "CustomProjectile 扩展"
             summary_en = "Additional fields for independent projectile assets"

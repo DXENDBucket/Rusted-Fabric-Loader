@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.api.projectile.pattern;
 
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisionSpec;
 import rustedwarfare.custom.CustomProjectileTemplate;
 
 import java.util.Objects;
@@ -15,6 +16,7 @@ public final class TurretProjectilePatternPlan {
     private final float originOffsetY;
     private final float originOffsetHeight;
     private final float directionDistance;
+    private final ProjectileCollisionSpec collision;
 
     private TurretProjectilePatternPlan(Builder builder) {
         template = Objects.requireNonNull(builder.template, "template");
@@ -25,6 +27,7 @@ public final class TurretProjectilePatternPlan {
         originOffsetY = finite(builder.originOffsetY, "originOffsetY");
         originOffsetHeight = finite(builder.originOffsetHeight, "originOffsetHeight");
         directionDistance = finite(builder.directionDistance, "directionDistance");
+        collision = Objects.requireNonNull(builder.collision, "collision");
         if (directionDistance <= 0.0F) {
             throw new IllegalArgumentException("directionDistance must be > 0");
         }
@@ -51,6 +54,7 @@ public final class TurretProjectilePatternPlan {
     public float originOffsetY() { return originOffsetY; }
     public float originOffsetHeight() { return originOffsetHeight; }
     public float directionDistance() { return directionDistance; }
+    public ProjectileCollisionSpec collision() { return collision; }
 
     private static float finite(float value, String name) {
         if (!Float.isFinite(value)) throw new IllegalArgumentException(name + " must be finite");
@@ -66,6 +70,7 @@ public final class TurretProjectilePatternPlan {
         private float originOffsetY;
         private float originOffsetHeight;
         private float directionDistance = 100000.0F;
+        private ProjectileCollisionSpec collision = ProjectileCollisionSpec.none();
 
         private Builder(CustomProjectileTemplate template, ProjectilePatternSpec pattern) {
             this.template = Objects.requireNonNull(template, "template");
@@ -78,6 +83,9 @@ public final class TurretProjectilePatternPlan {
             originOffsetX = x; originOffsetY = y; originOffsetHeight = height; return this;
         }
         public Builder directionDistance(float value) { directionDistance = value; return this; }
+        public Builder collision(ProjectileCollisionSpec value) {
+            collision = Objects.requireNonNull(value, "collision"); return this;
+        }
         public TurretProjectilePatternPlan build() {
             return new TurretProjectilePatternPlan(this);
         }

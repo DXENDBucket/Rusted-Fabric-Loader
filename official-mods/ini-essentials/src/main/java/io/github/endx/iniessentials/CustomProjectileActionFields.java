@@ -70,6 +70,7 @@ final class CustomProjectileActionFields {
         ProjectileSpawnSpec.Builder spec = ProjectileSpawnSpec.builder(
                         spawnContext, definition.projectile())
                 .origin(originX, originY, originHeight)
+                .collision(definition.collision().compileFor(actor).resolve(actor))
                 .directionDistance(pattern.directionDistance.evaluate(actor));
         switch (pattern.aimMode) {
             case DIRECTION:

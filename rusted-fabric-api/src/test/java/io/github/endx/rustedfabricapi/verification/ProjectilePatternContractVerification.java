@@ -5,9 +5,17 @@ import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternOf
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternSpec;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.TurretProjectilePatternPlan;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisionSpec;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.TerrainKind;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.TerrainTransitionSpec;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.UnitCollisionFilterSpec;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.UnitCollisionLayer;
 import rustedwarfare.custom.CustomProjectileTemplate;
+import rustedwarfare.unit.MovementType;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 final class ProjectilePatternContractVerification {
     private ProjectilePatternContractVerification() { }
@@ -56,17 +64,46 @@ final class ProjectilePatternContractVerification {
         }
 
         CustomProjectileTemplate template = new CustomProjectileTemplate();
+        TerrainTransitionSpec shoreImpact = TerrainTransitionSpec.of(
+                TerrainKind.LAND, TerrainKind.WATER);
+        UnitCollisionFilterSpec airTargets = UnitCollisionFilterSpec.builder()
+                .layers(EnumSet.of(UnitCollisionLayer.AIR, UnitCollisionLayer.UNDERWATER))
+                .movementTypes(Set.of(MovementType.air))
+                .heightRange(-4.0F, 80.0F)
+                .includeTransported(true)
+                .build();
         TurretProjectilePatternPlan plan = TurretProjectilePatternPlan
                 .builder(template, ProjectilePatternSpec.line(3, 8.0F))
                 .aimMode(ProjectileAimMode.POINT)
                 .centerDirection(45.0F)
                 .originOffset(3.0F, -4.0F, 2.0F)
+                .collision(ProjectileCollisionSpec.of(
+                        true, true, 4.0F, shoreImpact, airTargets))
                 .build();
         require(plan.template() == template && plan.pattern().count() == 3
                         && close(plan.centerDirection(), 45.0F)
                         && close(plan.originOffsetX(), 3.0F)
-                        && close(plan.originOffsetY(), -4.0F),
+                        && close(plan.originOffsetY(), -4.0F)
+                        && plan.collision().collideWithUnits()
+                        && plan.collision().collideWithTerrain()
+                        && close(plan.collision().contactRadius(), 4.0F)
+                        && plan.collision().terrainTransition().from() == TerrainKind.LAND
+                        && plan.collision().terrainTransition().to() == TerrainKind.WATER
+                        && plan.collision().unitFilter().enabled()
+                        && plan.collision().unitFilter().layers().contains(UnitCollisionLayer.AIR)
+                        && plan.collision().unitFilter().layers().contains(UnitCollisionLayer.UNDERWATER)
+                        && plan.collision().unitFilter().movementTypes().contains(MovementType.air)
+                        && close(plan.collision().unitFilter().minHeight(), -4.0F)
+                        && close(plan.collision().unitFilter().maxHeight(), 80.0F)
+                        && plan.collision().unitFilter().includeTransported(),
                 "turret projectile plan lost replacement data");
+
+        try {
+            ProjectileCollisionSpec.of(true, false, -1.0F);
+            throw new AssertionError("collision accepted a negative contact radius");
+        } catch (IllegalArgumentException expected) {
+            // Expected.
+        }
 
         try {
             TurretProjectilePatternPlan

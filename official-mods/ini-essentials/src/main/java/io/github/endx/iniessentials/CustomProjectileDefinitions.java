@@ -3,12 +3,22 @@ package io.github.endx.iniessentials;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternSpec;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternType;
+import io.github.endx.rustedfabricapi.api.projectile.asset.CustomProjectileAssets;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisionSpec;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.TerrainKind;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.TerrainTransitionSpec;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.UnitCollisionFilterSpec;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.UnitCollisionLayer;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
 import rustedwarfare.custom.CustomProjectileTemplate;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.CustomUnitMetadata;
+import rustedwarfare.custom.CustomTagList;
+import rustedwarfare.custom.graphics.DecalBehavior;
 import rustedwarfare.mod.ModInfo;
+import rustedwarfare.unit.MovementType;
 import rustedwarfare.util.UnitConfig;
 
 import java.io.ByteArrayInputStream;
@@ -21,6 +31,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.IdentityHashMap;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 /** Loader and registry for independent {@code class: CustomProjectile} INI assets. */
@@ -29,6 +43,9 @@ final class CustomProjectileDefinitions {
     private static final Map<Identifier, Definition> DEFINITIONS =
             new LinkedHashMap<Identifier, Definition>();
     private static final List<Reference> REFERENCES = new ArrayList<Reference>();
+    private static final Map<CustomProjectileTemplate, DecalBehavior> DECALS =
+            Collections.synchronizedMap(
+                    new IdentityHashMap<CustomProjectileTemplate, DecalBehavior>());
 
     private CustomProjectileDefinitions() { }
 
@@ -39,6 +56,7 @@ final class CustomProjectileDefinitions {
     static synchronized void beginReload() {
         DEFINITIONS.clear();
         REFERENCES.clear();
+        DECALS.clear();
     }
 
     static synchronized void noteReference(Reference reference) {
@@ -134,12 +152,16 @@ final class CustomProjectileDefinitions {
         metadata.templateRootPath = context.templateRoot();
         metadata.internalName = id.toString();
 
+        CustomProjectileAssets.parseEffects(metadata, config);
+
         CustomProjectileTemplate projectile = new CustomProjectileTemplate();
         projectile.name = id.path();
         projectile.projectileIndex = 0;
         projectile.unitMetadata = metadata;
         CustomProjectileTemplate.parseFromConfig(projectile, metadata, config, "projectile");
         metadata.projectileTemplates = new CustomProjectileTemplate[]{projectile};
+        CustomProjectileAssets.parseDecals(metadata, config)
+                .ifPresent(decals -> DECALS.put(projectile, decals));
 
         LinkedHashMap<String, PatternTemplate> patterns = new LinkedHashMap<String, PatternTemplate>();
         for (Object rawSection : config.getNonMetaSectionsWithPrefix("pattern_")) {
@@ -153,7 +175,12 @@ final class CustomProjectileDefinitions {
         if (patterns.isEmpty()) {
             patterns.put("main", PatternTemplate.defaultSingle());
         }
-        return new Definition(id, projectile, Collections.unmodifiableMap(patterns));
+        return new Definition(id, projectile, Collections.unmodifiableMap(patterns),
+                CollisionTemplate.parse(config));
+    }
+
+    static DecalBehavior decalsFor(CustomProjectileTemplate template) {
+        return DECALS.get(template);
     }
 
     private static void rejectDeferredNativeLinks(UnitConfig config, Identifier id) {
@@ -199,15 +226,19 @@ final class CustomProjectileDefinitions {
         private final Identifier id;
         private final CustomProjectileTemplate projectile;
         private final Map<String, PatternTemplate> patterns;
+        private final CollisionTemplate collision;
 
         private Definition(Identifier id, CustomProjectileTemplate projectile,
-                           Map<String, PatternTemplate> patterns) {
+                           Map<String, PatternTemplate> patterns,
+                           CollisionTemplate collision) {
             this.id = id;
             this.projectile = projectile;
             this.patterns = patterns;
+            this.collision = collision;
         }
 
         CustomProjectileTemplate projectile() { return projectile; }
+        CollisionTemplate collision() { return collision; }
 
         PatternTemplate requirePattern(String name) {
             PatternTemplate result = patterns.get(normalizePatternName(name));
@@ -215,6 +246,184 @@ final class CustomProjectileDefinitions {
                 throw new IllegalArgumentException(id + " has no pattern: " + name);
             }
             return result;
+        }
+    }
+
+    static final class CollisionTemplate {
+        private final String collideWithUnits;
+        private final String collideWithTerrain;
+        private final String contactCollisionRadius;
+        private final TerrainTransitionSpec terrainTransition;
+        private final boolean extendedUnitFilter;
+        private final Set<UnitCollisionLayer> layers;
+        private final Set<MovementType> movementTypes;
+        private final String minHeight, maxHeight, includeTransported;
+        private final CustomTagList requiredTags, forbiddenTags;
+        private final Map<Object, CompiledCollision> compiled =
+                Collections.synchronizedMap(new WeakHashMap<Object, CompiledCollision>());
+
+        private CollisionTemplate(String units, String terrain, String radius,
+                                  TerrainTransitionSpec transition,
+                                  boolean extendedUnitFilter,
+                                  Set<UnitCollisionLayer> layers,
+                                  Set<MovementType> movementTypes,
+                                  String minHeight, String maxHeight,
+                                  CustomTagList requiredTags, CustomTagList forbiddenTags,
+                                  String includeTransported) {
+            collideWithUnits = units;
+            collideWithTerrain = terrain;
+            contactCollisionRadius = radius;
+            terrainTransition = transition;
+            this.extendedUnitFilter = extendedUnitFilter;
+            this.layers = layers;
+            this.movementTypes = movementTypes;
+            this.minHeight = minHeight;
+            this.maxHeight = maxHeight;
+            this.requiredTags = requiredTags;
+            this.forbiddenTags = forbiddenTags;
+            this.includeTransported = includeTransported;
+        }
+
+        static CollisionTemplate parse(UnitConfig config) {
+            String transitionFrom = optionalNullable(config, "collision", "terrainTransitionFrom");
+            String transitionTo = optionalNullable(config, "collision", "terrainTransitionTo");
+            if ((transitionFrom == null) != (transitionTo == null)) {
+                throw new IllegalArgumentException(
+                        "[collision] terrainTransitionFrom and terrainTransitionTo must be used together");
+            }
+            TerrainTransitionSpec transition = transitionFrom == null
+                    ? TerrainTransitionSpec.none()
+                    : TerrainTransitionSpec.of(
+                            PatternTemplate.enumValue(
+                                    TerrainKind.class, transitionFrom, "terrainTransitionFrom"),
+                            PatternTemplate.enumValue(
+                                    TerrainKind.class, transitionTo, "terrainTransitionTo"));
+            String[] filterKeys = {"unitCollisionLayers", "unitCollisionMovementTypes",
+                    "unitCollisionMinHeight", "unitCollisionMaxHeight",
+                    "unitCollisionWithTags", "unitCollisionWithoutTags",
+                    "unitCollisionIncludeTransported"};
+            boolean filter = false;
+            for (String key : filterKeys) filter |= config.hasKey("collision", key);
+            return new CollisionTemplate(
+                    optional(config, "collision", "collideWithUnits", "false"),
+                    optional(config, "collision", "collideWithTerrain", "false"),
+                    optional(config, "collision", "contactCollisionRadius", "0"),
+                    transition, filter,
+                    parseLayers(optional(config, "collision", "unitCollisionLayers", "ground")),
+                    parseMovementTypes(optionalNullable(
+                            config, "collision", "unitCollisionMovementTypes")),
+                    optionalNullable(config, "collision", "unitCollisionMinHeight"),
+                    optionalNullable(config, "collision", "unitCollisionMaxHeight"),
+                    parseTags(optionalNullable(config, "collision", "unitCollisionWithTags")),
+                    parseTags(optionalNullable(config, "collision", "unitCollisionWithoutTags")),
+                    optional(config, "collision", "unitCollisionIncludeTransported", "false"));
+        }
+
+        CompiledCollision compileFor(CustomUnit actor) {
+            Object metadata = actor.unitMetadata;
+            CompiledCollision result = compiled.get(metadata);
+            if (result != null) return result;
+            result = new CompiledCollision(
+                    BooleanExpression.compile(metadata, collideWithUnits),
+                    BooleanExpression.compile(metadata, collideWithTerrain),
+                    NumericExpression.compile(metadata, contactCollisionRadius),
+                    terrainTransition, extendedUnitFilter, layers, movementTypes,
+                    minHeight != null ? NumericExpression.compile(metadata, minHeight) : null,
+                    maxHeight != null ? NumericExpression.compile(metadata, maxHeight) : null,
+                    requiredTags, forbiddenTags,
+                    BooleanExpression.compile(metadata, includeTransported));
+            compiled.put(metadata, result);
+            return result;
+        }
+
+        private static Set<UnitCollisionLayer> parseLayers(String raw) {
+            EnumSet<UnitCollisionLayer> result = EnumSet.noneOf(UnitCollisionLayer.class);
+            for (String value : raw.split(",")) {
+                result.add(PatternTemplate.enumValue(
+                        UnitCollisionLayer.class, value, "unitCollisionLayers"));
+            }
+            if (result.isEmpty()) throw new IllegalArgumentException("unitCollisionLayers is empty");
+            return result;
+        }
+
+        private static Set<MovementType> parseMovementTypes(String raw) {
+            Set<MovementType> result = new LinkedHashSet<MovementType>();
+            if (raw == null || raw.trim().isEmpty()) return result;
+            for (String item : raw.split(",")) {
+                String value = item.trim().toLowerCase(Locale.ROOT);
+                switch (value) {
+                    case "none": result.add(MovementType.none); break;
+                    case "land": result.add(MovementType.land); break;
+                    case "building": result.add(MovementType.building); break;
+                    case "air": result.add(MovementType.air); break;
+                    case "water": result.add(MovementType.water); break;
+                    case "hover": result.add(MovementType.hover); break;
+                    case "overcliff": result.add(MovementType.overCliff); break;
+                    case "overcliffwater": result.add(MovementType.overCliffWater); break;
+                    default: throw new IllegalArgumentException(
+                            "unknown unitCollisionMovementTypes value: " + item);
+                }
+            }
+            return result;
+        }
+
+        private static CustomTagList parseTags(String raw) {
+            return raw != null && !raw.trim().isEmpty() ? UnitTags.parse(raw) : null;
+        }
+    }
+
+    static final class CompiledCollision {
+        private final BooleanExpression units;
+        private final BooleanExpression terrain;
+        private final NumericExpression radius;
+        private final TerrainTransitionSpec terrainTransition;
+        private final boolean extendedUnitFilter;
+        private final Set<UnitCollisionLayer> layers;
+        private final Set<MovementType> movementTypes;
+        private final NumericExpression minHeight, maxHeight;
+        private final CustomTagList requiredTags, forbiddenTags;
+        private final BooleanExpression includeTransported;
+
+        private CompiledCollision(BooleanExpression units,
+                                  BooleanExpression terrain,
+                                  NumericExpression radius,
+                                  TerrainTransitionSpec terrainTransition,
+                                  boolean extendedUnitFilter,
+                                  Set<UnitCollisionLayer> layers,
+                                  Set<MovementType> movementTypes,
+                                  NumericExpression minHeight, NumericExpression maxHeight,
+                                  CustomTagList requiredTags, CustomTagList forbiddenTags,
+                                  BooleanExpression includeTransported) {
+            this.units = units;
+            this.terrain = terrain;
+            this.radius = radius;
+            this.terrainTransition = terrainTransition;
+            this.extendedUnitFilter = extendedUnitFilter;
+            this.layers = layers;
+            this.movementTypes = movementTypes;
+            this.minHeight = minHeight;
+            this.maxHeight = maxHeight;
+            this.requiredTags = requiredTags;
+            this.forbiddenTags = forbiddenTags;
+            this.includeTransported = includeTransported;
+        }
+
+        ProjectileCollisionSpec resolve(CustomUnit actor) {
+            UnitCollisionFilterSpec filter = UnitCollisionFilterSpec.nativeGroundOnly();
+            if (extendedUnitFilter) {
+                filter = UnitCollisionFilterSpec.builder()
+                        .layers(layers)
+                        .movementTypes(movementTypes)
+                        .heightRange(minHeight != null ? minHeight.evaluate(actor) : -Float.MAX_VALUE,
+                                maxHeight != null ? maxHeight.evaluate(actor) : Float.MAX_VALUE)
+                        .requiredTags(requiredTags)
+                        .forbiddenTags(forbiddenTags)
+                        .includeTransported(includeTransported.evaluate(actor))
+                        .build();
+            }
+            return ProjectileCollisionSpec.of(
+                    units.evaluate(actor), terrain.evaluate(actor), radius.evaluate(actor),
+                    terrainTransition, filter);
         }
     }
 
@@ -325,7 +534,11 @@ final class CustomProjectileDefinitions {
 
         private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String label) {
             try {
-                return Enum.valueOf(type, raw.trim().toUpperCase(Locale.ROOT));
+                String normalized = raw.trim()
+                        .replaceAll("([a-z0-9])([A-Z])", "$1_$2")
+                        .replace('-', '_')
+                        .toUpperCase(Locale.ROOT);
+                return Enum.valueOf(type, normalized);
             } catch (IllegalArgumentException failure) {
                 throw new IllegalArgumentException("unknown " + label + ": " + raw);
             }

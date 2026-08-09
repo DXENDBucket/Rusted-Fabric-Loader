@@ -3,6 +3,7 @@ client.screen.v1,client.screen.ClientScreens
 client.render.alpha_mask.v1,client.render.AlphaMask
 client.render.bar.v1,client.render.BarStyle
 event.client.decal_layer.v1,client.render.event.DecalRenderEvents
+event.client.projectile_render.v1,client.render.event.ProjectileRenderEvents
 event.audio.runtime.v1,event.AudioRuntimeEvents
 event.build.queue.v1,unit.build.event.BuildQueueEvents
 event.command.issue.v1,command.event.CommandEvents
@@ -35,6 +36,8 @@ event.network.sync.v1,event.NetworkSyncEvents
 event.projectile.lifecycle.v1,projectile.event.ProjectileEvents
 event.projectile.combat.v1,projectile.event.ProjectileCombatEvents
 projectile.spawn.v1,projectile.spawn.ProjectileSpawner
+projectile.assets.v1,projectile.asset.CustomProjectileAssets
+projectile.collision.v1,projectile.spawn.ProjectileCollisions
 projectile.turret_pattern.v1,projectile.pattern.TurretProjectilePatternEvents
 event.render.image.v1,event.RenderImageLifecycleEvents
 event.repair.reclaim.v1,unit.repair.event.RepairReclaimEvents

@@ -35,6 +35,7 @@ public final class ProjectileSpawner {
         // createProjectileFromTemplate has no recursion argument. Native turret firing
         // assigns this field separately before created effects can spawn child projectiles.
         projectile.spawnRecursionDepth = context.recursionDepth();
+        ProjectileCollisions.apply(projectile, current.collision());
 
         Unit target = null;
         float targetX;
