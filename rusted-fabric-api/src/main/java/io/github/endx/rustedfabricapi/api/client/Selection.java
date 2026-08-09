@@ -50,6 +50,14 @@ public final class Selection {
                 ? gameInterface.getPrimarySelectedOrderableUnit() : null);
     }
 
+    /** Returns whether the unit is selected in this local client's current interface state. */
+    public static boolean isSelected(Unit unit) {
+        Objects.requireNonNull(unit, "unit");
+        InterfaceEngine gameInterface = getInterfaceOrNull();
+        UnitArrayList selectedUnits = gameInterface != null ? gameInterface.selectedUnits : null;
+        return selectedUnits != null && selectedUnits.contains(unit);
+    }
+
     /** Adds a unit through the game's normal selection path. Call from the update thread. */
     public static boolean add(Unit unit) {
         return requireInterface().addUnitToSelection(Objects.requireNonNull(unit, "unit"));

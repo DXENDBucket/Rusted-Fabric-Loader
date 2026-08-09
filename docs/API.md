@@ -66,6 +66,12 @@ The public capability catalog is machine-readable in
 group has one versioned capability key. `ApiSupportMatrix.available(context, capability)` combines
 catalog membership with capabilities advertised by the shared Loader runtime.
 
+`LogicUnitProperties` lets API mods register typed, parameterless `self.*` values backed by
+`LogicUnitPropertyDefinition`. Definitions declare whether their value is synchronized simulation
+state or local-client state; the latter must only be consumed by presentation expressions. INI
+Essentials uses this registry for active-waypoint context and local selection instead of adding
+special parsing branches to every INI field.
+
 ## Event behavior
 
 Events in the domain packages (`api.unit.*`, `api.client.*`, `api.networking.*`, and similar)
@@ -219,7 +225,8 @@ The first typed desktop layer contains:
 - `api.unit.combat.CombatUnits`, `TurretSnapshot`, and `api.unit.combat.event.CombatEvents`:
   current-target and range checks, immutable turret configuration/runtime snapshots, normal
   warmup/reload firing, and cancellable or modifiable targeting/fire decisions.
-- `api.unit.order.UnitOrders` and `UnitOrderSnapshot`: active/next/last waypoint access, immutable
+- `api.unit.order.UnitOrders` and `UnitOrderSnapshot`: active/next/last waypoint access, live
+  active-target type/absolute/unit-relative coordinates, immutable
   queue snapshots, attack-mode access, and direct deterministic queue operations for move, attack,
   repair, reclaim, guard, patrol, and follow behavior.
 - `api.unit.repair.RepairReclaim` and `api.unit.repair.event.RepairReclaimEvents`: repair/reclaim

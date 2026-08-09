@@ -67,6 +67,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def overlayContext = file('src/main/java/io/github/endx/iniessentials/OverlayEvaluationContext.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
     def mathFields = file('src/main/java/io/github/endx/iniessentials/ExtendedMathFunctions.java')
+    def unitContextProperties = file('src/main/java/io/github/endx/iniessentials/UnitContextProperties.java')
     def referenceGenerator = file('docs/generate_reference.py')
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
@@ -75,7 +76,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             projectileRuleFields,
             booleanExpression,
             geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
-            referenceGenerator, referenceWorkbook
+            unitContextProperties, referenceGenerator, referenceWorkbook
     doLast {
         def rows = catalog.readLines('UTF-8')
         if (rows.size() < 2 || !rows[0].startsWith('version_added,code,section,')) {
@@ -117,7 +118,10 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'barDirection',
                 'overlayStableIndex', 'overlayCount', 'overlayRow',
                 'overlayColumn', 'overlaySlot', 'overlayUnitId', 'screenWidth',
-                'screenHeight', 'uiScale'
+                'screenHeight', 'uiScale',
+                'self.activeWaypointType', 'self.activeWaypointX',
+                'self.activeWaypointY', 'self.activeWaypointRelativeX',
+                'self.activeWaypointRelativeY', 'self.isSelectedByLocalPlayer'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
@@ -130,6 +134,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def overlayContextSource = overlayContext.getText('UTF-8')
         def fogSource = fogFields.getText('UTF-8')
         def mathSource = mathFields.getText('UTF-8')
+        def unitContextSource = unitContextProperties.getText('UTF-8')
         def eventRuleSource = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java').getText('UTF-8')
         def projectileRuleSource = projectileRuleFields.getText('UTF-8')
         def initializerSource = initializer.getText('UTF-8')
@@ -177,6 +182,12 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'overlayrow', 'overlaycolumn', 'overlayslot', 'overlayunitid',
                     'screenwidth', 'screenheight', 'uiscale'].every {
                     overlayContextSource.contains('"' + it + '"')
+                }
+                || !['self.activeWaypointType', 'self.activeWaypointX',
+                    'self.activeWaypointY', 'self.activeWaypointRelativeX',
+                    'self.activeWaypointRelativeY',
+                    'self.isSelectedByLocalPlayer'].every {
+                    unitContextSource.contains('"' + it + '"')
                 }
                 || !overlaySource.contains('HudRenderEvents.BEFORE_HUD')
                 || !overlaySource.contains('HudRenderEvents.AFTER_HUD')
@@ -332,7 +343,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v16'
+                || multiplayer?.protocol != 'ini_essentials_v17'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

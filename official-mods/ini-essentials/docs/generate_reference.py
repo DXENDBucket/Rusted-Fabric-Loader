@@ -205,8 +205,8 @@ def make_groups(field_rows: list[dict[str, str]],
         elif key == "math":
             section_en = "Runtime LogicBoolean numeric expressions"
             section_zh = "运行时 LogicBoolean 数值表达式"
-            summary_en = "Additional deterministic numeric functions available in dynamic INI expressions"
-            summary_zh = "动态 INI 表达式中可用的额外确定性数值函数"
+            summary_en = "Additional numeric functions and live unit-context properties for dynamic INI expressions"
+            summary_zh = "动态 INI 表达式中可用的额外数值函数与实时单位上下文属性"
         else:
             section_en = section_names[key]
             section_zh = section_names[key]

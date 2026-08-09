@@ -44,6 +44,30 @@ effects run only on the client locally controlling the acting unit's team; they 
 deterministic simulation state or another player's camera. A missing unit/action target makes the
 corresponding contextual move a safe no-op.
 
+## Live unit context
+
+Native `self.hasActiveWaypoint` remains the preferred existence check, including its optional
+`type` filter. INI Essentials adds the active waypoint values that the native expression language
+does not otherwise expose:
+
+```ini
+self.hasActiveWaypoint
+self.hasActiveWaypoint(type='attackMove')
+self.activeWaypointType == 'attackMove'
+self.activeWaypointX
+self.activeWaypointY
+self.activeWaypointRelativeX
+self.activeWaypointRelativeY
+self.isSelectedByLocalPlayer
+```
+
+Absolute coordinates use the active order's live native target position. Relative X is the
+unit-local lateral/right axis and relative Y is its forward axis, matching
+`self.getOffsetRelative(x=...,y=...)`. With no active waypoint, the type is `none`, absolute
+coordinates fall back to the unit position, and relative coordinates are zero. The selection value
+belongs to the local client and must only control presentation such as Decals or Overlays; it must
+not decide synchronized gameplay behavior.
+
 ## Geometry, math, and fog
 
 `[geometry_NAME]` declares a finite reusable mask. Numeric fields are runtime LogicBoolean

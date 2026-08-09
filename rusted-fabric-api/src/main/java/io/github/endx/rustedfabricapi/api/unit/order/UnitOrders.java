@@ -4,6 +4,7 @@ import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitAttackMode;
 import rustedwarfare.unit.UnitOrder;
+import rustedwarfare.util.CommonUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,50 @@ public final class UnitOrders {
 
     public static UnitOrder active(OrderableUnit unit) {
         return require(unit).getActiveWaypoint();
+    }
+
+    /** Returns the native active-order enum name, or {@code "none"}. */
+    public static String activeTypeName(OrderableUnit unit) {
+        OrderableUnit checked = require(unit);
+        UnitOrder order = checked.getActiveWaypoint();
+        return order != null && order.getOrderType() != null
+                ? order.getOrderType().name() : "none";
+    }
+
+    /** Returns the live native target X, or the unit's own X when no order is active. */
+    public static float activeTargetX(OrderableUnit unit) {
+        OrderableUnit checked = require(unit);
+        UnitOrder order = checked.getActiveWaypoint();
+        return order != null ? order.getTargetX() : ((Unit) checked).x;
+    }
+
+    /** Returns the live native target Y, or the unit's own Y when no order is active. */
+    public static float activeTargetY(OrderableUnit unit) {
+        OrderableUnit checked = require(unit);
+        UnitOrder order = checked.getActiveWaypoint();
+        return order != null ? order.getTargetY() : ((Unit) checked).y;
+    }
+
+    /** Returns the target on the native lateral/right unit-relative X axis. */
+    public static float activeTargetRelativeX(OrderableUnit unit) {
+        OrderableUnit checked = require(unit);
+        if (checked.getActiveWaypoint() == null) return 0.0F;
+        float dx = activeTargetX(checked) - ((Unit) checked).x;
+        float dy = activeTargetY(checked) - ((Unit) checked).y;
+        float sin = CommonUtils.fastSin(checked.direction);
+        float cos = CommonUtils.fastCos(checked.direction);
+        return -sin * dx + cos * dy;
+    }
+
+    /** Returns the target on the native forward unit-relative Y axis. */
+    public static float activeTargetRelativeY(OrderableUnit unit) {
+        OrderableUnit checked = require(unit);
+        if (checked.getActiveWaypoint() == null) return 0.0F;
+        float dx = activeTargetX(checked) - ((Unit) checked).x;
+        float dy = activeTargetY(checked) - ((Unit) checked).y;
+        float sin = CommonUtils.fastSin(checked.direction);
+        float cos = CommonUtils.fastCos(checked.direction);
+        return cos * dx + sin * dy;
     }
 
     public static UnitOrder next(OrderableUnit unit) {

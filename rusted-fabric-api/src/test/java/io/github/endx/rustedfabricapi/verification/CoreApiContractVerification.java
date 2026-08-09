@@ -53,11 +53,12 @@ public final class CoreApiContractVerification {
         ProjectileCombatEventContractVerification.verify();
         IniExtensionContractVerification.verify();
         IniActionEffectContractVerification.verify();
+        LogicUnitPropertyContractVerification.verify();
         System.out.println("Rusted Fabric API core contracts passed");
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 49,
+        require(ApiSupportMatrix.entries().size() == 50,
                 "public API support matrix does not cover every advertised API group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_RENDER_ALPHA_MASK,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
@@ -68,6 +69,9 @@ public final class CoreApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_DECAL_LAYER,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "client Decal-layer support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.LOGIC_UNIT_PROPERTIES,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "LogicBoolean unit-property support is not advertised");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "unit lifecycle support is not advertised");

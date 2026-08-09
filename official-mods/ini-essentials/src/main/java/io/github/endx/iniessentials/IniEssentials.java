@@ -28,6 +28,7 @@ public final class IniEssentials implements ModInitializer {
         CustomUnitRegistryEvents.BEFORE_NATIVE_LOAD.register(ignored -> {
             ExtendedMathFunctions.register();
             OverlayEvaluationContext.registerFunctions();
+            UnitContextProperties.register();
         });
         EventRuleDefinitions.register();
         ProjectileRuleDefinitions.register();
@@ -68,7 +69,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v16",
-                "059c6755f0e8cccaf9d389d73c5cf229da1092350aaf5ccd3ce1985769829d74"));
+                MOD_ID, version, "ini_essentials_v17",
+                "f36b975d68919b866e107a834132e37884d732e2fbb2a68071aae48cd886c7fa"));
     }
 }

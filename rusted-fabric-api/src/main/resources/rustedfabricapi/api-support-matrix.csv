@@ -18,6 +18,7 @@ event.game.lifecycle.v1,event.GameLifecycleEvents
 geometry.masks.v1,geometry.GeometryMasks
 fog.operations.v1,fog.FogOfWar
 logic.number_functions.v1,logic.LogicNumberFunctions
+logic.unit_properties.v1,logic.LogicUnitProperties
 logic.unit_reference.v1,logic.UnitReferenceExpression
 session.v1,event.GameSessionEvents
 event.hud.command.v1,event.HudCommandEvents
