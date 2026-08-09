@@ -242,8 +242,9 @@ The first typed desktop layer contains:
 - `api.custom.CustomUnits`, `CustomUnitRegistryEvents`, and `CustomUnitLifecycleEvents`: active and
   pending definition snapshots, lookup/creation/reload, registry phases, metadata conversion,
   custom-unit death, and removal.
-- `api.custom.CustomUnitTriggers` and `CustomUnitTriggerEvents`: immediate configured-event
-  dispatch, contextual queued dispatch, and cancellable before/after trigger or queue callbacks.
+- `api.custom.CustomUnitTriggers`, `CustomUnitEventData`, and `CustomUnitTriggerEvents`: immediate
+  configured-event dispatch, contextual queued dispatch, cancellable before/after callbacks, and
+  typed enrichment of the native `eventData(...)` scope.
 - `api.custom.attachment.Attachments` and `AttachmentEvents`: slot discovery and offsets, attached
   unit snapshots, parent/slot lookup, attach/detach calls, and mutation callbacks.
 - `api.unit.tag.UnitTags` and `UnitTagEvents`: tag parsing/interning, immutable name snapshots,
@@ -1335,6 +1336,12 @@ post-damage and post-death observation, damage-immunity modification, and contro
 game object remains after death effects. The same mapped desktop implementation runs on Windows
 and the Android desktop-JVM host.
 
+`AFTER_DAMAGE_RESULT` supplies an immutable `UnitDamageResult` with requested damage, native
+remaining damage, attacker/projectile, before/after HP and shield, actual HP/shield reductions,
+and lethal-transition state. The older `AFTER_DAMAGE` final float is the game's native return
+value—unapplied/remaining damage—not HP damage; its parameter documentation now states that exact
+semantics.
+
 `MODIFY_LETHAL_HEALTH` runs only at the native overkill branch that would clamp HP to zero. It
 provides both native zero and the result of the same native shield/hull multiplier calculation
 without the floor. With no listener—or when every listener returns `null`—the original clamp is
@@ -1384,6 +1391,20 @@ INI Essentials uses this API for `cameraCenterAt`, `cameraCenterBy`, `cameraCent
 `cameraTargetZoom`, and `cameraStopMovement`. These fields work in both visible and hidden action
 sections. Camera moves are local-owner-only; `cameraCenterOn` accepts `self`, `target`, or
 `actionTarget` followed by optional X/Y offsets.
+
+### Native custom-unit event data
+
+`api.custom.event.CustomUnitEventData` is a typed writer over the native `VariableScope` passed to
+queued custom-unit events. `CustomUnitTriggerEvents.ENRICH_EVENT_DATA` lets Java mods add numbers,
+booleans, strings, or unit references before native actions execute, while preserving existing
+`eventSource` and tag filtering.
+
+`DamageEventData` enables the built-in bridge for `autoTriggerOnEvent: tookDamage`. INI actions can
+read `damage`, `rawDamage`, `hpDamage`, `shieldDamage`, `remainingDamage`, `hpBefore`, `hpAfter`,
+`shieldBefore`, `shieldAfter`, and `wasLethal` through the original
+`eventData(name="...", type="...")` function. The data scope is queued before damage, then updated
+in place when the native damage routine finishes, so the subsequently executed event action sees
+accurate before/after values including changes made by the lethal-health extension hook.
 
 ## API layers
 

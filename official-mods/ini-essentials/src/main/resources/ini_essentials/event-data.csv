@@ -1,0 +1,11 @@
+version_added,event,event_data_name,value_type,multiplayer_impact,description_en,description_zh,example
+0.1.0,tookDamage,damage,number,gameplay_synced,Damage delivered to the native damage routine after attachment forwarding immunity and custom-unit armour.,传入原版伤害流程的数值；已经过附件伤害转移、伤害免疫和自定义单位护甲处理。,"eventData(name=""damage"", type=""number"")"
+0.1.0,tookDamage,rawDamage,number,gameplay_synced,Damage passed into this custom unit before attachment forwarding immunity and custom-unit armour.,最初传入该自定义单位的伤害值；尚未经过附件伤害转移、伤害免疫和自定义单位护甲处理。,"eventData(name=""rawDamage"", type=""number"")"
+0.1.0,tookDamage,hpDamage,number,gameplay_synced,Actual non-negative HP reduction produced by this damage application.,本次伤害实际造成的非负生命值减少量。,"eventData(name=""hpDamage"", type=""number"")"
+0.1.0,tookDamage,shieldDamage,number,gameplay_synced,Actual non-negative shield reduction produced by this damage application.,本次伤害实际造成的非负护盾值减少量。,"eventData(name=""shieldDamage"", type=""number"")"
+0.1.0,tookDamage,remainingDamage,number,gameplay_synced,Native return value containing damage left unapplied after shield and hull processing.,护盾和生命处理结束后未被应用的剩余伤害，即原版伤害方法的返回值。,"eventData(name=""remainingDamage"", type=""number"")"
+0.1.0,tookDamage,hpBefore,number,gameplay_synced,HP immediately before the native damage routine.,进入原版伤害流程前的生命值。,"eventData(name=""hpBefore"", type=""number"")"
+0.1.0,tookDamage,hpAfter,number,gameplay_synced,HP immediately after the native damage routine.,完成原版伤害流程后的生命值。,"eventData(name=""hpAfter"", type=""number"")"
+0.1.0,tookDamage,shieldBefore,number,gameplay_synced,Shield immediately before the native damage routine.,进入原版伤害流程前的护盾值。,"eventData(name=""shieldBefore"", type=""number"")"
+0.1.0,tookDamage,shieldAfter,number,gameplay_synced,Shield immediately after the native damage routine.,完成原版伤害流程后的护盾值。,"eventData(name=""shieldAfter"", type=""number"")"
+0.1.0,tookDamage,wasLethal,boolean,gameplay_synced,True when a unit with positive HP reached zero or lower during this damage application.,若单位在本次伤害前生命值大于零并在之后降到零或更低，则为 true。,"eventData(name=""wasLethal"", type=""boolean"")"

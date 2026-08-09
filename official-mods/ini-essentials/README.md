@@ -34,9 +34,26 @@ effects run only on the client locally controlling the acting unit's team; they 
 deterministic simulation state or another player's camera. A missing unit/action target makes the
 corresponding contextual move a safe no-op.
 
+The native `tookDamage` action event now receives typed damage context through the game's existing
+`eventData(...)` function:
+
+```ini
+[hiddenAction_on_damage]
+autoTriggerOnEvent: tookDamage
+showMessageToPlayer: Damage: %{eventData(name="hpDamage", type="number")}, attacker: %{eventSource}
+```
+
+Available names are `damage`, `rawDamage`, `hpDamage`, `shieldDamage`, `remainingDamage`,
+`hpBefore`, `hpAfter`, `shieldBefore`, `shieldAfter`, and `wasLethal`. `damage` is the value passed
+to the native damage routine after attachment forwarding, immunity, and custom-unit armour;
+`hpDamage` and `shieldDamage` are the actual non-negative reductions. Existing `eventSource` and
+projectile-tag filtering retain their native behavior. Parsing any enhanced name activates the
+matching multiplayer requirement because these values can influence synchronized actions.
+
 The machine-readable bilingual field catalog is stored at
-`src/main/resources/ini_essentials/fields.csv`. The generated spreadsheet in `docs/` is intended for
-the same community workflow as the original Rusted Warfare Unit Modding Reference.
+`src/main/resources/ini_essentials/fields.csv`; enhanced native event values are stored in
+`src/main/resources/ini_essentials/event-data.csv`. The generated spreadsheet in `docs/` is intended
+for the same community workflow as the original Rusted Warfare Unit Modding Reference.
 
 `sync-schema.txt` is the canonical gameplay/protocol input for the multiplayer SHA-256. Descriptive
 wording is deliberately excluded so documentation-only edits do not break compatibility.

@@ -35,6 +35,13 @@ public final class CustomUnitTriggerEvents {
                     listener.afterQueue(unit, eventType, source, tags, data);
                 }
             });
+    /** Adds typed values to the native {@code eventData(...)} scope before an event is queued. */
+    public static final RustedFabricEvent<EnrichEventData> ENRICH_EVENT_DATA =
+            RustedFabricEvent.create(listeners -> (unit, eventType, source, tags, data) -> {
+                for (EnrichEventData listener : listeners) {
+                    listener.enrich(unit, eventType, source, tags, data);
+                }
+            });
 
     private CustomUnitTriggerEvents() {
     }
@@ -59,5 +66,11 @@ public final class CustomUnitTriggerEvents {
     public interface AfterQueue {
         void afterQueue(CustomUnit unit, CustomUnitEventType eventType,
                         Unit source, CustomTagList eventTags, VariableScope eventData);
+    }
+
+    @FunctionalInterface
+    public interface EnrichEventData {
+        void enrich(CustomUnit unit, CustomUnitEventType eventType,
+                    Unit source, CustomTagList eventTags, CustomUnitEventData eventData);
     }
 }

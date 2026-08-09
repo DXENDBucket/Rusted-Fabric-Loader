@@ -18,6 +18,10 @@ public abstract class UnitDamageRuntimeNamedMixin {
 
     @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeUnitApplyDamage(@Coerce Object attacker, float amount, @Coerce Object projectile, CallbackInfoReturnable<Float> cir) {
+        io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime.beginNativeDamage(
+                (rustedwarfare.unit.Unit) (Object) this,
+                (rustedwarfare.unit.Unit) attacker, amount,
+                (rustedwarfare.game.Projectile) projectile);
         rustedfabricapi$captureUnclampedLethalHp(
                 (rustedwarfare.unit.Unit) attacker, amount,
                 (rustedwarfare.game.Projectile) projectile);
@@ -33,11 +37,16 @@ public abstract class UnitDamageRuntimeNamedMixin {
     @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterUnitApplyDamage(@Coerce Object attacker, float amount, @Coerce Object projectile, CallbackInfoReturnable<Float> cir) {
         Float result = cir.getReturnValue();
+        float remaining = result != null ? result.floatValue() : 0.0F;
+        io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult damageResult =
+                io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime.endNativeDamage(
+                        (rustedwarfare.unit.Unit) (Object) this, remaining);
         io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents.AFTER_DAMAGE.invoker()
                 .afterDamage((rustedwarfare.unit.Unit) (Object) this,
                         (rustedwarfare.unit.Unit) attacker, amount,
-                        (rustedwarfare.game.Projectile) projectile,
-                        result != null ? result.floatValue() : 0.0F);
+                        (rustedwarfare.game.Projectile) projectile, remaining);
+        io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents.AFTER_DAMAGE_RESULT
+                .invoker().afterDamage(damageResult);
         rustedfabricapi$clearLethalCapture();
     }
 

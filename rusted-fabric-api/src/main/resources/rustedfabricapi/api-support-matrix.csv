@@ -30,6 +30,7 @@ event.repair.reclaim.v1,unit.repair.event.RepairReclaimEvents
 event.resource.runtime.v1,event.ResourceRuntimeEvents
 event.runtime.lifecycle.v1,event.RuntimeLifecycleEvents
 event.custom.registry.v1,event.RustedCustomUnitRegistryEvents
+event.custom.context.v1,custom.event.CustomUnitTriggerEvents
 event.ini.v1,event.RustedIniEvents
 ini.extensions.v1,ini.IniExtensions
 ini.action_effects.v1,ini.action.IniActionEffects

@@ -52,11 +52,12 @@ tasks.register('verifyIniEssentialsMetadata') {
     group = 'verification'
     description = 'Checks the field catalog and synchronized multiplayer declaration.'
     def catalog = file('src/main/resources/ini_essentials/fields.csv')
+    def eventDataCatalog = file('src/main/resources/ini_essentials/event-data.csv')
     def syncSchema = file('src/main/resources/ini_essentials/sync-schema.txt')
     def metadata = file('src/main/resources/fabric.mod.json')
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/CameraActionFields.java')
-    inputs.files catalog, syncSchema, metadata, initializer, cameraFields
+    inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields
     doLast {
         def rows = catalog.readLines('UTF-8')
         if (rows.size() < 2 || !rows[0].startsWith('version_added,code,section,')) {
@@ -76,6 +77,20 @@ tasks.register('verifyIniEssentialsMetadata') {
                 }) {
             throw new GradleException('INI Essentials camera field catalog/source drifted')
         }
+        def eventRows = eventDataCatalog.readLines('UTF-8')
+        def expectedEventData = [
+                'damage', 'rawDamage', 'hpDamage', 'shieldDamage', 'remainingDamage',
+                'hpBefore', 'hpAfter', 'shieldBefore', 'shieldAfter', 'wasLethal'
+        ] as Set
+        def eventDataNames = eventRows.drop(1).findAll { !it.trim().isEmpty() }.collect {
+            it.split(',', 4)[2]
+        } as Set
+        if (eventRows.isEmpty()
+                || !eventRows[0].startsWith('version_added,event,event_data_name,')
+                || eventDataNames != expectedEventData
+                || !initializer.getText('UTF-8').contains('DamageEventData.enable(')) {
+            throw new GradleException('INI Essentials event-data catalog is empty or drifted')
+        }
         def mod = new groovy.json.JsonSlurper().parseText(metadata.getText('UTF-8'))
         def multiplayer = mod.custom?.get('rusted_fabric:multiplayer')
         byte[] canonicalSyncSchema = syncSchema.getText('UTF-8')
@@ -84,7 +99,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v2'
+                || multiplayer?.protocol != 'ini_essentials_v3'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

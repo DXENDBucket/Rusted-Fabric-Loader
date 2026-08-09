@@ -3,9 +3,11 @@ package io.github.endx.rustedfabricapi.mixin;
 import io.github.endx.rustedfabricapi.api.custom.attachment.event.AttachmentEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
 import io.github.endx.rustedfabricapi.api.unit.tag.event.UnitTagEvents;
+import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import rustedwarfare.custom.CustomTagList;
@@ -13,11 +15,29 @@ import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.attachment.AttachmentSlot;
 import rustedwarfare.custom.event.CustomUnitEventType;
 import rustedwarfare.custom.logic.VariableScope;
+import rustedwarfare.game.Projectile;
 import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitExtensionNamedMixin {
+    @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F",
+            at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beginEnhancedDamageEvent(Unit attacker, float amount,
+                                                          Projectile projectile,
+                                                          CallbackInfoReturnable<Float> cir) {
+        DamageEventDataRuntime.beginCustomDamage(
+                (CustomUnit) (Object) this, attacker, amount, projectile);
+    }
+
+    @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F",
+            at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$endEnhancedDamageEvent(Unit attacker, float amount,
+                                                        Projectile projectile,
+                                                        CallbackInfoReturnable<Float> cir) {
+        DamageEventDataRuntime.endCustomDamage((CustomUnit) (Object) this);
+    }
+
     @Inject(method = "setRuntimeTags(Lrustedwarfare/custom/CustomTagList;Z)V",
             at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeSetRuntimeTags(CustomTagList replacement,
@@ -114,6 +134,16 @@ public abstract class CustomUnitExtensionNamedMixin {
             CustomUnitEventType eventType, Unit source, CustomTagList eventTags,
             VariableScope eventData, CallbackInfo ci) {
         CustomUnitTriggerEvents.AFTER_QUEUE.invoker().afterQueue(
+                (CustomUnit) (Object) this, eventType, source, eventTags, eventData);
+    }
+
+    @ModifyVariable(
+            method = "queueCustomEventWithContext(Lrustedwarfare/custom/event/CustomUnitEventType;Lrustedwarfare/unit/Unit;Lrustedwarfare/custom/CustomTagList;Lrustedwarfare/custom/logic/VariableScope;)V",
+            at = @At("HEAD"), argsOnly = true, ordinal = 0, require = 1)
+    private VariableScope rustedfabricapi$enrichQueuedEventData(
+            VariableScope eventData, CustomUnitEventType eventType, Unit source,
+            CustomTagList eventTags, VariableScope originalEventData) {
+        return DamageEventDataRuntime.enrichQueuedEvent(
                 (CustomUnit) (Object) this, eventType, source, eventTags, eventData);
     }
 }

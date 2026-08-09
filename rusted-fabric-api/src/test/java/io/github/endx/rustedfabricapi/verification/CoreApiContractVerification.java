@@ -20,7 +20,11 @@ import io.github.endx.rustedfabricapi.api.event.GameSessionEvents;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
+import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult;
+import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
 import io.github.endx.rustedfabricapi.impl.combat.NativeDamageMath;
+import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
+import rustedwarfare.unit.Unit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,13 +47,14 @@ public final class CoreApiContractVerification {
         verifySharedSessions();
         verifyNetworkBridge();
         verifyLethalHealthModifier();
+        verifyDamageEventContextContracts();
         IniExtensionContractVerification.verify();
         IniActionEffectContractVerification.verify();
         System.out.println("Rusted Fabric API core contracts passed");
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 40,
+        require(ApiSupportMatrix.entries().size() == 41,
                 "public API support matrix does not cover every event group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
@@ -63,6 +68,9 @@ public final class CoreApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_DAMAGE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "unit damage support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CUSTOM_EVENT_CONTEXT,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "custom event context support is not advertised");
         require(ApiSupportMatrix.available(context, RustedFabricCapabilities.RUNTIME_LIFECYCLE),
                 "runtime capability and expected support matrix disagree");
     }
@@ -259,6 +267,40 @@ public final class CoreApiContractVerification {
                         .modify(null, null, 12.0F, null, 0.0F, -2.0F, 0.0F) == -2.0F,
                 "lethal-health listener could not select the unclamped value");
         damageRegistration.close();
+    }
+
+    private static void verifyDamageEventContextContracts() {
+        Unit unit = new Unit();
+        Unit attacker = new Unit();
+        UnitDamageResult result = new UnitDamageResult(
+                unit, attacker, null, 12.0F, 2.0F,
+                10.0F, -2.0F, 5.0F, 1.0F);
+        require(result.unit() == unit && result.attacker().orElse(null) == attacker,
+                "damage result lost target/attacker context");
+        require(result.hpDamage() == 12.0F && result.shieldDamage() == 4.0F,
+                "damage result did not preserve actual HP/shield reductions");
+        require(result.nativeRemainingDamage() == 2.0F && result.wasLethal(),
+                "damage result remaining/lethal semantics are wrong");
+
+        final int[] resultEvents = {0};
+        io.github.endx.rustedfabricapi.api.event.RustedFabricEvent.Registration resultRegistration =
+                UnitDamageEvents.AFTER_DAMAGE_RESULT.subscribe(value -> {
+                    if (value == result) resultEvents[0]++;
+                });
+        UnitDamageEvents.AFTER_DAMAGE_RESULT.invoker().afterDamage(result);
+        require(resultEvents[0] == 1, "detailed damage event was not delivered");
+        resultRegistration.close();
+
+        final int[] usage = {0};
+        try (DamageEventData.Registration ignored = DamageEventData.enable(() -> usage[0]++)) {
+            DamageEventDataRuntime.onEventDataNameParsed("HpDamage");
+            DamageEventDataRuntime.onEventDataNameParsed("unrelated");
+            require(usage[0] == 1, "enhanced eventData usage detection is not case-insensitive");
+        }
+        require(DamageEventData.fieldNames().contains("damage")
+                        && DamageEventData.fieldNames().contains("wasLethal"),
+                "damage event-data catalog is incomplete");
+
     }
 
     private static void verifySharedModEntrypoint(RustedFabricAPIContext context) {

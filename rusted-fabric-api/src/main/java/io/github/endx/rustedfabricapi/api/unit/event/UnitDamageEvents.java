@@ -16,10 +16,16 @@ public final class UnitDamageEvents {
             });
 
     public static final RustedFabricEvent<AfterDamage> AFTER_DAMAGE =
-            RustedFabricEvent.create(listeners -> (unit, attacker, amount, projectile, applied) -> {
+            RustedFabricEvent.create(listeners -> (unit, attacker, amount, projectile, remaining) -> {
                 for (AfterDamage listener : listeners) {
-                    listener.afterDamage(unit, attacker, amount, projectile, applied);
+                    listener.afterDamage(unit, attacker, amount, projectile, remaining);
                 }
+            });
+
+    /** Complete before/after values for one finished native damage application. */
+    public static final RustedFabricEvent<AfterDamageResult> AFTER_DAMAGE_RESULT =
+            RustedFabricEvent.create(listeners -> result -> {
+                for (AfterDamageResult listener : listeners) listener.afterDamage(result);
             });
 
     /**
@@ -84,8 +90,17 @@ public final class UnitDamageEvents {
 
     @FunctionalInterface
     public interface AfterDamage {
+        /**
+         * @param nativeRemainingAmount the native return value: damage left after shield/hull
+         *                              processing, not the amount applied to HP
+         */
         void afterDamage(Unit unit, Unit attacker, float requestedAmount,
-                         Projectile projectile, float appliedAmount);
+                         Projectile projectile, float nativeRemainingAmount);
+    }
+
+    @FunctionalInterface
+    public interface AfterDamageResult {
+        void afterDamage(UnitDamageResult result);
     }
 
     @FunctionalInterface

@@ -29,6 +29,7 @@
     "CustomUnitRenderNamedMixin",
     "CustomUnitRuntimeNamedMixin",
     "EffectEngineRuntimeNamedMixin",
+    "EventDataUsageNamedMixin",
     "CustomUnitTransportUnloadNamedMixin",
     "GameObjectSerializationNamedMixin",
     "GameImageLifecycleNamedMixin",
