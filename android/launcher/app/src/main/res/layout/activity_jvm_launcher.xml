@@ -248,6 +248,17 @@
                 android:textColor="@color/rf_text_primary" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/license_button"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="@android:color/transparent"
+            android:text="@string/jvm_open_source_licenses"
+            android:textAllCaps="false"
+            android:textColor="@color/rf_text_secondary" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

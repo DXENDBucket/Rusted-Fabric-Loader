@@ -13,6 +13,12 @@
     <string name="jvm_show_advanced">高级选项与诊断</string>
     <string name="jvm_hide_advanced">收起高级选项</string>
     <string name="jvm_no_diagnostics">尚未进行诊断测试。</string>
+    <string name="jvm_open_source_licenses">开源许可</string>
+    <string name="jvm_license_title">Rusted Fabric 许可</string>
+    <string name="jvm_license_notice">版权所有 © 2026 Rusted Fabric Loader 贡献者。\n\n本 Android 启动器是依照 GNU GPL 第 3 版发布的自由软件。你可以依照该许可重新分发和修改；本软件不提供任何担保。\n\nAPK 中不包含《铁锈战争》游戏文件。</string>
+    <string name="jvm_full_license">完整 GPLv3 许可</string>
+    <string name="jvm_source_code">源代码</string>
+    <string name="jvm_license_unavailable">无法读取 APK 内的许可证。</string>
     <string name="jvm_diagnostics_last">Java 运行时：\n%1$s\n\n渲染器：\n%2$s</string>
     <string name="jvm_boundary_short">游戏文件和 Java 仅保存在本应用的私有目录中。Rusted Fabric 不内置或分发铁锈战争本体。</string>
     <string name="jvm_game_checking">桌面版游戏 · 正在检查…</string>

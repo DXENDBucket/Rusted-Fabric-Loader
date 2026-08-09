@@ -13,6 +13,12 @@
     <string name="jvm_show_advanced">Advanced options and diagnostics</string>
     <string name="jvm_hide_advanced">Hide advanced options</string>
     <string name="jvm_no_diagnostics">No diagnostic tests have been run.</string>
+    <string name="jvm_open_source_licenses">Open-source licenses</string>
+    <string name="jvm_license_title">Rusted Fabric license</string>
+    <string name="jvm_license_notice">Copyright © 2026 Rusted Fabric Loader contributors.\n\nThis Android launcher is free software under GNU GPL version 3. You may redistribute and modify it under those terms. It is provided without warranty.\n\nThe APK does not contain Rusted Warfare game files.</string>
+    <string name="jvm_full_license">Full GPLv3 license</string>
+    <string name="jvm_source_code">Source code</string>
+    <string name="jvm_license_unavailable">The packaged license could not be read.</string>
     <string name="jvm_diagnostics_last">Java runtime:\n%1$s\n\nRenderer:\n%2$s</string>
     <string name="jvm_boundary_short">Game files and Java are stored only in this app’s private directory. Rusted Fabric does not bundle or distribute Rusted Warfare.</string>
     <string name="jvm_game_checking">Desktop game · Checking…</string>

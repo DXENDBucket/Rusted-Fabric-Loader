@@ -173,6 +173,15 @@ user-selected files into app-private storage. Windows and Android then execute t
 game, Fabric runtime, API Jar, Mixins, and mod format. Retired native-APK code is excluded from all
 active Gradle builds.
 
+## Licensing
+
+The Loader, API, shared JVM modules, and official mods are licensed under Apache License 2.0. The
+final Android launcher application under `android/launcher` is a separate GPL-3.0 distribution so
+it can comply with the GPL-covered FCL runtime components packaged into its APK. Third-party
+components retain their original licenses. See `android/launcher/LICENSE`,
+`android/launcher/SOURCE_OFFER.md`, and [`LICENSING.md`](LICENSING.md) for the exact path scopes and
+distribution details. The root `LICENSE` remains the unmodified Apache-2.0 license text.
+
 ## Example Mod
 The `official-mods/example-mod` subproject is a small test mod for the named development pipeline. It imports mapped game classes such as `rustedwarfare.core.GameEngine`, logs Fabric `main` and `client` entrypoints, and logs the Rusted-specific `classpath_ready` and `before_game` callbacks.
 

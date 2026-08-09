@@ -92,17 +92,33 @@ The following notices are provided for attribution and license compliance.
 
 ---
 
-## PojavLauncher Android LWJGL bridge
+## Fold Craft Launcher Android LWJGL bundle
 
-- Name: PojavLauncher Android GLFW/LWJGL class bundle
+- Name: Fold Craft Launcher LWJGL/Android runtime files
+- Homepage/Source: https://github.com/FCL-Team/FoldCraftLauncher
+- License: GNU General Public License 3.0 for the FCL distribution; embedded upstream components
+  retain the licenses listed below
+- Used for: Android-aware GLFW/LWJGL boundary, OpenAL, and FreeType binaries in the desktop JVM port
+- Release used: `1.3.2.4`
+- Corresponding source: https://github.com/FCL-Team/FoldCraftLauncher/tree/1.3.2.4
+
+The Android build extracts only the SHA-256-pinned paths declared in
+`android/launcher/app/build.gradle`. The GPLv3 text, corresponding-source directions, exact source
+release, and this notice are packaged in the APK under `assets/rusted-fabric/`. The Android launcher
+distribution is GPL-3.0; the Loader, API, and reusable JVM modules remain Apache-2.0.
+
+---
+
+## PojavLauncher Android components
+
+- Name: PojavLauncher Android runtime components
 - Homepage/Source: https://github.com/PojavLauncherTeam/PojavLauncher
-- License: GNU Lesser General Public License 3.0
-- Used for: Loader-owned LWJGL2-compatible Java API and Android-aware GLFW boundary in the desktop
-  JVM port
+- License: GNU Lesser General Public License 3.0 for PojavLauncher code; bundled upstream
+  components retain their own licenses
 - Revision used: `b12ad048157b3aa255d078c235dd4571e1900309`
 
-The Android build fetches this component by immutable revision and verifies its SHA-256. Its full
-license text is packaged in the APK under `assets/rusted-fabric/licenses/`.
+The Android build fetches the pinned GL4ES bridge binary and applicable notices by immutable
+revision and verifies their SHA-256 values. The LGPLv3 license text is packaged in the APK.
 
 ---
 
@@ -127,7 +143,7 @@ The full MIT license text is packaged in the APK.
 - Homepage/Source:
     - https://github.com/LWJGL/lwjgl3
     - https://github.com/PojavLauncherTeam/lwjglx
-- License: BSD 3-Clause (LWJGL); compatibility changes are distributed through the Pojav bundle
+- License: BSD 3-Clause (LWJGL); compatibility changes are distributed through the FCL/Pojav bundle
   described above
 - Used for: Native Java/OpenGL binding and the desktop game's `org.lwjgl` compatibility surface
 - LWJGL baseline in the Pojav bundle: `3.2.3`

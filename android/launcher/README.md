@@ -32,6 +32,18 @@ $env:JAVA_HOME = 'C:\Program Files\Java\jdk-17'
 
 The debug APK is written to `android/launcher/app/build/outputs/apk/debug/app-debug.apk`.
 
+## License and source
+
+The Android launcher distribution is licensed under GNU GPL version 3. Its full license is in
+[`LICENSE`](LICENSE). The reusable Loader, API, and JVM support modules outside this directory keep
+their Apache-2.0 licenses; Apache-2.0 code is included in the Android APK under the GPLv3
+distribution terms.
+
+Every APK includes the GPLv3 text, `THIRD_PARTY_NOTICES.md`, and a generated source offer containing
+the exact Git revision and pinned FCL source release. `assembleRelease` rejects a dirty or unknown
+Git revision. Release APKs must be published together with this repository's corresponding source
+archive. See [`SOURCE_OFFER.md`](SOURCE_OFFER.md) for the packaged template.
+
 ## Active modules
 
 - `app`: Android setup UI, isolated JVM process, Surface/input bridge, and native runtime adapters.

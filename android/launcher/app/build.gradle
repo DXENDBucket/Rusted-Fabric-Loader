@@ -78,6 +78,7 @@ def generatedLwjglCompatAssets = layout.buildDirectory.dir('generated/lwjglCompa
 def generatedLwjglAssets = layout.buildDirectory.dir('generated/lwjglAssets')
 def generatedLwjglNatives = layout.buildDirectory.dir('generated/lwjglNatives')
 def generatedRocketSources = layout.buildDirectory.dir('generated/rocketSources')
+def generatedComplianceAssets = layout.buildDirectory.dir('generated/complianceAssets')
 
 def lwjglAndroidRevision = 'b12ad048157b3aa255d078c235dd4571e1900309'
 def lwjglAndroidBase = "https://raw.githubusercontent.com/PojavLauncherTeam/PojavLauncher/${lwjglAndroidRevision}/"
@@ -127,6 +128,10 @@ def lwjglAndroidArtifacts = [
         [path: 'LICENSE', name: 'licenses/PojavLauncher-LGPL-3.0.txt',
          sha256: 'E3A994D82E644B03A792A930F574002658412F62407F5FEE083F2555C5F23118',
          asset: true],
+        [url: "https://raw.githubusercontent.com/FCL-Team/FoldCraftLauncher/${fclReleaseVersion}/LICENSE",
+         name: 'licenses/GPL-3.0.txt',
+         sha256: '605E9047A563C5C8396FFB18232AA4304EC56586AEE537C45064C6FB425E44AD',
+         asset: true],
         [url: 'https://raw.githubusercontent.com/PojavLauncherTeam/gl4es/3d8906d46a93066f21ea01aeaf1a36ec972efd15/LICENSE',
          name: 'licenses/GL4ES-MIT.txt',
          sha256: '69A3049C77ABD88658F6AD7CF6A5B6CEB5CF03B80E60F7C4657D90322CFAB7BD',
@@ -141,7 +146,63 @@ android.sourceSets.main.assets.srcDir(generatedJvmSmokeAssets)
 android.sourceSets.main.assets.srcDir(generatedJvmLauncherAssets)
 android.sourceSets.main.assets.srcDir(generatedLwjglCompatAssets)
 android.sourceSets.main.assets.srcDir(generatedLwjglAssets)
+android.sourceSets.main.assets.srcDir(generatedComplianceAssets)
 android.sourceSets.main.jniLibs.srcDir(generatedLwjglNatives)
+
+tasks.register('prepareComplianceAssets') {
+    group = 'build setup'
+    description = 'Packages GPLv3 source and license information for the Android distribution.'
+    inputs.file(rootProject.file('LICENSE'))
+    inputs.file(rootProject.file('SOURCE_OFFER.md'))
+    inputs.file(rootProject.file('../../THIRD_PARTY_NOTICES.md'))
+    inputs.property('androidVersion', android.defaultConfig.versionName)
+    inputs.property('fclVersion', fclReleaseVersion)
+    outputs.dir(generatedComplianceAssets)
+    // Git commit and dirty state can change without a tracked file input.
+    outputs.upToDateWhen { false }
+
+    doLast {
+        File repository = rootProject.file('../..')
+        def git = { String... arguments ->
+            List<String> command = ['git', '-C', repository.absolutePath]
+            command.addAll(arguments as List<String>)
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start()
+            String output = process.inputStream.getText('UTF-8').trim()
+            if (process.waitFor() != 0) {
+                return null
+            }
+            return output
+        }
+
+        String revision = git('rev-parse', 'HEAD') ?: 'unknown'
+        String status = git('status', '--porcelain')
+        String sourceRevision = revision
+        if (status == null || !status.isEmpty()) {
+            sourceRevision += '-dirty'
+        }
+
+        File output = generatedComplianceAssets.get().dir('rusted-fabric').asFile
+        project.delete(output)
+        File licenses = new File(output, 'licenses')
+        licenses.mkdirs()
+        project.copy {
+            from rootProject.file('LICENSE')
+            into licenses
+            rename { 'Rusted-Fabric-Android-GPL-3.0.txt' }
+        }
+        project.copy {
+            from rootProject.file('../../THIRD_PARTY_NOTICES.md')
+            into output
+        }
+
+        String sourceOffer = rootProject.file('SOURCE_OFFER.md').getText('UTF-8')
+                .replace('@ANDROID_VERSION@', android.defaultConfig.versionName)
+                .replace('@SOURCE_REVISION@', sourceRevision)
+                .replace('@GIT_COMMIT@', revision)
+                .replace('@FCL_VERSION@', fclReleaseVersion)
+        new File(output, 'SOURCE_OFFER.md').setText(sourceOffer, 'UTF-8')
+    }
+}
 
 tasks.register('prepareLwjglAndroidRuntime') {
     group = 'build setup'
@@ -370,6 +431,30 @@ tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareLwjglCompatAsset')
     dependsOn tasks.named('prepareLwjglAndroidRuntime')
     dependsOn tasks.named('prepareRocketSources')
+    dependsOn tasks.named('prepareComplianceAssets')
+}
+
+tasks.register('verifyGplReleaseReady') {
+    group = 'verification'
+    description = 'Rejects Android release builds without an exact public source revision.'
+    dependsOn tasks.named('prepareComplianceAssets')
+    doLast {
+        File offer = generatedComplianceAssets.get()
+                .file('rusted-fabric/SOURCE_OFFER.md').asFile
+        String text = offer.getText('UTF-8')
+        def revisionLine = text =~ /(?m)^- Source revision: `([^`]+)`$/
+        String revision = revisionLine.find() ? revisionLine.group(1) : 'unknown'
+        if (revision == 'unknown' || revision.endsWith('-dirty')) {
+            throw new GradleException(
+                    'A GPL Android release must be built from a clean Git revision')
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == 'assembleRelease') {
+        dependsOn tasks.named('verifyGplReleaseReady')
+    }
 }
 
 tasks.register('verifyNoGamePayload') {
@@ -397,6 +482,10 @@ tasks.register('verifyNoGamePayload') {
         def pojavExecFound = false
         def rocketConnectorFound = false
         def rendererLicensesFound = 0
+        def androidGplLicenseFound = false
+        def gplLicenseFound = false
+        def sourceOfferFound = false
+        def thirdPartyNoticesFound = false
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -429,6 +518,14 @@ tasks.register('verifyNoGamePayload') {
                 if (entry.name.startsWith('assets/rusted-fabric/licenses/')) {
                     rendererLicensesFound++
                 }
+                androidGplLicenseFound |= entry.name ==
+                        'assets/rusted-fabric/licenses/Rusted-Fabric-Android-GPL-3.0.txt'
+                gplLicenseFound |= entry.name ==
+                        'assets/rusted-fabric/licenses/GPL-3.0.txt'
+                sourceOfferFound |= entry.name ==
+                        'assets/rusted-fabric/SOURCE_OFFER.md'
+                thirdPartyNoticesFound |= entry.name ==
+                        'assets/rusted-fabric/THIRD_PARTY_NOTICES.md'
                 if (lower.endsWith('.dex')) {
                     def bytes
                     zip.getInputStream(entry).withCloseable { input ->
@@ -454,7 +551,9 @@ tasks.register('verifyNoGamePayload') {
                 || !lwjglCompatAssetFound
                 || !lwjglAdapterFound || !gl4esFound || !lwjglNativeFound
                 || !lwjglOpenGlNativeFound || !openAlNativeFound || !freetypeNativeFound
-                || !pojavExecFound || !rocketConnectorFound || rendererLicensesFound < 7) {
+                || !pojavExecFound || !rocketConnectorFound || rendererLicensesFound < 9
+                || !androidGplLicenseFound || !gplLicenseFound
+                || !sourceOfferFound || !thirdPartyNoticesFound) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
         if (!forbidden.isEmpty()) {

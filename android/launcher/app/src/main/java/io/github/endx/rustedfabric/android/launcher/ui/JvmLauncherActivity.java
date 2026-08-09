@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabric.android.launcher.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,10 +14,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -51,6 +57,7 @@ public final class JvmLauncherActivity extends Activity {
     private Button rendererButton;
     private Button launchButton;
     private Button advancedButton;
+    private Button licenseButton;
     private LinearLayout advancedPanel;
     private boolean busy;
     private boolean smokeReady;
@@ -98,6 +105,7 @@ public final class JvmLauncherActivity extends Activity {
         rendererButton = findViewById(R.id.test_renderer_button);
         launchButton = findViewById(R.id.launch_button);
         advancedButton = findViewById(R.id.advanced_button);
+        licenseButton = findViewById(R.id.license_button);
         advancedPanel = findViewById(R.id.advanced_panel);
     }
 
@@ -109,7 +117,52 @@ public final class JvmLauncherActivity extends Activity {
         rendererButton.setOnClickListener(ignored ->
                 startActivity(new Intent(this, JvmRenderActivity.class)));
         advancedButton.setOnClickListener(ignored -> showAdvanced(!advancedVisible));
+        licenseButton.setOnClickListener(ignored -> showOpenSourceNotice());
         launchButton.setOnClickListener(ignored -> launchGame());
+    }
+
+    private void showOpenSourceNotice() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.jvm_license_title)
+                .setMessage(R.string.jvm_license_notice)
+                .setNeutralButton(R.string.jvm_full_license,
+                        (dialog, which) -> showPackagedLicense())
+                .setNegativeButton(R.string.jvm_source_code, (dialog, which) ->
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(
+                                "https://github.com/DXENDBucket/Rusted-Fabric-Loader"))))
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private void showPackagedLicense() {
+        TextView license = new TextView(this);
+        int padding = Math.round(18 * getResources().getDisplayMetrics().density);
+        license.setPadding(padding, padding, padding, padding);
+        license.setTextIsSelectable(true);
+        license.setText(readAssetText(
+                "rusted-fabric/licenses/Rusted-Fabric-Android-GPL-3.0.txt"));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(license);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.jvm_full_license)
+                .setView(scroll)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private String readAssetText(String path) {
+        try (InputStream input = getAssets().open(path);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                output.write(buffer, 0, read);
+            }
+            return new String(output.toByteArray(), StandardCharsets.UTF_8);
+        } catch (IOException failure) {
+            return getString(R.string.jvm_license_unavailable);
+        }
     }
 
     @Override
