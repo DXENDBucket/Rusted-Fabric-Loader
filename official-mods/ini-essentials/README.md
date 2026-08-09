@@ -55,5 +55,15 @@ The machine-readable bilingual field catalog is stored at
 `src/main/resources/ini_essentials/event-data.csv`. The generated spreadsheet in `docs/` is intended
 for the same community workflow as the original Rusted Warfare Unit Modding Reference.
 
+The workbook is generated rather than edited by hand. Its English and Chinese pages use the
+original reference's five-column-first layout and matching section colors (`[core]` green,
+action/hiddenAction orange), followed by extension metadata columns. Colored section shortcuts at
+the top of each page jump directly to their section, and every section links back to the index.
+
+```text
+python docs/generate_reference.py
+python docs/generate_reference.py --check
+```
+
 `sync-schema.txt` is the canonical gameplay/protocol input for the multiplayer SHA-256. Descriptive
 wording is deliberately excluded so documentation-only edits do not break compatibility.
