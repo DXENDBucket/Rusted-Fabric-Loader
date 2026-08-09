@@ -52,7 +52,32 @@ pause
 Adjust `JAVA_EXE` and memory options as needed for your environment.
 
 ## Installing into a game directory
-Use `installToGameDir` to build and install the loader artifacts into an existing Rusted Warfare directory:
+For player distribution, build the graphical, game-free Windows installer:
+
+```bat
+set "JAVA_HOME=C:\Program Files\Java\jdk-17"
+set "PATH=%JAVA_HOME%\bin;%PATH%"
+gradlew.bat windowsInstaller
+```
+
+The single executable is written to
+`installer/windows/build/dist/Rusted-Fabric-Installer-<version>.exe`. It locates or asks for an
+existing Rusted Warfare directory and installs a small EXE launcher plus a BAT fallback. Rusted
+Fabric API and Java Mod Menu are selected by default; INI Essentials is optional. The installer
+never embeds the game, `game-lib.jar`, an APK, or the example mod, and preserves unrelated files in
+`javamods`. See [`installer/windows/README.md`](installer/windows/README.md).
+
+For a local `CN=EndXiom` Authenticode development build, use:
+
+```bat
+gradlew.bat windowsInstallerEndXiomDevSigned
+```
+
+This self-signed flavor proves that artifacts came from the same local signing key, but it does not
+establish public Windows or SmartScreen trust. See [`docs/CODE_SIGNING.md`](docs/CODE_SIGNING.md).
+
+For development-only direct installation, use `installToGameDir` to build and install the loader
+artifacts into an existing Rusted Warfare directory:
 
 ```bat
 set "JAVA_HOME=C:\Program Files\Java\jdk-17"

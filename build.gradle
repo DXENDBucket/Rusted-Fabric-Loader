@@ -295,6 +295,18 @@ tasks.register('copyFabricRuntime', Copy) {
     into layout.buildDirectory.dir("fabric-runtime")
 }
 
+tasks.register('windowsInstaller') {
+    group = 'distribution'
+    description = 'Builds and verifies the game-free Windows player installer.'
+    dependsOn ':installer:windows:windowsInstaller'
+}
+
+tasks.register('windowsInstallerEndXiomDevSigned') {
+    group = 'distribution'
+    description = 'Builds the Windows player installer signed by the local EndXiom development certificate.'
+    dependsOn ':installer:windows:windowsInstallerEndXiomDevSigned'
+}
+
 tasks.register('verifyDistribution') {
     group = 'verification'
     description = 'Builds and validates the named game Jar, provider, official API, official mods, and example-mod artifacts.'

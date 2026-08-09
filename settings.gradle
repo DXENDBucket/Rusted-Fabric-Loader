@@ -3,6 +3,7 @@ include 'rusted-fabric-api'
 include 'official-mods:example-mod'
 include 'official-mods:java-mod-menu'
 include 'official-mods:ini-essentials'
+include 'installer:windows'
 // Only the desktop-JVM Android port remains active. Retired native-APK experiments live in legacy/.
 include 'android:jvm-launcher-core'
 include 'android:jvm-game-provider'

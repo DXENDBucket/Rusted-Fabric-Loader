@@ -1,0 +1,351 @@
+plugins {
+    id 'base'
+}
+
+group = 'io.github.endx'
+version = rootProject.version
+
+def cscExecutable = {
+    def candidates = [
+            file('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe'),
+            file('C:/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe')
+    ]
+    candidates.find { it.isFile() }
+}
+
+def launcherExe = layout.buildDirectory.file('tools/RustedFabricLauncher.exe')
+def generatedMetadata = layout.buildDirectory.file('generated/payload/version.txt')
+def payloadZip = layout.buildDirectory.file("payload/rusted-fabric-installer-payload-${project.version}.zip")
+def installerExe = layout.buildDirectory.file("dist/Rusted-Fabric-Installer-${project.version}.exe")
+def signingDirectory = rootProject.layout.projectDirectory.dir('local-signing')
+def publicDevCertificate = signingDirectory.file('EndXiom-dev-code-signing.cer')
+def signedLauncherExe = layout.buildDirectory.file('tools/endxiom-dev-signed/RustedFabricLauncher.exe')
+def signedPayloadZip = layout.buildDirectory.file("payload/rusted-fabric-installer-payload-${project.version}-EndXiom-dev-signed.zip")
+def unsignedDevInstallerExe = layout.buildDirectory.file("tools/Rusted-Fabric-Installer-${project.version}-EndXiom-dev-unsigned.exe")
+def signedDevInstallerExe = layout.buildDirectory.file("dist/Rusted-Fabric-Installer-${project.version}-EndXiom-dev-signed.exe")
+
+tasks.register('compileWindowsLauncher', Exec) {
+    group = 'rusted fabric'
+    description = 'Compiles the small .NET Framework launcher used by installed Windows copies.'
+    inputs.file('src/launcher/csharp/RustedFabricLauncher.cs')
+    outputs.file launcherExe
+
+    doFirst {
+        def csc = cscExecutable()
+        if (csc == null) {
+            throw new GradleException('The Windows .NET Framework C# compiler (csc.exe) was not found')
+        }
+        launcherExe.get().asFile.parentFile.mkdirs()
+        commandLine csc.absolutePath,
+                '/nologo', '/target:winexe', '/optimize+',
+                "/out:${launcherExe.get().asFile.absolutePath}",
+                '/reference:System.dll', '/reference:System.Core.dll',
+                '/reference:System.Windows.Forms.dll',
+                file('src/launcher/csharp/RustedFabricLauncher.cs').absolutePath
+    }
+}
+
+tasks.register('generateInstallerPayloadMetadata') {
+    inputs.property('version', project.version)
+    outputs.file generatedMetadata
+    doLast {
+        def output = generatedMetadata.get().asFile
+        output.parentFile.mkdirs()
+        output.setText(project.version.toString() + '\n', 'UTF-8')
+    }
+}
+
+tasks.register('prepareWindowsInstallerPayload', Zip) {
+    group = 'rusted fabric'
+    description = 'Builds the game-free offline payload embedded in the Windows installer.'
+    dependsOn rootProject.tasks.named('copyFabricRuntime'), rootProject.tasks.named('jar'),
+            project(':rusted-fabric-api').tasks.named('remapJarToOfficial'),
+            project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial'),
+            project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial'),
+            tasks.named('compileWindowsLauncher'), tasks.named('generateInstallerPayloadMetadata')
+
+    archiveFileName.set("rusted-fabric-installer-payload-${project.version}.zip")
+    destinationDirectory.set(layout.buildDirectory.dir('payload'))
+    reproducibleFileOrder = true
+    preserveFileTimestamps = false
+
+    into('core/fabric-libs') {
+        from rootProject.layout.buildDirectory.dir('fabric-runtime')
+        include '*.jar'
+    }
+    into('core/rusted-fabric-loader') {
+        from rootProject.tasks.named('jar').flatMap { it.archiveFile }
+    }
+    into('core') {
+        from launcherExe
+    }
+    into('components/api/javamods') {
+        from project(':rusted-fabric-api').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/mod_menu/javamods') {
+        from project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/ini_essentials/javamods') {
+        from project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('metadata') {
+        from generatedMetadata
+    }
+}
+
+tasks.register('compileWindowsInstaller', Exec) {
+    group = 'rusted fabric'
+    description = 'Compiles a single-file graphical Windows installer with the offline payload.'
+    dependsOn tasks.named('prepareWindowsInstallerPayload')
+    inputs.file('src/installer/csharp/RustedFabricInstaller.cs')
+    inputs.file payloadZip
+    outputs.file installerExe
+
+    doFirst {
+        def csc = cscExecutable()
+        if (csc == null) {
+            throw new GradleException('The Windows .NET Framework C# compiler (csc.exe) was not found')
+        }
+        installerExe.get().asFile.parentFile.mkdirs()
+        commandLine csc.absolutePath,
+                '/nologo', '/target:winexe', '/optimize+',
+                "/out:${installerExe.get().asFile.absolutePath}",
+                '/reference:System.dll', '/reference:System.Core.dll',
+                '/reference:System.Drawing.dll', '/reference:System.Windows.Forms.dll',
+                '/reference:System.IO.Compression.dll',
+                '/reference:System.IO.Compression.FileSystem.dll',
+                '/reference:System.Web.Extensions.dll',
+                "/resource:${payloadZip.get().asFile.absolutePath},RustedFabricInstaller.Payload.zip",
+                file('src/installer/csharp/RustedFabricInstaller.cs').absolutePath
+    }
+}
+
+tasks.register('verifyWindowsInstallerPayload') {
+    group = 'verification'
+    description = 'Ensures the player installer contains only Loader-owned, game-free files.'
+    dependsOn tasks.named('prepareWindowsInstallerPayload')
+    inputs.file payloadZip
+    doLast {
+        new java.util.zip.ZipFile(payloadZip.get().asFile).withCloseable { zip ->
+            def names = zip.entries().collect { it.name }.findAll { !it.endsWith('/') }
+            def required = [
+                    ~/core\/fabric-libs\/.*\.jar/,
+                    ~/core\/rusted-fabric-loader\/rusted-fabric-loader-.*\.jar/,
+                    ~/core\/RustedFabricLauncher\.exe/,
+                    ~/components\/api\/javamods\/rusted-fabric-api-.*\.jar/,
+                    ~/components\/mod_menu\/javamods\/java-mod-menu-.*\.jar/,
+                    ~/components\/ini_essentials\/javamods\/ini-essentials-.*\.jar/,
+                    ~/metadata\/version\.txt/
+            ]
+            required.each { pattern ->
+                if (!names.any { it ==~ pattern }) {
+                    throw new GradleException("Windows installer payload is missing ${pattern}")
+                }
+            }
+            def forbidden = names.findAll { name ->
+                def lower = name.toLowerCase(Locale.ROOT)
+                lower.endsWith('.apk') || lower.endsWith('.dex')
+                        || lower.contains('game-lib') || lower.contains('example-mod')
+                        || lower.contains('rusted_fabric_example')
+            }
+            if (!forbidden.isEmpty()) {
+                throw new GradleException("Windows installer payload contains forbidden game/example files: ${forbidden}")
+            }
+        }
+    }
+}
+
+tasks.register('verifyWindowsInstaller', Exec) {
+    group = 'verification'
+    description = 'Runs the compiled installer in non-UI embedded-payload verification mode.'
+    dependsOn tasks.named('compileWindowsInstaller'), tasks.named('verifyWindowsInstallerPayload')
+    inputs.file installerExe
+    commandLine installerExe.get().asFile.absolutePath, '--verify-payload'
+}
+
+tasks.register('verifyWindowsInstallerInstallation', Exec) {
+    group = 'verification'
+    description = 'Installs into an isolated fake game directory and verifies preservation/selection behavior.'
+    dependsOn tasks.named('compileWindowsInstaller')
+    def testGame = layout.buildDirectory.dir('verification/fake-rusted-warfare')
+    inputs.file installerExe
+    outputs.dir testGame
+    outputs.upToDateWhen { false }
+
+    doFirst {
+        delete testGame
+        def root = testGame.get().asFile
+        new File(root, 'jvm64/bin').mkdirs()
+        new File(root, 'javamods').mkdirs()
+        new File(root, 'game-lib.jar').bytes = new byte[] { 0 }
+        new File(root, 'jvm64/bin/java.exe').bytes = new byte[] { 0 }
+        new File(root, 'javamods/third-party-keep.jar').bytes = new byte[] { 1, 2, 3 }
+        commandLine installerExe.get().asFile.absolutePath,
+                '--install-test', root.absolutePath
+    }
+
+    doLast {
+        def root = testGame.get().asFile
+        def required = [
+                'RustedFabricLauncher.exe', 'run-rusted-fabric.bat',
+                'rusted-fabric-loader/install-manifest.json',
+                'javamods/third-party-keep.jar'
+        ]
+        required.each { relative ->
+            if (!new File(root, relative).isFile()) {
+                throw new GradleException("Test installation is missing ${relative}")
+            }
+        }
+        if (new File(root, 'javamods').listFiles().any {
+            it.name.contains('example-mod') || it.name.contains('ini-essentials')
+        }) {
+            throw new GradleException('Default player installation unexpectedly included an example or optional INI mod')
+        }
+        if (!new File(root, 'javamods').listFiles().any { it.name.startsWith('rusted-fabric-api-') }
+                || !new File(root, 'javamods').listFiles().any { it.name.startsWith('java-mod-menu-') }) {
+            throw new GradleException('Default player installation did not include API and Java Mod Menu')
+        }
+    }
+}
+
+tasks.register('createEndXiomDevCertificate', Exec) {
+    group = 'signing'
+    description = 'Creates or reuses the local, non-exportable EndXiom development signing certificate.'
+    inputs.file('scripts/create-endxiom-dev-certificate.ps1')
+    outputs.file publicDevCertificate
+    outputs.upToDateWhen { false }
+    commandLine 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', file('scripts/create-endxiom-dev-certificate.ps1').absolutePath,
+            '-PublicCertificatePath', publicDevCertificate.asFile.absolutePath
+}
+
+tasks.register('signWindowsLauncherEndXiomDev', Exec) {
+    group = 'signing'
+    description = 'Authenticode-signs the installed launcher with the local EndXiom certificate.'
+    dependsOn tasks.named('compileWindowsLauncher'), tasks.named('createEndXiomDevCertificate')
+    inputs.file launcherExe
+    inputs.file('scripts/sign-endxiom-dev.ps1')
+    outputs.file signedLauncherExe
+    outputs.upToDateWhen { false }
+    commandLine 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', file('scripts/sign-endxiom-dev.ps1').absolutePath,
+            '-InputFile', launcherExe.get().asFile.absolutePath,
+            '-OutputFile', signedLauncherExe.get().asFile.absolutePath
+}
+
+tasks.register('prepareEndXiomDevSignedInstallerPayload', Zip) {
+    group = 'signing'
+    description = 'Builds the game-free installer payload with an EndXiom-signed launcher.'
+    dependsOn rootProject.tasks.named('copyFabricRuntime'), rootProject.tasks.named('jar'),
+            project(':rusted-fabric-api').tasks.named('remapJarToOfficial'),
+            project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial'),
+            project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial'),
+            tasks.named('signWindowsLauncherEndXiomDev'), tasks.named('generateInstallerPayloadMetadata')
+
+    archiveFileName.set("rusted-fabric-installer-payload-${project.version}-EndXiom-dev-signed.zip")
+    destinationDirectory.set(layout.buildDirectory.dir('payload'))
+    reproducibleFileOrder = true
+    preserveFileTimestamps = false
+
+    into('core/fabric-libs') {
+        from rootProject.layout.buildDirectory.dir('fabric-runtime')
+        include '*.jar'
+    }
+    into('core/rusted-fabric-loader') {
+        from rootProject.tasks.named('jar').flatMap { it.archiveFile }
+    }
+    into('core') {
+        from signedLauncherExe
+    }
+    into('components/api/javamods') {
+        from project(':rusted-fabric-api').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/mod_menu/javamods') {
+        from project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/ini_essentials/javamods') {
+        from project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('metadata') {
+        from generatedMetadata
+    }
+}
+
+tasks.register('compileEndXiomDevSignedWindowsInstaller', Exec) {
+    group = 'signing'
+    description = 'Compiles the installer around the payload containing the signed launcher.'
+    dependsOn tasks.named('prepareEndXiomDevSignedInstallerPayload')
+    inputs.file('src/installer/csharp/RustedFabricInstaller.cs')
+    inputs.file signedPayloadZip
+    outputs.file unsignedDevInstallerExe
+
+    doFirst {
+        def csc = cscExecutable()
+        if (csc == null) {
+            throw new GradleException('The Windows .NET Framework C# compiler (csc.exe) was not found')
+        }
+        unsignedDevInstallerExe.get().asFile.parentFile.mkdirs()
+        commandLine csc.absolutePath,
+                '/nologo', '/target:winexe', '/optimize+',
+                "/out:${unsignedDevInstallerExe.get().asFile.absolutePath}",
+                '/reference:System.dll', '/reference:System.Core.dll',
+                '/reference:System.Drawing.dll', '/reference:System.Windows.Forms.dll',
+                '/reference:System.IO.Compression.dll',
+                '/reference:System.IO.Compression.FileSystem.dll',
+                '/reference:System.Web.Extensions.dll',
+                "/resource:${signedPayloadZip.get().asFile.absolutePath},RustedFabricInstaller.Payload.zip",
+                file('src/installer/csharp/RustedFabricInstaller.cs').absolutePath
+    }
+}
+
+tasks.register('signWindowsInstallerEndXiomDev', Exec) {
+    group = 'signing'
+    description = 'Authenticode-signs the final Windows installer with the local EndXiom certificate.'
+    dependsOn tasks.named('compileEndXiomDevSignedWindowsInstaller'), tasks.named('createEndXiomDevCertificate')
+    inputs.file unsignedDevInstallerExe
+    inputs.file('scripts/sign-endxiom-dev.ps1')
+    outputs.file signedDevInstallerExe
+    outputs.upToDateWhen { false }
+    commandLine 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', file('scripts/sign-endxiom-dev.ps1').absolutePath,
+            '-InputFile', unsignedDevInstallerExe.get().asFile.absolutePath,
+            '-OutputFile', signedDevInstallerExe.get().asFile.absolutePath
+}
+
+tasks.register('verifyEndXiomDevSignatures', Exec) {
+    group = 'verification'
+    description = 'Checks that the launcher and installer use the same CN=EndXiom signing certificate.'
+    dependsOn tasks.named('signWindowsLauncherEndXiomDev'), tasks.named('signWindowsInstallerEndXiomDev')
+    inputs.files signedLauncherExe, signedPayloadZip, signedDevInstallerExe
+    inputs.file('scripts/verify-endxiom-dev-signature.ps1')
+    outputs.upToDateWhen { false }
+    commandLine 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', file('scripts/verify-endxiom-dev-signature.ps1').absolutePath,
+            '-LauncherFile', signedLauncherExe.get().asFile.absolutePath,
+            '-InstallerFile', signedDevInstallerExe.get().asFile.absolutePath,
+            '-PayloadZip', signedPayloadZip.get().asFile.absolutePath
+}
+
+tasks.register('verifyEndXiomDevSignedWindowsInstaller', Exec) {
+    group = 'verification'
+    description = 'Verifies the embedded payload in the signed installer without opening its UI.'
+    dependsOn tasks.named('signWindowsInstallerEndXiomDev')
+    inputs.file signedDevInstallerExe
+    outputs.upToDateWhen { false }
+    commandLine signedDevInstallerExe.get().asFile.absolutePath, '--verify-payload'
+}
+
+tasks.register('windowsInstallerEndXiomDevSigned') {
+    group = 'distribution'
+    description = 'Builds and verifies the EndXiom self-signed Windows installer.'
+    dependsOn tasks.named('verifyEndXiomDevSignatures'), tasks.named('verifyEndXiomDevSignedWindowsInstaller')
+}
+
+tasks.register('windowsInstaller') {
+    group = 'distribution'
+    description = 'Builds and verifies the single-file Rusted Fabric Windows installer.'
+    dependsOn tasks.named('verifyWindowsInstaller'), tasks.named('verifyWindowsInstallerInstallation')
+}
+
+assemble.dependsOn tasks.named('compileWindowsInstaller')
+check.dependsOn tasks.named('verifyWindowsInstaller'), tasks.named('verifyWindowsInstallerInstallation')

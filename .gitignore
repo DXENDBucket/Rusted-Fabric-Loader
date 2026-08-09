@@ -58,3 +58,4 @@ local.properties
 !/report/mapping-evidence/**
 /documents/
 /local-references/
+/local-signing/
