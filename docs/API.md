@@ -673,6 +673,7 @@ can return no object when visibility rules or the effect pool reject it, so crea
 ```java
 RustedWarfareClient.execute(() -> {
     Camera.centerAt(400.0F, 600.0F);
+    Camera.moveCenterBy(80.0F, -40.0F);
     Camera.setTargetZoom(1.25F);
     Effects.light(400.0F, 600.0F, 0.0F, 0xffffaa00);
     Sounds.playAt(Sounds.requireBuiltin("click"), 0.8F, 400.0F, 600.0F);
@@ -681,6 +682,11 @@ RustedWarfareClient.execute(() -> {
 SoundEvents.BEFORE_PLAY.register((engine, playback) ->
         mutedSoundNames.contains(playback.sound().name));
 ```
+
+`Camera` also accepts `WorldPoint` and `GameObject` anchors, optional object-relative offsets,
+top-left or center-relative movement, and `stopMovement()` for clearing the native scroll momentum.
+All mutations clamp through the game's mapped camera path. `setTargetZoom` deliberately writes the
+native target instead of forcing the rendered zoom, retaining normal smoothing and limit logic.
 
 `SoundEvents.BEFORE_PLAY` aggregates cancellation without skipping later listeners. It intercepts
 the game's high-level interface, global, and positional paths, including sounds initiated by the
@@ -1357,6 +1363,27 @@ can be applied immediately before or after static configuration variables; repea
 This contract deliberately permits documented additions to the value range or format of an
 existing field. It does not draw a permanent boundary around native keys; it draws the boundary at
 the actual value that activates an extension.
+
+### Java-backed action fields
+
+`api.ini.action.IniActionEffects` extends the same opt-in model to `[action_*]` and
+`[hiddenAction_*]`. An `IniActionEffectDefinition` owns one field key, scope, decoder, validator,
+optional exclusive group, documentation, and execution handler. During the original
+`CustomUnitLoader.parseCustomActionSection` path, an activated definition is decoded and appended
+to the native `CustomActionConfig.actionEffects` list. A field therefore participates in the same
+target propagation and recursion semantics as built-in effects instead of bypassing the action
+system.
+
+Handlers receive `IniActionExecutionContext`: the acting custom unit, native action, optional
+target point, optional target unit, recursion depth, actor position, action-target resolution, and
+an `isActorOwnedByLocalPlayer()` guard for visual-only client effects. Definitions in the same
+exclusive group are rejected before any effect is attached, preventing order-dependent partial
+configuration.
+
+INI Essentials uses this API for `cameraCenterAt`, `cameraCenterBy`, `cameraCenterOn`,
+`cameraTargetZoom`, and `cameraStopMovement`. These fields work in both visible and hidden action
+sections. Camera moves are local-owner-only; `cameraCenterOn` accepts `self`, `target`, or
+`actionTarget` followed by optional X/Y offsets.
 
 ## API layers
 

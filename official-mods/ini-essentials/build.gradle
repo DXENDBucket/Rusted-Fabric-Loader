@@ -55,11 +55,26 @@ tasks.register('verifyIniEssentialsMetadata') {
     def syncSchema = file('src/main/resources/ini_essentials/sync-schema.txt')
     def metadata = file('src/main/resources/fabric.mod.json')
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
-    inputs.files catalog, syncSchema, metadata, initializer
+    def cameraFields = file('src/main/java/io/github/endx/iniessentials/CameraActionFields.java')
+    inputs.files catalog, syncSchema, metadata, initializer, cameraFields
     doLast {
         def rows = catalog.readLines('UTF-8')
         if (rows.size() < 2 || !rows[0].startsWith('version_added,code,section,')) {
             throw new GradleException('INI Essentials field catalog is empty or malformed')
+        }
+        def expectedCodes = [
+                'allowNegativeHp', 'cameraCenterAt', 'cameraCenterBy',
+                'cameraCenterOn', 'cameraTargetZoom', 'cameraStopMovement'
+        ] as Set
+        def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
+            it.split(',', 3)[1]
+        } as Set
+        def cameraSource = cameraFields.getText('UTF-8')
+        if (catalogCodes != expectedCodes
+                || !expectedCodes.findAll { it.startsWith('camera') }.every {
+                    cameraSource.contains('"' + it + '"')
+                }) {
+            throw new GradleException('INI Essentials camera field catalog/source drifted')
         }
         def mod = new groovy.json.JsonSlurper().parseText(metadata.getText('UTF-8'))
         def multiplayer = mod.custom?.get('rusted_fabric:multiplayer')
@@ -69,7 +84,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v1'
+                || multiplayer?.protocol != 'ini_essentials_v2'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

@@ -44,11 +44,12 @@ public final class CoreApiContractVerification {
         verifyNetworkBridge();
         verifyLethalHealthModifier();
         IniExtensionContractVerification.verify();
+        IniActionEffectContractVerification.verify();
         System.out.println("Rusted Fabric API core contracts passed");
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 39,
+        require(ApiSupportMatrix.entries().size() == 40,
                 "public API support matrix does not cover every event group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,

@@ -1,2 +1,7 @@
 version_added,code,section,extension_type,value_type,default,multiplayer_impact,description_en,description_zh,example
 0.1.0,allowNegativeHp,[core],new_key,boolean,false,gameplay_synced,Allows overkill damage to leave this custom unit with HP below zero instead of clamping it to zero.,允许过量伤害使此自定义单位的生命值降到零以下，而不是夹到零。,allowNegativeHp: true
+0.1.0,cameraCenterAt,[action_*] / [hiddenAction_*],new_action_effect,"worldX,worldY",omitted,client_only,Centers the local owning player's camera at an absolute world coordinate.,将本机单位所属玩家的视角中心移动到绝对世界坐标。,"cameraCenterAt: 400,600"
+0.1.0,cameraCenterBy,[action_*] / [hiddenAction_*],new_action_effect,"deltaX,deltaY",omitted,client_only,Moves the local owning player's camera center by a world-space offset.,按照世界坐标偏移量移动本机单位所属玩家的视角中心。,"cameraCenterBy: 80,-40"
+0.1.0,cameraCenterOn,[action_*] / [hiddenAction_*],new_action_effect,"self|target|actionTarget[,offsetX,offsetY]",omitted,client_only,"Centers the camera on the acting unit, unit target, or action target point with an optional offset.",将视角居中到动作单位、目标单位或动作目标点，并可附加坐标偏移。,"cameraCenterOn: actionTarget,0,-60"
+0.1.0,cameraTargetZoom,[action_*] / [hiddenAction_*],new_action_effect,positive float,omitted,client_only,Sets the local owning player's native smoothed camera zoom target.,设置本机单位所属玩家的原版平滑视角缩放目标。,cameraTargetZoom: 1.25
+0.1.0,cameraStopMovement,[action_*] / [hiddenAction_*],new_action_effect,boolean,false,client_only,Clears native camera scroll momentum when the action executes.,在动作执行时清除原版摄像机的滚动惯性。,cameraStopMovement: true

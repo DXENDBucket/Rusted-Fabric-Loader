@@ -32,6 +32,7 @@ event.runtime.lifecycle.v1,event.RuntimeLifecycleEvents
 event.custom.registry.v1,event.RustedCustomUnitRegistryEvents
 event.ini.v1,event.RustedIniEvents
 ini.extensions.v1,ini.IniExtensions
+ini.action_effects.v1,ini.action.IniActionEffects
 event.save.sync.v1,event.SaveSyncEvents
 event.selection.v1,client.event.SelectionEvents
 event.transport.v1,unit.transport.event.TransportEvents

@@ -36,6 +36,7 @@ public final class RustedFabricCapabilities {
     public static final String CUSTOM_REGISTRY = "event.custom.registry.v1";
     public static final String INI = "event.ini.v1";
     public static final String INI_EXTENSIONS = "ini.extensions.v1";
+    public static final String INI_ACTION_EFFECTS = "ini.action_effects.v1";
     public static final String SAVE_SYNC = "event.save.sync.v1";
     public static final String SELECTION = "event.selection.v1";
     public static final String TRANSPORT = "event.transport.v1";

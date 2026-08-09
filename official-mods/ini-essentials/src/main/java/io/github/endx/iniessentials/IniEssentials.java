@@ -19,6 +19,7 @@ public final class IniEssentials implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        CameraActionFields.register();
         IniExtensions.register(IniFieldDefinition
                 .<Boolean>builder(MOD_ID, "allow_negative_hp",
                         IniSectionSelector.exact("core"), "allowNegativeHp")
@@ -48,13 +49,13 @@ public final class IniEssentials implements ModInitializer {
         throw new IllegalArgumentException("expected true or false, got: " + raw);
     }
 
-    private static void activateSynchronizedRequirement() {
+    static void activateSynchronizedRequirement() {
         if (!SYNC_REQUIREMENT_ACTIVE.compareAndSet(false, true)) return;
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v1",
-                "07c5ca3f584e498fdc9a0002d90a25a90b13991e95e5818a097123e96d404bfa"));
+                MOD_ID, version, "ini_essentials_v2",
+                "71de284187f37c256a82465ae1a0f3cdd5df516bf1d01fc1456eae6585aa3cd0"));
     }
 }

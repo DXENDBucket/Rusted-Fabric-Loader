@@ -19,6 +19,7 @@
     "CustomActionEffectRuntimeNamedMixin",
     "CustomAssetLoaderNamedMixin",
     "CustomUnitAssetNamedMixin",
+    "CustomUnitActionIniNamedMixin",
     "CustomUnitExtensionNamedMixin",
     "CustomUnitLifecycleNamedMixin",
     "CustomUnitLoaderNamedMixin",

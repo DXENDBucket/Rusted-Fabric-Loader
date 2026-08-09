@@ -1,2 +1,7 @@
-ini_essentials_v1
+ini_essentials_v2
 [core].allowNegativeHp|new_key|boolean|default=false|gameplay_synced|negative_hp_damage_v1
+[action_*|hiddenAction_*].cameraCenterAt|new_action_effect|finite_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraCenterBy|new_action_effect|finite_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraCenterOn|new_action_effect|self_target_actionTarget_optional_offset|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraTargetZoom|new_action_effect|positive_float|default=omitted|client_only|local_actor_owner|native_smoothing
+[action_*|hiddenAction_*].cameraStopMovement|new_action_effect|boolean|default=false|client_only|local_actor_owner|native_momentum

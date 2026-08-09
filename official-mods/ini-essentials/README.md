@@ -19,6 +19,21 @@ allowNegativeHp: true
 custom unit's HP below zero. Installing INI Essentials alone remains multiplayer-optional; parsing
 an enabled synchronized field promotes it to a required matching peer dependency.
 
+Camera action effects are available in both visible and hidden custom actions:
+
+```ini
+[action_focus]
+cameraCenterOn: actionTarget,0,-60
+cameraTargetZoom: 1.25
+cameraStopMovement: true
+```
+
+`cameraCenterAt`, `cameraCenterBy`, and `cameraCenterOn` are mutually exclusive inside one action.
+`cameraCenterOn` accepts `self`, `target`, or `actionTarget`, followed by optional X/Y offsets. The
+effects run only on the client locally controlling the acting unit's team; they do not alter
+deterministic simulation state or another player's camera. A missing unit/action target makes the
+corresponding contextual move a safe no-op.
+
 The machine-readable bilingual field catalog is stored at
 `src/main/resources/ini_essentials/fields.csv`. The generated spreadsheet in `docs/` is intended for
 the same community workflow as the original Rusted Warfare Unit Modding Reference.
