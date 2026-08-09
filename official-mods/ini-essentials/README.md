@@ -119,8 +119,10 @@ textColor: #FFFFFF
 ```
 
 `instanceCondition` filters units before selection. `instanceMode` can keep `all`, `first`, `last`,
-`highestPriority`, or `lowestPriority`; `maxInstances` applies afterward. `fogVisibility` defaults
-to `visible`, preventing an enemy overlay from exposing units still hidden by fog.
+`highestPriority`, `lowestPriority`, `nearestToCamera`, or `farthestFromCamera`; all single-instance
+modes use the native unit ID as a deterministic tie-break, and `maxInstances` applies afterward.
+`fogVisibility` defaults to `visible`, preventing an enemy overlay from exposing units still hidden
+by fog.
 
 Multi-instance layouts use `indexMode: compact|stable|explicit`. Compact indices close gaps every
 frame, stable indices remain attached to a unit for its lifetime, and explicit layout evaluates the
@@ -128,6 +130,33 @@ dynamic `slot` field. `columns`, `spacingX`, and `spacingY` provide a grid. Dyna
 can read `overlayIndex()`, `overlayStableIndex()`, `overlayCount()`, `overlayRow()`,
 `overlayColumn()`, `overlaySlot()`, `overlayUnitId()`, `screenWidth()`, `screenHeight()`, and
 `uiScale()`. These context functions return zero outside overlay evaluation.
+
+`layer: afterHud` is the default and draws above the native interface. `layer: beforeHud` draws
+between the world and native HUD, which is useful for panels that native controls should cover.
+`scale`, `scaleX`, `scaleY`, and `rotation` are runtime expressions applied around the overlay
+center. Negative axis scales mirror an element. Bars can fill `leftToRight`, `rightToLeft`,
+`topToBottom`, or `bottomToTop` through `barDirection`.
+
+Image overlays can use Decal-compatible atlas field names while keeping `frame` dynamic:
+
+```ini
+[overlay_bossIcon]
+type: image
+layer: beforeHud
+anchor: topCenter
+image: boss_icons.png
+total_frames: 4
+frame_width: 64
+frame_height: 64
+frame_verticalOrdering: false
+frame: memory.phase
+scale: 1.25
+rotation: memory.hudAngle
+```
+
+When explicit frame dimensions are omitted, a multi-frame image is split into one horizontal row,
+or one vertical column when `frame_verticalOrdering: true`. Explicit dimensions allow a grid;
+out-of-range runtime frame values are clamped.
 
 ## Dynamic projectile rules
 

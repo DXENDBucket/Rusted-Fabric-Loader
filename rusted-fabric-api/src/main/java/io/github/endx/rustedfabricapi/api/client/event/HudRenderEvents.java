@@ -7,6 +7,12 @@ import rustedwarfare.ui.InterfaceEngine;
 
 /** HUD rendering boundaries with mapped game types. */
 public final class HudRenderEvents {
+    /** Draws after the world but before the native game interface and HUD controls. */
+    public static final RustedFabricEvent<DrawHud> BEFORE_HUD =
+            RustedFabricEvent.create(listeners -> (gameInterface, context) -> {
+                for (DrawHud listener : listeners) listener.draw(gameInterface, context);
+            });
+
     /** Preferred frame-scoped drawing event with safe styles, clipping, transforms, and images. */
     public static final RustedFabricEvent<DrawHud> AFTER_HUD =
             RustedFabricEvent.create(listeners -> (gameInterface, context) -> {

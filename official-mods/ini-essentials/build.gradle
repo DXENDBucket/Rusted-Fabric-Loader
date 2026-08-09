@@ -101,12 +101,14 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'projectileRule_NAME_ifCondition',
                 'projectileRule_NAME_ifTargetWithTags',
                 'projectileRule_NAME_ifTargetWithoutTags',
-                'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
+                'layer', 'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
                 'isVisible', 'instanceCondition', 'priority', 'slot',
                 'maxInstances', 'columns', 'spacingX', 'spacingY', 'alpha',
                 'order', 'image', 'imageSmoothing', 'color', 'backgroundColor',
                 'borderColor', 'borderWidth', 'value', 'maxValue', 'text',
-                'textSize', 'textColor', 'textAlign', 'overlayIndex',
+                'textSize', 'textColor', 'textAlign', 'scale', 'scaleX', 'scaleY',
+                'frame', 'total_frames', 'frame_width', 'frame_height',
+                'frame_verticalOrdering', 'barDirection', 'overlayIndex',
                 'overlayStableIndex', 'overlayCount', 'overlayRow',
                 'overlayColumn', 'overlaySlot', 'overlayUnitId', 'screenWidth',
                 'screenHeight', 'uiScale'
@@ -145,13 +147,15 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !initializer.getText('UTF-8').contains('BooleanExpression.compile(')
                 || !fogSource.contains('BooleanExpression.compile(')
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
-                || !['anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
+                || !['layer', 'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
                     'isVisible', 'instanceCondition', 'priority', 'slot',
                     'maxInstances', 'columns', 'offsetX', 'offsetY', 'spacingX',
                     'spacingY', 'width', 'height', 'alpha', 'order', 'image',
                     'imageSmoothing', 'color', 'backgroundColor', 'borderColor',
                     'borderWidth', 'value', 'maxValue', 'text', 'textSize',
-                    'textColor', 'textAlign'].every {
+                    'textColor', 'textAlign', 'scale', 'scaleX', 'scaleY',
+                    'rotation', 'frame', 'total_frames', 'frame_width',
+                    'frame_height', 'frame_verticalOrdering', 'barDirection'].every {
                     overlaySource.contains('"' + it + '"')
                 }
                 || !['overlayindex', 'overlaystableindex', 'overlaycount',
@@ -159,7 +163,11 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'screenwidth', 'screenheight', 'uiscale'].every {
                     overlayContextSource.contains('"' + it + '"')
                 }
+                || !overlaySource.contains('HudRenderEvents.BEFORE_HUD')
                 || !overlaySource.contains('HudRenderEvents.AFTER_HUD')
+                || !overlaySource.contains('NEAREST_TO_CAMERA')
+                || !overlaySource.contains('FARTHEST_FROM_CAMERA')
+                || !overlaySource.contains('FrameLayout')
                 || !overlaySource.contains('metadata.loadImageFromConfigWithSmoothing')
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
                 || !['event', 'phase', 'when', 'cancelEventActions',
@@ -298,7 +306,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v13'
+                || multiplayer?.protocol != 'ini_essentials_v14'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

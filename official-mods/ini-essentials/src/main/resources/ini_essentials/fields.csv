@@ -1,7 +1,8 @@
 version_added,code,section,extension_type,value_type,default,multiplayer_impact,description_en,description_zh,example
 0.6.0,type,[overlay_*],new_section_key,bar|text|image,required,client_only,Selects the screen-space primitive rendered for each chosen unit instance.,选择为每个匹配单位实例绘制的屏幕空间图元。,type: bar
+0.7.0,layer,[overlay_*],new_section_key,beforeHud|afterHud,afterHud,client_only,Chooses whether the overlay is drawn below or above the native HUD.,选择覆盖层绘制在原版 HUD 下方还是上方。,layer: beforeHud
 0.6.0,anchor,[overlay_*],new_section_key,9-point screen anchor,topCenter,client_only,Anchors the overlay rectangle to a screen edge corner or center.,将覆盖层矩形锚定到屏幕边缘、角落或中心。,anchor: topCenter
-0.6.0,instanceMode,[overlay_*],new_section_key,all|first|last|highestPriority|lowestPriority,all,client_only,Selects all matching units or one deterministic representative.,选择全部匹配单位或一个确定性的代表实例。,instanceMode: highestPriority
+0.7.0,instanceMode,[overlay_*],new_section_key,all|first|last|highestPriority|lowestPriority|nearestToCamera|farthestFromCamera,all,client_only,Selects all matching units or one deterministic representative including camera-distance modes.,选择全部匹配单位或一个确定性的代表实例并支持按镜头距离选择。,instanceMode: nearestToCamera
 0.6.0,indexMode,[overlay_*],new_section_key,compact|stable|explicit,compact,client_only,Chooses gap-free frame indices stable lifetime indices or an explicit slot expression for layout.,选择无空位帧编号、生命周期稳定编号或显式槽位表达式用于排布。,indexMode: compact
 0.6.0,team,[overlay_*],new_section_key,any|own|ally|enemy|neutral,any,client_only,Filters source unit instances relative to the local player team.,按与本地玩家队伍的关系筛选来源单位实例。,team: enemy
 0.6.0,fogVisibility,[overlay_*],new_section_key,visible|explored|always,visible,client_only,Prevents hidden unit information from reaching the HUD unless explicitly relaxed.,默认阻止隐藏单位信息进入 HUD；只有显式配置才会放宽。,fogVisibility: visible
@@ -17,16 +18,26 @@ version_added,code,section,extension_type,value_type,default,multiplayer_impact,
 0.6.0,spacingY,[overlay_*],new_section_key,runtime number,8,client_only,Adds vertical spacing between automatic grid cells.,为自动网格单元添加垂直间距。,spacingY: 8
 0.6.0,width,[overlay_*],new_section_key,runtime number,type-dependent,client_only,Sets runtime overlay width; images default to native width.,设置运行时覆盖层宽度；图片默认使用原始宽度。,"width: clamp(screenWidth()*0.5,260,620)"
 0.6.0,height,[overlay_*],new_section_key,runtime number,type-dependent,client_only,Sets runtime overlay height; images default to native height.,设置运行时覆盖层高度；图片默认使用原始高度。,height: 24
+0.7.0,scale,[overlay_*],new_section_key,runtime number,1,client_only,Applies a uniform runtime scale around the overlay center; negative values mirror both axes.,以覆盖层中心为轴应用统一动态缩放；负值会同时镜像两个轴。,scale: 1.25
+0.7.0,scaleX,[overlay_*],new_section_key,runtime number,1,client_only,Multiplies the horizontal runtime scale and supports mirroring.,乘算水平方向动态缩放并支持镜像。,scaleX: -1
+0.7.0,scaleY,[overlay_*],new_section_key,runtime number,1,client_only,Multiplies the vertical runtime scale and supports mirroring.,乘算垂直方向动态缩放并支持镜像。,scaleY: 1
+0.7.0,rotation,[overlay_*],new_section_key,runtime degrees,0,client_only,Rotates the overlay clockwise around its center using a runtime expression.,使用动态表达式使覆盖层绕中心顺时针旋转。,rotation: memory.hudAngle
 0.6.0,alpha,[overlay_*],new_section_key,runtime number,1,client_only,Multiplies all primitive and text alpha after clamping to zero through one.,将所有图元和文字透明度乘以限制在零到一的动态值。,"alpha: clamp(self.hp/self.maxHp,0.35,1)"
 0.6.0,order,[overlay_*],new_section_key,runtime number,0,client_only,Orders overlay draws from lower values to higher values.,按从低到高的动态值决定覆盖层绘制顺序。,order: 10
 0.6.0,image,[overlay_*],new_section_key,native custom-unit image path,required for image,client_only,Loads an image with the native unit INI resource path rules.,按原版单位 INI 资源路径规则加载图片。,image: boss_frame.png
 0.6.0,imageSmoothing,[overlay_*],new_section_key,boolean,true,client_only,Selects native smoothing while loading an overlay image.,选择加载覆盖层图片时是否使用原版平滑。,imageSmoothing: true
+0.7.0,frame,[overlay_*],new_section_key,runtime number,0,client_only,Selects and clamps the current zero-based image atlas frame.,动态选择并限制从零开始的图片图集帧。,frame: memory.phase
+0.7.0,total_frames,[overlay_*],new_section_key,positive integer,1,client_only,Declares the number of image atlas frames using the native Decal-compatible spelling.,使用与原版 Decal 兼容的字段名声明图片图集帧数。,total_frames: 4
+0.7.0,frame_width,[overlay_*],new_section_key,positive integer,auto,client_only,Sets atlas frame width; omit with frame_height for automatic one-row or one-column slicing.,设置图集帧宽；与 frame_height 一同省略时自动按单行或单列切分。,frame_width: 64
+0.7.0,frame_height,[overlay_*],new_section_key,positive integer,auto,client_only,Sets atlas frame height; omit with frame_width for automatic one-row or one-column slicing.,设置图集帧高；与 frame_width 一同省略时自动按单行或单列切分。,frame_height: 64
+0.7.0,frame_verticalOrdering,[overlay_*],new_section_key,boolean,false,client_only,Orders atlas frame indices down columns before advancing right like native Decal.,像原版 Decal 一样先沿列向下再向右排列图集帧编号。,frame_verticalOrdering: true
 0.6.0,color,[overlay_*],new_section_key,color,type-dependent,client_only,Sets bar fill text color or image tint using native color syntax.,使用原版颜色语法设置血条填充、文字颜色或图片染色。,color: #43A047
 0.6.0,backgroundColor,[overlay_*],new_section_key,color,#B0000000,client_only,Sets the background color of bar overlays.,设置条形覆盖层的背景颜色。,backgroundColor: #B0000000
 0.6.0,borderColor,[overlay_*],new_section_key,color,white,client_only,Sets the border color of bar overlays.,设置条形覆盖层的边框颜色。,borderColor: #FFFFFF
 0.6.0,borderWidth,[overlay_*],new_section_key,runtime number,1,client_only,Sets bar border width; zero disables the border.,设置条形覆盖层边框宽度；零会关闭边框。,borderWidth: 2
 0.6.0,value,[overlay_*],new_section_key,runtime number,self.hp,client_only,Provides the current bar value before zero-through-one ratio clamping.,提供计算并限制到零至一前的条形当前值。,value: self.hp
 0.6.0,maxValue,[overlay_*],new_section_key,runtime number,self.maxHp,client_only,Provides the positive maximum used for the bar ratio.,提供条形比例使用的正最大值。,maxValue: self.maxHp
+0.7.0,barDirection,[overlay_*],new_section_key,leftToRight|rightToLeft|topToBottom|bottomToTop,leftToRight,client_only,Chooses the direction in which a bar fills.,选择条形覆盖层的填充方向。,barDirection: rightToLeft
 0.6.0,text,[overlay_*],new_section_key,native localized dynamic text,required for text,client_only,Uses native localized text and percent-brace dynamic resolvers.,使用原版本地化文字与百分号花括号动态解析。,text: Boss %{self.hp}/%{self.maxHp}
 0.6.0,textSize,[overlay_*],new_section_key,runtime number,18,client_only,Sets dynamic text size for text overlays and bar labels.,设置文字覆盖层和条形标签的动态字号。,textSize: 20
 0.6.0,textColor,[overlay_*],new_section_key,color,white,client_only,Sets bar-label color independently of the bar fill.,独立于条形填充设置条形标签颜色。,textColor: #FFFFFF

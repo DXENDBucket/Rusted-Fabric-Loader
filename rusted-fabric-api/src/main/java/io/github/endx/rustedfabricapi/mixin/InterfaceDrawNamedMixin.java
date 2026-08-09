@@ -10,6 +10,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "rustedwarfare.ui.InterfaceEngine", remap = false)
 public abstract class InterfaceDrawNamedMixin {
+    @Inject(method = "drawGameInterface(F)V", at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beforeGameInterfaceDraw(float delta, CallbackInfo ci) {
+        GameEngine engine = GameEngine.getInstance();
+        rustedwarfare.render.GraphicsEngine graphics =
+                engine != null ? engine.renderGraphicsEngine : null;
+        if (graphics != null) {
+            io.github.endx.rustedfabricapi.api.client.event.HudRenderEvents.BEFORE_HUD.invoker()
+                    .draw((rustedwarfare.ui.InterfaceEngine) (Object) this,
+                            new HudDrawContext(graphics, delta));
+        }
+    }
+
     @Inject(method = "drawGameInterface(F)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterGameInterfaceDraw(float delta, CallbackInfo ci) {
         GameLifecycleEvents.AFTER_GAME_INTERFACE_DRAW.invoker().afterGameInterfaceDraw(this, delta);

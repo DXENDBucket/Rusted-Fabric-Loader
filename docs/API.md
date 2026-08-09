@@ -614,10 +614,12 @@ run on the update/UI thread.
 
 ## HUD/world drawing and Jar images
 
-Prefer `HudRenderEvents.AFTER_HUD` over the lower-level `AFTER_HUD_RENDER` event. It supplies one
-frame-scoped `HudDrawContext` with screen dimensions, UI scale, delta, text measurement, text with
-backgrounds, rectangles, lines, circles, whole/centered/rotated/scaled/region images, clipping, and
-transforms. `DrawStyle` is immutable and hides the game's Android-compatible `Paint` class.
+Use `HudRenderEvents.BEFORE_HUD` when native interface controls should cover a custom element, or
+`HudRenderEvents.AFTER_HUD` when the element should remain on top. Both supply one frame-scoped
+`HudDrawContext` with screen dimensions, UI scale, delta, text measurement, text with backgrounds,
+rectangles, lines, circles, whole/centered/rotated/scaled/region images, clipping, and transforms.
+Prefer these typed events over the lower-level `AFTER_HUD_RENDER` event. `DrawStyle` is immutable
+and hides the game's Android-compatible `Paint` class.
 
 ```java
 DrawStyle label = DrawStyle.text(ArgbColor.WHITE, 16.0F);
@@ -631,6 +633,10 @@ HudRenderEvents.AFTER_HUD.register((gameInterface, draw) -> {
                     DrawStyle.stroke(ArgbColor.GREEN, 2.0F)));
 });
 ```
+
+`BEFORE_HUD` fires after world rendering but at the entry to native interface rendering;
+`AFTER_HUD` fires after that native interface pass. Each listener must finish drawing synchronously
+and must not retain its context beyond the callback.
 
 Use `WorldRenderEvents.AFTER_WORLD` for range rings, targeting previews, path overlays, and labels
 anchored to the map. It fires after terrain, units, effects, and mission overlays, but before the

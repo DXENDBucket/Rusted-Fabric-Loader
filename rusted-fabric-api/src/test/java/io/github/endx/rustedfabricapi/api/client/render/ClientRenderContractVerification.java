@@ -103,16 +103,22 @@ public final class ClientRenderContractVerification {
         require(calls.get() == 1, "client image release event was not dispatched");
         released.close();
 
+        RustedFabricEvent.Registration beforeHud = HudRenderEvents.BEFORE_HUD.subscribe(
+                (gameInterface, context) -> calls.addAndGet(10));
+        HudRenderEvents.BEFORE_HUD.invoker().draw(null, null);
+        require(calls.get() == 11, "typed before-HUD event was not dispatched");
+        beforeHud.close();
+
         RustedFabricEvent.Registration hud = HudRenderEvents.AFTER_HUD.subscribe(
                 (gameInterface, context) -> calls.addAndGet(10));
         HudRenderEvents.AFTER_HUD.invoker().draw(null, null);
-        require(calls.get() == 11, "typed HUD event was not dispatched");
+        require(calls.get() == 21, "typed HUD event was not dispatched");
         hud.close();
 
         RustedFabricEvent.Registration world = WorldRenderEvents.AFTER_WORLD.subscribe(
                 context -> calls.addAndGet(100));
         WorldRenderEvents.AFTER_WORLD.invoker().draw(null);
-        require(calls.get() == 111, "typed world event was not dispatched");
+        require(calls.get() == 121, "typed world event was not dispatched");
         world.close();
     }
 
