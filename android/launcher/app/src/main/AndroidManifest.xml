@@ -9,8 +9,9 @@
         android:description="@string/module_description"
         android:hasCode="true"
         android:fullBackupContent="false"
-        android:icon="@drawable/ic_loader"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/module_name"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/RustedFabricLauncherTheme">

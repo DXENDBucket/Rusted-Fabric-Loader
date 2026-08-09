@@ -79,6 +79,8 @@ namespace RustedFabricInstaller
         public InstallerForm()
         {
             Text = "Rusted Fabric Loader 安装器";
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
+            catch { }
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(690, 520);
             MinimumSize = new Size(650, 500);

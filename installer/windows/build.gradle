@@ -18,6 +18,7 @@ def generatedMetadata = layout.buildDirectory.file('generated/payload/version.tx
 def payloadZip = layout.buildDirectory.file("payload/rusted-fabric-installer-payload-${project.version}.zip")
 def installerExe = layout.buildDirectory.file("dist/Rusted-Fabric-Installer-${project.version}.exe")
 def installerManifest = layout.projectDirectory.file('src/installer/windows/RustedFabricInstaller.manifest')
+def applicationIcon = rootProject.layout.projectDirectory.file('assets/branding/rusted-fabric-icon.ico')
 def signingDirectory = rootProject.layout.projectDirectory.dir('local-signing')
 def publicDevCertificate = signingDirectory.file('EndXiom-dev-code-signing.cer')
 def signedLauncherExe = layout.buildDirectory.file('tools/endxiom-dev-signed/RustedFabricLauncher.exe')
@@ -29,6 +30,7 @@ tasks.register('compileWindowsLauncher', Exec) {
     group = 'rusted fabric'
     description = 'Compiles the small .NET Framework launcher used by installed Windows copies.'
     inputs.file('src/launcher/csharp/RustedFabricLauncher.cs')
+    inputs.file applicationIcon
     outputs.file launcherExe
 
     doFirst {
@@ -40,6 +42,7 @@ tasks.register('compileWindowsLauncher', Exec) {
         commandLine csc.absolutePath,
                 '/nologo', '/target:winexe', '/optimize+',
                 "/out:${launcherExe.get().asFile.absolutePath}",
+                "/win32icon:${applicationIcon.asFile.absolutePath}",
                 '/reference:System.dll', '/reference:System.Core.dll',
                 '/reference:System.Windows.Forms.dll',
                 file('src/launcher/csharp/RustedFabricLauncher.cs').absolutePath
@@ -100,6 +103,7 @@ tasks.register('compileWindowsInstaller', Exec) {
     dependsOn tasks.named('prepareWindowsInstallerPayload')
     inputs.file('src/installer/csharp/RustedFabricInstaller.cs')
     inputs.file installerManifest
+    inputs.file applicationIcon
     inputs.file payloadZip
     outputs.file installerExe
 
@@ -112,6 +116,7 @@ tasks.register('compileWindowsInstaller', Exec) {
         commandLine csc.absolutePath,
                 '/nologo', '/target:winexe', '/optimize+',
                 "/out:${installerExe.get().asFile.absolutePath}",
+                "/win32icon:${applicationIcon.asFile.absolutePath}",
                 '/reference:System.dll', '/reference:System.Core.dll',
                 '/reference:System.Drawing.dll', '/reference:System.Windows.Forms.dll',
                 '/reference:System.IO.Compression.dll',
@@ -280,6 +285,7 @@ tasks.register('compileEndXiomDevSignedWindowsInstaller', Exec) {
     dependsOn tasks.named('prepareEndXiomDevSignedInstallerPayload')
     inputs.file('src/installer/csharp/RustedFabricInstaller.cs')
     inputs.file installerManifest
+    inputs.file applicationIcon
     inputs.file signedPayloadZip
     outputs.file unsignedDevInstallerExe
 
@@ -292,6 +298,7 @@ tasks.register('compileEndXiomDevSignedWindowsInstaller', Exec) {
         commandLine csc.absolutePath,
                 '/nologo', '/target:winexe', '/optimize+',
                 "/out:${unsignedDevInstallerExe.get().asFile.absolutePath}",
+                "/win32icon:${applicationIcon.asFile.absolutePath}",
                 '/reference:System.dll', '/reference:System.Core.dll',
                 '/reference:System.Drawing.dll', '/reference:System.Windows.Forms.dll',
                 '/reference:System.IO.Compression.dll',
