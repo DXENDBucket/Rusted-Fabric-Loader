@@ -66,7 +66,48 @@ public final class NativeEventDataRuntime {
                     NativeEventData.AttachmentRemoval.REMOVED_UNIT,
                     NativeEventData.AttachmentRemoval.SLOT_NAME,
                     NativeEventData.AttachmentRemoval.SLOT_INDEX,
-                    NativeEventData.AttachmentRemoval.WAS_TRANSPORTED)));
+                    NativeEventData.AttachmentRemoval.WAS_TRANSPORTED,
+                    NativeEventData.KilledUnit.UNIT,
+                    NativeEventData.KilledUnit.UNIT_TYPE,
+                    NativeEventData.KilledUnit.TEAM_ID,
+                    NativeEventData.KilledUnit.X,
+                    NativeEventData.KilledUnit.Y,
+                    NativeEventData.KilledUnit.HP,
+                    NativeEventData.KilledUnit.MAX_HP,
+                    NativeEventData.KilledUnit.WAS_BUILDING,
+                    NativeEventData.FinishedQueueUnit.UNIT,
+                    NativeEventData.FinishedQueueUnit.UNIT_TYPE,
+                    NativeEventData.FinishedQueueUnit.TEAM_ID,
+                    NativeEventData.FinishedQueueUnit.X,
+                    NativeEventData.FinishedQueueUnit.Y,
+                    NativeEventData.FinishedQueueUnit.ACTION_ID,
+                    NativeEventData.FinishedQueueUnit.QUEUE_QUANTITY,
+                    NativeEventData.TouchedUnit.UNIT,
+                    NativeEventData.TouchedUnit.UNIT_TYPE,
+                    NativeEventData.TouchedUnit.TEAM_ID,
+                    NativeEventData.TouchedUnit.X,
+                    NativeEventData.TouchedUnit.Y,
+                    NativeEventData.TransportedUnit.UNIT,
+                    NativeEventData.TransportedUnit.UNIT_TYPE,
+                    NativeEventData.TransportedUnit.TEAM_ID,
+                    NativeEventData.TransportedUnit.X,
+                    NativeEventData.TransportedUnit.Y,
+                    NativeEventData.TransportedUnit.USED_SLOTS,
+                    NativeEventData.TransportedUnit.MAX_SLOTS,
+                    NativeEventData.Carrier.UNIT,
+                    NativeEventData.Carrier.UNIT_TYPE,
+                    NativeEventData.Carrier.TEAM_ID,
+                    NativeEventData.Carrier.X,
+                    NativeEventData.Carrier.Y,
+                    NativeEventData.Carrier.USED_SLOTS,
+                    NativeEventData.Carrier.MAX_SLOTS,
+                    NativeEventData.Message.SENDER,
+                    NativeEventData.Message.SENDER_UNIT_TYPE,
+                    NativeEventData.Message.SENDER_TEAM_ID,
+                    NativeEventData.Message.SENDER_X,
+                    NativeEventData.Message.SENDER_Y,
+                    NativeEventData.Message.HAS_TAGS,
+                    NativeEventData.Message.HAS_DATA)));
     private static final Set<String> NORMALIZED_FIELD_NAMES;
     private static final CopyOnWriteArrayList<Runnable> USAGE_CALLBACKS =
             new CopyOnWriteArrayList<Runnable>();
@@ -79,6 +120,8 @@ public final class NativeEventDataRuntime {
     private static final ThreadLocal<Deque<TeleportFrame>> TELEPORT =
             ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<Deque<AttachmentFrame>> ATTACHMENT =
+            ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<Deque<FinishedQueueFrame>> FINISHED_QUEUE =
             ThreadLocal.withInitial(ArrayDeque::new);
 
     static {
@@ -166,6 +209,15 @@ public final class NativeEventDataRuntime {
         pop(ATTACHMENT, frame -> frame.parent == parent && frame.child == child);
     }
 
+    public static void beginFinishedQueueItem(CustomUnit unit, BuildQueueItem item) {
+        if (USAGE_CALLBACKS.isEmpty()) return;
+        FINISHED_QUEUE.get().push(new FinishedQueueFrame(unit, item));
+    }
+
+    public static void endFinishedQueueItem(CustomUnit unit, BuildQueueItem item) {
+        pop(FINISHED_QUEUE, frame -> frame.unit == unit && frame.item == item);
+    }
+
     public static VariableScope enrichQueuedEvent(CustomUnit unit,
                                                    CustomUnitEventType eventType,
                                                    Unit source, CustomTagList eventTags,
@@ -189,6 +241,22 @@ public final class NativeEventDataRuntime {
             AttachmentFrame frame = find(
                     ATTACHMENT.get(), value -> value.parent == unit);
             if (frame != null) result = enrichAttachment(result, frame);
+        } else if (eventType == CustomUnitEventType.KILLED_ANY_UNIT) {
+            result = enrichKilledUnit(result, source);
+        } else if (eventType == CustomUnitEventType.QUEUED_UNIT_FINISHED) {
+            FinishedQueueFrame frame = find(
+                    FINISHED_QUEUE.get(), value -> value.unit == unit);
+            result = enrichFinishedQueueUnit(result, source, frame);
+        } else if (eventType == CustomUnitEventType.TOUCH_TARGET_SUCCESS) {
+            result = enrichTouchedUnit(result, source);
+        } else if (eventType == CustomUnitEventType.TRANSPORTING_NEW_UNIT
+                || eventType == CustomUnitEventType.TRANSPORT_UNLOADED_OR_REMOVED_UNIT) {
+            result = enrichTransportedUnit(result, unit, source);
+        } else if (eventType == CustomUnitEventType.ENTERED_TRANSPORT
+                || eventType == CustomUnitEventType.LEFT_TRANSPORT) {
+            result = enrichCarrier(result, source);
+        } else if (eventType == CustomUnitEventType.NEW_MESSAGE) {
+            result = enrichMessage(result, source, eventTags, original);
         }
         return result;
     }
@@ -283,6 +351,125 @@ public final class NativeEventDataRuntime {
         data.putBoolean(NativeEventData.AttachmentRemoval.WAS_TRANSPORTED,
                 frame.wasTransported);
         return data.nativeScope();
+    }
+
+    private static VariableScope enrichKilledUnit(VariableScope original, Unit killed) {
+        if (killed == null) return original;
+        CustomUnitEventData data = data(original);
+        putUnitSnapshot(data, killed,
+                NativeEventData.KilledUnit.UNIT,
+                NativeEventData.KilledUnit.UNIT_TYPE,
+                NativeEventData.KilledUnit.TEAM_ID,
+                NativeEventData.KilledUnit.X,
+                NativeEventData.KilledUnit.Y);
+        data.putNumber(NativeEventData.KilledUnit.HP, killed.hp)
+                .putNumber(NativeEventData.KilledUnit.MAX_HP, killed.maxHp)
+                .putBoolean(NativeEventData.KilledUnit.WAS_BUILDING, killed.isBuilding());
+        return data.nativeScope();
+    }
+
+    private static VariableScope enrichFinishedQueueUnit(
+            VariableScope original, Unit finished, FinishedQueueFrame frame) {
+        CustomUnitEventData data = data(original);
+        if (finished != null) {
+            putUnitSnapshot(data, finished,
+                    NativeEventData.FinishedQueueUnit.UNIT,
+                    NativeEventData.FinishedQueueUnit.UNIT_TYPE,
+                    NativeEventData.FinishedQueueUnit.TEAM_ID,
+                    NativeEventData.FinishedQueueUnit.X,
+                    NativeEventData.FinishedQueueUnit.Y);
+        }
+        if (frame != null && frame.item != null) {
+            if (frame.item.actionId != null) {
+                data.putString(NativeEventData.FinishedQueueUnit.ACTION_ID,
+                        frame.item.actionId.asString());
+            }
+            data.putNumber(NativeEventData.FinishedQueueUnit.QUEUE_QUANTITY,
+                    frame.item.quantity);
+        }
+        return data.nativeScope();
+    }
+
+    private static VariableScope enrichTouchedUnit(VariableScope original, Unit touched) {
+        if (touched == null) return original;
+        CustomUnitEventData data = data(original);
+        putUnitSnapshot(data, touched,
+                NativeEventData.TouchedUnit.UNIT,
+                NativeEventData.TouchedUnit.UNIT_TYPE,
+                NativeEventData.TouchedUnit.TEAM_ID,
+                NativeEventData.TouchedUnit.X,
+                NativeEventData.TouchedUnit.Y);
+        return data.nativeScope();
+    }
+
+    private static VariableScope enrichTransportedUnit(
+            VariableScope original, CustomUnit carrier, Unit transported) {
+        CustomUnitEventData data = data(original);
+        if (transported != null) {
+            putUnitSnapshot(data, transported,
+                    NativeEventData.TransportedUnit.UNIT,
+                    NativeEventData.TransportedUnit.UNIT_TYPE,
+                    NativeEventData.TransportedUnit.TEAM_ID,
+                    NativeEventData.TransportedUnit.X,
+                    NativeEventData.TransportedUnit.Y);
+        }
+        data.putNumber(NativeEventData.TransportedUnit.USED_SLOTS,
+                        carrier.getTransportBarUsedSlots())
+                .putNumber(NativeEventData.TransportedUnit.MAX_SLOTS,
+                        carrier.getTransportBarMaxSlots());
+        return data.nativeScope();
+    }
+
+    private static VariableScope enrichCarrier(VariableScope original, Unit carrier) {
+        if (carrier == null) return original;
+        CustomUnitEventData data = data(original);
+        putUnitSnapshot(data, carrier,
+                NativeEventData.Carrier.UNIT,
+                NativeEventData.Carrier.UNIT_TYPE,
+                NativeEventData.Carrier.TEAM_ID,
+                NativeEventData.Carrier.X,
+                NativeEventData.Carrier.Y);
+        data.putNumber(NativeEventData.Carrier.USED_SLOTS,
+                        carrier.getTransportBarUsedSlots())
+                .putNumber(NativeEventData.Carrier.MAX_SLOTS,
+                        carrier.getTransportBarMaxSlots());
+        return data.nativeScope();
+    }
+
+    private static VariableScope enrichMessage(
+            VariableScope original, Unit sender, CustomTagList tags,
+            VariableScope originalEventData) {
+        CustomUnitEventData data = data(original);
+        if (sender != null) {
+            putUnitSnapshot(data, sender,
+                    NativeEventData.Message.SENDER,
+                    NativeEventData.Message.SENDER_UNIT_TYPE,
+                    NativeEventData.Message.SENDER_TEAM_ID,
+                    NativeEventData.Message.SENDER_X,
+                    NativeEventData.Message.SENDER_Y);
+        }
+        data.putBoolean(NativeEventData.Message.HAS_TAGS, tags != null)
+                .putBoolean(NativeEventData.Message.HAS_DATA, originalEventData != null);
+        return data.nativeScope();
+    }
+
+    private static void putUnitSnapshot(CustomUnitEventData data, Unit unit,
+                                        String unitField, String typeField,
+                                        String teamField, String xField,
+                                        String yField) {
+        data.putUnit(unitField, unit)
+                .putString(typeField, unitTypeName(unit))
+                .putNumber(teamField, teamId(unit.team))
+                .putNumber(xField, unit.x)
+                .putNumber(yField, unit.y);
+    }
+
+    private static String unitTypeName(Unit unit) {
+        Object type = RustedReflection.invokeInstance(
+                unit, new String[]{"getUnitMetadata", "getUnitType", "r"});
+        return type instanceof UnitType
+                ? ((UnitType) type).getInternalName()
+                : type != null ? type.toString() : "";
     }
 
     private static CustomUnitEventData data(VariableScope scope) {
@@ -399,6 +586,16 @@ public final class NativeEventDataRuntime {
             this.child = child;
             this.slot = slot;
             this.wasTransported = wasTransported;
+        }
+    }
+
+    private static final class FinishedQueueFrame {
+        private final CustomUnit unit;
+        private final BuildQueueItem item;
+
+        private FinishedQueueFrame(CustomUnit unit, BuildQueueItem item) {
+            this.unit = unit;
+            this.item = item;
         }
     }
 }

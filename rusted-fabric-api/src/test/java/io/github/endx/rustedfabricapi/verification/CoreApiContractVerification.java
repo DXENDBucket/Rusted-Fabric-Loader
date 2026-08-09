@@ -307,15 +307,23 @@ public final class CoreApiContractVerification {
         try (NativeEventData.Registration ignored =
                      NativeEventData.enable(() -> nativeUsage[0]++)) {
             NativeEventDataRuntime.onEventDataNameParsed("TeleportFromX");
+            NativeEventDataRuntime.onEventDataNameParsed("MessageHasData");
             NativeEventDataRuntime.onEventDataNameParsed("unrelated");
-            require(nativeUsage[0] == 1,
+            require(nativeUsage[0] == 2,
                     "native eventData usage detection is not case-insensitive");
         }
-        require(NativeEventData.fieldNames().contains("actionId")
+        require(NativeEventData.fieldNames().size() == 74
+                        && NativeEventData.fieldNames().contains("actionId")
                         && NativeEventData.fieldNames().contains("waypointTargetUnit")
                         && NativeEventData.fieldNames().contains("oldTeamId")
                         && NativeEventData.fieldNames().contains("teleportFromX")
-                        && NativeEventData.fieldNames().contains("removedUnit"),
+                        && NativeEventData.fieldNames().contains("removedUnit")
+                        && NativeEventData.fieldNames().contains("killedUnitHp")
+                        && NativeEventData.fieldNames().contains("finishedActionId")
+                        && NativeEventData.fieldNames().contains("touchedUnit")
+                        && NativeEventData.fieldNames().contains("transportUsedSlots")
+                        && NativeEventData.fieldNames().contains("carrierUsedSlots")
+                        && NativeEventData.fieldNames().contains("messageHasData"),
                 "native event-data catalog is incomplete");
 
     }

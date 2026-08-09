@@ -23,9 +23,24 @@ import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitOrder;
 import rustedwarfare.unit.action.UnitAction;
+import rustedwarfare.unit.build.BuildQueueItem;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitExtensionNamedMixin {
+    @Inject(method = "completeBuildQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)V",
+            at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beginFinishedQueueItem(BuildQueueItem item, CallbackInfo ci) {
+        NativeEventDataRuntime.beginFinishedQueueItem(
+                (CustomUnit) (Object) this, item);
+    }
+
+    @Inject(method = "completeBuildQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)V",
+            at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$endFinishedQueueItem(BuildQueueItem item, CallbackInfo ci) {
+        NativeEventDataRuntime.endFinishedQueueItem(
+                (CustomUnit) (Object) this, item);
+    }
+
     @Inject(
             method = "queueAction(Lrustedwarfare/unit/action/UnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)V",
             at = @At("HEAD"), require = 1)

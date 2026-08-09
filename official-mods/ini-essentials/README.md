@@ -59,6 +59,21 @@ The same opt-in event-data bridge now fills gaps in five other native event grou
 - `attachmentRemoved`: the actual removed child, old slot and transport-list membership. This keeps
   the native event firing behavior while working around its `eventSource` pointing at the parent.
 
+The second event pass covers native events that already carry a related unit as `eventSource`, but
+previously required awkward chained logic to inspect it:
+
+- `killedAnyUnit`: killed unit reference, type, team, position, HP and building classification.
+- `queuedUnitFinished`: produced unit details plus the completed queue action ID and quantity.
+- `touchTargetSuccess`: the reached target's reference, type, team and position.
+- `transportingNewUnit` and `transportUnloadedOrRemovedUnit`: passenger details and the carrier's
+  used/maximum slots after the operation.
+- `enteredTransport` and `leftTransport`: carrier details and its used/maximum slots as seen by the
+  passenger event.
+- `newMessage`: sender details and flags reporting whether native message tags/data were supplied.
+
+The native `eventSource`, event tags and pre-existing message data remain intact; these additions
+provide stable typed aliases and snapshots rather than replacing the original event behavior.
+
 All values are added to the event's existing `eventData(...)` scope. Omitting the enhanced names
 keeps native INI behavior and does not activate the synchronized requirement.
 

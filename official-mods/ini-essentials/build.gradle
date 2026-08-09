@@ -93,12 +93,28 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'teleportFromX', 'teleportFromY', 'teleportFromHeight',
                 'teleportFromDirection', 'teleportToX', 'teleportToY',
                 'teleportToHeight', 'teleportToDirection', 'removedUnit',
-                'attachmentSlot', 'attachmentSlotIndex', 'attachmentWasTransported'
+                'attachmentSlot', 'attachmentSlotIndex', 'attachmentWasTransported',
+                'killedUnit', 'killedUnitType', 'killedUnitTeamId', 'killedUnitX',
+                'killedUnitY', 'killedUnitHp', 'killedUnitMaxHp',
+                'killedUnitWasBuilding', 'finishedUnit', 'finishedUnitType',
+                'finishedUnitTeamId', 'finishedUnitX', 'finishedUnitY',
+                'finishedActionId', 'finishedQueueQuantity', 'touchedUnit',
+                'touchedUnitType', 'touchedUnitTeamId', 'touchedUnitX',
+                'touchedUnitY', 'transportedUnit', 'transportedUnitType',
+                'transportedUnitTeamId', 'transportedUnitX', 'transportedUnitY',
+                'transportUsedSlots', 'transportMaxSlots', 'transportUnit',
+                'transportUnitType', 'transportUnitTeamId', 'transportUnitX',
+                'transportUnitY', 'carrierUsedSlots', 'carrierMaxSlots',
+                'messageSender', 'messageSenderUnitType', 'messageSenderTeamId',
+                'messageSenderX', 'messageSenderY', 'messageHasTags', 'messageHasData'
         ] as Set
         def expectedEventTypes = [
                 'tookDamage', 'queueItemAdded', 'queueItemCancelled',
                 'newWaypointGivenByPlayer', 'teamChanged', 'teleported',
-                'attachmentRemoved'
+                'attachmentRemoved', 'killedAnyUnit', 'queuedUnitFinished',
+                'touchTargetSuccess', 'transportingNewUnit',
+                'transportUnloadedOrRemovedUnit', 'enteredTransport',
+                'leftTransport', 'newMessage'
         ] as Set
         def eventDataNames = eventRows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 4)[2]
@@ -117,6 +133,8 @@ tasks.register('verifyIniEssentialsMetadata') {
         def generatorSource = referenceGenerator.getText('UTF-8')
         if (!generatorSource.contains('"core": ("0F9D58", "0D904F")')
                 || !generatorSource.contains('"action": ("FF9900", "B45F06")')
+                || !generatorSource.contains('"event": ("00A6B8", "007C91")')
+                || !generatorSource.contains('EVENT_INDEX_COLOR = "B2EBF2"')
                 || !generatorSource.contains('def inject_navigation_shapes(')
                 || !generatorSource.contains('hlinkClick')
                 || !generatorSource.contains('"--check"')) {
@@ -149,12 +167,13 @@ tasks.register('verifyIniEssentialsMetadata') {
                     || !['FF0F9D58', 'FF0D904F', 'FFFF9900', 'FFB45F06'].every {
                         stylesXml.contains(it)
                     }
-                    || hyperlinkCount < 40
+                    || hyperlinkCount < 72
                     || !drawingRelationshipText.contains('/relationships/hyperlink')
                     || !['#rf_en_core', '#rf_en_action', '#rf_zh_core',
                          '#rf_zh_action', '#rf_en_shortcuts', '#rf_zh_shortcuts',
                          '#rf_en_event_data', '#rf_zh_event_data',
-                         '#rf_en_event_tookdamage', '#rf_zh_event_attachmentremoved'].every {
+                         '#rf_en_event_tookdamage', '#rf_zh_event_attachmentremoved',
+                         '#rf_en_event_killedanyunit', '#rf_zh_event_newmessage'].every {
                         drawingRelationshipText.contains(it)
                     }
                     || !sheetText.contains('Section shortcuts')
@@ -172,7 +191,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v4'
+                || multiplayer?.protocol != 'ini_essentials_v5'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

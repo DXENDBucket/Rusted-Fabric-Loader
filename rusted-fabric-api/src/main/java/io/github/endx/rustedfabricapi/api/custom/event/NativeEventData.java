@@ -66,6 +66,79 @@ public final class NativeEventData {
         private AttachmentRemoval() { }
     }
 
+    public static final class KilledUnit {
+        public static final String UNIT = "killedUnit";
+        public static final String UNIT_TYPE = "killedUnitType";
+        public static final String TEAM_ID = "killedUnitTeamId";
+        public static final String X = "killedUnitX";
+        public static final String Y = "killedUnitY";
+        public static final String HP = "killedUnitHp";
+        public static final String MAX_HP = "killedUnitMaxHp";
+        public static final String WAS_BUILDING = "killedUnitWasBuilding";
+
+        private KilledUnit() { }
+    }
+
+    public static final class FinishedQueueUnit {
+        public static final String UNIT = "finishedUnit";
+        public static final String UNIT_TYPE = "finishedUnitType";
+        public static final String TEAM_ID = "finishedUnitTeamId";
+        public static final String X = "finishedUnitX";
+        public static final String Y = "finishedUnitY";
+        public static final String ACTION_ID = "finishedActionId";
+        public static final String QUEUE_QUANTITY = "finishedQueueQuantity";
+
+        private FinishedQueueUnit() { }
+    }
+
+    public static final class TouchedUnit {
+        public static final String UNIT = "touchedUnit";
+        public static final String UNIT_TYPE = "touchedUnitType";
+        public static final String TEAM_ID = "touchedUnitTeamId";
+        public static final String X = "touchedUnitX";
+        public static final String Y = "touchedUnitY";
+
+        private TouchedUnit() { }
+    }
+
+    /** Fields visible on the carrier's transporting/unloaded events. */
+    public static final class TransportedUnit {
+        public static final String UNIT = "transportedUnit";
+        public static final String UNIT_TYPE = "transportedUnitType";
+        public static final String TEAM_ID = "transportedUnitTeamId";
+        public static final String X = "transportedUnitX";
+        public static final String Y = "transportedUnitY";
+        public static final String USED_SLOTS = "transportUsedSlots";
+        public static final String MAX_SLOTS = "transportMaxSlots";
+
+        private TransportedUnit() { }
+    }
+
+    /** Fields visible on the passenger's entered/left transport events. */
+    public static final class Carrier {
+        public static final String UNIT = "transportUnit";
+        public static final String UNIT_TYPE = "transportUnitType";
+        public static final String TEAM_ID = "transportUnitTeamId";
+        public static final String X = "transportUnitX";
+        public static final String Y = "transportUnitY";
+        public static final String USED_SLOTS = "carrierUsedSlots";
+        public static final String MAX_SLOTS = "carrierMaxSlots";
+
+        private Carrier() { }
+    }
+
+    public static final class Message {
+        public static final String SENDER = "messageSender";
+        public static final String SENDER_UNIT_TYPE = "messageSenderUnitType";
+        public static final String SENDER_TEAM_ID = "messageSenderTeamId";
+        public static final String SENDER_X = "messageSenderX";
+        public static final String SENDER_Y = "messageSenderY";
+        public static final String HAS_TAGS = "messageHasTags";
+        public static final String HAS_DATA = "messageHasData";
+
+        private Message() { }
+    }
+
     /** Enables enrichment and reports when any field in this catalog is parsed by an INI. */
     public static Registration enable(Runnable onFieldUsed) {
         return new Registration(NativeEventDataRuntime.enable(onFieldUsed));
