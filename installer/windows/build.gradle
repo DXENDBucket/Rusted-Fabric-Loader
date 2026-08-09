@@ -82,6 +82,7 @@ tasks.register('prepareWindowsInstallerPayload', Zip) {
     }
     into('core') {
         from launcherExe
+        from rootProject.file('DISCLAIMER.md')
     }
     into('components/api/javamods') {
         from project(':rusted-fabric-api').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
@@ -140,6 +141,7 @@ tasks.register('verifyWindowsInstallerPayload') {
                     ~/core\/fabric-libs\/.*\.jar/,
                     ~/core\/rusted-fabric-loader\/rusted-fabric-loader-.*\.jar/,
                     ~/core\/RustedFabricLauncher\.exe/,
+                    ~/core\/DISCLAIMER\.md/,
                     ~/components\/api\/javamods\/rusted-fabric-api-.*\.jar/,
                     ~/components\/mod_menu\/javamods\/java-mod-menu-.*\.jar/,
                     ~/components\/ini_essentials\/javamods\/ini-essentials-.*\.jar/,
@@ -196,6 +198,7 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
         def root = testGame.get().asFile
         def required = [
                 'RustedFabricLauncher.exe', 'run-rusted-fabric.bat',
+                'DISCLAIMER.md',
                 'rusted-fabric-loader/install-manifest.json',
                 'javamods/third-party-keep.jar'
         ]
@@ -264,6 +267,7 @@ tasks.register('prepareEndXiomDevSignedInstallerPayload', Zip) {
     }
     into('core') {
         from signedLauncherExe
+        from rootProject.file('DISCLAIMER.md')
     }
     into('components/api/javamods') {
         from project(':rusted-fabric-api').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }

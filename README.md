@@ -11,6 +11,12 @@ Current compatibility baseline:
 
 The public API is still experimental while mappings are being completed. See [API.md](docs/API.md) for lifecycle, threading, cancellation, and compatibility rules.
 
+> [!WARNING]
+> Java mods are executable code loaded with the game/Loader's permissions. Unknown third-party
+> mods can access files or the network, damage saves, expose private data, or compromise the device.
+> Install only code you trust, keep backups, and read the full bilingual
+> [security and third-party content disclaimer](DISCLAIMER.md).
+
 The active Android direction is the PC-edition port: import user-owned Steam files and run the same
 Fabric/Knot stack inside a Loader-owned ARM64 JVM. Retired Android-APK patch/Xposed work is archived
 under `legacy/`. Both active hosts use the same API and ordinary Fabric-style Jar mods.

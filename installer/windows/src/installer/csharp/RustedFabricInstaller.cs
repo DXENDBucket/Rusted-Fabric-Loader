@@ -72,6 +72,8 @@ namespace RustedFabricInstaller
         private readonly CheckBox modMenu = new CheckBox();
         private readonly CheckBox iniEssentials = new CheckBox();
         private readonly CheckBox shortcut = new CheckBox();
+        private readonly CheckBox riskAcceptance = new CheckBox();
+        private readonly LinkLabel disclaimerLink = new LinkLabel();
         private readonly Button install = new Button();
         private readonly ProgressBar progress = new ProgressBar();
         private readonly TextBox log = new TextBox();
@@ -82,8 +84,8 @@ namespace RustedFabricInstaller
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
             catch { }
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(690, 520);
-            MinimumSize = new Size(650, 500);
+            ClientSize = new Size(690, 640);
+            MinimumSize = new Size(650, 620);
             MaximizeBox = false;
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
@@ -153,8 +155,36 @@ namespace RustedFabricInstaller
             components.Controls.Add(shortcut);
             ComponentDependencyChanged(null, EventArgs.Empty);
 
-            log.Location = new Point(30, 316);
-            log.Size = new Size(630, 125);
+            GroupBox safety = new GroupBox();
+            safety.Text = "安全与免责声明 / Security notice";
+            safety.Location = new Point(30, 315);
+            safety.Size = new Size(630, 125);
+            safety.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            Controls.Add(safety);
+
+            Label riskWarning = new Label();
+            riskWarning.Text = "第三方 Java 模组是与游戏同权限运行的可执行代码，可能访问文件和网络、损坏存档或泄露隐私。\r\nThird-party Java mods are executable code and may access files/network, damage saves, or expose data.";
+            riskWarning.ForeColor = Color.FromArgb(145, 72, 0);
+            riskWarning.Location = new Point(16, 23);
+            riskWarning.Size = new Size(598, 43);
+            safety.Controls.Add(riskWarning);
+
+            riskAcceptance.Text = "我已阅读并理解风险，只会加载我信任的 Java 模组 / I understand and accept the risk";
+            riskAcceptance.Location = new Point(16, 67);
+            riskAcceptance.Size = new Size(598, 24);
+            riskAcceptance.CheckedChanged += delegate {
+                install.Enabled = riskAcceptance.Checked;
+            };
+            safety.Controls.Add(riskAcceptance);
+
+            disclaimerLink.Text = "查看完整免责声明 / View full disclaimer";
+            disclaimerLink.AutoSize = true;
+            disclaimerLink.Location = new Point(18, 95);
+            disclaimerLink.LinkClicked += ShowDisclaimer;
+            safety.Controls.Add(disclaimerLink);
+
+            log.Location = new Point(30, 452);
+            log.Size = new Size(630, 110);
             log.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             log.Multiline = true;
             log.ReadOnly = true;
@@ -162,15 +192,16 @@ namespace RustedFabricInstaller
             log.BackColor = SystemColors.Window;
             Controls.Add(log);
 
-            progress.Location = new Point(30, 454);
+            progress.Location = new Point(30, 575);
             progress.Size = new Size(480, 22);
             progress.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(progress);
 
             install.Text = "安装 / Install";
-            install.Location = new Point(525, 449);
+            install.Location = new Point(525, 570);
             install.Size = new Size(135, 34);
             install.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            install.Enabled = false;
             install.Click += InstallClicked;
             Controls.Add(install);
 
@@ -232,6 +263,15 @@ namespace RustedFabricInstaller
 
         private async void InstallClicked(object sender, EventArgs args)
         {
+            if (!riskAcceptance.Checked)
+            {
+                MessageBox.Show(this,
+                    "请先阅读并确认第三方 Java 模组的代码执行风险。\r\n"
+                    + "Read and accept the third-party Java mod code-execution risk first.",
+                    "需要确认 / Confirmation required", MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
             InstallOptions options = new InstallOptions();
             options.GameDirectory = gameDirectory.Text.Trim();
             options.InstallApi = api.Checked;
@@ -276,6 +316,43 @@ namespace RustedFabricInstaller
             BeginInvoke(new Action<string>(AppendLog), message);
         }
 
+        private void ShowDisclaimer(object sender, LinkLabelLinkClickedEventArgs args)
+        {
+            using (Form dialog = new Form())
+            {
+                dialog.Text = "安全与第三方内容免责声明";
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.ClientSize = new Size(720, 560);
+                dialog.MinimumSize = new Size(600, 460);
+                dialog.Font = Font;
+                dialog.Icon = Icon;
+
+                TextBox text = new TextBox();
+                text.Multiline = true;
+                text.ReadOnly = true;
+                text.ScrollBars = ScrollBars.Vertical;
+                text.WordWrap = true;
+                text.BackColor = SystemColors.Window;
+                text.Text = Payload.ReadDisclaimer();
+                text.Location = new Point(16, 16);
+                text.Size = new Size(688, 484);
+                text.Anchor = AnchorStyles.Top | AnchorStyles.Bottom
+                    | AnchorStyles.Left | AnchorStyles.Right;
+                dialog.Controls.Add(text);
+
+                Button close = new Button();
+                close.Text = "关闭 / Close";
+                close.DialogResult = DialogResult.OK;
+                close.Location = new Point(574, 513);
+                close.Size = new Size(130, 32);
+                close.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+                dialog.Controls.Add(close);
+                dialog.AcceptButton = close;
+                dialog.CancelButton = close;
+                dialog.ShowDialog(this);
+            }
+        }
+
         private void AppendLog(string message)
         {
             log.AppendText(message + Environment.NewLine);
@@ -283,12 +360,14 @@ namespace RustedFabricInstaller
 
         private void SetBusy(bool busy)
         {
-            install.Enabled = !busy;
+            install.Enabled = !busy && riskAcceptance.Checked;
             browse.Enabled = !busy;
             gameDirectory.Enabled = !busy;
             modMenu.Enabled = !busy;
             iniEssentials.Enabled = !busy;
             shortcut.Enabled = !busy;
+            riskAcceptance.Enabled = !busy;
+            disclaimerLink.Enabled = !busy;
             api.Enabled = !busy && !modMenu.Checked;
             progress.Style = busy ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
         }
@@ -776,6 +855,17 @@ namespace RustedFabricInstaller
             }
         }
 
+        public static string ReadDisclaimer()
+        {
+            using (ZipArchive archive = Open())
+            {
+                ZipArchiveEntry entry = archive.GetEntry("core/DISCLAIMER.md");
+                if (entry == null) return "Disclaimer is missing from the installer payload.";
+                using (StreamReader reader = new StreamReader(entry.Open(), Encoding.UTF8))
+                    return reader.ReadToEnd();
+            }
+        }
+
         public static void Verify()
         {
             using (ZipArchive archive = Open())
@@ -784,6 +874,7 @@ namespace RustedFabricInstaller
                     return entry.FullName;
                 }).ToArray();
                 Require(names, "core/RustedFabricLauncher.exe");
+                Require(names, "core/DISCLAIMER.md");
                 RequirePrefix(names, "core/fabric-libs/");
                 RequirePrefix(names, "core/rusted-fabric-loader/rusted-fabric-loader-");
                 RequirePrefix(names, "components/api/javamods/rusted-fabric-api-");

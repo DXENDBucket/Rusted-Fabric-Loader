@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.launcher'
         minSdk 27
         targetSdk 35
-        versionCode 14
-        versionName '0.12.3-preview'
+        versionCode 15
+        versionName '0.12.4-preview'
 
         ndk {
             abiFilters 'arm64-v8a'
@@ -199,6 +199,7 @@ tasks.register('prepareComplianceAssets') {
     inputs.file(rootProject.file('LICENSE'))
     inputs.file(rootProject.file('SOURCE_OFFER.md'))
     inputs.file(rootProject.file('../../THIRD_PARTY_NOTICES.md'))
+    inputs.file(rootProject.file('../../DISCLAIMER.md'))
     inputs.property('androidVersion', android.defaultConfig.versionName)
     inputs.property('fclVersion', fclReleaseVersion)
     outputs.dir(generatedComplianceAssets)
@@ -236,6 +237,10 @@ tasks.register('prepareComplianceAssets') {
         }
         project.copy {
             from rootProject.file('../../THIRD_PARTY_NOTICES.md')
+            into output
+        }
+        project.copy {
+            from rootProject.file('../../DISCLAIMER.md')
             into output
         }
 
@@ -531,6 +536,7 @@ tasks.register('verifyNoGamePayload') {
         def gplLicenseFound = false
         def sourceOfferFound = false
         def thirdPartyNoticesFound = false
+        def disclaimerFound = false
         def officialModsFound = 0
         def officialModIds = [] as Set
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
@@ -573,6 +579,8 @@ tasks.register('verifyNoGamePayload') {
                         'assets/rusted-fabric/SOURCE_OFFER.md'
                 thirdPartyNoticesFound |= entry.name ==
                         'assets/rusted-fabric/THIRD_PARTY_NOTICES.md'
+                disclaimerFound |= entry.name ==
+                        'assets/rusted-fabric/DISCLAIMER.md'
                 if (entry.name.startsWith('assets/rusted-fabric/official-mods/')
                         && entry.name.endsWith('.jar')) {
                     officialModsFound++
@@ -627,7 +635,7 @@ tasks.register('verifyNoGamePayload') {
                 || !lwjglOpenGlNativeFound || !openAlNativeFound || !freetypeNativeFound
                 || !pojavExecFound || !rocketConnectorFound || rendererLicensesFound < 9
                 || !androidGplLicenseFound || !gplLicenseFound
-                || !sourceOfferFound || !thirdPartyNoticesFound) {
+                || !sourceOfferFound || !thirdPartyNoticesFound || !disclaimerFound) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
         if (officialModsFound != 3 || officialModIds != [

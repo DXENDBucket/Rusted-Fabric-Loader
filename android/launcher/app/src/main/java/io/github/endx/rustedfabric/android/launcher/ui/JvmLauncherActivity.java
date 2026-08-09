@@ -42,6 +42,8 @@ import io.github.endx.rustedfabric.android.launcher.jvm.OfficialModProvisioner;
 
 /** User-facing launcher for the imported desktop game and its ARM64 JVM runtime. */
 public final class JvmLauncherActivity extends Activity {
+    private static final String LAUNCHER_PREFERENCES = "launcher";
+    private static final String DISCLAIMER_ACCEPTED = "third_party_code_disclaimer_v1";
     private static final int REQUEST_GAME_ARCHIVE = 2001;
     private static final int REQUEST_GAME_TREE = 2002;
     private static final int REQUEST_JAVA_RUNTIME = 2003;
@@ -102,6 +104,7 @@ public final class JvmLauncherActivity extends Activity {
         bindActions();
         showAdvanced(false);
         refresh();
+        showRiskDisclaimerIfRequired();
     }
 
     private void bindViews() {
@@ -159,18 +162,47 @@ public final class JvmLauncherActivity extends Activity {
                 .show();
     }
 
+    private void showRiskDisclaimerIfRequired() {
+        if (getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE)
+                .getBoolean(DISCLAIMER_ACCEPTED, false)) return;
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.security_disclaimer_title)
+                .setMessage(R.string.security_disclaimer_message)
+                .setPositiveButton(R.string.security_disclaimer_accept, (ignored, which) ->
+                        getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE).edit()
+                                .putBoolean(DISCLAIMER_ACCEPTED, true).apply())
+                .setNeutralButton(R.string.security_disclaimer_view_full, null)
+                .setNegativeButton(R.string.security_disclaimer_exit,
+                        (ignored, which) -> finish())
+                .setCancelable(false)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+                .setOnClickListener(button -> showPackagedDisclaimer()));
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.show();
+    }
+
     private void showPackagedLicense() {
+        showPackagedText(R.string.jvm_full_license,
+                "rusted-fabric/licenses/Rusted-Fabric-Android-GPL-3.0.txt");
+    }
+
+    private void showPackagedDisclaimer() {
+        showPackagedText(R.string.security_disclaimer_title,
+                "rusted-fabric/DISCLAIMER.md");
+    }
+
+    private void showPackagedText(int title, String assetPath) {
         TextView license = new TextView(this);
         int padding = Math.round(18 * getResources().getDisplayMetrics().density);
         license.setPadding(padding, padding, padding, padding);
         license.setTextIsSelectable(true);
-        license.setText(readAssetText(
-                "rusted-fabric/licenses/Rusted-Fabric-Android-GPL-3.0.txt"));
+        license.setText(readAssetText(assetPath));
 
         ScrollView scroll = new ScrollView(this);
         scroll.addView(license);
         new AlertDialog.Builder(this)
-                .setTitle(R.string.jvm_full_license)
+                .setTitle(title)
                 .setView(scroll)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
@@ -427,6 +459,20 @@ public final class JvmLauncherActivity extends Activity {
     }
 
     private void chooseManagedContent(ManagedContentLibrary.Kind kind) {
+        if (kind == ManagedContentLibrary.Kind.JAVA_MOD) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.security_disclaimer_import_title)
+                    .setMessage(R.string.security_disclaimer_import_message)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.security_disclaimer_import_continue,
+                            (ignored, which) -> openManagedContentPicker(kind))
+                    .show();
+            return;
+        }
+        openManagedContentPicker(kind);
+    }
+
+    private void openManagedContentPicker(ManagedContentLibrary.Kind kind) {
         Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         picker.addCategory(Intent.CATEGORY_OPENABLE);
         picker.setType("*/*");
@@ -468,7 +514,7 @@ public final class JvmLauncherActivity extends Activity {
     }
 
     private void ensureOfficialMods() {
-        boolean currentAssets = getSharedPreferences("launcher", MODE_PRIVATE)
+        boolean currentAssets = getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE)
                 .getInt("official_mod_assets", -1)
                 == io.github.endx.rustedfabric.android.launcher.BuildConfig.VERSION_CODE;
         if (!gameImported || officialProvisioning || currentAssets) return;
@@ -514,7 +560,7 @@ public final class JvmLauncherActivity extends Activity {
     }
 
     private void markOfficialModsProvisioned() {
-        getSharedPreferences("launcher", MODE_PRIVATE).edit()
+        getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE).edit()
                 .putInt("official_mod_assets", io.github.endx.rustedfabric.android.launcher.BuildConfig.VERSION_CODE)
                 .apply();
     }

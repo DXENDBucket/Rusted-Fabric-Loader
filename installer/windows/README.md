@@ -7,6 +7,9 @@ game files.
 ## Player flow
 
 The installer detects common Steam library locations or lets the player select the game directory.
+It displays the Java-mod code-execution warning and keeps installation disabled until the user
+acknowledges it. The complete bilingual `DISCLAIMER.md` is embedded in the installer and installed
+beside the launcher for later reference.
 Its executable declares Per-Monitor V2 DPI awareness for sharp text on scaled displays, and the
 folder button opens the modern Windows Explorer picker (with a legacy fallback for old systems).
 It validates `game-lib.jar` and `jvm64/bin/java.exe` before changing anything. The component choices

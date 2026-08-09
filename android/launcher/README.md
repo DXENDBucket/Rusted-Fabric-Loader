@@ -48,10 +48,15 @@ The Android launcher distribution is licensed under GNU GPL version 3. Its full 
 their Apache-2.0 licenses; Apache-2.0 code is included in the Android APK under the GPLv3
 distribution terms.
 
-Every APK includes the GPLv3 text, `THIRD_PARTY_NOTICES.md`, and a generated source offer containing
+Every APK includes the GPLv3 text, `THIRD_PARTY_NOTICES.md`, the repository's bilingual
+`DISCLAIMER.md`, and a generated source offer containing
 the exact Git revision and pinned FCL source release. `assembleRelease` rejects a dirty or unknown
 Git revision. Release APKs must be published together with this repository's corresponding source
 archive. See [`SOURCE_OFFER.md`](SOURCE_OFFER.md) for the packaged template.
+
+On first launch, the user must acknowledge that Java mods execute with the game/Loader's
+permissions. Importing a Java mod shows the warning again before opening the file picker. The
+acceptance does not imply that Rusted Fabric reviewed or endorsed any third-party mod.
 
 ## Active modules
 
