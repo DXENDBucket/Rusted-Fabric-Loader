@@ -11,6 +11,8 @@ import io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot;
 import io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot;
 import io.github.endx.rustedfabricapi.api.game.Projectiles;
 import io.github.endx.rustedfabricapi.api.game.CustomUnitRuntimeSnapshot;
+import io.github.endx.rustedfabricapi.api.geometry.GeometryContractVerification;
+import io.github.endx.rustedfabricapi.api.ini.action.ActionEffectOrderContractVerification;
 import io.github.endx.rustedfabricapi.api.lifecycle.LifecycleScopeContractVerification;
 import io.github.endx.rustedfabricapi.api.service.ServiceRegistryContractVerification;
 import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
@@ -31,6 +33,8 @@ public final class ApiContractVerification {
         ServiceRegistryContractVerification.verify();
         LifecycleScopeContractVerification.verify();
         EventPhaseContractVerification.verify();
+        GeometryContractVerification.verify();
+        ActionEffectOrderContractVerification.verify();
         verifiesListenerOrderAndSnapshotRefresh();
         verifiesListenerCleanup();
         verifiesContextDefensiveCopies();

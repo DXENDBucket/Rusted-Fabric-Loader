@@ -48,6 +48,7 @@
     "LazyTeamColorImageLifecycleNamedMixin",
     "LanguageSettingsNamedMixin",
     "MapEngineLifecycleNamedMixin",
+    "MapFogSourceNamedMixin",
     "MapObjectSpawnNamedMixin",
     "MessageInterfaceNamedMixin",
     "MinimapRuntimeNamedMixin",

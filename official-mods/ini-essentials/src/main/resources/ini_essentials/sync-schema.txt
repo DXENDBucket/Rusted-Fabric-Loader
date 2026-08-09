@@ -1,4 +1,4 @@
-ini_essentials_v5
+ini_essentials_v6
 [core].allowNegativeHp|new_key|boolean|default=false|gameplay_synced|negative_hp_damage_v1
 [action_*|hiddenAction_*].cameraCenterAt|new_action_effect|finite_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
 [action_*|hiddenAction_*].cameraCenterBy|new_action_effect|finite_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
@@ -113,3 +113,16 @@ event.newMessage.eventData.messageSenderX|number|gameplay_synced|sender_position
 event.newMessage.eventData.messageSenderY|number|gameplay_synced|sender_position_y
 event.newMessage.eventData.messageHasTags|boolean|gameplay_synced|native_message_tag_presence
 event.newMessage.eventData.messageHasData|boolean|gameplay_synced|native_message_data_presence
+[geometry_*].type|new_section_key|geometry_mask_kind|required|gameplay_synced|finite_mask_v1
+[geometry_*].numeric_fields|new_section_keys|runtime_logic_number|defaults_by_field|gameplay_synced|strict_finite_evaluation
+[geometry_*].points|new_section_key|runtime_point_pairs|default=omitted|gameplay_synced|polygon_vertices
+[geometry_*].components|new_section_key|geometry_name_list|default=omitted|gameplay_synced|union_intersection_difference
+[fog_*].operation|new_section_key|reveal_explore_conceal_shroud|required|gameplay_synced|per_team_fog_levels_0_5_10
+[fog_*].geometry|new_section_key|geometry_name|required|gameplay_synced|world_tile_rasterization
+[fog_*].team|new_section_key|team_selector|default=own|gameplay_synced|deterministic_team_snapshot
+[fog_*].anchor|new_section_key|self_target_actionTarget|default=self|gameplay_synced|world_geometry_origin
+[fog_*].duration|new_section_key|runtime_seconds|default=0|gameplay_synced|negative_until_session_end
+[fog_*].follow|new_section_key|boolean|default=true|gameplay_synced|reevaluate_geometry_and_anchor
+[action_*|hiddenAction_*].applyFog|new_action_effect|fog_name_list|default=omitted|gameplay_synced|geometry_fog_operation
+[action_*|hiddenAction_*].setFogMode|new_action_effect|off_basic_los|default=omitted|gameplay_synced|initialize_missing_maps_unexplored
+logic.number_functions|runtime_logic_functions|pow_exp_ln_log10_cbrt_abs_floor_ceil_round_sign_clamp_lerp_inverse_lerp_hypot_atan2_atan_asin_acos_tan_smoothstep_pi_tau_e|gameplay_synced|strictmath_float_v1

@@ -56,8 +56,8 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 41,
-                "public API support matrix does not cover every event group");
+        require(ApiSupportMatrix.entries().size() == 44,
+                "public API support matrix does not cover every advertised API group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "unit lifecycle support is not advertised");
@@ -73,6 +73,15 @@ public final class CoreApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CUSTOM_EVENT_CONTEXT,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "custom event context support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.GEOMETRY,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "geometry support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.FOG,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "fog support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.LOGIC_NUMBER_FUNCTIONS,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "logic-number function support is not advertised");
         require(ApiSupportMatrix.available(context, RustedFabricCapabilities.RUNTIME_LIFECYCLE),
                 "runtime capability and expected support matrix disagree");
     }

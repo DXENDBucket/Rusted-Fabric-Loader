@@ -26,6 +26,7 @@ public final class IniActionEffectDefinition<T> {
     private final String fieldId;
     private final String key;
     private final IniActionSectionScope scope;
+    private final int priority;
     private final String exclusiveGroup;
     private final Decoder<T> decoder;
     private final Validator<T> validator;
@@ -37,6 +38,7 @@ public final class IniActionEffectDefinition<T> {
         fieldId = requireId(builder.fieldId, "fieldId", FIELD_ID);
         key = requireText(builder.key, "key");
         scope = Objects.requireNonNull(builder.scope, "scope");
+        priority = builder.priority;
         exclusiveGroup = builder.exclusiveGroup == null ? null
                 : requireId(builder.exclusiveGroup, "exclusiveGroup", FIELD_ID);
         decoder = Objects.requireNonNull(builder.decoder, "decoder");
@@ -55,6 +57,8 @@ public final class IniActionEffectDefinition<T> {
     public String qualifiedId() { return ownerId + ":" + fieldId; }
     public String key() { return key; }
     public IniActionSectionScope scope() { return scope; }
+    /** Higher-priority effects are attached and executed before lower-priority effects. */
+    public int priority() { return priority; }
     public String exclusiveGroup() { return exclusiveGroup; }
     public IniFieldDocumentation documentation() { return documentation; }
     public T decode(IniActionFieldContext context) throws Exception { return decoder.decode(context); }
@@ -70,6 +74,7 @@ public final class IniActionEffectDefinition<T> {
         private final String fieldId;
         private final String key;
         private IniActionSectionScope scope = IniActionSectionScope.ACTION_AND_HIDDEN;
+        private int priority;
         private String exclusiveGroup;
         private Decoder<T> decoder;
         private Validator<T> validator;
@@ -83,6 +88,7 @@ public final class IniActionEffectDefinition<T> {
         }
 
         public Builder<T> scope(IniActionSectionScope value) { scope = value; return this; }
+        public Builder<T> priority(int value) { priority = value; return this; }
         public Builder<T> exclusiveGroup(String value) { exclusiveGroup = value; return this; }
         public Builder<T> decoder(Decoder<T> value) { decoder = value; return this; }
         public Builder<T> validator(Validator<T> value) { validator = value; return this; }

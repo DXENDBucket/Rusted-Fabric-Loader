@@ -1137,6 +1137,7 @@ c	com/corrodinggames/rts/game/b/b	rw/map/MapEngine	rustedwarfare/map/MapEngine
 	f	I	as	field_b_nextRegisteredTileId	nextRegisteredTileId
 	f	Ljava/util/concurrent/locks/ReentrantLock;	e	field_b_mapLoadLock	mapLoadLock
 	f	Z	f	field_b_skipMapLoadLocking	skipMapLoadLocking
+	f	F	ar	field_MapEngine_lineOfSightFogRefreshTimer	lineOfSightFogRefreshTimer
 	f	Lcom/corrodinggames/rts/game/b/h;	l	field_b_fullScaleTileAtlas	fullScaleTileAtlas
 	f	Lcom/corrodinggames/rts/game/b/h;	m	field_b_halfScaleTileAtlas	halfScaleTileAtlas
 	f	I	n	field_MapEngine_tileWidth	tileWidth

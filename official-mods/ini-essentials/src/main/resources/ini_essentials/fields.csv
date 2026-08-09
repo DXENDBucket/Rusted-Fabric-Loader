@@ -5,3 +5,49 @@ version_added,code,section,extension_type,value_type,default,multiplayer_impact,
 0.1.0,cameraCenterOn,[action_*] / [hiddenAction_*],new_action_effect,"self|target|actionTarget[,offsetX,offsetY]",omitted,client_only,"Centers the camera on the acting unit, unit target, or action target point with an optional offset.",将视角居中到动作单位、目标单位或动作目标点，并可附加坐标偏移。,"cameraCenterOn: actionTarget,0,-60"
 0.1.0,cameraTargetZoom,[action_*] / [hiddenAction_*],new_action_effect,positive float,omitted,client_only,Sets the local owning player's native smoothed camera zoom target.,设置本机单位所属玩家的原版平滑视角缩放目标。,cameraTargetZoom: 1.25
 0.1.0,cameraStopMovement,[action_*] / [hiddenAction_*],new_action_effect,boolean,false,client_only,Clears native camera scroll momentum when the action executes.,在动作执行时清除原版摄像机的滚动惯性。,cameraStopMovement: true
+0.2.0,type,[geometry_*],new_section_key,"circle|ellipse|rectangle|sector|ring|arc|line|polygon|union|intersection|difference",required,gameplay_synced,Selects the finite geometry mask type.,选择有限几何遮罩的类型。,type: sector
+0.2.0,radius,[geometry_*],new_section_key,runtime number expression,1,gameplay_synced,Sets the outer radius for circle sector ring and arc masks.,设置圆形、扇形、圆环和圆弧遮罩的外半径。,"radius: pow(self.hp,0.5)"
+0.2.0,radiusX,[geometry_*],new_section_key,runtime number expression,1,gameplay_synced,Sets the horizontal radius of an ellipse.,设置椭圆的水平半径。,radiusX: 180
+0.2.0,radiusY,[geometry_*],new_section_key,runtime number expression,1,gameplay_synced,Sets the vertical radius of an ellipse.,设置椭圆的垂直半径。,radiusY: 90
+0.2.0,width,[geometry_*],new_section_key,runtime number expression,1,gameplay_synced,Sets rectangle width or line length.,设置矩形宽度或线段长度。,width: 240
+0.2.0,height,[geometry_*],new_section_key,runtime number expression,1,gameplay_synced,Sets rectangle height.,设置矩形高度。,height: 120
+0.2.0,innerRadius,[geometry_*],new_section_key,runtime number expression,0,gameplay_synced,Sets the empty inner radius of sectors and rings.,设置扇形和圆环的内部空心半径。,innerRadius: 60
+0.2.0,startAngle,[geometry_*],new_section_key,runtime number expression,0,gameplay_synced,Sets the starting angle in game degrees for sectors and arcs.,设置扇形和圆弧以游戏角度表示的起始角。,startAngle: -90
+0.2.0,sweepAngle,[geometry_*],new_section_key,runtime number expression,360,gameplay_synced,Sets the signed angular sweep of sectors and arcs.,设置扇形和圆弧带方向的扫过角度。,sweepAngle: 180
+0.2.0,rotation,[geometry_*],new_section_key,runtime number expression,0,gameplay_synced,Rotates the completed mask in game degrees.,以游戏角度旋转最终遮罩。,rotation: self.dir
+0.2.0,offsetX,[geometry_*],new_section_key,runtime number expression,0,gameplay_synced,Offsets the completed mask horizontally before an action anchor is applied.,在应用动作锚点前水平偏移最终遮罩。,offsetX: 40
+0.2.0,offsetY,[geometry_*],new_section_key,runtime number expression,0,gameplay_synced,Offsets the completed mask vertically before an action anchor is applied.,在应用动作锚点前垂直偏移最终遮罩。,offsetY: 0
+0.2.0,thickness,[geometry_*],new_section_key,runtime number expression,1,gameplay_synced,Sets line or arc stroke thickness.,设置线段或圆弧的描边厚度。,thickness: 12
+0.2.0,points,[geometry_*],new_section_key,"x,y; x,y; ... runtime expressions",omitted,gameplay_synced,Defines polygon vertices in local coordinates.,以局部坐标定义多边形顶点。,"points: 0,-80; 70,50; -70,50"
+0.2.0,components,[geometry_*],new_section_key,"geometry name,geometry name...",omitted,gameplay_synced,Lists masks consumed by union intersection or difference.,列出并集、交集或差集所使用的遮罩。,"components: outer,hole"
+0.2.0,operation,[fog_*],new_section_key,reveal|explore|conceal|shroud,required,gameplay_synced,Selects how the geometry changes per-team fog state.,选择几何遮罩如何修改每队的迷雾状态。,operation: reveal
+0.2.0,geometry,[fog_*],new_section_key,geometry name,required,gameplay_synced,Selects the geometry mask used by this fog definition.,选择此迷雾定义使用的几何遮罩。,geometry: front
+0.2.0,team,[fog_*],new_section_key,"own|allies|ownAndAllies|enemies|all|neutral|team:N",own,gameplay_synced,Selects teams whose fog maps are changed.,选择要修改迷雾图的队伍。,team: ownAndAllies
+0.2.0,anchor,[fog_*],new_section_key,self|target|actionTarget,self,gameplay_synced,Selects the world-space anchor for the geometry.,选择几何遮罩的世界坐标锚点。,anchor: actionTarget
+0.2.0,duration,[fog_*],new_section_key,runtime seconds expression,0,gameplay_synced,Reapplies the fog operation for this duration; negative values last until session end.,在指定秒数内持续重放迷雾操作；负数会持续到本局结束。,duration: 5
+0.2.0,follow,[fog_*],new_section_key,boolean,true,gameplay_synced,Re-evaluates geometry and anchor while a persistent fog source is active.,持续迷雾源生效时重新计算几何与锚点。,follow: true
+0.2.0,applyFog,[action_*] / [hiddenAction_*],new_action_effect,"fog name[,fog name...]",omitted,gameplay_synced,Applies reusable fog definitions from a custom action.,从自定义动作执行可复用的迷雾定义。,"applyFog: revealFront,concealRear"
+0.2.0,setFogMode,[action_*] / [hiddenAction_*],new_action_effect,off|basic|los,omitted,gameplay_synced,Changes the global fog mode and initializes missing team fog maps as unexplored.,修改全局迷雾模式，并将缺失的队伍雾图初始化为未探索。,setFogMode: los
+0.2.0,pow,Runtime LogicBoolean numeric expressions,logic_function,"pow(base,exponent)",omitted,gameplay_synced,Raises a number to a custom power.,计算自定义指数幂。,"pow(self.hp,2.5)"
+0.2.0,exp,Runtime LogicBoolean numeric expressions,logic_function,exp(x),omitted,gameplay_synced,Returns e raised to x.,计算 e 的 x 次幂。,exp(2)
+0.2.0,ln,Runtime LogicBoolean numeric expressions,logic_function,ln(x),omitted,gameplay_synced,Returns the natural logarithm.,计算自然对数。,ln(self.hp)
+0.2.0,log10,Runtime LogicBoolean numeric expressions,logic_function,log10(x),omitted,gameplay_synced,Returns the base-10 logarithm.,计算以 10 为底的对数。,log10(1000)
+0.2.0,cbrt,Runtime LogicBoolean numeric expressions,logic_function,cbrt(x),omitted,gameplay_synced,Returns the cube root.,计算立方根。,cbrt(27)
+0.2.0,abs,Runtime LogicBoolean numeric expressions,logic_function,abs(x),omitted,gameplay_synced,Returns the absolute value.,返回绝对值。,abs(-5)
+0.2.0,floor,Runtime LogicBoolean numeric expressions,logic_function,floor(x),omitted,gameplay_synced,Rounds downward.,向下取整。,floor(2.8)
+0.2.0,ceil,Runtime LogicBoolean numeric expressions,logic_function,ceil(x),omitted,gameplay_synced,Rounds upward.,向上取整。,ceil(2.2)
+0.2.0,round,Runtime LogicBoolean numeric expressions,logic_function,round(x),omitted,gameplay_synced,Rounds to the nearest integer.,四舍五入到最近整数。,round(2.6)
+0.2.0,sign,Runtime LogicBoolean numeric expressions,logic_function,sign(x),omitted,gameplay_synced,Returns -1 0 or 1 for the sign.,根据符号返回 -1、0 或 1。,sign(self.speed)
+0.2.0,clamp,Runtime LogicBoolean numeric expressions,logic_function,"clamp(x,min,max)",omitted,gameplay_synced,Clamps a number to an inclusive range.,将数值限制在闭区间内。,"clamp(self.hp,0,self.maxHp)"
+0.2.0,lerp,Runtime LogicBoolean numeric expressions,logic_function,"lerp(a,b,t)",omitted,gameplay_synced,Linearly interpolates between two values.,在两个数值之间线性插值。,"lerp(0,100,0.25)"
+0.2.0,inverse_lerp,Runtime LogicBoolean numeric expressions,logic_function,"inverse_lerp(a,b,x)",omitted,gameplay_synced,Returns the unbounded interpolation parameter of x.,返回 x 对应的不受限插值参数。,"inverse_lerp(0,100,self.hp)"
+0.2.0,hypot,Runtime LogicBoolean numeric expressions,logic_function,"hypot(x,y)",omitted,gameplay_synced,Returns the Euclidean length of two components.,返回两个分量的欧几里得长度。,"hypot(self.x,self.y)"
+0.2.0,atan2,Runtime LogicBoolean numeric expressions,logic_function,"atan2(y,x)",omitted,gameplay_synced,Returns a game-degree direction from two components.,根据两个分量返回游戏角度方向。,"atan2(20,10)"
+0.2.0,atan,Runtime LogicBoolean numeric expressions,logic_function,atan(x),omitted,gameplay_synced,Returns inverse tangent in game degrees.,返回以游戏角度表示的反正切。,atan(1)
+0.2.0,asin,Runtime LogicBoolean numeric expressions,logic_function,asin(x),omitted,gameplay_synced,Returns inverse sine in game degrees.,返回以游戏角度表示的反正弦。,asin(0.5)
+0.2.0,acos,Runtime LogicBoolean numeric expressions,logic_function,acos(x),omitted,gameplay_synced,Returns inverse cosine in game degrees.,返回以游戏角度表示的反余弦。,acos(0.5)
+0.2.0,tan,Runtime LogicBoolean numeric expressions,logic_function,tan(degrees),omitted,gameplay_synced,Returns tangent using game degrees.,使用游戏角度计算正切。,tan(45)
+0.2.0,smoothstep,Runtime LogicBoolean numeric expressions,logic_function,"smoothstep(min,max,x)",omitted,gameplay_synced,Returns a clamped smooth cubic interpolation.,返回限制区间后的平滑三次插值。,"smoothstep(0,100,self.hp)"
+0.2.0,pi,Runtime LogicBoolean numeric expressions,logic_function,pi(),omitted,gameplay_synced,Returns the pi constant.,返回圆周率常量。,pi()
+0.2.0,tau,Runtime LogicBoolean numeric expressions,logic_function,tau(),omitted,gameplay_synced,Returns two times pi.,返回二倍圆周率。,tau()
+0.2.0,e,Runtime LogicBoolean numeric expressions,logic_function,e(),omitted,gameplay_synced,Returns Euler's number.,返回自然常数 e。,e()

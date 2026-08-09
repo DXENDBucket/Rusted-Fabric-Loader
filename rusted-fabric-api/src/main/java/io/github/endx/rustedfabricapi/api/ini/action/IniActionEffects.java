@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricapi.api.ini.action;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,8 +33,12 @@ public final class IniActionEffects {
     }
 
     public static List<IniActionEffectDefinition<?>> definitions() {
-        return Collections.unmodifiableList(
-                new ArrayList<IniActionEffectDefinition<?>>(DEFINITIONS));
+        ArrayList<IniActionEffectDefinition<?>> result =
+                new ArrayList<IniActionEffectDefinition<?>>(DEFINITIONS);
+        // TimSort is stable, preserving registration order for equal priorities.
+        Collections.sort(result, Comparator.comparingInt(
+                IniActionEffectDefinition<?>::priority).reversed());
+        return Collections.unmodifiableList(result);
     }
 
     public static boolean hasDefinitions() { return !DEFINITIONS.isEmpty(); }

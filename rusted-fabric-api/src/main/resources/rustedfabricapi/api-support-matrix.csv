@@ -12,6 +12,9 @@ event.custom.unit.runtime.v1,event.CustomUnitRuntimeEvents
 event.effect.runtime.v1,event.EffectRuntimeEvents
 event.file.system.v1,event.FileSystemEvents
 event.game.lifecycle.v1,event.GameLifecycleEvents
+geometry.masks.v1,geometry.GeometryMasks
+fog.operations.v1,fog.FogOfWar
+logic.number_functions.v1,logic.LogicNumberFunctions
 session.v1,event.GameSessionEvents
 event.hud.command.v1,event.HudCommandEvents
 event.map.discovery.v1,event.MapDiscoveryEvents

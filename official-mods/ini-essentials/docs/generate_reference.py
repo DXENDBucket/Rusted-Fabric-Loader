@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 from xml.etree import ElementTree
-from xml.sax.saxutils import quoteattr
+from xml.sax.saxutils import escape, quoteattr
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -52,6 +52,10 @@ SECTION_PALETTES = {
     "attachment": ("CC4125", "85200C"),
     "action": ("FF9900", "B45F06"),
     "event": ("00A6B8", "007C91"),
+    # Saturated indigo stays visually distinct while preserving high white-text contrast.
+    "geometry": ("5E35B1", "311B92"),
+    "fog": ("455A64", "263238"),
+    "math": ("C62828", "8E0000"),
     "effect": ("A64D79", "741B47"),
     "animation": ("45818E", "134F5C"),
     "resource": ("134F5C", "0C343D"),
@@ -60,6 +64,7 @@ SECTION_PALETTES = {
 }
 
 COLUMN_WIDTHS = [15, 28, 18, 68, 42, 22, 16, 23]
+SHORTCUT_COLUMNS = 4
 
 
 @dataclass(frozen=True)
@@ -85,6 +90,10 @@ class NavigationButton:
     first_column: int
     last_row: int
     last_column: int
+    equal_slot: int | None = None
+    equal_slot_count: int | None = None
+    text: str | None = None
+    background: str | None = None
 
 
 def load_rows(source: Path) -> list[dict[str, str]]:
@@ -94,6 +103,12 @@ def load_rows(source: Path) -> list[dict[str, str]]:
 
 def section_key(section: str) -> str:
     value = section.lower()
+    if "geometry" in value:
+        return "geometry"
+    if "fog" in value:
+        return "fog"
+    if "logicboolean" in value or "numeric expression" in value:
+        return "math"
     if "core" in value:
         return "core"
     if "action" in value:
@@ -147,6 +162,19 @@ def make_groups(field_rows: list[dict[str, str]],
             section_zh = "[action_NAME] / [hiddenAction_NAME]"
             summary_en = "Action effects that run through the native custom-action chain"
             summary_zh = "通过原版自定义动作链执行的动作效果"
+        elif key == "geometry":
+            section_en, section_zh = "[geometry_NAME]", "[geometry_NAME]"
+            summary_en = "Reusable runtime geometry masks for fog and future gameplay consumers"
+            summary_zh = "供迷雾及后续玩法功能复用的运行时几何遮罩"
+        elif key == "fog":
+            section_en, section_zh = "[fog_NAME]", "[fog_NAME]"
+            summary_en = "Reusable per-team fog operations driven by geometry masks"
+            summary_zh = "由几何遮罩驱动、可复用的分队迷雾操作"
+        elif key == "math":
+            section_en = "Runtime LogicBoolean numeric expressions"
+            section_zh = "运行时 LogicBoolean 数值表达式"
+            summary_en = "Additional deterministic numeric functions available in dynamic INI expressions"
+            summary_zh = "动态 INI 表达式中可用的额外确定性数值函数"
         else:
             section_en = section_names[key]
             section_zh = section_names[key]
@@ -189,7 +217,11 @@ def define_target(workbook: Workbook, name: str,
 def add_navigation_button(buttons: list[NavigationButton], sheet,
                           name: str, target: str,
                           first_row: int, first_column: int,
-                          last_row: int, last_column: int) -> None:
+                          last_row: int, last_column: int, *,
+                          equal_slot: int | None = None,
+                          equal_slot_count: int | None = None,
+                          text: str | None = None,
+                          background: str | None = None) -> None:
     buttons.append(NavigationButton(
         sheet.parent.index(sheet) + 1,
         name,
@@ -198,6 +230,10 @@ def add_navigation_button(buttons: list[NavigationButton], sheet,
         first_column,
         last_row,
         last_column,
+        equal_slot,
+        equal_slot_count,
+        text,
+        background,
     ))
 
 
@@ -216,17 +252,18 @@ def style_range(sheet, row: int, start: int, end: int, *,
 
 
 def shortcut_rows(group_count: int) -> int:
-    return max(1, (group_count + 2) // 3)
+    return max(1, (group_count + SHORTCUT_COLUMNS - 1) // SHORTCUT_COLUMNS)
 
 
 def add_shortcuts(sheet, groups: list[ReferenceGroup], starts: dict[str, int],
                   start_row: int, chinese: bool,
                   buttons: list[NavigationButton]) -> int:
-    spans = ((1, 2), (3, 5), (6, 8))
+    spans = ((1, 2), (3, 4), (5, 6), (7, 8))
     language = "zh" if chinese else "en"
     for index, group in enumerate(groups):
-        row = start_row + index // 3
-        first, last = spans[index % 3]
+        row = start_row + index // SHORTCUT_COLUMNS
+        slot = index % SHORTCUT_COLUMNS
+        first, last = spans[slot]
         sheet.merge_cells(start_row=row, start_column=first,
                           end_row=row, end_column=last)
         cell = sheet.cell(row, first)
@@ -234,11 +271,13 @@ def add_shortcuts(sheet, groups: list[ReferenceGroup], starts: dict[str, int],
         target_name = f"rf_{language}_{group.key}"
         define_target(sheet.parent, target_name, sheet.title,
                       f"A{starts[group.key]}")
-        add_navigation_button(
-            buttons, sheet, f"shortcut_{language}_{group.key}", target_name,
-            row, first, row, last)
         section_color, _ = SECTION_PALETTES.get(
             group.palette, SECTION_PALETTES["other"])
+        add_navigation_button(
+            buttons, sheet, f"shortcut_{language}_{group.key}", target_name,
+            row, 1, row, 8,
+            equal_slot=slot, equal_slot_count=SHORTCUT_COLUMNS,
+            text=cell.value, background=section_color)
         style_range(sheet, row, first, last,
                     background=section_color, font_color=WHITE,
                     bold=True, horizontal="center", size=10.0)
@@ -526,32 +565,72 @@ def row_pixels(sheet, row: int) -> int:
     return max(1, int(points_to_pixels(height)))
 
 
+def column_marker(sheet, pixel_offset: int) -> tuple[int, int]:
+    """Convert an absolute horizontal pixel offset to a DrawingML cell marker."""
+    remaining = max(0, pixel_offset)
+    column = 1
+    while remaining >= column_pixels(sheet, column):
+        remaining -= column_pixels(sheet, column)
+        column += 1
+    return column - 1, pixels_to_EMU(remaining)
+
+
 def shape_xml(button: NavigationButton, sheet, shape_id: int,
               relationship_id: str) -> str:
-    first_column = button.first_column - 1
     first_row = button.first_row - 1
-    last_column = button.last_column
     last_row = button.last_row
-    x = pixels_to_EMU(sum(
+    area_x = sum(
         column_pixels(sheet, column)
-        for column in range(1, button.first_column)))
+        for column in range(1, button.first_column))
     y = pixels_to_EMU(sum(
         row_pixels(sheet, row)
         for row in range(1, button.first_row)))
-    width = pixels_to_EMU(sum(
+    area_width = sum(
         column_pixels(sheet, column)
-        for column in range(button.first_column, button.last_column + 1)))
+        for column in range(button.first_column, button.last_column + 1))
+    if button.equal_slot is not None:
+        if not button.equal_slot_count or not 0 <= button.equal_slot < button.equal_slot_count:
+            raise ValueError(f"invalid equal navigation slot for {button.name}")
+        left = area_x + area_width * button.equal_slot // button.equal_slot_count
+        right = area_x + area_width * (button.equal_slot + 1) // button.equal_slot_count
+    else:
+        left = area_x
+        right = area_x + area_width
+    first_column, first_column_offset = column_marker(sheet, left)
+    last_column, last_column_offset = column_marker(sheet, right)
+    x = pixels_to_EMU(left)
+    width = pixels_to_EMU(right - left)
     height = pixels_to_EMU(sum(
         row_pixels(sheet, row)
         for row in range(button.first_row, button.last_row + 1)))
+    if button.background is None:
+        shape_style = '<a:noFill/><a:ln><a:noFill/></a:ln>'
+        text_body = (
+            '<xdr:txBody><a:bodyPr vertOverflow="clip" horzOverflow="clip" '
+            'wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>'
+            '<a:lstStyle/><a:p/></xdr:txBody>')
+    else:
+        shape_style = (
+            f'<a:solidFill><a:srgbClr val="{button.background}"/></a:solidFill>'
+            f'<a:ln w="9525"><a:solidFill><a:srgbClr val="{GRID_COLOR}"/>'
+            '</a:solidFill></a:ln>')
+        label = escape(button.text or "")
+        text_body = (
+            '<xdr:txBody><a:bodyPr vertOverflow="clip" horzOverflow="clip" '
+            'wrap="square" lIns="45720" tIns="0" rIns="45720" bIns="0" anchor="ctr"/>'
+            '<a:lstStyle/><a:p><a:pPr algn="ctr"/>'
+            '<a:r><a:rPr lang="en-US" sz="1000" b="1">'
+            f'<a:solidFill><a:srgbClr val="{WHITE}"/></a:solidFill>'
+            f'<a:latin typeface="{FONT_NAME}"/></a:rPr><a:t>{label}</a:t></a:r>'
+            '<a:endParaRPr lang="en-US" sz="1000"/></a:p></xdr:txBody>')
     return (
         '<xdr:twoCellAnchor editAs="oneCell">'
         '<xdr:from>'
-        f'<xdr:col>{first_column}</xdr:col><xdr:colOff>0</xdr:colOff>'
+        f'<xdr:col>{first_column}</xdr:col><xdr:colOff>{first_column_offset}</xdr:colOff>'
         f'<xdr:row>{first_row}</xdr:row><xdr:rowOff>0</xdr:rowOff>'
         '</xdr:from>'
         '<xdr:to>'
-        f'<xdr:col>{last_column}</xdr:col><xdr:colOff>0</xdr:colOff>'
+        f'<xdr:col>{last_column}</xdr:col><xdr:colOff>{last_column_offset}</xdr:colOff>'
         f'<xdr:row>{last_row}</xdr:row><xdr:rowOff>0</xdr:rowOff>'
         '</xdr:to>'
         '<xdr:sp macro="" textlink=""><xdr:nvSpPr>'
@@ -562,11 +641,9 @@ def shape_xml(button: NavigationButton, sheet, shape_id: int,
         f'<a:xfrm><a:off x="{x}" y="{y}"/>'
         f'<a:ext cx="{width}" cy="{height}"/></a:xfrm>'
         '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
-        '<a:noFill/><a:ln><a:noFill/></a:ln>'
+        f'{shape_style}'
         '</xdr:spPr>'
-        '<xdr:txBody><a:bodyPr vertOverflow="clip" horzOverflow="clip" '
-        'wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>'
-        '<a:lstStyle/><a:p/></xdr:txBody></xdr:sp><xdr:clientData/>'
+        f'{text_body}</xdr:sp><xdr:clientData/>'
         '</xdr:twoCellAnchor>'
     )
 

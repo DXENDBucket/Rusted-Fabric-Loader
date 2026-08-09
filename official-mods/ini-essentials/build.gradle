@@ -57,9 +57,13 @@ tasks.register('verifyIniEssentialsMetadata') {
     def metadata = file('src/main/resources/fabric.mod.json')
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/CameraActionFields.java')
+    def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
+    def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
+    def mathFields = file('src/main/java/io/github/endx/iniessentials/ExtendedMathFunctions.java')
     def referenceGenerator = file('docs/generate_reference.py')
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
+            geometryFields, fogFields, mathFields,
             referenceGenerator, referenceWorkbook
     doLast {
         def rows = catalog.readLines('UTF-8')
@@ -68,17 +72,40 @@ tasks.register('verifyIniEssentialsMetadata') {
         }
         def expectedCodes = [
                 'allowNegativeHp', 'cameraCenterAt', 'cameraCenterBy',
-                'cameraCenterOn', 'cameraTargetZoom', 'cameraStopMovement'
+                'cameraCenterOn', 'cameraTargetZoom', 'cameraStopMovement',
+                'type', 'radius', 'radiusX', 'radiusY', 'width', 'height',
+                'innerRadius', 'startAngle', 'sweepAngle', 'rotation', 'offsetX',
+                'offsetY', 'thickness', 'points', 'components', 'operation',
+                'geometry', 'team', 'anchor', 'duration', 'follow', 'applyFog',
+                'setFogMode', 'pow', 'exp', 'ln', 'log10', 'cbrt', 'abs',
+                'floor', 'ceil', 'round', 'sign', 'clamp', 'lerp',
+                'inverse_lerp', 'hypot', 'atan2', 'atan', 'asin', 'acos',
+                'tan', 'smoothstep', 'pi', 'tau', 'e'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
         } as Set
         def cameraSource = cameraFields.getText('UTF-8')
+        def geometrySource = geometryFields.getText('UTF-8')
+        def fogSource = fogFields.getText('UTF-8')
+        def mathSource = mathFields.getText('UTF-8')
+        def geometryCodes = ['type', 'radius', 'radiusX', 'radiusY', 'width',
+                'height', 'innerRadius', 'startAngle', 'sweepAngle', 'rotation',
+                'offsetX', 'offsetY', 'thickness', 'points', 'components'] as Set
+        def fogCodes = ['operation', 'geometry', 'team', 'anchor', 'duration',
+                'follow', 'applyFog', 'setFogMode'] as Set
+        def mathCodes = ['pow', 'exp', 'ln', 'log10', 'cbrt', 'abs', 'floor',
+                'ceil', 'round', 'sign', 'clamp', 'lerp', 'inverse_lerp',
+                'hypot', 'atan2', 'atan', 'asin', 'acos', 'tan', 'smoothstep',
+                'pi', 'tau', 'e'] as Set
         if (catalogCodes != expectedCodes
                 || !expectedCodes.findAll { it.startsWith('camera') }.every {
                     cameraSource.contains('"' + it + '"')
-                }) {
-            throw new GradleException('INI Essentials camera field catalog/source drifted')
+                }
+                || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
+                || !fogCodes.every { fogSource.contains('"' + it + '"') }
+                || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
+            throw new GradleException('INI Essentials field catalog/source drifted')
         }
         def eventRows = eventDataCatalog.readLines('UTF-8')
         def expectedEventData = [
@@ -134,8 +161,10 @@ tasks.register('verifyIniEssentialsMetadata') {
         if (!generatorSource.contains('"core": ("0F9D58", "0D904F")')
                 || !generatorSource.contains('"action": ("FF9900", "B45F06")')
                 || !generatorSource.contains('"event": ("00A6B8", "007C91")')
-                || !generatorSource.contains('EVENT_INDEX_COLOR = "B2EBF2"')
-                || !generatorSource.contains('def inject_navigation_shapes(')
+                || !generatorSource.contains('"geometry": ("5E35B1", "311B92")')
+                  || !generatorSource.contains('EVENT_INDEX_COLOR = "B2EBF2"')
+                  || !generatorSource.contains('SHORTCUT_COLUMNS = 4')
+                  || !generatorSource.contains('def inject_navigation_shapes(')
                 || !generatorSource.contains('hlinkClick')
                 || !generatorSource.contains('"--check"')) {
             throw new GradleException('INI Essentials reference generator lost section styling/navigation')
@@ -164,7 +193,8 @@ tasks.register('verifyIniEssentialsMetadata') {
             def hyperlinkCount = (drawingText =~ /hlinkClick/).count
             if (!workbookXml.contains('name="English"')
                     || !workbookXml.contains('name="简体中文"')
-                    || !['FF0F9D58', 'FF0D904F', 'FFFF9900', 'FFB45F06'].every {
+                    || !['FF0F9D58', 'FF0D904F', 'FFFF9900', 'FFB45F06',
+                          'FF5E35B1', 'FF311B92'].every {
                         stylesXml.contains(it)
                     }
                     || hyperlinkCount < 72
@@ -191,7 +221,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v5'
+                || multiplayer?.protocol != 'ini_essentials_v6'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')
