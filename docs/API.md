@@ -13,7 +13,7 @@ Mods can declare the game dependency exposed by the GameProvider:
 ```json
 "depends": {
   "fabricloader": ">=0.18.1",
-  "rusted_warfare": "1.15",
+  "rustedwarfare": "1.15",
   "rustedfabricapi": ">=0.1.0"
 }
 ```

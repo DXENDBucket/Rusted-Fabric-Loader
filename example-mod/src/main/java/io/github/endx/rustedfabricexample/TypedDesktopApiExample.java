@@ -211,7 +211,7 @@ final class TypedDesktopApiExample {
             return;
         }
 
-        ModResourcePack resources = ModResources.forMod("rusted_fabric_example");
+        ModResourcePack resources = ModResources.forMod("rustedfabricexample");
         Translations.register("rustedfabricexample", resources);
         JavaUnitActions.attach("tank", REPORT_STATUS);
         JavaUnitActions.attach("tank", MARK_POSITION);

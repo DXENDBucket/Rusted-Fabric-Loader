@@ -185,7 +185,7 @@ tasks.withType(JavaCompile).configureEach {
 jar {
     manifest {
         attributes(
-                'Game-Id': 'rusted_warfare',
+                'Game-Id': 'rustedwarfare',
                 'Game-Version': rustedGameVersion,
                 'Mappings-Version': rustedMappingsVersion,
                 'Implementation-Version': project.version
@@ -300,7 +300,7 @@ tasks.register('verifyDistribution') {
     description = 'Builds and validates the named game Jar, provider, official API, Mod Menu, and example-mod artifacts.'
     dependsOn check, jar, generateNamedGameJar, ':rusted-fabric-api:check',
             ':rusted-fabric-api:verifyApiContracts',
-            ':rusted-fabric-api:remapJarToOfficial', ':mod-menu:remapJarToOfficial',
+            ':rusted-fabric-api:remapJarToOfficial', ':official-mods:mod-menu:remapJarToOfficial',
             ':example-mod:remapJarToOfficial'
 
     doLast {
@@ -309,7 +309,7 @@ tasks.register('verifyDistribution') {
                 .file("libs/official/rusted-fabric-api-${project.version}.jar").get().asFile
         def exampleJar = project(':example-mod').layout.buildDirectory
                 .file("libs/rusted-fabric-example-mod-${project.version}-official.jar").get().asFile
-        def modMenuJar = project(':mod-menu').layout.buildDirectory
+        def modMenuJar = project(':official-mods:mod-menu').layout.buildDirectory
                 .file("libs/rusted-fabric-mod-menu-${project.version}-official.jar").get().asFile
         def namedGameJar = namedGameJarFile()
 
@@ -328,7 +328,8 @@ tasks.register('verifyDistribution') {
         new java.util.zip.ZipFile(providerJar).withCloseable { zip ->
             def manifest = new java.util.jar.Manifest(zip.getInputStream(zip.getEntry('META-INF/MANIFEST.MF')))
             def attributes = manifest.mainAttributes
-            if (attributes.getValue('Game-Version') != rustedGameVersion.toString()
+            if (attributes.getValue('Game-Id') != 'rustedwarfare'
+                    || attributes.getValue('Game-Version') != rustedGameVersion.toString()
                     || attributes.getValue('Mappings-Version') != rustedMappingsVersion.toString()
                     || attributes.getValue('Implementation-Version') != project.version.toString()) {
                 throw new GradleException('Provider manifest version metadata is inconsistent')
@@ -357,9 +358,9 @@ tasks.register('verifyDistribution') {
         new java.util.zip.ZipFile(apiJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
             def mixins = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'rustedfabricapi.mixins.json'))
-            if (mod.version != project.version.toString()
+            if (mod.id != 'rustedfabricapi' || mod.version != project.version.toString()
                     || mod.custom?.get('rustedfabricapi:mappings_version') != rustedMappingsVersion.toString()) {
-                throw new GradleException('Official API metadata version is inconsistent')
+                throw new GradleException('Official API identity or version metadata is inconsistent')
             }
             def expectedMixinCount = fileTree(project(':rusted-fabric-api').file('src/main/java/io/github/endx/rustedfabricapi/mixin')) {
                 include '**/*NamedMixin.java'
@@ -687,8 +688,8 @@ tasks.register('verifyDistribution') {
 
         new java.util.zip.ZipFile(exampleJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
-            if (mod.version != project.version.toString()) {
-                throw new GradleException('Official example-mod metadata version is inconsistent')
+            if (mod.id != 'rustedfabricexample' || mod.version != project.version.toString()) {
+                throw new GradleException('Official example-mod identity or version metadata is inconsistent')
             }
             [
                     'assets/rustedfabricexample/lang/default.properties',
@@ -719,7 +720,7 @@ tasks.register('verifyDistribution') {
 
         new java.util.zip.ZipFile(modMenuJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
-            if (mod.id != 'rusted_fabric_mod_menu' || mod.version != project.version.toString()
+            if (mod.id != 'rustedfabricmodmenu' || mod.version != project.version.toString()
                     || zip.getEntry('io/github/endx/rustedfabricmodmenu/RustedFabricModMenu.class') == null) {
                 throw new GradleException('Official Mod Menu artifact is incomplete or inconsistent')
             }
@@ -800,7 +801,7 @@ tasks.register('installToGameDir') {
             }
         }
 
-        def modMenuRemapTask = project(':mod-menu').tasks.named('remapJarToOfficial').get()
+        def modMenuRemapTask = project(':official-mods:mod-menu').tasks.named('remapJarToOfficial').get()
         copy {
             from modMenuRemapTask.outputs.files.singleFile
             into javaModsDir

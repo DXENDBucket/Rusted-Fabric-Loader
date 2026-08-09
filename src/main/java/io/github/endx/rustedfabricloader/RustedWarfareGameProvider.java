@@ -400,7 +400,7 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     @Override
     public String getGameId() {
-        return "rusted_warfare";
+        return "rustedwarfare";
     }
 
     @Override

@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.github.endx.rustedfabricexample.ExampleDebugOverlay.*;
 
 public final class ExampleMod implements ModInitializer, ClientModInitializer {
-    public static final String MOD_ID = "rusted_fabric_example";
+    public static final String MOD_ID = "rustedfabricexample";
     private static final AtomicBoolean VISIBLE_SETTINGS_TWEAKS_STARTED = new AtomicBoolean();
     private static final AtomicBoolean MAIN_MENU_POPUP_STARTED = new AtomicBoolean();
     private static final AtomicBoolean MAIN_MENU_POPUP_SHOWN = new AtomicBoolean();

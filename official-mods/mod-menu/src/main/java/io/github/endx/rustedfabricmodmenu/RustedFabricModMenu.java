@@ -21,7 +21,7 @@ import net.fabricmc.loader.api.metadata.Person;
 
 /** Official client-side Java mod list for Rusted Fabric Loader. */
 public final class RustedFabricModMenu implements ClientModInitializer {
-    public static final String MOD_ID = "rusted_fabric_mod_menu";
+    public static final String MOD_ID = "rustedfabricmodmenu";
 
     @Override
     public void onInitializeClient() {

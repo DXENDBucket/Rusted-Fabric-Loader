@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "rusted_fabric_example",
+  "id": "rustedfabricexample",
   "version": "${version}",
   "name": "Rusted Fabric Example Mod",
   "description": "Sample mod for testing Rusted Fabric Loader named development and remapping.",

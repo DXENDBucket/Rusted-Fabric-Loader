@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "rusted_fabric_mod_menu",
+  "id": "rustedfabricmodmenu",
   "version": "${version}",
   "name": "Rusted Fabric Mod Menu",
   "description": "Adds an in-game list of loaded Java mods.",
