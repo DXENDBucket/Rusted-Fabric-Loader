@@ -109,6 +109,12 @@ public final class RemapJar {
 
         try {
             rewriteMixinMetadata(remappedClassesOutput, output, metadataRemapper);
+            // The development namespace intentionally tolerates partially named hierarchies while
+            // mappings are still being completed. Runtime artifacts cannot: they must satisfy the
+            // actual official superclass/interface contracts before distribution.
+            if ("official".equals(toNamespace)) {
+                verifyConcreteClassesImplementAbstractMethods(output, classpath);
+            }
         } finally {
             Files.deleteIfExists(remappedClassesOutput);
         }
@@ -145,7 +151,7 @@ public final class RemapJar {
                 if (name.endsWith(".class")) {
                     ClassReader reader = new ClassReader(bytes);
                     ClassWriter writer = new ClassWriter(0);
-                    reader.accept(new StrictClassRemapper(writer, definitions, references), 0);
+                    reader.accept(new StrictClassRemapper(writer, references), 0);
                     bytes = writer.toByteArray();
                     name = definitions.map(reader.getClassName()) + ".class";
                 }
@@ -174,7 +180,8 @@ public final class RemapJar {
                 }
                 try (InputStream stream = jarFile.getInputStream(entry)) {
                     ClassReader reader = new ClassReader(stream);
-                    final ClassInfo info = new ClassInfo(reader.getClassName(), reader.getSuperName(), reader.getInterfaces());
+                    final ClassInfo info = new ClassInfo(reader.getClassName(), reader.getAccess(),
+                            reader.getSuperName(), reader.getInterfaces());
                     reader.accept(new ClassVisitor(Opcodes.ASM9) {
                         @Override
                         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
@@ -194,6 +201,157 @@ public final class RemapJar {
                 }
             }
         }
+    }
+
+    /**
+     * Rejects remapped classes which only appeared to implement a mapped abstract method in the
+     * source namespace. The JVM permits such classes to load and reports AbstractMethodError only
+     * when the missing method is invoked, so ordinary compilation and startup tests cannot catch
+     * this class of remapping failure.
+     */
+    private static void verifyConcreteClassesImplementAbstractMethods(Path output,
+                                                                       List<Path> classpath)
+            throws IOException {
+        Map<String, ClassInfo> hierarchy = new HashMap<String, ClassInfo>();
+        for (Path classpathEntry : classpath) {
+            readClassHierarchy(classpathEntry, hierarchy, false);
+        }
+        Map<String, ClassInfo> outputClasses = new HashMap<String, ClassInfo>();
+        readClassHierarchy(output, outputClasses, true);
+        hierarchy.putAll(outputClasses);
+
+        for (ClassInfo concreteClass : outputClasses.values()) {
+            if ((concreteClass.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE)) != 0) {
+                continue;
+            }
+            Set<String> abstractMethods = collectInheritedAbstractMethods(concreteClass, hierarchy);
+            for (String signature : abstractMethods) {
+                if (!hasConcreteImplementation(concreteClass.name, signature, hierarchy)) {
+                    throw new IOException("Remapped concrete class " + concreteClass.name
+                            + " does not implement inherited abstract method "
+                            + ClassInfo.displaySignature(signature));
+                }
+            }
+        }
+    }
+
+    private static Set<String> collectInheritedAbstractMethods(ClassInfo concreteClass,
+                                                                 Map<String, ClassInfo> hierarchy) {
+        Set<String> result = new LinkedHashSet<String>();
+        ArrayDeque<String> queue = new ArrayDeque<String>();
+        if (concreteClass.superName != null) queue.add(concreteClass.superName);
+        for (String interfaceName : concreteClass.interfaces) queue.add(interfaceName);
+        Set<String> seen = new HashSet<String>();
+        while (!queue.isEmpty()) {
+            String className = queue.removeFirst();
+            if (!seen.add(className)) continue;
+            ClassInfo info = hierarchy.get(className);
+            if (info == null) continue;
+            for (Map.Entry<String, Integer> method : info.methods.entrySet()) {
+                int access = method.getValue().intValue();
+                if ((access & Opcodes.ACC_ABSTRACT) != 0
+                        && (access & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) == 0) {
+                    result.add(method.getKey());
+                }
+            }
+            if (info.superName != null) queue.add(info.superName);
+            for (String interfaceName : info.interfaces) queue.add(interfaceName);
+        }
+        return result;
+    }
+
+    private static boolean hasConcreteImplementation(String className, String signature,
+                                                      Map<String, ClassInfo> hierarchy) {
+        // Class declarations take precedence over interface defaults. An abstract redeclaration
+        // therefore blocks a concrete method farther up the superclass chain.
+        ClassInfo current = hierarchy.get(className);
+        Set<String> interfaces = new LinkedHashSet<String>();
+        while (current != null) {
+            Integer access = findOverrideAccess(current, signature, hierarchy);
+            if (access != null) {
+                return (access.intValue() & Opcodes.ACC_ABSTRACT) == 0;
+            }
+            for (String interfaceName : current.interfaces) interfaces.add(interfaceName);
+            current = current.superName != null ? hierarchy.get(current.superName) : null;
+        }
+
+        ArrayDeque<String> queue = new ArrayDeque<String>(interfaces);
+        Set<String> seen = new HashSet<String>();
+        while (!queue.isEmpty()) {
+            String interfaceName = queue.removeFirst();
+            if (!seen.add(interfaceName)) continue;
+            ClassInfo info = hierarchy.get(interfaceName);
+            if (info == null) continue;
+            Integer access = findOverrideAccess(info, signature, hierarchy);
+            if (access != null && (access.intValue() & Opcodes.ACC_ABSTRACT) == 0) {
+                return true;
+            }
+            for (String parent : info.interfaces) queue.add(parent);
+        }
+        return false;
+    }
+
+    private static Integer findOverrideAccess(ClassInfo info, String inheritedSignature,
+                                              Map<String, ClassInfo> hierarchy) {
+        Integer exact = info.methods.get(inheritedSignature);
+        if (exact != null && (exact.intValue() & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) == 0) {
+            return exact;
+        }
+        for (Map.Entry<String, Integer> candidate : info.methods.entrySet()) {
+            if ((candidate.getValue().intValue() & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) == 0
+                    && isCovariantOverride(candidate.getKey(), inheritedSignature, hierarchy)) {
+                return candidate.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isCovariantOverride(String candidateSignature, String inheritedSignature,
+                                                Map<String, ClassInfo> hierarchy) {
+        int candidateSeparator = candidateSignature.indexOf('\u0000');
+        int inheritedSeparator = inheritedSignature.indexOf('\u0000');
+        if (candidateSeparator < 0 || inheritedSeparator < 0
+                || !candidateSignature.substring(0, candidateSeparator)
+                .equals(inheritedSignature.substring(0, inheritedSeparator))) {
+            return false;
+        }
+        Type candidateType = Type.getMethodType(candidateSignature.substring(candidateSeparator + 1));
+        Type inheritedType = Type.getMethodType(inheritedSignature.substring(inheritedSeparator + 1));
+        if (!java.util.Arrays.equals(candidateType.getArgumentTypes(), inheritedType.getArgumentTypes())) {
+            return false;
+        }
+        return isAssignableReturnType(candidateType.getReturnType(), inheritedType.getReturnType(), hierarchy);
+    }
+
+    private static boolean isAssignableReturnType(Type candidate, Type inherited,
+                                                  Map<String, ClassInfo> hierarchy) {
+        if (candidate.equals(inherited)) return true;
+        if (candidate.getSort() != Type.OBJECT && candidate.getSort() != Type.ARRAY) return false;
+        if (inherited.getSort() == Type.ARRAY) {
+            if (candidate.getSort() != Type.ARRAY
+                    || candidate.getDimensions() != inherited.getDimensions()) return false;
+            return isAssignableReturnType(candidate.getElementType(), inherited.getElementType(), hierarchy);
+        }
+        if (inherited.getSort() != Type.OBJECT) return false;
+        if (candidate.getSort() == Type.ARRAY) {
+            String expected = inherited.getInternalName();
+            return "java/lang/Object".equals(expected) || "java/lang/Cloneable".equals(expected)
+                    || "java/io/Serializable".equals(expected);
+        }
+        String expected = inherited.getInternalName();
+        ArrayDeque<String> queue = new ArrayDeque<String>();
+        queue.add(candidate.getInternalName());
+        Set<String> seen = new HashSet<String>();
+        while (!queue.isEmpty()) {
+            String className = queue.removeFirst();
+            if (!seen.add(className)) continue;
+            if (expected.equals(className)) return true;
+            ClassInfo info = hierarchy.get(className);
+            if (info == null) continue;
+            if (info.superName != null) queue.add(info.superName);
+            for (String interfaceName : info.interfaces) queue.add(interfaceName);
+        }
+        return false;
     }
 
     private static class DefinitionRemapper extends Remapper {
@@ -297,8 +455,12 @@ public final class RemapJar {
     private static final class StrictClassRemapper extends ClassRemapper {
         private final Remapper referenceRemapper;
 
-        StrictClassRemapper(ClassVisitor visitor, Remapper definitionRemapper, Remapper referenceRemapper) {
-            super(visitor, definitionRemapper);
+        StrictClassRemapper(ClassVisitor visitor, Remapper referenceRemapper) {
+            // Game-owned superclass/interface methods must also rename overrides declared by a
+            // mod class. Using only the direct definition map leaves methods such as an
+            // implementation of CustomActionEffect.execute named, causing AbstractMethodError in
+            // the official runtime even though its descriptor and superclass were remapped.
+            super(visitor, referenceRemapper);
             this.referenceRemapper = referenceRemapper;
         }
 
@@ -325,19 +487,25 @@ public final class RemapJar {
 
     private static final class ClassInfo {
         final String name;
+        final int access;
         final String superName;
         final String[] interfaces;
         final Map<String, Integer> fields = new HashMap<String, Integer>();
         final Map<String, Integer> methods = new HashMap<String, Integer>();
 
-        ClassInfo(String name, String superName, String[] interfaces) {
+        ClassInfo(String name, int access, String superName, String[] interfaces) {
             this.name = name;
+            this.access = access;
             this.superName = superName;
             this.interfaces = interfaces != null ? interfaces : new String[0];
         }
 
         static String signature(String name, String descriptor) {
             return name + "\u0000" + descriptor;
+        }
+
+        static String displaySignature(String signature) {
+            return signature.replace('\u0000', ' ');
         }
     }
 

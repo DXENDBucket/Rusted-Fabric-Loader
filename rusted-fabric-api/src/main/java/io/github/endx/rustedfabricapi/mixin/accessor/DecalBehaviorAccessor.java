@@ -8,7 +8,7 @@ import rustedwarfare.custom.graphics.DecalTemplate;
 @Mixin(targets = "rustedwarfare.custom.graphics.DecalBehavior", remap = false)
 public interface DecalBehaviorAccessor {
     @Invoker("findDecalTemplateStrict")
-    static DecalTemplate rustedfabricapi$findDecalTemplateStrict(
+    static DecalTemplate rustedfabricapi$invokeDecalLookup(
             CustomUnitMetadata metadata, String name) {
         throw new AssertionError("Mixin invoker was not applied");
     }

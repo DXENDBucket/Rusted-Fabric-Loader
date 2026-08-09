@@ -13,7 +13,7 @@ public final class Decals {
     public static DecalTemplate require(CustomUnitMetadata metadata, String name) {
         String checkedName = Objects.requireNonNull(name, "name").trim();
         if (checkedName.isEmpty()) throw new IllegalArgumentException("decal name must not be empty");
-        return DecalBehaviorAccessor.rustedfabricapi$findDecalTemplateStrict(
+        return DecalBehaviorAccessor.rustedfabricapi$invokeDecalLookup(
                 Objects.requireNonNull(metadata, "metadata"), checkedName);
     }
 }
