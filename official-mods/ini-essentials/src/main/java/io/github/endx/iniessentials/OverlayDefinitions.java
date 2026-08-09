@@ -2,11 +2,18 @@ package io.github.endx.iniessentials;
 
 import io.github.endx.rustedfabricapi.api.client.Camera;
 import io.github.endx.rustedfabricapi.api.client.event.HudRenderEvents;
+import io.github.endx.rustedfabricapi.api.client.render.AlphaMask;
+import io.github.endx.rustedfabricapi.api.client.render.AlphaMaskOptions;
+import io.github.endx.rustedfabricapi.api.client.render.AlphaMasks;
 import io.github.endx.rustedfabricapi.api.client.render.ArgbColor;
 import io.github.endx.rustedfabricapi.api.client.render.ClientImage;
+import io.github.endx.rustedfabricapi.api.client.render.ClientImages;
 import io.github.endx.rustedfabricapi.api.client.render.DrawStyle;
 import io.github.endx.rustedfabricapi.api.client.render.HudDrawContext;
+import io.github.endx.rustedfabricapi.api.client.render.MaskAlphaMode;
+import io.github.endx.rustedfabricapi.api.client.render.MaskThresholdMode;
 import io.github.endx.rustedfabricapi.api.client.render.TextAlignment;
+import io.github.endx.rustedfabricapi.api.geometry.GeometryMask;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
@@ -153,7 +160,29 @@ final class OverlayDefinitions {
                 color(config, section, "textColor", 0xffffffff),
                 parseEnum(TextAlign.class, optional(config, section, "textAlign", "center"), "textAlign"),
                 parseEnum(BarDirection.class, optional(config, section, "barDirection", "leftToRight"),
-                        "barDirection"));
+                        "barDirection"),
+                optional(config, section, "mask"),
+                optional(config, section, "maskGeometry"),
+                bool(config, section, "maskRender", false),
+                NumericExpression.compile(metadata,
+                        optional(config, section, "maskAlphaThreshold"), "0"),
+                BooleanExpression.compile(metadata, optional(config, section, "maskInvert"), "false"),
+                parseEnum(MaskThresholdMode.class,
+                        optional(config, section, "maskThresholdMode", "keep"),
+                        "maskThresholdMode"),
+                parseEnum(MaskAlphaMode.class,
+                        optional(config, section, "maskAlphaMode", "multiply"),
+                        "maskAlphaMode"),
+                bool(config, section, "maskUsesSourceAlpha", true));
+
+        if (template.maskName != null && template.maskGeometry != null) {
+            throw new IllegalArgumentException("[" + section
+                    + "] mask and maskGeometry are mutually exclusive");
+        }
+        if (template.hasMask() && type != Type.IMAGE) {
+            throw new IllegalArgumentException("[" + section
+                    + "] masks currently require type: image");
+        }
 
         Map<String, Template> definitions = BY_METADATA.get(metadata);
         if (definitions == null) {
@@ -188,6 +217,8 @@ final class OverlayDefinitions {
                 if (matching.isEmpty()) continue;
                 for (Template template : metadataEntry.getValue().values()) {
                     if (template.layer != layer) continue;
+                    if (!template.maskRender
+                            && isMaskSource(metadataEntry.getValue(), template.name)) continue;
                     template.collect(matching, player, context, entries);
                 }
             }
@@ -196,6 +227,13 @@ final class OverlayDefinitions {
                 .thenComparing(entry -> entry.template.name)
                 .thenComparingLong(entry -> entry.unit.id));
         for (RenderEntry entry : entries) entry.draw(context);
+    }
+
+    private static boolean isMaskSource(Map<String, Template> definitions, String name) {
+        for (Template template : definitions.values()) {
+            if (template.maskName != null && template.maskName.equalsIgnoreCase(name)) return true;
+        }
+        return false;
     }
 
     private static List<CustomUnit> customUnits() {
@@ -403,6 +441,15 @@ final class OverlayDefinitions {
         final int textColor;
         final TextAlign textAlign;
         final BarDirection barDirection;
+        final String maskName, maskGeometry;
+        final boolean maskRender;
+        final NumericExpression maskAlphaThreshold;
+        final BooleanExpression maskInvert;
+        final MaskThresholdMode maskThresholdMode;
+        final MaskAlphaMode maskAlphaMode;
+        final boolean maskUsesSourceAlpha;
+        final LinkedHashMap<String, ClientImage> maskedImageCache =
+                new LinkedHashMap<String, ClientImage>(16, 0.75F, true);
         final Map<CustomUnit, Integer> stableIndices = new WeakHashMap<CustomUnit, Integer>();
         int nextStableIndex;
 
@@ -418,7 +465,11 @@ final class OverlayDefinitions {
                  FrameLayout frameLayout, NumericExpression frame, int color, int backgroundColor,
                  int borderColor, NumericExpression borderWidth, NumericExpression value,
                  NumericExpression maxValue, LocalizedString text, NumericExpression textSize,
-                 int textColor, TextAlign textAlign, BarDirection barDirection) {
+                 int textColor, TextAlign textAlign, BarDirection barDirection,
+                 String maskName, String maskGeometry, boolean maskRender,
+                 NumericExpression maskAlphaThreshold, BooleanExpression maskInvert,
+                 MaskThresholdMode maskThresholdMode, MaskAlphaMode maskAlphaMode,
+                 boolean maskUsesSourceAlpha) {
             this.name = name; this.type = type; this.anchor = anchor;
             this.layer = layer;
             this.instanceMode = instanceMode; this.indexMode = indexMode;
@@ -436,6 +487,35 @@ final class OverlayDefinitions {
             this.text = text; this.textSize = textSize; this.textAlign = textAlign;
             this.textColor = textColor;
             this.barDirection = barDirection;
+            this.maskName = normalizedOptionalName(maskName);
+            this.maskGeometry = normalizedOptionalName(maskGeometry);
+            this.maskRender = maskRender;
+            this.maskAlphaThreshold = maskAlphaThreshold;
+            this.maskInvert = maskInvert;
+            this.maskThresholdMode = maskThresholdMode;
+            this.maskAlphaMode = maskAlphaMode;
+            this.maskUsesSourceAlpha = maskUsesSourceAlpha;
+        }
+
+        boolean hasMask() { return maskName != null || maskGeometry != null; }
+
+        private static String normalizedOptionalName(String raw) {
+            if (raw == null) return null;
+            String value = raw.trim().toLowerCase(Locale.ROOT);
+            if (value.isEmpty()) throw new IllegalArgumentException("mask name must not be empty");
+            return value;
+        }
+
+        ClientImage cachedMask(String key) { return maskedImageCache.get(key); }
+
+        void cacheMask(String key, ClientImage image) {
+            ClientImage previous = maskedImageCache.put(key, image);
+            if (previous != null && previous != image) previous.close();
+            while (maskedImageCache.size() > 64) {
+                Map.Entry<String, ClientImage> eldest = maskedImageCache.entrySet().iterator().next();
+                maskedImageCache.remove(eldest.getKey());
+                eldest.getValue().close();
+            }
         }
 
         void collect(List<CustomUnit> units, Team player, HudDrawContext context,
@@ -555,47 +635,40 @@ final class OverlayDefinitions {
 
         void draw(HudDrawContext context) {
             OverlayEvaluationContext.with(state, () -> {
-                float width = template.width != null ? template.width.evaluate(unit)
-                        : template.image != null ? template.frameLayout.frameWidth : 0.0F;
-                float height = template.height != null ? template.height.evaluate(unit)
-                        : template.image != null ? template.frameLayout.frameHeight : 0.0F;
-                final float resolvedWidth = Math.max(0.0F, width);
-                final float resolvedHeight = Math.max(0.0F, height);
-                float uniformScale = template.scale.evaluate(unit);
-                float scaleX = uniformScale * template.scaleX.evaluate(unit);
-                float scaleY = uniformScale * template.scaleY.evaluate(unit);
-                if (scaleX == 0.0F || scaleY == 0.0F
-                        || resolvedWidth == 0.0F || resolvedHeight == 0.0F) return;
-                float drawnWidth = resolvedWidth * Math.abs(scaleX);
-                float drawnHeight = resolvedHeight * Math.abs(scaleY);
-                float x = anchorX(template.anchor, context.width(), drawnWidth)
-                        + template.offsetX.evaluate(unit)
-                        + state.column * (drawnWidth + template.spacingX.evaluate(unit));
-                float y = anchorY(template.anchor, context.height(), drawnHeight)
-                        + template.offsetY.evaluate(unit)
-                        + state.row * (drawnHeight + template.spacingY.evaluate(unit));
-                float alpha = template.alpha.evaluate(unit);
-                float rotation = template.rotation.evaluate(unit);
-                context.transformed(x + drawnWidth * 0.5F, y + drawnHeight * 0.5F,
-                        scaleX, scaleY, rotation, transformed ->
-                                drawPrimitive(transformed, -resolvedWidth * 0.5F,
-                                        -resolvedHeight * 0.5F,
-                                        resolvedWidth, resolvedHeight, alpha));
+                Placement placement = Placement.resolve(template, unit, state, context);
+                if (!placement.drawable()) return;
+                MaskedImage masked = template.hasMask()
+                        ? createMaskedImage(context, placement) : null;
+                try {
+                    context.transformed(placement.centerX, placement.centerY,
+                            placement.scaleX, placement.scaleY, placement.rotation, transformed ->
+                                    drawPrimitive(transformed, -placement.width * 0.5F,
+                                            -placement.height * 0.5F,
+                                            placement.width, placement.height,
+                                            placement.alpha, masked != null ? masked.image : null));
+                } finally {
+                    if (masked != null && masked.temporary) masked.image.close();
+                }
             });
         }
 
         private void drawPrimitive(HudDrawContext context, float x, float y, float width,
-                                   float height, float alpha) {
+                                   float height, float alpha, ClientImage maskedImage) {
             switch (template.type) {
                 case IMAGE:
                     int frame = template.frameLayout.clampFrame(template.frame.evaluate(unit));
-                    context.drawImageRegion(template.image,
-                            template.frameLayout.sourceX(frame),
-                            template.frameLayout.sourceY(frame),
-                            template.frameLayout.frameWidth,
-                            template.frameLayout.frameHeight,
-                            x, y, width, height,
-                            DrawStyle.fill(alphaColor(template.color, alpha)));
+                    if (maskedImage != null) {
+                        context.drawImageScaled(maskedImage, x, y, width, height,
+                                DrawStyle.fill(alphaColor(template.color, alpha)));
+                    } else {
+                        context.drawImageRegion(template.image,
+                                template.frameLayout.sourceX(frame),
+                                template.frameLayout.sourceY(frame),
+                                template.frameLayout.frameWidth,
+                                template.frameLayout.frameHeight,
+                                x, y, width, height,
+                                DrawStyle.fill(alphaColor(template.color, alpha)));
+                    }
                     break;
                 case BAR:
                     drawBar(context, x, y, width, height, alpha);
@@ -606,6 +679,100 @@ final class OverlayDefinitions {
                 default:
                     break;
             }
+        }
+
+        private MaskedImage createMaskedImage(HudDrawContext context, Placement content) {
+            int contentFrame = template.frameLayout.clampFrame(template.frame.evaluate(unit));
+            float threshold = Math.max(0.0F, Math.min(1.0F,
+                    template.maskAlphaThreshold.evaluate(unit)));
+            boolean inverted = template.maskInvert.evaluate(unit);
+            AlphaMask mask;
+            String cacheKey = null;
+            boolean temporary = true;
+            if (template.maskGeometry != null) {
+                GeometryMask geometry = GeometryDefinitions.require(
+                        unit.unitMetadata, template.maskGeometry).resolve(unit.unitMetadata, unit);
+                mask = AlphaMasks.geometry(geometry);
+            } else {
+                Template source = requireMaskTemplate(unit.unitMetadata, template.maskName);
+                if (source.type != Type.IMAGE) {
+                    throw new IllegalArgumentException("overlay mask source must be type: image: "
+                            + template.maskName);
+                }
+                Placement sourcePlacement = Placement.resolve(source, unit, state, context);
+                if (!sourcePlacement.drawable()) return new MaskedImage(
+                        transparentFrame(contentFrame), true);
+                int sourceFrame = source.frameLayout.clampFrame(source.frame.evaluate(unit));
+                float[] affine = relativeMaskAffine(content, sourcePlacement,
+                        source.frameLayout.frameWidth, source.frameLayout.frameHeight);
+                float sourceAlpha = template.maskUsesSourceAlpha
+                        ? sourcePlacement.alpha * ArgbColor.alpha(source.color) / 255.0F : 1.0F;
+                mask = AlphaMasks.imageAffine(source.image,
+                        source.frameLayout.sourceX(sourceFrame),
+                        source.frameLayout.sourceY(sourceFrame),
+                        source.frameLayout.frameWidth, source.frameLayout.frameHeight,
+                        affine[0], affine[1], affine[2], affine[3],
+                        affine[4], affine[5], sourceAlpha);
+                cacheKey = maskCacheKey(contentFrame, source, sourceFrame, content,
+                        sourcePlacement, sourceAlpha, threshold, inverted);
+                ClientImage cached = template.cachedMask(cacheKey);
+                if (cached != null && !cached.isClosed()) return new MaskedImage(cached, false);
+                temporary = false;
+            }
+            AlphaMaskOptions options = new AlphaMaskOptions(threshold, inverted,
+                    template.maskThresholdMode,
+                    template.maskAlphaMode);
+            ClientImage result = ClientImages.applyAlphaMask(template.image,
+                    template.frameLayout.sourceX(contentFrame),
+                    template.frameLayout.sourceY(contentFrame),
+                    template.frameLayout.frameWidth, template.frameLayout.frameHeight,
+                    mask, options);
+            if (!temporary) template.cacheMask(cacheKey, result);
+            return new MaskedImage(result, temporary);
+        }
+
+        private ClientImage transparentFrame(int frame) {
+            return ClientImages.applyAlphaMask(template.image,
+                    template.frameLayout.sourceX(frame), template.frameLayout.sourceY(frame),
+                    template.frameLayout.frameWidth, template.frameLayout.frameHeight,
+                    (x, y) -> 0.0F, AlphaMaskOptions.DEFAULT);
+        }
+
+        private String maskCacheKey(int contentFrame, Template source, int sourceFrame,
+                                    Placement content, Placement mask, float sourceAlpha,
+                                    float threshold, boolean inverted) {
+            return unit.id + ":" + contentFrame + ':' + System.identityHashCode(template.image)
+                    + ':' + sourceFrame + ':' + System.identityHashCode(source.image)
+                    + ':' + content.bits() + ':' + mask.bits() + ':'
+                    + Float.floatToIntBits(sourceAlpha) + ':'
+                    + Float.floatToIntBits(threshold) + ':' + inverted + ':'
+                    + template.maskThresholdMode
+                    + ':' + template.maskAlphaMode;
+        }
+
+        private static float[] relativeMaskAffine(Placement content, Placement mask,
+                                                   int maskFrameWidth, int maskFrameHeight) {
+            float[] center = content.screenVectorToLocal(
+                    mask.centerX - content.centerX, mask.centerY - content.centerY);
+            float maskCos = cosine(mask.rotation);
+            float maskSin = sine(mask.rotation);
+            float maskPixelX = mask.width / maskFrameWidth;
+            float maskPixelY = mask.height / maskFrameHeight;
+            float[] xAxis = content.screenVectorToLocal(
+                    maskCos * mask.scaleX * maskPixelX,
+                    maskSin * mask.scaleX * maskPixelX);
+            float[] yAxis = content.screenVectorToLocal(
+                    -maskSin * mask.scaleY * maskPixelY,
+                    maskCos * mask.scaleY * maskPixelY);
+            return new float[] { center[0], center[1], xAxis[0], xAxis[1],
+                    yAxis[0], yAxis[1] };
+        }
+
+        private static Template requireMaskTemplate(CustomUnitMetadata metadata, String name) {
+            Map<String, Template> definitions = BY_METADATA.get(metadata);
+            Template result = definitions != null ? definitions.get(name) : null;
+            if (result == null) throw new IllegalArgumentException("unknown overlay mask: " + name);
+            return result;
         }
 
         private void drawBar(HudDrawContext context, float x, float y, float width,
@@ -655,6 +822,75 @@ final class OverlayDefinitions {
             float drawY = freeText && height == 0.0F ? y : y + (height + textHeight) * 0.5F;
             context.drawText(value, drawX, drawY, style);
         }
+    }
+
+    private static final class MaskedImage {
+        final ClientImage image;
+        final boolean temporary;
+        private MaskedImage(ClientImage image, boolean temporary) {
+            this.image = image; this.temporary = temporary;
+        }
+    }
+
+    private static final class Placement {
+        final float width, height, scaleX, scaleY, rotation, alpha, centerX, centerY;
+
+        private Placement(float width, float height, float scaleX, float scaleY,
+                          float rotation, float alpha, float centerX, float centerY) {
+            this.width = width; this.height = height; this.scaleX = scaleX;
+            this.scaleY = scaleY; this.rotation = rotation; this.alpha = alpha;
+            this.centerX = centerX; this.centerY = centerY;
+        }
+
+        static Placement resolve(Template template, CustomUnit unit,
+                                 OverlayEvaluationContext.State state, HudDrawContext context) {
+            float width = template.width != null ? template.width.evaluate(unit)
+                    : template.image != null ? template.frameLayout.frameWidth : 0.0F;
+            float height = template.height != null ? template.height.evaluate(unit)
+                    : template.image != null ? template.frameLayout.frameHeight : 0.0F;
+            width = Math.max(0.0F, width);
+            height = Math.max(0.0F, height);
+            float uniform = template.scale.evaluate(unit);
+            float scaleX = uniform * template.scaleX.evaluate(unit);
+            float scaleY = uniform * template.scaleY.evaluate(unit);
+            float drawnWidth = width * Math.abs(scaleX);
+            float drawnHeight = height * Math.abs(scaleY);
+            float x = anchorX(template.anchor, context.width(), drawnWidth)
+                    + template.offsetX.evaluate(unit)
+                    + state.column * (drawnWidth + template.spacingX.evaluate(unit));
+            float y = anchorY(template.anchor, context.height(), drawnHeight)
+                    + template.offsetY.evaluate(unit)
+                    + state.row * (drawnHeight + template.spacingY.evaluate(unit));
+            return new Placement(width, height, scaleX, scaleY,
+                    template.rotation.evaluate(unit), template.alpha.evaluate(unit),
+                    x + drawnWidth * 0.5F, y + drawnHeight * 0.5F);
+        }
+
+        boolean drawable() {
+            return width > 0.0F && height > 0.0F && scaleX != 0.0F && scaleY != 0.0F;
+        }
+
+        float[] screenVectorToLocal(float x, float y) {
+            float cosine = cosine(rotation);
+            float sine = sine(rotation);
+            return new float[] { (cosine * x + sine * y) / scaleX,
+                    (-sine * x + cosine * y) / scaleY };
+        }
+
+        String bits() {
+            return Float.floatToIntBits(width) + "," + Float.floatToIntBits(height) + ","
+                    + Float.floatToIntBits(scaleX) + "," + Float.floatToIntBits(scaleY) + ","
+                    + Float.floatToIntBits(rotation) + "," + Float.floatToIntBits(alpha) + ","
+                    + Float.floatToIntBits(centerX) + "," + Float.floatToIntBits(centerY);
+        }
+    }
+
+    private static float cosine(float degrees) {
+        return (float) Math.cos(Math.toRadians(degrees));
+    }
+
+    private static float sine(float degrees) {
+        return (float) Math.sin(Math.toRadians(degrees));
     }
 
     private static float anchorX(Anchor anchor, float screenWidth, float width) {

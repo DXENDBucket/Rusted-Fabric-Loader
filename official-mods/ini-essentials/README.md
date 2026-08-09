@@ -158,6 +158,62 @@ When explicit frame dimensions are omitted, a multi-frame image is split into on
 or one vertical column when `frame_verticalOrdering: true`. Explicit dimensions allow a grid;
 out-of-range runtime frame values are clamped.
 
+## Decal and Overlay alpha masks
+
+An image Overlay can use another image Overlay as an aligned alpha mask. The source Overlay keeps
+its own anchor, offset, size, scale, rotation, frame, dynamic alpha, and unit context; the compositor
+maps those screen transforms back onto the content image. A referenced source is a mask-only
+definition by default and is not drawn normally unless it sets `maskRender: true`:
+
+```ini
+[overlay_bossShape]
+type: image
+anchor: topCenter
+image: boss_bar_shape.png
+width: 520
+height: 38
+
+[overlay_bossTexture]
+type: image
+anchor: topCenter
+image: animated_energy.png
+width: 760
+height: 80
+mask: bossShape
+maskAlphaThreshold: 0.08
+maskThresholdMode: normalize
+maskAlphaMode: multiply
+```
+
+The same field family extends native Decals while leaving their original layer, visibility, frame,
+team-color and placement pass in control:
+
+```ini
+[decal_hullShape]
+layer: onTop
+image: hull_mask.png
+
+[decal_hullTexture]
+layer: onTop
+image: large_texture.png
+mask: hullShape
+maskAlphaThreshold: memory.damageMaskCutoff
+maskInvert: memory.showOutside
+maskThresholdMode: keep
+maskAlphaMode: min
+```
+
+`maskThresholdMode` is `keep`, `binary`, or `normalize`. `maskAlphaMode` is `multiply`
+(`contentAlpha*maskAlpha`), `min`, or `replace`; RGB always comes from the content image.
+`maskUsesSourceAlpha: false` ignores the source definition's own alpha while retaining its texture
+alpha. Threshold and inversion support runtime expressions.
+
+`maskGeometry: NAME` replaces the image source with a `[geometry_NAME]` binary mask. Overlay
+geometry uses the content Overlay's unscaled local coordinates; Decal geometry uses the content
+Decal's unscaled local pixel coordinates. A masked native Decal currently requires one `image` on
+both definitions; `imageStack`, leg-end anchors, and turret anchors are rejected rather than being
+rendered with misleading alignment. Ordinary Decals without mask fields remain entirely native.
+
 ## Dynamic projectile rules
 
 Native projectile mutators keep their tag checks, resource side effects, effect selection, and

@@ -672,6 +672,25 @@ fallback, and ownership; close owned images when the mod no longer needs them. C
 idempotent and never releases engine-owned images wrapped with `ClientImage.borrowed(...)` or the
 shared out-of-memory fallback. Load/create/release and drawing must run on the render/update thread.
 
+`ClientImages.applyAlphaMask(...)` creates an owned image from one source region. Its `AlphaMask`
+samples caller-local pixel coordinates, while `AlphaMasks.imageAffine(...)` and
+`AlphaMasks.geometry(...)` provide image and geometry implementations. `AlphaMaskOptions` applies
+inversion, a `KEEP`, `BINARY`, or `NORMALIZE` threshold, then combines content and mask alpha with
+`MULTIPLY`, `MIN`, or `REPLACE`. Content RGB is retained:
+
+```java
+AlphaMask shape = AlphaMasks.geometry(GeometryMasks.circle(32.0F));
+AlphaMaskOptions options = new AlphaMaskOptions(
+        0.1F, false, MaskThresholdMode.NORMALIZE, MaskAlphaMode.MULTIPLY);
+ClientImage clipped = ClientImages.applyAlphaMask(
+        texture, 0, 0, texture.width(), texture.height(), shape, options);
+```
+
+The returned image is caller-owned. Image samplers snapshot source alpha when constructed, making
+the composition deterministic and avoiding render-target state leaks. `DecalRenderEvents` exposes
+read-only before/after boundaries for each native per-unit Decal layer; temporary mapped-image
+changes made before a layer must be restored in the matching after callback.
+
 ## Camera, sound, and visual effects
 
 Camera mutation and effect creation should run on the update/render thread. Native effect creation

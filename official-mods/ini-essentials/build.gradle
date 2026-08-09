@@ -62,6 +62,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/ProjectileRuleDefinitions.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
+    def decalMaskFields = file('src/main/java/io/github/endx/iniessentials/DecalMaskDefinitions.java')
     def overlayFields = file('src/main/java/io/github/endx/iniessentials/OverlayDefinitions.java')
     def overlayContext = file('src/main/java/io/github/endx/iniessentials/OverlayEvaluationContext.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
@@ -73,7 +74,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             eventRuleFields,
             projectileRuleFields,
             booleanExpression,
-            geometryFields, overlayFields, overlayContext, fogFields, mathFields,
+            geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
             referenceGenerator, referenceWorkbook
     doLast {
         def rows = catalog.readLines('UTF-8')
@@ -109,6 +110,9 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'textSize', 'textColor', 'textAlign', 'scale', 'scaleX', 'scaleY',
                 'frame', 'total_frames', 'frame_width', 'frame_height',
                 'frame_verticalOrdering', 'barDirection', 'overlayIndex',
+                'mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
+                'maskInvert', 'maskThresholdMode', 'maskAlphaMode',
+                'maskUsesSourceAlpha',
                 'overlayStableIndex', 'overlayCount', 'overlayRow',
                 'overlayColumn', 'overlaySlot', 'overlayUnitId', 'screenWidth',
                 'screenHeight', 'uiScale'
@@ -119,6 +123,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def cameraSource = cameraFields.getText('UTF-8')
         def actionPositionSource = actionPositionReference.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
+        def decalMaskSource = decalMaskFields.getText('UTF-8')
         def overlaySource = overlayFields.getText('UTF-8')
         def overlayContextSource = overlayContext.getText('UTF-8')
         def fogSource = fogFields.getText('UTF-8')
@@ -155,7 +160,10 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'borderWidth', 'value', 'maxValue', 'text', 'textSize',
                     'textColor', 'textAlign', 'scale', 'scaleX', 'scaleY',
                     'rotation', 'frame', 'total_frames', 'frame_width',
-                    'frame_height', 'frame_verticalOrdering', 'barDirection'].every {
+                    'frame_height', 'frame_verticalOrdering', 'barDirection',
+                    'mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
+                    'maskInvert', 'maskThresholdMode', 'maskAlphaMode',
+                    'maskUsesSourceAlpha'].every {
                     overlaySource.contains('"' + it + '"')
                 }
                 || !['overlayindex', 'overlaystableindex', 'overlaycount',
@@ -168,7 +176,14 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !overlaySource.contains('NEAREST_TO_CAMERA')
                 || !overlaySource.contains('FARTHEST_FROM_CAMERA')
                 || !overlaySource.contains('FrameLayout')
+                || !overlaySource.contains('AlphaMasks.imageAffine')
                 || !overlaySource.contains('metadata.loadImageFromConfigWithSmoothing')
+                || !['mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
+                    'maskInvert', 'maskThresholdMode', 'maskAlphaMode',
+                    'maskUsesSourceAlpha'].every { decalMaskSource.contains('"' + it + '"') }
+                || !decalMaskSource.contains('DecalRenderEvents.BEFORE_LAYER')
+                || !decalMaskSource.contains('AlphaMasks.imageAffine')
+                || !decalMaskSource.contains('GeometryDefinitions.require(')
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
                 || !['event', 'phase', 'when', 'cancelEventActions',
                     'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
@@ -247,6 +262,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !generatorSource.contains('"event": ("00A6B8", "007C91")')
                 || !generatorSource.contains('"geometry": ("5E35B1", "311B92")')
                 || !generatorSource.contains('"overlay": ("AD1457", "6A1B4D")')
+                || !generatorSource.contains('"decal": ("00796B", "004D40")')
                   || !generatorSource.contains('EVENT_INDEX_COLOR = "B2EBF2"')
                   || !generatorSource.contains('SHORTCUT_COLUMNS = 4')
                   || !generatorSource.contains('def inject_navigation_shapes(')
@@ -306,7 +322,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v14'
+                || multiplayer?.protocol != 'ini_essentials_v15'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

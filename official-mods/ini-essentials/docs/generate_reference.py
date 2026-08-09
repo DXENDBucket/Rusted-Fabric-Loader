@@ -56,6 +56,8 @@ SECTION_PALETTES = {
     "geometry": ("5E35B1", "311B92"),
     # HUD overlays are distinct from native world-render sections.
     "overlay": ("AD1457", "6A1B4D"),
+    # Native Decal extensions use a dark teal distinct from geometry and overlays.
+    "decal": ("00796B", "004D40"),
     "fog": ("455A64", "263238"),
     "math": ("C62828", "8E0000"),
     "effect": ("A64D79", "741B47"),
@@ -107,6 +109,8 @@ def section_key(section: str) -> str:
     value = section.lower()
     if "overlay" in value:
         return "overlay"
+    if "decal" in value:
+        return "decal"
     if "[event_" in value:
         return "event"
     if "geometry" in value:
@@ -160,7 +164,7 @@ def make_groups(field_rows: list[dict[str, str]],
     # Keep established workbook navigation stable when a later version adds
     # fields for a section that did not previously have an Essentials group.
     established_order = [
-        "core", "action", "geometry", "overlay", "fog", "math", "event",
+        "core", "action", "geometry", "overlay", "decal", "fog", "math", "event",
         "projectile", "turret",
     ]
     ordered_keys = [key for key in established_order if key in grouped]
@@ -190,6 +194,10 @@ def make_groups(field_rows: list[dict[str, str]],
             section_en, section_zh = "[overlay_NAME]", "[overlay_NAME]"
             summary_en = "Screen-space HUD primitives driven by live custom-unit instances"
             summary_zh = "由存活自定义单位实例驱动的屏幕空间 HUD 图元"
+        elif key == "decal":
+            section_en, section_zh = "[decal_NAME]", "[decal_NAME]"
+            summary_en = "Alpha-mask extensions layered onto the native Decal renderer"
+            summary_zh = "叠加在原版 Decal 渲染器上的透明度遮罩扩展"
         elif key == "fog":
             section_en, section_zh = "[fog_NAME]", "[fog_NAME]"
             summary_en = "Reusable per-team fog operations driven by geometry masks"

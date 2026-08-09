@@ -59,6 +59,47 @@ public final class ClientImages {
         return new ClientImage(image, null, !fallback, fallback);
     }
 
+    /**
+     * Copies a source region into a new image while replacing its alpha through a local-coordinate
+     * mask. Pixel centers are exposed relative to the center of the copied source region.
+     */
+    public static ClientImage applyAlphaMask(ClientImage content, int sourceX, int sourceY,
+            int sourceWidth, int sourceHeight, AlphaMask mask, AlphaMaskOptions options) {
+        ClientImage checked = Objects.requireNonNull(content, "content");
+        AlphaMask checkedMask = Objects.requireNonNull(mask, "mask");
+        AlphaMaskOptions checkedOptions = Objects.requireNonNull(options, "options");
+        if (sourceX < 0 || sourceY < 0 || sourceWidth <= 0 || sourceHeight <= 0
+                || (long) sourceX + sourceWidth > checked.width()
+                || (long) sourceY + sourceHeight > checked.height()) {
+            throw new IllegalArgumentException("content source rectangle is outside the image");
+        }
+        GameImage source = checked.requireOpen();
+        source.ensureImageDataAvailable();
+        ClientImage result = create(sourceWidth, sourceHeight, true);
+        boolean success = false;
+        try {
+            GameImage output = result.requireOpen();
+            output.ensurePixelBuffer();
+            for (int y = 0; y < sourceHeight; y++) {
+                for (int x = 0; x < sourceWidth; x++) {
+                    int color = source.getPixel(sourceX + x, sourceY + y);
+                    float localX = x + 0.5F - sourceWidth * 0.5F;
+                    float localY = y + 0.5F - sourceHeight * 0.5F;
+                    int alpha = checkedOptions.combineAlpha(
+                            (color >>> 24) & 0xff, checkedMask.alphaAt(localX, localY));
+                    output.setPixel(x, y, (color & 0x00ffffff) | (alpha << 24));
+                }
+            }
+            output.flushPixelBufferToBitmap();
+            output.dropPixelBuffer();
+            result.smooth(source.smooth);
+            success = true;
+            return result;
+        } finally {
+            if (!success) result.close();
+        }
+    }
+
     private static GraphicsEngine graphics() {
         GameEngine engine = RustedWarfareClient.requireEngine();
         if (engine.renderGraphicsEngine == null) {

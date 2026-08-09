@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.github.endx.rustedfabricapi.api.client.event.HudRenderEvents;
 import io.github.endx.rustedfabricapi.api.client.event.WorldRenderEvents;
 import io.github.endx.rustedfabricapi.api.client.render.event.ClientImageEvents;
+import io.github.endx.rustedfabricapi.api.client.render.event.DecalRenderEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 
@@ -14,8 +15,28 @@ public final class ClientRenderContractVerification {
 
     public static void verify() {
         verifyColorAndStyleValues();
+        verifyMaskAlphaFormulas();
         verifyWorldViewportValues();
         verifyImageAndEventContracts();
+    }
+
+    private static void verifyMaskAlphaFormulas() {
+        AlphaMaskOptions multiply = AlphaMaskOptions.DEFAULT;
+        require(multiply.combineAlpha(128, 0.5F) == 64,
+                "multiplicative mask alpha drifted");
+        AlphaMaskOptions binary = new AlphaMaskOptions(0.4F, false,
+                MaskThresholdMode.BINARY, MaskAlphaMode.MIN);
+        require(binary.combineAlpha(128, 0.39F) == 0
+                        && binary.combineAlpha(128, 0.4F) == 128,
+                "binary threshold boundary drifted");
+        AlphaMaskOptions normalized = new AlphaMaskOptions(0.25F, false,
+                MaskThresholdMode.NORMALIZE, MaskAlphaMode.REPLACE);
+        require(normalized.combineAlpha(0, 0.625F) == 128,
+                "normalized replacement mask alpha drifted");
+        AlphaMaskOptions inverted = new AlphaMaskOptions(0.0F, true,
+                MaskThresholdMode.KEEP, MaskAlphaMode.REPLACE);
+        require(inverted.combineAlpha(255, 0.25F) == 191,
+                "inverted mask alpha drifted");
     }
 
     private static void verifyWorldViewportValues() {
@@ -120,6 +141,13 @@ public final class ClientRenderContractVerification {
         WorldRenderEvents.AFTER_WORLD.invoker().draw(null);
         require(calls.get() == 121, "typed world event was not dispatched");
         world.close();
+
+        RustedFabricEvent.Registration decal = DecalRenderEvents.BEFORE_LAYER.subscribe(
+                (unit, delta, layer, templates) -> calls.addAndGet(1000));
+        DecalRenderEvents.BEFORE_LAYER.invoker().onLayer(null, 0.0F, null,
+                java.util.Collections.emptyList());
+        require(calls.get() == 1121, "typed Decal layer event was not dispatched");
+        decal.close();
     }
 
     private static void require(boolean condition, String message) {

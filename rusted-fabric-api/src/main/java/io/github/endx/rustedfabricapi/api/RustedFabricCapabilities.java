@@ -12,6 +12,8 @@ public final class RustedFabricCapabilities {
     public static final String CUSTOM_UNIT_RENDER = "event.custom.unit.render.v1";
     public static final String CUSTOM_UNIT_RUNTIME = "event.custom.unit.runtime.v1";
     public static final String CLIENT_SCREEN = "client.screen.v1";
+    public static final String CLIENT_RENDER_ALPHA_MASK = "client.render.alpha_mask.v1";
+    public static final String CLIENT_DECAL_LAYER = "event.client.decal_layer.v1";
     public static final String EFFECT_RUNTIME = "event.effect.runtime.v1";
     public static final String FILE_SYSTEM = "event.file.system.v1";
     public static final String GAME_LIFECYCLE = "event.game.lifecycle.v1";

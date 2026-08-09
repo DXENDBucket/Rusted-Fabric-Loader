@@ -16,6 +16,7 @@
     "CommandIssueNamedMixin",
     "ConfigVariableProcessorNamedMixin",
     "CurrentMapLifecycleNamedMixin",
+    "DecalBehaviorNamedMixin",
     "CustomActionEffectRuntimeNamedMixin",
     "CustomAssetLoaderNamedMixin",
     "CustomUnitAssetNamedMixin",
@@ -120,6 +121,7 @@
     "WorldRenderNamedMixin",
     "accessor.MapEngineAccessor",
     "accessor.CustomUnitEventActionAccessor",
+    "accessor.DecalBehaviorAccessor",
     "accessor.LogicBooleanAccessor",
     "accessor.PopupDocumentDataAccessor"
   ],
