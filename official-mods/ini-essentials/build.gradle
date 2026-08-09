@@ -97,7 +97,8 @@ tasks.register('verifyIniEssentialsMetadata') {
         def generatorSource = referenceGenerator.getText('UTF-8')
         if (!generatorSource.contains('"core": ("0F9D58", "0D904F")')
                 || !generatorSource.contains('"action": ("FF9900", "B45F06")')
-                || !generatorSource.contains('def internal_link(')
+                || !generatorSource.contains('def inject_navigation_shapes(')
+                || !generatorSource.contains('hlinkClick')
                 || !generatorSource.contains('"--check"')) {
             throw new GradleException('INI Essentials reference generator lost section styling/navigation')
         }
@@ -105,24 +106,40 @@ tasks.register('verifyIniEssentialsMetadata') {
             def workbookXml = zip.getInputStream(zip.getEntry('xl/workbook.xml')).getText('UTF-8')
             def stylesXml = zip.getInputStream(zip.getEntry('xl/styles.xml')).getText('UTF-8')
             def sheetsXml = new StringBuilder()
+            def drawingsXml = new StringBuilder()
+            def drawingRelationshipsXml = new StringBuilder()
             zip.entries().each { entry ->
                 if (entry.name.startsWith('xl/worksheets/sheet') && entry.name.endsWith('.xml')) {
                     sheetsXml.append(zip.getInputStream(entry).getText('UTF-8'))
+                } else if (entry.name.startsWith('xl/drawings/drawing')
+                        && entry.name.endsWith('.xml')) {
+                    drawingsXml.append(zip.getInputStream(entry).getText('UTF-8'))
+                } else if (entry.name.startsWith('xl/drawings/_rels/drawing')
+                        && entry.name.endsWith('.xml.rels')) {
+                    drawingRelationshipsXml.append(
+                            zip.getInputStream(entry).getText('UTF-8'))
                 }
             }
             def sheetText = sheetsXml.toString()
-            def hyperlinkCount = (sheetText =~ / location=/).count
+            def drawingText = drawingsXml.toString()
+            def drawingRelationshipText = drawingRelationshipsXml.toString()
+            def hyperlinkCount = (drawingText =~ /hlinkClick/).count
             if (!workbookXml.contains('name="English"')
                     || !workbookXml.contains('name="简体中文"')
                     || !['FF0F9D58', 'FF0D904F', 'FFFF9900', 'FFB45F06'].every {
                         stylesXml.contains(it)
                     }
-                    || hyperlinkCount < 12
+                    || hyperlinkCount < 14
+                    || !drawingRelationshipText.contains('/relationships/hyperlink')
+                    || !['#rf_en_core', '#rf_en_action', '#rf_zh_core',
+                         '#rf_zh_action', '#rf_en_shortcuts', '#rf_zh_shortcuts'].every {
+                        drawingRelationshipText.contains(it)
+                    }
                     || !sheetText.contains('Section shortcuts')
                     || !sheetText.contains('节快捷导航')
                     || !(expectedCodes + expectedEventData).every { sheetText.contains(it) }) {
                 throw new GradleException(
-                        'Generated INI Essentials workbook is stale or lost section links/colors')
+                        'Generated INI Essentials workbook is stale or lost drawing links/colors')
             }
         }
         def mod = new groovy.json.JsonSlurper().parseText(metadata.getText('UTF-8'))

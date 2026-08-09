@@ -59,6 +59,8 @@ The workbook is generated rather than edited by hand. Its English and Chinese pa
 original reference's five-column-first layout and matching section colors (`[core]` green,
 action/hiddenAction orange), followed by extension metadata columns. Colored section shortcuts at
 the top of each page jump directly to their section, and every section links back to the index.
+Like the community 1.15 enhanced reference, these controls use transparent DrawingML hyperlink
+overlays: hovering shows a link pointer and clicking jumps immediately without selecting a cell.
 
 ```text
 python docs/generate_reference.py

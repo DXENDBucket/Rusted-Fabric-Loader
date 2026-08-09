@@ -5,15 +5,21 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
+import warnings
+import zipfile
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+from xml.etree import ElementTree
+from xml.sax.saxutils import quoteattr
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.hyperlink import Hyperlink
+from openpyxl.utils.units import pixels_to_EMU, points_to_pixels
+from openpyxl.workbook.defined_name import DefinedName
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +69,19 @@ class ReferenceGroup:
     palette: str
     rows: tuple[dict[str, str], ...]
     event_data: bool = False
+
+
+@dataclass(frozen=True)
+class NavigationButton:
+    """An invisible DrawingML hyperlink laid over a styled cell range."""
+
+    sheet_index: int
+    name: str
+    target: str
+    first_row: int
+    first_column: int
+    last_row: int
+    last_column: int
 
 
 def load_rows(source: Path) -> list[dict[str, str]]:
@@ -153,12 +172,26 @@ def argb(color: str) -> str:
     return color if len(color) == 8 else "FF" + color
 
 
-def internal_link(cell, sheet_title: str, target: str) -> None:
-    cell.hyperlink = Hyperlink(
-        ref=cell.coordinate,
-        location=f"'{sheet_title}'!{target}",
-        display=str(cell.value) if cell.value is not None else None,
-    )
+def define_target(workbook: Workbook, name: str,
+                  sheet_title: str, coordinate: str) -> None:
+    escaped_title = sheet_title.replace("'", "''")
+    workbook.defined_names.add(DefinedName(
+        name, attr_text=f"'{escaped_title}'!${coordinate[0]}${coordinate[1:]}"))
+
+
+def add_navigation_button(buttons: list[NavigationButton], sheet,
+                          name: str, target: str,
+                          first_row: int, first_column: int,
+                          last_row: int, last_column: int) -> None:
+    buttons.append(NavigationButton(
+        sheet.parent.index(sheet) + 1,
+        name,
+        target,
+        first_row,
+        first_column,
+        last_row,
+        last_column,
+    ))
 
 
 def style_range(sheet, row: int, start: int, end: int, *,
@@ -180,8 +213,10 @@ def shortcut_rows(group_count: int) -> int:
 
 
 def add_shortcuts(sheet, groups: list[ReferenceGroup], starts: dict[str, int],
-                  start_row: int, chinese: bool) -> int:
+                  start_row: int, chinese: bool,
+                  buttons: list[NavigationButton]) -> int:
     spans = ((1, 2), (3, 5), (6, 8))
+    language = "zh" if chinese else "en"
     for index, group in enumerate(groups):
         row = start_row + index // 3
         first, last = spans[index % 3]
@@ -189,7 +224,12 @@ def add_shortcuts(sheet, groups: list[ReferenceGroup], starts: dict[str, int],
                           end_row=row, end_column=last)
         cell = sheet.cell(row, first)
         cell.value = group.section_zh if chinese else group.section_en
-        internal_link(cell, sheet.title, f"A{starts[group.key]}")
+        target_name = f"rf_{language}_{group.key}"
+        define_target(sheet.parent, target_name, sheet.title,
+                      f"A{starts[group.key]}")
+        add_navigation_button(
+            buttons, sheet, f"shortcut_{language}_{group.key}", target_name,
+            row, first, row, last)
         section_color, _ = SECTION_PALETTES.get(
             group.palette, SECTION_PALETTES["other"])
         style_range(sheet, row, first, last,
@@ -197,13 +237,14 @@ def add_shortcuts(sheet, groups: list[ReferenceGroup], starts: dict[str, int],
                     bold=True, horizontal="center", size=10.0)
         cell.font = Font(
             name=FONT_NAME, size=10.0, bold=True,
-            underline="single", color=argb(WHITE))
+            color=argb(WHITE))
         sheet.row_dimensions[row].height = 27
     return start_row + shortcut_rows(len(groups))
 
 
 def add_group(sheet, group: ReferenceGroup, start_row: int,
-              chinese: bool, shortcut_target: str) -> int:
+              chinese: bool, shortcut_target: str,
+              buttons: list[NavigationButton]) -> int:
     section_color, header_color = SECTION_PALETTES.get(
         group.palette, SECTION_PALETTES["other"])
     section_name = group.section_zh if chinese else group.section_en
@@ -218,10 +259,13 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
     sheet.merge_cells(start_row=start_row, start_column=5,
                       end_row=start_row, end_column=7)
     back = sheet.cell(start_row, 8, "↑ Shortcuts" if not chinese else "↑ 返回节导航")
-    internal_link(back, sheet.title, shortcut_target)
+    language = "zh" if chinese else "en"
+    add_navigation_button(
+        buttons, sheet, f"back_{language}_{group.key}", shortcut_target,
+        start_row, 8, start_row, 8)
     back.font = Font(
         name=FONT_NAME, size=10.0, bold=True,
-        underline="single", color=argb(WHITE))
+        color=argb(WHITE))
     sheet.cell(start_row, 4).font = Font(
         name=FONT_NAME, size=10.0, bold=True, color=argb(WHITE))
     sheet.row_dimensions[start_row].height = 34
@@ -274,7 +318,8 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
 
 
 def add_reference_sheet(workbook: Workbook, title: str,
-                        groups: list[ReferenceGroup], chinese: bool) -> None:
+                        groups: list[ReferenceGroup], chinese: bool,
+                        buttons: list[NavigationButton]) -> None:
     sheet = workbook.create_sheet(title)
     sheet.sheet_view.showGridLines = False
 
@@ -309,11 +354,16 @@ def add_reference_sheet(workbook: Workbook, title: str,
         starts[group.key] = cursor
         cursor += len(group.rows) + 3
 
-    add_shortcuts(sheet, groups, starts, 4, chinese)
+    language = "zh" if chinese else "en"
+    shortcut_target = f"rf_{language}_shortcuts"
+    define_target(workbook, shortcut_target, sheet.title, "A3")
+    define_target(workbook, f"rf_{language}_title", sheet.title, "A1")
+    add_shortcuts(sheet, groups, starts, 4, chinese, buttons)
 
     cursor = first_group_row
     for group in groups:
-        cursor = add_group(sheet, group, cursor, chinese, "A3")
+        cursor = add_group(
+            sheet, group, cursor, chinese, shortcut_target, buttons)
 
     for index, width in enumerate(COLUMN_WIDTHS, 1):
         sheet.column_dimensions[get_column_letter(index)].width = width
@@ -325,7 +375,8 @@ def add_reference_sheet(workbook: Workbook, title: str,
     sheet.print_options.horizontalCentered = True
 
 
-def add_about_sheet(workbook: Workbook) -> None:
+def add_about_sheet(workbook: Workbook,
+                    buttons: list[NavigationButton]) -> None:
     sheet = workbook.active
     sheet.title = "About 关于"
     sheet.sheet_view.showGridLines = False
@@ -355,29 +406,227 @@ def add_about_sheet(workbook: Workbook) -> None:
             ("打开简体中文代码表 / Open Chinese reference", "简体中文", "0F9D58")), 10):
         sheet.merge_cells(start_row=row, start_column=2, end_row=row, end_column=7)
         cell = sheet.cell(row, 2, label)
-        internal_link(cell, target, "A1")
+        target_name = "rf_en_title" if target == "English" else "rf_zh_title"
+        add_navigation_button(
+            buttons, sheet, f"open_{target_name}", target_name,
+            row, 2, row, 7)
         style_range(sheet, row, 2, 7,
                     background=color, font_color=WHITE,
                     bold=True, horizontal="center", size=11.0)
         cell.font = Font(
             name=FONT_NAME, size=11.0, bold=True,
-            underline="single", color=argb(WHITE))
+            color=argb(WHITE))
         sheet.row_dimensions[row].height = 31
 
     for index, width in enumerate(COLUMN_WIDTHS, 1):
         sheet.column_dimensions[get_column_letter(index)].width = width
 
 
-def build_workbook() -> Workbook:
+def build_workbook() -> tuple[Workbook, list[NavigationButton]]:
     groups = make_groups(load_rows(FIELD_SOURCE), load_rows(EVENT_DATA_SOURCE))
     workbook = Workbook()
+    buttons: list[NavigationButton] = []
     workbook.properties.title = "INI Essentials Unit Modding Reference"
     workbook.properties.creator = "Rusted Fabric Loader / INI Essentials"
     workbook.properties.description = "Generated bilingual reference for INI Essentials"
-    add_about_sheet(workbook)
-    add_reference_sheet(workbook, "English", groups, False)
-    add_reference_sheet(workbook, "简体中文", groups, True)
-    return workbook
+    add_about_sheet(workbook, buttons)
+    add_reference_sheet(workbook, "English", groups, False, buttons)
+    add_reference_sheet(workbook, "简体中文", groups, True, buttons)
+    return workbook, buttons
+
+
+DRAWING_NS = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+DRAWING_MAIN_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+DRAWING_REL_TYPE = OFFICE_REL_NS + "/drawing"
+HYPERLINK_REL_TYPE = OFFICE_REL_NS + "/hyperlink"
+DRAWING_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.drawing+xml")
+
+
+def column_pixels(sheet, column: int) -> int:
+    width = sheet.column_dimensions[get_column_letter(column)].width
+    if width is None:
+        width = sheet.sheet_format.defaultColWidth or 8.43
+    return max(1, int(width * 7 + 5))
+
+
+def row_pixels(sheet, row: int) -> int:
+    height = sheet.row_dimensions[row].height
+    if height is None:
+        height = sheet.sheet_format.defaultRowHeight or 15
+    return max(1, int(points_to_pixels(height)))
+
+
+def shape_xml(button: NavigationButton, sheet, shape_id: int,
+              relationship_id: str) -> str:
+    first_column = button.first_column - 1
+    first_row = button.first_row - 1
+    last_column = button.last_column
+    last_row = button.last_row
+    x = pixels_to_EMU(sum(
+        column_pixels(sheet, column)
+        for column in range(1, button.first_column)))
+    y = pixels_to_EMU(sum(
+        row_pixels(sheet, row)
+        for row in range(1, button.first_row)))
+    width = pixels_to_EMU(sum(
+        column_pixels(sheet, column)
+        for column in range(button.first_column, button.last_column + 1)))
+    height = pixels_to_EMU(sum(
+        row_pixels(sheet, row)
+        for row in range(button.first_row, button.last_row + 1)))
+    return (
+        '<xdr:twoCellAnchor editAs="oneCell">'
+        '<xdr:from>'
+        f'<xdr:col>{first_column}</xdr:col><xdr:colOff>0</xdr:colOff>'
+        f'<xdr:row>{first_row}</xdr:row><xdr:rowOff>0</xdr:rowOff>'
+        '</xdr:from>'
+        '<xdr:to>'
+        f'<xdr:col>{last_column}</xdr:col><xdr:colOff>0</xdr:colOff>'
+        f'<xdr:row>{last_row}</xdr:row><xdr:rowOff>0</xdr:rowOff>'
+        '</xdr:to>'
+        '<xdr:sp macro="" textlink=""><xdr:nvSpPr>'
+        f'<xdr:cNvPr id="{shape_id}" name={quoteattr(button.name)}>'
+        f'<a:hlinkClick xmlns:r="{OFFICE_REL_NS}" r:id="{relationship_id}"/>'
+        '</xdr:cNvPr><xdr:cNvSpPr/></xdr:nvSpPr>'
+        '<xdr:spPr>'
+        f'<a:xfrm><a:off x="{x}" y="{y}"/>'
+        f'<a:ext cx="{width}" cy="{height}"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+        '<a:noFill/><a:ln><a:noFill/></a:ln>'
+        '</xdr:spPr>'
+        '<xdr:txBody><a:bodyPr vertOverflow="clip" horzOverflow="clip" '
+        'wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>'
+        '<a:lstStyle/><a:p/></xdr:txBody></xdr:sp><xdr:clientData/>'
+        '</xdr:twoCellAnchor>'
+    )
+
+
+def drawing_xml(sheet, buttons: list[NavigationButton]) -> bytes:
+    shapes = ''.join(
+        shape_xml(button, sheet, index + 1, f"rId{index + 1}")
+        for index, button in enumerate(buttons))
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<xdr:wsDr xmlns:xdr="{DRAWING_NS}" xmlns:a="{DRAWING_MAIN_NS}">'
+        f'{shapes}</xdr:wsDr>'
+    ).encode("utf-8")
+
+
+def drawing_relationships_xml(buttons: list[NavigationButton]) -> bytes:
+    relationships = ''.join(
+        f'<Relationship Id="rId{index + 1}" Type="{HYPERLINK_REL_TYPE}" '
+        f'Target={quoteattr("#" + button.target)}/>'
+        for index, button in enumerate(buttons))
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<Relationships xmlns="{REL_NS}">{relationships}</Relationships>'
+    ).encode("utf-8")
+
+
+def append_before(xml: bytes, closing_tag: bytes, content: bytes) -> bytes:
+    position = xml.rfind(closing_tag)
+    if position < 0:
+        raise RuntimeError(f"Malformed XLSX XML: missing {closing_tag!r}")
+    return xml[:position] + content + xml[position:]
+
+
+def inject_navigation_shapes(path: Path, workbook: Workbook,
+                             buttons: list[NavigationButton]) -> None:
+    """Add Excel-style click overlays that open links without selecting cells."""
+    grouped: OrderedDict[int, list[NavigationButton]] = OrderedDict()
+    for button in buttons:
+        grouped.setdefault(button.sheet_index, []).append(button)
+
+    with zipfile.ZipFile(path, "r") as source:
+        entries = {name: source.read(name) for name in source.namelist()}
+
+    content_types = entries["[Content_Types].xml"]
+    for sheet_index in grouped:
+        drawing_name = f"drawing{sheet_index}.xml"
+        override = (
+            f'<Override PartName="/xl/drawings/{drawing_name}" '
+            f'ContentType="{DRAWING_CONTENT_TYPE}"/>').encode("utf-8")
+        if override not in content_types:
+            content_types = append_before(
+                content_types, b"</Types>", override)
+
+        worksheet_name = f"xl/worksheets/sheet{sheet_index}.xml"
+        drawing_tag = (
+            f'<drawing xmlns:r="{OFFICE_REL_NS}" '
+            'r:id="rIdRFNavigation"/>').encode("utf-8")
+        entries[worksheet_name] = append_before(
+            entries[worksheet_name], b"</worksheet>", drawing_tag)
+
+        worksheet_rels_name = (
+            f"xl/worksheets/_rels/sheet{sheet_index}.xml.rels")
+        drawing_relationship = (
+            f'<Relationship Id="rIdRFNavigation" Type="{DRAWING_REL_TYPE}" '
+            f'Target="../drawings/{drawing_name}"/>').encode("utf-8")
+        if worksheet_rels_name in entries:
+            entries[worksheet_rels_name] = append_before(
+                entries[worksheet_rels_name],
+                b"</Relationships>", drawing_relationship)
+        else:
+            entries[worksheet_rels_name] = (
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                f'<Relationships xmlns="{REL_NS}">').encode("utf-8") \
+                + drawing_relationship + b"</Relationships>"
+
+        drawing_path = f"xl/drawings/{drawing_name}"
+        entries[drawing_path] = drawing_xml(
+            workbook.worksheets[sheet_index - 1], grouped[sheet_index])
+        entries[f"xl/drawings/_rels/{drawing_name}.rels"] = (
+            drawing_relationships_xml(grouped[sheet_index]))
+    entries["[Content_Types].xml"] = content_types
+
+    temporary = path.with_name(path.name + ".tmp")
+    with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as target:
+        for name, data in entries.items():
+            target.writestr(name, data)
+    os.replace(temporary, path)
+
+
+def navigation_signature(path: Path) -> tuple:
+    result = []
+    with zipfile.ZipFile(path, "r") as archive:
+        drawing_names = sorted(
+            name for name in archive.namelist()
+            if name.startswith("xl/drawings/drawing") and name.endswith(".xml"))
+        for drawing_name in drawing_names:
+            rels_name = drawing_name.replace(
+                "xl/drawings/", "xl/drawings/_rels/") + ".rels"
+            rels_root = ElementTree.fromstring(archive.read(rels_name))
+            targets = {
+                relationship.attrib["Id"]: relationship.attrib["Target"]
+                for relationship in rels_root
+                if relationship.attrib.get("Type") == HYPERLINK_REL_TYPE
+            }
+            drawing_root = ElementTree.fromstring(archive.read(drawing_name))
+            for properties in drawing_root.iter(
+                    f"{{{DRAWING_NS}}}cNvPr"):
+                hyperlink = properties.find(
+                    f"{{{DRAWING_MAIN_NS}}}hlinkClick")
+                if hyperlink is None:
+                    continue
+                relationship_id = hyperlink.attrib[
+                    f"{{{OFFICE_REL_NS}}}id"]
+                result.append((
+                    drawing_name,
+                    properties.attrib["name"],
+                    targets[relationship_id],
+                ))
+    return tuple(sorted(result))
+
+
+def expected_navigation_signature(
+        buttons: list[NavigationButton]) -> tuple:
+    return tuple(sorted(
+        (f"xl/drawings/drawing{button.sheet_index}.xml",
+         button.name, "#" + button.target)
+        for button in buttons))
 
 
 def workbook_signature(workbook: Workbook) -> tuple:
@@ -401,11 +650,25 @@ def workbook_signature(workbook: Workbook) -> tuple:
     return tuple(result)
 
 
-def check_output(expected: Workbook) -> None:
+def defined_name_signature(workbook: Workbook) -> tuple:
+    return tuple(sorted(
+        (name, definition.attr_text)
+        for name, definition in workbook.defined_names.items()
+        if name.startswith("rf_")
+    ))
+
+
+def check_output(expected: Workbook,
+                 buttons: list[NavigationButton]) -> None:
     if not OUTPUT.exists():
         raise SystemExit(f"Missing generated workbook: {OUTPUT}")
-    actual = load_workbook(OUTPUT, read_only=False, data_only=False)
-    if workbook_signature(expected) != workbook_signature(actual):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        actual = load_workbook(OUTPUT, read_only=False, data_only=False)
+    if (workbook_signature(expected) != workbook_signature(actual)
+            or defined_name_signature(expected) != defined_name_signature(actual)
+            or navigation_signature(OUTPUT)
+            != expected_navigation_signature(buttons)):
         raise SystemExit(
             "Generated workbook is stale; run docs/generate_reference.py and commit the result")
     print(f"Reference workbook is current: {OUTPUT}")
@@ -418,11 +681,12 @@ def main(argv: Iterable[str] | None = None) -> None:
         help="verify that the committed workbook matches the CSV catalogs and generator",
     )
     args = parser.parse_args(argv)
-    workbook = build_workbook()
+    workbook, buttons = build_workbook()
     if args.check:
-        check_output(workbook)
+        check_output(workbook, buttons)
         return
     workbook.save(OUTPUT)
+    inject_navigation_shapes(OUTPUT, workbook, buttons)
     print(f"Wrote {OUTPUT}")
 
 
