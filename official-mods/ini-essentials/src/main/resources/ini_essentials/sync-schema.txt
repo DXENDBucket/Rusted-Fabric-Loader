@@ -1,4 +1,4 @@
-ini_essentials_v10
+ini_essentials_v11
 [core].allowNegativeHp|new_key|runtime_logic_boolean|default=false|gameplay_synced|negative_hp_damage_v2
 [action_*|hiddenAction_*].cameraCenterAt|new_action_effect|runtime_number_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
 [action_*|hiddenAction_*].cameraCenterBy|new_action_effect|runtime_number_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
@@ -138,3 +138,10 @@ logic.number_functions|runtime_logic_functions|pow_exp_ln_log10_log_cbrt_abs_flo
 [event_*].setEventValue|new_section_key|runtime_logic_number|default=omitted|gameplay_synced|before_native_primary_value_replace|supported=tookDamage
 [event_*].addEventValue|new_section_key|runtime_logic_number|default=omitted|gameplay_synced|before_native_primary_value_add|supported=tookDamage
 [event_*].multiplyEventValue|new_section_key|runtime_logic_number|default=omitted|gameplay_synced|before_native_primary_value_multiply|supported=tookDamage
+[projectile_*].mutatorNAME_ifCondition|new_key|runtime_logic_boolean|default=true|gameplay_synced|self=shooter|eventSource=hit_target|gates=dynamic_damage_multipliers
+[projectile_*].mutatorNAME_directDamageMultiplier|extended_format|runtime_logic_number|default=1|gameplay_synced|ordered_after_native_mutators
+[projectile_*].mutatorNAME_areaDamageMultiplier|extended_format|runtime_logic_number|default=1|gameplay_synced|ordered_after_native_mutators
+[turret_*].projectileRule_NAME_projectile|new_key|projectile_reference|required|gameplay_synced|first_matching_rule_wins
+[turret_*].projectileRule_NAME_ifCondition|new_key|runtime_logic_boolean|default=omitted|gameplay_synced|self=shooter|eventSource=attack_target
+[turret_*].projectileRule_NAME_ifTargetWithTags|new_key|target_tag_list|default=omitted|gameplay_synced
+[turret_*].projectileRule_NAME_ifTargetWithoutTags|new_key|target_tag_list|default=omitted|gameplay_synced

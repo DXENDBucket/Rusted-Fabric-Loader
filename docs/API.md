@@ -267,7 +267,8 @@ The first typed desktop layer contains:
   refunds, and team resource queries.
 - `api.command.Commands` and `api.command.event.CommandEvents`: synchronized command creation,
   common orders, and cancellable issue callbacks.
-- `api.projectile.event.ProjectileEvents`: typed creation, update, impact, explosion, and removal.
+- `api.projectile.event.ProjectileEvents` and `ProjectileCombatEvents`: typed lifecycle callbacks,
+  ordered turret projectile selection, and post-native damage modification.
 - `api.map.Maps`, `MapObjects`, `MapTiles`, and map events: current-map queries and typed TMX/current-map
   loading phases, tile/world conversion, visibility, exploration, fog reveal helpers, and immutable
   tile-layer plus custom object-group/point/region/property catalogs.
@@ -1293,6 +1294,13 @@ before-explosion, original game logic, after-explosion, then after-impact.
 The snapshot distinguishes the named development runtime and official runtime namespace without
 exposing a compile-time game class dependency. Projectile creation, update, impact, explosion, and
 removal callbacks use the same Mixin implementation on both active host platforms.
+
+`ProjectileCombatEvents.SELECT_TURRET_PROJECTILE` runs after the native `projectile` /
+`altProjectile` choice and reduces listeners in phase/registration order. Each listener receives
+both the stable native index and the current reduced index. `MODIFY_DAMAGE` similarly runs after
+the native tag-based projectile mutators and receives the input damage, native result, current
+result, target, projectile, and direct/area flag. This is the shared low-level boundary used by INI
+Essentials; Java mods can use it without depending on that mod's INI syntax.
 
 `Projectiles.requestRemoval(projectile)` retains the game's deferred-removal behavior.
 `Projectiles.removeImmediately(projectile)` instead calls the mapped game-object removal entrypoint

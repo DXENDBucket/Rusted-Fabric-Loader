@@ -58,6 +58,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/CameraActionFields.java')
     def eventRuleFields = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java')
+    def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/ProjectileRuleDefinitions.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
@@ -66,6 +67,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
             eventRuleFields,
+            projectileRuleFields,
             booleanExpression,
             geometryFields, fogFields, mathFields,
             referenceGenerator, referenceWorkbook
@@ -88,7 +90,13 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'event', 'phase', 'when', 'cancelEventActions',
                 'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
                 'setEventBoolean', 'cancelEvent', 'setEventValue',
-                'addEventValue', 'multiplyEventValue'
+                'addEventValue', 'multiplyEventValue',
+                'mutatorNAME_ifCondition', 'mutatorNAME_directDamageMultiplier',
+                'mutatorNAME_areaDamageMultiplier',
+                'projectileRule_NAME_projectile',
+                'projectileRule_NAME_ifCondition',
+                'projectileRule_NAME_ifTargetWithTags',
+                'projectileRule_NAME_ifTargetWithoutTags'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
@@ -98,6 +106,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def fogSource = fogFields.getText('UTF-8')
         def mathSource = mathFields.getText('UTF-8')
         def eventRuleSource = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java').getText('UTF-8')
+        def projectileRuleSource = projectileRuleFields.getText('UTF-8')
         def geometryCodes = ['type', 'radius', 'radiusX', 'radiusY', 'width',
                 'height', 'innerRadius', 'startAngle', 'sweepAngle', 'rotation',
                 'offsetX', 'offsetY', 'thickness', 'points', 'components'] as Set
@@ -128,6 +137,13 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !eventRuleSource.contains('CustomUnitEventEvaluation.withContext')
                 || !eventRuleSource.contains('NumericExpression.compile(')
                 || !eventRuleSource.contains('BooleanExpression.compile(')
+                || !['mutator_if_condition', 'mutator_dynamic_direct_multiplier',
+                    'mutator_dynamic_area_multiplier', 'projectileRule_'].every {
+                    projectileRuleSource.contains(it)
+                }
+                || !projectileRuleSource.contains('ProjectileCombatEvents.MODIFY_DAMAGE')
+                || !projectileRuleSource.contains('ProjectileCombatEvents.SELECT_TURRET_PROJECTILE')
+                || !projectileRuleSource.contains('CustomUnitEventEvaluation.withContext')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
         }
@@ -245,7 +261,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v10'
+                || multiplayer?.protocol != 'ini_essentials_v11'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

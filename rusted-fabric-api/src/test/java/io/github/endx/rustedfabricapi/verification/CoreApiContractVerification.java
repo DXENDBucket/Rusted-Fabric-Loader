@@ -50,13 +50,14 @@ public final class CoreApiContractVerification {
         verifyNetworkBridge();
         verifyLethalHealthModifier();
         verifyDamageEventContextContracts();
+        ProjectileCombatEventContractVerification.verify();
         IniExtensionContractVerification.verify();
         IniActionEffectContractVerification.verify();
         System.out.println("Rusted Fabric API core contracts passed");
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 44,
+        require(ApiSupportMatrix.entries().size() == 45,
                 "public API support matrix does not cover every advertised API group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
@@ -67,6 +68,9 @@ public final class CoreApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.PROJECTILE_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "projectile lifecycle support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.PROJECTILE_COMBAT,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "projectile combat support is not advertised");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_DAMAGE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "unit damage support is not advertised");

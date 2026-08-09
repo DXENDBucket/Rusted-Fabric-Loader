@@ -23,6 +23,7 @@ public final class IniEssentials implements ModInitializer {
     public void onInitialize() {
         ExtendedMathFunctions.register();
         EventRuleDefinitions.register();
+        ProjectileRuleDefinitions.register();
         GeometryDefinitions.register();
         FogActionFields.register();
         CameraActionFields.register();
@@ -58,7 +59,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v10",
-                "592dbdaa8d3299ae21fcba79f9479c23aaa68449de05d97697d2930aa9efa09a"));
+                MOD_ID, version, "ini_essentials_v11",
+                "94b13e7a373a83d9ee0de917d6ea31c8c79192f5431aa3f1c8ab13efdbe67f8a"));
     }
 }

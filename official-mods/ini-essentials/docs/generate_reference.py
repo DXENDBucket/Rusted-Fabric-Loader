@@ -153,8 +153,18 @@ def make_groups(field_rows: list[dict[str, str]],
         grouped.setdefault(key, []).append(row)
         section_names.setdefault(key, row["section"])
 
+    # Keep established workbook navigation stable when a later version adds
+    # fields for a section that did not previously have an Essentials group.
+    established_order = [
+        "core", "action", "geometry", "fog", "math", "event",
+        "projectile", "turret",
+    ]
+    ordered_keys = [key for key in established_order if key in grouped]
+    ordered_keys.extend(key for key in grouped if key not in ordered_keys)
+
     groups: list[ReferenceGroup] = []
-    for key, rows in grouped.items():
+    for key in ordered_keys:
+        rows = grouped[key]
         if key == "core":
             section_en, section_zh = "[core]", "[core]"
             summary_en = "Core unit functions and opt-in static unit fields"

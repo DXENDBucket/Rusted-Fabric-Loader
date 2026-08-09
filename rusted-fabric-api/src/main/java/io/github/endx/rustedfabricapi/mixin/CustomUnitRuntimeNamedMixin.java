@@ -5,11 +5,32 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitRuntimeNamedMixin {
+    @Redirect(
+            method = "fireProjectileAtGround(Lrustedwarfare/unit/Unit;FFILrustedwarfare/custom/CustomProjectileTemplate;I)Lrustedwarfare/game/Projectile;",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lrustedwarfare/custom/TurretTemplate;getProjectileIndexForUnit(Lrustedwarfare/custom/CustomUnit;)I"
+            ),
+            require = 1
+    )
+    private int rustedfabricapi$selectTurretProjectile(
+            rustedwarfare.custom.TurretTemplate turret,
+            rustedwarfare.custom.CustomUnit shooter,
+            rustedwarfare.unit.Unit targetUnit, float x, float y, int turretIndex,
+            rustedwarfare.custom.CustomProjectileTemplate explicitTemplate,
+            int projectileCount) {
+        int nativeIndex = turret.getProjectileIndexForUnit(shooter);
+        return io.github.endx.rustedfabricapi.api.projectile.event.ProjectileCombatEvents
+                .SELECT_TURRET_PROJECTILE.invoker()
+                .select(shooter, targetUnit, turret, turretIndex, nativeIndex, nativeIndex);
+    }
+
     @Inject(method = "executeCustomAction(Lrustedwarfare/unit/action/UnitAction;Landroid/graphics/PointF;Lrustedwarfare/unit/Unit;I)Z", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeCustomActionExecute(@Coerce Object action, @Coerce Object targetPoint, @Coerce Object targetUnit, int recursionDepth, CallbackInfoReturnable<Boolean> cir) {
         if (CustomUnitRuntimeEvents.BEFORE_CUSTOM_ACTION_EXECUTE.invoker().beforeCustomActionExecute(this, action, targetPoint, targetUnit, recursionDepth)) {

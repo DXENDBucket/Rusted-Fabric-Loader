@@ -18,6 +18,7 @@ final class IniExtensionContractVerification {
         verifyNewKeyIsConsumedAndAppliedOnce();
         verifyNativeValueIsNotActivated();
         verifyExplicitExtendedFormatUsesFallback();
+        verifyPrefixKeyMatchingConsumesOnlyActivatedKeys();
         verifyInvalidExtendedValueHasLocation();
     }
 
@@ -97,6 +98,31 @@ final class IniExtensionContractVerification {
                         && expected.getMessage().contains("test_mod:hp_suffix");
             }
             require(contextual, "invalid extension value lacked section, key, and owner context");
+        }
+    }
+
+    private static void verifyPrefixKeyMatchingConsumesOnlyActivatedKeys() {
+        final String[] appliedKey = {null};
+        IniFieldDefinition<String> definition = IniFieldDefinition
+                .<String>builder("test_mod", "mutator_condition",
+                        IniSectionSelector.prefix("projectile_"), "mutator")
+                .matchKeyPrefix()
+                .activatesWhen(context -> context.key().endsWith("_ifCondition"))
+                .decoder(context -> context.rawValue())
+                .applier(field -> appliedKey[0] = field.source().key())
+                .build();
+        try (IniExtensions.Registration ignored = IniExtensions.register(definition)) {
+            UnitConfig config = config("[projectile_main]\n"
+                    + "mutatorArmour_ifCondition: memory.enabled\n"
+                    + "mutatorArmour_nativeField: untouched\n");
+            IniExtensionRuntime.index(config);
+            IniExtensionRuntime.markActiveFieldsRead(config);
+            IniExtensionRuntime.applyAfterStaticVariables(new Object(), config);
+            require("mutatorArmour_ifCondition".equals(appliedKey[0]),
+                    "prefix key definition did not apply the activated concrete key");
+            require(IniExtensionRuntime.nativeFallback(
+                    config, "projectile_main", "mutatorArmour_nativeField") == null,
+                    "inactive sibling prefix key was intercepted");
         }
     }
 

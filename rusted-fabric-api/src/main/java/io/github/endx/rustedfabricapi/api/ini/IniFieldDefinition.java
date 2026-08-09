@@ -24,6 +24,7 @@ public final class IniFieldDefinition<T> {
     private final String fieldId;
     private final IniSectionSelector section;
     private final String key;
+    private final boolean keyPrefix;
     private final IniExtensionKind kind;
     private final IniApplicationPhase applicationPhase;
     private final Activation activation;
@@ -38,6 +39,7 @@ public final class IniFieldDefinition<T> {
         fieldId = requireId(builder.fieldId, "fieldId", FIELD_ID);
         section = Objects.requireNonNull(builder.section, "section");
         key = requireText(builder.key, "key");
+        keyPrefix = builder.keyPrefix;
         kind = Objects.requireNonNull(builder.kind, "kind");
         applicationPhase = Objects.requireNonNull(builder.applicationPhase, "applicationPhase");
         decoder = Objects.requireNonNull(builder.decoder, "decoder");
@@ -62,12 +64,14 @@ public final class IniFieldDefinition<T> {
     public String qualifiedId() { return ownerId + ":" + fieldId; }
     public IniSectionSelector section() { return section; }
     public String key() { return key; }
+    public boolean matchesKeyPrefix() { return keyPrefix; }
     public IniExtensionKind kind() { return kind; }
     public IniApplicationPhase applicationPhase() { return applicationPhase; }
     public IniFieldDocumentation documentation() { return documentation; }
 
     public boolean matches(String candidateSection, String candidateKey) {
-        return section.matches(candidateSection) && key.equals(candidateKey);
+        return section.matches(candidateSection)
+                && (keyPrefix ? candidateKey.startsWith(key) : key.equals(candidateKey));
     }
 
     public boolean activates(IniFieldContext context) { return activation.activates(context); }
@@ -95,6 +99,7 @@ public final class IniFieldDefinition<T> {
         private NativeFallback<T> nativeFallback;
         private Applier<T> applier;
         private IniFieldDocumentation documentation;
+        private boolean keyPrefix;
 
         private Builder(String ownerId, String fieldId, IniSectionSelector section, String key) {
             this.ownerId = ownerId;
@@ -111,6 +116,8 @@ public final class IniFieldDefinition<T> {
         public Builder<T> nativeFallback(NativeFallback<T> value) { nativeFallback = value; return this; }
         public Builder<T> applier(Applier<T> value) { applier = value; return this; }
         public Builder<T> documentation(IniFieldDocumentation value) { documentation = value; return this; }
+        /** Matches all keys beginning with the builder key; activation can narrow suffixes. */
+        public Builder<T> matchKeyPrefix() { keyPrefix = true; return this; }
         public IniFieldDefinition<T> build() { return new IniFieldDefinition<T>(this); }
     }
 

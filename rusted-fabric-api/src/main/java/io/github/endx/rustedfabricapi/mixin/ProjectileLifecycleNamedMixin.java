@@ -5,11 +5,48 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.game.Projectile", remap = false)
 public abstract class ProjectileLifecycleNamedMixin {
+    @Redirect(
+            method = "update(F)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lrustedwarfare/game/BaseProjectileTemplate;applyDamageModifiers(Lrustedwarfare/unit/Unit;FZ)F"
+            ),
+            require = 2
+    )
+    private float rustedfabricapi$modifyDirectProjectileDamage(
+            rustedwarfare.game.BaseProjectileTemplate template,
+            rustedwarfare.unit.Unit target, float damage, boolean areaHit) {
+        float nativeDamage = template.applyDamageModifiers(target, damage, areaHit);
+        return io.github.endx.rustedfabricapi.api.projectile.event.ProjectileCombatEvents
+                .MODIFY_DAMAGE.invoker().modify(
+                        (rustedwarfare.game.Projectile) (Object) this,
+                        target, damage, nativeDamage, nativeDamage, areaHit);
+    }
+
+    @Redirect(
+            method = "applyAreaDamageToUnit(FLrustedwarfare/unit/Unit;F)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lrustedwarfare/game/BaseProjectileTemplate;applyDamageModifiers(Lrustedwarfare/unit/Unit;FZ)F"
+            ),
+            require = 1
+    )
+    private float rustedfabricapi$modifyAreaProjectileDamage(
+            rustedwarfare.game.BaseProjectileTemplate template,
+            rustedwarfare.unit.Unit target, float damage, boolean areaHit) {
+        float nativeDamage = template.applyDamageModifiers(target, damage, areaHit);
+        return io.github.endx.rustedfabricapi.api.projectile.event.ProjectileCombatEvents
+                .MODIFY_DAMAGE.invoker().modify(
+                        (rustedwarfare.game.Projectile) (Object) this,
+                        target, damage, nativeDamage, nativeDamage, areaHit);
+    }
+
     @Inject(
             method = "createProjectile(Lrustedwarfare/unit/Unit;FF)Lrustedwarfare/game/Projectile;",
             at = @At("RETURN"),

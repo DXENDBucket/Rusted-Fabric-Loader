@@ -89,6 +89,47 @@ Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`,
 convention. Invalid domains retain deterministic IEEE float behavior; geometry rejects non-finite
 results before changing gameplay state.
 
+## Dynamic projectile rules
+
+Native projectile mutators keep their tag checks, resource side effects, effect selection, and
+execution order. A mutator damage multiplier can additionally use a runtime condition and runtime
+number expression:
+
+```ini
+[projectile_shell]
+directDamage: 40
+mutatorArmour_ifUnitWithTags: armoured
+mutatorArmour_ifCondition: self.resource.charge > 0 and eventSource.hp > 0
+mutatorArmour_directDamageMultiplier: 1 + memory.armourBonus
+mutatorArmour_areaDamageMultiplier: clamp(eventSource.hp/eventSource.maxHp,0.25,1)
+```
+
+For the new expressions, `self` is the firing custom unit and `eventSource` is the unit currently
+being hit, including area-damage targets. That makes shooter and target memory/resources available
+without changing the native meaning of `ifUnitWithTags` or `ifUnitWithoutTags`. Plain numeric
+multipliers without an INI Essentials condition remain on the native parser path. Native mutators
+run first; matching extended multipliers are then multiplied in their INI declaration order.
+
+A turret can also declare any number of ordered projectile replacement rules:
+
+```ini
+[turret_main]
+projectile: shell
+
+projectileRule_antiAir_projectile: missileAA
+projectileRule_antiAir_ifTargetWithTags: flying
+projectileRule_antiAir_ifCondition: self.resource.missiles > 0
+
+projectileRule_finisher_projectile: heavyShell
+projectileRule_finisher_ifCondition: eventSource.hp < eventSource.maxHp * 0.25
+projectileRule_finisher_ifTargetWithoutTags: boss
+```
+
+Rules use their first appearance in the section as their order, and the first complete match wins.
+The general condition can read shooter memory/resources and the target through `eventSource`; the
+two target-tag fields provide direct native-style tag filters. If no rule matches, the native
+`projectile` / `altProjectile` result is used unchanged.
+
 ## Ordered event rules
 
 `[event_NAME]` adds a separate rule layer in front of the native queued
