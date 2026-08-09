@@ -13,7 +13,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import io.github.endx.rustedfabric.android.jvm.ManagedContentLibrary;
@@ -31,6 +34,7 @@ final class ContentManagerDialog {
 
     static void show(Activity activity, ExecutorService worker, File gameRoot,
                      ManagedContentLibrary.Kind kind, Listener listener) {
+        Map<Path, Boolean> pendingEnabled = new LinkedHashMap<>();
         LinearLayout content = new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
         int padding = dp(activity, 16);
@@ -55,17 +59,26 @@ final class ContentManagerDialog {
         AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle(title(kind))
                 .setView(content)
-                .setPositiveButton(R.string.content_import, (ignored, which) ->
-                        listener.importContent(kind))
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.content_import, null)
                 .setNegativeButton(android.R.string.cancel, null)
                 .create();
-        render(activity, worker, gameRoot, kind, listener, rows, dialog);
+        render(activity, worker, gameRoot, kind, listener, rows, dialog, pendingEnabled);
+        dialog.setOnShowListener(ignored -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button ->
+                    applyChanges(activity, worker, gameRoot, kind, listener, rows, dialog,
+                            pendingEnabled, null));
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(button ->
+                    applyChanges(activity, worker, gameRoot, kind, listener, rows, dialog,
+                            pendingEnabled, () -> listener.importContent(kind)));
+        });
         dialog.show();
     }
 
     private static void render(Activity activity, ExecutorService worker, File gameRoot,
                                ManagedContentLibrary.Kind kind, Listener listener,
-                               LinearLayout rows, AlertDialog dialog) {
+                               LinearLayout rows, AlertDialog dialog,
+                               Map<Path, Boolean> pendingEnabled) {
         rows.removeAllViews();
         final List<ManagedContentLibrary.Item> items;
         try {
@@ -108,25 +121,14 @@ final class ContentManagerDialog {
                         0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
             } else {
                 Switch enabled = new Switch(activity);
-                enabled.setText(item.enabled() ? R.string.content_enabled : R.string.content_disabled);
-                enabled.setChecked(item.enabled());
-                enabled.setEnabled(!item.locked());
+                boolean desired = pendingEnabled.containsKey(item.path())
+                        ? pendingEnabled.get(item.path()) : item.enabled();
+                enabled.setText(desired ? R.string.content_enabled : R.string.content_disabled);
+                enabled.setChecked(desired);
                 enabled.setOnCheckedChangeListener((button, checked) -> {
-                    button.setEnabled(false);
-                    worker.execute(() -> {
-                        try {
-                            ManagedContentLibrary.setEnabled(gameRoot.toPath(), item, checked);
-                            activity.runOnUiThread(() -> {
-                                listener.contentChanged();
-                                render(activity, worker, gameRoot, kind, listener, rows, dialog);
-                            });
-                        } catch (Exception failure) {
-                            activity.runOnUiThread(() -> {
-                                Toast.makeText(activity, safeMessage(failure), Toast.LENGTH_LONG).show();
-                                render(activity, worker, gameRoot, kind, listener, rows, dialog);
-                            });
-                        }
-                    });
+                    button.setText(checked ? R.string.content_enabled : R.string.content_disabled);
+                    if (checked == item.enabled()) pendingEnabled.remove(item.path());
+                    else pendingEnabled.put(item.path(), checked);
                 });
                 controls.addView(enabled, new LinearLayout.LayoutParams(
                         0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
@@ -136,7 +138,6 @@ final class ContentManagerDialog {
             delete.setText(R.string.content_delete);
             delete.setTextSize(12);
             delete.setAllCaps(false);
-            delete.setVisibility(item.official() ? View.GONE : View.VISIBLE);
             delete.setOnClickListener(ignored -> new AlertDialog.Builder(activity)
                     .setTitle(R.string.content_delete_title)
                     .setMessage(activity.getString(R.string.content_delete_confirm, item.name()))
@@ -145,8 +146,10 @@ final class ContentManagerDialog {
                         try {
                             ManagedContentLibrary.delete(gameRoot.toPath(), item);
                             activity.runOnUiThread(() -> {
+                                pendingEnabled.remove(item.path());
                                 listener.contentChanged();
-                                render(activity, worker, gameRoot, kind, listener, rows, dialog);
+                                render(activity, worker, gameRoot, kind, listener, rows, dialog,
+                                        pendingEnabled);
                             });
                         } catch (Exception failure) {
                             activity.runOnUiThread(() -> Toast.makeText(activity,
@@ -162,6 +165,50 @@ final class ContentManagerDialog {
             rows.addView(divider, new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, 1));
         }
+    }
+
+    private static void applyChanges(Activity activity, ExecutorService worker, File gameRoot,
+                                     ManagedContentLibrary.Kind kind, Listener listener,
+                                     LinearLayout rows, AlertDialog dialog,
+                                     Map<Path, Boolean> pendingEnabled, Runnable afterSave) {
+        if (pendingEnabled.isEmpty()) {
+            dialog.dismiss();
+            if (afterSave != null) afterSave.run();
+            return;
+        }
+        dialog.setCancelable(false);
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(false);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(false);
+        worker.execute(() -> {
+            try {
+                for (ManagedContentLibrary.Item item : ManagedContentLibrary.list(
+                        gameRoot.toPath(), kind)) {
+                    Boolean desired = pendingEnabled.get(item.path());
+                    if (desired != null && desired != item.enabled()) {
+                        ManagedContentLibrary.setEnabled(gameRoot.toPath(), item, desired);
+                    }
+                }
+                activity.runOnUiThread(() -> {
+                    pendingEnabled.clear();
+                    listener.contentChanged();
+                    dialog.dismiss();
+                    if (afterSave != null) afterSave.run();
+                });
+            } catch (Exception failure) {
+                activity.runOnUiThread(() -> {
+                    pendingEnabled.clear();
+                    listener.contentChanged();
+                    dialog.setCancelable(true);
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                    dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(true);
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(true);
+                    Toast.makeText(activity, safeMessage(failure), Toast.LENGTH_LONG).show();
+                    render(activity, worker, gameRoot, kind, listener, rows, dialog,
+                            pendingEnabled);
+                });
+            }
+        });
     }
 
     private static TextView text(Activity activity, String value, int size, int color) {

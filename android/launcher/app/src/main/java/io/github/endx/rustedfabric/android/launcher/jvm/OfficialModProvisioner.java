@@ -13,9 +13,9 @@ import io.github.endx.rustedfabric.android.jvm.ManagedContentLibrary;
 /** Installs APK-owned official mods without bundling or modifying the game itself. */
 public final class OfficialModProvisioner {
     private static final OfficialMod[] MODS = {
-            new OfficialMod("rusted-fabric-api.jar", "rusted_fabric_api", true, true),
-            new OfficialMod("java-mod-menu.jar", "java_mod_menu", true, false),
-            new OfficialMod("ini-essentials.jar", "ini_essentials", false, false)
+            new OfficialMod("rusted-fabric-api.jar", "rusted_fabric_api", true),
+            new OfficialMod("java-mod-menu.jar", "java_mod_menu", true),
+            new OfficialMod("ini-essentials.jar", "ini_essentials", false)
     };
 
     private OfficialModProvisioner() {
@@ -32,7 +32,7 @@ public final class OfficialModProvisioner {
             File source = new File(cache, mod.asset);
             installAsset(context, "rusted-fabric/official-mods/" + mod.asset, source);
             ManagedContentLibrary.provisionOfficialJavaMod(gameRoot.toPath(), source.toPath(),
-                    mod.id, mod.defaultEnabled, mod.locked);
+                    mod.id, mod.defaultEnabled);
         }
     }
 
@@ -53,13 +53,11 @@ public final class OfficialModProvisioner {
         final String asset;
         final String id;
         final boolean defaultEnabled;
-        final boolean locked;
 
-        OfficialMod(String asset, String id, boolean defaultEnabled, boolean locked) {
+        OfficialMod(String asset, String id, boolean defaultEnabled) {
             this.asset = asset;
             this.id = id;
             this.defaultEnabled = defaultEnabled;
-            this.locked = locked;
         }
     }
 }

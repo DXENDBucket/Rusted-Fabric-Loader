@@ -130,6 +130,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def mathSource = mathFields.getText('UTF-8')
         def eventRuleSource = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java').getText('UTF-8')
         def projectileRuleSource = projectileRuleFields.getText('UTF-8')
+        def initializerSource = initializer.getText('UTF-8')
         def geometryCodes = ['type', 'radius', 'radiusX', 'radiusY', 'width',
                 'height', 'innerRadius', 'startAngle', 'sweepAngle', 'rotation',
                 'offsetX', 'offsetY', 'thickness', 'points', 'components'] as Set
@@ -149,7 +150,11 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !fogSource.contains('ActionPositionReference.compile(')
                 || !actionPositionSource.contains('UnitReferenceExpression.compile(')
                 || !actionPositionSource.contains('ACTION_TARGET')
-                || !initializer.getText('UTF-8').contains('BooleanExpression.compile(')
+                || !initializerSource.contains('BooleanExpression.compile(')
+                || !initializerSource.contains('CustomUnitRegistryEvents.BEFORE_NATIVE_LOAD.register(')
+                || !initializerSource.contains('ExtendedMathFunctions.register();')
+                || !initializerSource.contains('OverlayEvaluationContext.registerFunctions();')
+                || overlaySource.contains('OverlayEvaluationContext.registerFunctions();')
                 || !fogSource.contains('BooleanExpression.compile(')
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
                 || !['layer', 'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
@@ -252,8 +257,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !eventRows[0].startsWith('version_added,event,event_data_name,')
                 || eventDataNames != expectedEventData
                 || eventTypes != expectedEventTypes
-                || !initializer.getText('UTF-8').contains('DamageEventData.enable(')
-                || !initializer.getText('UTF-8').contains('NativeEventData.enable(')) {
+                || !initializerSource.contains('DamageEventData.enable(')
+                || !initializerSource.contains('NativeEventData.enable(')) {
             throw new GradleException('INI Essentials event-data catalog is empty or drifted')
         }
         def generatorSource = referenceGenerator.getText('UTF-8')
@@ -324,7 +329,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
                 || multiplayer?.protocol != 'ini_essentials_v15'
                 || multiplayer?.syncHash != digest
-                || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
+                || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')
         }
     }

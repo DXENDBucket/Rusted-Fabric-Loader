@@ -82,10 +82,6 @@ public final class ManagedContentLibrary {
         Path checkedSource = requireRegularFile(source, "import source");
         if (kind == Kind.JAVA_MOD) {
             JavaMetadata metadata = readJavaMetadata(checkedSource);
-            if (OFFICIAL_JAVA_IDS.contains(metadata.id)) {
-                throw new IOException("The bundled official mod cannot be replaced by an import: "
-                        + metadata.id);
-            }
             Path root = enabledRoot(gameRoot, kind);
             Path target = root.resolve(
                     safeFilePart(metadata.id) + "-" + safeFilePart(metadata.version) + ".jar");
@@ -137,7 +133,7 @@ public final class ManagedContentLibrary {
 
     /** Installs or updates one APK-owned official Java mod while preserving its current state. */
     public static Item provisionOfficialJavaMod(Path gameRoot, Path source, String expectedId,
-                                                boolean defaultEnabled, boolean locked)
+                                                boolean defaultEnabled)
             throws IOException {
         prepare(gameRoot);
         JavaMetadata metadata = readJavaMetadata(source);
@@ -145,8 +141,18 @@ public final class ManagedContentLibrary {
             throw new IOException("Unexpected bundled official mod: " + metadata.id);
         }
         List<Item> current = findJavaModsById(gameRoot, expectedId);
-        boolean enabled = locked || (current.isEmpty() ? defaultEnabled
-                : current.stream().anyMatch(Item::enabled));
+        for (Item item : current) {
+            if (!isBundledOfficialAsset(item)) {
+                for (Item candidate : current) {
+                    if (candidate != item && isBundledOfficialAsset(candidate)) {
+                        Files.deleteIfExists(candidate.path());
+                    }
+                }
+                return item;
+            }
+        }
+        boolean enabled = current.isEmpty() ? defaultEnabled
+                : current.stream().anyMatch(Item::enabled);
         Path root = enabled ? enabledRoot(gameRoot, Kind.JAVA_MOD)
                 : disabledRoot(gameRoot, Kind.JAVA_MOD);
         Path target = root.resolve("official-" + expectedId + ".jar");
@@ -165,7 +171,6 @@ public final class ManagedContentLibrary {
         if (item.kind() == Kind.INI_MOD) {
             throw new IOException("INI mods are enabled through the in-game mod menu");
         }
-        if (item.locked()) throw new IOException("This core component must remain enabled");
         if (item.enabled() == enabled) return item;
         Path destinationRoot = enabled ? enabledRoot(gameRoot, item.kind())
                 : disabledRoot(gameRoot, item.kind());
@@ -179,7 +184,6 @@ public final class ManagedContentLibrary {
 
     public static void delete(Path gameRoot, Item item) throws IOException {
         requireOwnedItem(gameRoot, item);
-        if (item.official()) throw new IOException("Bundled official mods cannot be removed");
         deleteRecursively(item.path(), item.path().getParent());
     }
 
@@ -222,7 +226,7 @@ public final class ManagedContentLibrary {
                             result.add(javaItem(path, enabled));
                         } catch (IOException malformed) {
                             result.add(new Item(kind, fileName, malformed.getMessage(), "", "",
-                                    enabled, false, false, path));
+                                    enabled, false, path));
                         }
                     }
                 } else if (Files.isDirectory(path) || Files.isRegularFile(path)
@@ -236,17 +240,16 @@ public final class ManagedContentLibrary {
     private static Item javaItem(Path path, boolean enabled) throws IOException {
         JavaMetadata metadata = readJavaMetadata(path);
         boolean official = OFFICIAL_JAVA_IDS.contains(metadata.id);
-        boolean locked = "rusted_fabric_api".equals(metadata.id);
         return new Item(Kind.JAVA_MOD, metadata.name,
                 "ID: " + metadata.id + " · " + metadata.version,
-                metadata.id, metadata.version, enabled, official, locked, path);
+                metadata.id, metadata.version, enabled, official, path);
     }
 
     private static Item contentItem(Path path, Kind kind, boolean enabled) throws IOException {
         String name = readMarkerName(path);
         if (name.isEmpty()) name = path.getFileName().toString();
         String detail = Files.isDirectory(path) ? "folder" : path.getFileName().toString();
-        return new Item(kind, name, detail, "", "", enabled, false, false, path);
+        return new Item(kind, name, detail, "", "", enabled, false, path);
     }
 
     private static List<Item> findJavaModsById(Path gameRoot, String id) throws IOException {
@@ -259,10 +262,11 @@ public final class ManagedContentLibrary {
 
     private static void removeJavaModById(Path gameRoot, String id) throws IOException {
         List<Item> existing = findJavaModsById(gameRoot, id);
-        if (existing.stream().anyMatch(Item::official)) {
-            throw new IOException("Official Java mod id is reserved: " + id);
-        }
         for (Item item : existing) Files.deleteIfExists(item.path());
+    }
+
+    private static boolean isBundledOfficialAsset(Item item) {
+        return item.path().getFileName().toString().equals("official-" + item.id() + ".jar");
     }
 
     private static void copyAtomically(Path source, Path target, long maximumBytes)
@@ -517,11 +521,10 @@ public final class ManagedContentLibrary {
         private final String version;
         private final boolean enabled;
         private final boolean official;
-        private final boolean locked;
         private final Path path;
 
         Item(Kind kind, String name, String detail, String id, String version,
-             boolean enabled, boolean official, boolean locked, Path path) {
+             boolean enabled, boolean official, Path path) {
             this.kind = kind;
             this.name = name;
             this.detail = detail;
@@ -529,7 +532,6 @@ public final class ManagedContentLibrary {
             this.version = version;
             this.enabled = enabled;
             this.official = official;
-            this.locked = locked;
             this.path = path;
         }
 
@@ -540,7 +542,6 @@ public final class ManagedContentLibrary {
         public String version() { return version; }
         public boolean enabled() { return enabled; }
         public boolean official() { return official; }
-        public boolean locked() { return locked; }
         public Path path() { return path; }
     }
 

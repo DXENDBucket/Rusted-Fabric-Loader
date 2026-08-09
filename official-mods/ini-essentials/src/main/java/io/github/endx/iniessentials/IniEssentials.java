@@ -5,6 +5,7 @@ import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
 import io.github.endx.rustedfabricapi.api.ini.IniSectionSelector;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.NativeEventData;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
@@ -21,7 +22,13 @@ public final class IniEssentials implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ExtendedMathFunctions.register();
+        // Native LogicBoolean initialization reads the current game engine. Fabric entrypoints
+        // run before that singleton exists on the Android desktop-JVM host, so install custom
+        // functions at the first native unit-load boundary, immediately before INI parsing.
+        CustomUnitRegistryEvents.BEFORE_NATIVE_LOAD.register(ignored -> {
+            ExtendedMathFunctions.register();
+            OverlayEvaluationContext.registerFunctions();
+        });
         EventRuleDefinitions.register();
         ProjectileRuleDefinitions.register();
         GeometryDefinitions.register();

@@ -55,6 +55,7 @@ public final class RemapJar {
     private static final String SHADOW_DESC = "Lorg/spongepowered/asm/mixin/Shadow;";
     private static final String AT_DESC = "Lorg/spongepowered/asm/mixin/injection/At;";
     private static final String ACCESSOR_DESC = "Lorg/spongepowered/asm/mixin/gen/Accessor;";
+    private static final String INVOKER_DESC = "Lorg/spongepowered/asm/mixin/gen/Invoker;";
 
     private RemapJar() {
     }
@@ -598,6 +599,10 @@ public final class RemapJar {
                         methodNode.desc, mixinTargets);
                 changed |= rewriteAccessorAnnotations(methodNode.invisibleAnnotations,
                         methodNode.desc, mixinTargets);
+                changed |= rewriteInvokerAnnotations(methodNode.visibleAnnotations,
+                        methodNode.desc, mixinTargets);
+                changed |= rewriteInvokerAnnotations(methodNode.invisibleAnnotations,
+                        methodNode.desc, mixinTargets);
                 changed |= rewriteAnnotations(methodNode.visibleAnnotations, mixinTargets);
                 changed |= rewriteAnnotations(methodNode.invisibleAnnotations, mixinTargets);
                 for (AbstractInsnNode instruction : methodNode.instructions) {
@@ -672,6 +677,30 @@ public final class RemapJar {
                     if (oldName.isEmpty()) continue;
                     MemberMapping mapping = findMixinMemberMapping(fields, oldName,
                             fieldDescriptor, mixinTargets, "@Accessor field");
+                    if (!oldName.equals(mapping.name)) {
+                        annotation.values.set(i + 1, mapping.name);
+                        changed = true;
+                    }
+                }
+            }
+            return changed;
+        }
+
+        private boolean rewriteInvokerAnnotations(List<AnnotationNode> annotations,
+                                                  String methodDescriptor,
+                                                  List<String> mixinTargets) {
+            if (annotations == null) return false;
+            boolean changed = false;
+            for (AnnotationNode annotation : annotations) {
+                if (annotation == null || !INVOKER_DESC.equals(annotation.desc)
+                        || annotation.values == null) continue;
+                for (int i = 0; i < annotation.values.size(); i += 2) {
+                    if (!"value".equals(annotation.values.get(i))
+                            || !(annotation.values.get(i + 1) instanceof String)) continue;
+                    String oldName = (String) annotation.values.get(i + 1);
+                    if (oldName.isEmpty() || "<init>".equals(oldName)) continue;
+                    MemberMapping mapping = findMixinMemberMapping(methods, oldName,
+                            methodDescriptor, mixinTargets, "@Invoker method");
                     if (!oldName.equals(mapping.name)) {
                         annotation.values.set(i + 1, mapping.name);
                         changed = true;

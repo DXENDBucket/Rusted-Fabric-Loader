@@ -50,7 +50,6 @@ final class OverlayDefinitions {
     private OverlayDefinitions() { }
 
     static void register() {
-        OverlayEvaluationContext.registerFunctions();
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "overlay_definition",
                         IniSectionSelector.prefix(PREFIX), "type")

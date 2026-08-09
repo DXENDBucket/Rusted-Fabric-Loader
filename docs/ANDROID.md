@@ -50,7 +50,11 @@ import:
   moves them between `javamods` and `javamods-disabled`, taking effect on the next launch.
 - Rusted Fabric API and Java Mod Menu are provisioned enabled from Loader-owned APK assets. INI
   Essentials is also provisioned and listed, but starts disabled. Updates preserve later user
-  enable choices; the API remains enabled because the official mods depend on it.
+  enable choices unless a manually imported same-ID Jar takes precedence.
+- Enable switches are committed only by the dialog's confirmation button; cancellation discards
+  pending switch changes. Every managed item, including the bundled API, can be disabled or deleted.
+  Importing a newer Jar with the same official mod ID replaces the bundled copy, and later launcher
+  starts preserve that manual replacement.
 
 All archive content uses bounded expansion and path-containment checks. User content stays in the
 app-private imported game area and is never copied into an APK or repository artifact.

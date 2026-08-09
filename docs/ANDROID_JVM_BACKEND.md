@@ -29,10 +29,12 @@ artifacts.
   verified copy intact.
 - After activation, the setup UI becomes a persistent content library for INI mods, custom maps,
   Fabric Jars, and `.javamod` files. Map and Java-mod disable operations move content to private
-  non-scan directories and never rewrite the imported package.
-- The APK provisions Rusted Fabric API and Java Mod Menu enabled, matching the default Windows
-  install, and provisions INI Essentials disabled. Official updates preserve the user's later
-  enable state, while the required API is locked enabled.
+  non-scan directories and never rewrite the imported package. Switch changes are staged until
+  confirmation, and every managed item can be deleted. A manual Jar using an official mod ID
+  replaces the bundled copy and takes precedence during later provisioning.
+- The APK initially provisions Rusted Fabric API and Java Mod Menu enabled, matching the default
+  Windows install, and provisions INI Essentials disabled. Bundled updates preserve later enable
+  state unless the user has installed a manual replacement with the same mod ID.
 - ZIP path traversal, ambiguous names, duplicate outputs, multiple game roots, excessive expansion,
   excessive size/file count, and deep nesting are rejected. Path-containment checks also protect the
   private import area.

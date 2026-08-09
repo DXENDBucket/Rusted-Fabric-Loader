@@ -657,7 +657,9 @@ tasks.register('verifyDistribution') {
                     'io/github/endx/rustedfabricapi/mixin/SoundEnginePlaybackNamedMixin.class':
                             'playInterfaceSound(Lcom/corrodinggames/rts/gameFramework/a/i;F)V',
                     'io/github/endx/rustedfabricapi/mixin/accessor/MapEngineAccessor.class':
-                            'objectGroups'
+                            'objectGroups',
+                    'io/github/endx/rustedfabricapi/mixin/accessor/DecalBehaviorAccessor.class':
+                            'findDecalTemplateStrict'
             ].each { entryName, namedSelector ->
                 byte[] bytes = zip.getInputStream(zip.getEntry(entryName)).bytes
                 def constants = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)

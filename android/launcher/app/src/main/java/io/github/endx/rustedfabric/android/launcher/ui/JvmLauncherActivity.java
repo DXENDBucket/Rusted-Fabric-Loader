@@ -77,7 +77,6 @@ public final class JvmLauncherActivity extends Activity {
     private boolean advancedVisible;
     private boolean receiverRegistered;
     private boolean gameImported;
-    private boolean officialModsReady;
     private boolean officialProvisioning;
 
     private final BroadcastReceiver smokeReceiver = new BroadcastReceiver() {
@@ -371,7 +370,6 @@ public final class JvmLauncherActivity extends Activity {
         DesktopGameInspection inspection = DesktopGameLayout.inspect(gameRoot.toPath());
         boolean gameReady = inspection.isImportable();
         gameImported = gameReady;
-        officialModsReady = gameReady && inspectOfficialMods();
 
         File runtimeHome = new File(new File(getFilesDir(), "desktop-jvm"), "runtime");
         File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
@@ -396,7 +394,7 @@ public final class JvmLauncherActivity extends Activity {
         }
 
         smokeReady = capabilities.hasJava17() && capabilities.hasJvmHost();
-        gameProbeReady = gameReady && runtimeReady && officialModsReady;
+        gameProbeReady = gameReady && runtimeReady;
         readinessBadge.setText(gameProbeReady
                 ? R.string.jvm_ready_badge : R.string.jvm_setup_badge);
         readinessBadge.setTextColor(getColor(gameProbeReady
@@ -473,7 +471,7 @@ public final class JvmLauncherActivity extends Activity {
         boolean currentAssets = getSharedPreferences("launcher", MODE_PRIVATE)
                 .getInt("official_mod_assets", -1)
                 == io.github.endx.rustedfabric.android.launcher.BuildConfig.VERSION_CODE;
-        if (!gameImported || officialProvisioning || (officialModsReady && currentAssets)) return;
+        if (!gameImported || officialProvisioning || currentAssets) return;
         officialProvisioning = true;
         setBusy(true, getString(R.string.content_official_installing));
         worker.execute(() -> {
@@ -493,24 +491,6 @@ public final class JvmLauncherActivity extends Activity {
                 });
             }
         });
-    }
-
-    private boolean inspectOfficialMods() {
-        boolean api = false;
-        boolean menu = false;
-        boolean essentials = false;
-        try {
-            for (ManagedContentLibrary.Item item : ManagedContentLibrary.list(
-                    DesktopGameImportService.importedRoot(this).toPath(),
-                    ManagedContentLibrary.Kind.JAVA_MOD)) {
-                if ("rusted_fabric_api".equals(item.id())) api = item.enabled();
-                else if ("java_mod_menu".equals(item.id())) menu = true;
-                else if ("ini_essentials".equals(item.id())) essentials = true;
-            }
-        } catch (IOException ignored) {
-            return false;
-        }
-        return api && menu && essentials;
     }
 
     private void refreshContentSummary() {

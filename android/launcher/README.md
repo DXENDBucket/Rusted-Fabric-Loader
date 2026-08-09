@@ -10,9 +10,12 @@ input, and libRocket compatibility layers required by the desktop game.
 
 After setup, the same screen becomes a persistent content library. It imports and lists INI mods,
 custom maps, ordinary Fabric Jars, and `.javamod` packages. Maps and Java mods can be enabled or
-disabled without rewriting them; disabled files are moved outside the game/Fabric scan paths. The
-APK supplies the same official Rusted Fabric API and Java Mod Menu selected by default on Windows,
-plus INI Essentials installed disabled by default. None of these Jars contains the game itself.
+disabled without rewriting them; switch changes are staged until the user confirms the dialog.
+All managed content, including the bundled API, can be disabled, deleted, or replaced by importing
+a newer Jar with the same mod ID. The APK supplies the same official Rusted Fabric API and Java Mod
+Menu selected by default on Windows, plus INI Essentials installed disabled by default. A manual
+official-ID replacement takes precedence over the bundled copy. None of these Jars contains the game
+itself.
 
 The application contains only Loader-owned code and reviewed third-party runtime components.
 `verifyNoGamePayload` rejects APKs that contain Rusted Warfare classes or game payloads.

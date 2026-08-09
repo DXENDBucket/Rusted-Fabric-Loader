@@ -272,20 +272,41 @@ public final class JvmLauncherCoreVerification {
         Path api = temporary.resolve("api.jar");
         createFabricModJar(api, "rusted_fabric_api", "Rusted Fabric API", "0.1.0");
         ManagedContentLibrary.Item officialApi = ManagedContentLibrary.provisionOfficialJavaMod(
-                game, api, "rusted_fabric_api", true, true);
-        require(officialApi.official() && officialApi.locked() && officialApi.enabled(),
-                "Bundled API was not provisioned as a locked official component");
+                game, api, "rusted_fabric_api", true);
+        require(officialApi.official() && officialApi.enabled(),
+                "Bundled API was not provisioned as a manageable official component");
 
         Path essentials = temporary.resolve("essentials.jar");
         createFabricModJar(essentials, "ini_essentials", "INI Essentials", "0.1.0");
         ManagedContentLibrary.Item officialIni = ManagedContentLibrary.provisionOfficialJavaMod(
-                game, essentials, "ini_essentials", false, false);
+                game, essentials, "ini_essentials", false);
         require(officialIni.official() && !officialIni.enabled(),
                 "INI Essentials was not installed disabled by default");
         officialIni = ManagedContentLibrary.setEnabled(game, officialIni, true);
         ManagedContentLibrary.Item updatedIni = ManagedContentLibrary.provisionOfficialJavaMod(
-                game, essentials, "ini_essentials", false, false);
+                game, essentials, "ini_essentials", false);
         require(updatedIni.enabled(), "Official mod update did not preserve user enable state");
+        ManagedContentLibrary.delete(game, updatedIni);
+        require(ManagedContentLibrary.list(game, ManagedContentLibrary.Kind.JAVA_MOD).stream()
+                        .noneMatch(item -> "ini_essentials".equals(item.id())),
+                "Optional bundled Java mod could not be deleted");
+        officialApi = ManagedContentLibrary.setEnabled(game, officialApi, false);
+        require(!officialApi.enabled(), "Bundled API could not be disabled");
+        Path manualApi = temporary.resolve("updated-api.javamod");
+        createFabricModJar(manualApi, "rusted_fabric_api", "Rusted Fabric API", "0.2.0");
+        officialApi = ManagedContentLibrary.importContent(game,
+                ManagedContentLibrary.Kind.JAVA_MOD, manualApi, "updated API");
+        require(officialApi.enabled() && "0.2.0".equals(officialApi.version()),
+                "Manual official-ID update was not imported");
+        ManagedContentLibrary.Item preservedApi = ManagedContentLibrary.provisionOfficialJavaMod(
+                game, api, "rusted_fabric_api", true);
+        require("0.2.0".equals(preservedApi.version())
+                        && !preservedApi.path().getFileName().toString().startsWith("official-"),
+                "Bundled provisioning overwrote a manual official-ID update");
+        ManagedContentLibrary.delete(game, preservedApi);
+        require(ManagedContentLibrary.list(game, ManagedContentLibrary.Kind.JAVA_MOD).stream()
+                        .noneMatch(item -> "rusted_fabric_api".equals(item.id())),
+                "Updated API could not be deleted");
 
         ManagedContentLibrary.delete(game, javaMod);
         require(ManagedContentLibrary.list(game, ManagedContentLibrary.Kind.JAVA_MOD).stream()
