@@ -82,6 +82,23 @@ public final class ClientRenderContractVerification {
             // Expected.
         }
 
+        BarStyle bar = new BarStyle(ArgbColor.GREEN, ArgbColor.BLACK,
+                ArgbColor.WHITE, 2, BarDirection.RIGHT_TO_LEFT);
+        require(bar.fillColor() == ArgbColor.GREEN
+                        && bar.backgroundColor() == ArgbColor.BLACK
+                        && bar.borderColor() == ArgbColor.WHITE
+                        && bar.borderWidth() == 2
+                        && bar.direction() == BarDirection.RIGHT_TO_LEFT
+                        && bar.direction().isHorizontal()
+                        && !BarDirection.TOP_TO_BOTTOM.isHorizontal(),
+                "bar style or direction values drifted");
+        try {
+            new BarStyle(0, 0, 0, -1, BarDirection.LEFT_TO_RIGHT);
+            throw new AssertionError("negative bar border width was accepted");
+        } catch (IllegalArgumentException expected) {
+            // Expected.
+        }
+
         DrawStyle base = DrawStyle.text(ArgbColor.WHITE, 18.0F);
         DrawStyle centered = base.withTextAlignment(TextAlignment.CENTER).withAlpha(128);
         require(base.textAlignment() == TextAlignment.LEFT

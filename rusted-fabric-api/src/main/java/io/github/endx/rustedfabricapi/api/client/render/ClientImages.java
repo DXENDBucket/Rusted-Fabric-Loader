@@ -60,6 +60,65 @@ public final class ClientImages {
     }
 
     /**
+     * Creates a native image containing a filled bar. The ratio is clamped to zero through one,
+     * and the border is drawn inside the returned image. The caller owns the returned image.
+     */
+    public static ClientImage createBar(int width, int height, float ratio, BarStyle style) {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("bar dimensions must be positive");
+        }
+        if (!Float.isFinite(ratio)) throw new IllegalArgumentException("ratio must be finite");
+        BarStyle checked = Objects.requireNonNull(style, "style");
+        float normalized = Math.max(0.0F, Math.min(1.0F, ratio));
+        int axisLength = checked.direction().isHorizontal() ? width : height;
+        int filled = Math.round(axisLength * normalized);
+        int border = Math.min(checked.borderWidth(), Math.min(width, height) / 2);
+
+        ClientImage result = create(width, height, true);
+        boolean success = false;
+        try {
+            GameImage output = result.requireOpen();
+            output.ensurePixelBuffer();
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    boolean isBorder = border > 0 && (x < border || y < border
+                            || x >= width - border || y >= height - border);
+                    int color;
+                    if (isBorder) {
+                        color = checked.borderColor();
+                    } else {
+                        boolean isFilled;
+                        switch (checked.direction()) {
+                            case RIGHT_TO_LEFT:
+                                isFilled = x >= width - filled;
+                                break;
+                            case TOP_TO_BOTTOM:
+                                isFilled = y < filled;
+                                break;
+                            case BOTTOM_TO_TOP:
+                                isFilled = y >= height - filled;
+                                break;
+                            case LEFT_TO_RIGHT:
+                            default:
+                                isFilled = x < filled;
+                                break;
+                        }
+                        color = isFilled ? checked.fillColor() : checked.backgroundColor();
+                    }
+                    output.setPixel(x, y, color);
+                }
+            }
+            output.flushPixelBufferToBitmap();
+            output.dropPixelBuffer();
+            result.smooth(false);
+            success = true;
+            return result;
+        } finally {
+            if (!success) result.close();
+        }
+    }
+
+    /**
      * Copies a source region into a new image while replacing its alpha through a local-coordinate
      * mask. Pixel centers are exposed relative to the center of the copied source region.
      */

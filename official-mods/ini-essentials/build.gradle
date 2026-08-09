@@ -112,7 +112,9 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'frame_verticalOrdering', 'barDirection', 'overlayIndex',
                 'mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
                 'maskInvert', 'maskThresholdMode', 'maskAlphaMode',
-                'maskUsesSourceAlpha',
+                'maskUsesSourceAlpha', 'barValue', 'barMaxValue', 'barColor',
+                'barBackgroundColor', 'barBorderColor', 'barBorderWidth',
+                'barDirection',
                 'overlayStableIndex', 'overlayCount', 'overlayRow',
                 'overlayColumn', 'overlaySlot', 'overlayUnitId', 'screenWidth',
                 'screenHeight', 'uiScale'
@@ -185,8 +187,11 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !overlaySource.contains('metadata.loadImageFromConfigWithSmoothing')
                 || !['mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
                     'maskInvert', 'maskThresholdMode', 'maskAlphaMode',
-                    'maskUsesSourceAlpha'].every { decalMaskSource.contains('"' + it + '"') }
+                    'maskUsesSourceAlpha', 'barValue', 'barMaxValue', 'barColor',
+                    'barBackgroundColor', 'barBorderColor', 'barBorderWidth',
+                    'barDirection'].every { decalMaskSource.contains('"' + it + '"') }
                 || !decalMaskSource.contains('DecalRenderEvents.BEFORE_LAYER')
+                || !decalMaskSource.contains('ClientImages.createBar')
                 || !decalMaskSource.contains('AlphaMasks.imageAffine')
                 || !decalMaskSource.contains('GeometryDefinitions.require(')
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
@@ -327,7 +332,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v15'
+                || multiplayer?.protocol != 'ini_essentials_v16'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

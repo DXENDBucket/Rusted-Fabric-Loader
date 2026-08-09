@@ -57,11 +57,14 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 48,
+        require(ApiSupportMatrix.entries().size() == 49,
                 "public API support matrix does not cover every advertised API group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_RENDER_ALPHA_MASK,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "client alpha-mask support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_RENDER_BAR,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "client bar-image support is not advertised");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_DECAL_LAYER,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "client Decal-layer support is not advertised");

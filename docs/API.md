@@ -691,6 +691,11 @@ the composition deterministic and avoiding render-target state leaks. `DecalRend
 read-only before/after boundaries for each native per-unit Decal layer; temporary mapped-image
 changes made before a layer must be restored in the matching after callback.
 
+`ClientImages.createBar(...)` creates an owned native bar image using a `BarStyle` and
+`BarDirection`. It clamps the supplied ratio, rasterizes the border inward, and is shared by INI
+Essentials' native Decal bar extension. Mods that update a bar every frame should cache images by
+pixel fill amount and close evicted images rather than allocating an unbounded image per value.
+
 ## Camera, sound, and visual effects
 
 Camera mutation and effect creation should run on the update/render thread. Native effect creation

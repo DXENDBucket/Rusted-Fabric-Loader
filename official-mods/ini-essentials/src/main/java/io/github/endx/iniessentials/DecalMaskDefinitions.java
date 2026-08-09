@@ -4,6 +4,8 @@ import android.graphics.Rect;
 import io.github.endx.rustedfabricapi.api.client.render.AlphaMask;
 import io.github.endx.rustedfabricapi.api.client.render.AlphaMaskOptions;
 import io.github.endx.rustedfabricapi.api.client.render.AlphaMasks;
+import io.github.endx.rustedfabricapi.api.client.render.BarDirection;
+import io.github.endx.rustedfabricapi.api.client.render.BarStyle;
 import io.github.endx.rustedfabricapi.api.client.render.ClientImage;
 import io.github.endx.rustedfabricapi.api.client.render.ClientImages;
 import io.github.endx.rustedfabricapi.api.client.render.Decals;
@@ -37,18 +39,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-/** Alpha masks layered onto native Decal images without replacing native placement/render rules. */
+/** Optional bar and alpha-mask images layered into native Decal placement/render rules. */
 final class DecalMaskDefinitions {
     private static final String PREFIX = "decal_";
     private static final Set<String> KEYS = new java.util.HashSet<String>(java.util.Arrays.asList(
             "mask", "maskgeometry", "maskrender", "maskalphathreshold", "maskinvert",
             "maskthresholdmode", "maskalphamode", "maskusessourcealpha"));
+    private static final Set<String> BAR_KEYS = new java.util.HashSet<String>(java.util.Arrays.asList(
+            "barvalue", "barmaxvalue", "barcolor", "barbackgroundcolor", "barbordercolor",
+            "barborderwidth", "bardirection"));
     private static final Map<DecalTemplate, MaskConfig> MASKS =
             Collections.synchronizedMap(new WeakHashMap<DecalTemplate, MaskConfig>());
     private static final Map<DecalTemplate, Boolean> MASK_SOURCES =
             Collections.synchronizedMap(new WeakHashMap<DecalTemplate, Boolean>());
     private static final Map<DecalTemplate, Boolean> SOURCE_RENDER =
             Collections.synchronizedMap(new WeakHashMap<DecalTemplate, Boolean>());
+    private static final Map<DecalTemplate, BarConfig> BARS =
+            Collections.synchronizedMap(new WeakHashMap<DecalTemplate, BarConfig>());
     private static final ThreadLocal<Deque<LayerState>> STATES =
             ThreadLocal.withInitial(ArrayDeque::new);
 
@@ -72,8 +79,55 @@ final class DecalMaskDefinitions {
                         "mask: hullShape\nmaskAlphaThreshold: 0.1",
                         IniMultiplayerImpact.CLIENT_ONLY))
                 .build());
+        IniExtensions.register(IniFieldDefinition
+                .<String>builder(IniEssentials.MOD_ID, "decal_bar_fields",
+                        IniSectionSelector.prefix(PREFIX), "bar")
+                .matchKeyPrefix()
+                .activatesWhen(context -> BAR_KEYS.contains(
+                        context.key().toLowerCase(Locale.ROOT)))
+                .decoder(context -> context.rawValue().trim())
+                .applier(field -> applyBarField((CustomUnitMetadata) field.metadata(),
+                        (UnitConfig) field.unitConfig(), field.source().section(),
+                        field.source().key()))
+                .documentation(new IniFieldDocumentation(
+                        "runtime bar value plus optional bar style fields",
+                        "Turns a native Decal image frame into a dynamic bar while retaining native placement and visibility rules.",
+                        "把原版 Decal 图片帧变为动态条形图，同时保留原版的位置与可见性规则。",
+                        "barValue: self.hp\nbarMaxValue: self.maxHp",
+                        IniMultiplayerImpact.CLIENT_ONLY))
+                .build());
         DecalRenderEvents.BEFORE_LAYER.register(DecalMaskDefinitions::beforeLayer);
         DecalRenderEvents.AFTER_LAYER.register(DecalMaskDefinitions::afterLayer);
+    }
+
+    private static void applyBarField(CustomUnitMetadata metadata, UnitConfig config,
+                                      String section, String key) {
+        if (!config.hasKey(section, "barValue")) {
+            throw new IllegalArgumentException("[" + section + "] " + key
+                    + " requires barValue");
+        }
+        if (!key.equalsIgnoreCase("barValue")) return;
+        DecalTemplate template = Decals.require(metadata,
+                section.substring(PREFIX.length()));
+        if (template.imageFrame == null || template.imageStackFrames != null) {
+            throw new IllegalArgumentException("[" + section
+                    + "] bar Decal requires image and does not support imageStack");
+        }
+        BarConfig parsed = new BarConfig(template,
+                NumericExpression.compile(metadata,
+                        config.getString(section, "barValue", null), "self.hp"),
+                NumericExpression.compile(metadata,
+                        config.getString(section, "barMaxValue", null), "self.maxHp"),
+                config.getColor(section, "barColor", Integer.valueOf(0xff43a047)).intValue(),
+                config.getColor(section, "barBackgroundColor", Integer.valueOf(0xb0000000)).intValue(),
+                config.getColor(section, "barBorderColor", Integer.valueOf(0xffffffff)).intValue(),
+                NumericExpression.compile(metadata,
+                        config.getString(section, "barBorderWidth", null), "1"),
+                parseEnum(BarDirection.class,
+                        config.getString(section, "barDirection", "leftToRight"),
+                        "barDirection"));
+        BarConfig previous = BARS.put(template, parsed);
+        if (previous != null) previous.close();
     }
 
     private static void applyField(CustomUnitMetadata metadata, UnitConfig config,
@@ -147,6 +201,14 @@ final class DecalMaskDefinitions {
                     state.visibility.add(new VisibilitySwap(decal, decal.isVisible));
                     decal.isVisible = LogicBoolean.falseBoolean;
                 }
+                BarConfig bar = BARS.get(decal);
+                if (bar != null) {
+                    ImageSwap swap = bar.prepare(unit);
+                    if (swap != null) {
+                        state.images.add(swap);
+                        swap.apply();
+                    }
+                }
                 MaskConfig config = MASKS.get(decal);
                 if (config == null) continue;
                 ImageSwap swap = config.prepare(unit);
@@ -159,6 +221,60 @@ final class DecalMaskDefinitions {
             state.restore();
             STATES.get().pop();
             throw failure;
+        }
+    }
+
+    private static final class BarConfig {
+        final DecalTemplate template;
+        final NumericExpression value;
+        final NumericExpression maxValue;
+        final int fillColor, backgroundColor, borderColor;
+        final NumericExpression borderWidth;
+        final BarDirection direction;
+        final LinkedHashMap<String, ClientImage> cache =
+                new LinkedHashMap<String, ClientImage>(32, 0.75F, true);
+
+        BarConfig(DecalTemplate template, NumericExpression value, NumericExpression maxValue,
+                  int fillColor, int backgroundColor, int borderColor,
+                  NumericExpression borderWidth, BarDirection direction) {
+            this.template = template; this.value = value; this.maxValue = maxValue;
+            this.fillColor = fillColor; this.backgroundColor = backgroundColor;
+            this.borderColor = borderColor; this.borderWidth = borderWidth;
+            this.direction = direction;
+        }
+
+        ImageSwap prepare(CustomUnit unit) {
+            Frame frame = Frame.resolve(template, unit);
+            if (frame == null) return null;
+            float maximum = maxValue.evaluate(unit);
+            float ratio = maximum > 0.0F ? clamp(value.evaluate(unit) / maximum) : 0.0F;
+            int axis = direction.isHorizontal() ? frame.width() : frame.height();
+            int filled = Math.round(axis * ratio);
+            int border = Math.max(0, Math.round(borderWidth.evaluate(unit)));
+            String key = frame.width() + "x" + frame.height() + ':' + filled + ':' + border;
+            ClientImage image = cache.get(key);
+            if (image == null || image.isClosed()) {
+                float quantizedRatio = axis > 0 ? (float) filled / axis : 0.0F;
+                image = ClientImages.createBar(frame.width(), frame.height(), quantizedRatio,
+                        new BarStyle(fillColor, backgroundColor, borderColor, border, direction));
+                cache(key, image);
+            }
+            return ImageSwap.create(template, image);
+        }
+
+        private void cache(String key, ClientImage image) {
+            ClientImage previous = cache.put(key, image);
+            if (previous != null && previous != image) previous.close();
+            while (cache.size() > 128) {
+                Map.Entry<String, ClientImage> eldest = cache.entrySet().iterator().next();
+                cache.remove(eldest.getKey());
+                eldest.getValue().close();
+            }
+        }
+
+        void close() {
+            for (ClientImage image : cache.values()) image.close();
+            cache.clear();
         }
     }
 

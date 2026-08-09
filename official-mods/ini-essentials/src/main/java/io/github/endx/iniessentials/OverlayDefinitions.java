@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.client.render.AlphaMask;
 import io.github.endx.rustedfabricapi.api.client.render.AlphaMaskOptions;
 import io.github.endx.rustedfabricapi.api.client.render.AlphaMasks;
 import io.github.endx.rustedfabricapi.api.client.render.ArgbColor;
+import io.github.endx.rustedfabricapi.api.client.render.BarDirection;
 import io.github.endx.rustedfabricapi.api.client.render.ClientImage;
 import io.github.endx.rustedfabricapi.api.client.render.ClientImages;
 import io.github.endx.rustedfabricapi.api.client.render.DrawStyle;
@@ -338,8 +339,6 @@ final class OverlayDefinitions {
     enum TeamFilter { ANY, OWN, ALLY, ENEMY, NEUTRAL }
     enum FogVisibility { VISIBLE, EXPLORED, ALWAYS }
     enum TextAlign { LEFT, CENTER, RIGHT }
-    enum BarDirection { LEFT_TO_RIGHT, RIGHT_TO_LEFT, TOP_TO_BOTTOM, BOTTOM_TO_TOP }
-
     private static final class FrameLayout {
         final int totalFrames;
         final int frameWidth;
