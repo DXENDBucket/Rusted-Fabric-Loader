@@ -83,15 +83,35 @@ tasks.register('verifyIniEssentialsMetadata') {
         def eventRows = eventDataCatalog.readLines('UTF-8')
         def expectedEventData = [
                 'damage', 'rawDamage', 'hpDamage', 'shieldDamage', 'remainingDamage',
-                'hpBefore', 'hpAfter', 'shieldBefore', 'shieldAfter', 'wasLethal'
+                'hpBefore', 'hpAfter', 'shieldBefore', 'shieldAfter', 'wasLethal',
+                'actionId', 'queueQuantity', 'producesUnit', 'producedUnitType',
+                'queueSizeBefore', 'queueSizeAfter', 'hasActionTargetPoint',
+                'actionTargetX', 'actionTargetY', 'actionTargetUnit',
+                'orderType', 'waypointTargetX', 'waypointTargetY', 'waypointTargetUnit',
+                'waypointQueuedByPlayer', 'waypointBuildUnitType', 'waypointActionId',
+                'oldTeamId', 'newTeamId', 'oldAllianceGroup', 'newAllianceGroup',
+                'teleportFromX', 'teleportFromY', 'teleportFromHeight',
+                'teleportFromDirection', 'teleportToX', 'teleportToY',
+                'teleportToHeight', 'teleportToDirection', 'removedUnit',
+                'attachmentSlot', 'attachmentSlotIndex', 'attachmentWasTransported'
+        ] as Set
+        def expectedEventTypes = [
+                'tookDamage', 'queueItemAdded', 'queueItemCancelled',
+                'newWaypointGivenByPlayer', 'teamChanged', 'teleported',
+                'attachmentRemoved'
         ] as Set
         def eventDataNames = eventRows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 4)[2]
         } as Set
+        def eventTypes = eventRows.drop(1).findAll { !it.trim().isEmpty() }.collect {
+            it.split(',', 3)[1]
+        } as Set
         if (eventRows.isEmpty()
                 || !eventRows[0].startsWith('version_added,event,event_data_name,')
                 || eventDataNames != expectedEventData
-                || !initializer.getText('UTF-8').contains('DamageEventData.enable(')) {
+                || eventTypes != expectedEventTypes
+                || !initializer.getText('UTF-8').contains('DamageEventData.enable(')
+                || !initializer.getText('UTF-8').contains('NativeEventData.enable(')) {
             throw new GradleException('INI Essentials event-data catalog is empty or drifted')
         }
         def generatorSource = referenceGenerator.getText('UTF-8')
@@ -129,10 +149,12 @@ tasks.register('verifyIniEssentialsMetadata') {
                     || !['FF0F9D58', 'FF0D904F', 'FFFF9900', 'FFB45F06'].every {
                         stylesXml.contains(it)
                     }
-                    || hyperlinkCount < 14
+                    || hyperlinkCount < 40
                     || !drawingRelationshipText.contains('/relationships/hyperlink')
                     || !['#rf_en_core', '#rf_en_action', '#rf_zh_core',
-                         '#rf_zh_action', '#rf_en_shortcuts', '#rf_zh_shortcuts'].every {
+                         '#rf_zh_action', '#rf_en_shortcuts', '#rf_zh_shortcuts',
+                         '#rf_en_event_data', '#rf_zh_event_data',
+                         '#rf_en_event_tookdamage', '#rf_zh_event_attachmentremoved'].every {
                         drawingRelationshipText.contains(it)
                     }
                     || !sheetText.contains('Section shortcuts')
@@ -150,7 +172,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v3'
+                || multiplayer?.protocol != 'ini_essentials_v4'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
 import io.github.endx.rustedfabricapi.api.ini.IniSectionSelector;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
+import io.github.endx.rustedfabricapi.api.custom.event.NativeEventData;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerRequirements;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
@@ -22,6 +23,7 @@ public final class IniEssentials implements ModInitializer {
     public void onInitialize() {
         CameraActionFields.register();
         DamageEventData.enable(IniEssentials::activateSynchronizedRequirement);
+        NativeEventData.enable(IniEssentials::activateSynchronizedRequirement);
         IniExtensions.register(IniFieldDefinition
                 .<Boolean>builder(MOD_ID, "allow_negative_hp",
                         IniSectionSelector.exact("core"), "allowNegativeHp")
@@ -57,7 +59,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v3",
-                "cf2f09493c7bfa753703ca83442de8fc6bab8039675136bbde2174a61a4f90fa"));
+                MOD_ID, version, "ini_essentials_v4",
+                "664ad1bcb235bf3c8250f9087eb35bd5a605b3442338eae93dc75c0ddc72cd54"));
     }
 }

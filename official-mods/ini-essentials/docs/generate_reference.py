@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import re
 import warnings
 import zipfile
 from collections import OrderedDict
@@ -31,6 +32,7 @@ FONT_NAME = "Arial"
 TITLE_COLOR = "EFEFEF"
 NOTICE_COLOR = "00FF00"
 INDEX_COLOR = "D9D9D9"
+EVENT_INDEX_COLOR = "B2EBF2"
 GRID_COLOR = "A6A6A6"
 ROW_ALT_COLOR = "F3F3F3"
 WHITE = "FFFFFF"
@@ -49,6 +51,7 @@ SECTION_PALETTES = {
     "leg_arm": ("134F5C", "0C343D"),
     "attachment": ("CC4125", "85200C"),
     "action": ("FF9900", "B45F06"),
+    "event": ("00A6B8", "007C91"),
     "effect": ("A64D79", "741B47"),
     "animation": ("45818E", "134F5C"),
     "resource": ("134F5C", "0C343D"),
@@ -153,14 +156,18 @@ def make_groups(field_rows: list[dict[str, str]],
             key, section_en, section_zh, summary_en, summary_zh,
             key, tuple(rows), False))
 
-    if event_rows:
+    events: OrderedDict[str, list[dict[str, str]]] = OrderedDict()
+    for row in event_rows:
+        events.setdefault(row["event"], []).append(row)
+    for event, rows in events.items():
+        event_key = re.sub(r"[^a-z0-9]+", "_", event.lower()).strip("_")
         groups.append(ReferenceGroup(
-            "took_damage_event_data",
-            "tookDamage — eventData(...)",
-            "tookDamage — eventData(...) 事件数据",
-            "Extra context values for the native tookDamage action event",
-            "为原版 tookDamage 动作事件补充的上下文值",
-            "action", tuple(event_rows), True))
+            f"event_{event_key}",
+            f"{event} — eventData(...)",
+            f"{event} — eventData(...) 事件数据",
+            f"Extra context values for the native {event} action event",
+            f"为原版 {event} 动作事件补充的上下文值",
+            "event", tuple(rows), True))
     return groups
 
 
@@ -346,24 +353,84 @@ def add_reference_sheet(workbook: Workbook, title: str,
                 background=INDEX_COLOR, bold=True, horizontal="center", size=11.0)
     sheet.row_dimensions[3].height = 28
 
-    index_rows = shortcut_rows(len(groups))
-    first_group_row = 4 + index_rows + 1
-    starts: dict[str, int] = {}
+    regular_groups = [group for group in groups if not group.event_data]
+    event_groups = [group for group in groups if group.event_data]
+    index_rows = shortcut_rows(len(regular_groups))
+    event_category_row = 4 + index_rows
+    first_group_row = event_category_row + 2
+    regular_starts: dict[str, int] = {}
     cursor = first_group_row
-    for group in groups:
-        starts[group.key] = cursor
+    for group in regular_groups:
+        regular_starts[group.key] = cursor
         cursor += len(group.rows) + 3
 
     language = "zh" if chinese else "en"
     shortcut_target = f"rf_{language}_shortcuts"
     define_target(workbook, shortcut_target, sheet.title, "A3")
     define_target(workbook, f"rf_{language}_title", sheet.title, "A1")
-    add_shortcuts(sheet, groups, starts, 4, chinese, buttons)
+    add_shortcuts(sheet, regular_groups, regular_starts, 4, chinese, buttons)
+
+    event_category_target = f"rf_{language}_event_data"
+    define_target(workbook, event_category_target, sheet.title, f"A{cursor}")
+    sheet.merge_cells(start_row=event_category_row, start_column=1,
+                      end_row=event_category_row, end_column=8)
+    category = sheet.cell(
+        event_category_row, 1,
+        "Native eventData extensions ↓" if not chinese else "原版事件数据扩展 ↓")
+    style_range(sheet, event_category_row, 1, 8,
+                background=SECTION_PALETTES["event"][0], font_color=WHITE,
+                bold=True, horizontal="center", size=11.0)
+    category.font = Font(
+        name=FONT_NAME, size=11.0, bold=True, color=argb(WHITE))
+    sheet.row_dimensions[event_category_row].height = 29
+    add_navigation_button(
+        buttons, sheet, f"open_{language}_event_data", event_category_target,
+        event_category_row, 1, event_category_row, 8)
 
     cursor = first_group_row
-    for group in groups:
+    for group in regular_groups:
         cursor = add_group(
             sheet, group, cursor, chinese, shortcut_target, buttons)
+
+    event_banner_row = cursor
+    sheet.merge_cells(start_row=event_banner_row, start_column=1,
+                      end_row=event_banner_row, end_column=8)
+    sheet.cell(event_banner_row, 1, (
+        "Native autoTriggerOnEvent data extensions"
+        if not chinese else "原版 autoTriggerOnEvent 事件数据扩展"))
+    style_range(sheet, event_banner_row, 1, 8,
+                background=SECTION_PALETTES["event"][1], font_color=WHITE,
+                bold=True, horizontal="center", size=14.0)
+    sheet.row_dimensions[event_banner_row].height = 42
+
+    event_index_row = event_banner_row + 1
+    event_shortcut_target = f"rf_{language}_event_shortcuts"
+    define_target(workbook, event_shortcut_target, sheet.title,
+                  f"A{event_index_row}")
+    sheet.merge_cells(start_row=event_index_row, start_column=1,
+                      end_row=event_index_row, end_column=8)
+    sheet.cell(event_index_row, 1, (
+        "Event shortcuts — click to jump"
+        if not chinese else "事件快捷导航——点击即可跳转"))
+    style_range(sheet, event_index_row, 1, 8,
+                background=EVENT_INDEX_COLOR, bold=True,
+                horizontal="center", size=11.0)
+    sheet.row_dimensions[event_index_row].height = 28
+
+    event_shortcut_row = event_index_row + 1
+    event_first_group_row = (
+        event_shortcut_row + shortcut_rows(len(event_groups)) + 1)
+    event_starts: dict[str, int] = {}
+    event_cursor = event_first_group_row
+    for group in event_groups:
+        event_starts[group.key] = event_cursor
+        event_cursor += len(group.rows) + 3
+    add_shortcuts(
+        sheet, event_groups, event_starts, event_shortcut_row, chinese, buttons)
+    event_cursor = event_first_group_row
+    for group in event_groups:
+        event_cursor = add_group(
+            sheet, group, event_cursor, chinese, event_shortcut_target, buttons)
 
     for index, width in enumerate(COLUMN_WIDTHS, 1):
         sheet.column_dimensions[get_column_letter(index)].width = width

@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
+import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,6 +13,7 @@ public abstract class EventDataUsageNamedMixin {
     private void rustedfabricapi$noticeEnhancedEventDataName(String name, CallbackInfo ci) {
         if (getClass().getName().endsWith("VariableScope$ReadEventMemoryLogicBoolean")) {
             DamageEventDataRuntime.onEventDataNameParsed(name);
+            NativeEventDataRuntime.onEventDataNameParsed(name);
         }
     }
 }

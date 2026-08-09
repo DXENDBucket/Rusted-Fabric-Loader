@@ -56,6 +56,9 @@ public abstract class BuildQueueNamedMixin {
                                         targetPoint, new String[]{"y", "b"}) : Float.NaN,
                         targetPoint != null, (rustedwarfare.unit.Unit) targetUnit,
                         (rustedwarfare.unit.build.BuildQueueItem) cir.getReturnValue());
+        io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime.captureQueueItem(
+                (rustedwarfare.unit.action.UnitAction) action,
+                (rustedwarfare.unit.build.BuildQueueItem) cir.getReturnValue());
     }
 
     @Inject(method = "setCurrentQueueItem(Lrustedwarfare/unit/build/BuildQueueItem;)V", at = @At("HEAD"), require = 1)

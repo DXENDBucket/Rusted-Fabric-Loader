@@ -50,6 +50,18 @@ to the native damage routine after attachment forwarding, immunity, and custom-u
 projectile-tag filtering retain their native behavior. Parsing any enhanced name activates the
 matching multiplayer requirement because these values can influence synchronized actions.
 
+The same opt-in event-data bridge now fills gaps in five other native event groups:
+
+- `queueItemAdded` and `queueItemCancelled`: action ID, queue item metadata, queue sizes and targets.
+- `newWaypointGivenByPlayer`: order type, point/unit target, player queue flag, build type and action ID.
+- `teamChanged`: old/new team IDs and alliance groups.
+- `teleported`: position, height and direction before and after the native teleport.
+- `attachmentRemoved`: the actual removed child, old slot and transport-list membership. This keeps
+  the native event firing behavior while working around its `eventSource` pointing at the parent.
+
+All values are added to the event's existing `eventData(...)` scope. Omitting the enhanced names
+keeps native INI behavior and does not activate the synchronized requirement.
+
 The machine-readable bilingual field catalog is stored at
 `src/main/resources/ini_essentials/fields.csv`; enhanced native event values are stored in
 `src/main/resources/ini_essentials/event-data.csv`. The generated spreadsheet in `docs/` is intended
@@ -57,8 +69,10 @@ for the same community workflow as the original Rusted Warfare Unit Modding Refe
 
 The workbook is generated rather than edited by hand. Its English and Chinese pages use the
 original reference's five-column-first layout and matching section colors (`[core]` green,
-action/hiddenAction orange), followed by extension metadata columns. Colored section shortcuts at
-the top of each page jump directly to their section, and every section links back to the index.
+action/hiddenAction orange), followed by extension metadata columns. Native event-data additions
+live in a separate large catalog at the bottom instead of being mixed with regular INI sections.
+Colored shortcuts jump to regular sections or that event catalog, whose own index links each event;
+every section links back to its corresponding index.
 Like the community 1.15 enhanced reference, these controls use transparent DrawingML hyperlink
 overlays: hovering shows a link pointer and clicking jumps immediately without selecting a cell.
 

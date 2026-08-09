@@ -1,9 +1,11 @@
 package io.github.endx.rustedfabricapi.mixin;
 
+import android.graphics.PointF;
 import io.github.endx.rustedfabricapi.api.custom.attachment.event.AttachmentEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
 import io.github.endx.rustedfabricapi.api.unit.tag.event.UnitTagEvents;
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
+import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,11 +18,67 @@ import rustedwarfare.custom.attachment.AttachmentSlot;
 import rustedwarfare.custom.event.CustomUnitEventType;
 import rustedwarfare.custom.logic.VariableScope;
 import rustedwarfare.game.Projectile;
+import rustedwarfare.game.Team;
 import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
+import rustedwarfare.unit.UnitOrder;
+import rustedwarfare.unit.action.UnitAction;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitExtensionNamedMixin {
+    @Inject(
+            method = "queueAction(Lrustedwarfare/unit/action/UnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)V",
+            at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beginQueueEventContext(UnitAction action, boolean cancellation,
+                                                        PointF targetPoint, Unit targetUnit,
+                                                        CallbackInfo ci) {
+        NativeEventDataRuntime.beginQueueAction(
+                (CustomUnit) (Object) this, action, cancellation, targetPoint, targetUnit);
+    }
+
+    @Inject(
+            method = "queueAction(Lrustedwarfare/unit/action/UnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)V",
+            at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$endQueueEventContext(UnitAction action, boolean cancellation,
+                                                      PointF targetPoint, Unit targetUnit,
+                                                      CallbackInfo ci) {
+        NativeEventDataRuntime.endQueueAction((CustomUnit) (Object) this, action);
+    }
+
+    @Inject(method = "a(Lrustedwarfare/unit/UnitOrder;)V",
+            at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beginWaypointEventContext(UnitOrder order, CallbackInfo ci) {
+        NativeEventDataRuntime.beginWaypoint((CustomUnit) (Object) this, order);
+    }
+
+    @Inject(method = "a(Lrustedwarfare/unit/UnitOrder;)V",
+            at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$endWaypointEventContext(UnitOrder order, CallbackInfo ci) {
+        NativeEventDataRuntime.endWaypoint((CustomUnit) (Object) this);
+    }
+
+    @Inject(method = "changeTeam(Lrustedwarfare/game/Team;)V",
+            at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beginTeamEventContext(Team newTeam, CallbackInfo ci) {
+        NativeEventDataRuntime.beginTeamChange((CustomUnit) (Object) this, newTeam);
+    }
+
+    @Inject(method = "changeTeam(Lrustedwarfare/game/Team;)V",
+            at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$endTeamEventContext(Team newTeam, CallbackInfo ci) {
+        NativeEventDataRuntime.endTeamChange((CustomUnit) (Object) this);
+    }
+
+    @Inject(method = "f(FF)V", at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beginTeleportEventContext(float x, float y, CallbackInfo ci) {
+        NativeEventDataRuntime.beginTeleport((CustomUnit) (Object) this);
+    }
+
+    @Inject(method = "f(FF)V", at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$endTeleportEventContext(float x, float y, CallbackInfo ci) {
+        NativeEventDataRuntime.endTeleport((CustomUnit) (Object) this);
+    }
+
     @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F",
             at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beginEnhancedDamageEvent(Unit attacker, float amount,
@@ -87,7 +145,10 @@ public abstract class CustomUnitExtensionNamedMixin {
                 (CustomUnit) (Object) this, child,
                 child != null ? child.getAttachmentSlot() : null)) {
             cir.setReturnValue(Boolean.FALSE);
+            return;
         }
+        NativeEventDataRuntime.beginAttachmentRemoval(
+                (CustomUnit) (Object) this, child);
     }
 
     @Inject(method = "detachUnit(Lrustedwarfare/unit/OrderableUnit;)Z",
@@ -97,6 +158,8 @@ public abstract class CustomUnitExtensionNamedMixin {
         AttachmentEvents.AFTER_DETACH.invoker().afterDetach(
                 (CustomUnit) (Object) this, child,
                 Boolean.TRUE.equals(cir.getReturnValue()));
+        NativeEventDataRuntime.endAttachmentRemoval(
+                (CustomUnit) (Object) this, child);
     }
 
     @Inject(method = "triggerCustomEvent(Lrustedwarfare/custom/event/CustomUnitEventType;)V",
@@ -143,7 +206,10 @@ public abstract class CustomUnitExtensionNamedMixin {
     private VariableScope rustedfabricapi$enrichQueuedEventData(
             VariableScope eventData, CustomUnitEventType eventType, Unit source,
             CustomTagList eventTags, VariableScope originalEventData) {
+        CustomUnit unit = (CustomUnit) (Object) this;
+        VariableScope nativeData = NativeEventDataRuntime.enrichQueuedEvent(
+                unit, eventType, source, eventTags, eventData);
         return DamageEventDataRuntime.enrichQueuedEvent(
-                (CustomUnit) (Object) this, eventType, source, eventTags, eventData);
+                unit, eventType, source, eventTags, nativeData);
     }
 }

@@ -333,6 +333,7 @@ tasks.register('verifyOfficialApiNamespace') {
                 'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitEventData.java',
                 'io/github/endx/rustedfabricapi/api/custom/event/CustomUnitTriggerEvents.java',
                 'io/github/endx/rustedfabricapi/api/custom/event/DamageEventData.java',
+                'io/github/endx/rustedfabricapi/api/custom/event/NativeEventData.java',
                 'io/github/endx/rustedfabricapi/api/data/PersistentData.java',
                 'io/github/endx/rustedfabricapi/api/data/PersistentDataCodec.java',
                 'io/github/endx/rustedfabricapi/api/data/PersistentDataKey.java',

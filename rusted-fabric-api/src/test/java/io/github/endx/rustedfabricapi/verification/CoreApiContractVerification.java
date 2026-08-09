@@ -22,8 +22,10 @@ import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
+import io.github.endx.rustedfabricapi.api.custom.event.NativeEventData;
 import io.github.endx.rustedfabricapi.impl.combat.NativeDamageMath;
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
+import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
 import rustedwarfare.unit.Unit;
 
 import java.util.ArrayList;
@@ -300,6 +302,21 @@ public final class CoreApiContractVerification {
         require(DamageEventData.fieldNames().contains("damage")
                         && DamageEventData.fieldNames().contains("wasLethal"),
                 "damage event-data catalog is incomplete");
+
+        final int[] nativeUsage = {0};
+        try (NativeEventData.Registration ignored =
+                     NativeEventData.enable(() -> nativeUsage[0]++)) {
+            NativeEventDataRuntime.onEventDataNameParsed("TeleportFromX");
+            NativeEventDataRuntime.onEventDataNameParsed("unrelated");
+            require(nativeUsage[0] == 1,
+                    "native eventData usage detection is not case-insensitive");
+        }
+        require(NativeEventData.fieldNames().contains("actionId")
+                        && NativeEventData.fieldNames().contains("waypointTargetUnit")
+                        && NativeEventData.fieldNames().contains("oldTeamId")
+                        && NativeEventData.fieldNames().contains("teleportFromX")
+                        && NativeEventData.fieldNames().contains("removedUnit"),
+                "native event-data catalog is incomplete");
 
     }
 
