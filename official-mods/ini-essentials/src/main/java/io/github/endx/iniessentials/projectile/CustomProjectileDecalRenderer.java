@@ -1,8 +1,8 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.projectile;
 
 import android.graphics.PointF;
 import io.github.endx.rustedfabricapi.api.client.render.event.ProjectileRenderEvents;
-import io.github.endx.rustedfabricapi.mixin.DecalBehaviorAccessor;
+import io.github.endx.rustedfabricapi.mixin.accessor.DecalBehaviorAccessor;
 import rustedwarfare.custom.CustomProjectileTemplate;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.graphics.DecalBehavior;
@@ -14,13 +14,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 /** Draws native Decal sections at a CustomProjectile's live world position. */
-final class CustomProjectileDecalRenderer {
+public final class CustomProjectileDecalRenderer {
     private static final ThreadLocal<PointF> POINT = ThreadLocal.withInitial(PointF::new);
     private static final Field[] POINT_COORDINATES = pointCoordinateFields();
 
     private CustomProjectileDecalRenderer() { }
 
-    static void register() {
+    public static void register() {
         ProjectileRenderEvents.DRAW.register(CustomProjectileDecalRenderer::draw);
     }
 

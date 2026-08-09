@@ -1,4 +1,4 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.overlay;
 
 import io.github.endx.rustedfabricapi.api.logic.LogicNumberFunctionDefinition;
 import io.github.endx.rustedfabricapi.api.logic.LogicNumberFunctions;
@@ -7,13 +7,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /** Frame-local values available while an overlay expression or dynamic string is evaluated. */
-final class OverlayEvaluationContext {
+public final class OverlayEvaluationContext {
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
     private static final ThreadLocal<State> CURRENT = new ThreadLocal<State>();
 
     private OverlayEvaluationContext() { }
 
-    static void registerFunctions() {
+    public static void registerFunctions() {
         if (!REGISTERED.compareAndSet(false, true)) return;
         function("overlayindex", state -> state.index);
         function("overlaystableindex", state -> state.stableIndex);

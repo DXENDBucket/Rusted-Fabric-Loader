@@ -10,7 +10,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 /** A position resolved from legacy action context tokens or a native UnitReference expression. */
-final class ActionPositionReference {
+public final class ActionPositionReference {
     private final Kind kind;
     private final UnitReferenceExpression expression;
 
@@ -19,7 +19,7 @@ final class ActionPositionReference {
         this.expression = expression;
     }
 
-    static ActionPositionReference compile(Object metadata, String raw) {
+    public static ActionPositionReference compile(Object metadata, String raw) {
         String checked = raw != null ? raw.trim() : "";
         if (checked.isEmpty()) throw new IllegalArgumentException("position reference must not be empty");
         String normalized = checked.replace("_", "").toLowerCase(Locale.ROOT);
@@ -32,7 +32,7 @@ final class ActionPositionReference {
                 UnitReferenceExpression.compile(metadata, checked));
     }
 
-    Optional<WorldPoint> resolve(IniActionExecutionContext context) {
+    public Optional<WorldPoint> resolve(IniActionExecutionContext context) {
         switch (kind) {
             case SELF:
                 return Optional.of(context.actorPosition());
@@ -47,7 +47,7 @@ final class ActionPositionReference {
         }
     }
 
-    WorldPoint require(IniActionExecutionContext context, String field) {
+    public WorldPoint require(IniActionExecutionContext context, String field) {
         return resolve(context).orElseThrow(() -> new IllegalArgumentException(
                 field + " unit reference resolved to null"));
     }

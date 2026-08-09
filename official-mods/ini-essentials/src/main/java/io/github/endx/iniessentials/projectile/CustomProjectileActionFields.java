@@ -1,4 +1,6 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.projectile;
+
+import io.github.endx.iniessentials.IniEssentials;
 
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
@@ -16,10 +18,10 @@ import rustedwarfare.unit.Unit;
 import rustedwarfare.util.CommonUtils;
 
 /** Action entrypoint for independent CustomProjectile patterns. */
-final class CustomProjectileActionFields {
+public final class CustomProjectileActionFields {
     private CustomProjectileActionFields() { }
 
-    static void register() {
+    public static void register() {
         IniActionEffects.register(IniActionEffectDefinition
                 .<CustomProjectileDefinitions.Reference>builder(
                         IniEssentials.MOD_ID, "emit_projectile_pattern",

@@ -1,4 +1,8 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.projectile;
+
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventEvaluation;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
@@ -25,7 +29,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /** Dynamic projectile mutators and ordered per-turret projectile replacement rules. */
-final class ProjectileRuleDefinitions {
+public final class ProjectileRuleDefinitions {
     private static final String MUTATOR_PREFIX = "mutator";
     private static final String SELECT_PREFIX = "projectileRule_";
     private static final String IF_CONDITION = "ifCondition";
@@ -41,7 +45,7 @@ final class ProjectileRuleDefinitions {
 
     private ProjectileRuleDefinitions() { }
 
-    static void register() {
+    public static void register() {
         registerMutatorCondition();
         registerMutatorMultiplier(DIRECT_MULTIPLIER, false);
         registerMutatorMultiplier(AREA_MULTIPLIER, true);

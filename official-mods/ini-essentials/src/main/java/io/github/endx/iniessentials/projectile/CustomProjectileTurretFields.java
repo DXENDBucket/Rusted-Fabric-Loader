@@ -1,4 +1,7 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.projectile;
+
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.IniEssentials;
 
 import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
@@ -26,7 +29,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /** Exact turret integration for independent CustomProjectile patterns. */
-final class CustomProjectileTurretFields {
+public final class CustomProjectileTurretFields {
     private static final String FIELD = "projectilePattern";
     private static final String RULE_PREFIX = "projectilePatternRule_";
     private static final String RULE_PATTERN = "pattern";
@@ -43,7 +46,7 @@ final class CustomProjectileTurretFields {
 
     private CustomProjectileTurretFields() { }
 
-    static void register() {
+    public static void register() {
         IniExtensions.register(IniFieldDefinition
                 .<CustomProjectileDefinitions.Reference>builder(
                         IniEssentials.MOD_ID, "turret_projectile_pattern",

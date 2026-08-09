@@ -1,4 +1,9 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.overlay;
+
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.GeometryDefinitions;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import io.github.endx.rustedfabricapi.api.client.Camera;
 import io.github.endx.rustedfabricapi.api.client.event.HudRenderEvents;
@@ -43,14 +48,14 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /** Screen-space overlays declared by custom-unit INI sections. */
-final class OverlayDefinitions {
+public final class OverlayDefinitions {
     private static final String PREFIX = "overlay_";
     private static final Map<Object, Map<String, Template>> BY_METADATA =
             Collections.synchronizedMap(new WeakHashMap<Object, Map<String, Template>>());
 
     private OverlayDefinitions() { }
 
-    static void register() {
+    public static void register() {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "overlay_definition",
                         IniSectionSelector.prefix(PREFIX), "type")

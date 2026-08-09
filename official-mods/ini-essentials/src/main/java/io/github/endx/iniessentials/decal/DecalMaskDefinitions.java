@@ -1,4 +1,9 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.decal;
+
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.GeometryDefinitions;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import android.graphics.Rect;
 import io.github.endx.rustedfabricapi.api.client.render.AlphaMask;
@@ -40,7 +45,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 /** Optional bar and alpha-mask images layered into native Decal placement/render rules. */
-final class DecalMaskDefinitions {
+public final class DecalMaskDefinitions {
     private static final String PREFIX = "decal_";
     private static final Set<String> KEYS = new java.util.HashSet<String>(java.util.Arrays.asList(
             "mask", "maskgeometry", "maskrender", "maskalphathreshold", "maskinvert",
@@ -61,7 +66,7 @@ final class DecalMaskDefinitions {
 
     private DecalMaskDefinitions() { }
 
-    static void register() {
+    public static void register() {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "decal_mask_fields",
                         IniSectionSelector.prefix(PREFIX), "mask")

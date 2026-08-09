@@ -1,5 +1,17 @@
 package io.github.endx.iniessentials;
 
+import io.github.endx.iniessentials.action.CameraActionFields;
+import io.github.endx.iniessentials.action.FogActionFields;
+import io.github.endx.iniessentials.decal.DecalMaskDefinitions;
+import io.github.endx.iniessentials.event.EventRuleDefinitions;
+import io.github.endx.iniessentials.health.NegativeHpPolicy;
+import io.github.endx.iniessentials.overlay.OverlayDefinitions;
+import io.github.endx.iniessentials.overlay.OverlayEvaluationContext;
+import io.github.endx.iniessentials.projectile.CustomProjectileActionFields;
+import io.github.endx.iniessentials.projectile.CustomProjectileDecalRenderer;
+import io.github.endx.iniessentials.projectile.CustomProjectileDefinitions;
+import io.github.endx.iniessentials.projectile.CustomProjectileTurretFields;
+import io.github.endx.iniessentials.projectile.ProjectileRuleDefinitions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
@@ -70,7 +82,7 @@ public final class IniEssentials implements ModInitializer {
         System.out.println("[INI Essentials] Registered opt-in INI fields and event data");
     }
 
-    static void activateSynchronizedRequirement() {
+    public static void activateSynchronizedRequirement() {
         if (!SYNC_REQUIREMENT_ACTIVE.compareAndSet(false, true)) return;
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())

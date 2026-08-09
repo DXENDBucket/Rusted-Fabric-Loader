@@ -753,7 +753,7 @@ tasks.register('verifyDistribution') {
                     || zip.getEntry('io/github/endx/iniessentials/IniEssentials.class') == null
                     || zip.getEntry('ini_essentials/fields.csv') == null
                     || zip.getEntry('ini_essentials/sync-schema.txt') == null
-                    || zip.getEntry('io/github/endx/iniessentials/NegativeHpPolicy.class') == null) {
+                    || zip.getEntry('io/github/endx/iniessentials/health/NegativeHpPolicy.class') == null) {
                 throw new GradleException('Official INI Essentials artifact is incomplete or inconsistent')
             }
             zip.entries().each { entry ->

@@ -1,4 +1,8 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.projectile;
+
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternSpec;
@@ -38,7 +42,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 /** Loader and registry for independent {@code class: CustomProjectile} INI assets. */
-final class CustomProjectileDefinitions {
+public final class CustomProjectileDefinitions {
     private static final int PROBE_BYTES = 65536;
     private static final Map<Identifier, Definition> DEFINITIONS =
             new LinkedHashMap<Identifier, Definition>();
@@ -49,11 +53,11 @@ final class CustomProjectileDefinitions {
 
     private CustomProjectileDefinitions() { }
 
-    static void register() {
+    public static void register() {
         RustedIniEvents.BEFORE_PARSE_STREAM.register(CustomProjectileDefinitions::inspectStream);
     }
 
-    static synchronized void beginReload() {
+    public static synchronized void beginReload() {
         DEFINITIONS.clear();
         REFERENCES.clear();
         DECALS.clear();
@@ -63,7 +67,7 @@ final class CustomProjectileDefinitions {
         REFERENCES.add(reference);
     }
 
-    static synchronized void validateReferences() {
+    public static synchronized void validateReferences() {
         for (Reference reference : REFERENCES) {
             Definition definition = DEFINITIONS.get(reference.definitionId);
             if (definition == null) {

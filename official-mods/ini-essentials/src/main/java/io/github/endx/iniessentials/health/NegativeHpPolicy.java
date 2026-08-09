@@ -1,4 +1,6 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.health;
+
+import io.github.endx.iniessentials.BooleanExpression;
 
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.unit.Unit;
@@ -19,7 +21,7 @@ public final class NegativeHpPolicy {
         configure(metadata, enabled ? BooleanExpression.compile(metadata, "true") : null);
     }
 
-    static void configure(Object metadata, BooleanExpression expression) {
+    public static void configure(Object metadata, BooleanExpression expression) {
         if (metadata == null) return;
         if (expression != null && !expression.isStaticFalse()) {
             POLICIES.put(metadata, expression);

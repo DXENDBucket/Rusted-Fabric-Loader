@@ -1,4 +1,9 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.action;
+
+import io.github.endx.iniessentials.ActionPositionReference;
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import io.github.endx.rustedfabricapi.api.client.Camera;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
@@ -10,12 +15,12 @@ import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 import java.util.ArrayList;
 import java.util.List;
 
-final class CameraActionFields {
+public final class CameraActionFields {
     private static final String POSITION_GROUP = "camera_position";
 
     private CameraActionFields() { }
 
-    static void register() {
+    public static void register() {
         IniActionEffects.register(IniActionEffectDefinition
                 .<DynamicPoint>builder(IniEssentials.MOD_ID, "camera_center_at", "cameraCenterAt")
                 .exclusiveGroup(POSITION_GROUP)

@@ -1,4 +1,8 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.event;
+
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventEvaluation;
@@ -26,7 +30,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Declarative synchronous-operation and queued-notification event rules. */
-final class EventRuleDefinitions {
+public final class EventRuleDefinitions {
     private static final String PREFIX = "event_";
     private static final Map<Object, List<Rule>> BY_METADATA = Collections.synchronizedMap(
             new WeakHashMap<Object, List<Rule>>());
@@ -34,7 +38,7 @@ final class EventRuleDefinitions {
 
     private EventRuleDefinitions() { }
 
-    static void register() {
+    public static void register() {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "event_rule",
                         IniSectionSelector.prefix(PREFIX), "event")

@@ -1,4 +1,10 @@
-package io.github.endx.iniessentials;
+package io.github.endx.iniessentials.action;
+
+import io.github.endx.iniessentials.ActionPositionReference;
+import io.github.endx.iniessentials.BooleanExpression;
+import io.github.endx.iniessentials.GeometryDefinitions;
+import io.github.endx.iniessentials.IniEssentials;
+import io.github.endx.iniessentials.NumericExpression;
 
 import io.github.endx.rustedfabricapi.api.fog.FogMode;
 import io.github.endx.rustedfabricapi.api.fog.FogOfWar;
@@ -27,14 +33,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-final class FogActionFields {
+public final class FogActionFields {
     private static final String PREFIX = "fog_";
     private static final Map<Object, Map<String, Template>> BY_METADATA =
             Collections.synchronizedMap(new WeakHashMap<Object, Map<String, Template>>());
 
     private FogActionFields() { }
 
-    static void register() {
+    public static void register() {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "fog_definition",
                         IniSectionSelector.prefix(PREFIX), "operation")

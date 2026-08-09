@@ -21,14 +21,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-final class GeometryDefinitions {
+public final class GeometryDefinitions {
     private static final String PREFIX = "geometry_";
     private static final Map<Object, Map<String, Template>> BY_METADATA =
             Collections.synchronizedMap(new WeakHashMap<Object, Map<String, Template>>());
 
     private GeometryDefinitions() { }
 
-    static void register() {
+    public static void register() {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "geometry_definition",
                         IniSectionSelector.prefix(PREFIX), "type")
@@ -48,7 +48,7 @@ final class GeometryDefinitions {
                 .build());
     }
 
-    static Template require(Object metadata, String name) {
+    public static Template require(Object metadata, String name) {
         String key = normalizeName(name);
         Map<String, Template> definitions = BY_METADATA.get(metadata);
         Template result = definitions != null ? definitions.get(key) : null;
@@ -166,7 +166,7 @@ final class GeometryDefinitions {
     enum Type { CIRCLE, ELLIPSE, RECTANGLE, SECTOR, RING, ARC, LINE, POLYGON,
         UNION, INTERSECTION, DIFFERENCE }
 
-    static final class Template {
+    public static final class Template {
         private final String name;
         private final Type type;
         private final NumericExpression radius, radiusX, radiusY, width, height;
@@ -191,7 +191,7 @@ final class GeometryDefinitions {
             this.thickness = thickness; this.points = points; this.components = components;
         }
 
-        GeometryMask resolve(Object metadata, OrderableUnit unit) {
+        public GeometryMask resolve(Object metadata, OrderableUnit unit) {
             return resolve(metadata, unit, new HashSet<String>(), 0);
         }
 
