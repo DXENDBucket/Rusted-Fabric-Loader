@@ -28,7 +28,7 @@
     <string name="security_disclaimer_import_message">Java 模组会以游戏/Loader 的权限执行代码。只有在你信任作者和下载来源时才应继续。Rusted Fabric 没有验证未知第三方模组。</string>
     <string name="security_disclaimer_import_continue">选择可信文件</string>
     <string name="jvm_diagnostics_last">Java 运行时：\n%1$s\n\n渲染器：\n%2$s</string>
-    <string name="jvm_boundary_short">游戏文件和 Java 仅保存在本应用的私有目录中。Rusted Fabric 不内置或分发铁锈战争本体。</string>
+    <string name="jvm_boundary_short">游戏程序文件和 Java 保存在本应用私有目录；用户模组与地图位于公共 rustedWarfare 文件夹。Rusted Fabric 不内置或分发铁锈战争本体。</string>
     <string name="jvm_game_checking">桌面版游戏 · 正在检查…</string>
     <string name="jvm_runtime_checking">Java 运行时 · 正在检查…</string>
     <string name="jvm_import_archive">导入或更换桌面版游戏 ZIP</string>
@@ -79,6 +79,16 @@
     <string name="content_maps_description">可以导入 .tmx 地图或 ZIP 包；禁用后会移出游戏扫描目录，但不会删除。</string>
     <string name="content_java_description">Java 模组是以游戏/Loader 权限运行的可执行代码。只导入可信的 Fabric Jar 或 .javamod 包；启停结果在下一次启动游戏时生效。</string>
     <string name="content_import">导入</string>
+    <string name="content_open_folder">打开文件夹</string>
+    <string name="content_open_folder_unavailable">设备上没有能打开这个文件夹的文件管理器。</string>
+    <string name="content_storage_permission_title">允许直接编辑模组目录</string>
+    <string name="content_storage_permission_message">Rusted Fabric 会把 INI 模组、地图和 Java 模组放在“内部存储/rustedWarfare”中，MT 管理器等文件管理器可以直接编辑，游戏也能热重载 INI 改动。Android 要求授予一次“所有文件访问权限”，桌面 JVM 才能直接读取这些普通文件。</string>
+    <string name="content_storage_permission_open">打开权限设置</string>
+    <string name="content_storage_permission_denied">尚未授予公共存储访问权限。内容目录就绪前无法启动游戏。</string>
+    <string name="content_storage_permission_required">公共内容目录需要存储权限；点击管理或打开文件夹即可授权。</string>
+    <string name="content_storage_preparing">正在准备公共模组与地图目录…</string>
+    <string name="content_storage_ready">公共内容目录 · %1$s</string>
+    <string name="content_storage_failed">无法准备公共内容目录：%1$s</string>
     <string name="content_empty">尚未导入任何内容。</string>
     <string name="content_official">官方</string>
     <string name="content_ini_game_managed">启用状态由游戏内管理</string>

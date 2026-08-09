@@ -2,12 +2,17 @@ package io.github.endx.rustedfabric.android.launcher.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.view.View;
@@ -39,6 +44,7 @@ import io.github.endx.rustedfabric.android.launcher.jvm.JvmRuntimeImportService;
 import io.github.endx.rustedfabric.android.launcher.jvm.ManagedContentImportService;
 import io.github.endx.rustedfabric.android.launcher.jvm.NativeJvmHost;
 import io.github.endx.rustedfabric.android.launcher.jvm.OfficialModProvisioner;
+import io.github.endx.rustedfabric.android.launcher.jvm.SharedContentWorkspace;
 
 /** User-facing launcher for the imported desktop game and its ARM64 JVM runtime. */
 public final class JvmLauncherActivity extends Activity {
@@ -50,6 +56,7 @@ public final class JvmLauncherActivity extends Activity {
     private static final int REQUEST_INI_MOD = 2004;
     private static final int REQUEST_MAP = 2005;
     private static final int REQUEST_JAVA_MOD = 2006;
+    private static final int REQUEST_SHARED_STORAGE = 2007;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private TextView readinessBadge;
@@ -70,9 +77,13 @@ public final class JvmLauncherActivity extends Activity {
     private Button iniModsButton;
     private Button mapsButton;
     private Button javaModsButton;
+    private Button openIniFolderButton;
+    private Button openMapsFolderButton;
+    private Button openJavaFolderButton;
     private LinearLayout advancedPanel;
     private LinearLayout contentPanel;
     private TextView contentSummary;
+    private TextView contentStorageStatus;
     private boolean busy;
     private boolean smokeReady;
     private boolean gameProbeReady;
@@ -80,6 +91,10 @@ public final class JvmLauncherActivity extends Activity {
     private boolean receiverRegistered;
     private boolean gameImported;
     private boolean officialProvisioning;
+    private boolean workspaceReady;
+    private boolean workspacePreparing;
+    private boolean storagePromptShown;
+    private Runnable pendingWorkspaceAction;
 
     private final BroadcastReceiver smokeReceiver = new BroadcastReceiver() {
         @Override
@@ -126,9 +141,13 @@ public final class JvmLauncherActivity extends Activity {
         iniModsButton = findViewById(R.id.manage_ini_mods_button);
         mapsButton = findViewById(R.id.manage_maps_button);
         javaModsButton = findViewById(R.id.manage_java_mods_button);
+        openIniFolderButton = findViewById(R.id.open_ini_folder_button);
+        openMapsFolderButton = findViewById(R.id.open_maps_folder_button);
+        openJavaFolderButton = findViewById(R.id.open_java_folder_button);
         advancedPanel = findViewById(R.id.advanced_panel);
         contentPanel = findViewById(R.id.content_panel);
         contentSummary = findViewById(R.id.content_summary);
+        contentStorageStatus = findViewById(R.id.content_storage_status);
     }
 
     private void bindActions() {
@@ -147,6 +166,12 @@ public final class JvmLauncherActivity extends Activity {
                 showContentManager(ManagedContentLibrary.Kind.MAP));
         javaModsButton.setOnClickListener(ignored ->
                 showContentManager(ManagedContentLibrary.Kind.JAVA_MOD));
+        openIniFolderButton.setOnClickListener(ignored ->
+                openSharedFolder(ManagedContentLibrary.Kind.INI_MOD));
+        openMapsFolderButton.setOnClickListener(ignored ->
+                openSharedFolder(ManagedContentLibrary.Kind.MAP));
+        openJavaFolderButton.setOnClickListener(ignored ->
+                openSharedFolder(ManagedContentLibrary.Kind.JAVA_MOD));
     }
 
     private void showOpenSourceNotice() {
@@ -225,6 +250,10 @@ public final class JvmLauncherActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_SHARED_STORAGE) {
+            prepareSharedWorkspace(pendingWorkspaceAction, false);
+            return;
+        }
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
         if (requestCode != REQUEST_GAME_ARCHIVE && requestCode != REQUEST_GAME_TREE
                 && requestCode != REQUEST_JAVA_RUNTIME && requestCode != REQUEST_INI_MOD
@@ -253,7 +282,24 @@ public final class JvmLauncherActivity extends Activity {
         receiverRegistered = true;
         refreshDiagnostics();
         refresh();
-        ensureOfficialMods();
+        if (gameImported) prepareSharedWorkspace(null, true);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_SHARED_STORAGE) return;
+        boolean granted = grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+            prepareSharedWorkspace(pendingWorkspaceAction, false);
+        } else {
+            pendingWorkspaceAction = null;
+            Toast.makeText(this, R.string.content_storage_permission_denied,
+                    Toast.LENGTH_LONG).show();
+            refresh();
+        }
     }
 
     @Override
@@ -272,6 +318,10 @@ public final class JvmLauncherActivity extends Activity {
     }
 
     private void launchGame() {
+        if (gameImported && !workspaceReady) {
+            prepareSharedWorkspace(this::launchGame, false);
+            return;
+        }
         if (!gameProbeReady) {
             Toast.makeText(this, R.string.jvm_setup_required, Toast.LENGTH_LONG).show();
             return;
@@ -347,12 +397,11 @@ public final class JvmLauncherActivity extends Activity {
                 DesktopGameImportService.Result result = archive
                         ? DesktopGameImportService.importArchive(this, source, listener)
                         : DesktopGameImportService.importTree(this, source, listener);
-                OfficialModProvisioner.provision(this);
-                markOfficialModsProvisioned();
                 runOnUiThread(() -> {
                     setBusy(false, getString(R.string.jvm_import_complete, result.files(),
                             Formatter.formatFileSize(this, result.bytes())));
                     refresh();
+                    prepareSharedWorkspace(null, true);
                 });
             } catch (Exception failure) {
                 runOnUiThread(() -> showFailure(R.string.jvm_import_failed, failure));
@@ -402,6 +451,7 @@ public final class JvmLauncherActivity extends Activity {
         DesktopGameInspection inspection = DesktopGameLayout.inspect(gameRoot.toPath());
         boolean gameReady = inspection.isImportable();
         gameImported = gameReady;
+        workspaceReady = gameReady && SharedContentWorkspace.isReady(this);
 
         File runtimeHome = new File(new File(getFilesDir(), "desktop-jvm"), "runtime");
         File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
@@ -426,24 +476,42 @@ public final class JvmLauncherActivity extends Activity {
         }
 
         smokeReady = capabilities.hasJava17() && capabilities.hasJvmHost();
-        gameProbeReady = gameReady && runtimeReady;
+        gameProbeReady = gameReady && runtimeReady && workspaceReady;
         readinessBadge.setText(gameProbeReady
                 ? R.string.jvm_ready_badge : R.string.jvm_setup_badge);
         readinessBadge.setTextColor(getColor(gameProbeReady
                 ? R.color.rf_status_ready : R.color.rf_status_warning));
         readinessMessage.setText(gameProbeReady
-                ? R.string.jvm_ready_message : R.string.jvm_setup_message);
+                ? R.string.jvm_ready_message
+                : gameReady && runtimeReady && !workspaceReady
+                    ? R.string.content_storage_permission_required
+                    : R.string.jvm_setup_message);
         launchButton.setEnabled(!busy && gameProbeReady);
         launchButton.setText(gameProbeReady
                 ? R.string.jvm_launch_game : R.string.jvm_launch_unavailable);
         smokeButton.setEnabled(!busy && smokeReady);
         contentPanel.setVisibility(gameReady ? View.VISIBLE : View.GONE);
         setContentButtonsEnabled(gameReady && !busy);
-        if (gameReady) refreshContentSummary();
+        if (gameReady) {
+            if (workspaceReady) {
+                contentStorageStatus.setText(getString(R.string.content_storage_ready,
+                        SharedContentWorkspace.root().toString()));
+            } else {
+                contentStorageStatus.setText(R.string.content_storage_permission_required);
+            }
+            contentStorageStatus.setTextColor(getColor(workspaceReady
+                    ? R.color.rf_status_ready : R.color.rf_status_warning));
+            if (workspaceReady) refreshContentSummary();
+            else contentSummary.setText(R.string.content_summary_empty);
+        }
     }
 
     private void showContentManager(ManagedContentLibrary.Kind kind) {
         if (!gameImported || busy) return;
+        if (!workspaceReady) {
+            prepareSharedWorkspace(() -> showContentManager(kind), false);
+            return;
+        }
         ContentManagerDialog.show(this, worker, DesktopGameImportService.importedRoot(this), kind,
                 new ContentManagerDialog.Listener() {
                     @Override
@@ -456,6 +524,106 @@ public final class JvmLauncherActivity extends Activity {
                         refresh();
                     }
                 });
+    }
+
+    private void openSharedFolder(ManagedContentLibrary.Kind kind) {
+        if (!gameImported || busy) return;
+        if (!workspaceReady) {
+            prepareSharedWorkspace(() -> openSharedFolder(kind), false);
+            return;
+        }
+        Uri folder = DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents",
+                SharedContentWorkspace.documentId(kind));
+        Intent view = new Intent(Intent.ACTION_VIEW);
+        view.setDataAndType(folder, DocumentsContract.Document.MIME_TYPE_DIR);
+        view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        try {
+            startActivity(view);
+        } catch (RuntimeException noFolderViewer) {
+            Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            picker.putExtra(DocumentsContract.EXTRA_INITIAL_URI, folder);
+            picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+            try {
+                startActivity(picker);
+            } catch (RuntimeException unavailable) {
+                Toast.makeText(this, R.string.content_open_folder_unavailable,
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void prepareSharedWorkspace(Runnable afterReady, boolean automatic) {
+        if (!gameImported) return;
+        if (afterReady != null) pendingWorkspaceAction = afterReady;
+        if (workspaceReady) {
+            Runnable action = pendingWorkspaceAction;
+            pendingWorkspaceAction = null;
+            ensureOfficialMods(action);
+            return;
+        }
+        if (!SharedContentWorkspace.hasStorageAccess(this)) {
+            requestSharedStorageAccess(automatic);
+            return;
+        }
+        if (workspacePreparing) return;
+        workspacePreparing = true;
+        setBusy(true, getString(R.string.content_storage_preparing));
+        worker.execute(() -> {
+            try {
+                SharedContentWorkspace.ensureLinked(this);
+                runOnUiThread(() -> {
+                    workspacePreparing = false;
+                    setBusy(false, getString(R.string.content_storage_ready,
+                            SharedContentWorkspace.root().toString()));
+                    refresh();
+                    Runnable action = pendingWorkspaceAction;
+                    pendingWorkspaceAction = null;
+                    ensureOfficialMods(action);
+                });
+            } catch (Exception failure) {
+                runOnUiThread(() -> {
+                    workspacePreparing = false;
+                    pendingWorkspaceAction = null;
+                    showFailure(R.string.content_storage_failed, failure);
+                    refresh();
+                });
+            }
+        });
+    }
+
+    private void requestSharedStorageAccess(boolean automatic) {
+        if (automatic && storagePromptShown) return;
+        storagePromptShown = true;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.content_storage_permission_title)
+                .setMessage(R.string.content_storage_permission_message)
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> {
+                    pendingWorkspaceAction = null;
+                    refresh();
+                })
+                .setPositiveButton(R.string.content_storage_permission_open,
+                        (dialog, which) -> openSharedStorageSettings())
+                .show();
+    }
+
+    private void openSharedStorageSettings() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            Intent settings = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    Uri.parse("package:" + getPackageName()));
+            try {
+                startActivityForResult(settings, REQUEST_SHARED_STORAGE);
+            } catch (RuntimeException unavailable) {
+                startActivityForResult(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                        REQUEST_SHARED_STORAGE);
+            }
+        } else {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_SHARED_STORAGE);
+        }
     }
 
     private void chooseManagedContent(ManagedContentLibrary.Kind kind) {
@@ -514,10 +682,17 @@ public final class JvmLauncherActivity extends Activity {
     }
 
     private void ensureOfficialMods() {
+        ensureOfficialMods(null);
+    }
+
+    private void ensureOfficialMods(Runnable afterReady) {
         boolean currentAssets = getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE)
                 .getInt("official_mod_assets", -1)
                 == io.github.endx.rustedfabric.android.launcher.BuildConfig.VERSION_CODE;
-        if (!gameImported || officialProvisioning || currentAssets) return;
+        if (!gameImported || !workspaceReady || officialProvisioning || currentAssets) {
+            if (afterReady != null && !officialProvisioning) afterReady.run();
+            return;
+        }
         officialProvisioning = true;
         setBusy(true, getString(R.string.content_official_installing));
         worker.execute(() -> {
@@ -528,6 +703,7 @@ public final class JvmLauncherActivity extends Activity {
                     officialProvisioning = false;
                     setBusy(false, getString(R.string.content_official_ready));
                     refresh();
+                    if (afterReady != null) afterReady.run();
                 });
             } catch (Exception failure) {
                 runOnUiThread(() -> {
@@ -604,6 +780,9 @@ public final class JvmLauncherActivity extends Activity {
         iniModsButton.setEnabled(enabled);
         mapsButton.setEnabled(enabled);
         javaModsButton.setEnabled(enabled);
+        openIniFolderButton.setEnabled(enabled);
+        openMapsFolderButton.setEnabled(enabled);
+        openJavaFolderButton.setEnabled(enabled);
     }
 
     private void showOperation(String message) {

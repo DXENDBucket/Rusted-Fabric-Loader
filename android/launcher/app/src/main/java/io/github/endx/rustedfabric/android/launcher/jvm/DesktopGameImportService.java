@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -220,7 +221,16 @@ public final class DesktopGameImportService {
     }
 
     private static void deleteTree(File target, File backendRoot) throws IOException {
-        if (!target.exists()) return;
+        if (!Files.exists(target.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) return;
+        if (Files.isSymbolicLink(target.toPath())) {
+            java.nio.file.Path backend = backendRoot.getAbsoluteFile().toPath().normalize();
+            java.nio.file.Path link = target.getAbsoluteFile().toPath().normalize();
+            if (!link.startsWith(backend) || link.equals(backend)) {
+                throw new IOException("Refusing to delete a link outside the private backend directory");
+            }
+            Files.delete(link);
+            return;
+        }
         String root = backendRoot.getCanonicalPath() + File.separator;
         if (!target.getCanonicalPath().startsWith(root)) {
             throw new IOException("Refusing to delete outside the private backend directory");

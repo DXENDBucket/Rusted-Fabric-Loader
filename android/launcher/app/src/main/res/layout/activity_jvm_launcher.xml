@@ -208,33 +208,94 @@
                 android:textColor="@color/rf_text_secondary"
                 android:textSize="13sp" />
 
-            <Button
-                android:id="@+id/manage_ini_mods_button"
+            <TextView
+                android:id="@+id/content_storage_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/content_storage_permission_required"
+                android:textColor="@color/rf_status_warning"
+                android:textSize="12sp" />
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/content_manage_ini"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/manage_maps_button"
+                <Button
+                    android:id="@+id/manage_ini_mods_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/rf_control"
+                    android:text="@string/content_manage_ini"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_primary" />
+
+                <Button
+                    android:id="@+id/open_ini_folder_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="@color/rf_control"
+                    android:text="@string/content_open_folder"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_primary" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/content_manage_maps"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/manage_java_mods_button"
+                <Button
+                    android:id="@+id/manage_maps_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/rf_control"
+                    android:text="@string/content_manage_maps"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_primary" />
+
+                <Button
+                    android:id="@+id/open_maps_folder_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="@color/rf_control"
+                    android:text="@string/content_open_folder"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_primary" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/content_manage_java"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/manage_java_mods_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/rf_control"
+                    android:text="@string/content_manage_java"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_primary" />
+
+                <Button
+                    android:id="@+id/open_java_folder_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="@color/rf_control"
+                    android:text="@string/content_open_folder"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_primary" />
+            </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"

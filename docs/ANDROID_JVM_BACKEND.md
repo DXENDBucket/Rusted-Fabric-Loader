@@ -26,12 +26,17 @@ artifacts.
 - Windows executables, DLLs, bundled desktop JVMs, saves, replays, screenshots, and existing mods are
   excluded.
 - Imports are staged, validated, and atomically activated. A failed import leaves the previous
-  verified copy intact.
+  verified copy intact. Game binaries and the imported JVM remain private, while managed user
+  content is linked from the shared `rustedWarfare/units`, `rustedWarfare/maps`, and
+  `rustedWarfare/javamods` directories.
 - After activation, the setup UI becomes a persistent content library for INI mods, custom maps,
-  Fabric Jars, and `.javamod` files. Map and Java-mod disable operations move content to private
-  non-scan directories and never rewrite the imported package. Switch changes are staged until
+  Fabric Jars, and `.javamod` files. Map and Java-mod disable operations move content to hidden
+  non-scan directories under the shared root and never rewrite the imported package. Switch changes are staged until
   confirmation, and every managed item can be deleted. A manual Jar using an official mod ID
   replaces the bundled copy and takes precedence during later provisioning.
+- The launcher exposes an **Open folder** action for all three active content directories. Android
+  11+ uses the system all-files-access grant so ordinary Java file APIs and the game hot-reload path
+  see edits made by external file managers immediately.
 - The APK initially provisions Rusted Fabric API and Java Mod Menu enabled, matching the default
   Windows install, and provisions INI Essentials disabled. Bundled updates preserve later enable
   state unless the user has installed a manual replacement with the same mod ID.

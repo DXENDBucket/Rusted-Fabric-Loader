@@ -210,9 +210,10 @@ android/launcher:app       no-root Android UI and isolated JNI JVM/render host
 ```
 
 The Android launcher does not contain the game or a user Java runtime: it imports both from
-user-selected files into app-private storage. Windows and Android then execute the same desktop
-game, Fabric runtime, API Jar, Mixins, and mod format. Retired native-APK code is excluded from all
-active Gradle builds.
+user-selected files into app-private storage. User INI mods, maps, and Java mods are exposed in the
+shared `rustedWarfare` directory for normal Android file managers and linked into that private game
+root. Windows and Android then execute the same desktop game, Fabric runtime, API Jar, Mixins, and
+mod format. Retired native-APK code is excluded from all active Gradle builds.
 
 ## Licensing
 

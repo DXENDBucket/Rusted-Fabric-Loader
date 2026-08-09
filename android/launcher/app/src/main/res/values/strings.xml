@@ -28,7 +28,7 @@
     <string name="security_disclaimer_import_message">A Java mod runs as executable code with the game/Loader’s permissions. Only continue if you trust its author and download source. Rusted Fabric has not verified unknown third-party mods.</string>
     <string name="security_disclaimer_import_continue">Choose trusted file</string>
     <string name="jvm_diagnostics_last">Java runtime:\n%1$s\n\nRenderer:\n%2$s</string>
-    <string name="jvm_boundary_short">Game files and Java are stored only in this app’s private directory. Rusted Fabric does not bundle or distribute Rusted Warfare.</string>
+    <string name="jvm_boundary_short">Game binaries and Java stay in this app’s private directory. User mods and maps are stored in the shared rustedWarfare folder. Rusted Fabric does not bundle or distribute Rusted Warfare.</string>
     <string name="jvm_game_checking">Desktop game · Checking…</string>
     <string name="jvm_runtime_checking">Java runtime · Checking…</string>
     <string name="jvm_import_archive">Import or replace desktop game ZIP</string>
@@ -79,6 +79,16 @@
     <string name="content_maps_description">Import .tmx maps or ZIP packages. Disabled maps are kept outside the game’s scan directory.</string>
     <string name="content_java_description">Java mods are executable code with the game/Loader’s permissions. Import only trusted Fabric Jar or .javamod packages. Changes take effect on the next game launch.</string>
     <string name="content_import">Import</string>
+    <string name="content_open_folder">Open folder</string>
+    <string name="content_open_folder_unavailable">No installed file manager can open this folder.</string>
+    <string name="content_storage_permission_title">Allow editable mod folders</string>
+    <string name="content_storage_permission_message">Rusted Fabric stores INI mods, maps, and Java mods in Internal storage/rustedWarfare so file managers such as MT Manager can edit them and the game can hot-reload INI changes. Android requires one-time “All files access” permission for the desktop JVM to read these ordinary files.</string>
+    <string name="content_storage_permission_open">Open permission settings</string>
+    <string name="content_storage_permission_denied">Shared storage access was not granted. The game cannot start until its content folders are available.</string>
+    <string name="content_storage_permission_required">Shared content folders need storage access. Tap Manage or Open folder to grant it.</string>
+    <string name="content_storage_preparing">Preparing shared mod and map folders…</string>
+    <string name="content_storage_ready">Shared content folder · %1$s</string>
+    <string name="content_storage_failed">Could not prepare shared content folders: %1$s</string>
     <string name="content_empty">Nothing imported yet.</string>
     <string name="content_official">Official</string>
     <string name="content_ini_game_managed">Enabled state is managed in game</string>

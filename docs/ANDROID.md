@@ -36,14 +36,15 @@ font/ (optional)
 ```
 
 The importer rejects executables, DLLs, saves, existing mods, path traversal, ambiguous roots, and
-oversized archives. Writable `mods`, `saves`, `replays`, `screenshots`, and cache directories are
-created privately after validation.
+oversized archives. Saves, replays, screenshots, cache, game binaries, and Java are created or kept
+privately after validation. User-editable content is exposed under the shared
+`Internal storage/rustedWarfare` root and linked into the private game working directory.
 
 Once the game is imported, the launcher manages new content independently of that bounded game
 import:
 
-- INI mods accept `.ini`, `.rwmod`, and ZIP inputs under `mods/units`; their enable state remains in
-  the game's native mod menu.
+- INI mods accept `.ini`, `.rwmod`, and ZIP inputs under shared `rustedWarfare/units`; their enable
+  state remains in the game's native mod menu.
 - Maps accept `.tmx` files and ZIP inputs. Disable moves an item between `mods/maps` and
   `mods-disabled/maps` without altering its contents.
 - Java mods accept Fabric Jars and `.javamod` packages after validating `fabric.mod.json`. Disable
@@ -57,7 +58,10 @@ import:
   starts preserve that manual replacement.
 
 All archive content uses bounded expansion and path-containment checks. User content stays in the
-app-private imported game area and is never copied into an APK or repository artifact.
+shared `rustedWarfare` directory and is never copied into an APK or repository artifact. The three
+active directories have launcher **Open folder** buttons for the system file manager or compatible
+tools such as MT Manager. Android 11+ requires one-time all-files access so the desktop JVM can use
+ordinary file APIs and observe INI edits during hot reload.
 
 The Java importer accepts ZIP or TAR.XZ and requires Linux/AArch64 Java 17 metadata plus valid
 AArch64 ELF builds of `libjvm.so` and `libjava.so`.

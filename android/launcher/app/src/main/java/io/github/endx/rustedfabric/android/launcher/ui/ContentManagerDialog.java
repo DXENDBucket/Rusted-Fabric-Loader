@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 import io.github.endx.rustedfabric.android.jvm.ManagedContentLibrary;
 import io.github.endx.rustedfabric.android.launcher.R;
 
-/** Native Android content-management sheet backed by the private game directories. */
+/** Native Android content-management sheet backed by shared folders linked into the game root. */
 final class ContentManagerDialog {
     interface Listener {
         void importContent(ManagedContentLibrary.Kind kind);

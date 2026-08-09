@@ -8,6 +8,14 @@ The launcher imports a desktop game ZIP or directory and a Linux/AArch64 Java 17
 application-private storage. Its ARM64 host supplies the Android Surface, LWJGL2/GL4ES, OpenAL,
 input, and libRocket compatibility layers required by the desktop game.
 
+User-editable content lives in the conventional shared `Internal storage/rustedWarfare` root:
+`units`, `maps`, and `javamods`. The launcher migrates older private content without overwriting
+same-named shared files and links these directories into the private desktop game root, so an INI
+author can edit with MT Manager and use the game's hot reload directly. Each content row on the
+launcher has an **Open folder** action. Android 11 and newer require the user to grant the launcher
+one-time **All files access**; this sideload-oriented permission is required because the embedded
+desktop JVM uses ordinary file APIs rather than Android document-provider streams.
+
 After setup, the same screen becomes a persistent content library. It imports and lists INI mods,
 custom maps, ordinary Fabric Jars, and `.javamod` packages. Maps and Java mods can be enabled or
 disabled without rewriting them; switch changes are staged until the user confirms the dialog.
