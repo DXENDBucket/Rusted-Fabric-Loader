@@ -7,6 +7,8 @@ game files.
 ## Player flow
 
 The installer detects common Steam library locations or lets the player select the game directory.
+Its executable declares Per-Monitor V2 DPI awareness for sharp text on scaled displays, and the
+folder button opens the modern Windows Explorer picker (with a legacy fallback for old systems).
 It validates `game-lib.jar` and `jvm64/bin/java.exe` before changing anything. The component choices
 are:
 

@@ -17,6 +17,7 @@ def launcherExe = layout.buildDirectory.file('tools/RustedFabricLauncher.exe')
 def generatedMetadata = layout.buildDirectory.file('generated/payload/version.txt')
 def payloadZip = layout.buildDirectory.file("payload/rusted-fabric-installer-payload-${project.version}.zip")
 def installerExe = layout.buildDirectory.file("dist/Rusted-Fabric-Installer-${project.version}.exe")
+def installerManifest = layout.projectDirectory.file('src/installer/windows/RustedFabricInstaller.manifest')
 def signingDirectory = rootProject.layout.projectDirectory.dir('local-signing')
 def publicDevCertificate = signingDirectory.file('EndXiom-dev-code-signing.cer')
 def signedLauncherExe = layout.buildDirectory.file('tools/endxiom-dev-signed/RustedFabricLauncher.exe')
@@ -98,6 +99,7 @@ tasks.register('compileWindowsInstaller', Exec) {
     description = 'Compiles a single-file graphical Windows installer with the offline payload.'
     dependsOn tasks.named('prepareWindowsInstallerPayload')
     inputs.file('src/installer/csharp/RustedFabricInstaller.cs')
+    inputs.file installerManifest
     inputs.file payloadZip
     outputs.file installerExe
 
@@ -115,6 +117,7 @@ tasks.register('compileWindowsInstaller', Exec) {
                 '/reference:System.IO.Compression.dll',
                 '/reference:System.IO.Compression.FileSystem.dll',
                 '/reference:System.Web.Extensions.dll',
+                "/win32manifest:${installerManifest.asFile.absolutePath}",
                 "/resource:${payloadZip.get().asFile.absolutePath},RustedFabricInstaller.Payload.zip",
                 file('src/installer/csharp/RustedFabricInstaller.cs').absolutePath
     }
@@ -276,6 +279,7 @@ tasks.register('compileEndXiomDevSignedWindowsInstaller', Exec) {
     description = 'Compiles the installer around the payload containing the signed launcher.'
     dependsOn tasks.named('prepareEndXiomDevSignedInstallerPayload')
     inputs.file('src/installer/csharp/RustedFabricInstaller.cs')
+    inputs.file installerManifest
     inputs.file signedPayloadZip
     outputs.file unsignedDevInstallerExe
 
@@ -293,6 +297,7 @@ tasks.register('compileEndXiomDevSignedWindowsInstaller', Exec) {
                 '/reference:System.IO.Compression.dll',
                 '/reference:System.IO.Compression.FileSystem.dll',
                 '/reference:System.Web.Extensions.dll',
+                "/win32manifest:${installerManifest.asFile.absolutePath}",
                 "/resource:${signedPayloadZip.get().asFile.absolutePath},RustedFabricInstaller.Payload.zip",
                 file('src/installer/csharp/RustedFabricInstaller.cs').absolutePath
     }

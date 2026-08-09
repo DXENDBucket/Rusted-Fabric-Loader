@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -199,12 +200,31 @@ namespace RustedFabricInstaller
 
         private void BrowseClicked(object sender, EventArgs args)
         {
+            try
+            {
+                string selected = ExplorerFolderPicker.Show(
+                    Handle, "选择 Rusted Warfare 游戏目录", gameDirectory.Text);
+                if (!string.IsNullOrEmpty(selected)) gameDirectory.Text = selected;
+            }
+            catch (COMException)
+            {
+                BrowseWithLegacyDialog();
+            }
+            catch (EntryPointNotFoundException)
+            {
+                BrowseWithLegacyDialog();
+            }
+        }
+
+        private void BrowseWithLegacyDialog()
+        {
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
             {
                 dialog.Description = "选择 Rusted Warfare 游戏目录";
                 dialog.ShowNewFolderButton = false;
                 if (Directory.Exists(gameDirectory.Text)) dialog.SelectedPath = gameDirectory.Text;
-                if (dialog.ShowDialog(this) == DialogResult.OK) gameDirectory.Text = dialog.SelectedPath;
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                    gameDirectory.Text = dialog.SelectedPath;
             }
         }
 
@@ -269,6 +289,120 @@ namespace RustedFabricInstaller
             shortcut.Enabled = !busy;
             api.Enabled = !busy && !modMenu.Checked;
             progress.Style = busy ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
+        }
+    }
+
+    internal static class ExplorerFolderPicker
+    {
+        private const uint FosPickFolders = 0x00000020;
+        private const uint FosForceFileSystem = 0x00000040;
+        private const uint FosPathMustExist = 0x00000800;
+        private const uint FosDontAddToRecent = 0x02000000;
+        private const uint SigdnFileSystemPath = 0x80058000;
+        private const int CancelledHresult = unchecked((int)0x800704C7);
+
+        public static string Show(IntPtr owner, string title, string initialPath)
+        {
+            IFileDialog dialog = (IFileDialog)new FileOpenDialogCom();
+            try
+            {
+                uint existingOptions;
+                dialog.GetOptions(out existingOptions);
+                dialog.SetOptions(existingOptions | FosPickFolders | FosForceFileSystem
+                    | FosPathMustExist | FosDontAddToRecent);
+                dialog.SetTitle(title);
+                dialog.SetOkButtonLabel("选择文件夹");
+
+                if (Directory.Exists(initialPath))
+                {
+                    IShellItem initialFolder = CreateShellItem(initialPath);
+                    try { dialog.SetFolder(initialFolder); }
+                    finally { Marshal.FinalReleaseComObject(initialFolder); }
+                }
+
+                int result = dialog.Show(owner);
+                if (result == CancelledHresult) return null;
+                if (result < 0) Marshal.ThrowExceptionForHR(result);
+
+                IShellItem selected;
+                dialog.GetResult(out selected);
+                try
+                {
+                    IntPtr value;
+                    selected.GetDisplayName(SigdnFileSystemPath, out value);
+                    try { return Marshal.PtrToStringUni(value); }
+                    finally { Marshal.FreeCoTaskMem(value); }
+                }
+                finally { Marshal.FinalReleaseComObject(selected); }
+            }
+            finally
+            {
+                Marshal.FinalReleaseComObject(dialog);
+            }
+        }
+
+        private static IShellItem CreateShellItem(string path)
+        {
+            Guid interfaceId = typeof(IShellItem).GUID;
+            IShellItem item;
+            SHCreateItemFromParsingName(path, IntPtr.Zero, ref interfaceId, out item);
+            return item;
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        private static extern void SHCreateItemFromParsingName(
+            string path, IntPtr bindingContext, ref Guid interfaceId,
+            [MarshalAs(UnmanagedType.Interface)] out IShellItem item);
+
+        [ComImport]
+        [Guid("DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7")]
+        private class FileOpenDialogCom
+        {
+        }
+
+        [ComImport]
+        [Guid("42F85136-DB7E-439C-85F1-E4075D135FC8")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IFileDialog
+        {
+            [PreserveSig]
+            int Show(IntPtr parent);
+            void SetFileTypes(uint count, IntPtr filterSpecifications);
+            void SetFileTypeIndex(uint index);
+            void GetFileTypeIndex(out uint index);
+            void Advise(IntPtr events, out uint cookie);
+            void Unadvise(uint cookie);
+            void SetOptions(uint options);
+            void GetOptions(out uint options);
+            void SetDefaultFolder(IShellItem shellItem);
+            void SetFolder(IShellItem shellItem);
+            void GetFolder(out IShellItem shellItem);
+            void GetCurrentSelection(out IShellItem shellItem);
+            void SetFileName([MarshalAs(UnmanagedType.LPWStr)] string name);
+            void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string name);
+            void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string title);
+            void SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string label);
+            void SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string label);
+            void GetResult(out IShellItem shellItem);
+            void AddPlace(IShellItem shellItem, uint alignment);
+            void SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string extension);
+            void Close(int hresult);
+            void SetClientGuid(ref Guid guid);
+            void ClearClientData();
+            void SetFilter(IntPtr filter);
+        }
+
+        [ComImport]
+        [Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IShellItem
+        {
+            void BindToHandler(IntPtr bindingContext, ref Guid handlerId,
+                ref Guid interfaceId, out IntPtr result);
+            void GetParent(out IShellItem parent);
+            void GetDisplayName(uint displayName, out IntPtr name);
+            void GetAttributes(uint mask, out uint attributes);
+            void Compare(IShellItem shellItem, uint hint, out int order);
         }
     }
 
