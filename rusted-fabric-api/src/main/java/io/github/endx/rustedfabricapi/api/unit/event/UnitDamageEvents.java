@@ -22,6 +22,25 @@ public final class UnitDamageEvents {
                 }
             });
 
+    /**
+     * Modifies the health value at the native lethal-damage clamp.
+     *
+     * <p>The event is only invoked when the game would call {@code setHp(0)} because hull damage
+     * exceeded current HP. Returning {@code null} preserves the current value in the listener
+     * chain. With no replacement, native zero-clamping remains unchanged.</p>
+     */
+    public static final RustedFabricEvent<ModifyLethalHealth> MODIFY_LETHAL_HEALTH =
+            RustedFabricEvent.create(listeners -> (unit, attacker, requestedAmount, projectile,
+                                                    nativeValue, unclampedValue, currentValue) -> {
+                Float result = Float.valueOf(currentValue);
+                for (ModifyLethalHealth listener : listeners) {
+                    Float replacement = listener.modify(unit, attacker, requestedAmount, projectile,
+                            nativeValue, unclampedValue, result.floatValue());
+                    if (replacement != null) result = replacement;
+                }
+                return result;
+            });
+
     public static final RustedFabricEvent<ModifyBoolean> MODIFY_DAMAGE_IMMUNITY = modifyEvent();
     public static final RustedFabricEvent<BeforeDeath> BEFORE_DEATH =
             RustedFabricEvent.create(listeners -> unit -> {
@@ -67,6 +86,19 @@ public final class UnitDamageEvents {
     public interface AfterDamage {
         void afterDamage(Unit unit, Unit attacker, float requestedAmount,
                          Projectile projectile, float appliedAmount);
+    }
+
+    @FunctionalInterface
+    public interface ModifyLethalHealth {
+        /**
+         * @param nativeValue the game's normal clamped value (currently zero)
+         * @param unclampedValue the HP produced by applying the same native damage math without
+         *                       its zero floor
+         * @param currentValue the result from earlier listeners, initially {@code nativeValue}
+         * @return a replacement health value, or {@code null} to keep {@code currentValue}
+         */
+        Float modify(Unit unit, Unit attacker, float requestedAmount, Projectile projectile,
+                     float nativeValue, float unclampedValue, float currentValue);
     }
 
     @FunctionalInterface

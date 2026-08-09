@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerRequirements;
 
 /** Platform-neutral game session exposed in single-player and multiplayer alike. */
 public final class GameSession {
@@ -32,6 +33,8 @@ public final class GameSession {
     public boolean multiplayer() { return kind != Kind.SINGLE_PLAYER; }
     public boolean host() { return kind == Kind.MULTIPLAYER_HOST; }
     public Optional<MultiplayerManifest> localManifest() {
-        return Optional.ofNullable(localManifest);
+        return localManifest != null
+                ? Optional.of(MultiplayerRequirements.effective(localManifest))
+                : Optional.empty();
     }
 }

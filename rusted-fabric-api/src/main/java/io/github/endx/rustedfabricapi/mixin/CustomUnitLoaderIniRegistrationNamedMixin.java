@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricapi.mixin;
 import io.github.endx.rustedfabricapi.api.RustedCustomUnitRegistry;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
+import io.github.endx.rustedfabricapi.impl.ini.IniExtensionRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -54,6 +55,7 @@ public abstract class CustomUnitLoaderIniRegistrationNamedMixin {
 
     @Inject(method = "applyCoreCopyFrom(Lrustedwarfare/custom/CustomUnitMetadata;Lrustedwarfare/util/UnitConfig;Lrustedwarfare/util/UnitConfig;Ljava/lang/String;I)V", at = @At("RETURN"), require = 1)
     private static void rustedfabricapi$afterCopyFrom(@Coerce Object metadata, @Coerce Object targetConfig, @Coerce Object sourceConfig, String copyFromPath, int recursionDepth, CallbackInfo ci) {
+        IniExtensionRuntime.index(targetConfig);
         RustedIniEvents.AFTER_COPY_FROM.invoker().afterCopyFrom(metadata, targetConfig, sourceConfig, copyFromPath, recursionDepth);
     }
 

@@ -77,6 +77,16 @@ gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampl
 
 This preserves unrelated files in `javamods`. After copying a successful build, the installer removes older versioned `rusted-fabric-api-*.jar`, `rusted-fabric-example-mod-*.jar`, and provider jars so Fabric does not discover duplicate versions of loader-owned components.
 
+INI Essentials is built as an official artifact but is not installed by default yet. Install it for
+custom-unit development with:
+
+```bat
+gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallIniEssentials=true
+```
+
+Installing it alone remains optional in multiplayer. When a synchronized field is actually used,
+the API promotes it to a required matching version for subsequent peer handshakes.
+
 ## Mappings
 The `src/main/resources/mappings/mappings.tiny` file is packaged into the GameProvider jar at `mappings/mappings.tiny`, the resource path Fabric Loader checks by default.
 

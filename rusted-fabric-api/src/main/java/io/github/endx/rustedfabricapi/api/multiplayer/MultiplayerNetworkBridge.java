@@ -264,9 +264,10 @@ public final class MultiplayerNetworkBridge {
     }
 
     private MultiplayerManifest localManifest() {
-        return RustedFabricRuntime.currentContext()
+        MultiplayerManifest base = RustedFabricRuntime.currentContext()
                 .flatMap(context -> context.multiplayerManifest())
                 .orElseGet(() -> MultiplayerManifest.empty("unknown"));
+        return MultiplayerRequirements.effective(base);
     }
 
     private Object newPacket(Object engine, byte[] payload) throws Exception {

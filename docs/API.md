@@ -1329,11 +1329,34 @@ post-damage and post-death observation, damage-immunity modification, and contro
 game object remains after death effects. The same mapped desktop implementation runs on Windows
 and the Android desktop-JVM host.
 
+`MODIFY_LETHAL_HEALTH` runs only at the native overkill branch that would clamp HP to zero. It
+provides both native zero and the result of the same native shield/hull multiplier calculation
+without the floor. With no listener—or when every listener returns `null`—the original clamp is
+unchanged. This is the shared hook used by fields such as INI Essentials' `allowNegativeHp`.
+
 `CustomUnitRuntimeSnapshot.capture(unit)` promotes the high-confidence v0.84 construction/runtime
 mapping into the same stable style. It exposes active/revert metadata build-queue-effect gates,
 `whenBuilding_cannotMove` runtime state, first CREATED/COMPLETE_AND_ACTIVE pending state,
 auto-trigger cooldown, and the previous leg-animation base transform. These are snapshots, not live
 mutable wrappers, so values remain consistent for the duration of a callback.
+
+## Extensible custom-unit INI fields
+
+`api.ini.IniExtensions` registers opt-in custom-unit fields without replacing the native parser.
+An `IniFieldDefinition` identifies its owner, stable field ID, section selector, key, decoder,
+validator, application phase, and bilingual documentation. Definitions are one of `NEW_KEY`,
+`EXTENDED_VALUE`, or `EXTENDED_FORMAT`.
+
+Extended values and formats must provide `activatesWhen(...)`. A native key/value pair for which
+that predicate is false remains entirely on the native path. An activated non-native format may
+provide `nativeFallback(...)` when the original loader still needs a compatible raw value. Only
+activated extension keys are marked as consumed before the native unused-key check. Decoded values
+can be applied immediately before or after static configuration variables; repeated scans caused by
+`copyFrom` remain idempotent.
+
+This contract deliberately permits documented additions to the value range or format of an
+existing field. It does not draw a permanent boundary around native keys; it draws the boundary at
+the actual value that activates an extension.
 
 ## API layers
 

@@ -15,9 +15,12 @@ import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerMod;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerHandshake;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerPeerCompatibility;
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerNetworkBridge;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerRequirements;
 import io.github.endx.rustedfabricapi.api.event.GameSessionEvents;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
+import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
+import io.github.endx.rustedfabricapi.impl.combat.NativeDamageMath;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,11 +42,13 @@ public final class CoreApiContractVerification {
         verifyEntrypointInstallsContext();
         verifySharedSessions();
         verifyNetworkBridge();
+        verifyLethalHealthModifier();
+        IniExtensionContractVerification.verify();
         System.out.println("Rusted Fabric API core contracts passed");
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 37,
+        require(ApiSupportMatrix.entries().size() == 39,
                 "public API support matrix does not cover every event group");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_LIFECYCLE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
@@ -121,6 +126,22 @@ public final class CoreApiContractVerification {
         require(MultiplayerManifest.decode(optional.encode()).mods().get(0).mode()
                         == MultiplayerMod.Mode.OPTIONAL,
                 "optional mode was not preserved by the wire manifest");
+        MultiplayerMod activated = MultiplayerMod.required("dynamic_test", "1.0.0",
+                "dynamic_v1", repeat('d', 64));
+        MultiplayerManifest optionalDynamic = new MultiplayerManifest("windows", Arrays.asList(
+                MultiplayerMod.optional("dynamic_test", "1.0.0")));
+        require(MultiplayerRequirements.effective(optionalDynamic).mods().get(0).mode()
+                        == MultiplayerMod.Mode.OPTIONAL,
+                "inactive dynamic requirement changed an optional mod");
+        try (MultiplayerRequirements.Activation ignored = MultiplayerRequirements.activate(activated)) {
+            MultiplayerManifest effective = MultiplayerRequirements.effective(optionalDynamic);
+            require(effective.mods().get(0).mode() == MultiplayerMod.Mode.REQUIRED
+                            && repeat('d', 64).equals(effective.mods().get(0).syncHash()),
+                    "active dynamic requirement did not replace its optional manifest row");
+        }
+        require(MultiplayerRequirements.effective(optionalDynamic).mods().get(0).mode()
+                        == MultiplayerMod.Mode.OPTIONAL,
+                "closed dynamic requirement remained active");
         final int[] peerEvents = {0};
         MultiplayerCompatibilityEvents.Registration peerRegistration =
                 MultiplayerCompatibilityEvents.PEER_EVALUATED.register(result -> peerEvents[0]++);
@@ -214,6 +235,29 @@ public final class CoreApiContractVerification {
         Thread.sleep(200L);
         require(legacy.disconnectReason != null,
                 "legacy peer was not rejected when a required mod was active");
+    }
+
+    private static void verifyLethalHealthModifier() {
+        require(NativeDamageMath.projectedHp(10.0F, 1.0F, 0.0F, 0.0F,
+                        15.0F, 1.0F, 1.0F, 1.0F) == -5.0F,
+                "unshielded overkill projection did not preserve negative HP");
+        require(NativeDamageMath.projectedHp(5.0F, 1.0F, 0.0F, 3.0F,
+                        10.0F, 1.0F, 1.0F, 1.0F) == -2.0F,
+                "shielded overkill projection diverged from native damage math");
+        require(NativeDamageMath.projectedHp(5.0F, 1.0F, 0.0F, 20.0F,
+                        10.0F, 1.0F, 1.0F, 1.0F) == 5.0F,
+                "fully deflected damage incorrectly changed projected HP");
+        require(UnitDamageEvents.MODIFY_LETHAL_HEALTH.invoker()
+                        .modify(null, null, 12.0F, null, 0.0F, -2.0F, 0.0F) == 0.0F,
+                "empty lethal-health event changed the native zero clamp");
+        io.github.endx.rustedfabricapi.api.event.RustedFabricEvent.Registration damageRegistration =
+                UnitDamageEvents.MODIFY_LETHAL_HEALTH.subscribe(
+                        (unit, attacker, requested, projectile, nativeValue,
+                         unclampedValue, currentValue) -> Float.valueOf(unclampedValue));
+        require(UnitDamageEvents.MODIFY_LETHAL_HEALTH.invoker()
+                        .modify(null, null, 12.0F, null, 0.0F, -2.0F, 0.0F) == -2.0F,
+                "lethal-health listener could not select the unclamped value");
+        damageRegistration.close();
     }
 
     private static void verifySharedModEntrypoint(RustedFabricAPIContext context) {

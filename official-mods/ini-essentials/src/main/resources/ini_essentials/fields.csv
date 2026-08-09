@@ -1,0 +1,2 @@
+version_added,code,section,extension_type,value_type,default,multiplayer_impact,description_en,description_zh,example
+0.1.0,allowNegativeHp,[core],new_key,boolean,false,gameplay_synced,Allows overkill damage to leave this custom unit with HP below zero instead of clamping it to zero.,允许过量伤害使此自定义单位的生命值降到零以下，而不是夹到零。,allowNegativeHp: true

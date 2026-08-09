@@ -1,0 +1,2 @@
+ini_essentials_v1
+[core].allowNegativeHp|new_key|boolean|default=false|gameplay_synced|negative_hp_damage_v1

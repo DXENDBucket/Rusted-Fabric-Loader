@@ -18,6 +18,7 @@ event.map.discovery.v1,event.MapDiscoveryEvents
 event.map.mission.v1,event.MapMissionEvents
 event.map.spawn.v1,event.MapSpawnEvents
 multiplayer.compat.v1,event.MultiplayerCompatibilityEvents
+multiplayer.dynamic_requirements.v1,multiplayer.MultiplayerRequirements
 event.network.callback.v1,event.NetworkCallbackEvents
 event.network.handshake.v1,event.NetworkHandshakeEvents
 event.network.chat.v1,event.NetworkLobbyChatEvents
@@ -30,6 +31,7 @@ event.resource.runtime.v1,event.ResourceRuntimeEvents
 event.runtime.lifecycle.v1,event.RuntimeLifecycleEvents
 event.custom.registry.v1,event.RustedCustomUnitRegistryEvents
 event.ini.v1,event.RustedIniEvents
+ini.extensions.v1,ini.IniExtensions
 event.save.sync.v1,event.SaveSyncEvents
 event.selection.v1,client.event.SelectionEvents
 event.transport.v1,unit.transport.event.TransportEvents

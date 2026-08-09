@@ -52,6 +52,14 @@ The sync hash must be generated from deterministic gameplay data, such as normal
 definitions and protocol-visible configuration. Do not use the whole mod Jar hash: harmless
 client-only resources or packaging changes should not alter synchronized-content compatibility.
 
+An installed mod whose synchronized behavior is genuinely opt-in may declare itself `optional`
+statically and call `MultiplayerRequirements.activate(MultiplayerMod.required(...))` when such
+content is actually parsed or enabled. Subsequent handshakes use the effective manifest, where the
+runtime requirement replaces that optional row. The returned activation handle can undo a
+temporary requirement; content loaders should normally keep it active for the process lifetime.
+This mechanism must be activated before opening a peer connection and must never be used to hide
+already-active deterministic behavior.
+
 ## Common API
 
 ```java
@@ -70,8 +78,9 @@ The evaluator ignores differing `client_only`, `server_only`, and `optional` mod
 required mods, mode differences, and required-mod version/protocol/hash differences. Comparing with
 `evaluateVanillaPeer` succeeds when every enabled mod is genuinely client-only, server-only, or optional.
 
-`RuntimeLifecycleEvents.LOADER_READY` is the earliest portable point at which the local manifest is
-final. `MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY` announces it, and
+`RuntimeLifecycleEvents.LOADER_READY` is the earliest portable point at which the static local
+manifest is available. `MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY` announces its current
+effective form; later runtime requirements are folded into each handshake. The
 `COMPATIBILITY_EVALUATED` observes decisions without allowing listener failures to affect the game.
 `PEER_EVALUATED` adds the live connection ID and distinguishes Loader peers from vanilla/legacy
 timeouts.

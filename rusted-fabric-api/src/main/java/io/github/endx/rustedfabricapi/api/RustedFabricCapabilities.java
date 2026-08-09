@@ -22,6 +22,7 @@ public final class RustedFabricCapabilities {
     public static final String MAP_MISSION = "event.map.mission.v1";
     public static final String MAP_SPAWN = "event.map.spawn.v1";
     public static final String MULTIPLAYER_COMPATIBILITY = "multiplayer.compat.v1";
+    public static final String MULTIPLAYER_DYNAMIC_REQUIREMENTS = "multiplayer.dynamic_requirements.v1";
     public static final String NETWORK_CALLBACK = "event.network.callback.v1";
     public static final String NETWORK_HANDSHAKE = "event.network.handshake.v1";
     public static final String NETWORK_CHAT = "event.network.chat.v1";
@@ -34,6 +35,7 @@ public final class RustedFabricCapabilities {
     public static final String RUNTIME_LIFECYCLE = "event.runtime.lifecycle.v1";
     public static final String CUSTOM_REGISTRY = "event.custom.registry.v1";
     public static final String INI = "event.ini.v1";
+    public static final String INI_EXTENSIONS = "ini.extensions.v1";
     public static final String SAVE_SYNC = "event.save.sync.v1";
     public static final String SELECTION = "event.selection.v1";
     public static final String TRANSPORT = "event.transport.v1";

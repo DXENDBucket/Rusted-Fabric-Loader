@@ -1029,7 +1029,7 @@ public class RustedWarfareGameProvider implements GameProvider {
                     }
                     String id = jsonString(metadata, "id");
                     String version = jsonString(metadata, "version");
-                    if ("rustedfabricapi".equals(id)
+                    if ("rusted_fabric_api".equals(id) || "rustedfabricapi".equals(id)
                             || !id.matches("[a-z][a-z0-9_-]{0,63}")
                             || !safeToken(version, 64)) continue;
                     MultiplayerRow row = readMultiplayerRow(id, version, metadata);

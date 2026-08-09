@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.event.RuntimeLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents;
+import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerRequirements;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +36,7 @@ public abstract class GameEngineInitializationNamedMixin {
         RustedFabricAPIContext context = RustedFabricRuntime.currentContext().orElse(null);
         if (context != null && rustedfabricapi$loaderReady.compareAndSet(false, true)) {
             RuntimeLifecycleEvents.LOADER_READY.dispatch(context);
-            context.multiplayerManifest().ifPresent(
+            context.multiplayerManifest().map(MultiplayerRequirements::effective).ifPresent(
                     MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY::dispatch);
         }
         if (rustedfabricapi$engineInitializationStarted.compareAndSet(false, true)) {

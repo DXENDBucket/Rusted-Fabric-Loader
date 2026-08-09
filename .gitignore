@@ -57,3 +57,4 @@ local.properties
 !/report/mapping-evidence/
 !/report/mapping-evidence/**
 /documents/
+/local-references/

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ini_essentials",
+  "version": "${version}",
+  "name": "INI Essentials",
+  "description": "Opt-in additions and carefully scoped extensions to Rusted Warfare unit INI files.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.endx.iniessentials.IniEssentials"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "rusted_fabric_api": "*"
+  },
+  "custom": {
+    "rusted_fabric:multiplayer": {
+      "mode": "optional",
+      "protocol": "ini_essentials_v1",
+      "syncHash": "07c5ca3f584e498fdc9a0002d90a25a90b13991e95e5818a097123e96d404bfa"
+    }
+  }
+}
