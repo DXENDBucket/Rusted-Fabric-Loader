@@ -68,6 +68,51 @@ coordinates fall back to the unit position, and relative coordinates are zero. T
 belongs to the local client and must only control presentation such as Decals or Overlays; it must
 not decide synchronized gameplay behavior.
 
+## Independent CustomProjectile assets
+
+`class: CustomProjectile` files define a reusable native projectile template without registering a
+dummy unit. The definition ID is always namespaced, and ordinary unit actions refer to one named
+pattern after the final `/`:
+
+```ini
+[core]
+class: CustomProjectile
+name: example:plasma_fan
+schemaVersion: 1
+
+[projectile]
+directDamage: 20
+life: 180
+speed: 5
+
+[pattern_main]
+type: fan
+aimMode: direction
+count: clamp(memory.shots,1,30)
+centerDirection: self.dir
+sweepAngle: 60
+originOffsetY: 18
+```
+
+```ini
+[action_fireFan]
+emitProjectilePattern: example:plasma_fan/main
+```
+
+`single`, `fan`, `ring`, and `line` are deterministic same-tick layouts. A ring defaults to a full
+360-degree sweep without duplicating its endpoint; a smaller sweep includes both ends. Numeric pattern values are
+evaluated when the action runs, with the firing unit as `self`, so memory, resources, and extended
+math functions are available. One expansion creates only its real native projectiles—there is no
+invisible parent projectile—and `count` has a hard limit of 1024. `direction` works without an
+action target; `point` requires an action target point and `unit` requires a target unit.
+
+The `[projectile]` section accepts the ordinary native projectile fields except deferred links to
+other projectile names (`spawnProjectilesOnCreate`, `spawnProjectilesOnExplode`, and
+`spawnProjectilesOnEndOfLife`), which are rejected in this first phase. Interval/sequence firing,
+direct `[turret_*]` replacement, and custom per-tick trajectories are planned later. The current
+turret hook is deliberately not reused because cancelling it at method entry would also suppress
+native muzzle effects, recoil, and shoot actions.
+
 ## Geometry, math, and fog
 
 `[geometry_NAME]` declares a finite reusable mask. Numeric fields are runtime LogicBoolean

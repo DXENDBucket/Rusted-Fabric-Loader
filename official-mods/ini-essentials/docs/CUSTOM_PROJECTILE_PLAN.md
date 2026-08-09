@@ -1,6 +1,7 @@
 # `class: CustomProjectile` 设计草案
 
-状态：规划中，不代表字段已经可用。
+状态：第一阶段已实现。独立定义、Action 发射、`single` / `fan` / `ring` / `line`
+同帧展开已经可用；定时 sequence、自定义逐 tick 轨迹和原版炮塔直接替换仍在后续阶段。
 
 ## 要解决的问题
 
@@ -17,28 +18,35 @@
 
 ## 文件和引用模型
 
-拟议的独立定义文件：
+独立定义文件：
 
 ```ini
 [core]
 class: CustomProjectile
-name: plasma_fan
+name: example:plasma_fan
 schemaVersion: 1
 
 [projectile]
 directDamage: 20
 life: 180
 speed: 5
-aimMode: direction
 
 [pattern_main]
 type: fan
+aimMode: direction
 count: 7
 centerDirection: self.dir
 sweepAngle: 60
 ```
 
-普通单位通过有命名空间的引用使用它，例如 `projectilePattern: example:plasma_fan/main`。最终字段名要在完成原版解析入口映射后确定；在此之前不占用现有原版字段名。
+普通单位在 `[action_*]` 或 `[hiddenAction_*]` 中通过有命名空间的引用使用它：
+
+```ini
+emitProjectilePattern: example:plasma_fan/main
+```
+
+`[projectile]` 复用原版 `[projectile_NAME]` 的字段语法；`[pattern_*]` 的数值字段在动作
+执行时以发射单位为 `self` 求值，因此可读取该单位的 memory、resources 和数学表达式。
 
 原则：
 
@@ -59,7 +67,7 @@ sweepAngle: 60
 
 所有坐标、方向和速度值应优先采用运行时表达式。发射原点应支持发射单位、炮塔、任意 UnitReference 和相对偏移。
 
-### 一次性弹幕
+### 一次性弹幕（第一阶段）
 
 首批 pattern：
 
@@ -67,9 +75,12 @@ sweepAngle: 60
 - `fan`：以中心方向和总夹角均匀排布；
 - `ring`：按整圆或指定角度区间排布；
 - `line`：沿横向或纵向间隔排布发射原点；
-- `sequence`：按列表组合其他 pattern，不通过弹体递归。
+- `sequence`：计划按列表组合其他 pattern，不通过弹体递归，第一阶段尚未开放。
 
-共同参数预计包含 `count`、`startAngle`、`sweepAngle`、`angleStep`、`originSpacing`、`delay`、`interval` 和 `maxActiveProjectiles`。`count: 1` 时扇形的方向固定为中心方向，避免除零和左右偏置歧义。
+当前共同参数包含 `count`、`centerDirection`、`startAngle`、`sweepAngle`、
+`originSpacing`、`lineAngleOffset`、三个原点偏移和 `directionDistance`。
+`count: 1` 时扇形的方向固定为中心方向，避免除零和左右偏置歧义。
+单次展开硬上限为 1024 发；越界会明确报错而不是截断。
 
 `interval: 0` 在同一模拟帧直接生成全部实际弹体；大于零时由轻量的发射任务保存剩余数量和下次触发时间。发射任务不是可碰撞、可绘制或可继续刷弹的 Projectile。
 
@@ -115,13 +126,14 @@ sweepAngle: 60
 - 数量、递归、单帧生成量和活动弹体数必须有硬上限，并给出清楚的 INI 错误，而不是静默截断；
 - 使用 gameplay `CustomProjectile` 的房间不能允许完全原版客户端加入，这与仅服务端逻辑不同，因为每个客户端都要进行弹体模拟。
 
-## 实施顺序
+## 实施进度
 
-1. 补映射并给 API 增加可测试的单发 `ProjectileSpawner`，先支持 `point` 与 `direction`。
-2. 实现纯数据、可单元测试的 `fan`、`ring`、`line` 展开器，不接 INI。
-3. 在 INI Essentials 中解析独立 `class: CustomProjectile`，建立命名空间注册表和引用校验。
-4. 接入同帧 pattern；验证无目标平射、扇形与环形不产生中间母弹。
+1. 已完成：API 单发 `ProjectileSpawner`，支持 `unit`、`point` 与 `direction`。
+2. 已完成：纯数据且有契约测试的 `fan`、`ring`、`line` 展开器。
+3. 已完成：独立 `class: CustomProjectile` 解析、命名空间注册表和完整 pattern 引用校验。
+4. 已完成代码路径：Action 同帧 pattern 直接创建真实弹体，不生成中间母弹；待游戏内验收。
 5. 加入带 interval 的发射任务及其存档/联机状态。
-6. 最后再评估自定义逐 tick 运动、碰撞过滤和高级生命周期回调；这些不进入第一版。
+6. 为原版炮塔加入精确发射织入，在保留炮口效果、后坐力和 onShoot Action 的同时替换弹体创建；不能使用方法入口取消事件代替。
+7. 最后再评估自定义逐 tick 运动、碰撞过滤和高级生命周期回调；这些不进入第一版。
 
 第一轮验收基准：用一个动作或炮塔直接发射 30 发固定方向扇形弹幕，场上只出现 30 个实际弹体，不存在用于刷弹的母弹；PC 与 Android 的弹体顺序、角度、命中和回放结果一致。

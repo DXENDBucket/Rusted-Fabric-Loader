@@ -26,10 +26,15 @@ public final class IniEssentials implements ModInitializer {
         // run before that singleton exists on the Android desktop-JVM host, so install custom
         // functions at the first native unit-load boundary, immediately before INI parsing.
         CustomUnitRegistryEvents.BEFORE_NATIVE_LOAD.register(ignored -> {
+            CustomProjectileDefinitions.beginReload();
             ExtendedMathFunctions.register();
             OverlayEvaluationContext.registerFunctions();
             UnitContextProperties.register();
         });
+        CustomUnitRegistryEvents.AFTER_PARSE_BEFORE_ENABLE.register(ignored ->
+                CustomProjectileDefinitions.validateReferences());
+        CustomProjectileDefinitions.register();
+        CustomProjectileActionFields.register();
         EventRuleDefinitions.register();
         ProjectileRuleDefinitions.register();
         GeometryDefinitions.register();
@@ -69,7 +74,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v17",
-                "f36b975d68919b866e107a834132e37884d732e2fbb2a68071aae48cd886c7fa"));
+                MOD_ID, version, "ini_essentials_v18",
+                "4997e5a82096f22bf11cbaed2664a2c369dcafcfc7e90ebcb78fbdba4b1bba91"));
     }
 }

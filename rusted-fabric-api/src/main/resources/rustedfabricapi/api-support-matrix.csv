@@ -34,6 +34,7 @@ event.network.packet.v1,event.NetworkPacketEvents
 event.network.sync.v1,event.NetworkSyncEvents
 event.projectile.lifecycle.v1,projectile.event.ProjectileEvents
 event.projectile.combat.v1,projectile.event.ProjectileCombatEvents
+projectile.spawn.v1,projectile.spawn.ProjectileSpawner
 event.render.image.v1,event.RenderImageLifecycleEvents
 event.repair.reclaim.v1,unit.repair.event.RepairReclaimEvents
 event.resource.runtime.v1,event.ResourceRuntimeEvents

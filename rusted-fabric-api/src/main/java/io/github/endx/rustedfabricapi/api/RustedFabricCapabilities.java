@@ -25,6 +25,7 @@ public final class RustedFabricCapabilities {
     public static final String LOGIC_NUMBER_FUNCTIONS = "logic.number_functions.v1";
     public static final String LOGIC_UNIT_PROPERTIES = "logic.unit_properties.v1";
     public static final String LOGIC_UNIT_REFERENCE = "logic.unit_reference.v1";
+    public static final String PROJECTILE_SPAWN = "projectile.spawn.v1";
     public static final String HUD_COMMAND = "event.hud.command.v1";
     public static final String MAP_DISCOVERY = "event.map.discovery.v1";
     public static final String MAP_MISSION = "event.map.mission.v1";

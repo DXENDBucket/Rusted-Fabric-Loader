@@ -58,6 +58,8 @@ SECTION_PALETTES = {
     "overlay": ("AD1457", "6A1B4D"),
     # Native Decal extensions use a dark teal distinct from geometry and overlays.
     "decal": ("00796B", "004D40"),
+    # Independent projectile assets use a vivid blue distinct from native projectile rows.
+    "custom_projectile": ("1565C0", "0D47A1"),
     "fog": ("455A64", "263238"),
     "math": ("C62828", "8E0000"),
     "effect": ("A64D79", "741B47"),
@@ -107,6 +109,8 @@ def load_rows(source: Path) -> list[dict[str, str]]:
 
 def section_key(section: str) -> str:
     value = section.lower()
+    if "customprojectile" in value:
+        return "custom_projectile"
     if "overlay" in value:
         return "overlay"
     if "decal" in value:
@@ -164,7 +168,7 @@ def make_groups(field_rows: list[dict[str, str]],
     # Keep established workbook navigation stable when a later version adds
     # fields for a section that did not previously have an Essentials group.
     established_order = [
-        "core", "action", "geometry", "overlay", "decal", "fog", "math", "event",
+        "core", "action", "custom_projectile", "geometry", "overlay", "decal", "fog", "math", "event",
         "projectile", "turret",
     ]
     ordered_keys = [key for key in established_order if key in grouped]
@@ -190,6 +194,10 @@ def make_groups(field_rows: list[dict[str, str]],
             section_en, section_zh = "[geometry_NAME]", "[geometry_NAME]"
             summary_en = "Reusable runtime geometry masks for fog and future gameplay consumers"
             summary_zh = "供迷雾及后续玩法功能复用的运行时几何遮罩"
+        elif key == "custom_projectile":
+            section_en, section_zh = "class: CustomProjectile / [pattern_NAME]", "class: CustomProjectile / [pattern_NAME]"
+            summary_en = "Independent reusable projectile templates and deterministic same-tick patterns"
+            summary_zh = "独立可复用弹体模板与确定性的同帧弹幕排布"
         elif key == "overlay":
             section_en, section_zh = "[overlay_NAME]", "[overlay_NAME]"
             summary_en = "Screen-space HUD primitives driven by live custom-unit instances"
