@@ -31,7 +31,22 @@ public final class RepairReclaimEvents {
             unitResourceAmountEvent();
     public static final RustedFabricEvent<ModifyUnitResourceAmount> MODIFY_RECLAIM_PRICE_OVERRIDE =
             unitResourceAmountEvent();
+    public static final RustedFabricEvent<ModifyUnitTags> MODIFY_SIMILAR_RESOURCES_TAG =
+            RustedFabricEvent.create(listeners -> (unit, current) -> {
+                CustomTagList result = current;
+                for (ModifyUnitTags listener : listeners) {
+                    CustomTagList replacement = listener.modify(unit, result);
+                    if (replacement != null) result = replacement;
+                }
+                return result;
+            });
     public static final RustedFabricEvent<ModifyUnitResourceAmount> MODIFY_REPAIR_RECLAIM_RESOURCE_DELTA =
+            unitResourceAmountEvent();
+    public static final RustedFabricEvent<UnitEvent> BEFORE_ACTIVE_RESOURCE_DELTA_REFRESH = unitEvent();
+    public static final RustedFabricEvent<UnitEvent> AFTER_ACTIVE_RESOURCE_DELTA_REFRESH = unitEvent();
+    public static final RustedFabricEvent<ModifyUnitResourceAmount> MODIFY_BUILD_QUEUE_RESOURCE_DELTA =
+            unitResourceAmountEvent();
+    public static final RustedFabricEvent<ModifyUnitResourceAmount> MODIFY_QUEUED_ACTION_RESOURCE_DELTA =
             unitResourceAmountEvent();
     public static final RustedFabricEvent<BeforeConstructionProgressSet> BEFORE_CONSTRUCTION_PROGRESS_SET =
             RustedFabricEvent.create(listeners -> (unit, progress) -> {
@@ -102,6 +117,12 @@ public final class RepairReclaimEvents {
         });
     }
 
+    private static RustedFabricEvent<UnitEvent> unitEvent() {
+        return RustedFabricEvent.create(listeners -> unit -> {
+            for (UnitEvent listener : listeners) listener.onUnit(unit);
+        });
+    }
+
     @FunctionalInterface
     public interface BeforeOrderUpdate {
         boolean beforeUpdate(OrderableUnit unit, float delta, UnitOrder order);
@@ -134,6 +155,17 @@ public final class RepairReclaimEvents {
     public interface ModifyUnitResourceAmount {
         /** Return {@code null} to retain {@code current}. */
         ResourceAmount modify(Unit unit, ResourceAmount current);
+    }
+
+    @FunctionalInterface
+    public interface ModifyUnitTags {
+        /** Return {@code null} to retain {@code current}. */
+        CustomTagList modify(Unit unit, CustomTagList current);
+    }
+
+    @FunctionalInterface
+    public interface UnitEvent {
+        void onUnit(Unit unit);
     }
 
     @FunctionalInterface

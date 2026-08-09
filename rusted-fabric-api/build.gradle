@@ -85,12 +85,12 @@ tasks.register('verifyGameApiContracts', JavaExec) {
 
 tasks.register('verifyApiSupportMatrix') {
     group = 'verification'
-    description = 'Requires every public event group to have one capability catalog row.'
+    description = 'Validates capability keys and their package-relative public API classes.'
     def matrixFile = file('src/main/resources/rustedfabricapi/api-support-matrix.csv')
-    def eventDirectory = file('src/main/java/io/github/endx/rustedfabricapi/api/event')
+    def apiDirectory = file('src/main/java/io/github/endx/rustedfabricapi/api')
     def capabilitySource = file('src/main/java/io/github/endx/rustedfabricapi/api/RustedFabricCapabilities.java')
     inputs.file(matrixFile)
-    inputs.dir(eventDirectory)
+    inputs.dir(apiDirectory)
     inputs.file(capabilitySource)
 
     doLast {
@@ -100,21 +100,21 @@ tasks.register('verifyApiSupportMatrix') {
         }
         def capabilities = new LinkedHashSet<String>()
         def matrixClasses = new LinkedHashSet<String>()
+        def missingClasses = new LinkedHashSet<String>()
         lines.drop(1).findAll { !it.trim().isEmpty() && !it.startsWith('#') }.eachWithIndex { row, index ->
             def fields = row.split(',', -1)
-            if (fields.length != 2 || !fields[0].matches('[a-z][a-z0-9._-]*\\.v[0-9]+')) {
+            if (fields.length != 2 || !fields[0].matches('[a-z][a-z0-9._-]*\\.v[0-9]+')
+                    || !fields[1].matches('[A-Za-z_][A-Za-z0-9_.]*')) {
                 throw new GradleException("Malformed API capability row ${index + 2}: ${row}")
             }
             if (!capabilities.add(fields[0]) || !matrixClasses.add(fields[1])) {
                 throw new GradleException("Duplicate API capability row ${index + 2}: ${row}")
             }
+            def apiClassFile = new File(apiDirectory, fields[1].replace('.', '/') + '.java')
+            if (!apiClassFile.isFile()) missingClasses.add(fields[1])
         }
-        def eventClasses = fileTree(eventDirectory) {
-            include '*.java'
-            exclude 'RustedFabricEvent.java'
-        }.files.collect { it.name - '.java' } as Set
-        if (eventClasses != matrixClasses) {
-            throw new GradleException("API capability catalog mismatch; missing=${eventClasses - matrixClasses}, stale=${matrixClasses - eventClasses}")
+        if (!missingClasses.isEmpty()) {
+            throw new GradleException("API capability catalog references missing classes: ${missingClasses}")
         }
         def constants = capabilitySource.getText('UTF-8')
         capabilities.each { capability ->

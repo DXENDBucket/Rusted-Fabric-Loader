@@ -26,9 +26,10 @@ The no-root launcher can import and validate a desktop installation and Linux/AA
 start Fabric and the desktop game in an isolated HotSpot process, render through an Android Surface
 using LWJGL2/GL4ES, translate touch input, and reach/play the game on a physical ARM64 phone.
 
-Current device work focuses on matching the official mobile UI/control experience and validating
-audio, saves, custom maps, multiplayer, and longer sessions. The launcher itself never contains a
-game APK, desktop game files, or a Java runtime supplied by the user.
+Physical-device testing has established a playable baseline with mobile-style UI and controls,
+audio, saves, custom maps, and multiplayer exercised on the current test device. Further Android
+work is regression-driven while API development resumes. The launcher itself never contains a game
+APK, desktop game files, or a Java runtime supplied by the user.
 
 ## Verification
 

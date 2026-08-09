@@ -28,23 +28,13 @@ public final class ProjectileSnapshot {
 
     private ProjectileSnapshot(Object projectile) {
         if (projectile == null) throw new IllegalArgumentException("projectile must not be null");
-        boolean androidOfficial = hasTypeInHierarchy(projectile,
-                "com.corrodinggames.rts.gameFramework.ah");
         this.projectile = projectile;
-        this.id = number(projectile, androidOfficial
-                ? new String[]{"id", "ej"}
-                : new String[]{"id", "eh"}).longValue();
+        this.id = number(projectile, "id", "eh").longValue();
         this.sourceUnit = field(projectile, "sourceUnit", "j");
         this.targetUnit = field(projectile, "targetUnit", "l");
-        this.x = number(projectile, androidOfficial
-                ? new String[]{"x", "eq"}
-                : new String[]{"x", "eo"}).floatValue();
-        this.y = number(projectile, androidOfficial
-                ? new String[]{"y", "er"}
-                : new String[]{"y", "ep"}).floatValue();
-        this.height = number(projectile, androidOfficial
-                ? new String[]{"height", "es"}
-                : new String[]{"height", "eq"}).floatValue();
+        this.x = number(projectile, "x", "eo").floatValue();
+        this.y = number(projectile, "y", "ep").floatValue();
+        this.height = number(projectile, "height", "eq").floatValue();
         this.targetX = number(projectile, "targetX", "n").floatValue();
         this.targetY = number(projectile, "targetY", "o").floatValue();
         this.remainingLife = number(projectile, "remainingLife", "h").floatValue();
@@ -96,21 +86,8 @@ public final class ProjectileSnapshot {
         return value instanceof Number ? (Number) value : Integer.valueOf(0);
     }
 
-    private static Number number(Object owner, String[] names) {
-        Object value = RustedReflection.getFieldValue(owner, names);
-        return value instanceof Number ? (Number) value : Integer.valueOf(0);
-    }
-
     private static boolean bool(Object owner, String named, String official) {
         return Boolean.TRUE.equals(field(owner, named, official));
     }
 
-    private static boolean hasTypeInHierarchy(Object owner, String typeName) {
-        Class<?> current = owner.getClass();
-        while (current != null) {
-            if (typeName.equals(current.getName())) return true;
-            current = current.getSuperclass();
-        }
-        return false;
-    }
 }

@@ -12,7 +12,7 @@ import java.util.Optional;
 
 import io.github.endx.rustedfabricapi.api.multiplayer.MultiplayerManifest;
 
-/** Immutable context shared by Windows Fabric mods and Android DEX mods. */
+/** Immutable context supplied by the shared Fabric Loader on Windows and Android. */
 public final class RustedFabricAPIContext {
     private final Map<String, Object> raw;
 

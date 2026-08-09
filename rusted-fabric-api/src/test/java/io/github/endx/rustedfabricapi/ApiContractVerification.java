@@ -37,9 +37,7 @@ public final class ApiContractVerification {
         verifiesEntrypointAdapter();
         verifiesGameThreadScheduling();
         verifiesProjectileSnapshot();
-        verifiesAndroidOfficialProjectileLayout();
         verifiesCustomUnitRuntimeSnapshot();
-        verifiesAndroidOfficialCustomUnitLayout();
         System.out.println("Rusted Fabric API contract verification passed");
     }
 
@@ -176,22 +174,6 @@ public final class ApiContractVerification {
         require(value.removed, "named projectile was not removed immediately");
     }
 
-    private static void verifiesAndroidOfficialProjectileLayout() {
-        AndroidFakeProjectile value = new AndroidFakeProjectile();
-        ProjectileSnapshot snapshot = ProjectileSnapshot.capture(value);
-        require(snapshot.id() == 84L && snapshot.x() == 11.0F
-                        && snapshot.y() == 22.0F && snapshot.height() == 4.0F,
-                "Android official projectile base fields used the PC layout");
-        Projectiles.requestRemoval(value);
-        require(value.aS, "Android projectile removal flag was not set");
-        Projectiles.removeImmediately(value);
-        require(value.removed, "Android projectile was not removed immediately");
-        ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(value);
-        require(impact.kind() == ProjectileImpactSnapshot.Kind.UNIT_TARGET
-                        && impact.impactHeight() == 6.0F,
-                "Android projectile impact snapshot failed");
-    }
-
     private static void verifiesCustomUnitRuntimeSnapshot() {
         FakeCustomUnit value = new FakeCustomUnit();
         CustomUnitRuntimeSnapshot snapshot = CustomUnitRuntimeSnapshot.capture(value);
@@ -209,18 +191,6 @@ public final class ApiContractVerification {
         value.currentBuildQueueActionBlocksMovement = false;
         require(snapshot.currentBuildQueueActionBlocksMovement(),
                 "custom-unit runtime snapshot was not immutable");
-    }
-
-    private static void verifiesAndroidOfficialCustomUnitLayout() {
-        AndroidFakeCustomUnit value = new AndroidFakeCustomUnit();
-        CustomUnitRuntimeSnapshot snapshot = CustomUnitRuntimeSnapshot.capture(value);
-        require(!snapshot.hasLastLegBasePosition()
-                        && Float.isNaN(snapshot.lastLegBaseX())
-                        && Float.isNaN(snapshot.lastLegBaseY()),
-                "unmapped Android leg-base X/Y fields exposed reused dP/dQ values");
-        require(snapshot.lastLegBaseHeight() == 6.0F
-                        && snapshot.lastLegBaseDirection() == 270.0F,
-                "mapped Android leg-base height/direction were not captured");
     }
 
     private static void require(boolean condition, String message) {
@@ -269,48 +239,6 @@ public final class ApiContractVerification {
         }
     }
 
-    private static final class AndroidFakeProjectile
-            extends com.corrodinggames.rts.gameFramework.ah {
-        Object j = new Object();
-        Object l = new Object();
-        float n = 31.0F;
-        float o = 41.0F;
-        float h = 5.0F;
-        float J = 2.0F;
-        float t = 4.0F;
-        float az = 90.0F;
-        float U = 12.0F;
-        float Y = 6.0F;
-        float Z = 8.0F;
-        boolean A;
-        boolean E;
-        boolean aH = true;
-        boolean bn;
-        boolean aS;
-        boolean removed;
-        boolean m;
-        boolean collideWithUnits = true;
-        boolean at;
-        boolean aC;
-        float aV = 14.0F;
-        float aW = 24.0F;
-        float aX = 6.0F;
-        float aA = 3.0F;
-
-        AndroidFakeProjectile() {
-            ej = 84L;
-            eo = 1234;
-            ep = 5678;
-            eq = 11.0F;
-            er = 22.0F;
-            es = 4.0F;
-        }
-
-        void a() {
-            removed = true;
-        }
-    }
-
     private static final class FakeCustomUnitMetadata {
         boolean hasBuildQueueRuntimeEffects;
 
@@ -332,17 +260,4 @@ public final class ApiContractVerification {
         float lastLegBaseDir = 180.0F;
     }
 
-    private static final class AndroidFakeCustomUnit
-            extends com.corrodinggames.rts.gameFramework.ah {
-        Object x = new FakeCustomUnitMetadata(true);
-        Object z = new FakeCustomUnitMetadata(false);
-        boolean g = true;
-        boolean h;
-        boolean i = true;
-        float w = 2.5F;
-        Object dP = new Object();
-        int dQ = 99;
-        float dR = 6.0F;
-        float dS = 270.0F;
-    }
 }

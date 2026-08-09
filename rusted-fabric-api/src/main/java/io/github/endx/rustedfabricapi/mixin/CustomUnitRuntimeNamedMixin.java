@@ -1,7 +1,6 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
-import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -87,9 +86,7 @@ public abstract class CustomUnitRuntimeNamedMixin {
 
     @Inject(method = "onKilled()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeCustomUnitKilled(CallbackInfo ci) {
-        boolean cancelled = CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.invoker()
-                .beforeCustomUnitKilled(this);
-        cancelled |= io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.BEFORE_KILLED
+        boolean cancelled = io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.BEFORE_KILLED
                 .invoker().beforeUnit((rustedwarfare.custom.CustomUnit) (Object) this);
         if (cancelled) {
             ci.cancel();
@@ -99,16 +96,13 @@ public abstract class CustomUnitRuntimeNamedMixin {
     @Inject(method = "onKilled()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterCustomUnitKilled(CallbackInfo ci) {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_KILLED.invoker().afterCustomUnitKilled(this);
-        CustomUnitLifecycleEvents.AFTER_CUSTOM_UNIT_KILLED.invoker().afterCustomUnitKilled(this);
         io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.AFTER_KILLED
                 .invoker().afterUnit((rustedwarfare.custom.CustomUnit) (Object) this);
     }
 
     @Inject(method = "removeFromGame()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeCustomUnitRemoved(CallbackInfo ci) {
-        boolean cancelled = CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.invoker()
-                .beforeCustomUnitRemoved(this);
-        cancelled |= io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.BEFORE_REMOVED
+        boolean cancelled = io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.BEFORE_REMOVED
                 .invoker().beforeUnit((rustedwarfare.custom.CustomUnit) (Object) this);
         if (cancelled) {
             ci.cancel();
@@ -118,7 +112,6 @@ public abstract class CustomUnitRuntimeNamedMixin {
     @Inject(method = "removeFromGame()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterCustomUnitRemoved(CallbackInfo ci) {
         CustomUnitRuntimeEvents.AFTER_CUSTOM_UNIT_REMOVED.invoker().afterCustomUnitRemoved(this);
-        CustomUnitLifecycleEvents.AFTER_CUSTOM_UNIT_REMOVED.invoker().afterCustomUnitRemoved(this);
         io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents.AFTER_REMOVED
                 .invoker().afterUnit((rustedwarfare.custom.CustomUnit) (Object) this);
     }

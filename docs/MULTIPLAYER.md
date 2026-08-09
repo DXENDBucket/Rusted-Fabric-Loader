@@ -2,10 +2,10 @@
 
 ## Current status
 
-API context version 5 defines and validates the `RFM1` cross-platform mod manifest. Windows builds
-derive it from Fabric metadata; Android builds derive it from enabled `.javamod` metadata. The common
-API provides deterministic encoding, SHA-256 fingerprinting, compatibility evaluation, and
-exception-isolated manifest/evaluation events. Both backends wrap it in the same `RFH1` envelope and
+API context version 5 defines and validates the `RFM1` cross-platform mod manifest. Both host
+platforms derive it from the same Fabric metadata in enabled Java mods. The common API provides
+deterministic encoding, SHA-256 fingerprinting, compatibility evaluation, and exception-isolated
+manifest/evaluation events. The shared Loader runtime wraps it in the same `RFH1` envelope and
 carry it in game system packet `179`, which unmodified 1.15 peers safely ignore.
 
 After client registration/server info, each Loader sends its hello and evaluates the remote
@@ -36,7 +36,7 @@ These modes control compatibility, not initial class loading. Mods initialize no
 can additionally inspect the peer manifest delivered by `PEER_EVALUATED` before enabling a feature
 that talks to its counterpart.
 
-Windows `fabric.mod.json`:
+Shared `fabric.mod.json` metadata:
 
 ```json
 "custom": {
@@ -48,17 +48,9 @@ Windows `fabric.mod.json`:
 }
 ```
 
-Android `.javamod` metadata:
-
-```properties
-multiplayerMode=required
-multiplayerProtocol=portable-units-v1
-multiplayerSyncHash=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-```
-
-The sync hash must be generated from the common deterministic gameplay data shared by both builds,
-such as normalized unit definitions and protocol-visible configuration. Do not hash the Windows
-JAR or Android DEX/archive: platform binaries are expected to differ.
+The sync hash must be generated from deterministic gameplay data, such as normalized unit
+definitions and protocol-visible configuration. Do not use the whole mod Jar hash: harmless
+client-only resources or packaging changes should not alter synchronized-content compatibility.
 
 ## Common API
 

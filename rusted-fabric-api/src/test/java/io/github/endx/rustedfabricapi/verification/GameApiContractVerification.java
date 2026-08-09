@@ -1,11 +1,11 @@
 package io.github.endx.rustedfabricapi.verification;
 
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
-import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.game.TeamView;
 import io.github.endx.rustedfabricapi.api.game.Teams;
 import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.game.Units;
+import io.github.endx.rustedfabricapi.api.unit.event.UnitEvents;
 import rustedwarfare.game.Team;
 import rustedwarfare.unit.Unit;
 
@@ -65,8 +65,8 @@ public final class GameApiContractVerification {
 
         final UnitView[] delivered = new UnitView[1];
         RustedFabricEvent.Registration registration =
-                UnitLifecycleEvents.subscribeAfterUnitAdded(value -> delivered[0] = value);
-        UnitLifecycleEvents.AFTER_UNIT_REGISTER.invoker().afterUnitRegister(builder);
+                UnitEvents.subscribeAfterUnitAdded(value -> delivered[0] = value);
+        UnitEvents.AFTER_REGISTER.invoker().onUnit(builder);
         require(delivered[0] != null && delivered[0].raw() == builder,
                 "typed lifecycle adapter did not preserve the unit");
         registration.close();

@@ -62,14 +62,16 @@ the game-visible Java runtime is intentionally the same one used on Windows. Pla
 features should still check `RustedFabricAPIContext` capabilities where documented.
 
 The public capability catalog is machine-readable in
-`rusted-fabric-api/src/main/resources/rustedfabricapi/api-support-matrix.csv`. Every event group has
-one versioned capability key. `ApiSupportMatrix.available(context, capability)` combines catalog
-membership with capabilities advertised by the running Loader, and the build fails if a public
-event class or capability row is missing.
+`rusted-fabric-api/src/main/resources/rustedfabricapi/api-support-matrix.csv`. Each mapped event
+group has one versioned capability key. `ApiSupportMatrix.available(context, capability)` combines
+catalog membership with capabilities advertised by the shared Loader runtime.
 
 ## Event behavior
 
-Events under `io.github.endx.rustedfabricapi.api.event` invoke listeners synchronously in registration order on the thread that reached the corresponding game method. They do not switch to a render, update, or network thread.
+Events in the domain packages (`api.unit.*`, `api.client.*`, `api.networking.*`, and similar)
+invoke listeners synchronously in registration order on the thread that reached the corresponding
+game method. They do not switch to a render, update, or network thread. The base event primitive is
+`api.event.RustedFabricEvent`; new mod code should use the typed domain event classes.
 
 - Existing game-object events propagate listener exceptions to the intercepted game call. A listener should catch failures it can recover from.
 - Permanent registration is intended for initialization time; runtime-toggleable features should
@@ -82,11 +84,12 @@ Events under `io.github.endx.rustedfabricapi.api.event` invoke listeners synchro
   one phase retain registration order.
 - `BEFORE_*` callbacks returning `true` generally cancel the operation, but the callback interface remains the source of truth.
 - `MODIFY_*` callbacks are chained in registration order; each listener receives the value produced by the previous listener.
-- Game objects are commonly exposed as `Object`. This keeps the public API Jar namespace-neutral across named development and official runtime. Mods may cast to mapped game types when they are compiled and remapped through the supported pipeline.
+- Typed domain events expose mapped game classes and are remapped with the mod. A few still-active
+  low-level experimental hooks expose `Object`; prefer a typed domain event whenever one exists.
 
 `RuntimeLifecycleEvents` is the cross-platform exception: each listener is isolated, failures are
 counted in `DispatchResult`, registrations can be unregistered, and no game or platform object is
-exposed. The before/after engine initialization events are one-shot on both backends.
+exposed. The before/after engine initialization events are one-shot on both host platforms.
 
 ### Ordered event phases
 
@@ -286,8 +289,8 @@ The first typed desktop layer contains:
   saves, replay/save streams, and multiplayer resync snapshots.
 
 Compile against `game-lib-named.jar` and the named desktop API Jar. Both the mod and API must then
-be remapped to the official namespace for a normal game installation. The existing
-`api.event` callbacks remain available as the namespace-neutral compatibility layer.
+be remapped to the official namespace for a normal game installation. Do not depend on old
+`api.event` game hooks when a typed domain event is available.
 
 `rusted-fabric-api:build` also creates a named `-sources.jar` containing the complete API source
 tree, so IDE navigation and documentation work from a single dependency.
@@ -1151,8 +1154,8 @@ Loader handshake. This means a server-only or optional mod can still accept vani
 `ServerNetworking.canSend(connection)` before sending any payload. Optional features can inspect
 `ServerNetworking.peerManifest(connection)` / `isModPresent(...)` (or the client-side equivalents)
 before assuming that the corresponding mod exists remotely.
-The Windows Loader advertises `NetworkingCapabilities.NAMED_CHANNELS` (`network.channels.v1`);
-other backends do not advertise it.
+The shared Loader runtime advertises `NetworkingCapabilities.NAMED_CHANNELS`
+(`network.channels.v1`) on both Windows and the Android desktop-JVM host.
 
 ```java
 ChannelId status = ChannelId.of("examplemod", "status");
@@ -1275,7 +1278,7 @@ class dependency. A view is live: every accessor reads the current game object, 
 queries are immutable snapshots of membership.
 
 ```java
-UnitLifecycleEvents.registerAfterUnitAdded(unit -> {
+UnitEvents.registerAfterUnitAdded(unit -> {
     if (unit.alive() && unit.healthFraction() < 0.25f) {
         unit.setHealth(unit.maxHealth() * 0.25f);
     }
@@ -1292,21 +1295,17 @@ cover the usual query patterns. Explicit operations currently include health, di
 construction progress, team changes, and removal. Call them only from game-thread callbacks or work
 scheduled through `GameThreadScheduler`.
 
-Raw `Object` lifecycle events remain available for compatibility and uncommon mapped operations.
-`registerAfterUnitAdded`, `subscribeAfterUnitAdded`, `registerBeforeUnitRemoved`, and
-`subscribeBeforeUnitRemoved` provide the type-safe view adapters. Check
+`UnitEvents.registerAfterUnitAdded`, `subscribeAfterUnitAdded`, `registerBeforeUnitRemoved`, and
+`subscribeBeforeUnitRemoved` provide namespace-neutral `UnitView` adapters alongside the mapped
+unit callbacks. Check
 `RustedFabricCapabilities.GAME_UNITS` when a mod may run on an older Loader.
 
 ## Unit damage development API
 
-`UnitDamageEvents` provides cancellable pre-damage and post-damage callbacks. The post callback
-reports both the requested amount and the amount returned by the game. Windows exposes the full
-damage, immunity, death-sequence, and death-effect surface. Android 1.15 R8 distributes
-`applyDamage` across eight concrete implementations; both Android backends hook all eight exact
-targets and expose the pre/post damage pair. They also expose the modifiable death-effect result for
-14 mapped unit implementations and cancellable before/after complete-death callbacks for custom
-units. Android remains `partial`: the shared immunity method and complete non-custom death
-sequences do not yet have equally reliable mapping anchors.
+`api.unit.event.UnitDamageEvents` provides cancellable pre-damage and pre-death callbacks,
+post-damage and post-death observation, damage-immunity modification, and control of whether the
+game object remains after death effects. The same mapped desktop implementation runs on Windows
+and the Android desktop-JVM host.
 
 `CustomUnitRuntimeSnapshot.capture(unit)` promotes the high-confidence v0.84 construction/runtime
 mapping into the same stable style. It exposes active/revert metadata build-queue-effect gates,
@@ -1316,7 +1315,8 @@ mutable wrappers, so values remain consistent for the duration of a callback.
 
 ## API layers
 
-- `api.event`: public experimental event surface for mods.
+- `api.event.RustedFabricEvent`: shared event primitive plus the few low-level hooks that do not yet
+  have complete typed replacements. New gameplay APIs live in their domain packages.
 - `rusted-fabric-api`: the complete public API, mapped game helpers, Fabric/Mixin implementation,
   resources, capability catalog, tests, and named-to-official remapping.
 - `api.asset`, `api.ini`, and `api.logic`: higher-level experimental helpers backed by current mappings.

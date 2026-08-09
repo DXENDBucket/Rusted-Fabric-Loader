@@ -21,8 +21,6 @@ public final class CustomUnitRuntimeSnapshot {
 
     private CustomUnitRuntimeSnapshot(Object customUnit) {
         if (customUnit == null) throw new IllegalArgumentException("customUnit must not be null");
-        boolean androidOfficial = hasTypeInHierarchy(customUnit,
-                "com.corrodinggames.rts.gameFramework.ah");
         this.customUnit = customUnit;
         this.unitMetadata = field(customUnit, "unitMetadata", "x");
         this.revertMetadata = field(customUnit, "revertMetadata", "z");
@@ -35,11 +33,9 @@ public final class CustomUnitRuntimeSnapshot {
                 "completeAndActiveEventPending", "h");
         this.autoTriggerCooldownTimer = number(customUnit,
                 "autoTriggerCooldownTimer", "w");
-        this.lastLegBasePositionAvailable = !androidOfficial;
-        this.lastLegBaseX = androidOfficial
-                ? Float.NaN : number(customUnit, "lastLegBaseX", "dP");
-        this.lastLegBaseY = androidOfficial
-                ? Float.NaN : number(customUnit, "lastLegBaseY", "dQ");
+        this.lastLegBasePositionAvailable = true;
+        this.lastLegBaseX = number(customUnit, "lastLegBaseX", "dP");
+        this.lastLegBaseY = number(customUnit, "lastLegBaseY", "dQ");
         this.lastLegBaseHeight = number(customUnit, "lastLegBaseHeight", "dR");
         this.lastLegBaseDirection = number(customUnit, "lastLegBaseDir", "dS");
     }
@@ -67,7 +63,6 @@ public final class CustomUnitRuntimeSnapshot {
     public float lastLegBaseY() { return lastLegBaseY; }
     public float lastLegBaseHeight() { return lastLegBaseHeight; }
     public float lastLegBaseDirection() { return lastLegBaseDirection; }
-    /** False on Android 1.15, where X/Y are not yet present in the strict mapping. */
     public boolean hasLastLegBasePosition() { return lastLegBasePositionAvailable; }
 
     private static boolean metadataFlag(Object metadata) {
@@ -87,12 +82,4 @@ public final class CustomUnitRuntimeSnapshot {
         return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
     }
 
-    private static boolean hasTypeInHierarchy(Object owner, String typeName) {
-        Class<?> current = owner.getClass();
-        while (current != null) {
-            if (typeName.equals(current.getName())) return true;
-            current = current.getSuperclass();
-        }
-        return false;
-    }
 }

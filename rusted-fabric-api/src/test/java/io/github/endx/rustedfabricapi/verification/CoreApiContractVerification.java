@@ -3,7 +3,6 @@ package io.github.endx.rustedfabricapi.verification;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIContext;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
-import io.github.endx.rustedfabricapi.api.RustedFabricModEntrypoint;
 import io.github.endx.rustedfabricapi.api.RustedFabricPlatform;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
@@ -35,7 +34,7 @@ public final class CoreApiContractVerification {
         verifyContext(context);
         verifySupportMatrix(context);
         verifySafeEvents(context);
-        verifyPortableModEntrypoint(context);
+        verifySharedModEntrypoint(context);
         verifyMultiplayerCompatibility();
         verifyEntrypointInstallsContext();
         verifySharedSessions();
@@ -217,34 +216,26 @@ public final class CoreApiContractVerification {
                 "legacy peer was not rejected when a required mod was active");
     }
 
-    private static void verifyPortableModEntrypoint(RustedFabricAPIContext context) {
+    private static void verifySharedModEntrypoint(RustedFabricAPIContext context) {
         final RustedFabricAPIContext[] received = new RustedFabricAPIContext[1];
-        RustedFabricModEntrypoint entrypoint = value -> received[0] = value;
-        entrypoint.onInitialize(context);
-        require(received[0] == context, "portable mod entrypoint did not receive context");
-
-        RustedFabricAPIEntrypoint dualPlatform = new RustedFabricAPIEntrypoint() {
+        RustedFabricAPIEntrypoint entrypoint = new RustedFabricAPIEntrypoint() {
             @Override
             protected void onRustedFabricAPI(RustedFabricAPIContext value) {
                 received[0] = value;
             }
         };
-        require(dualPlatform instanceof RustedFabricModEntrypoint,
-                "typed Fabric entrypoint is not also an Android mod entrypoint");
-        dualPlatform.onInitialize(context);
-        require(received[0] == context, "Android entrypoint path changed the context");
-        dualPlatform.accept(context.asMap());
+        entrypoint.accept(context.asMap());
         require(received[0].platform() == context.platform(),
-                "Fabric entrypoint path did not adapt the raw context");
+                "shared Fabric entrypoint did not adapt the raw context");
     }
 
     private static RustedFabricAPIContext androidContext() {
         Map<String, Object> raw = new HashMap<>();
-        raw.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 3);
-        raw.put(RustedFabricAPIKeys.K_LOADER_VERSION, "0.3.0");
+        raw.put(RustedFabricAPIKeys.K_CONTEXT_VERSION, 5);
+        raw.put(RustedFabricAPIKeys.K_LOADER_VERSION, "0.1.0");
         raw.put(RustedFabricAPIKeys.K_GAME_VERSION, "1.15");
-        raw.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "android-1.15-v1.0");
-        raw.put(RustedFabricAPIKeys.K_MAPPING_PROFILE_ID, "rw-android-1.15-code176-v1.0");
+        raw.put(RustedFabricAPIKeys.K_MAPPINGS_VERSION, "1.1 FINAL");
+        raw.put(RustedFabricAPIKeys.K_MAPPING_PROFILE_ID, "rw-pc-1.15-v1.1");
         raw.put(RustedFabricAPIKeys.K_PLATFORM, "android");
         raw.put(RustedFabricAPIKeys.K_ANDROID, Boolean.TRUE);
         raw.put(RustedFabricAPIKeys.K_RUNTIME_NAMESPACE, "official");
@@ -257,11 +248,11 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifyContext(RustedFabricAPIContext context) {
-        require(context.contextVersion() == 3, "context version missing");
+        require(context.contextVersion() == 5, "context version missing");
         require(context.platform() == RustedFabricPlatform.ANDROID, "Android platform missing");
         require(context.androidRuntime(), "legacy Android accessor must remain compatible");
         require(context.hasCapability("event.engine.init"), "capability missing");
-        require("rw-android-1.15-code176-v1.0".equals(context.mappingProfileId()),
+        require("rw-pc-1.15-v1.1".equals(context.mappingProfileId()),
                 "mapping profile missing");
         require(context.multiplayerManifest().isPresent()
                         && "android".equals(context.multiplayerManifest().get().platform()),

@@ -1,6 +1,5 @@
 package io.github.endx.rustedfabricapi.mixin;
 
-import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -10,9 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class UnitRepairReclaimNamedMixin {
     @Inject(method = "setConstructionProgress(F)V", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeConstructionProgressSet(float progress, CallbackInfo ci) {
-        boolean cancelled = RepairReclaimEvents.BEFORE_CONSTRUCTION_PROGRESS_SET.invoker()
-                .beforeConstructionProgressSet(this, progress);
-        cancelled |= io.github.endx.rustedfabricapi.api.unit.repair.event.RepairReclaimEvents
+        boolean cancelled = io.github.endx.rustedfabricapi.api.unit.repair.event.RepairReclaimEvents
                 .BEFORE_CONSTRUCTION_PROGRESS_SET.invoker()
                 .beforeSet((rustedwarfare.unit.Unit) (Object) this, progress);
         if (cancelled) {
@@ -22,8 +19,6 @@ public abstract class UnitRepairReclaimNamedMixin {
 
     @Inject(method = "setConstructionProgress(F)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterConstructionProgressSet(float progress, CallbackInfo ci) {
-        RepairReclaimEvents.AFTER_CONSTRUCTION_PROGRESS_SET.invoker()
-                .afterConstructionProgressSet(this, progress);
         io.github.endx.rustedfabricapi.api.unit.repair.event.RepairReclaimEvents
                 .AFTER_CONSTRUCTION_PROGRESS_SET.invoker()
                 .afterSet((rustedwarfare.unit.Unit) (Object) this, progress);

@@ -1,12 +1,9 @@
 package io.github.endx.rustedfabricexample;
 
-import io.github.endx.rustedfabricapi.api.event.CommandEvents;
 import io.github.endx.rustedfabricapi.api.event.AudioRuntimeEvents;
-import io.github.endx.rustedfabricapi.api.event.BuildQueueEvents;
 import io.github.endx.rustedfabricapi.api.event.CoreDebugStatsEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomAssetEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
-import io.github.endx.rustedfabricapi.api.event.CustomUnitLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRenderEvents;
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.EffectRuntimeEvents;
@@ -21,17 +18,21 @@ import io.github.endx.rustedfabricapi.api.event.NetworkHandshakeEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkLobbyChatEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkPacketEvents;
 import io.github.endx.rustedfabricapi.api.event.NetworkSyncEvents;
-import io.github.endx.rustedfabricapi.api.event.RepairReclaimEvents;
 import io.github.endx.rustedfabricapi.api.event.RenderImageLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.event.ResourceRuntimeEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.event.SaveSyncEvents;
-import io.github.endx.rustedfabricapi.api.event.SelectionEvents;
-import io.github.endx.rustedfabricapi.api.event.TransportEvents;
 import io.github.endx.rustedfabricapi.api.event.UiScriptEvents;
-import io.github.endx.rustedfabricapi.api.event.UnitDamageEvents;
-import io.github.endx.rustedfabricapi.api.event.UnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.client.event.SelectionEvents;
+import io.github.endx.rustedfabricapi.api.command.event.CommandEvents;
+import io.github.endx.rustedfabricapi.api.unit.build.event.BuildQueueEvents;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitLifecycleEvents;
+import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
+import io.github.endx.rustedfabricapi.api.unit.event.UnitEvents;
+import io.github.endx.rustedfabricapi.api.unit.repair.event.RepairReclaimEvents;
+import io.github.endx.rustedfabricapi.api.unit.transport.event.TransportEvents;
+import io.github.endx.rustedfabricapi.api.unit.type.event.UnitTypeEvents;
 import io.github.endx.rustedfabricapi.api.diagnostic.AudioRuntimeDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.BuildQueueDiagnostics;
 import io.github.endx.rustedfabricapi.api.diagnostic.CommandDiagnostics;
@@ -807,27 +808,27 @@ final class ExampleEventProbes {
                                 + " dispatcher=" + describeObject(dispatcher),
                         killedUnit, 300L));
 
-        UnitLifecycleEvents.BEFORE_UNIT_REGISTER.register(unit ->
+        UnitEvents.BEFORE_REGISTER.register(unit ->
                 showEventProbeMessage(stage, "BeforeUnitRegister",
                         "BeforeUnitRegister unit=" + describeObject(unit),
                         unit, 1000L));
 
-        UnitLifecycleEvents.AFTER_UNIT_REGISTER.register(unit ->
+        UnitEvents.AFTER_REGISTER.register(unit ->
                 showEventProbeMessage(stage, "AfterUnitRegister",
                         "AfterUnitRegister unit=" + describeObject(unit),
                         unit, 1000L));
 
-        UnitLifecycleEvents.BEFORE_UNIT_UNREGISTER.register(unit ->
+        UnitEvents.BEFORE_UNREGISTER.register(unit ->
                 showEventProbeMessage(stage, "BeforeUnitUnregister",
                         "BeforeUnitUnregister unit=" + describeObject(unit),
                         unit, 1000L));
 
-        UnitLifecycleEvents.AFTER_UNIT_UNREGISTER.register(unit ->
+        UnitEvents.AFTER_UNREGISTER.register(unit ->
                 showEventProbeMessage(stage, "AfterUnitUnregister",
                         "AfterUnitUnregister unit=" + describeObject(unit),
                         unit, 1000L));
 
-        UnitDamageEvents.BEFORE_UNIT_APPLY_DAMAGE.register((unit, attacker, amount, projectile) -> {
+        UnitDamageEvents.BEFORE_DAMAGE.register((unit, attacker, amount, projectile) -> {
             boolean blocked = isInvincibleUnitsEnabled();
             showEventProbeMessage(stage, "BeforeUnitApplyDamage",
                     "BeforeUnitApplyDamage amount=" + formatFloat(amount)
@@ -838,14 +839,14 @@ final class ExampleEventProbes {
             return blocked;
         });
 
-        UnitDamageEvents.AFTER_UNIT_APPLY_DAMAGE.register((unit, attacker, amount, projectile, appliedAmount) ->
+        UnitDamageEvents.AFTER_DAMAGE.register((unit, attacker, amount, projectile, appliedAmount) ->
                 showEventProbeMessage(stage, "AfterUnitApplyDamage",
                         "AfterUnitApplyDamage amount=" + formatFloat(amount)
                                 + " applied=" + formatFloat(appliedAmount)
                                 + " unit=" + describeObject(unit),
                         unit, 300L));
 
-        UnitDamageEvents.MODIFY_UNIT_DAMAGE_IMMUNITY.register((unit, currentResult) -> {
+        UnitDamageEvents.MODIFY_DAMAGE_IMMUNITY.register((unit, currentResult) -> {
             showEventProbeMessage(stage, "ModifyUnitDamageImmunity",
                     "ModifyUnitDamageImmunity current=" + currentResult
                             + " unit=" + describeObject(unit),
@@ -853,19 +854,19 @@ final class ExampleEventProbes {
             return null;
         });
 
-        UnitDamageEvents.BEFORE_UNIT_DEATH_SEQUENCE.register(unit -> {
+        UnitDamageEvents.BEFORE_DEATH.register(unit -> {
             showEventProbeMessage(stage, "BeforeUnitDeathSequence",
                     "BeforeUnitDeathSequence unit=" + describeObject(unit),
                     unit, 300L);
             return false;
         });
 
-        UnitDamageEvents.AFTER_UNIT_DEATH_SEQUENCE.register(unit ->
+        UnitDamageEvents.AFTER_DEATH.register(unit ->
                 showEventProbeMessage(stage, "AfterUnitDeathSequence",
                         "AfterUnitDeathSequence unit=" + describeObject(unit),
                         unit, 300L));
 
-        UnitDamageEvents.MODIFY_UNIT_DEATH_EFFECTS_RESULT.register((unit, currentKeepObject) -> {
+        UnitDamageEvents.MODIFY_KEEP_OBJECT_AFTER_DEATH.register((unit, currentKeepObject) -> {
             showEventProbeMessage(stage, "ModifyUnitDeathEffectsResult",
                     "ModifyUnitDeathEffectsResult keep=" + currentKeepObject
                             + " unit=" + describeObject(unit),
@@ -873,24 +874,23 @@ final class ExampleEventProbes {
             return null;
         });
 
-        RepairReclaimEvents.BEFORE_REPAIR_RECLAIM_ORDER_UPDATE.register((unit, delta, waypoint, waypointState) -> {
+        RepairReclaimEvents.BEFORE_ORDER_UPDATE.register((unit, delta, waypoint) -> {
             showEventProbeMessage(stage, "BeforeRepairReclaimOrderUpdate",
                     "BeforeRepairReclaimOrderUpdate delta=" + formatFloat(delta)
                             + " unit=" + describeObject(unit)
-                            + " waypoint=" + describeObject(waypoint)
-                            + " state=" + describeObject(waypointState),
+                            + " waypoint=" + describeObject(waypoint),
                     unit, 500L);
             return false;
         });
 
-        RepairReclaimEvents.AFTER_REPAIR_RECLAIM_ORDER_UPDATE.register((unit, delta, waypoint, waypointState) ->
+        RepairReclaimEvents.AFTER_ORDER_UPDATE.register((unit, delta, waypoint) ->
                 showEventProbeMessage(stage, "AfterRepairReclaimOrderUpdate",
                         "AfterRepairReclaimOrderUpdate delta=" + formatFloat(delta)
                                 + " unit=" + describeObject(unit)
                                 + " activeDelta=" + describeActiveResourceDelta(unit),
                         unit, 500L));
 
-        RepairReclaimEvents.MODIFY_CAN_REPAIR_TARGET.register((unit, target, currentResult) -> {
+        RepairReclaimEvents.MODIFY_CAN_REPAIR.register((unit, target, currentResult) -> {
             showEventProbeMessage(stage, "ModifyCanRepairTarget",
                     "ModifyCanRepairTarget result=" + currentResult
                             + " unit=" + describeObject(unit)
@@ -899,7 +899,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        RepairReclaimEvents.MODIFY_CAN_RECLAIM_UNIT_TARGET.register((unit, target, currentResult) -> {
+        RepairReclaimEvents.MODIFY_CAN_RECLAIM.register((unit, target, currentResult) -> {
             showEventProbeMessage(stage, "ModifyCanReclaimUnitTarget",
                     "ModifyCanReclaimUnitTarget result=" + currentResult
                             + " unit=" + describeObject(unit)
@@ -926,7 +926,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        RepairReclaimEvents.MODIFY_BUILD_PRICE_FOR_TARGET.register((unit, target, currentPrice) -> {
+        RepairReclaimEvents.MODIFY_BUILD_PRICE.register((unit, target, currentPrice) -> {
             showEventProbeMessage(stage, "ModifyBuildPriceForTarget",
                     "ModifyBuildPriceForTarget price=" + describeObject(currentPrice)
                             + " unit=" + describeObject(unit)
@@ -1003,7 +1003,7 @@ final class ExampleEventProbes {
             return currentDelta;
         });
 
-        RepairReclaimEvents.MODIFY_NEAREST_RECLAIM_RESOURCE_TARGET.register((searcher, x, y, range, requiredTags, currentTarget) -> {
+        RepairReclaimEvents.MODIFY_NEAREST_RESOURCE_TARGET.register((searcher, x, y, range, requiredTags, currentTarget) -> {
             showEventProbeMessage(stage, "ModifyNearestReclaimResourceTarget",
                     "ModifyNearestReclaimResourceTarget range=" + formatFloat(range)
                             + " pos=" + formatPoint(x, y)
@@ -1013,12 +1013,12 @@ final class ExampleEventProbes {
             return currentTarget;
         });
 
-        CustomUnitLifecycleEvents.BEFORE_RUNTIME_UNIT_CREATE.register(metadata ->
+        UnitTypeEvents.BEFORE_CUSTOM_CREATE.register(metadata ->
                 showEventProbeMessage(stage, "BeforeRuntimeUnitCreate",
                         "BeforeRuntimeUnitCreate metadata=" + describeObject(metadata),
                         metadata, 750L));
 
-        CustomUnitLifecycleEvents.AFTER_RUNTIME_UNIT_CREATE.register((metadata, unit) -> {
+        UnitTypeEvents.AFTER_CUSTOM_CREATE.register((metadata, unit) -> {
             showEventProbeMessage(stage, "AfterRuntimeUnitCreate",
                     "AfterRuntimeUnitCreate unit=" + describeObject(unit)
                             + " metadata=" + describeObject(metadata),
@@ -1026,7 +1026,7 @@ final class ExampleEventProbes {
             return unit;
         });
 
-        CustomUnitLifecycleEvents.AFTER_RUNTIME_UNIT_CREATE_WITH_FLAG.register((metadata, createFlag, unit) -> {
+        UnitTypeEvents.AFTER_CUSTOM_CREATE_WITH_FLAG.register((metadata, createFlag, unit) -> {
             showEventProbeMessage(stage, "AfterRuntimeUnitCreateWithFlag",
                     "AfterRuntimeUnitCreateWithFlag flag=" + createFlag
                             + " unit=" + describeObject(unit),
@@ -1034,7 +1034,7 @@ final class ExampleEventProbes {
             return unit;
         });
 
-        CustomUnitLifecycleEvents.BEFORE_UNIT_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
+        CustomUnitLifecycleEvents.BEFORE_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
                 showEventProbeMessage(stage, "BeforeUnitMetadataApply",
                         "BeforeUnitMetadataApply conversion=" + conversion
                                 + " initial=" + initial
@@ -1042,21 +1042,21 @@ final class ExampleEventProbes {
                                 + " new=" + describeObject(newMetadata),
                         unit, 750L));
 
-        CustomUnitLifecycleEvents.AFTER_UNIT_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
+        CustomUnitLifecycleEvents.AFTER_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial, statOverrides) ->
                 showEventProbeMessage(stage, "AfterUnitMetadataApply",
                         "AfterUnitMetadataApply conversion=" + conversion
                                 + " initial=" + initial
                                 + " unit=" + describeObject(unit),
                         unit, 750L));
 
-        CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_KILLED.register(unit -> {
+        CustomUnitLifecycleEvents.BEFORE_KILLED.register(unit -> {
             showEventProbeMessage(stage, "BeforeCustomUnitKilled",
                     "BeforeCustomUnitKilled unit=" + describeObject(unit),
                     unit, 750L);
             return false;
         });
 
-        CustomUnitLifecycleEvents.BEFORE_CUSTOM_UNIT_REMOVED.register(unit -> {
+        CustomUnitLifecycleEvents.BEFORE_REMOVED.register(unit -> {
             showEventProbeMessage(stage, "BeforeCustomUnitRemoved",
                     "BeforeCustomUnitRemoved unit=" + describeObject(unit),
                     unit, 750L);
@@ -1159,7 +1159,7 @@ final class ExampleEventProbes {
             return transform;
         });
 
-        SelectionEvents.BEFORE_UNIT_SELECT.register((interfaceEngine, unit, append) -> {
+        SelectionEvents.BEFORE_SELECT.register((interfaceEngine, unit, append) -> {
             showEventProbeMessage(stage, "BeforeUnitSelect",
                     "BeforeUnitSelect append=" + append
                             + " unit=" + describeObject(unit),
@@ -1167,57 +1167,57 @@ final class ExampleEventProbes {
             return false;
         });
 
-        SelectionEvents.AFTER_UNIT_SELECT.register((interfaceEngine, unit, append) ->
+        SelectionEvents.AFTER_SELECT.register((interfaceEngine, unit, append) ->
                 showEventProbeMessage(stage, "AfterUnitSelect",
                         "AfterUnitSelect append=" + append
                                 + " unit=" + describeObject(unit),
                         unit, 300L));
 
-        SelectionEvents.BEFORE_UNIT_ADDED_TO_SELECTION.register((interfaceEngine, unit) -> {
+        SelectionEvents.BEFORE_ADD.register((interfaceEngine, unit) -> {
             showEventProbeMessage(stage, "BeforeUnitAddedToSelection",
                     "BeforeUnitAddedToSelection unit=" + describeObject(unit),
                     unit, 300L);
             return false;
         });
 
-        SelectionEvents.AFTER_UNIT_ADDED_TO_SELECTION.register((interfaceEngine, unit, result) ->
+        SelectionEvents.AFTER_ADD.register((interfaceEngine, unit, result) ->
                 showEventProbeMessage(stage, "AfterUnitAddedToSelection",
                         "AfterUnitAddedToSelection result=" + result
                                 + " unit=" + describeObject(unit),
                         unit, 300L));
 
-        SelectionEvents.BEFORE_UNIT_DESELECT.register((interfaceEngine, unit) -> {
+        SelectionEvents.BEFORE_DESELECT.register((interfaceEngine, unit) -> {
             showEventProbeMessage(stage, "BeforeUnitDeselect",
                     "BeforeUnitDeselect unit=" + describeObject(unit),
                     unit, 300L);
             return false;
         });
 
-        SelectionEvents.AFTER_UNIT_DESELECT.register((interfaceEngine, unit) ->
+        SelectionEvents.AFTER_DESELECT.register((interfaceEngine, unit) ->
                 showEventProbeMessage(stage, "AfterUnitDeselect",
                         "AfterUnitDeselect unit=" + describeObject(unit),
                         unit, 300L));
 
-        SelectionEvents.BEFORE_SELECTION_CLEAR.register(interfaceEngine -> {
+        SelectionEvents.BEFORE_CLEAR.register(interfaceEngine -> {
             showEventProbeMessage(stage, "BeforeSelectionClear",
                     "BeforeSelectionClear interface=" + describeObject(interfaceEngine),
                     interfaceEngine, 300L);
             return false;
         });
 
-        SelectionEvents.AFTER_SELECTION_CLEAR.register(interfaceEngine ->
+        SelectionEvents.AFTER_CLEAR.register(interfaceEngine ->
                 showEventProbeMessage(stage, "AfterSelectionClear",
                         "AfterSelectionClear interface=" + describeObject(interfaceEngine),
                         interfaceEngine, 300L));
 
-        CommandEvents.BEFORE_COMMAND_ISSUE.register(command -> {
+        CommandEvents.BEFORE_ISSUE.register(command -> {
             showEventProbeMessage(stage, "BeforeCommandIssue",
                     "BeforeCommandIssue " + describeCommand(command),
                     command, 500L);
             return false;
         });
 
-        CommandEvents.AFTER_COMMAND_ISSUE.register(command ->
+        CommandEvents.AFTER_ISSUE.register(command ->
                 showEventProbeMessage(stage, "AfterCommandIssue",
                         "AfterCommandIssue " + describeCommand(command),
                         command, 500L));
@@ -1420,7 +1420,7 @@ final class ExampleEventProbes {
                                 + " unloaded=" + describeObject(transportedUnit),
                         unit, 750L));
 
-        TransportEvents.MODIFY_CAN_TRANSPORT_UNIT.register((carrier, candidate, allowPartial, currentResult) -> {
+        TransportEvents.MODIFY_CAN_LOAD.register((carrier, candidate, allowPartial, currentResult) -> {
             showEventProbeMessage(stage, "ModifyCanTransportUnit",
                     "ModifyCanTransportUnit result=" + currentResult
                             + " partial=" + allowPartial
@@ -1430,7 +1430,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.MODIFY_CAN_TRANSPORT_UNIT_IGNORING_CURRENT_CONTAINER.register((carrier, candidate, allowPartial, currentResult) -> {
+        TransportEvents.MODIFY_CAN_LOAD_IGNORING_CURRENT_CONTAINER.register((carrier, candidate, allowPartial, currentResult) -> {
             showEventProbeMessage(stage, "ModifyCanTransportUnitIgnoringCurrentContainer",
                     "ModifyCanTransportUnitIgnoringCurrentContainer result=" + currentResult
                             + " partial=" + allowPartial
@@ -1440,7 +1440,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.BEFORE_TRY_ADD_UNIT_TO_TRANSPORT.register((carrier, candidate, allowPartial) -> {
+        TransportEvents.BEFORE_TRY_LOAD.register((carrier, candidate, allowPartial) -> {
             showEventProbeMessage(stage, "BeforeTryAddUnitToTransport",
                     "BeforeTryAddUnitToTransport partial=" + allowPartial
                             + " carrier=" + describeObject(carrier)
@@ -1450,7 +1450,7 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_TRY_ADD_UNIT_TO_TRANSPORT.register((carrier, candidate, allowPartial, result) ->
+        TransportEvents.AFTER_TRY_LOAD.register((carrier, candidate, allowPartial, result) ->
                 showEventProbeMessage(stage, "AfterTryAddUnitToTransport",
                         "AfterTryAddUnitToTransport result=" + result
                                 + " partial=" + allowPartial
@@ -1459,7 +1459,7 @@ final class ExampleEventProbes {
                                 + " state=" + describeTransportState(carrier),
                         carrier, 750L));
 
-        TransportEvents.BEFORE_ADD_UNIT_TO_TRANSPORT.register((carrier, transportedUnit) -> {
+        TransportEvents.BEFORE_LOAD.register((carrier, transportedUnit) -> {
             showEventProbeMessage(stage, "BeforeAddUnitToTransport",
                     "BeforeAddUnitToTransport carrier=" + describeObject(carrier)
                             + " unit=" + describeObject(transportedUnit)
@@ -1468,14 +1468,14 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_ADD_UNIT_TO_TRANSPORT.register((carrier, transportedUnit) ->
+        TransportEvents.AFTER_LOAD.register((carrier, transportedUnit) ->
                 showEventProbeMessage(stage, "AfterAddUnitToTransport",
                         "AfterAddUnitToTransport carrier=" + describeObject(carrier)
                                 + " unit=" + describeObject(transportedUnit)
                                 + " state=" + describeTransportState(carrier),
                         carrier, 750L));
 
-        TransportEvents.BEFORE_REMOVE_UNIT_FROM_TRANSPORT.register((carrier, transportedUnit) -> {
+        TransportEvents.BEFORE_REMOVE.register((carrier, transportedUnit) -> {
             showEventProbeMessage(stage, "BeforeRemoveUnitFromTransport",
                     "BeforeRemoveUnitFromTransport carrier=" + describeObject(carrier)
                             + " unit=" + describeObject(transportedUnit),
@@ -1483,14 +1483,14 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_REMOVE_UNIT_FROM_TRANSPORT.register((carrier, transportedUnit) ->
+        TransportEvents.AFTER_REMOVE.register((carrier, transportedUnit) ->
                 showEventProbeMessage(stage, "AfterRemoveUnitFromTransport",
                         "AfterRemoveUnitFromTransport carrier=" + describeObject(carrier)
                                 + " unit=" + describeObject(transportedUnit)
                                 + " state=" + describeTransportState(carrier),
                         carrier, 750L));
 
-        TransportEvents.MODIFY_HAS_TRANSPORT_CAPACITY.register((unit, currentResult) -> {
+        TransportEvents.MODIFY_HAS_CAPACITY.register((unit, currentResult) -> {
             showEventProbeMessage(stage, "ModifyHasTransportCapacity",
                     "ModifyHasTransportCapacity result=" + currentResult
                             + " unit=" + describeObject(unit)
@@ -1499,7 +1499,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.MODIFY_TRANSPORT_SLOTS_NEEDED.register((unit, currentSlots) -> {
+        TransportEvents.MODIFY_SLOTS_NEEDED.register((unit, currentSlots) -> {
             showEventProbeMessage(stage, "ModifyTransportSlotsNeeded",
                     "ModifyTransportSlotsNeeded slots=" + currentSlots
                             + " unit=" + describeObject(unit),
@@ -1507,7 +1507,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.MODIFY_TRANSPORT_BAR_USED_SLOTS.register((unit, currentSlots) -> {
+        TransportEvents.MODIFY_USED_SLOTS.register((unit, currentSlots) -> {
             showEventProbeMessage(stage, "ModifyTransportBarUsedSlots",
                     "ModifyTransportBarUsedSlots slots=" + currentSlots
                             + " unit=" + describeObject(unit),
@@ -1515,7 +1515,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.MODIFY_TRANSPORT_BAR_MAX_SLOTS.register((unit, currentSlots) -> {
+        TransportEvents.MODIFY_MAX_SLOTS.register((unit, currentSlots) -> {
             showEventProbeMessage(stage, "ModifyTransportBarMaxSlots",
                     "ModifyTransportBarMaxSlots slots=" + currentSlots
                             + " unit=" + describeObject(unit),
@@ -1523,7 +1523,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.MODIFY_TRANSPORTED_UNIT_COUNT.register((unit, currentCount) -> {
+        TransportEvents.MODIFY_CARGO_COUNT.register((unit, currentCount) -> {
             showEventProbeMessage(stage, "ModifyTransportedUnitCount",
                     "ModifyTransportedUnitCount count=" + currentCount
                             + " unit=" + describeObject(unit),
@@ -1531,7 +1531,7 @@ final class ExampleEventProbes {
             return null;
         });
 
-        TransportEvents.MODIFY_TRANSPORT_UNLOADING.register((unit, currentResult) -> {
+        TransportEvents.MODIFY_IS_UNLOADING.register((unit, currentResult) -> {
             showEventProbeMessage(stage, "ModifyTransportUnloading",
                     "ModifyTransportUnloading result=" + currentResult
                             + " unit=" + describeObject(unit),
@@ -1555,7 +1555,7 @@ final class ExampleEventProbes {
             return currentSlot;
         });
 
-        TransportEvents.BEFORE_START_TRANSPORT_UNLOADING.register(unit -> {
+        TransportEvents.BEFORE_START_UNLOADING.register(unit -> {
             showEventProbeMessage(stage, "BeforeStartTransportUnloading",
                     "BeforeStartTransportUnloading unit=" + describeObject(unit)
                             + " state=" + describeTransportState(unit),
@@ -1563,13 +1563,13 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_START_TRANSPORT_UNLOADING.register(unit ->
+        TransportEvents.AFTER_START_UNLOADING.register(unit ->
                 showEventProbeMessage(stage, "AfterStartTransportUnloading",
                         "AfterStartTransportUnloading unit=" + describeObject(unit)
                                 + " state=" + describeTransportState(unit),
                         unit, 750L));
 
-        TransportEvents.BEFORE_STOP_TRANSPORT_UNLOADING.register(unit -> {
+        TransportEvents.BEFORE_STOP_UNLOADING.register(unit -> {
             showEventProbeMessage(stage, "BeforeStopTransportUnloading",
                     "BeforeStopTransportUnloading unit=" + describeObject(unit)
                             + " state=" + describeTransportState(unit),
@@ -1577,13 +1577,13 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_STOP_TRANSPORT_UNLOADING.register(unit ->
+        TransportEvents.AFTER_STOP_UNLOADING.register(unit ->
                 showEventProbeMessage(stage, "AfterStopTransportUnloading",
                         "AfterStopTransportUnloading unit=" + describeObject(unit)
                                 + " state=" + describeTransportState(unit),
                         unit, 750L));
 
-        TransportEvents.BEFORE_UNLOAD_NEXT_TRANSPORTED_UNIT.register((unit, forced) -> {
+        TransportEvents.BEFORE_UNLOAD_NEXT.register((unit, forced) -> {
             showEventProbeMessage(stage, "BeforeUnloadNextTransportedUnit",
                     "BeforeUnloadNextTransportedUnit forced=" + forced
                             + " unit=" + describeObject(unit)
@@ -1592,7 +1592,7 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_UNLOAD_NEXT_TRANSPORTED_UNIT.register((unit, forced, result) ->
+        TransportEvents.AFTER_UNLOAD_NEXT.register((unit, forced, result) ->
                 showEventProbeMessage(stage, "AfterUnloadNextTransportedUnit",
                         "AfterUnloadNextTransportedUnit result=" + result
                                 + " forced=" + forced
@@ -1600,7 +1600,7 @@ final class ExampleEventProbes {
                                 + " state=" + describeTransportState(unit),
                         unit, 750L));
 
-        TransportEvents.BEFORE_UNLOAD_SPECIFIC_TRANSPORTED_UNIT.register((unit, transportedUnit, optionA, optionB) -> {
+        TransportEvents.BEFORE_UNLOAD_SPECIFIC.register((unit, transportedUnit, optionA, optionB) -> {
             showEventProbeMessage(stage, "BeforeUnloadSpecificTransportedUnit",
                     "BeforeUnloadSpecificTransportedUnit unit=" + describeObject(unit)
                             + " cargo=" + describeObject(transportedUnit)
@@ -1609,14 +1609,14 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_UNLOAD_SPECIFIC_TRANSPORTED_UNIT.register((unit, transportedUnit, optionA, optionB, result) ->
+        TransportEvents.AFTER_UNLOAD_SPECIFIC.register((unit, transportedUnit, optionA, optionB, result) ->
                 showEventProbeMessage(stage, "AfterUnloadSpecificTransportedUnit",
                         "AfterUnloadSpecificTransportedUnit result=" + result
                                 + " unit=" + describeObject(unit)
                                 + " cargo=" + describeObject(transportedUnit),
                         unit, 750L));
 
-        TransportEvents.BEFORE_RELEASE_ALL_TRANSPORTED_UNITS.register((unit, killUnits) -> {
+        TransportEvents.BEFORE_RELEASE_ALL.register((unit, killUnits) -> {
             showEventProbeMessage(stage, "BeforeReleaseAllTransportedUnits",
                     "BeforeReleaseAllTransportedUnits kill=" + killUnits
                             + " unit=" + describeObject(unit)
@@ -1625,14 +1625,14 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_RELEASE_ALL_TRANSPORTED_UNITS.register((unit, killUnits) ->
+        TransportEvents.AFTER_RELEASE_ALL.register((unit, killUnits) ->
                 showEventProbeMessage(stage, "AfterReleaseAllTransportedUnits",
                         "AfterReleaseAllTransportedUnits kill=" + killUnits
                                 + " unit=" + describeObject(unit)
                                 + " state=" + describeTransportState(unit),
                         unit, 750L));
 
-        TransportEvents.BEFORE_TRANSPORT_DEATH_CARGO_CLEANUP.register(unit -> {
+        TransportEvents.BEFORE_DEATH_CARGO_CLEANUP.register(unit -> {
             showEventProbeMessage(stage, "BeforeTransportDeathCargoCleanup",
                     "BeforeTransportDeathCargoCleanup unit=" + describeObject(unit)
                             + " state=" + describeTransportState(unit),
@@ -1640,7 +1640,7 @@ final class ExampleEventProbes {
             return false;
         });
 
-        TransportEvents.AFTER_TRANSPORT_DEATH_CARGO_CLEANUP.register(unit ->
+        TransportEvents.AFTER_DEATH_CARGO_CLEANUP.register(unit ->
                 showEventProbeMessage(stage, "AfterTransportDeathCargoCleanup",
                         "AfterTransportDeathCargoCleanup unit=" + describeObject(unit)
                                 + " state=" + describeTransportState(unit),
@@ -1656,7 +1656,8 @@ final class ExampleEventProbes {
                         "AfterCustomUnitRemoved unit=" + describeObject(unit),
                         unit, 750L));
 
-        BuildQueueEvents.BEFORE_QUEUE_ACTION_APPLY.register((queue, action, front, targetPoint, targetUnit) -> {
+        BuildQueueEvents.BEFORE_ACTION_APPLY.register(
+                (queue, action, front, targetX, targetY, hasTargetPoint, targetUnit) -> {
             showEventProbeMessage(stage, "BeforeQueueActionApply",
                     "BeforeQueueActionApply action=" + describeObject(action)
                             + " front=" + front
@@ -1665,39 +1666,40 @@ final class ExampleEventProbes {
             return false;
         });
 
-        BuildQueueEvents.AFTER_QUEUE_ACTION_APPLY.register((queue, action, front, targetPoint, targetUnit, queueItem) ->
+        BuildQueueEvents.AFTER_ACTION_APPLY.register(
+                (queue, action, front, targetX, targetY, hasTargetPoint, targetUnit, queueItem) ->
                 showEventProbeMessage(stage, "AfterQueueActionApply",
                         "AfterQueueActionApply item=" + describeBuildQueueItem(queueItem)
                                 + " front=" + front
                                 + " target=" + describeObject(targetUnit),
                         queue, 750L));
 
-        BuildQueueEvents.AFTER_QUEUE_ITEM_ACTIVATE.register((queue, queueItem) ->
+        BuildQueueEvents.AFTER_ITEM_ACTIVATE.register((queue, queueItem) ->
                 showEventProbeMessage(stage, "AfterQueueItemActivate",
                         "AfterQueueItemActivate item=" + describeBuildQueueItem(queueItem),
                         queue, 750L));
 
-        BuildQueueEvents.AFTER_QUEUE_ITEM_COMPLETE.register((queue, queueItem, spacing, useRallyPoint, spawnYOffset, producedUnit) ->
+        BuildQueueEvents.AFTER_ITEM_COMPLETE.register((queue, queueItem, spacing, useRallyPoint, spawnYOffset, producedUnit) ->
                 showEventProbeMessage(stage, "AfterQueueItemComplete",
                         "AfterQueueItemComplete item=" + describeBuildQueueItem(queueItem)
                                 + " produced=" + describeObject(producedUnit)
                                 + " rally=" + useRallyPoint,
                         producedUnit != null ? producedUnit : queue, 750L));
 
-        BuildQueueEvents.AFTER_NEWLY_PRODUCED_UNIT_POSITIONED.register((queue, unit, spacing, useRallyPoint) ->
+        BuildQueueEvents.AFTER_PRODUCED_UNIT_POSITIONED.register((queue, unit, spacing, useRallyPoint) ->
                 showEventProbeMessage(stage, "AfterNewlyProducedUnitPositioned",
                         "AfterNewlyProducedUnitPositioned unit=" + describeObject(unit)
                                 + " spacing=" + formatFloat(spacing)
                                 + " rally=" + useRallyPoint,
                         unit, 750L));
 
-        BuildQueueEvents.AFTER_HOST_BUILD_QUEUE_ITEM_COMPLETE.register((host, queueItem) ->
+        BuildQueueEvents.AFTER_HOST_ITEM_COMPLETE.register((host, queueItem) ->
                 showEventProbeMessage(stage, "AfterHostBuildQueueItemComplete",
                         "AfterHostBuildQueueItemComplete host=" + describeObject(host)
                                 + " item=" + describeBuildQueueItem(queueItem),
                         host, 750L));
 
-        BuildQueueEvents.MODIFY_HOST_BUILD_QUEUE_ITEM_REFUNDABLE.register((host, queueItem, currentResult) -> {
+        BuildQueueEvents.MODIFY_HOST_ITEM_REFUNDABLE.register((host, queueItem, currentResult) -> {
             showEventProbeMessage(stage, "ModifyHostBuildQueueItemRefundable",
                     "ModifyHostBuildQueueItemRefundable result=" + currentResult
                             + " item=" + describeBuildQueueItem(queueItem),

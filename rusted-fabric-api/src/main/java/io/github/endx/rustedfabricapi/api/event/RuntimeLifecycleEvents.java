@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Platform-neutral process events available to both JVM Jar and Android DEX mods. */
+/** Process lifecycle events shared by Windows and Android JVM hosts. */
 public final class RuntimeLifecycleEvents {
     /** Mods are loaded and the immutable cross-platform runtime context is available. */
     public static final EngineInitializationEvent LOADER_READY = new EngineInitializationEvent();

@@ -791,6 +791,24 @@ public final class MappedApiContractVerification {
         require(calls.get() == 2, "repair/reclaim cancellation skipped a listener");
         beforeFirst.close();
         beforeSecond.close();
+
+        AtomicInteger parityCalls = new AtomicInteger();
+        RustedFabricEvent.Registration resourceDelta =
+                RepairReclaimEvents.MODIFY_BUILD_QUEUE_RESOURCE_DELTA.subscribe((unit, current) -> {
+                    parityCalls.incrementAndGet();
+                    return current;
+                });
+        require(RepairReclaimEvents.MODIFY_BUILD_QUEUE_RESOURCE_DELTA.invoker()
+                        .modify(null, null) == null,
+                "build-queue resource delta did not retain a null value");
+        RustedFabricEvent.Registration refresh =
+                RepairReclaimEvents.AFTER_ACTIVE_RESOURCE_DELTA_REFRESH.subscribe(
+                        unit -> parityCalls.incrementAndGet());
+        RepairReclaimEvents.AFTER_ACTIVE_RESOURCE_DELTA_REFRESH.invoker().onUnit(null);
+        require(parityCalls.get() == 2,
+                "typed repair/reclaim parity events were not dispatched");
+        resourceDelta.close();
+        refresh.close();
     }
 
     private static void verifyStatusEffectEventContracts() {
