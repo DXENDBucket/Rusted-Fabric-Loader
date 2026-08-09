@@ -74,7 +74,7 @@ the operation for that many seconds after the native LOS pass; a negative value 
 the session ends. `setFogMode: off|basic|los` changes the global native mode and initializes missing
 team fog maps as unexplored.
 
-Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `cbrt`, `abs`, `floor`, `ceil`,
+Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`, `cbrt`, `abs`, `floor`, `ceil`,
 `round`, `sign`, `clamp`, `lerp`, `inverse_lerp`, `hypot`, `atan2`, `atan`, `asin`, `acos`, `tan`,
 `smoothstep`, `pi`, `tau`, and `e`. Trigonometric inputs and inverse outputs use the game's degree
 convention. Invalid domains retain deterministic IEEE float behavior; geometry rejects non-finite

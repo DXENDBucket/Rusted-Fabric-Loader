@@ -77,7 +77,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'innerRadius', 'startAngle', 'sweepAngle', 'rotation', 'offsetX',
                 'offsetY', 'thickness', 'points', 'components', 'operation',
                 'geometry', 'team', 'anchor', 'duration', 'follow', 'applyFog',
-                'setFogMode', 'pow', 'exp', 'ln', 'log10', 'cbrt', 'abs',
+                'setFogMode', 'pow', 'exp', 'ln', 'log10', 'log', 'cbrt', 'abs',
                 'floor', 'ceil', 'round', 'sign', 'clamp', 'lerp',
                 'inverse_lerp', 'hypot', 'atan2', 'atan', 'asin', 'acos',
                 'tan', 'smoothstep', 'pi', 'tau', 'e'
@@ -94,7 +94,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'offsetX', 'offsetY', 'thickness', 'points', 'components'] as Set
         def fogCodes = ['operation', 'geometry', 'team', 'anchor', 'duration',
                 'follow', 'applyFog', 'setFogMode'] as Set
-        def mathCodes = ['pow', 'exp', 'ln', 'log10', 'cbrt', 'abs', 'floor',
+        def mathCodes = ['pow', 'exp', 'ln', 'log10', 'log', 'cbrt', 'abs', 'floor',
                 'ceil', 'round', 'sign', 'clamp', 'lerp', 'inverse_lerp',
                 'hypot', 'atan2', 'atan', 'asin', 'acos', 'tan', 'smoothstep',
                 'pi', 'tau', 'e'] as Set
@@ -221,7 +221,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v6'
+                || multiplayer?.protocol != 'ini_essentials_v7'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

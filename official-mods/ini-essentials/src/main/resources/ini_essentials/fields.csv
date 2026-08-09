@@ -32,6 +32,7 @@ version_added,code,section,extension_type,value_type,default,multiplayer_impact,
 0.2.0,exp,Runtime LogicBoolean numeric expressions,logic_function,exp(x),omitted,gameplay_synced,Returns e raised to x.,计算 e 的 x 次幂。,exp(2)
 0.2.0,ln,Runtime LogicBoolean numeric expressions,logic_function,ln(x),omitted,gameplay_synced,Returns the natural logarithm.,计算自然对数。,ln(self.hp)
 0.2.0,log10,Runtime LogicBoolean numeric expressions,logic_function,log10(x),omitted,gameplay_synced,Returns the base-10 logarithm.,计算以 10 为底的对数。,log10(1000)
+0.2.0,log,Runtime LogicBoolean numeric expressions,logic_function,"log(value,base)",omitted,gameplay_synced,Returns a logarithm using a custom base; invalid domains produce NaN.,计算自定义底数的对数；无效定义域返回 NaN。,"log(81,3)"
 0.2.0,cbrt,Runtime LogicBoolean numeric expressions,logic_function,cbrt(x),omitted,gameplay_synced,Returns the cube root.,计算立方根。,cbrt(27)
 0.2.0,abs,Runtime LogicBoolean numeric expressions,logic_function,abs(x),omitted,gameplay_synced,Returns the absolute value.,返回绝对值。,abs(-5)
 0.2.0,floor,Runtime LogicBoolean numeric expressions,logic_function,floor(x),omitted,gameplay_synced,Rounds downward.,向下取整。,floor(2.8)

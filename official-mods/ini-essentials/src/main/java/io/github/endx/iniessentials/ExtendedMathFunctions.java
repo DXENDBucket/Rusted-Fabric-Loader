@@ -16,6 +16,9 @@ final class ExtendedMathFunctions {
         function("exp", 1, a -> (float) StrictMath.exp(a[0]));
         function("ln", 1, a -> (float) StrictMath.log(a[0]));
         function("log10", 1, a -> (float) StrictMath.log10(a[0]));
+        function("log", 2, a -> a[0] > 0.0F && a[1] > 0.0F && a[1] != 1.0F
+                ? (float) (StrictMath.log(a[0]) / StrictMath.log(a[1]))
+                : Float.NaN);
         function("cbrt", 1, a -> (float) StrictMath.cbrt(a[0]));
         function("abs", 1, a -> Math.abs(a[0]));
         function("floor", 1, a -> (float) StrictMath.floor(a[0]));
