@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
 import io.github.endx.rustedfabricapi.api.unit.tag.event.UnitTagEvents;
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
 import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
+import io.github.endx.rustedfabricapi.impl.custom.QueuedEventActionRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -224,7 +225,13 @@ public abstract class CustomUnitExtensionNamedMixin {
         CustomUnit unit = (CustomUnit) (Object) this;
         VariableScope nativeData = NativeEventDataRuntime.enrichQueuedEvent(
                 unit, eventType, source, eventTags, eventData);
-        return DamageEventDataRuntime.enrichQueuedEvent(
+        VariableScope enriched = DamageEventDataRuntime.enrichQueuedEvent(
                 unit, eventType, source, eventTags, nativeData);
+        VariableScope prepared = enriched != null ? enriched : new VariableScope();
+        if (CustomUnitTriggerEvents.PREPARE_QUEUE.invoker().beforeQueue(
+                unit, eventType, source, eventTags, prepared)) {
+            QueuedEventActionRuntime.cancel(prepared);
+        }
+        return prepared;
     }
 }

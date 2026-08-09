@@ -6,6 +6,7 @@ import rustedwarfare.custom.logic.VariableScope$VariableDataNumber;
 import rustedwarfare.custom.logic.VariableScope$VariableDataString;
 import rustedwarfare.custom.logic.VariableScope$VariableDataUnit;
 import rustedwarfare.custom.logic.VariableScope$VariableName;
+import rustedwarfare.custom.logic.LogicBoolean;
 import rustedwarfare.unit.Unit;
 
 import java.util.Locale;
@@ -31,6 +32,18 @@ public final class CustomUnitEventData {
 
     public boolean contains(String name) {
         return scope.getDataObjectRaw(variableName(name)) != null;
+    }
+
+    public double getNumber(String name, double fallback) {
+        LogicBoolean value = scope.getDataObjectRaw(variableName(name));
+        return value instanceof VariableScope$VariableDataNumber
+                ? value.readNumber(null) : fallback;
+    }
+
+    public boolean getBoolean(String name, boolean fallback) {
+        LogicBoolean value = scope.getDataObjectRaw(variableName(name));
+        return value instanceof VariableScope$VariableDataBoolean
+                ? value.read(null) : fallback;
     }
 
     public CustomUnitEventData putNumber(String name, double value) {

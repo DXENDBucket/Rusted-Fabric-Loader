@@ -20,6 +20,10 @@ final class BooleanExpression {
                 LogicBooleanApi.parseBooleanBlock(metadata, checked, false));
     }
 
+    static BooleanExpression compile(Object metadata, String source, String fallback) {
+        return compile(metadata, source != null ? source : fallback);
+    }
+
     boolean evaluate(OrderableUnit unit) {
         return LogicBooleanApi.readBoolean(compiled, unit);
     }

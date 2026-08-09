@@ -78,6 +78,7 @@
     "OpenALSoundPlayTaskNamedMixin",
     "ProjectileSpawnListAssetNamedMixin",
     "ProjectileLifecycleNamedMixin",
+    "QueuedEventActionNamedMixin",
     "QueuedActionResourceDeltaNamedMixin",
     "ReclaimTargetNamedMixin",
     "RepairReclaimTargetNamedMixin",
@@ -118,6 +119,8 @@
     "WarLogInterfaceNamedMixin",
     "WorldRenderNamedMixin",
     "accessor.MapEngineAccessor",
+    "accessor.CustomUnitEventActionAccessor",
+    "accessor.LogicBooleanAccessor",
     "accessor.PopupDocumentDataAccessor"
   ],
   "injectors": {

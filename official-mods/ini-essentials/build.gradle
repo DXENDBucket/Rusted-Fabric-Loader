@@ -57,6 +57,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def metadata = file('src/main/resources/fabric.mod.json')
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/CameraActionFields.java')
+    def eventRuleFields = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
@@ -64,6 +65,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def referenceGenerator = file('docs/generate_reference.py')
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
+            eventRuleFields,
             booleanExpression,
             geometryFields, fogFields, mathFields,
             referenceGenerator, referenceWorkbook
@@ -82,7 +84,10 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'setFogMode', 'pow', 'exp', 'ln', 'log10', 'log', 'cbrt', 'abs',
                 'floor', 'ceil', 'round', 'sign', 'clamp', 'lerp',
                 'inverse_lerp', 'hypot', 'atan2', 'atan', 'asin', 'acos',
-                'tan', 'smoothstep', 'pi', 'tau', 'e'
+                'tan', 'smoothstep', 'pi', 'tau', 'e',
+                'event', 'phase', 'when', 'cancelEventActions',
+                'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
+                'setEventBoolean'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
@@ -91,6 +96,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def geometrySource = geometryFields.getText('UTF-8')
         def fogSource = fogFields.getText('UTF-8')
         def mathSource = mathFields.getText('UTF-8')
+        def eventRuleSource = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java').getText('UTF-8')
         def geometryCodes = ['type', 'radius', 'radiusX', 'radiusY', 'width',
                 'height', 'innerRadius', 'startAngle', 'sweepAngle', 'rotation',
                 'offsetX', 'offsetY', 'thickness', 'points', 'components'] as Set
@@ -110,6 +116,13 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !fogSource.contains('BooleanExpression.compile(')
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
+                || !['event', 'phase', 'when', 'cancelEventActions',
+                    'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
+                    'setEventBoolean'].every { eventRuleSource.contains('"' + it + '"') }
+                || !eventRuleSource.contains('CustomUnitTriggerEvents.PREPARE_QUEUE')
+                || !eventRuleSource.contains('CustomUnitEventEvaluation.withContext')
+                || !eventRuleSource.contains('NumericExpression.compile(')
+                || !eventRuleSource.contains('BooleanExpression.compile(')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
         }
@@ -227,7 +240,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v8'
+                || multiplayer?.protocol != 'ini_essentials_v9'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

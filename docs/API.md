@@ -1399,6 +1399,17 @@ queued custom-unit events. `CustomUnitTriggerEvents.ENRICH_EVENT_DATA` lets Java
 booleans, strings, or unit references before native actions execute, while preserving existing
 `eventSource` and tag filtering.
 
+`CustomUnitTriggerEvents.PREPARE_QUEUE` runs after that data scope is non-null and fully enriched.
+It can mutate the scope or cancel the queued handler list while keeping the relative order of every
+uncancelled native handler unchanged. The older `BEFORE_QUEUE` remains the earliest raw queue hook.
+
+`QueuedEventActionContext.current()` exposes the active queued `autoTriggerOnEvent` handler to Java
+mods. Its mutable data view is shared by all handlers queued for the same notification, and
+`cancelRemainingActions()` skips only later handlers in that notification. It does not report an
+already completed native operation as cancellable. `CustomUnitEventEvaluation.withContext(...)`
+provides the same native `eventData(...)`, `eventSource`, and tag evaluation environment for
+declarative rule engines without changing the original action-effect order.
+
 `DamageEventData` enables the built-in bridge for `autoTriggerOnEvent: tookDamage`. INI actions can
 read `damage`, `rawDamage`, `hpDamage`, `shieldDamage`, `remainingDamage`, `hpBefore`, `hpAfter`,
 `shieldBefore`, `shieldAfter`, and `wasLethal` through the original

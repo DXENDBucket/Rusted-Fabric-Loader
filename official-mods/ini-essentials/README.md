@@ -3,6 +3,10 @@
 INI Essentials adds opt-in fields and extensions to Rusted Warfare custom-unit INI files. Omitting
 all documented extensions leaves native INI parsing and runtime behavior unchanged.
 
+Runtime evaluation is a project-wide design rule: values that can meaningfully depend on unit
+state are compiled as native LogicBoolean number/boolean expressions. Section names, event kinds,
+phases, and assignment target names remain static because they define structure rather than state.
+
 An extension can add a new key, extend a native key's accepted value range, or add a new textual
 format. Native keys with native-valid values remain on the native parser path. Extended values and
 formats must declare an explicit activation rule, so the extension cannot accidentally capture an
@@ -84,6 +88,33 @@ Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`,
 `smoothstep`, `pi`, `tau`, and `e`. Trigonometric inputs and inverse outputs use the game's degree
 convention. Invalid domains retain deterministic IEEE float behavior; geometry rejects non-finite
 results before changing gameplay state.
+
+## Ordered event rules
+
+`[event_NAME]` adds a separate rule layer in front of the native queued
+`autoTriggerOnEvent` action list. It does not insert effects into, or reorder, the native action
+chain. Rules are evaluated in their INI declaration order. The initial `queued` phase can cancel
+the complete event action list or update the shared `eventData(...)` values read by those actions:
+
+```ini
+[event_scaleDamageHandlers]
+event: tookDamage
+phase: queued
+when: eventData(name='damage',type='number') > 0
+multiplyEventNumber: damage=0.5;hpDamage=0.5
+setEventBoolean: wasLethal=false
+cancelEventActions: memory.suppressDamageHandlers
+```
+
+Assignments in `setEventNumber`, `addEventNumber`, `multiplyEventNumber`, and `setEventBoolean`
+are separated with semicolons and evaluated from left to right. Later expressions can read values
+written earlier through `eventData(...)`. Their expressions, `when`, and `cancelEventActions` can
+also use memory, resources, unit state, and INI Essentials math functions. `cancelEventActions`
+cancels the native handlers for the
+queued notification; it intentionally does not claim to undo damage, teleportation, queue changes,
+or other game work that already occurred. True operation cancellation and result replacement need
+event-specific synchronous `before` phases, which can be added without changing this queued phase
+or native ordering.
 
 The native `tookDamage` action event now receives typed damage context through the game's existing
 `eventData(...)` function:

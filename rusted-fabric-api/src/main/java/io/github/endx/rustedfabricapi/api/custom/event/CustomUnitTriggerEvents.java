@@ -35,6 +35,18 @@ public final class CustomUnitTriggerEvents {
                     listener.afterQueue(unit, eventType, source, tags, data);
                 }
             });
+    /**
+     * Runs after the queued event has a non-null, fully enriched data scope. Returning true marks
+     * all configured actions for this notification as cancelled without reordering the others.
+     */
+    public static final RustedFabricEvent<BeforeQueue> PREPARE_QUEUE =
+            RustedFabricEvent.create(listeners -> (unit, eventType, source, tags, data) -> {
+                boolean cancelled = false;
+                for (BeforeQueue listener : listeners) {
+                    cancelled |= listener.beforeQueue(unit, eventType, source, tags, data);
+                }
+                return cancelled;
+            });
     /** Adds typed values to the native {@code eventData(...)} scope before an event is queued. */
     public static final RustedFabricEvent<EnrichEventData> ENRICH_EVENT_DATA =
             RustedFabricEvent.create(listeners -> (unit, eventType, source, tags, data) -> {

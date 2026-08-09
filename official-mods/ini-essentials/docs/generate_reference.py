@@ -103,6 +103,8 @@ def load_rows(source: Path) -> list[dict[str, str]]:
 
 def section_key(section: str) -> str:
     value = section.lower()
+    if "[event_" in value:
+        return "event"
     if "geometry" in value:
         return "geometry"
     if "fog" in value:
@@ -162,6 +164,10 @@ def make_groups(field_rows: list[dict[str, str]],
             section_zh = "[action_NAME] / [hiddenAction_NAME]"
             summary_en = "Action effects that run through the native custom-action chain"
             summary_zh = "通过原版自定义动作链执行的动作效果"
+        elif key == "event":
+            section_en, section_zh = "[event_NAME]", "[event_NAME]"
+            summary_en = "Ordered queued-event rules that leave the native action-effect order intact"
+            summary_zh = "不改变原版动作效果顺序的有序队列事件规则"
         elif key == "geometry":
             section_en, section_zh = "[geometry_NAME]", "[geometry_NAME]"
             summary_en = "Reusable runtime geometry masks for fog and future gameplay consumers"
