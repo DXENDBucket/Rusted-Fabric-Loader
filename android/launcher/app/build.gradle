@@ -225,6 +225,7 @@ tasks.register('prepareRocketSources') {
     description = 'Fetches SHA-256-pinned libRocket and FreeType source used by the ARM64 UI bridge.'
     inputs.property('libRocketCommit', 'bd47356a678ef61b38f4b34dda8e7840bfee0983')
     inputs.property('libRocketAbsoluteInsetsPatch', 'v1')
+    inputs.property('libRocketDeferredTextGeometryPatch', 'v1')
     inputs.property('freetypeVersion', '2.13.3')
     outputs.dir(generatedRocketSources)
     doLast {
@@ -315,6 +316,23 @@ tasks.register('prepareRocketSources') {
                 ])
                 layoutEngine.setText(
                         lines.join(System.lineSeparator()) + System.lineSeparator(), 'UTF-8')
+
+                // libRocket 1.3 generates glyph geometry synchronously while laying out each
+                // line. A font-family change during dynamic document construction can therefore
+                // pair a layer-configuration index with the previous FontFaceHandle. The RmlUi
+                // successor fixed this by deferring geometry generation until OnRender:
+                // https://github.com/mikke89/RmlUi/commit/48fa0e46a382a415d31234bb2063757cf3aa1066
+                File elementText = new File(destination, 'Source/Core/ElementTextDefault.cpp')
+                String elementTextSource = elementText.getText('UTF-8')
+                String immediateGeometry = '''\tGenerateGeometry(font_face_handle, lines.back());
+\tgeometry_dirty = false;'''
+                String deferredGeometry = '''\tgeometry_dirty = true;'''
+                if (!elementTextSource.contains(immediateGeometry)) {
+                    throw new GradleException(
+                            'Pinned libRocket immediate text geometry block was not found')
+                }
+                elementText.setText(
+                        elementTextSource.replace(immediateGeometry, deferredGeometry), 'UTF-8')
             }
         }
     }
