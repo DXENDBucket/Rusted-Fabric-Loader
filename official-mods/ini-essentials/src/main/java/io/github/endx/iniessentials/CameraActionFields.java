@@ -7,13 +7,8 @@ import io.github.endx.rustedfabricapi.api.ini.action.IniActionEffectDefinition;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionEffects;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionExecutionContext;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
-import rustedwarfare.unit.Unit;
-import rustedwarfare.framework.GameObject;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 
 final class CameraActionFields {
     private static final String POSITION_GROUP = "camera_position";
@@ -63,10 +58,10 @@ final class CameraActionFields {
                         context.metadata(), context.rawValue())))
                 .handler(CameraActionFields::centerOnContext)
                 .documentation(documentation(
-                        "self|target|actionTarget[,runtimeOffsetX,runtimeOffsetY]",
-                        "Centers on a contextual target with optional runtime offsets.",
-                        "将视角居中到上下文目标，并可附加运行时坐标偏移。",
-                        "cameraCenterOn: actionTarget,memory.offsetX,memory.offsetY"))
+                        "(UnitReference|actionTarget)[,runtimeWorldOffsetX,runtimeWorldOffsetY]",
+                        "Centers on a native unit reference or contextual target with optional world-axis offsets.",
+                        "将视角居中到原版 UnitReference 或上下文目标；尾部世界轴偏移整体选填且默认均为零。",
+                        "cameraCenterOn: self.getOffsetRelative(y=100)"))
                 .build());
 
         IniActionEffects.register(IniActionEffectDefinition
@@ -108,30 +103,11 @@ final class CameraActionFields {
 
     private static void centerOnContext(IniActionExecutionContext context, ContextTarget target) {
         if (!context.isActorOwnedByLocalPlayer()) return;
-        Optional<WorldPoint> base;
-        switch (target.anchor) {
-            case SELF:
-                base = Optional.of(context.actorPosition());
-                break;
-            case TARGET:
-                base = context.targetUnit().map(CameraActionFields::position);
-                break;
-            case ACTION_TARGET:
-                base = context.actionTargetPosition();
-                break;
-            default:
-                throw new AssertionError(target.anchor);
-        }
-        base.ifPresent(point -> {
+        target.position.resolve(context).ifPresent(point -> {
             WorldPoint offset = target.offset != null
                     ? target.offset.evaluate(context) : new WorldPoint(0.0F, 0.0F);
             Camera.centerAt(point.x() + offset.x(), point.y() + offset.y());
         });
-    }
-
-    private static WorldPoint position(Unit unit) {
-        GameObject object = unit;
-        return new WorldPoint(object.x, object.y);
     }
 
     private static DynamicPoint parsePoint(Object metadata, String raw) {
@@ -145,24 +121,14 @@ final class CameraActionFields {
         List<String> parts = splitTopLevel(raw);
         if (parts.size() != 1 && parts.size() != 3) {
             throw new IllegalArgumentException(
-                    "expected self|target|actionTarget[,offsetX,offsetY]");
+                    "expected (UnitReference|actionTarget)[,worldOffsetX,worldOffsetY]");
         }
-        String name = parts.get(0).trim().toLowerCase(Locale.ROOT);
-        Anchor anchor;
-        if ("self".equals(name)) {
-            anchor = Anchor.SELF;
-        } else if ("target".equals(name)) {
-            anchor = Anchor.TARGET;
-        } else if ("actiontarget".equals(name)) {
-            anchor = Anchor.ACTION_TARGET;
-        } else {
-            throw new IllegalArgumentException("unknown camera anchor: " + parts.get(0).trim());
-        }
+        ActionPositionReference position = ActionPositionReference.compile(metadata, parts.get(0));
         DynamicPoint offset = parts.size() == 3
                 ? new DynamicPoint(NumericExpression.compile(metadata, parts.get(1)),
                         NumericExpression.compile(metadata, parts.get(2)))
                 : null;
-        return new ContextTarget(anchor, offset);
+        return new ContextTarget(position, offset);
     }
 
     private static List<String> splitTopLevel(String raw) {
@@ -201,8 +167,6 @@ final class CameraActionFields {
                 IniMultiplayerImpact.CLIENT_ONLY);
     }
 
-    private enum Anchor { SELF, TARGET, ACTION_TARGET }
-
     private static final class DynamicPoint {
         private final NumericExpression x;
         private final NumericExpression y;
@@ -218,11 +182,11 @@ final class CameraActionFields {
     }
 
     private static final class ContextTarget {
-        private final Anchor anchor;
+        private final ActionPositionReference position;
         private final DynamicPoint offset;
 
-        private ContextTarget(Anchor anchor, DynamicPoint offset) {
-            this.anchor = anchor;
+        private ContextTarget(ActionPositionReference position, DynamicPoint offset) {
+            this.position = position;
             this.offset = offset;
         }
     }

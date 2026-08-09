@@ -28,15 +28,18 @@ Camera action effects are available in both visible and hidden custom actions:
 
 ```ini
 [action_focus]
-cameraCenterOn: actionTarget,memory.cameraOffsetX,-self.resource.cameraLift
+cameraCenterOn: self.getOffsetRelative(x=memory.cameraOffsetX,y=100)
 cameraTargetZoom: clamp(memory.zoom,0.5,3)
 cameraStopMovement: memory.lockCamera
 ```
 
 `cameraCenterAt`, `cameraCenterBy`, and `cameraCenterOn` are mutually exclusive inside one action.
 Their coordinates, offsets and zoom are runtime numeric expressions; `cameraStopMovement` is a
-runtime LogicBoolean. `cameraCenterOn` accepts `self`, `target`, or `actionTarget`, followed by
-optional dynamic X/Y offsets. The
+runtime LogicBoolean. `cameraCenterOn` accepts any native UnitReference, including chained
+references and marker-producing expressions such as `self.getOffsetRelative(y=100)`. The legacy
+`self`, `target`, and `actionTarget` tokens remain compatible. Its trailing world-axis X/Y offsets
+are optional together and default to zero; `getOffsetRelative` instead rotates its local offset
+with the referenced unit. The
 effects run only on the client locally controlling the acting unit's team; they do not alter
 deterministic simulation state or another player's camera. A missing unit/action target makes the
 corresponding contextual move a safe no-op.
@@ -82,6 +85,9 @@ the session ends. `setFogMode: off|basic|los` changes the global native mode and
 team fog maps as unexplored.
 `duration` is a runtime number expression. `follow` is a runtime LogicBoolean checked while the
 source is active; when false, the source uses the geometry snapshot captured by its action.
+`anchor` accepts the same native UnitReference expressions as `cameraCenterOn`, so fog can follow
+`self.customTarget1`, a parent/transport unit, a queried nearby unit, or a relative marker. The
+special `actionTarget` token remains available for actions that contain only a target point.
 
 Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`, `cbrt`, `abs`, `floor`, `ceil`,
 `round`, `sign`, `clamp`, `lerp`, `inverse_lerp`, `hypot`, `atan2`, `atan`, `asin`, `acos`, `tan`,

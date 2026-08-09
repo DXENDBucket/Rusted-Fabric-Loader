@@ -17,8 +17,8 @@
   "custom": {
     "rusted_fabric:multiplayer": {
       "mode": "optional",
-      "protocol": "ini_essentials_v12",
-      "syncHash": "4de41f2b7eeca56ef85e8a723440d9e481bd895298bf5a356243fc3a385f7352"
+      "protocol": "ini_essentials_v13",
+      "syncHash": "d9a743b9879461d19fdd3f4c9567417a8ef8887eb44b696b3552642d3b4295a8"
     }
   }
 }

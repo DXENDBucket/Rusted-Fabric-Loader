@@ -1361,6 +1361,18 @@ mapping into the same stable style. It exposes active/revert metadata build-queu
 auto-trigger cooldown, and the previous leg-animation base transform. These are snapshots, not live
 mutable wrappers, so values remain consistent for the duration of a callback.
 
+## Native UnitReference expressions
+
+`api.logic.UnitReferenceExpression` compiles the game's complete UnitReference language once and
+provides typed `Optional<Unit>` evaluation against an `OrderableUnit` acting as `self`. It accepts
+ordinary and chained references such as `self.customTarget1`, as well as marker-producing
+references such as `self.getOffsetRelative(x=20,y=100)`. Non-unit return types are rejected during
+compilation instead of failing later at the read site. Mods targeting older API builds can check
+`RustedFabricCapabilities.LOGIC_UNIT_REFERENCE`.
+
+The returned unit can be a real live unit or a native marker unit carrying a calculated position;
+callers should not assume that every result belongs to the global live-unit registry.
+
 ## Extensible custom-unit INI fields
 
 `api.ini.IniExtensions` registers opt-in custom-unit fields without replacing the native parser.
@@ -1397,8 +1409,8 @@ configuration.
 
 INI Essentials uses this API for `cameraCenterAt`, `cameraCenterBy`, `cameraCenterOn`,
 `cameraTargetZoom`, and `cameraStopMovement`. These fields work in both visible and hidden action
-sections. Camera moves are local-owner-only; `cameraCenterOn` accepts `self`, `target`, or
-`actionTarget` followed by optional X/Y offsets.
+sections. Camera moves are local-owner-only; `cameraCenterOn` accepts any native UnitReference or
+the contextual `actionTarget` point. Its optional trailing world-axis X/Y offsets default to zero.
 
 ### Native custom-unit event data
 

@@ -1,8 +1,8 @@
-ini_essentials_v12
+ini_essentials_v13
 [core].allowNegativeHp|new_key|runtime_logic_boolean|default=false|gameplay_synced|negative_hp_damage_v2
 [action_*|hiddenAction_*].cameraCenterAt|new_action_effect|runtime_number_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
 [action_*|hiddenAction_*].cameraCenterBy|new_action_effect|runtime_number_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
-[action_*|hiddenAction_*].cameraCenterOn|new_action_effect|self_target_actionTarget_optional_runtime_number_offset|default=omitted|client_only|local_actor_owner|exclusive=camera_position
+[action_*|hiddenAction_*].cameraCenterOn|new_action_effect|native_unit_reference_or_actionTarget_optional_world_offset_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position|null_safe
 [action_*|hiddenAction_*].cameraTargetZoom|new_action_effect|positive_runtime_number|default=omitted|client_only|local_actor_owner|native_smoothing
 [action_*|hiddenAction_*].cameraStopMovement|new_action_effect|runtime_logic_boolean|default=false|client_only|local_actor_owner|native_momentum
 event.tookDamage.eventData.damage|number|gameplay_synced|post_attachment_immunity_armour
@@ -120,7 +120,7 @@ event.newMessage.eventData.messageHasData|boolean|gameplay_synced|native_message
 [fog_*].operation|new_section_key|reveal_explore_conceal_shroud|required|gameplay_synced|per_team_fog_levels_0_5_10
 [fog_*].geometry|new_section_key|geometry_name|required|gameplay_synced|world_tile_rasterization
 [fog_*].team|new_section_key|team_selector|default=own|gameplay_synced|deterministic_team_snapshot
-[fog_*].anchor|new_section_key|self_target_actionTarget|default=self|gameplay_synced|world_geometry_origin
+[fog_*].anchor|new_section_key|native_unit_reference_or_actionTarget|default=self|gameplay_synced|world_geometry_origin|follow_reevaluation
 [fog_*].duration|new_section_key|runtime_seconds|default=0|gameplay_synced|negative_until_session_end
 [fog_*].follow|new_section_key|runtime_logic_boolean|default=true|gameplay_synced|reevaluate_geometry_and_anchor_or_initial_snapshot
 [action_*|hiddenAction_*].applyFog|new_action_effect|fog_name_list|default=omitted|gameplay_synced|geometry_fog_operation

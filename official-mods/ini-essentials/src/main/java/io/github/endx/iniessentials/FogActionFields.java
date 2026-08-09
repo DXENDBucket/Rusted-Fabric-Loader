@@ -16,9 +16,7 @@ import io.github.endx.rustedfabricapi.api.ini.action.IniActionEffectDefinition;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionEffects;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionExecutionContext;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
-import rustedwarfare.framework.GameObject;
 import rustedwarfare.game.Team;
-import rustedwarfare.unit.Unit;
 import rustedwarfare.util.UnitConfig;
 
 import java.util.ArrayList;
@@ -100,7 +98,8 @@ final class FogActionFields {
                 required(config, section, "geometry"),
                 parseOperation(required(config, section, "operation")),
                 TeamSelector.parse(optional(config, section, "team", "own")),
-                Anchor.parse(optional(config, section, "anchor", "self")),
+                ActionPositionReference.compile(metadata,
+                        optional(config, section, "anchor", "self")),
                 NumericExpression.compile(metadata, optional(config, section, "duration", "0")),
                 BooleanExpression.compile(metadata,
                         optional(config, section, "follow", "true")));
@@ -163,13 +162,13 @@ final class FogActionFields {
         private final String geometry;
         private final FogOperation operation;
         private final TeamSelector teamSelector;
-        private final Anchor anchor;
+        private final ActionPositionReference anchor;
         private final NumericExpression duration;
         private final BooleanExpression follow;
 
         private Template(Object metadata, String name, String geometry,
                          FogOperation operation, TeamSelector teamSelector,
-                         Anchor anchor, NumericExpression duration,
+                         ActionPositionReference anchor, NumericExpression duration,
                          BooleanExpression follow) {
             this.metadata = metadata; this.name = name; this.geometry = geometry;
             this.operation = operation; this.teamSelector = teamSelector;
@@ -197,32 +196,11 @@ final class FogActionFields {
         private GeometryMask worldMask(IniActionExecutionContext context) {
             GeometryMask local = GeometryDefinitions.require(metadata, geometry)
                     .resolve(metadata, context.actor());
-            WorldPoint origin = anchor.resolve(context);
+            WorldPoint origin = anchor.require(context, "fog anchor");
             return GeometryMasks.transform(local, origin.x(), origin.y(), 0.0F);
         }
 
         @Override public String toString() { return "FogTemplate{" + name + '}'; }
-    }
-
-    private enum Anchor {
-        SELF, TARGET, ACTION_TARGET;
-        private static Anchor parse(String raw) {
-            String value = raw.replace("_", "").toUpperCase(Locale.ROOT);
-            if ("ACTIONTARGET".equals(value)) return ACTION_TARGET;
-            try { return valueOf(value); }
-            catch (IllegalArgumentException failure) {
-                throw new IllegalArgumentException("unknown fog anchor: " + raw);
-            }
-        }
-        private WorldPoint resolve(IniActionExecutionContext context) {
-            if (this == SELF) return context.actorPosition();
-            if (this == ACTION_TARGET) return context.actionTargetPosition()
-                    .orElseThrow(() -> new IllegalArgumentException("fog anchor actionTarget has no target"));
-            Unit unit = context.targetUnit()
-                    .orElseThrow(() -> new IllegalArgumentException("fog anchor target has no unit target"));
-            GameObject object = unit;
-            return new WorldPoint(object.x, object.y);
-        }
     }
 
     private static final class TeamSelector {
