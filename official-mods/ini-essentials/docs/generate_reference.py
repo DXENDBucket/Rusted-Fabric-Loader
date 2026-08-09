@@ -110,7 +110,11 @@ def load_rows(source: Path) -> list[dict[str, str]]:
 def section_key(section: str) -> str:
     value = section.lower()
     if "customprojectile" in value:
-        return "custom_projectile"
+        if "[core]" in value:
+            return "custom_projectile_core"
+        if "[pattern_" in value:
+            return "custom_projectile_pattern"
+        return "custom_projectile_other"
     if "overlay" in value:
         return "overlay"
     if "decal" in value:
@@ -168,7 +172,8 @@ def make_groups(field_rows: list[dict[str, str]],
     # Keep established workbook navigation stable when a later version adds
     # fields for a section that did not previously have an Essentials group.
     established_order = [
-        "core", "action", "custom_projectile", "geometry", "overlay", "decal", "fog", "math", "event",
+        "core", "action", "custom_projectile_core", "custom_projectile_pattern",
+        "custom_projectile_other", "geometry", "overlay", "decal", "fog", "math", "event",
         "projectile", "turret",
     ]
     ordered_keys = [key for key in established_order if key in grouped]
@@ -194,10 +199,18 @@ def make_groups(field_rows: list[dict[str, str]],
             section_en, section_zh = "[geometry_NAME]", "[geometry_NAME]"
             summary_en = "Reusable runtime geometry masks for fog and future gameplay consumers"
             summary_zh = "供迷雾及后续玩法功能复用的运行时几何遮罩"
-        elif key == "custom_projectile":
-            section_en, section_zh = "class: CustomProjectile / [pattern_NAME]", "class: CustomProjectile / [pattern_NAME]"
-            summary_en = "Independent reusable projectile templates and deterministic same-tick patterns"
-            summary_zh = "独立可复用弹体模板与确定性的同帧弹幕排布"
+        elif key == "custom_projectile_core":
+            section_en, section_zh = "[core]", "[core]"
+            summary_en = "Identity and schema fields for an independent CustomProjectile asset"
+            summary_zh = "独立 CustomProjectile 资源的标识与格式字段"
+        elif key == "custom_projectile_pattern":
+            section_en, section_zh = "[pattern_NAME]", "[pattern_NAME]"
+            summary_en = "Deterministic same-tick layouts attached to this projectile asset"
+            summary_zh = "附属于此弹体资源的确定性同帧弹幕排布"
+        elif key == "custom_projectile_other":
+            section_en, section_zh = "CustomProjectile extensions", "CustomProjectile 扩展"
+            summary_en = "Additional fields for independent projectile assets"
+            summary_zh = "独立弹体资源的其他扩展字段"
         elif key == "overlay":
             section_en, section_zh = "[overlay_NAME]", "[overlay_NAME]"
             summary_en = "Screen-space HUD primitives driven by live custom-unit instances"
@@ -220,9 +233,10 @@ def make_groups(field_rows: list[dict[str, str]],
             section_zh = section_names[key]
             summary_en = "INI Essentials additions for this native section"
             summary_zh = "该原版节对应的 INI Essentials 扩展"
+        palette = "custom_projectile" if key.startswith("custom_projectile_") else key
         groups.append(ReferenceGroup(
             key, section_en, section_zh, summary_en, summary_zh,
-            key, tuple(rows), False))
+            palette, tuple(rows), False))
 
     events: OrderedDict[str, list[dict[str, str]]] = OrderedDict()
     for row in event_rows:
@@ -426,52 +440,103 @@ def add_reference_sheet(workbook: Workbook, title: str,
                 background=NOTICE_COLOR, bold=True, horizontal="center", size=10.0)
     sheet.row_dimensions[2].height = 29
 
-    sheet.merge_cells("A3:H3")
-    sheet["A3"] = "Section shortcuts — click to jump" if not chinese else "节快捷导航——点击即可跳转"
-    style_range(sheet, 3, 1, 8,
-                background=INDEX_COLOR, bold=True, horizontal="center", size=11.0)
-    sheet.row_dimensions[3].height = 28
-
-    regular_groups = [group for group in groups if not group.event_data]
+    regular_groups = [
+        group for group in groups
+        if not group.event_data and not group.key.startswith("custom_projectile_")
+    ]
+    custom_projectile_groups = [
+        group for group in groups
+        if not group.event_data and group.key.startswith("custom_projectile_")
+    ]
     event_groups = [group for group in groups if group.event_data]
-    index_rows = shortcut_rows(len(regular_groups))
-    event_category_row = 4 + index_rows
-    first_group_row = event_category_row + 2
+    main_shortcut_header = 4
+    main_shortcut_row = 5
+    first_group_row = main_shortcut_row + shortcut_rows(len(regular_groups)) + 1
     regular_starts: dict[str, int] = {}
     cursor = first_group_row
     for group in regular_groups:
         regular_starts[group.key] = cursor
         cursor += len(group.rows) + 3
 
+    custom_shortcut_header = cursor
+    custom_shortcut_row = custom_shortcut_header + 1
+    custom_first_group_row = (
+        custom_shortcut_row + shortcut_rows(len(custom_projectile_groups)) + 1)
+    custom_starts: dict[str, int] = {}
+    custom_cursor = custom_first_group_row
+    for group in custom_projectile_groups:
+        custom_starts[group.key] = custom_cursor
+        custom_cursor += len(group.rows) + 3
+
     language = "zh" if chinese else "en"
     shortcut_target = f"rf_{language}_shortcuts"
-    define_target(workbook, shortcut_target, sheet.title, "A3")
+    custom_shortcut_target = f"rf_{language}_custom_projectile_shortcuts"
+    unit_class_target = f"rf_{language}_class_custom_unit"
+    custom_class_target = f"rf_{language}_class_custom_projectile"
+    define_target(workbook, shortcut_target, sheet.title, f"A{main_shortcut_header}")
+    define_target(workbook, unit_class_target, sheet.title, f"A{main_shortcut_header}")
+    define_target(workbook, custom_shortcut_target, sheet.title,
+                  f"A{custom_shortcut_header}")
+    define_target(workbook, custom_class_target, sheet.title,
+                  f"A{custom_shortcut_header}")
     define_target(workbook, f"rf_{language}_title", sheet.title, "A1")
-    add_shortcuts(sheet, regular_groups, regular_starts, 4, chinese, buttons)
 
-    event_category_target = f"rf_{language}_event_data"
-    define_target(workbook, event_category_target, sheet.title, f"A{cursor}")
-    sheet.merge_cells(start_row=event_category_row, start_column=1,
-                      end_row=event_category_row, end_column=8)
-    category = sheet.cell(
-        event_category_row, 1,
-        "Native eventData extensions ↓" if not chinese else "原版事件数据扩展 ↓")
-    style_range(sheet, event_category_row, 1, 8,
-                background=SECTION_PALETTES["event"][0], font_color=WHITE,
-                bold=True, horizontal="center", size=11.0)
-    category.font = Font(
-        name=FONT_NAME, size=11.0, bold=True, color=argb(WHITE))
-    sheet.row_dimensions[event_category_row].height = 29
-    add_navigation_button(
-        buttons, sheet, f"open_{language}_event_data", event_category_target,
-        event_category_row, 1, event_category_row, 8)
+    class_buttons = (
+        ("CustomUnitMetadata", unit_class_target, SECTION_PALETTES["core"][0]),
+        ("CustomProjectile", custom_class_target,
+         SECTION_PALETTES["custom_projectile"][0]),
+    )
+    for slot, (label, target, color) in enumerate(class_buttons):
+        first, last = ((1, 4), (5, 8))[slot]
+        sheet.merge_cells(start_row=3, start_column=first,
+                          end_row=3, end_column=last)
+        sheet.cell(3, first, label)
+        style_range(sheet, 3, first, last, background=color, font_color=WHITE,
+                    bold=True, horizontal="center", size=10.0)
+        add_navigation_button(
+            buttons, sheet, f"class_{language}_{slot}", target,
+            3, 1, 3, 8, equal_slot=slot, equal_slot_count=2,
+            text=label, background=color)
+    sheet.row_dimensions[3].height = 22
+
+    sheet.merge_cells(start_row=main_shortcut_header, start_column=1,
+                      end_row=main_shortcut_header, end_column=8)
+    sheet.cell(main_shortcut_header, 1, (
+        "CustomUnitMetadata sections" if not chinese else "CustomUnitMetadata 节导航"))
+    style_range(sheet, main_shortcut_header, 1, 8, background=INDEX_COLOR,
+                bold=True, horizontal="center", size=10.0)
+    sheet.row_dimensions[main_shortcut_header].height = 22
+    add_shortcuts(
+        sheet, regular_groups, regular_starts, main_shortcut_row, chinese, buttons)
 
     cursor = first_group_row
     for group in regular_groups:
         cursor = add_group(
             sheet, group, cursor, chinese, shortcut_target, buttons)
 
+    sheet.merge_cells(start_row=custom_shortcut_header, start_column=1,
+                      end_row=custom_shortcut_header, end_column=8)
+    sheet.cell(custom_shortcut_header, 1, (
+        "CustomProjectile sections" if not chinese else "CustomProjectile 节导航"))
+    style_range(
+        sheet, custom_shortcut_header, 1, 8,
+        background=SECTION_PALETTES["custom_projectile"][0],
+        font_color=WHITE, bold=True, horizontal="center", size=10.0)
+    sheet.row_dimensions[custom_shortcut_header].height = 24
+    add_shortcuts(
+        sheet, custom_projectile_groups, custom_starts,
+        custom_shortcut_row, chinese, buttons)
+    custom_cursor = custom_first_group_row
+    for group in custom_projectile_groups:
+        custom_cursor = add_group(
+            sheet, group, custom_cursor, chinese,
+            custom_shortcut_target, buttons)
+
+    cursor = custom_cursor
+
     event_banner_row = cursor
+    define_target(workbook, f"rf_{language}_event_data", sheet.title,
+                  f"A{event_banner_row}")
     sheet.merge_cells(start_row=event_banner_row, start_column=1,
                       end_row=event_banner_row, end_column=8)
     sheet.cell(event_banner_row, 1, (

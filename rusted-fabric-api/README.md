@@ -28,3 +28,9 @@ Expansion is pure and testable; `ProjectilePatternEmitter.emit` then creates the
 sequence order. A pattern is bounded to 1024 projectiles and never creates an intermediate parent
 projectile. Gameplay mods must ensure the same pattern inputs and template are present on every
 simulation peer.
+
+`TurretProjectilePatternEvents.PLAN` runs after native turret projectile selection. A listener can
+provide a `TurretProjectilePatternPlan`; the runtime then replaces the selected template and the
+projectile creation/initialization calls without cancelling the enclosing firing method. Native
+`onShoot`, muzzle effects, sound, recoil, counters, and post-fire state therefore retain their
+original ordering and execute once per turret shot.

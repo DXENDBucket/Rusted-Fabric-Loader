@@ -62,6 +62,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/ProjectileRuleDefinitions.java')
     def customProjectileDefinitions = file('src/main/java/io/github/endx/iniessentials/CustomProjectileDefinitions.java')
     def customProjectileActionFields = file('src/main/java/io/github/endx/iniessentials/CustomProjectileActionFields.java')
+    def customProjectileTurretFields = file('src/main/java/io/github/endx/iniessentials/CustomProjectileTurretFields.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
     def decalMaskFields = file('src/main/java/io/github/endx/iniessentials/DecalMaskDefinitions.java')
@@ -77,6 +78,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             eventRuleFields,
             projectileRuleFields,
             customProjectileDefinitions, customProjectileActionFields,
+            customProjectileTurretFields,
             booleanExpression,
             geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
             unitContextProperties, referenceGenerator, referenceWorkbook
@@ -128,7 +130,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'class', 'name', 'schemaVersion', 'aimMode', 'count',
                 'centerDirection', 'originSpacing', 'lineAngleOffset',
                 'originOffsetX', 'originOffsetY', 'originOffsetHeight',
-                'directionDistance', 'emitProjectilePattern'
+                'directionDistance', 'emitProjectilePattern', 'projectilePattern'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
@@ -146,6 +148,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def projectileRuleSource = projectileRuleFields.getText('UTF-8')
         def customProjectileSource = customProjectileDefinitions.getText('UTF-8')
         def customProjectileActionSource = customProjectileActionFields.getText('UTF-8')
+        def customProjectileTurretSource = customProjectileTurretFields.getText('UTF-8')
         def initializerSource = initializer.getText('UTF-8')
         def geometryCodes = ['type', 'radius', 'radiusX', 'radiusY', 'width',
                 'height', 'innerRadius', 'startAngle', 'sweepAngle', 'rotation',
@@ -242,6 +245,9 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !customProjectileSource.contains('NumericExpression.compile(')
                 || !customProjectileActionSource.contains('"emitProjectilePattern"')
                 || !customProjectileActionSource.contains('ProjectilePatternEmitter.emit(')
+                || !customProjectileTurretSource.contains('"projectilePattern"')
+                || !customProjectileTurretSource.contains('TurretProjectilePatternEvents.PLAN')
+                || !customProjectileTurretSource.contains('TurretProjectilePatternPlan')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
         }
@@ -343,13 +349,16 @@ tasks.register('verifyIniEssentialsMetadata') {
                     || !drawingRelationshipText.contains('/relationships/hyperlink')
                     || !['#rf_en_core', '#rf_en_action', '#rf_zh_core',
                          '#rf_zh_action', '#rf_en_shortcuts', '#rf_zh_shortcuts',
-                         '#rf_en_event_data', '#rf_zh_event_data',
+                         '#rf_en_class_custom_unit', '#rf_zh_class_custom_unit',
+                         '#rf_en_class_custom_projectile', '#rf_zh_class_custom_projectile',
                          '#rf_en_event_tookdamage', '#rf_zh_event_attachmentremoved',
                          '#rf_en_event_killedanyunit', '#rf_zh_event_newmessage'].every {
                         drawingRelationshipText.contains(it)
                     }
-                    || !sheetText.contains('Section shortcuts')
-                    || !sheetText.contains('节快捷导航')
+                    || !sheetText.contains('CustomUnitMetadata sections')
+                    || !sheetText.contains('CustomProjectile sections')
+                    || !sheetText.contains('CustomUnitMetadata 节导航')
+                    || !sheetText.contains('CustomProjectile 节导航')
                     || !(expectedCodes + expectedEventData).every { sheetText.contains(it) }) {
                 throw new GradleException(
                         'Generated INI Essentials workbook is stale or lost drawing links/colors')
@@ -363,7 +372,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v18'
+                || multiplayer?.protocol != 'ini_essentials_v19'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

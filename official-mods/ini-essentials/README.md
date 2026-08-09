@@ -89,7 +89,6 @@ speed: 5
 type: fan
 aimMode: direction
 count: clamp(memory.shots,1,30)
-centerDirection: self.dir
 sweepAngle: 60
 originOffsetY: 18
 ```
@@ -97,21 +96,28 @@ originOffsetY: 18
 ```ini
 [action_fireFan]
 emitProjectilePattern: example:plasma_fan/main
+
+[turret_main]
+projectilePattern: example:plasma_fan/main
 ```
 
 `single`, `fan`, `ring`, and `line` are deterministic same-tick layouts. A ring defaults to a full
-360-degree sweep without duplicating its endpoint; a smaller sweep includes both ends. Numeric pattern values are
-evaluated when the action runs, with the firing unit as `self`, so memory, resources, and extended
-math functions are available. One expansion creates only its real native projectiles—there is no
+360-degree sweep without duplicating its endpoint; a smaller sweep includes both ends. Numeric
+pattern values are evaluated when the action runs or the turret fires, with the firing unit as
+`self`, so memory, resources, and extended math functions are available. When `centerDirection` is
+omitted, actions use the unit direction and turrets use the live native turret aim angle. One
+expansion creates only its real native projectiles—there is no
 invisible parent projectile—and `count` has a hard limit of 1024. `direction` works without an
-action target; `point` requires an action target point and `unit` requires a target unit.
+action target; `point` and `unit` require the corresponding action or native turret target.
 
 The `[projectile]` section accepts the ordinary native projectile fields except deferred links to
 other projectile names (`spawnProjectilesOnCreate`, `spawnProjectilesOnExplode`, and
 `spawnProjectilesOnEndOfLife`), which are rejected in this first phase. Interval/sequence firing,
-direct `[turret_*]` replacement, and custom per-tick trajectories are planned later. The current
-turret hook is deliberately not reused because cancelling it at method entry would also suppress
-native muzzle effects, recoil, and shoot actions.
+and custom per-tick trajectories are planned later. `projectilePattern` uses a precise weave inside
+the native firing method: native projectile selection and `onShoot` run first, only projectile
+allocation/template initialization is replaced, and the native muzzle effects, sound, recoil,
+shot counter, and post-fire state continue once afterward. It does not use the older method-entry
+cancellation event.
 
 ## Geometry, math, and fog
 
@@ -423,8 +429,10 @@ The workbook is generated rather than edited by hand. Its English and Chinese pa
 original reference's five-column-first layout and matching section colors (`[core]` green,
 action/hiddenAction orange, `[geometry_*]` high-contrast indigo), followed by extension metadata columns. Native event-data additions
 live in a separate large catalog at the bottom instead of being mixed with regular INI sections.
-Colored shortcuts jump to regular sections or that event catalog, whose own index links each event;
-every section links back to its corresponding index.
+The compact top-level menu switches between `CustomUnitMetadata` and `CustomProjectile`; each class
+has its own section shortcuts, so projectile asset fields are not mixed into the ordinary unit
+section index. The separate event catalog at the bottom has its own per-event index, and every
+section links back to the index for its class.
 Like the community 1.15 enhanced reference, these controls use transparent DrawingML hyperlink
 overlays: hovering shows a link pointer and clicking jumps immediately without selecting a cell.
 

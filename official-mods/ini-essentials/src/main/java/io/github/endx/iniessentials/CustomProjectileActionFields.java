@@ -48,7 +48,7 @@ final class CustomProjectileActionFields {
                 .requirePattern(reference.patternName()).compileFor(context.actor());
         CustomUnit actor = context.actor();
 
-        float direction = pattern.centerDirection.evaluate(actor);
+        float direction = pattern.centerDirection(actor, actor.direction);
         float localX = pattern.originOffsetX.evaluate(actor);
         float localY = pattern.originOffsetY.evaluate(actor);
         float sin = CommonUtils.fastSin(actor.direction);

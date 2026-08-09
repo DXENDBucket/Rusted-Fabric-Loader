@@ -1,4 +1,4 @@
-ini_essentials_v18
+ini_essentials_v19
 [core].allowNegativeHp|new_key|runtime_logic_boolean|default=false|gameplay_synced|negative_hp_damage_v2
 [action_*|hiddenAction_*].cameraCenterAt|new_action_effect|runtime_number_world_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
 [action_*|hiddenAction_*].cameraCenterBy|new_action_effect|runtime_number_world_delta_pair|default=omitted|client_only|local_actor_owner|exclusive=camera_position
@@ -8,6 +8,7 @@ ini_essentials_v18
 class.CustomProjectile|independent_asset|schema=1|namespaced_identifier|native_projectile_template|gameplay_synced
 class.CustomProjectile.[pattern_*]|single_fan_ring_line|ring_full_no_duplicate_or_partial_inclusive|runtime_numeric_expressions|same_tick|ordered|count_max=1024|gameplay_synced
 [action_*|hiddenAction_*].emitProjectilePattern|new_action_effect|namespace:path/pattern|default=omitted|direct_real_projectiles|no_parent_projectile|gameplay_synced
+[turret_*].projectilePattern|new_key|namespace:path/pattern|default=omitted|replace_projectile_segment_only|preserve_onShoot_muzzle_recoil_sound_post_fire|native_aim_default|gameplay_synced
 event.tookDamage.eventData.damage|number|gameplay_synced|post_attachment_immunity_armour
 event.tookDamage.eventData.rawDamage|number|gameplay_synced|custom_unit_entry_amount
 event.tookDamage.eventData.hpDamage|number|gameplay_synced|actual_non_negative_hp_reduction

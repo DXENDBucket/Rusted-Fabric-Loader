@@ -35,6 +35,7 @@ public final class IniEssentials implements ModInitializer {
                 CustomProjectileDefinitions.validateReferences());
         CustomProjectileDefinitions.register();
         CustomProjectileActionFields.register();
+        CustomProjectileTurretFields.register();
         EventRuleDefinitions.register();
         ProjectileRuleDefinitions.register();
         GeometryDefinitions.register();
@@ -74,7 +75,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v18",
-                "4997e5a82096f22bf11cbaed2664a2c369dcafcfc7e90ebcb78fbdba4b1bba91"));
+                MOD_ID, version, "ini_essentials_v19",
+                "959816dda4a83ca6b1ce4522b69ecf09e4f7f7b99157dd919d18b26a01a0375a"));
     }
 }

@@ -3,6 +3,7 @@ package io.github.endx.iniessentials;
 import io.github.endx.rustedfabricapi.api.event.RustedIniEvents;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternSpec;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternType;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
 import rustedwarfare.custom.CustomProjectileTemplate;
 import rustedwarfare.custom.CustomUnit;
@@ -181,6 +182,11 @@ final class CustomProjectileDefinitions {
         return result != null ? result.trim() : fallback;
     }
 
+    private static String optionalNullable(UnitConfig config, String section, String key) {
+        String result = config.getString(section, key, null);
+        return result != null ? result.trim() : null;
+    }
+
     private static String normalizePatternName(String raw) {
         String value = raw.trim().toLowerCase(Locale.ROOT);
         if (!value.matches("[a-z0-9_.-]+")) {
@@ -238,7 +244,7 @@ final class CustomProjectileDefinitions {
 
     static final class PatternTemplate {
         private final ProjectilePatternType type;
-        private final AimMode aimMode;
+        private final ProjectileAimMode aimMode;
         private final String count;
         private final String centerDirection;
         private final String startAngle;
@@ -252,7 +258,7 @@ final class CustomProjectileDefinitions {
         private final Map<Object, CompiledPattern> compiled =
                 Collections.synchronizedMap(new WeakHashMap<Object, CompiledPattern>());
 
-        private PatternTemplate(ProjectilePatternType type, AimMode aimMode,
+        private PatternTemplate(ProjectilePatternType type, ProjectileAimMode aimMode,
                                 String count, String centerDirection, String startAngle,
                                 String sweepAngle, String originSpacing, String lineAngleOffset,
                                 String originOffsetX, String originOffsetY,
@@ -276,10 +282,10 @@ final class CustomProjectileDefinitions {
                     optional(config, section, "type", "single"), "pattern type");
             return new PatternTemplate(
                     type,
-                    enumValue(AimMode.class,
+                    enumValue(ProjectileAimMode.class,
                             optional(config, section, "aimMode", "direction"), "aimMode"),
                     optional(config, section, "count", "1"),
-                    optional(config, section, "centerDirection", "self.dir"),
+                    optionalNullable(config, section, "centerDirection"),
                     optional(config, section, "startAngle", "0"),
                     optional(config, section, "sweepAngle",
                             type == ProjectilePatternType.RING ? "360" : "0"),
@@ -292,8 +298,8 @@ final class CustomProjectileDefinitions {
         }
 
         static PatternTemplate defaultSingle() {
-            return new PatternTemplate(ProjectilePatternType.SINGLE, AimMode.DIRECTION,
-                    "1", "self.dir", "0", "0", "0", "90",
+            return new PatternTemplate(ProjectilePatternType.SINGLE, ProjectileAimMode.DIRECTION,
+                    "1", null, "0", "0", "0", "90",
                     "0", "0", "0", "100000");
         }
 
@@ -303,7 +309,8 @@ final class CustomProjectileDefinitions {
             if (result != null) return result;
             result = new CompiledPattern(type, aimMode,
                     NumericExpression.compile(metadata, count),
-                    NumericExpression.compile(metadata, centerDirection),
+                    centerDirection != null
+                            ? NumericExpression.compile(metadata, centerDirection) : null,
                     NumericExpression.compile(metadata, startAngle),
                     NumericExpression.compile(metadata, sweepAngle),
                     NumericExpression.compile(metadata, originSpacing),
@@ -325,17 +332,15 @@ final class CustomProjectileDefinitions {
         }
     }
 
-    enum AimMode { UNIT, POINT, DIRECTION }
-
     static final class CompiledPattern {
         final ProjectilePatternType type;
-        final AimMode aimMode;
+        final ProjectileAimMode aimMode;
         final NumericExpression count, centerDirection, startAngle, sweepAngle;
         final NumericExpression originSpacing, lineAngleOffset;
         final NumericExpression originOffsetX, originOffsetY, originOffsetHeight;
         final NumericExpression directionDistance;
 
-        private CompiledPattern(ProjectilePatternType type, AimMode aimMode,
+        private CompiledPattern(ProjectilePatternType type, ProjectileAimMode aimMode,
                                 NumericExpression count, NumericExpression centerDirection,
                                 NumericExpression startAngle, NumericExpression sweepAngle,
                                 NumericExpression originSpacing, NumericExpression lineAngleOffset,
@@ -359,6 +364,10 @@ final class CustomProjectileDefinitions {
                     .originSpacing(originSpacing.evaluate(actor))
                     .lineAngleOffset(lineAngleOffset.evaluate(actor))
                     .build();
+        }
+
+        float centerDirection(CustomUnit actor, float fallback) {
+            return centerDirection != null ? centerDirection.evaluate(actor) : fallback;
         }
     }
 }

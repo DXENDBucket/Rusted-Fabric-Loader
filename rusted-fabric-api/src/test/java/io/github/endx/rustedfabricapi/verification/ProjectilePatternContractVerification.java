@@ -3,6 +3,9 @@ package io.github.endx.rustedfabricapi.verification;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternEmitter;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternOffset;
 import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternSpec;
+import io.github.endx.rustedfabricapi.api.projectile.pattern.TurretProjectilePatternPlan;
+import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode;
+import rustedwarfare.custom.CustomProjectileTemplate;
 
 import java.util.List;
 
@@ -48,6 +51,29 @@ final class ProjectilePatternContractVerification {
         try {
             ProjectilePatternSpec.fan(ProjectilePatternSpec.MAX_PROJECTILES + 1, 30.0F);
             throw new AssertionError("pattern accepted an unsafe projectile count");
+        } catch (IllegalArgumentException expected) {
+            // Expected.
+        }
+
+        CustomProjectileTemplate template = new CustomProjectileTemplate();
+        TurretProjectilePatternPlan plan = TurretProjectilePatternPlan
+                .builder(template, ProjectilePatternSpec.line(3, 8.0F))
+                .aimMode(ProjectileAimMode.POINT)
+                .centerDirection(45.0F)
+                .originOffset(3.0F, -4.0F, 2.0F)
+                .build();
+        require(plan.template() == template && plan.pattern().count() == 3
+                        && close(plan.centerDirection(), 45.0F)
+                        && close(plan.originOffsetX(), 3.0F)
+                        && close(plan.originOffsetY(), -4.0F),
+                "turret projectile plan lost replacement data");
+
+        try {
+            TurretProjectilePatternPlan
+                    .builder(template, ProjectilePatternSpec.fan(3, 30.0F))
+                    .aimMode(ProjectileAimMode.UNIT)
+                    .build();
+            throw new AssertionError("angular turret pattern accepted non-direction aim");
         } catch (IllegalArgumentException expected) {
             // Expected.
         }

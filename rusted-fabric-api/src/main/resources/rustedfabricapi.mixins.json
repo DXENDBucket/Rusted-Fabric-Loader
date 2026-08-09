@@ -29,6 +29,7 @@
     "CustomUnitReclaimPriceNamedMixin",
     "CustomUnitRenderNamedMixin",
     "CustomUnitRuntimeNamedMixin",
+    "CustomUnitTurretProjectilePatternNamedMixin",
     "EffectEngineRuntimeNamedMixin",
     "EventDataUsageNamedMixin",
     "CustomUnitTransportUnloadNamedMixin",
