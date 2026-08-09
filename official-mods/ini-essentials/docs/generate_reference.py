@@ -54,6 +54,8 @@ SECTION_PALETTES = {
     "event": ("00A6B8", "007C91"),
     # Saturated indigo stays visually distinct while preserving high white-text contrast.
     "geometry": ("5E35B1", "311B92"),
+    # HUD overlays are distinct from native world-render sections.
+    "overlay": ("AD1457", "6A1B4D"),
     "fog": ("455A64", "263238"),
     "math": ("C62828", "8E0000"),
     "effect": ("A64D79", "741B47"),
@@ -103,6 +105,8 @@ def load_rows(source: Path) -> list[dict[str, str]]:
 
 def section_key(section: str) -> str:
     value = section.lower()
+    if "overlay" in value:
+        return "overlay"
     if "[event_" in value:
         return "event"
     if "geometry" in value:
@@ -156,7 +160,7 @@ def make_groups(field_rows: list[dict[str, str]],
     # Keep established workbook navigation stable when a later version adds
     # fields for a section that did not previously have an Essentials group.
     established_order = [
-        "core", "action", "geometry", "fog", "math", "event",
+        "core", "action", "geometry", "overlay", "fog", "math", "event",
         "projectile", "turret",
     ]
     ordered_keys = [key for key in established_order if key in grouped]
@@ -182,6 +186,10 @@ def make_groups(field_rows: list[dict[str, str]],
             section_en, section_zh = "[geometry_NAME]", "[geometry_NAME]"
             summary_en = "Reusable runtime geometry masks for fog and future gameplay consumers"
             summary_zh = "供迷雾及后续玩法功能复用的运行时几何遮罩"
+        elif key == "overlay":
+            section_en, section_zh = "[overlay_NAME]", "[overlay_NAME]"
+            summary_en = "Screen-space HUD primitives driven by live custom-unit instances"
+            summary_zh = "由存活自定义单位实例驱动的屏幕空间 HUD 图元"
         elif key == "fog":
             section_en, section_zh = "[fog_NAME]", "[fog_NAME]"
             summary_en = "Reusable per-team fog operations driven by geometry masks"

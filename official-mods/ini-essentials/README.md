@@ -89,6 +89,40 @@ Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`,
 convention. Invalid domains retain deterministic IEEE float behavior; geometry rejects non-finite
 results before changing gameplay state.
 
+## Screen-space overlays
+
+`[overlay_NAME]` draws a `bar`, `text`, or `image` in HUD coordinates while evaluating dynamic
+values against live instances of the unit type that declared the section. Images use the native
+custom-unit resource path loader; text uses native localization and `%{...}` dynamic text.
+
+```ini
+[overlay_boss]
+type: bar
+anchor: topCenter
+team: enemy
+instanceMode: highestPriority
+priority: self.maxHp
+offsetY: 28
+width: clamp(screenWidth()*0.55,280,640)
+height: 26
+value: self.hp
+maxValue: self.maxHp
+color: #B71C1C
+text: Boss %{self.hp}/%{self.maxHp}
+textColor: #FFFFFF
+```
+
+`instanceCondition` filters units before selection. `instanceMode` can keep `all`, `first`, `last`,
+`highestPriority`, or `lowestPriority`; `maxInstances` applies afterward. `fogVisibility` defaults
+to `visible`, preventing an enemy overlay from exposing units still hidden by fog.
+
+Multi-instance layouts use `indexMode: compact|stable|explicit`. Compact indices close gaps every
+frame, stable indices remain attached to a unit for its lifetime, and explicit layout evaluates the
+dynamic `slot` field. `columns`, `spacingX`, and `spacingY` provide a grid. Dynamic fields and text
+can read `overlayIndex()`, `overlayStableIndex()`, `overlayCount()`, `overlayRow()`,
+`overlayColumn()`, `overlaySlot()`, `overlayUnitId()`, `screenWidth()`, `screenHeight()`, and
+`uiScale()`. These context functions return zero outside overlay evaluation.
+
 ## Dynamic projectile rules
 
 Native projectile mutators keep their tag checks, resource side effects, effect selection, and

@@ -61,6 +61,8 @@ tasks.register('verifyIniEssentialsMetadata') {
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/ProjectileRuleDefinitions.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
+    def overlayFields = file('src/main/java/io/github/endx/iniessentials/OverlayDefinitions.java')
+    def overlayContext = file('src/main/java/io/github/endx/iniessentials/OverlayEvaluationContext.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/FogActionFields.java')
     def mathFields = file('src/main/java/io/github/endx/iniessentials/ExtendedMathFunctions.java')
     def referenceGenerator = file('docs/generate_reference.py')
@@ -69,7 +71,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             eventRuleFields,
             projectileRuleFields,
             booleanExpression,
-            geometryFields, fogFields, mathFields,
+            geometryFields, overlayFields, overlayContext, fogFields, mathFields,
             referenceGenerator, referenceWorkbook
     doLast {
         def rows = catalog.readLines('UTF-8')
@@ -96,13 +98,24 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'projectileRule_NAME_projectile',
                 'projectileRule_NAME_ifCondition',
                 'projectileRule_NAME_ifTargetWithTags',
-                'projectileRule_NAME_ifTargetWithoutTags'
+                'projectileRule_NAME_ifTargetWithoutTags',
+                'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
+                'isVisible', 'instanceCondition', 'priority', 'slot',
+                'maxInstances', 'columns', 'spacingX', 'spacingY', 'alpha',
+                'order', 'image', 'imageSmoothing', 'color', 'backgroundColor',
+                'borderColor', 'borderWidth', 'value', 'maxValue', 'text',
+                'textSize', 'textColor', 'textAlign', 'overlayIndex',
+                'overlayStableIndex', 'overlayCount', 'overlayRow',
+                'overlayColumn', 'overlaySlot', 'overlayUnitId', 'screenWidth',
+                'screenHeight', 'uiScale'
         ] as Set
         def catalogCodes = rows.drop(1).findAll { !it.trim().isEmpty() }.collect {
             it.split(',', 3)[1]
         } as Set
         def cameraSource = cameraFields.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
+        def overlaySource = overlayFields.getText('UTF-8')
+        def overlayContextSource = overlayContext.getText('UTF-8')
         def fogSource = fogFields.getText('UTF-8')
         def mathSource = mathFields.getText('UTF-8')
         def eventRuleSource = file('src/main/java/io/github/endx/iniessentials/EventRuleDefinitions.java').getText('UTF-8')
@@ -125,6 +138,22 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !initializer.getText('UTF-8').contains('BooleanExpression.compile(')
                 || !fogSource.contains('BooleanExpression.compile(')
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
+                || !['anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
+                    'isVisible', 'instanceCondition', 'priority', 'slot',
+                    'maxInstances', 'columns', 'offsetX', 'offsetY', 'spacingX',
+                    'spacingY', 'width', 'height', 'alpha', 'order', 'image',
+                    'imageSmoothing', 'color', 'backgroundColor', 'borderColor',
+                    'borderWidth', 'value', 'maxValue', 'text', 'textSize',
+                    'textColor', 'textAlign'].every {
+                    overlaySource.contains('"' + it + '"')
+                }
+                || !['overlayindex', 'overlaystableindex', 'overlaycount',
+                    'overlayrow', 'overlaycolumn', 'overlayslot', 'overlayunitid',
+                    'screenwidth', 'screenheight', 'uiscale'].every {
+                    overlayContextSource.contains('"' + it + '"')
+                }
+                || !overlaySource.contains('HudRenderEvents.AFTER_HUD')
+                || !overlaySource.contains('metadata.loadImageFromConfigWithSmoothing')
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
                 || !['event', 'phase', 'when', 'cancelEventActions',
                     'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
@@ -202,6 +231,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !generatorSource.contains('"action": ("FF9900", "B45F06")')
                 || !generatorSource.contains('"event": ("00A6B8", "007C91")')
                 || !generatorSource.contains('"geometry": ("5E35B1", "311B92")')
+                || !generatorSource.contains('"overlay": ("AD1457", "6A1B4D")')
                   || !generatorSource.contains('EVENT_INDEX_COLOR = "B2EBF2"')
                   || !generatorSource.contains('SHORTCUT_COLUMNS = 4')
                   || !generatorSource.contains('def inject_navigation_shapes(')
@@ -234,7 +264,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             if (!workbookXml.contains('name="English"')
                     || !workbookXml.contains('name="简体中文"')
                     || !['FF0F9D58', 'FF0D904F', 'FFFF9900', 'FFB45F06',
-                          'FF5E35B1', 'FF311B92'].every {
+                          'FF5E35B1', 'FF311B92', 'FFAD1457', 'FF6A1B4D'].every {
                         stylesXml.contains(it)
                     }
                     || hyperlinkCount < 72
@@ -261,7 +291,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v11'
+                || multiplayer?.protocol != 'ini_essentials_v12'
                 || multiplayer?.syncHash != digest
                 || !initializer.getText('UTF-8').contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')
