@@ -445,8 +445,8 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
 
     private String runGameProbe(int width, int height) throws IOException {
         File desktopRoot = DesktopGameImportService.importedRoot(this);
-        // Imports deliberately omit user saves and mods. Recreate the empty writable layout on
-        // every launch as a repair path for older imports and folders removed by the user.
+        // The initial desktop import deliberately omits user saves and mods. Recreate the writable
+        // layout on every launch as a repair path; launcher-managed content remains in these dirs.
         DesktopGameLayout.prepareWritableDirectories(desktopRoot.toPath());
         File launcherDirectory = new File(new File(getFilesDir(), "desktop-jvm"), "launcher");
         if (!launcherDirectory.isDirectory() && !launcherDirectory.mkdirs()) {

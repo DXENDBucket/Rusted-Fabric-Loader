@@ -28,6 +28,7 @@ public final class JvmLauncherCoreVerification {
                             && Files.isDirectory(game.resolve("mods/units"))
                             && Files.isDirectory(game.resolve("replays")),
                     "Writable desktop game directories were not prepared");
+            verifyManagedContentLibrary(temporary, game);
 
             Path runtime = createRuntime(temporary.resolve("runtime"));
             Path loader = Files.createDirectories(temporary.resolve("loader"));
@@ -231,6 +232,81 @@ public final class JvmLauncherCoreVerification {
         return root;
     }
 
+    private static void verifyManagedContentLibrary(Path temporary, Path game) throws Exception {
+        ManagedContentLibrary.prepare(game);
+
+        Path map = temporary.resolve("challenge.tmx");
+        Files.write(map, "<map/>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        ManagedContentLibrary.Item importedMap = ManagedContentLibrary.importContent(game,
+                ManagedContentLibrary.Kind.MAP, map, "Challenge map");
+        require(importedMap.enabled()
+                        && ManagedContentLibrary.list(game, ManagedContentLibrary.Kind.MAP).size() == 1,
+                "Map import was not listed");
+        importedMap = ManagedContentLibrary.setEnabled(game, importedMap, false);
+        require(!importedMap.enabled() && Files.isRegularFile(
+                        game.resolve("mods-disabled/maps/challenge.tmx")),
+                "Map disable did not leave the native scan directory");
+
+        Path iniArchive = temporary.resolve("units.rwmod");
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(iniArchive))) {
+            addArchiveFile(zip, "wrapped/mod-info.txt", "[mod]".getBytes(
+                    java.nio.charset.StandardCharsets.UTF_8));
+            addArchiveFile(zip, "wrapped/tank.ini", "[core]".getBytes(
+                    java.nio.charset.StandardCharsets.UTF_8));
+        }
+        ManagedContentLibrary.Item ini = ManagedContentLibrary.importContent(game,
+                ManagedContentLibrary.Kind.INI_MOD, iniArchive, "Unit pack");
+        require("Unit pack".equals(ini.name()) && Files.isRegularFile(ini.path().resolve("tank.ini")),
+                "INI archive import did not flatten and identify its wrapper");
+
+        Path thirdParty = temporary.resolve("third-party.javamod");
+        createFabricModJar(thirdParty, "third_party", "Third Party", "1.2.3");
+        ManagedContentLibrary.Item javaMod = ManagedContentLibrary.importContent(game,
+                ManagedContentLibrary.Kind.JAVA_MOD, thirdParty, "ignored");
+        require("third_party".equals(javaMod.id()) && javaMod.enabled(),
+                "Java mod metadata import failed");
+        javaMod = ManagedContentLibrary.setEnabled(game, javaMod, false);
+        require(!javaMod.enabled() && javaMod.path().startsWith(game.resolve("javamods-disabled")),
+                "Java mod disable did not leave Fabric discovery");
+
+        Path api = temporary.resolve("api.jar");
+        createFabricModJar(api, "rusted_fabric_api", "Rusted Fabric API", "0.1.0");
+        ManagedContentLibrary.Item officialApi = ManagedContentLibrary.provisionOfficialJavaMod(
+                game, api, "rusted_fabric_api", true, true);
+        require(officialApi.official() && officialApi.locked() && officialApi.enabled(),
+                "Bundled API was not provisioned as a locked official component");
+
+        Path essentials = temporary.resolve("essentials.jar");
+        createFabricModJar(essentials, "ini_essentials", "INI Essentials", "0.1.0");
+        ManagedContentLibrary.Item officialIni = ManagedContentLibrary.provisionOfficialJavaMod(
+                game, essentials, "ini_essentials", false, false);
+        require(officialIni.official() && !officialIni.enabled(),
+                "INI Essentials was not installed disabled by default");
+        officialIni = ManagedContentLibrary.setEnabled(game, officialIni, true);
+        ManagedContentLibrary.Item updatedIni = ManagedContentLibrary.provisionOfficialJavaMod(
+                game, essentials, "ini_essentials", false, false);
+        require(updatedIni.enabled(), "Official mod update did not preserve user enable state");
+
+        ManagedContentLibrary.delete(game, javaMod);
+        require(ManagedContentLibrary.list(game, ManagedContentLibrary.Kind.JAVA_MOD).stream()
+                        .noneMatch(item -> "third_party".equals(item.id())),
+                "Managed Java mod delete failed");
+
+        Path malicious = temporary.resolve("content-traversal.zip");
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(malicious))) {
+            addArchiveFile(zip, "../escaped.tmx", new byte[]{1});
+        }
+        boolean rejected = false;
+        try {
+            ManagedContentLibrary.importContent(game, ManagedContentLibrary.Kind.MAP,
+                    malicious, "malicious");
+        } catch (IOException expected) {
+            rejected = expected.getMessage().contains("traversal");
+        }
+        require(rejected && !Files.exists(game.resolve("mods/escaped.tmx")),
+                "Managed-content archive traversal was not rejected");
+    }
+
     private static byte[] runtimeRelease(String osName) {
         return ("JAVA_VERSION=\"17.0.12\"\nOS_ARCH=\"aarch64\"\nOS_NAME=\""
                 + osName + "\"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -240,6 +316,17 @@ public final class JvmLauncherCoreVerification {
         try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(output))) {
             zip.putNextEntry(new ZipEntry(entryName));
             zip.write(new byte[]{0});
+            zip.closeEntry();
+        }
+    }
+
+    private static void createFabricModJar(Path output, String id, String name, String version)
+            throws IOException {
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(output))) {
+            zip.putNextEntry(new ZipEntry("fabric.mod.json"));
+            String json = "{\"schemaVersion\":1,\"id\":\"" + id + "\",\"name\":\""
+                    + name + "\",\"version\":\"" + version + "\"}";
+            zip.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             zip.closeEntry();
         }
     }

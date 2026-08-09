@@ -180,6 +180,72 @@
                 android:textColor="@color/rf_text_primary" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/content_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/panel_background"
+            android:orientation="vertical"
+            android:padding="18dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/content_library_title"
+                android:textColor="@color/rf_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/content_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/content_summary_empty"
+                android:textColor="@color/rf_text_secondary"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/manage_ini_mods_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="@color/rf_control"
+                android:text="@string/content_manage_ini"
+                android:textAllCaps="false"
+                android:textColor="@color/rf_text_primary" />
+
+            <Button
+                android:id="@+id/manage_maps_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/rf_control"
+                android:text="@string/content_manage_maps"
+                android:textAllCaps="false"
+                android:textColor="@color/rf_text_primary" />
+
+            <Button
+                android:id="@+id/manage_java_mods_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/rf_control"
+                android:text="@string/content_manage_java"
+                android:textAllCaps="false"
+                android:textColor="@color/rf_text_primary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/content_official_note"
+                android:textColor="@color/rf_text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/advanced_button"
             style="?android:attr/buttonStyleSmall"

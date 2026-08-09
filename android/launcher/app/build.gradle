@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.launcher'
         minSdk 27
         targetSdk 35
-        versionCode 10
-        versionName '0.11.0-preview'
+        versionCode 11
+        versionName '0.12.0-preview'
 
         ndk {
             abiFilters 'arm64-v8a'
@@ -79,6 +79,7 @@ def generatedLwjglAssets = layout.buildDirectory.dir('generated/lwjglAssets')
 def generatedLwjglNatives = layout.buildDirectory.dir('generated/lwjglNatives')
 def generatedRocketSources = layout.buildDirectory.dir('generated/rocketSources')
 def generatedComplianceAssets = layout.buildDirectory.dir('generated/complianceAssets')
+def generatedOfficialModAssets = layout.buildDirectory.dir('generated/officialModAssets')
 
 def lwjglAndroidRevision = 'b12ad048157b3aa255d078c235dd4571e1900309'
 def lwjglAndroidBase = "https://raw.githubusercontent.com/PojavLauncherTeam/PojavLauncher/${lwjglAndroidRevision}/"
@@ -147,7 +148,50 @@ android.sourceSets.main.assets.srcDir(generatedJvmLauncherAssets)
 android.sourceSets.main.assets.srcDir(generatedLwjglCompatAssets)
 android.sourceSets.main.assets.srcDir(generatedLwjglAssets)
 android.sourceSets.main.assets.srcDir(generatedComplianceAssets)
+android.sourceSets.main.assets.srcDir(generatedOfficialModAssets)
 android.sourceSets.main.jniLibs.srcDir(generatedLwjglNatives)
+
+def repositoryRoot = rootProject.file('../..')
+def repositoryBuildText = new File(repositoryRoot, 'build.gradle').getText('UTF-8')
+def repositoryVersionMatch = repositoryBuildText =~ /(?m)^version = '([^']+)'$/
+if (!repositoryVersionMatch.find()) {
+    throw new GradleException('Could not determine the Rusted Fabric repository version')
+}
+def repositoryVersion = repositoryVersionMatch.group(1)
+def officialApiJar = repositoryRoot.toPath().resolve(
+        "rusted-fabric-api/build/libs/official/rusted-fabric-api-${repositoryVersion}.jar").toFile()
+def officialMenuJar = repositoryRoot.toPath().resolve(
+        "official-mods/java-mod-menu/build/libs/java-mod-menu-${repositoryVersion}-official.jar").toFile()
+def officialIniJar = repositoryRoot.toPath().resolve(
+        "official-mods/ini-essentials/build/libs/ini-essentials-${repositoryVersion}-official.jar").toFile()
+
+tasks.register('buildOfficialModAssets', Exec) {
+    group = 'build setup'
+    description = 'Builds the same official Java mods offered by the Windows installer.'
+    workingDir repositoryRoot
+    commandLine System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('win')
+            ? [new File(repositoryRoot, 'gradlew.bat').absolutePath,
+               ':rusted-fabric-api:remapJarToOfficial',
+               ':official-mods:java-mod-menu:remapJarToOfficial',
+               ':official-mods:ini-essentials:remapJarToOfficial']
+            : [new File(repositoryRoot, 'gradlew').absolutePath,
+               ':rusted-fabric-api:remapJarToOfficial',
+               ':official-mods:java-mod-menu:remapJarToOfficial',
+               ':official-mods:ini-essentials:remapJarToOfficial']
+    inputs.files(fileTree(new File(repositoryRoot, 'rusted-fabric-api/src')),
+            fileTree(new File(repositoryRoot, 'official-mods/java-mod-menu/src')),
+            fileTree(new File(repositoryRoot, 'official-mods/ini-essentials/src')),
+            new File(repositoryRoot, 'src/main/resources/mappings/mappings.tiny'))
+    outputs.files(officialApiJar, officialMenuJar, officialIniJar)
+}
+
+tasks.register('prepareOfficialModAssets', Copy) {
+    dependsOn tasks.named('buildOfficialModAssets')
+    into(generatedOfficialModAssets.map { it.dir('rusted-fabric/official-mods') })
+    from(officialApiJar) { rename { 'rusted-fabric-api.jar' } }
+    from(officialMenuJar) { rename { 'java-mod-menu.jar' } }
+    from(officialIniJar) { rename { 'ini-essentials.jar' } }
+}
 
 tasks.register('prepareComplianceAssets') {
     group = 'build setup'
@@ -432,6 +476,7 @@ tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareLwjglAndroidRuntime')
     dependsOn tasks.named('prepareRocketSources')
     dependsOn tasks.named('prepareComplianceAssets')
+    dependsOn tasks.named('prepareOfficialModAssets')
 }
 
 tasks.register('verifyGplReleaseReady') {
@@ -486,6 +531,8 @@ tasks.register('verifyNoGamePayload') {
         def gplLicenseFound = false
         def sourceOfferFound = false
         def thirdPartyNoticesFound = false
+        def officialModsFound = 0
+        def officialModIds = [] as Set
         new java.util.zip.ZipFile(apk).withCloseable { zip ->
             zip.entries().each { entry ->
                 def lower = entry.name.toLowerCase(Locale.ROOT)
@@ -526,6 +573,33 @@ tasks.register('verifyNoGamePayload') {
                         'assets/rusted-fabric/SOURCE_OFFER.md'
                 thirdPartyNoticesFound |= entry.name ==
                         'assets/rusted-fabric/THIRD_PARTY_NOTICES.md'
+                if (entry.name.startsWith('assets/rusted-fabric/official-mods/')
+                        && entry.name.endsWith('.jar')) {
+                    officialModsFound++
+                    zip.getInputStream(entry).withCloseable { nestedRaw ->
+                        new java.util.zip.ZipInputStream(nestedRaw).withCloseable { nested ->
+                            java.util.zip.ZipEntry nestedEntry
+                            while ((nestedEntry = nested.nextEntry) != null) {
+                                String nestedName = nestedEntry.name.toLowerCase(Locale.ROOT)
+                                if (nestedName.startsWith('com/corrodinggames/')
+                                        || nestedName.endsWith('game-lib.jar')) {
+                                    forbidden.add("${entry.name}!/${nestedEntry.name}")
+                                }
+                                if (nestedEntry.name == 'fabric.mod.json') {
+                                    def metadataBytes = new java.io.ByteArrayOutputStream()
+                                    byte[] metadataBuffer = new byte[8192]
+                                    int metadataRead
+                                    while ((metadataRead = nested.read(metadataBuffer)) >= 0) {
+                                        metadataBytes.write(metadataBuffer, 0, metadataRead)
+                                    }
+                                    def metadata = new groovy.json.JsonSlurper().parseText(
+                                            metadataBytes.toString('UTF-8'))
+                                    officialModIds.add(metadata.id)
+                                }
+                            }
+                        }
+                    }
+                }
                 if (lower.endsWith('.dex')) {
                     def bytes
                     zip.getInputStream(entry).withCloseable { input ->
@@ -554,6 +628,10 @@ tasks.register('verifyNoGamePayload') {
                 || !pojavExecFound || !rocketConnectorFound || rendererLicensesFound < 9
                 || !androidGplLicenseFound || !gplLicenseFound
                 || !sourceOfferFound || !thirdPartyNoticesFound) {
+            throw new GradleException('Android launcher APK is missing a required JVM component')
+        }
+        if (officialModsFound != 3 || officialModIds != [
+                'rusted_fabric_api', 'java_mod_menu', 'ini_essentials'] as Set) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
         if (!forbidden.isEmpty()) {

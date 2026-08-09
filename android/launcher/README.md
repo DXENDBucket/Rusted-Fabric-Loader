@@ -8,6 +8,12 @@ The launcher imports a desktop game ZIP or directory and a Linux/AArch64 Java 17
 application-private storage. Its ARM64 host supplies the Android Surface, LWJGL2/GL4ES, OpenAL,
 input, and libRocket compatibility layers required by the desktop game.
 
+After setup, the same screen becomes a persistent content library. It imports and lists INI mods,
+custom maps, ordinary Fabric Jars, and `.javamod` packages. Maps and Java mods can be enabled or
+disabled without rewriting them; disabled files are moved outside the game/Fabric scan paths. The
+APK supplies the same official Rusted Fabric API and Java Mod Menu selected by default on Windows,
+plus INI Essentials installed disabled by default. None of these Jars contains the game itself.
+
 The application contains only Loader-owned code and reviewed third-party runtime components.
 `verifyNoGamePayload` rejects APKs that contain Rusted Warfare classes or game payloads.
 
@@ -47,7 +53,8 @@ archive. See [`SOURCE_OFFER.md`](SOURCE_OFFER.md) for the packaged template.
 ## Active modules
 
 - `app`: Android setup UI, isolated JVM process, Surface/input bridge, and native runtime adapters.
-- `android/jvm-launcher-core`: desktop-file import and immutable JVM launch planning.
+- `android/jvm-launcher-core`: desktop-file import, managed content storage, and immutable JVM
+  launch planning.
 - `android/jvm-game-provider`: self-contained Fabric GameProvider launcher asset.
 - `android/lwjgl2-compat`: Java-side LWJGL2 and touch compatibility classes.
 

@@ -27,6 +27,12 @@ artifacts.
   excluded.
 - Imports are staged, validated, and atomically activated. A failed import leaves the previous
   verified copy intact.
+- After activation, the setup UI becomes a persistent content library for INI mods, custom maps,
+  Fabric Jars, and `.javamod` files. Map and Java-mod disable operations move content to private
+  non-scan directories and never rewrite the imported package.
+- The APK provisions Rusted Fabric API and Java Mod Menu enabled, matching the default Windows
+  install, and provisions INI Essentials disabled. Official updates preserve the user's later
+  enable state, while the required API is locked enabled.
 - ZIP path traversal, ambiguous names, duplicate outputs, multiple game roots, excessive expansion,
   excessive size/file count, and deep nesting are rejected. Path-containment checks also protect the
   private import area.
@@ -150,10 +156,9 @@ and ARM64 libRocket path are implemented, and the game reaches playable matches 
 device. Current milestones are:
 
 1. finish mobile-quality menu scrolling, controls, scaling, and display-cutout behavior;
-2. validate saves, custom maps, audio, multiplayer discovery, and longer sessions;
+2. validate saves, managed custom-map/mod imports, audio, multiplayer discovery, and longer sessions;
 3. add a user-friendly Java-runtime acquisition flow with reviewed licenses and pinned hashes;
-4. add ordinary Fabric mod import/management for the shared desktop mod format;
-5. broaden device/GPU coverage beyond the current ARM64 test phone.
+4. broaden device/GPU coverage beyond the current ARM64 test phone.
 
 The retired native Android APK backends are archived under `legacy/` and are not fallback paths.
 
