@@ -85,6 +85,7 @@ import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.lwjgl.vulkan.VkWin32SurfaceCreateInfoKHR;
 import org.lwjgl.system.windows.User32;
 import org.lwjgl.system.windows.POINT;
+import org.lwjgl.system.windows.MSG;
 import org.lwjgl.system.windows.WNDCLASSEX;
 import org.lwjgl.system.windows.WindowProc;
 
@@ -481,11 +482,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         IntBuffer modes = stack.mallocInt(count.get(0));
         check(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, modes),
                 "vkGetPhysicalDeviceSurfacePresentModesKHR(list)");
-        for (int index = 0; index < count.get(0); index++) {
-            if (modes.get(index) == VK_PRESENT_MODE_MAILBOX_KHR) {
-                return VK_PRESENT_MODE_MAILBOX_KHR;
-            }
-        }
+        // FIFO is mandatory and behaves consistently for the non-activating Win32 overlay.
+        // MAILBOX can keep all images owned by the compositor when the WGL owner is redrawn
+        // underneath it, leaving this serialized baseline in a permanent acquire timeout.
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
@@ -588,9 +587,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             } else if (registeredInstance != instance) {
                 throw new IllegalStateException("Vulkan overlay HINSTANCE changed");
             }
-            int extendedStyle = User32.WS_EX_TRANSPARENT | User32.WS_EX_NOACTIVATE
-                    | User32.WS_EX_TOOLWINDOW;
+            // WM_NCHITTEST already passes pointer input through to the game. WS_EX_TRANSPARENT is
+            // intentionally not used: DWM may then classify the Vulkan popup as occluded behind
+            // its WGL owner and retain every swapchain image after the first present.
+            int extendedStyle = User32.WS_EX_NOACTIVATE | User32.WS_EX_TOOLWINDOW;
             int style = User32.WS_POPUP | User32.WS_VISIBLE;
+            boolean detached = Boolean.getBoolean(
+                    "rusted.fabric.vulkan.debugDetachedOverlay");
             int x;
             int y;
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -603,7 +606,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 y = origin.y();
             }
             long window = User32.CreateWindowEx(null, extendedStyle, CLASS_NAME, "",
-                    style, x, y, request.width(), request.height(), request.windowHandle(),
+                    style, x, y, request.width(), request.height(),
+                    detached ? 0L : request.windowHandle(),
                     0L, instance, 0L);
             if (window == 0L) {
                 throw new IllegalStateException("CreateWindowEx(Vulkan overlay) failed");
@@ -612,14 +616,21 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     request.width(), request.height(), User32.SWP_NOACTIVATE
                             | User32.SWP_SHOWWINDOW | User32.SWP_NOMOVE);
             User32.ShowWindow(window, User32.SW_SHOWNOACTIVATE);
-            return new Win32OverlayWindow(window, request.windowHandle(),
+            User32.UpdateWindow(window);
+            if (detached) {
+                System.out.println("[Vulkan Mod/Driver] Using detached Win32 overlay diagnostic");
+            }
+            Win32OverlayWindow result = new Win32OverlayWindow(window, request.windowHandle(),
                     request.width(), request.height(), x, y);
+            result.pumpMessages();
+            return result;
         }
 
         private void resize(int requestedWidth, int requestedHeight) {
             int nextWidth = Math.max(1, requestedWidth);
             int nextHeight = Math.max(1, requestedHeight);
             if (closed) return;
+            pumpMessages();
             if (!User32.IsWindowVisible(parentHandle) || User32.IsIconic(parentHandle)) {
                 User32.ShowWindow(handle, User32.SW_HIDE);
                 return;
@@ -633,7 +644,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 nextY = origin.y();
             }
             User32.ShowWindow(handle, User32.SW_SHOWNOACTIVATE);
-            if (nextWidth == width && nextHeight == height && nextX == x && nextY == y) return;
+            // Slick swaps its WGL surface immediately before this call. Reassert the popup order
+            // even when its rectangle did not change so that Vulkan remains above the owner.
             if (!User32.SetWindowPos(null, handle, User32.HWND_TOP, nextX, nextY,
                     nextWidth, nextHeight,
                     User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW)) {
@@ -643,6 +655,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             height = nextHeight;
             x = nextX;
             y = nextY;
+        }
+
+        private void pumpMessages() {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                MSG message = MSG.calloc(stack);
+                while (User32.PeekMessage(message, handle, 0, 0, User32.PM_REMOVE)) {
+                    User32.TranslateMessage(message);
+                    User32.DispatchMessage(message);
+                }
+            }
         }
 
         private void close() {
