@@ -10,9 +10,16 @@ public final class VulkanColoredQuad {
     private final float green;
     private final float blue;
     private final float alpha;
+    private final VulkanDrawState state;
 
     public VulkanColoredQuad(float x, float y, float width, float height,
                              float red, float green, float blue, float alpha) {
+        this(x, y, width, height, red, green, blue, alpha, VulkanDrawState.DEFAULT);
+    }
+
+    public VulkanColoredQuad(float x, float y, float width, float height,
+                             float red, float green, float blue, float alpha,
+                             VulkanDrawState state) {
         requireFinite("x", x);
         requireFinite("y", y);
         requireFinite("width", width);
@@ -26,6 +33,7 @@ public final class VulkanColoredQuad {
         if (width < 0.0f || height < 0.0f) {
             throw new IllegalArgumentException("quad width and height must be non-negative");
         }
+        if (state == null) throw new NullPointerException("state");
         this.x = x;
         this.y = y;
         this.width = width;
@@ -34,6 +42,7 @@ public final class VulkanColoredQuad {
         this.green = clamp(green);
         this.blue = clamp(blue);
         this.alpha = clamp(alpha);
+        this.state = state;
     }
 
     public float x() { return x; }
@@ -44,6 +53,7 @@ public final class VulkanColoredQuad {
     public float green() { return green; }
     public float blue() { return blue; }
     public float alpha() { return alpha; }
+    public VulkanDrawState state() { return state; }
 
     private static float clamp(float value) {
         return Math.max(0.0f, Math.min(1.0f, value));

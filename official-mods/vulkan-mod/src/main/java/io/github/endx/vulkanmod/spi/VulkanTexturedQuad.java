@@ -15,11 +15,21 @@ public final class VulkanTexturedQuad {
     private final float green;
     private final float blue;
     private final float alpha;
+    private final VulkanDrawState state;
 
     public VulkanTexturedQuad(long textureHandle,
                               float x, float y, float width, float height,
                               float u0, float v0, float u1, float v1,
                               float red, float green, float blue, float alpha) {
+        this(textureHandle, x, y, width, height, u0, v0, u1, v1,
+                red, green, blue, alpha, VulkanDrawState.DEFAULT);
+    }
+
+    public VulkanTexturedQuad(long textureHandle,
+                              float x, float y, float width, float height,
+                              float u0, float v0, float u1, float v1,
+                              float red, float green, float blue, float alpha,
+                              VulkanDrawState state) {
         if (textureHandle <= 0L) throw new IllegalArgumentException("invalid texture handle");
         requireFinite("x", x);
         requireFinite("y", y);
@@ -38,6 +48,7 @@ public final class VulkanTexturedQuad {
         if (width < 0.0f || height < 0.0f) {
             throw new IllegalArgumentException("quad width and height must be non-negative");
         }
+        if (state == null) throw new NullPointerException("state");
         this.textureHandle = textureHandle;
         this.x = x;
         this.y = y;
@@ -51,6 +62,7 @@ public final class VulkanTexturedQuad {
         this.green = clamp(green);
         this.blue = clamp(blue);
         this.alpha = clamp(alpha);
+        this.state = state;
     }
 
     public long textureHandle() { return textureHandle; }
@@ -66,6 +78,7 @@ public final class VulkanTexturedQuad {
     public float green() { return green; }
     public float blue() { return blue; }
     public float alpha() { return alpha; }
+    public VulkanDrawState state() { return state; }
 
     private static float clamp(float value) {
         return Math.max(0.0f, Math.min(1.0f, value));

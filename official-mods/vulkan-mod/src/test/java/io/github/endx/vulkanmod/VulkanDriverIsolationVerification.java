@@ -5,6 +5,9 @@ import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanClipRect;
+import io.github.endx.vulkanmod.spi.VulkanDrawState;
+import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +23,14 @@ public final class VulkanDriverIsolationVerification {
         if (texture.copyRgba()[0] != (byte) 255) {
             throw new AssertionError("texture upload data is externally mutable");
         }
+        VulkanTransform2D transform = VulkanTransform2D.translation(10.0f, 20.0f)
+                .then(VulkanTransform2D.scale(2.0f, 3.0f));
+        if (transform.transformX(5.0f, 7.0f) != 30.0f
+                || transform.transformY(5.0f, 7.0f) != 81.0f) {
+            throw new AssertionError("affine transform composition order is invalid");
+        }
+        VulkanDrawState drawState = new VulkanDrawState(transform,
+                new VulkanClipRect(0.0f, 0.0f, 640.0f, 360.0f));
         VulkanFrameCommands commands = VulkanFrameCommands.builder(1280, 720)
                 .clear(0.1f, 0.2f, 0.3f, 1.0f)
                 .coloredQuad(new VulkanColoredQuad(
@@ -27,12 +38,13 @@ public final class VulkanDriverIsolationVerification {
                 .texturedQuad(new VulkanTexturedQuad(7L,
                         30.0f, 40.0f, 64.0f, 64.0f,
                         0.0f, 0.0f, 1.0f, 1.0f,
-                        1.0f, 1.0f, 1.0f, 1.0f))
+                        1.0f, 1.0f, 1.0f, 1.0f, drawState))
                 .build();
         if (commands.coloredQuads().size() != 1
                 || commands.coloredQuads().get(0).alpha() != 0.75f
                 || commands.texturedQuads().size() != 1
-                || commands.texturedQuads().get(0).textureHandle() != 7L) {
+                || commands.texturedQuads().get(0).textureHandle() != 7L
+                || commands.texturedQuads().get(0).state().clip() == null) {
             throw new AssertionError("binding-neutral frame command contract is invalid");
         }
         try {

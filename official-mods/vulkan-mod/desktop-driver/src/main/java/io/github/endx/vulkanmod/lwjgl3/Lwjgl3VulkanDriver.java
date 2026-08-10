@@ -2,9 +2,11 @@ package io.github.endx.vulkanmod.lwjgl3;
 
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import io.github.endx.vulkanmod.spi.VulkanPlatformDriver;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
@@ -1204,17 +1206,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             .width(info.width()).height(info.height())
                             .minDepth(0.0f).maxDepth(1.0f);
                     vkCmdSetViewport(commandBuffer, 0, viewport);
-                    VkRect2D.Buffer scissor = VkRect2D.calloc(1, stack);
-                    scissor.get(0).offset().x(0).y(0);
-                    scissor.get(0).extent().width(info.width()).height(info.height());
-                    vkCmdSetScissor(commandBuffer, 0, scissor);
                 }
-                if (upload.coloredVertexCount > 0) {
+                if (!upload.coloredBatches.isEmpty()) {
                     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             colorPipeline);
                     vkCmdBindVertexBuffers(commandBuffer, 0,
                             stack.longs(vertexBuffer), stack.longs(0L));
-                    vkCmdDraw(commandBuffer, upload.coloredVertexCount, 1, 0, 0);
+                    for (ColoredDrawBatch batch : upload.coloredBatches) {
+                        if (setScissor(commandBuffer, batch.clip, stack)) {
+                            vkCmdDraw(commandBuffer, batch.vertexCount, 1,
+                                    batch.firstVertex, 0);
+                        }
+                    }
                 }
                 if (!upload.textureBatches.isEmpty()) {
                     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1222,9 +1225,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer),
                             stack.longs(upload.texturedByteOffset));
                     for (TextureDrawBatch batch : upload.textureBatches) {
-                        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                texturePipelineLayout, 0, stack.longs(batch.descriptorSet), null);
-                        vkCmdDraw(commandBuffer, batch.vertexCount, 1, batch.firstVertex, 0);
+                        if (setScissor(commandBuffer, batch.clip, stack)) {
+                            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    texturePipelineLayout, 0,
+                                    stack.longs(batch.descriptorSet), null);
+                            vkCmdDraw(commandBuffer, batch.vertexCount, 1, batch.firstVertex, 0);
+                        }
                     }
                 }
                 vkCmdEndRenderPass(commandBuffer);
@@ -1257,7 +1263,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             int coloredBytes = Math.multiplyExact(coloredVertexCount, VERTEX_STRIDE);
             int texturedBytes = Math.multiplyExact(texturedVertexCount, TEXTURED_VERTEX_STRIDE);
             int totalBytes = Math.addExact(coloredBytes, texturedBytes);
-            FrameUpload result = new FrameUpload(coloredVertexCount, coloredBytes);
+            FrameUpload result = new FrameUpload(coloredBytes);
             if (totalBytes == 0) return result;
             ensureVertexCapacity(totalBytes, stack);
             PointerBuffer mapped = stack.mallocPointer(1);
@@ -1267,17 +1273,27 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 ByteBuffer coloredSlice = bytes.duplicate();
                 coloredSlice.limit(coloredBytes);
                 FloatBuffer coloredVertices = coloredSlice.slice().asFloatBuffer();
+                ColoredDrawBatch coloredBatch = null;
+                int coloredFirstVertex = 0;
                 for (VulkanColoredQuad quad : frame.coloredQuads()) {
-                    float left = pixelToNdcX(quad.x(), frame.width());
-                    float right = pixelToNdcX(quad.x() + quad.width(), frame.width());
-                    float top = pixelToNdcY(quad.y(), frame.height());
-                    float bottom = pixelToNdcY(quad.y() + quad.height(), frame.height());
-                    putVertex(coloredVertices, left, top, quad);
-                    putVertex(coloredVertices, left, bottom, quad);
-                    putVertex(coloredVertices, right, bottom, quad);
-                    putVertex(coloredVertices, left, top, quad);
-                    putVertex(coloredVertices, right, bottom, quad);
-                    putVertex(coloredVertices, right, top, quad);
+                    VulkanClipRect clip = quad.state().clip();
+                    if (coloredBatch == null || !sameClip(coloredBatch.clip, clip)) {
+                        coloredBatch = new ColoredDrawBatch(clip, coloredFirstVertex);
+                        result.coloredBatches.add(coloredBatch);
+                    }
+                    VulkanTransform2D transform = quad.state().transform();
+                    float left = quad.x();
+                    float right = quad.x() + quad.width();
+                    float top = quad.y();
+                    float bottom = quad.y() + quad.height();
+                    putVertex(coloredVertices, transform, left, top, frame, quad);
+                    putVertex(coloredVertices, transform, left, bottom, frame, quad);
+                    putVertex(coloredVertices, transform, right, bottom, frame, quad);
+                    putVertex(coloredVertices, transform, left, top, frame, quad);
+                    putVertex(coloredVertices, transform, right, bottom, frame, quad);
+                    putVertex(coloredVertices, transform, right, top, frame, quad);
+                    coloredBatch.vertexCount += 6;
+                    coloredFirstVertex += 6;
                 }
 
                 ByteBuffer texturedSlice = bytes.duplicate();
@@ -1292,21 +1308,29 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 "unknown texture handle: " + quad.textureHandle());
                     }
                     if (currentBatch == null
-                            || currentBatch.textureHandle != quad.textureHandle()) {
+                            || currentBatch.textureHandle != quad.textureHandle()
+                            || !sameClip(currentBatch.clip, quad.state().clip())) {
                         currentBatch = new TextureDrawBatch(quad.textureHandle(),
-                                texture.descriptorSet, firstVertex);
+                                texture.descriptorSet, quad.state().clip(), firstVertex);
                         result.textureBatches.add(currentBatch);
                     }
-                    float left = pixelToNdcX(quad.x(), frame.width());
-                    float right = pixelToNdcX(quad.x() + quad.width(), frame.width());
-                    float top = pixelToNdcY(quad.y(), frame.height());
-                    float bottom = pixelToNdcY(quad.y() + quad.height(), frame.height());
-                    putTexturedVertex(texturedVertices, left, top, quad.u0(), quad.v0(), quad);
-                    putTexturedVertex(texturedVertices, left, bottom, quad.u0(), quad.v1(), quad);
-                    putTexturedVertex(texturedVertices, right, bottom, quad.u1(), quad.v1(), quad);
-                    putTexturedVertex(texturedVertices, left, top, quad.u0(), quad.v0(), quad);
-                    putTexturedVertex(texturedVertices, right, bottom, quad.u1(), quad.v1(), quad);
-                    putTexturedVertex(texturedVertices, right, top, quad.u1(), quad.v0(), quad);
+                    VulkanTransform2D transform = quad.state().transform();
+                    float left = quad.x();
+                    float right = quad.x() + quad.width();
+                    float top = quad.y();
+                    float bottom = quad.y() + quad.height();
+                    putTexturedVertex(texturedVertices, transform, left, top,
+                            quad.u0(), quad.v0(), frame, quad);
+                    putTexturedVertex(texturedVertices, transform, left, bottom,
+                            quad.u0(), quad.v1(), frame, quad);
+                    putTexturedVertex(texturedVertices, transform, right, bottom,
+                            quad.u1(), quad.v1(), frame, quad);
+                    putTexturedVertex(texturedVertices, transform, left, top,
+                            quad.u0(), quad.v0(), frame, quad);
+                    putTexturedVertex(texturedVertices, transform, right, bottom,
+                            quad.u1(), quad.v1(), frame, quad);
+                    putTexturedVertex(texturedVertices, transform, right, top,
+                            quad.u1(), quad.v0(), frame, quad);
                     currentBatch.vertexCount += 6;
                     firstVertex += 6;
                 }
@@ -1367,16 +1391,46 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return 1.0f - value * 2.0f / height;
         }
 
-        private static void putVertex(FloatBuffer output, float x, float y,
+        private static void putVertex(FloatBuffer output, VulkanTransform2D transform,
+                                      float x, float y, VulkanFrameCommands frame,
                                       VulkanColoredQuad quad) {
-            output.put(x).put(y).put(quad.red()).put(quad.green())
+            float transformedX = transform.transformX(x, y);
+            float transformedY = transform.transformY(x, y);
+            output.put(pixelToNdcX(transformedX, frame.width()))
+                    .put(pixelToNdcY(transformedY, frame.height()))
+                    .put(quad.red()).put(quad.green())
                     .put(quad.blue()).put(quad.alpha());
         }
 
-        private static void putTexturedVertex(FloatBuffer output, float x, float y,
-                                              float u, float v, VulkanTexturedQuad quad) {
-            output.put(x).put(y).put(u).put(v)
+        private static void putTexturedVertex(FloatBuffer output, VulkanTransform2D transform,
+                                              float x, float y, float u, float v,
+                                              VulkanFrameCommands frame,
+                                              VulkanTexturedQuad quad) {
+            float transformedX = transform.transformX(x, y);
+            float transformedY = transform.transformY(x, y);
+            output.put(pixelToNdcX(transformedX, frame.width()))
+                    .put(pixelToNdcY(transformedY, frame.height())).put(u).put(v)
                     .put(quad.red()).put(quad.green()).put(quad.blue()).put(quad.alpha());
+        }
+
+        private boolean setScissor(VkCommandBuffer commandBuffer, VulkanClipRect clip,
+                                   MemoryStack stack) {
+            int left = clip == null ? 0 : Math.max(0, (int) Math.floor(clip.x()));
+            int top = clip == null ? 0 : Math.max(0, (int) Math.floor(clip.y()));
+            int right = clip == null ? info.width()
+                    : Math.min(info.width(), (int) Math.ceil(clip.x() + clip.width()));
+            int bottom = clip == null ? info.height()
+                    : Math.min(info.height(), (int) Math.ceil(clip.y() + clip.height()));
+            if (right <= left || bottom <= top) return false;
+            VkRect2D.Buffer scissor = VkRect2D.calloc(1, stack);
+            scissor.get(0).offset().x(left).y(top);
+            scissor.get(0).extent().width(right - left).height(bottom - top);
+            vkCmdSetScissor(commandBuffer, 0, scissor);
+            return true;
+        }
+
+        private static boolean sameClip(VulkanClipRect first, VulkanClipRect second) {
+            return first == second || (first != null && first.equals(second));
         }
 
         private void recreateSwapchain(int width, int height) {
@@ -1478,29 +1532,46 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private static final class TextureDrawBatch {
             private final long textureHandle;
             private final long descriptorSet;
+            private final VulkanClipRect clip;
             private final int firstVertex;
             private int vertexCount;
 
-            private TextureDrawBatch(long textureHandle, long descriptorSet, int firstVertex) {
+            private TextureDrawBatch(long textureHandle, long descriptorSet,
+                                     VulkanClipRect clip, int firstVertex) {
                 this.textureHandle = textureHandle;
                 this.descriptorSet = descriptorSet;
+                this.clip = clip;
+                this.firstVertex = firstVertex;
+            }
+        }
+
+        private static final class ColoredDrawBatch {
+            private final VulkanClipRect clip;
+            private final int firstVertex;
+            private int vertexCount;
+
+            private ColoredDrawBatch(VulkanClipRect clip, int firstVertex) {
+                this.clip = clip;
                 this.firstVertex = firstVertex;
             }
         }
 
         private static final class FrameUpload {
-            private final int coloredVertexCount;
             private final long texturedByteOffset;
+            private final List<ColoredDrawBatch> coloredBatches =
+                    new ArrayList<ColoredDrawBatch>();
             private final List<TextureDrawBatch> textureBatches =
                     new ArrayList<TextureDrawBatch>();
 
-            private FrameUpload(int coloredVertexCount, long texturedByteOffset) {
-                this.coloredVertexCount = coloredVertexCount;
+            private FrameUpload(long texturedByteOffset) {
                 this.texturedByteOffset = texturedByteOffset;
             }
 
             private int totalVertexCount() {
-                int total = coloredVertexCount;
+                int total = 0;
+                for (ColoredDrawBatch batch : coloredBatches) {
+                    total = Math.addExact(total, batch.vertexCount);
+                }
                 for (TextureDrawBatch batch : textureBatches) {
                     total = Math.addExact(total, batch.vertexCount);
                 }

@@ -83,7 +83,8 @@ tasks.register('verifyVulkanModBundle') {
             def mixins = new groovy.json.JsonSlurper().parseText(
                     zip.getInputStream(zip.getEntry('vulkanmod.mixins.json')).getText('UTF-8'))
             if (!mixins.mixins.contains('SlickGameVulkanSurfaceNamedMixin')
-                    || !mixins.mixins.contains('RustedWarfareGameLoopVulkanPresentNamedMixin')) {
+                    || !mixins.mixins.contains('RustedWarfareGameLoopVulkanPresentNamedMixin')
+                    || !mixins.mixins.contains('SlickBitmapVulkanTextureLifecycleNamedMixin')) {
                 throw new GradleException('Vulkan window lifecycle mixin is missing')
             }
             def propertiesEntry = zip.getEntry(

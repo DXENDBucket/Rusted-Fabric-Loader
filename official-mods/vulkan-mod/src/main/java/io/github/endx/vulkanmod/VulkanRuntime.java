@@ -2,9 +2,14 @@ package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanClipRect;
+import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanTransform2D;
+import rustedwarfare.client.render.GameImage;
+import rustedwarfare.client.render.SlickGraphicsBackend;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 
@@ -17,7 +22,11 @@ public final class VulkanRuntime {
     private static volatile VulkanSurfaceInfo surfaceInfo;
     private static VulkanMode configuredMode = VulkanMode.OFF;
     private static boolean frameTestAttempted;
+    private static int frameTestWaitFrames;
     private static long frameTestTexture;
+    private static int frameTestTextureWidth = 32;
+    private static int frameTestTextureHeight = 32;
+    private static GameImageVulkanTextureCache gameTextureCache;
 
     private VulkanRuntime() { }
 
@@ -68,6 +77,8 @@ public final class VulkanRuntime {
     public static synchronized void afterOpenGlPresent() {
         if (configuredMode != VulkanMode.FRAME_TEST || frameTestAttempted
                 || activeDriver == null || surfaceInfo == null) return;
+        GameImage diagnosticImage = diagnosticGameImage();
+        if (diagnosticImage == null && ++frameTestWaitFrames < 600) return;
         frameTestAttempted = true;
         try {
             io.github.endx.vulkanmod.spi.VulkanSurfaceRequest window =
@@ -75,8 +86,31 @@ public final class VulkanRuntime {
             int width = window.width();
             int height = window.height();
             if (frameTestTexture == 0L) {
-                frameTestTexture = activeDriver.uploadTexture(checkerTexture());
+                GameImage gameImage = diagnosticImage;
+                if (gameImage != null && gameTextureCache != null) {
+                    frameTestTexture = gameTextureCache.texture(gameImage);
+                    frameTestTextureWidth = gameImage.getWidth();
+                    frameTestTextureHeight = gameImage.getHeight();
+                    log("Frame test uses cached game image " + gameImage.getName() + " ("
+                            + gameImage.getWidth() + "x" + gameImage.getHeight() + ")");
+                } else {
+                    frameTestTexture = activeDriver.uploadTexture(checkerTexture());
+                    log("Frame test uses generated checker texture");
+                }
             }
+            float textureHeight = height * 0.19f;
+            float textureWidth = textureHeight * frameTestTextureWidth
+                    / Math.max(1.0f, frameTestTextureHeight);
+            textureWidth = Math.min(textureWidth, width * 0.18f);
+            float textureX = width * 0.60f;
+            float textureY = height * 0.405f;
+            VulkanDrawState textureState = new VulkanDrawState(
+                    VulkanTransform2D.rotationAround(-9.0f,
+                            textureX + textureWidth * 0.5f,
+                            textureY + textureHeight * 0.5f),
+                    new VulkanClipRect(textureX + textureWidth * 0.08f,
+                            textureY + textureHeight * 0.08f,
+                            textureWidth * 0.84f, textureHeight * 0.84f));
             VulkanFrameCommands frame = VulkanFrameCommands.builder(width, height)
                     .clear(0.035f, 0.075f, 0.16f, 1.0f)
                     .coloredQuad(new VulkanColoredQuad(width * 0.20f, height * 0.28f,
@@ -92,10 +126,9 @@ public final class VulkanRuntime {
                             width * 0.45f, height * 0.035f,
                             0.42f, 0.60f, 0.76f, 1.0f))
                     .texturedQuad(new VulkanTexturedQuad(frameTestTexture,
-                            width * 0.60f, height * 0.405f,
-                            height * 0.19f, height * 0.19f,
+                            textureX, textureY, textureWidth, textureHeight,
                             0.0f, 0.0f, 1.0f, 1.0f,
-                            1.0f, 1.0f, 1.0f, 0.92f))
+                            1.0f, 1.0f, 1.0f, 0.92f, textureState))
                     .build();
             VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
             surfaceInfo = updated;
@@ -130,6 +163,7 @@ public final class VulkanRuntime {
         try {
             VulkanSurfaceInfo created = activeDriver.createSurface(Lwjgl2Win32Window.current());
             surfaceInfo = created;
+            gameTextureCache = new GameImageVulkanTextureCache(activeDriver);
             log("Win32 surface and swapchain ready on " + created.deviceName() + ": "
                     + created.width() + "x" + created.height() + ", images="
                     + created.imageCount() + ", format=" + created.imageFormat()
@@ -151,6 +185,44 @@ public final class VulkanRuntime {
 
     public static Optional<VulkanSurfaceInfo> surfaceInfo() {
         return Optional.ofNullable(surfaceInfo);
+    }
+
+    public static synchronized void invalidateCachedImage(Object image) {
+        if (gameTextureCache != null) gameTextureCache.invalidate(image);
+    }
+
+    public static synchronized void shutdown() {
+        if (gameTextureCache != null) {
+            try {
+                gameTextureCache.close();
+            } catch (RuntimeException failure) {
+                log("Could not release Vulkan game-image cache: " + failure.getMessage());
+            }
+            gameTextureCache = null;
+        }
+        if (activeDriver != null) {
+            try {
+                activeDriver.close();
+            } catch (RuntimeException failure) {
+                log("Could not close Vulkan driver cleanly: " + failure.getMessage());
+            }
+            activeDriver = null;
+        }
+        surfaceInfo = null;
+        frameTestTexture = 0L;
+        frameTestWaitFrames = 0;
+        frameTestTextureWidth = 32;
+        frameTestTextureHeight = 32;
+    }
+
+    private static GameImage diagnosticGameImage() {
+        if (SlickGraphicsBackend.generalErrorImage != null) {
+            return SlickGraphicsBackend.generalErrorImage;
+        }
+        if (SlickGraphicsBackend.outOfMemoryErrorImage != null) {
+            return SlickGraphicsBackend.outOfMemoryErrorImage;
+        }
+        return null;
     }
 
     private static void log(String message) {

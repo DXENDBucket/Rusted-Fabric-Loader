@@ -171,11 +171,23 @@ final class VulkanDriverLoader {
         }
 
         @Override public void close() {
+            RuntimeException driverFailure = null;
             try {
-                driver.close();
+                invoke(() -> {
+                    driver.close();
+                    return null;
+                });
+            } catch (RuntimeException failure) {
+                driverFailure = failure;
+            }
+            try {
                 loader.close();
             } catch (IOException failure) {
-                throw new IllegalStateException("Could not close Vulkan driver", failure);
+                if (driverFailure != null) driverFailure.addSuppressed(failure);
+                else throw new IllegalStateException("Could not close Vulkan driver", failure);
+            }
+            if (driverFailure != null) {
+                throw driverFailure;
             }
         }
     }

@@ -14,4 +14,9 @@ public abstract class RustedWarfareGameLoopVulkanPresentNamedMixin {
     private void vulkanmod$afterOpenGlPresent(CallbackInfo callback) {
         VulkanRuntime.afterOpenGlPresent();
     }
+
+    @Inject(method = "destroy()V", at = @At("HEAD"), require = 1)
+    private void vulkanmod$beforeWindowDestroy(CallbackInfo callback) {
+        VulkanRuntime.shutdown();
+    }
 }
