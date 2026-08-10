@@ -48,6 +48,11 @@ original ordering and execute once per turret shot.
 stages for client-side additions. It is a presentation event and must not drive synchronized
 gameplay.
 
+`ProjectileMotion` provides mapped per-instance controls for world position, independent X/Y
+velocity, guided flight speed, and turn speed. The turn override is stored per projectile and is
+substituted at the two native template reads, so it never mutates a shared projectile template;
+removing the projectile also clears the override.
+
 `CustomProjectileAssets` runs the native `[effect_*]` and `[decal_*]` loading passes for independent
 projectile-definition formats, including resolution of nested custom-effect references. This keeps
 format mods on a public API instead of exposing Mixin accessors.

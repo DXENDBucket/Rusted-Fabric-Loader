@@ -62,6 +62,9 @@ tasks.register('verifyIniEssentialsMetadata') {
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/projectile/ProjectileRuleDefinitions.java')
     def customProjectileDefinitions = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileDefinitions.java')
     def customProjectileActionFields = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileActionFields.java')
+    def customProjectileEmitter = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileEmitter.java')
+    def customProjectileRuntime = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileRuntime.java')
+    def customProjectileExpression = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileExpression.java')
     def customProjectileTurretFields = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileTurretFields.java')
     def customProjectileDecalRenderer = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileDecalRenderer.java')
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
@@ -79,6 +82,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             eventRuleFields,
             projectileRuleFields,
             customProjectileDefinitions, customProjectileActionFields,
+            customProjectileEmitter, customProjectileRuntime, customProjectileExpression,
             customProjectileTurretFields, customProjectileDecalRenderer,
             booleanExpression,
             geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
@@ -131,7 +135,13 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'class', 'name', 'schemaVersion', 'aimMode', 'count',
                 'centerDirection', 'originSpacing', 'lineAngleOffset',
                 'originOffsetX', 'originOffsetY', 'originOffsetHeight',
-                'directionDistance', 'emitProjectilePattern', 'projectilePattern',
+                'directionDistance', 'emitProjectilePattern', 'spawnCustomProjectile',
+                '@memory NAME', 'speed', 'turnSpeed', 'dx', 'dy',
+                'onCreate', 'onUpdate', 'onImpact', 'onRemove', 'ifCondition',
+                'setMemory', 'setSpeed', 'setTurnSpeed', 'setDx', 'setDy',
+                'setOffsetX', 'setOffsetY', 'projectile.age',
+                'projectile.x|y|height', 'projectile.direction|speed|dx|dy',
+                'projectile.offsetX|offsetY', 'projectilePattern',
                 'collideWithUnits', 'collideWithTerrain', 'contactCollisionRadius',
                 'terrainTransitionFrom', 'terrainTransitionTo',
                 'unitCollisionLayers', 'unitCollisionMovementTypes',
@@ -160,6 +170,9 @@ tasks.register('verifyIniEssentialsMetadata') {
         def projectileRuleSource = projectileRuleFields.getText('UTF-8')
         def customProjectileSource = customProjectileDefinitions.getText('UTF-8')
         def customProjectileActionSource = customProjectileActionFields.getText('UTF-8')
+        def customProjectileEmitterSource = customProjectileEmitter.getText('UTF-8')
+        def customProjectileRuntimeSource = customProjectileRuntime.getText('UTF-8')
+        def customProjectileExpressionSource = customProjectileExpression.getText('UTF-8')
         def customProjectileTurretSource = customProjectileTurretFields.getText('UTF-8')
         def customProjectileDecalSource = customProjectileDecalRenderer.getText('UTF-8')
         def initializerSource = initializer.getText('UTF-8')
@@ -266,7 +279,16 @@ tasks.register('verifyIniEssentialsMetadata') {
                     customProjectileSource.contains('"' + it + '"') }
                 || !customProjectileSource.contains('NumericExpression.compile(')
                 || !customProjectileActionSource.contains('"emitProjectilePattern"')
-                || !customProjectileActionSource.contains('ProjectilePatternEmitter.emit(')
+                || !customProjectileActionSource.contains('"spawnCustomProjectile"')
+                || !customProjectileEmitterSource.contains('ProjectilePatternEmitter.emit(')
+                || !['"speed"', '"turnSpeed"', '"dx"', '"dy"', '"offsetX"',
+                    '"offsetY"', '"onCreate"', '"onUpdate"', '"onImpact"',
+                    '"onRemove"', '"setMemory"', '"setSpeed"', '"setTurnSpeed"',
+                    '"setDx"', '"setDy"', '"setOffsetX"', '"setOffsetY"'].every {
+                    customProjectileRuntimeSource.contains(it)
+                }
+                || !customProjectileRuntimeSource.contains('ProjectileEvents.AFTER_UPDATE')
+                || !customProjectileExpressionSource.contains('LOCAL_MEMORY')
                 || !customProjectileTurretSource.contains('"projectilePattern"')
                 || !customProjectileTurretSource.contains('TurretProjectilePatternEvents.PLAN')
                 || !customProjectileTurretSource.contains('TurretProjectilePatternPlan')
@@ -397,7 +419,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v21'
+                || multiplayer?.protocol != 'ini_essentials_v22'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

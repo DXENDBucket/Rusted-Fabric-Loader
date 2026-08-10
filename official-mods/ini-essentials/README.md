@@ -79,6 +79,8 @@ pattern after the final `/`:
 class: CustomProjectile
 name: example:plasma_fan
 schemaVersion: 1
+@memory phase: float
+@memory splitDone: bool
 
 [projectile]
 directDamage: 20
@@ -115,11 +117,31 @@ aimMode: direction
 count: clamp(memory.shots,1,30)
 sweepAngle: 60
 originOffsetY: 18
+
+[motion]
+speed: 5+memory.phase
+turnSpeed: 2+projectile.age*0.05
+dx: sin(projectile.age*3)*1.5
+dy: cos(projectile.age*3)*1.5
+# offsetX/offsetY instead place the projectile relative to its own spawn point.
+
+[lifecycle]
+onUpdate: accelerate
+onImpact: split
+
+[hiddenAction_accelerate]
+ifCondition: memory.phase<3
+setMemory: phase=memory.phase+0.02
+
+[action_split]
+ifCondition: not memory.splitDone
+setMemory: splitDone=true
+emitProjectilePattern: example:fragment/main
 ```
 
 ```ini
 [action_fireFan]
-emitProjectilePattern: example:plasma_fan/main
+spawnCustomProjectile: example:plasma_fan
 
 [turret_main]
 projectilePattern: example:plasma_fan/main
@@ -166,11 +188,27 @@ the live projectile world position, while `self`, visibility expressions, team c
 orientation still use the firing `CustomUnit`; this keeps native Decal syntax useful without
 pretending a projectile is itself a unit.
 
+Each spawned instance owns its declared `@memory` values, initialized to zero/false. `[motion]`
+evaluates `speed`, `turnSpeed`, `dx`, and `dy` before native movement on every tick. `offsetX` and
+`offsetY` are different: after the tick they place the projectile at a dynamic position relative
+to its own spawn point, which supports parametric paths without integrating velocity. Expressions
+keep the firing unit as `self` and can additionally read `projectile.age`, position, direction,
+speed, velocity, and spawn-relative offsets.
+
+`[lifecycle]` can bind `onCreate`, `onUpdate`, `onImpact`, and `onRemove` to local
+`[action_NAME]` or `[hiddenAction_NAME]` sections. The supported projectile-safe subset is
+`ifCondition`, `setMemory`, `setSpeed`, `setTurnSpeed`, `setDx`, `setDy`, `setOffsetX`,
+`setOffsetY`, and `emitProjectilePattern`. Impact/removal bindings run once. Child emission starts
+at the live projectile position and is capped at ten recursion levels; local actions also accept
+`spawnCustomProjectile` with the same default-main shorthand. Ordinary unit actions can
+use `spawnCustomProjectile: namespace:path` (default `main`) or the compatible
+`emitProjectilePattern: namespace:path/pattern` form.
+
 The `[projectile]`, `[effect_NAME]`, and `[decal_NAME]` sections accept their ordinary native fields
 except deferred links to
 other projectile names (`spawnProjectilesOnCreate`, `spawnProjectilesOnExplode`, and
-`spawnProjectilesOnEndOfLife`), which are rejected in this first phase. Interval/sequence firing,
-and custom per-tick trajectories are planned later. `projectilePattern` uses a precise weave inside
+`spawnProjectilesOnEndOfLife`), which remain rejected in favor of bounded lifecycle emission.
+`projectilePattern` uses a precise weave inside
 the native firing method: native projectile selection and `onShoot` run first, only projectile
 allocation/template initialization is replaced, and the native muzzle effects, sound, recoil,
 shot counter, and post-fire state continue once afterward. It does not use the older method-entry

@@ -50,17 +50,23 @@ public final class CustomProjectileDefinitions {
     private static final Map<CustomProjectileTemplate, DecalBehavior> DECALS =
             Collections.synchronizedMap(
                     new IdentityHashMap<CustomProjectileTemplate, DecalBehavior>());
+    private static final Map<CustomProjectileTemplate, Definition> BY_TEMPLATE =
+            Collections.synchronizedMap(
+                    new IdentityHashMap<CustomProjectileTemplate, Definition>());
 
     private CustomProjectileDefinitions() { }
 
     public static void register() {
         RustedIniEvents.BEFORE_PARSE_STREAM.register(CustomProjectileDefinitions::inspectStream);
+        CustomProjectileRuntime.register();
     }
 
     public static synchronized void beginReload() {
         DEFINITIONS.clear();
         REFERENCES.clear();
         DECALS.clear();
+        BY_TEMPLATE.clear();
+        CustomProjectileRuntime.beginReload();
     }
 
     static synchronized void noteReference(Reference reference) {
@@ -101,6 +107,7 @@ public final class CustomProjectileDefinitions {
                     throw new IllegalArgumentException(
                             "duplicate CustomProjectile ID: " + definition.id);
                 }
+                BY_TEMPLATE.put(definition.projectile, definition);
             }
             IniEssentials.activateSynchronizedRequirement();
             context.cancelWith(null);
@@ -179,12 +186,17 @@ public final class CustomProjectileDefinitions {
         if (patterns.isEmpty()) {
             patterns.put("main", PatternTemplate.defaultSingle());
         }
+        CustomProjectileRuntime.Parsed runtime = CustomProjectileRuntime.parse(config, id.toString());
         return new Definition(id, projectile, Collections.unmodifiableMap(patterns),
-                CollisionTemplate.parse(config));
+                CollisionTemplate.parse(config), runtime.motion, runtime.lifecycle);
     }
 
     static DecalBehavior decalsFor(CustomProjectileTemplate template) {
         return DECALS.get(template);
+    }
+
+    static Definition forTemplate(CustomProjectileTemplate template) {
+        return BY_TEMPLATE.get(template);
     }
 
     private static void rejectDeferredNativeLinks(UnitConfig config, Identifier id) {
@@ -231,18 +243,26 @@ public final class CustomProjectileDefinitions {
         private final CustomProjectileTemplate projectile;
         private final Map<String, PatternTemplate> patterns;
         private final CollisionTemplate collision;
+        private final CustomProjectileRuntime.MotionTemplate motion;
+        private final CustomProjectileRuntime.Lifecycle lifecycle;
 
         private Definition(Identifier id, CustomProjectileTemplate projectile,
                            Map<String, PatternTemplate> patterns,
-                           CollisionTemplate collision) {
+                           CollisionTemplate collision,
+                           CustomProjectileRuntime.MotionTemplate motion,
+                           CustomProjectileRuntime.Lifecycle lifecycle) {
             this.id = id;
             this.projectile = projectile;
             this.patterns = patterns;
             this.collision = collision;
+            this.motion = motion;
+            this.lifecycle = lifecycle;
         }
 
         CustomProjectileTemplate projectile() { return projectile; }
         CollisionTemplate collision() { return collision; }
+        CustomProjectileRuntime.MotionTemplate motion() { return motion; }
+        CustomProjectileRuntime.Lifecycle lifecycle() { return lifecycle; }
 
         PatternTemplate requirePattern(String name) {
             PatternTemplate result = patterns.get(normalizePatternName(name));
@@ -443,10 +463,14 @@ public final class CustomProjectileDefinitions {
         static Reference parse(String raw) {
             String value = raw != null ? raw.trim().toLowerCase(Locale.ROOT) : "";
             int slash = value.lastIndexOf('/');
-            if (slash <= value.indexOf(':') || slash == value.length() - 1) {
+            int colon = value.indexOf(':');
+            if (colon <= 0 || colon == value.length() - 1) {
                 throw new IllegalArgumentException(
-                        "CustomProjectile reference must use namespace:path/pattern: " + raw);
+                        "CustomProjectile reference must use namespace:path[/pattern]: " + raw);
             }
+            if (slash <= colon) return new Reference(Identifier.parse(value), "main");
+            if (slash == value.length() - 1) throw new IllegalArgumentException(
+                    "CustomProjectile pattern name is empty: " + raw);
             return new Reference(Identifier.parse(value.substring(0, slash)),
                     normalizePatternName(value.substring(slash + 1)));
         }

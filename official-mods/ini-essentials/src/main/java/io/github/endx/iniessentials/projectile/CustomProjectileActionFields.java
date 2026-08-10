@@ -1,17 +1,12 @@
 package io.github.endx.iniessentials.projectile;
 
 import io.github.endx.iniessentials.IniEssentials;
-
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionEffectDefinition;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionEffects;
 import io.github.endx.rustedfabricapi.api.ini.action.IniActionExecutionContext;
-import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternEmitter;
-import io.github.endx.rustedfabricapi.api.projectile.pattern.ProjectilePatternSpec;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileSpawnContext;
-import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileSpawnSpec;
-import io.github.endx.rustedfabricapi.api.world.GameWorld;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.unit.Unit;
@@ -22,10 +17,22 @@ public final class CustomProjectileActionFields {
     private CustomProjectileActionFields() { }
 
     public static void register() {
+        registerField("spawn_custom_projectile", "spawnCustomProjectile",
+                "Spawns an independent CustomProjectile directly from this action. The pattern suffix is optional and defaults to main.",
+                "从该 action 直接生成独立 CustomProjectile；可省略 pattern 后缀，默认使用 main。",
+                "spawnCustomProjectile: example:plasma_fan");
+        registerField("emit_projectile_pattern", "emitProjectilePattern",
+                "Emits one bounded CustomProjectile pattern directly, without a projectile-spawning parent projectile.",
+                "直接发射一组有上限的 CustomProjectile 图案，不需要用母弹不断刷弹。",
+                "emitProjectilePattern: example:plasma_fan/main");
+    }
+
+    private static void registerField(String fieldId, String key, String english,
+                                      String chinese, String example) {
         IniActionEffects.register(IniActionEffectDefinition
                 .<CustomProjectileDefinitions.Reference>builder(
-                        IniEssentials.MOD_ID, "emit_projectile_pattern",
-                        "emitProjectilePattern")
+                        IniEssentials.MOD_ID, fieldId, key)
+                .exclusiveGroup("custom_projectile_spawn")
                 .decoder(context -> {
                     CustomProjectileDefinitions.Reference reference =
                             CustomProjectileDefinitions.Reference.parse(context.rawValue());
@@ -35,22 +42,16 @@ public final class CustomProjectileActionFields {
                 })
                 .handler(CustomProjectileActionFields::emit)
                 .documentation(new IniFieldDocumentation(
-                        "namespace:path/pattern",
-                        "Emits one bounded CustomProjectile pattern directly, without a projectile-spawning parent projectile.",
-                        "鐩存帴鍙戝皠涓€涓湁涓婇檺鐨?CustomProjectile 寮瑰箷锛屼笉鍒涘缓鐢ㄤ簬鍒峰脊鐨勬瘝寮逛綋銆?",
-                        "emitProjectilePattern: example:plasma_fan/main",
+                        "namespace:path[/pattern]", english, chinese, example,
                         IniMultiplayerImpact.GAMEPLAY_SYNCED))
                 .build());
     }
 
     private static void emit(IniActionExecutionContext context,
                              CustomProjectileDefinitions.Reference reference) {
-        CustomProjectileDefinitions.Definition definition = reference.definition();
-        CustomProjectileDefinitions.CompiledPattern pattern = definition
-                .requirePattern(reference.patternName()).compileFor(context.actor());
         CustomUnit actor = context.actor();
-
-        float direction = pattern.centerDirection(actor, actor.direction);
+        CustomProjectileDefinitions.CompiledPattern pattern = reference.definition()
+                .requirePattern(reference.patternName()).compileFor(actor);
         float localX = pattern.originOffsetX.evaluate(actor);
         float localY = pattern.originOffsetY.evaluate(actor);
         float sin = CommonUtils.fastSin(actor.direction);
@@ -59,40 +60,12 @@ public final class CustomProjectileActionFields {
         float originY = ((Unit) actor).y + sin * localY + cos * localX;
         float originHeight = actor.height + pattern.originOffsetHeight.evaluate(actor);
 
-        ProjectileSpawnContext.Builder contextBuilder = ProjectileSpawnContext.builder(actor)
-                .cause(ProjectileSpawnContext.Cause.ACTION)
-                .recursionDepth(context.recursionDepth())
-                .synchronizedTick(GameWorld.tick())
-                .targetLeadRange(actor.mutableStats.maxAttackRange);
-        context.targetUnit().ifPresent(contextBuilder::targetUnit);
-        context.actionTargetPosition().ifPresent(point -> contextBuilder.targetPoint(
-                point.x(), point.y(), targetHeight(context)));
-        ProjectileSpawnContext spawnContext = contextBuilder.build();
-
-        ProjectileSpawnSpec.Builder spec = ProjectileSpawnSpec.builder(
-                        spawnContext, definition.projectile())
-                .origin(originX, originY, originHeight)
-                .collision(definition.collision().compileFor(actor).resolve(actor))
-                .directionDistance(pattern.directionDistance.evaluate(actor));
-        switch (pattern.aimMode) {
-            case DIRECTION:
-                spec.directionTarget(direction);
-                break;
-            case POINT:
-                WorldPoint point = context.actionTargetPosition().orElseThrow(() ->
-                        new IllegalArgumentException("POINT CustomProjectile requires an action target point"));
-                spec.pointTarget(point.x(), point.y(), targetHeight(context)).direction(direction);
-                break;
-            case UNIT:
-                Unit target = context.targetUnit().orElseThrow(() ->
-                        new IllegalArgumentException("UNIT CustomProjectile requires an action target unit"));
-                spec.unitTarget(target).direction(direction);
-                break;
-            default:
-                throw new AssertionError(pattern.aimMode);
-        }
-        ProjectilePatternSpec resolvedPattern = pattern.resolve(actor);
-        ProjectilePatternEmitter.emit(spec.build(), resolvedPattern);
+        WorldPoint point = context.actionTargetPosition().orElse(null);
+        CustomProjectileEmitter.emit(reference, actor, originX, originY, originHeight,
+                actor.direction, context.targetUnit().orElse(null), point != null,
+                point != null ? point.x() : 0.0F, point != null ? point.y() : 0.0F,
+                targetHeight(context), ProjectileSpawnContext.Cause.ACTION,
+                context.recursionDepth());
     }
 
     private static float targetHeight(IniActionExecutionContext context) {

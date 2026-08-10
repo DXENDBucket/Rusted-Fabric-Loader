@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricapi.mixin;
 import io.github.endx.rustedfabricapi.api.game.Projectiles;
 import io.github.endx.rustedfabricapi.api.client.render.event.ProjectileRenderEvents;
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisions;
+import io.github.endx.rustedfabricapi.impl.projectile.ProjectileMotionRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -13,6 +14,30 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.game.Projectile", remap = false)
 public abstract class ProjectileLifecycleNamedMixin {
+    @Redirect(
+            method = "update(F)V",
+            at = @At(value = "FIELD",
+                    target = "Lrustedwarfare/game/BaseProjectileTemplate;turnSpeed:F"),
+            require = 1
+    )
+    private float rustedfabricapi$dynamicProjectileTurnSpeed(
+            rustedwarfare.game.BaseProjectileTemplate template) {
+        return ProjectileMotionRuntime.resolveTurnSpeed(
+                (rustedwarfare.game.Projectile) (Object) this, template.turnSpeed);
+    }
+
+    @Redirect(
+            method = "update(F)V",
+            at = @At(value = "FIELD",
+                    target = "Lrustedwarfare/game/BaseProjectileTemplate;turnSpeedWhenNear:F"),
+            require = 1
+    )
+    private float rustedfabricapi$dynamicProjectileTurnSpeedWhenNear(
+            rustedwarfare.game.BaseProjectileTemplate template) {
+        return ProjectileMotionRuntime.resolveTurnSpeed(
+                (rustedwarfare.game.Projectile) (Object) this, template.turnSpeedWhenNear);
+    }
+
     @Redirect(
             method = "update(F)V",
             at = @At(
@@ -170,7 +195,10 @@ public abstract class ProjectileLifecycleNamedMixin {
 
     @Inject(method = "removeFromGame()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileRemovedFromGame(CallbackInfo ci) {
-        ProjectileCollisions.forget((rustedwarfare.game.Projectile) (Object) this);
+        rustedwarfare.game.Projectile projectile =
+                (rustedwarfare.game.Projectile) (Object) this;
+        ProjectileCollisions.forget(projectile);
+        ProjectileMotionRuntime.forget(projectile);
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_REMOVAL.invoker().onRemoval(
                 (rustedwarfare.game.Projectile) (Object) this,
                 io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.RemovalReason.REMOVED_FROM_GAME);
