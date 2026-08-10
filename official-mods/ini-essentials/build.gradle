@@ -57,6 +57,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def metadata = file('src/main/resources/fabric.mod.json')
     def initializer = file('src/main/java/io/github/endx/iniessentials/IniEssentials.java')
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/action/CameraActionFields.java')
+    def autoTriggerCooldownFields = file('src/main/java/io/github/endx/iniessentials/action/PerActionAutoTriggerCooldownFields.java')
     def actionPositionReference = file('src/main/java/io/github/endx/iniessentials/ActionPositionReference.java')
     def eventRuleFields = file('src/main/java/io/github/endx/iniessentials/event/EventRuleDefinitions.java')
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/projectile/ProjectileRuleDefinitions.java')
@@ -78,6 +79,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def referenceGenerator = file('docs/generate_reference.py')
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
+            autoTriggerCooldownFields,
             actionPositionReference,
             eventRuleFields,
             projectileRuleFields,
@@ -93,7 +95,9 @@ tasks.register('verifyIniEssentialsMetadata') {
             throw new GradleException('INI Essentials field catalog is empty or malformed')
         }
         def expectedCodes = [
-                'allowNegativeHp', 'cameraCenterAt', 'cameraCenterBy',
+                'allowNegativeHp', 'autoTriggerCooldownTime',
+                'autoTriggerCooldownTime_allowDangerousHighCPU',
+                'cameraCenterAt', 'cameraCenterBy',
                 'cameraCenterOn', 'cameraTargetZoom', 'cameraStopMovement',
                 'type', 'radius', 'radiusX', 'radiusY', 'width', 'height',
                 'innerRadius', 'startAngle', 'sweepAngle', 'rotation', 'offsetX',
@@ -159,6 +163,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             it.split(',', 3)[1]
         } as Set
         def cameraSource = cameraFields.getText('UTF-8')
+        def autoTriggerCooldownSource = autoTriggerCooldownFields.getText('UTF-8')
         def actionPositionSource = actionPositionReference.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
         def decalMaskSource = decalMaskFields.getText('UTF-8')
@@ -187,6 +192,11 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'hypot', 'atan2', 'atan', 'asin', 'acos', 'tan', 'smoothstep',
                 'pi', 'tau', 'e'] as Set
         if (catalogCodes != expectedCodes
+                || !['"autoTriggerCooldownTime"',
+                    '"autoTriggerCooldownTime_allowDangerousHighCPU"'].every {
+                    autoTriggerCooldownSource.contains(it)
+                }
+                || !autoTriggerCooldownSource.contains('PerActionAutoTriggerCooldowns.configureSeconds(')
                 || !expectedCodes.findAll { it.startsWith('camera') }.every {
                     cameraSource.contains('"' + it + '"')
                 }
@@ -422,7 +432,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v23'
+                || multiplayer?.protocol != 'ini_essentials_v24'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

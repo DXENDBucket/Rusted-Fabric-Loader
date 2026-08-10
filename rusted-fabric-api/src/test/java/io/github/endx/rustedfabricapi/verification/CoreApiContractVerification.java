@@ -23,6 +23,7 @@ import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.NativeEventData;
+import io.github.endx.rustedfabricapi.api.custom.PerActionAutoTriggerCooldowns;
 import io.github.endx.rustedfabricapi.impl.combat.NativeDamageMath;
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
 import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
@@ -50,6 +51,7 @@ public final class CoreApiContractVerification {
         verifyNetworkBridge();
         verifyLethalHealthModifier();
         verifyDamageEventContextContracts();
+        verifyPerActionAutoTriggerCooldownContract();
         ProjectileCombatEventContractVerification.verify();
         ProjectilePatternContractVerification.verify();
         IniExtensionContractVerification.verify();
@@ -59,8 +61,12 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 55,
+        require(ApiSupportMatrix.entries().size() == 56,
                 "public API support matrix does not cover every advertised API group");
+        require(ApiSupportMatrix.expectedSupport(
+                        RustedFabricCapabilities.CUSTOM_AUTO_TRIGGER_COOLDOWN,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "per-action auto-trigger cooldown support is not advertised");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CLIENT_RENDER_ALPHA_MASK,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "client alpha-mask support is not advertised");
@@ -464,6 +470,22 @@ public final class CoreApiContractVerification {
                 "entrypoint did not receive Windows context");
         require(RustedFabricRuntime.currentContext().orElse(null) == received[0],
                 "entrypoint did not install the process context");
+    }
+
+    private static void verifyPerActionAutoTriggerCooldownContract() {
+        Object metadata = new Object();
+        Object actionConfig = new Object();
+        require(!PerActionAutoTriggerCooldowns.isEnabled(metadata),
+                "unconfigured metadata unexpectedly enabled independent auto-trigger cooldowns");
+        PerActionAutoTriggerCooldowns.configureSeconds(metadata, actionConfig, 0.5F);
+        require(PerActionAutoTriggerCooldowns.isEnabled(metadata),
+                "per-action auto-trigger cooldown configuration was not retained");
+        try {
+            PerActionAutoTriggerCooldowns.configureSeconds(metadata, actionConfig, -1.0F);
+            throw new AssertionError("negative auto-trigger cooldown was accepted");
+        } catch (IllegalArgumentException expected) {
+            // Expected public validation contract.
+        }
     }
 
     private static void require(boolean condition, String message) {

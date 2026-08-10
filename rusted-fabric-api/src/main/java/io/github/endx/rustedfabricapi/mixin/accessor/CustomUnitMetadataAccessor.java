@@ -12,4 +12,7 @@ import java.util.ArrayList;
 public interface CustomUnitMetadataAccessor {
     @Accessor("effectTemplates")
     ArrayList<EffectTemplate> rustedfabricapi$getEffectTemplates();
+
+    @Accessor("autoTriggerCooldownTime")
+    float rustedfabricapi$getAutoTriggerCooldownTime();
 }

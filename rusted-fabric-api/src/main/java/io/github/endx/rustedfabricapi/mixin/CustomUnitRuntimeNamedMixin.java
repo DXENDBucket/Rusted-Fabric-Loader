@@ -1,7 +1,9 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
+import io.github.endx.rustedfabricapi.impl.custom.PerActionAutoTriggerCooldownRuntime;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -11,6 +13,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitRuntimeNamedMixin {
+    @Shadow private float autoTriggerCooldownTimer;
+
+    @Inject(method = "b(FZ)V", at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$updatePerActionAutoTriggerCooldowns(
+            float deltaFrames, boolean forceCheck, CallbackInfo ci) {
+        if (PerActionAutoTriggerCooldownRuntime.beforeAutoTriggerUpdate(
+                (rustedwarfare.custom.CustomUnit) (Object) this, deltaFrames)) {
+            autoTriggerCooldownTimer = 0.0F;
+        }
+    }
+
+    @Redirect(
+            method = "a(F[Lrustedwarfare/custom/action/AutoTriggerConfig;)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lrustedwarfare/custom/CustomUnit;executeActionWithContext(Lrustedwarfare/unit/action/UnitAction;Landroid/graphics/PointF;Lrustedwarfare/unit/Unit;II)Z"
+            ),
+            require = 1
+    )
+    private boolean rustedfabricapi$executeAutoTriggerWithIndependentCooldown(
+            rustedwarfare.custom.CustomUnit unit,
+            rustedwarfare.unit.action.UnitAction action,
+            android.graphics.PointF targetPoint,
+            rustedwarfare.unit.Unit targetUnit,
+            int recursionDepth, int repeatedCount) {
+        return PerActionAutoTriggerCooldownRuntime.execute(unit, action, targetPoint,
+                targetUnit, recursionDepth, repeatedCount);
+    }
+
     @Redirect(
             method = "fireProjectileAtGround(Lrustedwarfare/unit/Unit;FFILrustedwarfare/custom/CustomProjectileTemplate;I)Lrustedwarfare/game/Projectile;",
             at = @At(

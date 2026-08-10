@@ -24,6 +24,22 @@ the damaged unit, so memory, resources and ordinary boolean logic can control wh
 HP below zero. Installing INI Essentials alone remains multiplayer-optional; parsing a potentially
 enabled synchronized field promotes it to a required matching peer dependency.
 
+Automatic actions can override the native unit-wide trigger cooldown inside their own section:
+
+```ini
+[hiddenAction_regenerate]
+autoTrigger: if self.hp < self.maxHp
+autoTriggerCooldownTime: 0.5s
+autoTriggerCooldownTime_allowDangerousHighCPU: false
+addResources: hp=1
+```
+
+The timer belongs to this unit instance and this Action. When at least one Action opts in, every
+other `autoTrigger` on the same unit keeps the `[core] autoTriggerCooldownTime` duration as its own
+independent fallback instead of sharing the original single latch. The native limits remain: zero
+to two seconds, and values below five simulation frames require the dangerous-CPU opt-in in the
+same Action. These fields apply to `autoTrigger`, not `autoTriggerOnEvent`.
+
 Camera action effects are available in both visible and hidden custom actions:
 
 ```ini

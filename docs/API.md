@@ -252,6 +252,9 @@ The first typed desktop layer contains:
 - `api.custom.CustomUnitTriggers`, `CustomUnitEventData`, and `CustomUnitTriggerEvents`: immediate
   configured-event dispatch, contextual queued dispatch, cancellable before/after callbacks, and
   typed enrichment of the native `eventData(...)` scope.
+- `api.custom.PerActionAutoTriggerCooldowns`: opts custom-unit metadata into deterministic
+  per-unit, per-action auto-trigger timers. Unconfigured actions inherit the metadata's native
+  core duration without sharing one unit-wide latch.
 - `api.custom.attachment.Attachments` and `AttachmentEvents`: slot discovery and offsets, attached
   unit snapshots, parent/slot lookup, attach/detach calls, and mutation callbacks.
 - `api.unit.tag.UnitTags` and `UnitTagEvents`: tag parsing/interning, immutable name snapshots,

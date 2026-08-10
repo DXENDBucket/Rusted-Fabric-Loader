@@ -1,4 +1,5 @@
 capability,apiClass
+custom.auto_trigger_cooldown.v1,custom.PerActionAutoTriggerCooldowns
 client.screen.v1,client.screen.ClientScreens
 client.render.alpha_mask.v1,client.render.AlphaMask
 client.render.bar.v1,client.render.BarStyle
