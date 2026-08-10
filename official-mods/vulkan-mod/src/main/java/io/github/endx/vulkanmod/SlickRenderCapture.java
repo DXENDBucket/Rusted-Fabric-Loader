@@ -3,21 +3,27 @@ package io.github.endx.vulkanmod;
 import android.graphics.Paint;
 import android.graphics.Paint$Align;
 import android.graphics.Paint$Style;
+import android.graphics.ColorFilter;
+import android.graphics.LightingColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import io.github.endx.vulkanmod.mixin.SlickGraphicsBackendStateAccessor;
 import io.github.endx.vulkanmod.mixin.SlickTransformStateAccessor;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
+import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
+import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import rustedwarfare.client.render.GameImage;
 import rustedwarfare.client.render.SlickGraphicsBackend;
 import rustedwarfare.client.render.SlickTransformState;
+import rustedwarfare.render.ShaderBlendMode;
+import rustedwarfare.render.ShaderColorFilter;
 
 /** Translates the first safe subset of Slick draw calls into ordered Vulkan commands. */
 final class SlickRenderCapture {
@@ -81,8 +87,8 @@ final class SlickRenderCapture {
         if (paint.d() == Paint$Style.b) {
             return rectangleOutline(source, left, top, right, bottom, paint);
         }
-        float[] color = color(paint.e());
-        colored(left, top, right - left, bottom - top, color, state(source));
+        float[] color = paintColor(paint);
+        colored(left, top, right - left, bottom - top, color, state(source, paint));
         if (paint.d() == Paint$Style.c) {
             rectangleOutline(source, left, top, right, bottom, paint);
         }
@@ -93,8 +99,8 @@ final class SlickRenderCapture {
                                      float right, float bottom, Paint paint) {
         float thickness = Math.max(1.0f, paint.g());
         float half = thickness * 0.5f;
-        float[] color = color(paint.e());
-        VulkanDrawState drawState = state(source);
+        float[] color = paintColor(paint);
+        VulkanDrawState drawState = state(source, paint);
         colored(left - half, top - half, right - left + thickness, thickness,
                 color, drawState);
         colored(left - half, bottom - half, right - left + thickness, thickness,
@@ -120,13 +126,13 @@ final class SlickRenderCapture {
         int imageHeight = image.getHeight();
         if (imageWidth <= 0 || imageHeight <= 0) return reject();
         long texture = VulkanRuntime.textureForGameImage(image);
-        float[] tint = paint == null ? WHITE : color(paint.e());
+        float[] tint = paint == null ? WHITE : paintColor(paint);
         builder.texturedQuad(new VulkanTexturedQuad(texture,
                 dst.a, dst.b, dst.c - dst.a, dst.d - dst.b,
                 src.a / (float) imageWidth, src.b / (float) imageHeight,
                 src.c / (float) imageWidth, src.d / (float) imageHeight,
                 tint[0], tint[1], tint[2], tint[3],
-                overrideState == null ? state(source) : overrideState));
+                overrideState == null ? state(source, paint) : overrideState));
         commandCount++;
         return true;
     }
@@ -155,7 +161,7 @@ final class SlickRenderCapture {
         VulkanTransform2D local = VulkanTransform2D.rotationAround(
                 angle, centerX, centerY);
         return image(source, image, sourceRect, destination, paint,
-                stateWithLocalTransform(source, local));
+                stateWithLocalTransform(source, paint, local));
     }
 
     boolean imageTransformed(SlickGraphicsBackend source, GameImage image,
@@ -165,7 +171,7 @@ final class SlickRenderCapture {
         RectF destination = new RectF(x, y,
                 x + image.getWidth() * scale, y + image.getHeight() * scale);
         return image(source, image, sourceRect, destination, paint,
-                stateWithLocalTransform(source,
+                stateWithLocalTransform(source, paint,
                         VulkanTransform2D.rotationAround(angle, x, y)));
     }
 
@@ -209,11 +215,11 @@ final class SlickRenderCapture {
         float left = x;
         if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
-        float[] tint = color(paint.e());
+        float[] tint = paintColor(paint);
         builder.texturedQuad(new VulkanTexturedQuad(texture.textureHandle,
                 left, y - texture.lineHeight, texture.width, texture.height,
                 0.0f, 0.0f, 1.0f, 1.0f,
-                tint[0], tint[1], tint[2], tint[3], state(source)));
+                tint[0], tint[1], tint[2], tint[3], state(source, paint)));
         commandCount++;
         return true;
     }
@@ -226,15 +232,15 @@ final class SlickRenderCapture {
         float dy = y2 - y1;
         float length = (float) Math.hypot(dx, dy);
         float thickness = Math.max(1.0f, paint.g());
-        float[] color = color(paint.e());
+        float[] color = paintColor(paint);
         if (length < 0.0001f) {
             colored(x1 - thickness * 0.5f, y1 - thickness * 0.5f,
-                    thickness, thickness, color, state(source));
+                    thickness, thickness, color, state(source, paint));
             return true;
         }
         float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
         colored(x1, y1 - thickness * 0.5f, length, thickness, color,
-                stateWithLocalTransform(source,
+                stateWithLocalTransform(source, paint,
                         VulkanTransform2D.rotationAround(angle, x1, y1)));
         return true;
     }
@@ -247,8 +253,8 @@ final class SlickRenderCapture {
         int availablePoints = Math.max(0, (points.length - start) / 2);
         int pointCount = Math.min(count, availablePoints);
         float size = Math.max(1.0f, paint.g());
-        float[] color = color(paint.e());
-        VulkanDrawState drawState = state(source);
+        float[] color = paintColor(paint);
+        VulkanDrawState drawState = state(source, paint);
         for (int index = 0; index < pointCount; index++) {
             int point = start + index * 2;
             colored(points[point] - size * 0.5f, points[point + 1] - size * 0.5f,
@@ -280,8 +286,8 @@ final class SlickRenderCapture {
         }
         int strips = Math.max(12, Math.min(64, (int) Math.ceil(radius)));
         float stripHeight = radius * 2.0f / strips;
-        float[] color = color(paint.e());
-        VulkanDrawState drawState = state(source);
+        float[] color = paintColor(paint);
+        VulkanDrawState drawState = state(source, paint);
         for (int strip = 0; strip < strips; strip++) {
             float relativeY = -radius + (strip + 0.5f) * stripHeight;
             float halfWidth = (float) Math.sqrt(Math.max(0.0f,
@@ -352,7 +358,14 @@ final class SlickRenderCapture {
     }
 
     private boolean ensure(SlickGraphicsBackend source) {
-        if (source == null || source.renderTargetImage != null) return false;
+        if (source == null) return false;
+        if (source.renderTargetImage != null) {
+            // Offscreen rendering still runs through Slick for now. Any intercepted draw means
+            // the next screen-space use must upload the newly rendered pixels, even when the
+            // game's public image version was not incremented by its Graphics path.
+            VulkanRuntime.invalidateCachedImage(source.renderTargetImage);
+            return false;
+        }
         if (builder == null) begin(source);
         if (backend == null) backend = source;
         return isCapturing(source);
@@ -370,7 +383,7 @@ final class SlickRenderCapture {
         commandCount++;
     }
 
-    private static VulkanDrawState state(SlickGraphicsBackend backend) {
+    private static VulkanDrawState state(SlickGraphicsBackend backend, Paint paint) {
         SlickTransformState raw = ((SlickGraphicsBackendStateAccessor) (Object) backend)
                 .vulkanmod$getTransformState();
         SlickTransformStateAccessor state = (SlickTransformStateAccessor) (Object) raw;
@@ -387,13 +400,15 @@ final class SlickRenderCapture {
         VulkanClipRect vulkanClip = clip == null ? null : new VulkanClipRect(
                 clip.a, clip.b, Math.max(0.0f, clip.c - clip.a),
                 Math.max(0.0f, clip.d - clip.b));
-        return new VulkanDrawState(transform, vulkanClip);
+        return new VulkanDrawState(transform, vulkanClip, blendMode(paint),
+                textureFilter(paint));
     }
 
     private static VulkanDrawState stateWithLocalTransform(
-            SlickGraphicsBackend backend, VulkanTransform2D local) {
-        VulkanDrawState base = state(backend);
-        return new VulkanDrawState(local.then(base.transform()), base.clip());
+            SlickGraphicsBackend backend, Paint paint, VulkanTransform2D local) {
+        VulkanDrawState base = state(backend, paint);
+        return new VulkanDrawState(local.then(base.transform()), base.clip(), base.blendMode(),
+                base.textureFilter());
     }
 
     private static float positiveModulo(float value, int divisor) {
@@ -408,6 +423,40 @@ final class SlickRenderCapture {
                 (argb & 255) / 255.0f,
                 ((argb >>> 24) & 255) / 255.0f
         };
+    }
+
+    private static float[] paintColor(Paint paint) {
+        float[] tint = color(paint.e());
+        ColorFilter filter = paint.h();
+        if (filter instanceof LightingColorFilter) {
+            int multiplier = ((LightingColorFilter) filter).a;
+            if (multiplier != 0 && multiplier != -1) {
+                float[] lighting = color(multiplier);
+                for (int channel = 0; channel < 4; channel++) {
+                    tint[channel] *= lighting[channel];
+                }
+            }
+        }
+        return tint;
+    }
+
+    private static VulkanBlendMode blendMode(Paint paint) {
+        if (paint == null) return VulkanBlendMode.NORMAL;
+        ColorFilter filter = paint.h();
+        if (filter instanceof LightingColorFilter) {
+            int multiplier = ((LightingColorFilter) filter).a;
+            if (multiplier != 0 && multiplier != -1) return VulkanBlendMode.ADDITIVE;
+        } else if (filter instanceof ShaderColorFilter) {
+            ShaderBlendMode mode = ((ShaderColorFilter) filter).blendMode;
+            if (mode == ShaderBlendMode.copy) return VulkanBlendMode.COPY;
+            if (mode == ShaderBlendMode.additive) return VulkanBlendMode.MODULATE;
+        }
+        return VulkanBlendMode.NORMAL;
+    }
+
+    private static VulkanTextureFilter textureFilter(Paint paint) {
+        return paint != null && paint.c()
+                ? VulkanTextureFilter.LINEAR : VulkanTextureFilter.NEAREST;
     }
 
     private static final float[] WHITE = { 1.0f, 1.0f, 1.0f, 1.0f };

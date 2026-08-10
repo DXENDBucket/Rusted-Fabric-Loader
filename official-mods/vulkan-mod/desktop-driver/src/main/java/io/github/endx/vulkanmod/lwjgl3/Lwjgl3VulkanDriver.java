@@ -1,12 +1,14 @@
 package io.github.endx.vulkanmod.lwjgl3;
 
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
+import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
@@ -104,7 +106,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     private static final int VERTEX_STRIDE = VERTEX_FLOATS * Float.BYTES;
     private static final int TEXTURED_VERTEX_FLOATS = 8;
     private static final int TEXTURED_VERTEX_STRIDE = TEXTURED_VERTEX_FLOATS * Float.BYTES;
-    private static final int MAX_TEXTURE_DESCRIPTORS = 8192;
+    private static final int MAX_TEXTURES = 8192;
     private static final String COLOR_VERTEX_SHADER = "#version 450\n"
             + "layout(location=0) in vec2 inPosition;\n"
             + "layout(location=1) in vec4 inColor;\n"
@@ -548,9 +550,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long[] imageViews = new long[0];
         private long renderPass;
         private long pipelineLayout;
-        private long colorPipeline;
+        private final long[] colorPipelines =
+                new long[VulkanBlendMode.values().length];
         private long texturePipelineLayout;
-        private long texturePipeline;
+        private final long[] texturePipelines =
+                new long[VulkanBlendMode.values().length];
         private long textureDescriptorSetLayout;
         private long textureDescriptorPool;
         private final Map<Long, TextureResource> textures =
@@ -684,7 +688,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private void createColorPipeline(MemoryStack stack) {
+        private long colorPipeline(MemoryStack stack, VulkanBlendMode blendMode) {
+            int index = blendMode.ordinal();
+            if (colorPipelines[index] == VK_NULL_HANDLE) {
+                createColorPipeline(stack, blendMode);
+            }
+            return colorPipelines[index];
+        }
+
+        private void createColorPipeline(MemoryStack stack, VulkanBlendMode blendMode) {
             long vertexModule = VK_NULL_HANDLE;
             long fragmentModule = VK_NULL_HANDLE;
             try {
@@ -732,16 +744,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 .sampleShadingEnable(false);
                 VkPipelineColorBlendAttachmentState.Buffer blendAttachment =
                         VkPipelineColorBlendAttachmentState.calloc(1, stack);
-                blendAttachment.get(0)
+                configureBlend(blendAttachment.get(0), blendMode)
                         .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-                        .blendEnable(true)
-                        .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
-                        .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                        .colorBlendOp(VK_BLEND_OP_ADD)
-                        .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
-                        .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                        .alphaBlendOp(VK_BLEND_OP_ADD);
+                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
                 VkPipelineColorBlendStateCreateInfo colorBlending =
                         VkPipelineColorBlendStateCreateInfo.calloc(stack).sType$Default()
                                 .logicOpEnable(false).pAttachments(blendAttachment);
@@ -749,12 +754,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         VkPipelineDynamicStateCreateInfo.calloc(stack).sType$Default()
                                 .pDynamicStates(stack.ints(
                                         VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
-                VkPipelineLayoutCreateInfo layoutInfo =
-                        VkPipelineLayoutCreateInfo.calloc(stack).sType$Default();
                 LongBuffer handle = stack.mallocLong(1);
-                check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
-                        "vkCreatePipelineLayout");
-                pipelineLayout = handle.get(0);
+                if (pipelineLayout == VK_NULL_HANDLE) {
+                    VkPipelineLayoutCreateInfo layoutInfo =
+                            VkPipelineLayoutCreateInfo.calloc(stack).sType$Default();
+                    check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
+                            "vkCreatePipelineLayout");
+                    pipelineLayout = handle.get(0);
+                }
                 VkGraphicsPipelineCreateInfo.Buffer pipelineInfo =
                         VkGraphicsPipelineCreateInfo.calloc(1, stack);
                 pipelineInfo.get(0).sType$Default().pStages(stages)
@@ -768,7 +775,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         .layout(pipelineLayout).renderPass(renderPass).subpass(0);
                 check(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE,
                         pipelineInfo, null, handle), "vkCreateGraphicsPipelines(coloredQuad)");
-                colorPipeline = handle.get(0);
+                colorPipelines[blendMode.ordinal()] = handle.get(0);
             } finally {
                 if (fragmentModule != VK_NULL_HANDLE) {
                     vkDestroyShaderModule(device, fragmentModule, null);
@@ -779,7 +786,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private void createTexturePipeline(MemoryStack stack) {
+        private long texturePipeline(MemoryStack stack, VulkanBlendMode blendMode) {
+            int index = blendMode.ordinal();
+            if (texturePipelines[index] == VK_NULL_HANDLE) {
+                createTexturePipeline(stack, blendMode);
+            }
+            return texturePipelines[index];
+        }
+
+        private void createTexturePipeline(MemoryStack stack, VulkanBlendMode blendMode) {
             if (textureDescriptorSetLayout == VK_NULL_HANDLE) {
                 throw new IllegalStateException("texture descriptor layout is unavailable");
             }
@@ -831,16 +846,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 .sampleShadingEnable(false);
                 VkPipelineColorBlendAttachmentState.Buffer blendAttachment =
                         VkPipelineColorBlendAttachmentState.calloc(1, stack);
-                blendAttachment.get(0)
+                configureBlend(blendAttachment.get(0), blendMode)
                         .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-                        .blendEnable(true)
-                        .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
-                        .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                        .colorBlendOp(VK_BLEND_OP_ADD)
-                        .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
-                        .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                        .alphaBlendOp(VK_BLEND_OP_ADD);
+                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
                 VkPipelineColorBlendStateCreateInfo colorBlending =
                         VkPipelineColorBlendStateCreateInfo.calloc(stack).sType$Default()
                                 .logicOpEnable(false).pAttachments(blendAttachment);
@@ -848,12 +856,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         VkPipelineDynamicStateCreateInfo.calloc(stack).sType$Default()
                                 .pDynamicStates(stack.ints(
                                         VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
-                VkPipelineLayoutCreateInfo layoutInfo = VkPipelineLayoutCreateInfo.calloc(stack)
-                        .sType$Default().pSetLayouts(stack.longs(textureDescriptorSetLayout));
                 LongBuffer handle = stack.mallocLong(1);
-                check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
-                        "vkCreatePipelineLayout(texture)");
-                texturePipelineLayout = handle.get(0);
+                if (texturePipelineLayout == VK_NULL_HANDLE) {
+                    VkPipelineLayoutCreateInfo layoutInfo = VkPipelineLayoutCreateInfo.calloc(stack)
+                            .sType$Default().pSetLayouts(stack.longs(textureDescriptorSetLayout));
+                    check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
+                            "vkCreatePipelineLayout(texture)");
+                    texturePipelineLayout = handle.get(0);
+                }
                 VkGraphicsPipelineCreateInfo.Buffer pipelineInfo =
                         VkGraphicsPipelineCreateInfo.calloc(1, stack);
                 pipelineInfo.get(0).sType$Default().pStages(stages)
@@ -864,7 +874,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         .renderPass(renderPass).subpass(0);
                 check(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE,
                         pipelineInfo, null, handle), "vkCreateGraphicsPipelines(texturedQuad)");
-                texturePipeline = handle.get(0);
+                texturePipelines[blendMode.ordinal()] = handle.get(0);
             } finally {
                 if (fragmentModule != VK_NULL_HANDLE) {
                     vkDestroyShaderModule(device, fragmentModule, null);
@@ -872,6 +882,41 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (vertexModule != VK_NULL_HANDLE) {
                     vkDestroyShaderModule(device, vertexModule, null);
                 }
+            }
+        }
+
+        private static VkPipelineColorBlendAttachmentState configureBlend(
+                VkPipelineColorBlendAttachmentState attachment,
+                VulkanBlendMode blendMode) {
+            attachment.blendEnable(true)
+                    .colorBlendOp(VK_BLEND_OP_ADD)
+                    .alphaBlendOp(VK_BLEND_OP_ADD);
+            switch (blendMode) {
+                case ADDITIVE:
+                    return attachment
+                            .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
+                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE)
+                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
+                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
+                case COPY:
+                    return attachment
+                            .srcColorBlendFactor(VK_BLEND_FACTOR_ONE)
+                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE)
+                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
+                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
+                case MODULATE:
+                    return attachment
+                            .srcColorBlendFactor(VK_BLEND_FACTOR_DST_COLOR)
+                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
+                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_DST_COLOR)
+                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+                case NORMAL:
+                default:
+                    return attachment
+                            .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
+                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
+                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
+                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
             }
         }
 
@@ -966,22 +1011,28 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkCreateImageView(device, viewInfo, null, handle),
                         "vkCreateImageView(texture)");
                 created.view = handle.get(0);
-                VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
-                        .sType$Default()
-                        .magFilter(VK_FILTER_LINEAR).minFilter(VK_FILTER_LINEAR)
-                        .mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-                        .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                        .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                        .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                        .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
-                        .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
-                        .minLod(0.0f).maxLod(0.0f)
-                        .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-                        .unnormalizedCoordinates(false);
-                check(vkCreateSampler(device, samplerInfo, null, handle),
-                        "vkCreateSampler(texture)");
-                created.sampler = handle.get(0);
-                allocateTextureDescriptor(stack, created);
+                for (VulkanTextureFilter filter : VulkanTextureFilter.values()) {
+                    int vkFilter = filter == VulkanTextureFilter.LINEAR
+                            ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+                    VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
+                            .sType$Default()
+                            .magFilter(vkFilter).minFilter(vkFilter)
+                            .mipmapMode(filter == VulkanTextureFilter.LINEAR
+                                    ? VK_SAMPLER_MIPMAP_MODE_LINEAR
+                                    : VK_SAMPLER_MIPMAP_MODE_NEAREST)
+                            .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
+                            .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
+                            .minLod(0.0f).maxLod(0.0f)
+                            .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+                            .unnormalizedCoordinates(false);
+                    check(vkCreateSampler(device, samplerInfo, null, handle),
+                            "vkCreateSampler(texture " + filter + ")");
+                    created.samplers[filter.ordinal()] = handle.get(0);
+                    allocateTextureDescriptor(stack, created, filter);
+                }
 
                 long publicHandle = nextTextureHandle++;
                 if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
@@ -1009,28 +1060,31 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             textureDescriptorSetLayout = handle.get(0);
             VkDescriptorPoolSize.Buffer poolSize = VkDescriptorPoolSize.calloc(1, stack);
             poolSize.get(0).type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                    .descriptorCount(MAX_TEXTURE_DESCRIPTORS);
+                    .descriptorCount(MAX_TEXTURES * VulkanTextureFilter.values().length);
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack)
                     .sType$Default().flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
-                    .maxSets(MAX_TEXTURE_DESCRIPTORS).pPoolSizes(poolSize);
+                    .maxSets(MAX_TEXTURES * VulkanTextureFilter.values().length)
+                    .pPoolSizes(poolSize);
             check(vkCreateDescriptorPool(device, poolInfo, null, handle),
                     "vkCreateDescriptorPool(texture)");
             textureDescriptorPool = handle.get(0);
         }
 
-        private void allocateTextureDescriptor(MemoryStack stack, TextureResource texture) {
+        private void allocateTextureDescriptor(MemoryStack stack, TextureResource texture,
+                                               VulkanTextureFilter filter) {
             VkDescriptorSetAllocateInfo allocateInfo = VkDescriptorSetAllocateInfo.calloc(stack)
                     .sType$Default().descriptorPool(textureDescriptorPool)
                     .pSetLayouts(stack.longs(textureDescriptorSetLayout));
             LongBuffer descriptor = stack.mallocLong(1);
             check(vkAllocateDescriptorSets(device, allocateInfo, descriptor),
                     "vkAllocateDescriptorSets(texture)");
-            texture.descriptorSet = descriptor.get(0);
+            texture.descriptorSets[filter.ordinal()] = descriptor.get(0);
             VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack);
-            imageInfo.get(0).sampler(texture.sampler).imageView(texture.view)
+            imageInfo.get(0).sampler(texture.samplers[filter.ordinal()]).imageView(texture.view)
                     .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             VkWriteDescriptorSet.Buffer write = VkWriteDescriptorSet.calloc(1, stack);
-            write.get(0).sType$Default().dstSet(texture.descriptorSet).dstBinding(0)
+            write.get(0).sType$Default()
+                    .dstSet(texture.descriptorSets[filter.ordinal()]).dstBinding(0)
                     .dstArrayElement(0).descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                     .descriptorCount(1).pImageInfo(imageInfo);
             vkUpdateDescriptorSets(device, write, null);
@@ -1143,12 +1197,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private void destroyTextureResource(TextureResource texture, boolean freeDescriptor,
                                             MemoryStack stack) {
-            if (freeDescriptor && texture.descriptorSet != VK_NULL_HANDLE
-                    && textureDescriptorPool != VK_NULL_HANDLE) {
-                check(vkFreeDescriptorSets(device, textureDescriptorPool,
-                        stack.longs(texture.descriptorSet)), "vkFreeDescriptorSets(texture)");
+            for (long descriptorSet : texture.descriptorSets) {
+                if (freeDescriptor && descriptorSet != VK_NULL_HANDLE
+                        && textureDescriptorPool != VK_NULL_HANDLE) {
+                    check(vkFreeDescriptorSets(device, textureDescriptorPool,
+                            stack.longs(descriptorSet)), "vkFreeDescriptorSets(texture)");
+                }
             }
-            if (texture.sampler != VK_NULL_HANDLE) vkDestroySampler(device, texture.sampler, null);
+            for (long sampler : texture.samplers) {
+                if (sampler != VK_NULL_HANDLE) vkDestroySampler(device, sampler, null);
+            }
             if (texture.view != VK_NULL_HANDLE) vkDestroyImageView(device, texture.view, null);
             if (texture.image != VK_NULL_HANDLE) vkDestroyImage(device, texture.image, null);
             if (texture.memory != VK_NULL_HANDLE) vkFreeMemory(device, texture.memory, null);
@@ -1168,14 +1226,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame,
                                                boolean retryOutOfDate) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                if ((!frame.coloredQuads().isEmpty() || !frame.coloredTriangles().isEmpty())
-                        && colorPipeline == VK_NULL_HANDLE) {
-                    createColorPipeline(stack);
-                }
-                if ((!frame.texturedQuads().isEmpty() || !frame.texturedTriangles().isEmpty())
-                        && texturePipeline == VK_NULL_HANDLE) {
-                    createTexturePipeline(stack);
-                }
                 check(vkWaitForFences(device, stack.longs(inFlightFence), true, Long.MAX_VALUE),
                         "vkWaitForFences");
                 IntBuffer imageIndex = stack.mallocInt(1);
@@ -1222,7 +1272,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     if (drawBatch instanceof ColoredDrawBatch) {
                         ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
                         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                colorPipeline);
+                                colorPipeline(stack, batch.blendMode));
                         vkCmdBindVertexBuffers(commandBuffer, 0,
                                 stack.longs(vertexBuffer), stack.longs(0L));
                         if (setScissor(commandBuffer, batch.clip, stack)) {
@@ -1232,7 +1282,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     } else {
                         TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
                         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                texturePipeline);
+                                texturePipeline(stack, batch.blendMode));
                         vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer),
                                 stack.longs(upload.texturedByteOffset));
                         if (setScissor(commandBuffer, batch.clip, stack)) {
@@ -1368,9 +1418,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (command instanceof VulkanColoredQuad) {
                     VulkanColoredQuad quad = (VulkanColoredQuad) command;
                     if (!(currentBatch instanceof ColoredDrawBatch)
-                            || !sameClip(currentBatch.clip, quad.state().clip())) {
+                            || !sameClip(currentBatch.clip, quad.state().clip())
+                            || currentBatch.blendMode != quad.state().blendMode()) {
                         currentBatch = new ColoredDrawBatch(
-                                quad.state().clip(), coloredFirstVertex);
+                                quad.state().clip(), quad.state().blendMode(),
+                                coloredFirstVertex);
                         result.batches.add(currentBatch);
                     }
                     currentBatch.vertexCount += 6;
@@ -1378,9 +1430,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 } else if (command instanceof VulkanColoredTriangle) {
                     VulkanColoredTriangle triangle = (VulkanColoredTriangle) command;
                     if (!(currentBatch instanceof ColoredDrawBatch)
-                            || !sameClip(currentBatch.clip, triangle.state().clip())) {
+                            || !sameClip(currentBatch.clip, triangle.state().clip())
+                            || currentBatch.blendMode != triangle.state().blendMode()) {
                         currentBatch = new ColoredDrawBatch(
-                                triangle.state().clip(), coloredFirstVertex);
+                                triangle.state().clip(), triangle.state().blendMode(),
+                                coloredFirstVertex);
                         result.batches.add(currentBatch);
                     }
                     currentBatch.vertexCount += 3;
@@ -1388,13 +1442,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 } else if (command instanceof VulkanTexturedQuad) {
                     VulkanTexturedQuad quad = (VulkanTexturedQuad) command;
                     TextureResource texture = textures.get(quad.textureHandle());
+                    long descriptorSet = texture.descriptorSets[
+                            quad.state().textureFilter().ordinal()];
                     TextureDrawBatch textureBatch = currentBatch instanceof TextureDrawBatch
                             ? (TextureDrawBatch) currentBatch : null;
                     if (textureBatch == null
                             || textureBatch.textureHandle != quad.textureHandle()
-                            || !sameClip(textureBatch.clip, quad.state().clip())) {
+                            || textureBatch.descriptorSet != descriptorSet
+                            || !sameClip(textureBatch.clip, quad.state().clip())
+                            || textureBatch.blendMode != quad.state().blendMode()) {
                         currentBatch = new TextureDrawBatch(quad.textureHandle(),
-                                texture.descriptorSet, quad.state().clip(), texturedFirstVertex);
+                                descriptorSet,
+                                quad.state().clip(),
+                                quad.state().blendMode(), texturedFirstVertex);
                         result.batches.add(currentBatch);
                     }
                     currentBatch.vertexCount += 6;
@@ -1402,14 +1462,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 } else if (command instanceof VulkanTexturedTriangle) {
                     VulkanTexturedTriangle triangle = (VulkanTexturedTriangle) command;
                     TextureResource texture = textures.get(triangle.textureHandle());
+                    long descriptorSet = texture.descriptorSets[
+                            triangle.state().textureFilter().ordinal()];
                     TextureDrawBatch textureBatch = currentBatch instanceof TextureDrawBatch
                             ? (TextureDrawBatch) currentBatch : null;
                     if (textureBatch == null
                             || textureBatch.textureHandle != triangle.textureHandle()
-                            || !sameClip(textureBatch.clip, triangle.state().clip())) {
+                            || textureBatch.descriptorSet != descriptorSet
+                            || !sameClip(textureBatch.clip, triangle.state().clip())
+                            || textureBatch.blendMode != triangle.state().blendMode()) {
                         currentBatch = new TextureDrawBatch(triangle.textureHandle(),
-                                texture.descriptorSet, triangle.state().clip(),
-                                texturedFirstVertex);
+                                descriptorSet,
+                                triangle.state().clip(),
+                                triangle.state().blendMode(), texturedFirstVertex);
                         result.batches.add(currentBatch);
                     }
                     currentBatch.vertexCount += 3;
@@ -1563,17 +1628,21 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (framebuffer != 0L) vkDestroyFramebuffer(device, framebuffer, null);
             }
             framebuffers = new long[0];
-            if (colorPipeline != 0L) {
-                vkDestroyPipeline(device, colorPipeline, null);
-                colorPipeline = 0L;
+            for (int index = 0; index < colorPipelines.length; index++) {
+                if (colorPipelines[index] != 0L) {
+                    vkDestroyPipeline(device, colorPipelines[index], null);
+                    colorPipelines[index] = 0L;
+                }
             }
             if (pipelineLayout != 0L) {
                 vkDestroyPipelineLayout(device, pipelineLayout, null);
                 pipelineLayout = 0L;
             }
-            if (texturePipeline != 0L) {
-                vkDestroyPipeline(device, texturePipeline, null);
-                texturePipeline = 0L;
+            for (int index = 0; index < texturePipelines.length; index++) {
+                if (texturePipelines[index] != 0L) {
+                    vkDestroyPipeline(device, texturePipelines[index], null);
+                    texturePipelines[index] = 0L;
+                }
             }
             if (texturePipelineLayout != 0L) {
                 vkDestroyPipelineLayout(device, texturePipelineLayout, null);
@@ -1630,17 +1699,22 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private long image;
             private long memory;
             private long view;
-            private long sampler;
-            private long descriptorSet;
+            private final long[] samplers =
+                    new long[VulkanTextureFilter.values().length];
+            private final long[] descriptorSets =
+                    new long[VulkanTextureFilter.values().length];
         }
 
         private abstract static class DrawBatch {
             final VulkanClipRect clip;
+            final VulkanBlendMode blendMode;
             final int firstVertex;
             int vertexCount;
 
-            private DrawBatch(VulkanClipRect clip, int firstVertex) {
+            private DrawBatch(VulkanClipRect clip, VulkanBlendMode blendMode,
+                              int firstVertex) {
                 this.clip = clip;
+                this.blendMode = blendMode;
                 this.firstVertex = firstVertex;
             }
         }
@@ -1650,16 +1724,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private final long descriptorSet;
 
             private TextureDrawBatch(long textureHandle, long descriptorSet,
-                                     VulkanClipRect clip, int firstVertex) {
-                super(clip, firstVertex);
+                                     VulkanClipRect clip, VulkanBlendMode blendMode,
+                                     int firstVertex) {
+                super(clip, blendMode, firstVertex);
                 this.textureHandle = textureHandle;
                 this.descriptorSet = descriptorSet;
             }
         }
 
         private static final class ColoredDrawBatch extends DrawBatch {
-            private ColoredDrawBatch(VulkanClipRect clip, int firstVertex) {
-                super(clip, firstVertex);
+            private ColoredDrawBatch(VulkanClipRect clip, VulkanBlendMode blendMode,
+                                     int firstVertex) {
+                super(clip, blendMode, firstVertex);
             }
         }
 

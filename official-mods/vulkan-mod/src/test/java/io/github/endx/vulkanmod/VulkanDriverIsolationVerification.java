@@ -1,10 +1,12 @@
 package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
+import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
@@ -32,7 +34,8 @@ public final class VulkanDriverIsolationVerification {
             throw new AssertionError("affine transform composition order is invalid");
         }
         VulkanDrawState drawState = new VulkanDrawState(transform,
-                new VulkanClipRect(0.0f, 0.0f, 640.0f, 360.0f));
+                new VulkanClipRect(0.0f, 0.0f, 640.0f, 360.0f),
+                VulkanBlendMode.ADDITIVE, VulkanTextureFilter.NEAREST);
         VulkanFrameCommands commands = VulkanFrameCommands.builder(1280, 720)
                 .clear(0.1f, 0.2f, 0.3f, 1.0f)
                 .coloredQuad(new VulkanColoredQuad(
@@ -58,6 +61,10 @@ public final class VulkanDriverIsolationVerification {
                 || commands.texturedQuads().size() != 1
                 || commands.texturedQuads().get(0).textureHandle() != 7L
                 || commands.texturedQuads().get(0).state().clip() == null
+                || commands.texturedQuads().get(0).state().blendMode()
+                        != VulkanBlendMode.ADDITIVE
+                || commands.texturedQuads().get(0).state().textureFilter()
+                        != VulkanTextureFilter.NEAREST
                 || commands.coloredTriangles().size() != 1
                 || commands.texturedTriangles().size() != 1
                 || commands.commands().size() != 4

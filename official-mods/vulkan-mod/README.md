@@ -21,10 +21,13 @@ development default, `frame_test` presents one diagnostic Vulkan frame after an 
 takeover: every game-loop frame captures Slick clears, image draws, transformed/tiled images,
 rectangles, lines, circles and text into an ordered Vulkan frame. It also translates LibRocket's
 indexed colored/textured geometry, including its scissor state, before presenting the completed
-frame. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the game
-thread. The text path currently rasterizes and caches complete AWT string runs rather than using a
-glyph atlas. Slick shaders, blend-mode parity, offscreen render targets and a proper frames-in-flight
-scheduler still need Vulkan implementations, so takeover remains an opt-in developer mode.
+frame. Normal, additive, copy and modulation blend equations follow the game's Slick state, while
+each texture has independently selectable linear and nearest-neighbour sampling. Slick-rendered
+offscreen images remain a compatibility fallback and invalidate their Vulkan copy whenever they are
+drawn into. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the
+game thread. The text path currently rasterizes and caches complete AWT string runs rather than
+using a glyph atlas. Arbitrary Slick shaders, native Vulkan offscreen targets and a proper
+frames-in-flight scheduler still need implementations, so takeover remains an opt-in developer mode.
 
 ## Boundary
 
@@ -43,9 +46,10 @@ scheduler still need Vulkan implementations, so takeover remains an opt-in devel
 2. Add native-window surface creation and queue-family selection while Slick still owns the desktop
    window and input loop. Swapchain resize recreation, basic render targets, command submission,
    synchronization, and an opt-in one-frame presentation test are complete.
-3. Complete offscreen render targets, shader/blend-state translation and dynamic texture
-   invalidation. The current takeover already translates the commonly used `GraphicsEngine`, Slick
-   primitive/image and LibRocket geometry paths into frame-local commands.
+3. Complete native offscreen render targets and shader translation. Common blend modes, texture
+   filtering and dynamic fallback-texture invalidation are complete; the takeover already translates
+   the commonly used `GraphicsEngine`, Slick primitive/image and LibRocket geometry paths into
+   frame-local commands.
 4. Replace the serialized safe baseline with persistent mapped vertex/index rings and multiple
    frames in flight, then widen batching without changing draw order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the remaining OpenGL fallback
