@@ -4,6 +4,9 @@
   "package": "io.github.endx.vulkanmod.mixin",
   "compatibilityLevel": "JAVA_13",
   "mixins": [
+    "AppGameContainerRendererBootstrapMixin",
+    "RustedWarfareMainRendererSelectionNamedMixin",
+    "SlickGameGraphicsEngineCompatibilityNamedMixin",
     "SlickGameVulkanSurfaceNamedMixin",
     "RustedWarfareGameLoopVulkanPresentNamedMixin",
     "SlickBitmapVulkanTextureLifecycleNamedMixin",

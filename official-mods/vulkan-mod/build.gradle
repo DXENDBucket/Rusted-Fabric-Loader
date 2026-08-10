@@ -35,6 +35,7 @@ dependencies {
     compileOnly "net.fabricmc:fabric-loader:0.18.1"
     compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
     compileOnly files({ namedGameJarFile() })
+    compileOnly files(rootProject.file('libs/android.jar'))
     testRuntimeOnly "net.fabricmc:fabric-loader:0.18.1"
     desktopDriverBundle project(':official-mods:vulkan-mod:desktop-driver')
 }
@@ -82,7 +83,10 @@ tasks.register('verifyVulkanModBundle') {
             }
             def mixins = new groovy.json.JsonSlurper().parseText(
                     zip.getInputStream(zip.getEntry('vulkanmod.mixins.json')).getText('UTF-8'))
-            if (!mixins.mixins.contains('SlickGameVulkanSurfaceNamedMixin')
+            if (!mixins.mixins.contains('AppGameContainerRendererBootstrapMixin')
+                    || !mixins.mixins.contains('RustedWarfareMainRendererSelectionNamedMixin')
+                    || !mixins.mixins.contains('SlickGameGraphicsEngineCompatibilityNamedMixin')
+                    || !mixins.mixins.contains('SlickGameVulkanSurfaceNamedMixin')
                     || !mixins.mixins.contains('RustedWarfareGameLoopVulkanPresentNamedMixin')
                     || !mixins.mixins.contains('SlickBitmapVulkanTextureLifecycleNamedMixin')
                     || !mixins.mixins.contains('SlickBitmapOrTextureDataAccessor')
@@ -100,8 +104,9 @@ tasks.register('verifyVulkanModBundle') {
                 throw new GradleException('Vulkan desktop driver manifest is missing')
             }
             if (zip.getEntry('META-INF/LICENSE-rusted-fabric.txt') == null
-                    || zip.getEntry('META-INF/THIRD_PARTY_NOTICES.md') == null) {
-                throw new GradleException('Vulkan Mod license or third-party notices are missing')
+                    || zip.getEntry('META-INF/THIRD_PARTY_NOTICES.md') == null
+                    || zip.getEntry('io/github/endx/vulkanmod/render/VulkanGraphicsEngine.class') == null) {
+                throw new GradleException('Vulkan Mod bundle is missing renderer or legal metadata')
             }
             def properties = new Properties()
             zip.getInputStream(propertiesEntry).withCloseable { properties.load(it) }

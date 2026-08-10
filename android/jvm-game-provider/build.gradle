@@ -24,6 +24,7 @@ sourceSets {
         java {
             srcDir '../../src/main/java'
             include 'io/github/endx/rustedfabricloader/RustedWarfareGameProvider.java'
+            include 'io/github/endx/rustedfabricloader/RendererBackendSelection.java'
         }
     }
 }
@@ -66,6 +67,7 @@ tasks.register('verifyAndroidJvmLauncher') {
         def required = [
                 'net/fabricmc/loader/impl/launch/knot/KnotClient.class',
                 'io/github/endx/rustedfabricloader/RustedWarfareGameProvider.class',
+                'io/github/endx/rustedfabricloader/RendererBackendSelection.class',
                 'META-INF/services/net.fabricmc.loader.impl.game.GameProvider'
         ] as Set
         def found = [] as Set

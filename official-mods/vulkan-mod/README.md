@@ -15,7 +15,7 @@ Game-owned `GameImage` objects can now be read back into an identity/version-awa
 cache. Image reload and release hooks invalidate stale GPU copies. Draw commands also carry an
 affine screen-space transform and optional scissor rectangle; transforms are baked while batching,
 and scissor changes split otherwise compatible batches.
-Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|required`; `probe` is the
+Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|native|required`; `probe` is the
 development default, `frame_test` presents 300 solid diagnostic frames (red, green, then blue)
 after OpenGL frames, and `required` makes an unavailable driver fail startup. `takeover_test` is
 the first real presentation takeover. Its Win32 child surface starts hidden while draw calls are
@@ -32,6 +32,16 @@ drawn into. A minimized or occluded window uses a bounded image-acquire wait so 
 game thread. The text path currently rasterizes and caches complete AWT string runs rather than
 using a glyph atlas. Arbitrary Slick shaders, native Vulkan offscreen targets and a proper
 frames-in-flight scheduler still need implementations, so takeover remains an opt-in developer mode.
+
+`native` is the first renderer-startup migration stage. The Vulkan mod registers as a renderer
+provider during client-mod initialization, then RFL resolves the backend before invoking the game
+main class. A bootstrap hook confirms that decision at the start of `AppGameContainer.setup()`,
+before Slick calls `Display.create()`. The game now constructs `VulkanGraphicsEngine` as its
+`GraphicsEngine`; this first implementation delegates operations not yet migrated to Slick while
+the proven Vulkan capture path presents them. This stage intentionally retains Slick's compatibility
+window and OpenGL context for input, LibRocket and fallback assets. Removing that context requires
+a native platform window/input loop and completion of the renderer methods, not another overlay
+timing switch.
 
 Useful takeover diagnostics are:
 

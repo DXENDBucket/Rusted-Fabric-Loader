@@ -121,7 +121,7 @@ the API promotes it to a required matching version for subsequent peer handshake
 ## Mappings
 The `src/main/resources/mappings/mappings.tiny` file is packaged into the GameProvider jar at `mappings/mappings.tiny`, the resource path Fabric Loader checks by default.
 
-`game-lib-named.jar` contains remapped game classes, so it is generated locally from a developer's own `game-lib.jar` rather than distributed with the loader. Put `game-lib.jar` in `libs/`, or pass its path with `-PgameLibJar`.
+`game-lib-named.jar` contains remapped game classes, so it is generated locally from a developer's own `game-lib.jar` rather than distributed with the loader. Put `game-lib.jar` in `libs/`, or pass its path with `-PgameLibJar`. Building Vulkan Mod's `GraphicsEngine` bridge also requires the game's `libs/android.jar` copied to the workspace `libs/` directory. Both local game files are ignored by Git.
 
 Run `generateNamedGameJar` to create a development jar at `build/rusted-dev/game-lib-named.jar`:
 

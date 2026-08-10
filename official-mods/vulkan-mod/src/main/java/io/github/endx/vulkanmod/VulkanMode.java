@@ -8,6 +8,8 @@ public enum VulkanMode {
     PROBE,
     FRAME_TEST,
     TAKEOVER_TEST,
+    /** Selected before game startup; currently uses the compatibility capture bridge. */
+    NATIVE,
     REQUIRED;
 
     static VulkanMode configured() {
@@ -21,6 +23,10 @@ public enum VulkanMode {
             case "frame_test": return FRAME_TEST;
             case "takeover-test":
             case "takeover_test": return TAKEOVER_TEST;
+            case "native":
+            case "vulkan":
+            case "rustedvk":
+            case "rusted_vk": return NATIVE;
             case "required": return REQUIRED;
             default: throw new IllegalArgumentException(
                     "Unknown rusted.fabric.vulkan.mode: " + raw);

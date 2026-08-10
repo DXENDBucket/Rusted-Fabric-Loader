@@ -8,6 +8,11 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,6 +21,10 @@ final class VulkanTextTextureCache implements AutoCloseable {
     private static final int MAX_ENTRIES = 768;
 
     private final VulkanDriverLoader.LoadedDriver driver;
+    private final Font regularFont;
+    private final Font boldFont;
+    private final Font cjkFont;
+    private final Font legacyFallbackFont;
     private final LinkedHashMap<Key, Entry> entries =
             new LinkedHashMap<Key, Entry>(128, 0.75f, true);
     private boolean closed;
@@ -23,6 +32,10 @@ final class VulkanTextTextureCache implements AutoCloseable {
     VulkanTextTextureCache(VulkanDriverLoader.LoadedDriver driver) {
         if (driver == null) throw new NullPointerException("driver");
         this.driver = driver;
+        regularFont = loadGameFont("font/Roboto-Regular.ttf", Font.PLAIN);
+        boldFont = loadGameFont("font/Roboto-Bold.ttf", Font.BOLD);
+        cjkFont = loadGameFont("font/NotoSansCJKsc-Regular.otf", Font.PLAIN);
+        legacyFallbackFont = loadGameFont("font/DroidSansFallback.ttf", Font.PLAIN);
     }
 
     synchronized Entry texture(String text, int requestedSize, boolean bold) {
@@ -58,8 +71,9 @@ final class VulkanTextTextureCache implements AutoCloseable {
         entries.clear();
     }
 
-    private static Raster rasterize(String text, int size, boolean bold) {
-        Font font = new Font(Font.SANS_SERIF, bold ? Font.BOLD : Font.PLAIN, size);
+    private Raster rasterize(String text, int size, boolean bold) {
+        Font primary = (bold ? boldFont : regularFont).deriveFont((float) size);
+        Font font = selectFont(primary, text, size);
         BufferedImage measurement = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         Graphics2D measureGraphics = measurement.createGraphics();
         configure(measureGraphics);
@@ -99,6 +113,35 @@ final class VulkanTextTextureCache implements AutoCloseable {
             }
         }
         return new Raster(width, height, lineHeight, rgba);
+    }
+
+    private Font selectFont(Font primary, String text, int size) {
+        if (primary.canDisplayUpTo(text) < 0) return primary;
+        Font cjk = cjkFont.deriveFont((float) size);
+        if (cjk.canDisplayUpTo(text) < 0) return cjk;
+        return legacyFallbackFont.deriveFont((float) size);
+    }
+
+    private static Font loadGameFont(String resource, int fallbackStyle) {
+        try (InputStream stream = openGameResource(resource)) {
+            if (stream == null) throw new IOException("resource not found: " + resource);
+            return Font.createFont(Font.TRUETYPE_FONT, stream);
+        } catch (Exception failure) {
+            System.out.println("[Vulkan Mod] Could not load original game font " + resource
+                    + "; using logical SansSerif: " + failure.getMessage());
+            return new Font(Font.SANS_SERIF, fallbackStyle, 1);
+        }
+    }
+
+    private static InputStream openGameResource(String resource) throws IOException {
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        InputStream stream = context == null ? null : context.getResourceAsStream(resource);
+        if (stream == null) {
+            stream = VulkanTextTextureCache.class.getClassLoader().getResourceAsStream(resource);
+        }
+        if (stream != null) return stream;
+        Path path = Paths.get(resource);
+        return Files.isRegularFile(path) ? Files.newInputStream(path) : null;
     }
 
     private static void configure(Graphics2D graphics) {

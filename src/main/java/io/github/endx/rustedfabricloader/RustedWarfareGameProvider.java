@@ -887,6 +887,9 @@ public class RustedWarfareGameProvider implements GameProvider {
             fl.invokeEntrypoints("main", net.fabricmc.api.ModInitializer.class, net.fabricmc.api.ModInitializer::onInitialize);
             fl.invokeEntrypoints("client", net.fabricmc.api.ClientModInitializer.class, net.fabricmc.api.ClientModInitializer::onInitializeClient);
 
+            RendererBackendSelection.resolveAndPublish(message ->
+                    Log.info(LOG_CATEGORY, message));
+
             runRustedFabricAPIStage("rusted_fabric_loader:before_game");
 
             // launch
@@ -997,6 +1000,10 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("gameArgs", getLaunchArguments(false));
         ctx.put("androidRuntime", isAndroidRuntime());
         ctx.put("runtimeNamespace", getRequestedRuntimeNamespace());
+        ctx.put("rendererBackend", System.getProperty(
+                RendererBackendSelection.RESOLVED_PROPERTY, "opengl"));
+        ctx.put("rendererRequested", System.getProperty(
+                RendererBackendSelection.REQUEST_PROPERTY, "auto"));
         ctx.put("entrypointKey", key);
         ctx.put("rusted_fabric_api.multiplayerManifest", buildMultiplayerManifest());
 

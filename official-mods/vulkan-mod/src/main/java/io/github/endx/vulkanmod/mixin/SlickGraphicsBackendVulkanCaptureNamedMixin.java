@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import rustedwarfare.client.render.GameImage;
 import rustedwarfare.client.render.SlickGraphicsBackend;
 
-/** Captures a conservative subset of top-level Slick drawing during takeover_test. */
+/** Captures top-level Slick compatibility drawing during takeover modes. */
 @Mixin(targets = "rustedwarfare.client.render.SlickGraphicsBackend", remap = false)
 public abstract class SlickGraphicsBackendVulkanCaptureNamedMixin {
     private SlickGraphicsBackend vulkanmod$self() {
