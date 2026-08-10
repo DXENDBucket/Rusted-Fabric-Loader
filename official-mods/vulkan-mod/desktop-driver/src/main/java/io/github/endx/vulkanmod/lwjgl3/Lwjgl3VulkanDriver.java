@@ -217,6 +217,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         return surfaceSession.presentFrame(frame);
     }
 
+    @Override public synchronized VulkanSurfaceInfo presentFrameAndReveal(
+            VulkanFrameCommands frame) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        if (frame == null) throw new NullPointerException("frame");
+        return surfaceSession.presentFrameAndReveal(frame);
+    }
+
+    @Override public synchronized boolean setSurfaceVisible(boolean visible) {
+        if (surfaceSession == null) return false;
+        return surfaceSession.setVisible(visible);
+    }
+
     @Override public synchronized long uploadTexture(VulkanTextureData texture) {
         if (surfaceSession == null) {
             throw new IllegalStateException("Vulkan surface has not been created");
@@ -551,16 +565,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private final long handle;
         private final long parentHandle;
+        private final boolean detached;
         private int width;
         private int height;
         private int x;
         private int y;
+        private boolean visibleRequested;
         private boolean closed;
 
-        private Win32OverlayWindow(long handle, long parentHandle,
+        private Win32OverlayWindow(long handle, long parentHandle, boolean detached,
                                    int width, int height, int x, int y) {
             this.handle = handle;
             this.parentHandle = parentHandle;
+            this.detached = detached;
             this.width = width;
             this.height = height;
             this.x = x;
@@ -590,10 +607,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             // WM_NCHITTEST already passes pointer input through to the game. WS_EX_TRANSPARENT is
             // intentionally not used: DWM may then classify the Vulkan popup as occluded behind
             // its WGL owner and retain every swapchain image after the first present.
-            int extendedStyle = User32.WS_EX_NOACTIVATE | User32.WS_EX_TOOLWINDOW;
-            int style = User32.WS_POPUP | User32.WS_VISIBLE;
             boolean detached = Boolean.getBoolean(
                     "rusted.fabric.vulkan.debugDetachedOverlay");
+            int extendedStyle = detached
+                    ? 0
+                    : User32.WS_EX_NOACTIVATE | User32.WS_EX_TOOLWINDOW;
+            int style = User32.WS_POPUP;
             int x;
             int y;
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -605,7 +624,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 x = origin.x();
                 y = origin.y();
             }
-            long window = User32.CreateWindowEx(null, extendedStyle, CLASS_NAME, "",
+            String title = detached ? "Rusted Fabric Vulkan Diagnostic" : "";
+            long window = User32.CreateWindowEx(null, extendedStyle, CLASS_NAME, title,
                     style, x, y, request.width(), request.height(),
                     detached ? 0L : request.windowHandle(),
                     0L, instance, 0L);
@@ -613,15 +633,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 throw new IllegalStateException("CreateWindowEx(Vulkan overlay) failed");
             }
             User32.SetWindowPos(null, window, User32.HWND_TOP, 0, 0,
-                    request.width(), request.height(), User32.SWP_NOACTIVATE
-                            | User32.SWP_SHOWWINDOW | User32.SWP_NOMOVE);
-            User32.ShowWindow(window, User32.SW_SHOWNOACTIVATE);
-            User32.UpdateWindow(window);
+                    request.width(), request.height(),
+                    (detached ? 0 : User32.SWP_NOACTIVATE) | User32.SWP_NOMOVE);
+            User32.ShowWindow(window, User32.SW_HIDE);
             if (detached) {
                 System.out.println("[Vulkan Mod/Driver] Using detached Win32 overlay diagnostic");
             }
             Win32OverlayWindow result = new Win32OverlayWindow(window, request.windowHandle(),
-                    request.width(), request.height(), x, y);
+                    detached, request.width(), request.height(), x, y);
             result.pumpMessages();
             return result;
         }
@@ -631,7 +650,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             int nextHeight = Math.max(1, requestedHeight);
             if (closed) return;
             pumpMessages();
-            if (!User32.IsWindowVisible(parentHandle) || User32.IsIconic(parentHandle)) {
+            if (!visibleRequested || !User32.IsWindowVisible(parentHandle)
+                    || User32.IsIconic(parentHandle)) {
                 User32.ShowWindow(handle, User32.SW_HIDE);
                 return;
             }
@@ -643,18 +663,31 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 nextX = origin.x();
                 nextY = origin.y();
             }
-            User32.ShowWindow(handle, User32.SW_SHOWNOACTIVATE);
+            User32.ShowWindow(handle, detached ? User32.SW_SHOW : User32.SW_SHOWNOACTIVATE);
             // Slick swaps its WGL surface immediately before this call. Reassert the popup order
             // even when its rectangle did not change so that Vulkan remains above the owner.
             if (!User32.SetWindowPos(null, handle, User32.HWND_TOP, nextX, nextY,
                     nextWidth, nextHeight,
-                    User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW)) {
+                    (detached ? 0 : User32.SWP_NOACTIVATE) | User32.SWP_SHOWWINDOW)) {
                 throw new IllegalStateException("SetWindowPos(Vulkan overlay) failed");
             }
             width = nextWidth;
             height = nextHeight;
             x = nextX;
             y = nextY;
+        }
+
+        private boolean setVisible(boolean visible) {
+            if (closed) return false;
+            visibleRequested = visible;
+            if (!visible) {
+                User32.ShowWindow(handle, User32.SW_HIDE);
+                pumpMessages();
+                return true;
+            }
+            resize(width, height);
+            User32.UpdateWindow(handle);
+            return User32.IsWindowVisible(handle);
         }
 
         private void pumpMessages() {
@@ -714,7 +747,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long commandPool;
         private VkCommandBuffer[] commandBuffers = new VkCommandBuffer[0];
         private long imageAvailableSemaphore;
-        private long renderFinishedSemaphore;
+        private long[] renderFinishedSemaphores = new long[0];
         private long inFlightFence;
         private long vertexBuffer;
         private long vertexMemory;
@@ -752,9 +785,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkCreateSemaphore(device, semaphoreInfo, null, handle),
                         "vkCreateSemaphore(imageAvailable)");
                 imageAvailableSemaphore = handle.get(0);
-                check(vkCreateSemaphore(device, semaphoreInfo, null, handle),
-                        "vkCreateSemaphore(renderFinished)");
-                renderFinishedSemaphore = handle.get(0);
                 VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack)
                         .sType$Default().flags(VK_FENCE_CREATE_SIGNALED_BIT);
                 check(vkCreateFence(device, fenceInfo, null, handle), "vkCreateFence");
@@ -765,6 +795,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private void createSwapchainResources(MemoryStack stack) {
             imageViews = new long[images.length];
             LongBuffer handle = stack.mallocLong(1);
+            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack)
+                    .sType$Default();
+            renderFinishedSemaphores = new long[images.length];
+            for (int index = 0; index < images.length; index++) {
+                check(vkCreateSemaphore(device, semaphoreInfo, null, handle),
+                        "vkCreateSemaphore(renderFinished[" + index + "])");
+                renderFinishedSemaphores[index] = handle.get(0);
+            }
             for (int index = 0; index < images.length; index++) {
                 VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
                         .sType$Default()
@@ -1367,6 +1405,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
+            return prepareAndPresentFrame(frame, false);
+        }
+
+        private VulkanSurfaceInfo presentFrameAndReveal(VulkanFrameCommands frame) {
+            if (overlay == null) {
+                throw new IllegalStateException("Vulkan surface has no independently owned overlay");
+            }
+            return prepareAndPresentFrame(frame, true);
+        }
+
+        private VulkanSurfaceInfo prepareAndPresentFrame(VulkanFrameCommands frame,
+                                                         boolean revealBeforePresent) {
             if (closed) throw new IllegalStateException("Vulkan surface is closed");
             int width = frame.width();
             int height = frame.height();
@@ -1375,18 +1425,25 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     && (width != info.width() || height != info.height())) {
                 recreateSwapchain(width, height);
             }
-            return presentFrame(frame, true);
+            return presentFrame(frame, true, revealBeforePresent);
+        }
+
+        private boolean setVisible(boolean visible) {
+            return overlay != null && overlay.setVisible(visible);
         }
 
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame,
-                                               boolean retryOutOfDate) {
+                                               boolean retryOutOfDate,
+                                               boolean revealBeforePresent) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 check(vkWaitForFences(device, stack.longs(inFlightFence), true, Long.MAX_VALUE),
                         "vkWaitForFences");
                 IntBuffer imageIndex = stack.mallocInt(1);
                 // A minimized/occluded Win32 surface is allowed to stop returning images.
                 // Never let that suspend Rusted Warfare's game thread indefinitely.
-                int acquire = vkAcquireNextImageKHR(device, swapchain, 16_000_000L,
+                long acquireTimeout = Boolean.getBoolean(
+                        "rusted.fabric.vulkan.debugInfiniteAcquire") ? -1L : 16_000_000L;
+                int acquire = vkAcquireNextImageKHR(device, swapchain, acquireTimeout,
                         imageAvailableSemaphore, VK_NULL_HANDLE, imageIndex);
                 if (acquire == VK_TIMEOUT || acquire == VK_NOT_READY) {
                     acquireSkips++;
@@ -1398,13 +1455,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 }
                 if (acquire == VK_ERROR_OUT_OF_DATE_KHR && retryOutOfDate) {
                     recreateSwapchain(frame.width(), frame.height());
-                    return presentFrame(frame, false);
+                    return presentFrame(frame, false, revealBeforePresent);
                 }
                 if (acquire != VK_SUCCESS && acquire != VK_SUBOPTIMAL_KHR) {
                     check(acquire, "vkAcquireNextImageKHR");
                 }
                 check(vkResetFences(device, stack.longs(inFlightFence)), "vkResetFences");
                 int index = imageIndex.get(0);
+                long renderFinishedSemaphore = renderFinishedSemaphores[index];
                 FrameUpload upload = uploadFrame(frame, stack);
                 VkCommandBuffer commandBuffer = commandBuffers[index];
                 check(vkResetCommandBuffer(commandBuffer, 0), "vkResetCommandBuffer");
@@ -1457,27 +1515,38 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkEndCommandBuffer(commandBuffer), "vkEndCommandBuffer");
 
                 VkSubmitInfo submit = VkSubmitInfo.calloc(stack).sType$Default()
+                        .waitSemaphoreCount(1)
                         .pWaitSemaphores(stack.longs(imageAvailableSemaphore))
                         .pWaitDstStageMask(stack.ints(
                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT))
                         .pCommandBuffers(stack.pointers(commandBuffer.address()))
                         .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
                 check(vkQueueSubmit(graphicsQueue, submit, inFlightFence), "vkQueueSubmit");
+                boolean revealed = false;
+                if (revealBeforePresent) {
+                    if (!overlay.setVisible(true)) {
+                        throw new IllegalStateException("Could not reveal Vulkan overlay");
+                    }
+                    revealed = true;
+                }
                 VkPresentInfoKHR present = VkPresentInfoKHR.calloc(stack).sType$Default()
                         .pWaitSemaphores(stack.longs(renderFinishedSemaphore))
+                        .swapchainCount(1)
                         .pSwapchains(stack.longs(swapchain)).pImageIndices(imageIndex);
                 int presented = vkQueuePresentKHR(presentQueue, present);
                 if ((presented == VK_ERROR_OUT_OF_DATE_KHR || presented == VK_SUBOPTIMAL_KHR)
                         && retryOutOfDate) {
+                    if (revealed) overlay.setVisible(false);
                     recreateSwapchain(frame.width(), frame.height());
+                    return null;
                 } else if (presented != VK_SUCCESS) {
+                    if (revealed) overlay.setVisible(false);
                     check(presented, "vkQueuePresentKHR");
                 } else {
-                    // The first playable takeover path deliberately owns one semaphore pair.
-                    // Wait until presentation consumed renderFinishedSemaphore before the next
-                    // frame reuses it; otherwise some drivers can block forever in acquire.
-                    // Replace this serialized baseline with per-frame sync objects when the
-                    // renderer grows a proper frames-in-flight scheduler.
+                    // This serialized baseline keeps one acquire semaphore and submit fence.
+                    // Present-wait semaphores are instead indexed by swapchain image: neither a
+                    // submit fence nor QueueWaitIdle proves that presentation has stopped using
+                    // one, while reacquiring that same image does.
                     check(vkQueueWaitIdle(presentQueue), "vkQueueWaitIdle(present)");
                     successfulPresents++;
                     if (successfulPresents == 1) {
@@ -1786,6 +1855,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private void destroySwapchainResources() {
+            for (long semaphore : renderFinishedSemaphores) {
+                if (semaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, semaphore, null);
+            }
+            renderFinishedSemaphores = new long[0];
             if (commandPool != 0L) {
                 vkDestroyCommandPool(device, commandPool, null);
                 commandPool = 0L;
@@ -1830,9 +1903,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             closed = true;
             vkDeviceWaitIdle(device);
             if (inFlightFence != 0L) vkDestroyFence(device, inFlightFence, null);
-            if (renderFinishedSemaphore != 0L) {
-                vkDestroySemaphore(device, renderFinishedSemaphore, null);
-            }
             if (imageAvailableSemaphore != 0L) {
                 vkDestroySemaphore(device, imageAvailableSemaphore, null);
             }

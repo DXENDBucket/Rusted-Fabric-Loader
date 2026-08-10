@@ -153,8 +153,16 @@ final class VulkanDriverLoader {
             });
         }
 
+        boolean setSurfaceVisible(boolean visible) {
+            return invoke(() -> driver.setSurfaceVisible(visible));
+        }
+
         VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
             return invoke(() -> driver.presentFrame(frame));
+        }
+
+        VulkanSurfaceInfo presentFrameAndReveal(VulkanFrameCommands frame) {
+            return invoke(() -> driver.presentFrameAndReveal(frame));
         }
 
         private <T> T invoke(java.util.function.Supplier<T> operation) {

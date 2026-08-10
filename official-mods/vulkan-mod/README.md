@@ -16,9 +16,13 @@ cache. Image reload and release hooks invalidate stale GPU copies. Draw commands
 affine screen-space transform and optional scissor rectangle; transforms are baked while batching,
 and scissor changes split otherwise compatible batches.
 Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|required`; `probe` is the
-development default, `frame_test` presents one diagnostic Vulkan frame after an OpenGL frame, and
-`required` makes an unavailable driver fail startup. `takeover_test` is the first real presentation
-takeover: every game-loop frame captures Slick clears, image draws, transformed/tiled images,
+development default, `frame_test` presents 300 solid diagnostic frames (red, green, then blue)
+after OpenGL frames, and `required` makes an unavailable driver fail startup. `takeover_test` is
+the first real presentation takeover. Its Win32 overlay starts hidden while draw calls are mirrored
+without suppressing OpenGL. The first complete Vulkan frame is acquired, recorded and submitted
+before the overlay is atomically revealed immediately ahead of presentation; suppression starts
+only after that present succeeds, on the following game-loop frame. Every game-loop frame captures
+Slick clears, image draws, transformed/tiled images,
 rectangles, lines, circles and text into an ordered Vulkan frame. It also translates LibRocket's
 indexed colored/textured geometry, including its scissor state, before presenting the completed
 frame. Normal, additive, copy and modulation blend equations follow the game's Slick state, while
@@ -28,6 +32,19 @@ drawn into. A minimized or occluded window uses a bounded image-acquire wait so 
 game thread. The text path currently rasterizes and caches complete AWT string runs rather than
 using a glyph atlas. Arbitrary Slick shaders, native Vulkan offscreen targets and a proper
 frames-in-flight scheduler still need implementations, so takeover remains an opt-in developer mode.
+
+Useful takeover diagnostics are:
+
+- `-Drusted.fabric.vulkan.debugMagentaClear=true` overrides captured clears with magenta.
+- `-Drusted.fabric.vulkan.debugDetachedOverlay=true` presents in a separate popup rather than an
+  owned overlay.
+- `-Drusted.fabric.vulkan.renderWhenHidden=true` keeps the Slick loop rendering while its window is
+  hidden or occluded.
+- `-Drusted.fabric.vulkan.debugInfiniteAcquire=true` removes the normal 16 ms swapchain-acquire
+  timeout. This can deliberately block the game thread and is only for isolating WSI diagnostics.
+
+Vulkan validation and Debug Utils are not wired yet; they are the next diagnostic layer after the
+solid-frame and safe-takeover sequence is confirmed.
 
 ## Boundary
 
