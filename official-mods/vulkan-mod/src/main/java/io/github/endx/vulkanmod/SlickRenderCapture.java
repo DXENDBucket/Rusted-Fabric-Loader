@@ -53,6 +53,10 @@ final class SlickRenderCapture {
         if (Boolean.getBoolean("rusted.fabric.vulkan.debugMagentaClear")) {
             builder.clear(0.65f, 0.0f, 0.65f, 1.0f);
         }
+        if (Boolean.getBoolean("rusted.fabric.vulkan.debugMarkerQuad")) {
+            builder.coloredQuad(new VulkanColoredQuad(32.0f, 32.0f, 224.0f, 160.0f,
+                    0.1f, 1.0f, 0.1f, 1.0f));
+        }
         VulkanFrameCommands frame = builder.build();
         builder = null;
         backend = null;

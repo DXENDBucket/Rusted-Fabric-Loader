@@ -90,6 +90,7 @@ import org.lwjgl.system.windows.WNDCLASSEX;
 import org.lwjgl.system.windows.WindowProc;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -604,18 +605,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             } else if (registeredInstance != instance) {
                 throw new IllegalStateException("Vulkan overlay HINSTANCE changed");
             }
-            // WM_NCHITTEST already passes pointer input through to the game. WS_EX_TRANSPARENT is
-            // intentionally not used: DWM may then classify the Vulkan popup as occluded behind
-            // its WGL owner and retain every swapchain image after the first present.
+            // The production surface is a real child of the LWJGL window. Keeping it out of the
+            // top-level owned-popup list prevents Windows from independently classifying the
+            // presentation surface as hung while Slick owns the thread's message loop. The
+            // detached popup remains available solely for WSI diagnostics.
             boolean detached = Boolean.getBoolean(
                     "rusted.fabric.vulkan.debugDetachedOverlay");
             int extendedStyle = detached
                     ? 0
-                    : User32.WS_EX_NOACTIVATE | User32.WS_EX_TOOLWINDOW;
-            int style = User32.WS_POPUP;
+                    : User32.WS_EX_NOACTIVATE;
+            int style = detached ? User32.WS_POPUP : User32.WS_CHILD;
             int x;
             int y;
-            try (MemoryStack stack = MemoryStack.stackPush()) {
+            if (detached) try (MemoryStack stack = MemoryStack.stackPush()) {
                 POINT origin = POINT.calloc(stack).set(0, 0);
                 if (!User32.ClientToScreen(request.windowHandle(), origin)) {
                     throw new IllegalStateException(
@@ -623,6 +625,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 }
                 x = origin.x();
                 y = origin.y();
+            } else {
+                x = 0;
+                y = 0;
             }
             String title = detached ? "Rusted Fabric Vulkan Diagnostic" : "";
             long window = User32.CreateWindowEx(null, extendedStyle, CLASS_NAME, title,
@@ -632,9 +637,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (window == 0L) {
                 throw new IllegalStateException("CreateWindowEx(Vulkan overlay) failed");
             }
-            User32.SetWindowPos(null, window, User32.HWND_TOP, 0, 0,
+            User32.SetWindowPos(null, window, User32.HWND_TOP, x, y,
                     request.width(), request.height(),
-                    (detached ? 0 : User32.SWP_NOACTIVATE) | User32.SWP_NOMOVE);
+                    (detached ? 0 : User32.SWP_NOACTIVATE));
             User32.ShowWindow(window, User32.SW_HIDE);
             if (detached) {
                 System.out.println("[Vulkan Mod/Driver] Using detached Win32 overlay diagnostic");
@@ -655,9 +660,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 User32.ShowWindow(handle, User32.SW_HIDE);
                 return;
             }
-            int nextX;
-            int nextY;
-            try (MemoryStack stack = MemoryStack.stackPush()) {
+            int nextX = 0;
+            int nextY = 0;
+            if (detached) try (MemoryStack stack = MemoryStack.stackPush()) {
                 POINT origin = POINT.calloc(stack).set(0, 0);
                 if (!User32.ClientToScreen(parentHandle, origin)) return;
                 nextX = origin.x();
@@ -1579,7 +1584,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 ByteBuffer bytes = MemoryUtil.memByteBuffer(mapped.get(0), totalBytes);
                 ByteBuffer coloredSlice = bytes.duplicate();
                 coloredSlice.limit(coloredBytes);
-                FloatBuffer coloredVertices = coloredSlice.slice().asFloatBuffer();
+                FloatBuffer coloredVertices = coloredSlice.slice()
+                        .order(ByteOrder.nativeOrder()).asFloatBuffer();
                 for (VulkanDrawCommand command : frame.commands()) {
                     if (command instanceof VulkanColoredQuad) {
                         VulkanColoredQuad quad = (VulkanColoredQuad) command;
@@ -1606,7 +1612,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
                 ByteBuffer texturedSlice = bytes.duplicate();
                 texturedSlice.position(coloredBytes).limit(totalBytes);
-                FloatBuffer texturedVertices = texturedSlice.slice().asFloatBuffer();
+                FloatBuffer texturedVertices = texturedSlice.slice()
+                        .order(ByteOrder.nativeOrder()).asFloatBuffer();
                 for (VulkanDrawCommand command : frame.commands()) {
                     if (command instanceof VulkanTexturedQuad) {
                         VulkanTexturedQuad quad = (VulkanTexturedQuad) command;
@@ -1771,7 +1778,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private static float pixelToNdcY(float value, int height) {
-            return 1.0f - value * 2.0f / height;
+            // Vulkan's positive-height viewport maps NDC -1 to the top of the framebuffer.
+            // Screen-space input and scissors are both top-down, so unlike OpenGL this axis
+            // must not be inverted here. Inverting only the vertices separates them from their
+            // unchanged scissors and can clip every LibRocket draw from the frame.
+            return value * 2.0f / height - 1.0f;
         }
 
         private static void putVertex(FloatBuffer output, VulkanTransform2D transform,

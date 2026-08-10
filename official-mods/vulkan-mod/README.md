@@ -18,8 +18,8 @@ and scissor changes split otherwise compatible batches.
 Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|required`; `probe` is the
 development default, `frame_test` presents 300 solid diagnostic frames (red, green, then blue)
 after OpenGL frames, and `required` makes an unavailable driver fail startup. `takeover_test` is
-the first real presentation takeover. Its Win32 overlay starts hidden while draw calls are mirrored
-without suppressing OpenGL. The first complete Vulkan frame is acquired, recorded and submitted
+the first real presentation takeover. Its Win32 child surface starts hidden while draw calls are
+mirrored without suppressing OpenGL. The first complete Vulkan frame is acquired, recorded and submitted
 before the overlay is atomically revealed immediately ahead of presentation; suppression starts
 only after that present succeeds, on the following game-loop frame. Every game-loop frame captures
 Slick clears, image draws, transformed/tiled images,
@@ -36,8 +36,10 @@ frames-in-flight scheduler still need implementations, so takeover remains an op
 Useful takeover diagnostics are:
 
 - `-Drusted.fabric.vulkan.debugMagentaClear=true` overrides captured clears with magenta.
+- `-Drusted.fabric.vulkan.debugMarkerQuad=true` appends an opaque green quad to prove that the
+  vertex upload and graphics pipeline reach the swapchain.
 - `-Drusted.fabric.vulkan.debugDetachedOverlay=true` presents in a separate popup rather than an
-  owned overlay.
+  in-window child surface.
 - `-Drusted.fabric.vulkan.renderWhenHidden=true` keeps the Slick loop rendering while its window is
   hidden or occluded.
 - `-Drusted.fabric.vulkan.debugInfiniteAcquire=true` removes the normal 16 ms swapchain-acquire
