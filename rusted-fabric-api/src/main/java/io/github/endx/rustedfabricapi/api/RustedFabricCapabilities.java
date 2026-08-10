@@ -59,6 +59,7 @@ public final class RustedFabricCapabilities {
     public static final String UI_SCRIPT = "event.ui.script.v1";
     public static final String UNIT_DAMAGE = "event.unit.damage.v1";
     public static final String UNIT_LIFECYCLE = "event.unit.lifecycle.v1";
+    public static final String UNIT_MOVEMENT_OVERRIDE = "unit.movement_override.v1";
 
     private RustedFabricCapabilities() {
     }

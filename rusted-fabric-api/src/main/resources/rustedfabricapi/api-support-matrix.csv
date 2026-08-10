@@ -55,3 +55,4 @@ event.transport.v1,unit.transport.event.TransportEvents
 event.ui.script.v1,event.UiScriptEvents
 event.unit.damage.v1,unit.event.UnitDamageEvents
 event.unit.lifecycle.v1,unit.event.UnitEvents
+unit.movement_override.v1,unit.movement.UnitMovementOverrides

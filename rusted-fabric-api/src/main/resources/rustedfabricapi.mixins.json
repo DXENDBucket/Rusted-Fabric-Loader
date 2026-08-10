@@ -26,6 +26,7 @@
     "CustomUnitLoaderNamedMixin",
     "CustomUnitLoaderIniRegistrationNamedMixin",
     "CustomUnitMetadataLifecycleNamedMixin",
+    "CustomUnitMovementOverrideNamedMixin",
     "CustomUnitReclaimPriceNamedMixin",
     "CustomUnitRenderNamedMixin",
     "CustomUnitRuntimeNamedMixin",

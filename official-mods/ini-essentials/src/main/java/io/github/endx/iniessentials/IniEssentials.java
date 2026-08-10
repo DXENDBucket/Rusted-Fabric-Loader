@@ -2,6 +2,7 @@ package io.github.endx.iniessentials;
 
 import io.github.endx.iniessentials.action.CameraActionFields;
 import io.github.endx.iniessentials.action.FogActionFields;
+import io.github.endx.iniessentials.action.MovementActionFields;
 import io.github.endx.iniessentials.action.PerActionAutoTriggerCooldownFields;
 import io.github.endx.iniessentials.decal.DecalMaskDefinitions;
 import io.github.endx.iniessentials.event.EventRuleDefinitions;
@@ -58,6 +59,7 @@ public final class IniEssentials implements ModInitializer {
         OverlayDefinitions.register();
         FogActionFields.register();
         CameraActionFields.register();
+        MovementActionFields.register();
         PerActionAutoTriggerCooldownFields.register();
         DamageEventData.enable(IniEssentials::activateSynchronizedRequirement);
         NativeEventData.enable(IniEssentials::activateSynchronizedRequirement);
@@ -92,7 +94,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v26",
-                "896874954edfa3661fa61287b4641c0aea1cde271040dff91966a391829717f2"));
+                MOD_ID, version, "ini_essentials_v27",
+                "d2e760ded835a070af6c245ec19bf513946be24369758f2c0bf92f50068f45fe"));
     }
 }

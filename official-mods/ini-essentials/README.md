@@ -60,6 +60,27 @@ effects run only on the client locally controlling the acting unit's team; they 
 deterministic simulation state or another player's camera. A missing unit/action target makes the
 corresponding contextual move a safe no-op.
 
+## Runtime movement type
+
+Actions and hidden actions can replace the acting unit instance's movement/pathing type without
+changing the shared unit definition or converting every instance of that unit type:
+
+```ini
+[action_enterWater]
+setUnitMovementType: water
+
+[hiddenAction_restoreDefinition]
+setUnitMovementType: native
+```
+
+Accepted modes are `native`, `none`, `land`, `air`, `water`, `hover`, `overCliff`,
+`overCliffWater`, and `building`; common aliases such as `ground`, `naval`, and `structure` are
+also accepted. The value may instead be a native runtime string expression. Submerging remains the
+native composition of `water` movement and a height at or below `-1`; this field deliberately does
+not replace or fight the game's existing height controls. Changing to or from `building` refreshes
+native building path costs. The override is saved in Loader saves/resync snapshots, and `native`
+removes it.
+
 ## Live unit context
 
 Native `self.hasActiveWaypoint` remains the preferred existence check, including its optional

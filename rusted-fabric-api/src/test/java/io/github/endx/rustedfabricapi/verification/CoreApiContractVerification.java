@@ -61,8 +61,12 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 56,
+        require(ApiSupportMatrix.entries().size() == 57,
                 "public API support matrix does not cover every advertised API group");
+        require(ApiSupportMatrix.expectedSupport(
+                        RustedFabricCapabilities.UNIT_MOVEMENT_OVERRIDE,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "per-unit movement override support is not advertised");
         require(ApiSupportMatrix.expectedSupport(
                         RustedFabricCapabilities.CUSTOM_AUTO_TRIGGER_COOLDOWN,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,

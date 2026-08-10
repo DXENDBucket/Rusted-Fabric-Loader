@@ -56,6 +56,7 @@ import io.github.endx.rustedfabricapi.api.unit.event.UnitSpawnEvents;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitTeamEvents;
 import io.github.endx.rustedfabricapi.api.unit.TeamCreditChangeSource;
 import io.github.endx.rustedfabricapi.api.unit.TeamOutcome;
+import io.github.endx.rustedfabricapi.api.unit.movement.UnitMovementMode;
 import io.github.endx.rustedfabricapi.api.unit.action.JavaUnitActionContractVerification;
 import io.github.endx.rustedfabricapi.api.unit.event.TeamStateEvents;
 import io.github.endx.rustedfabricapi.api.unit.type.event.UnitTypeEvents;
@@ -119,6 +120,7 @@ public final class MappedApiContractVerification {
         verifyStatusEffectClassification();
         verifyUnitStatModifierContract();
         verifyPathQueryAndEventContracts();
+        verifyUnitMovementModes();
         verifyPersistentDataRoundTrip();
         verifyUnitTagSetSemantics();
         verifyExtensionCancellationAggregation();
@@ -141,6 +143,27 @@ public final class MappedApiContractVerification {
         RegistryContractVerification.verify();
         RegistryTagContractVerification.verify();
         System.out.println("Mapped Rusted Fabric API contract verification passed");
+    }
+
+    private static void verifyUnitMovementModes() {
+        require(UnitMovementMode.parse("ground") == UnitMovementMode.LAND
+                        && UnitMovementMode.parse("naval") == UnitMovementMode.WATER
+                        && UnitMovementMode.parse("overCliffWater")
+                                == UnitMovementMode.OVER_CLIFF_WATER
+                        && UnitMovementMode.parse("structure") == UnitMovementMode.BUILDING,
+                "unit movement aliases changed");
+        require(UnitMovementMode.AIR.movementType() == MovementType.air
+                        && UnitMovementMode.BUILDING.movementType() == MovementType.building
+                        && UnitMovementMode.BUILDING.building(false)
+                        && !UnitMovementMode.LAND.building(true)
+                        && UnitMovementMode.NATIVE.building(true),
+                "unit movement native mapping changed");
+        try {
+            UnitMovementMode.parse("underwater");
+            throw new AssertionError("underwater incorrectly became a separate movement type");
+        } catch (IllegalArgumentException expected) {
+            // Native submerging remains water movement plus negative height.
+        }
     }
 
     private static void verifyTeamStateEventContracts() {
