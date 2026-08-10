@@ -3,6 +3,8 @@ package io.github.endx.vulkanmod.lwjgl3;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanPlatformDriver;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
@@ -15,6 +17,7 @@ import org.lwjgl.vulkan.VkApplicationInfo;
 import org.lwjgl.vulkan.VkAttachmentDescription;
 import org.lwjgl.vulkan.VkAttachmentReference;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
+import org.lwjgl.vulkan.VkBufferImageCopy;
 import org.lwjgl.vulkan.VkClearValue;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkCommandBufferAllocateInfo;
@@ -23,10 +26,18 @@ import org.lwjgl.vulkan.VkCommandPoolCreateInfo;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkDeviceCreateInfo;
 import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
+import org.lwjgl.vulkan.VkDescriptorImageInfo;
+import org.lwjgl.vulkan.VkDescriptorPoolCreateInfo;
+import org.lwjgl.vulkan.VkDescriptorPoolSize;
+import org.lwjgl.vulkan.VkDescriptorSetAllocateInfo;
+import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
+import org.lwjgl.vulkan.VkDescriptorSetLayoutCreateInfo;
 import org.lwjgl.vulkan.VkExtensionProperties;
 import org.lwjgl.vulkan.VkFenceCreateInfo;
 import org.lwjgl.vulkan.VkFramebufferCreateInfo;
 import org.lwjgl.vulkan.VkImageViewCreateInfo;
+import org.lwjgl.vulkan.VkImageCreateInfo;
+import org.lwjgl.vulkan.VkImageMemoryBarrier;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkInstanceCreateInfo;
 import org.lwjgl.vulkan.VkPhysicalDevice;
@@ -51,6 +62,7 @@ import org.lwjgl.vulkan.VkQueueFamilyProperties;
 import org.lwjgl.vulkan.VkRenderPassBeginInfo;
 import org.lwjgl.vulkan.VkRenderPassCreateInfo;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
+import org.lwjgl.vulkan.VkSamplerCreateInfo;
 import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.lwjgl.vulkan.VkSubpassDependency;
@@ -62,6 +74,7 @@ import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import org.lwjgl.vulkan.VkViewport;
 import org.lwjgl.vulkan.VkRect2D;
+import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.lwjgl.vulkan.VkWin32SurfaceCreateInfoKHR;
 
 import java.nio.ByteBuffer;
@@ -69,7 +82,9 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -82,6 +97,8 @@ import static org.lwjgl.util.shaderc.Shaderc.*;
 public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     private static final int VERTEX_FLOATS = 6;
     private static final int VERTEX_STRIDE = VERTEX_FLOATS * Float.BYTES;
+    private static final int TEXTURED_VERTEX_FLOATS = 8;
+    private static final int TEXTURED_VERTEX_STRIDE = TEXTURED_VERTEX_FLOATS * Float.BYTES;
     private static final String COLOR_VERTEX_SHADER = "#version 450\n"
             + "layout(location=0) in vec2 inPosition;\n"
             + "layout(location=1) in vec4 inColor;\n"
@@ -91,6 +108,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             + "layout(location=0) in vec4 color;\n"
             + "layout(location=0) out vec4 outColor;\n"
             + "void main(){ outColor=color; }\n";
+    private static final String TEXTURE_VERTEX_SHADER = "#version 450\n"
+            + "layout(location=0) in vec2 inPosition;\n"
+            + "layout(location=1) in vec2 inUv;\n"
+            + "layout(location=2) in vec4 inColor;\n"
+            + "layout(location=0) out vec2 uv;\n"
+            + "layout(location=1) out vec4 color;\n"
+            + "void main(){ gl_Position=vec4(inPosition,0.0,1.0); uv=inUv; color=inColor; }\n";
+    private static final String TEXTURE_FRAGMENT_SHADER = "#version 450\n"
+            + "layout(set=0,binding=0) uniform sampler2D image;\n"
+            + "layout(location=0) in vec2 uv;\n"
+            + "layout(location=1) in vec4 color;\n"
+            + "layout(location=0) out vec4 outColor;\n"
+            + "void main(){ outColor=texture(image,uv)*color; }\n";
     private SurfaceSession surfaceSession;
 
     @Override public String name() { return "LWJGL 3 Vulkan"; }
@@ -164,6 +194,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
         if (frame == null) throw new NullPointerException("frame");
         return surfaceSession.presentFrame(frame);
+    }
+
+    @Override public synchronized long uploadTexture(VulkanTextureData texture) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        if (texture == null) throw new NullPointerException("texture");
+        return surfaceSession.uploadTexture(texture);
+    }
+
+    @Override public synchronized void destroyTexture(long textureHandle) {
+        if (surfaceSession != null) surfaceSession.destroyTexture(textureHandle);
     }
 
     @Override public synchronized void close() {
@@ -501,6 +543,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long renderPass;
         private long pipelineLayout;
         private long colorPipeline;
+        private long texturePipelineLayout;
+        private long texturePipeline;
+        private long textureDescriptorSetLayout;
+        private long textureDescriptorPool;
+        private final Map<Long, TextureResource> textures =
+                new LinkedHashMap<Long, TextureResource>();
+        private long nextTextureHandle = 1L;
         private long[] framebuffers = new long[0];
         private long commandPool;
         private VkCommandBuffer[] commandBuffers = new VkCommandBuffer[0];
@@ -724,6 +773,102 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
+        private void createTexturePipeline(MemoryStack stack) {
+            if (textureDescriptorSetLayout == VK_NULL_HANDLE) {
+                throw new IllegalStateException("texture descriptor layout is unavailable");
+            }
+            long vertexModule = VK_NULL_HANDLE;
+            long fragmentModule = VK_NULL_HANDLE;
+            try {
+                vertexModule = createShaderModule(stack, TEXTURE_VERTEX_SHADER,
+                        shaderc_glsl_vertex_shader, "textured-quad.vert");
+                fragmentModule = createShaderModule(stack, TEXTURE_FRAGMENT_SHADER,
+                        shaderc_glsl_fragment_shader, "textured-quad.frag");
+                VkPipelineShaderStageCreateInfo.Buffer stages =
+                        VkPipelineShaderStageCreateInfo.calloc(2, stack);
+                stages.get(0).sType$Default().stage(VK_SHADER_STAGE_VERTEX_BIT)
+                        .module(vertexModule).pName(stack.UTF8("main"));
+                stages.get(1).sType$Default().stage(VK_SHADER_STAGE_FRAGMENT_BIT)
+                        .module(fragmentModule).pName(stack.UTF8("main"));
+                VkVertexInputBindingDescription.Buffer binding =
+                        VkVertexInputBindingDescription.calloc(1, stack);
+                binding.get(0).binding(0).stride(TEXTURED_VERTEX_STRIDE)
+                        .inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
+                VkVertexInputAttributeDescription.Buffer attributes =
+                        VkVertexInputAttributeDescription.calloc(3, stack);
+                attributes.get(0).location(0).binding(0)
+                        .format(VK_FORMAT_R32G32_SFLOAT).offset(0);
+                attributes.get(1).location(1).binding(0)
+                        .format(VK_FORMAT_R32G32_SFLOAT).offset(2 * Float.BYTES);
+                attributes.get(2).location(2).binding(0)
+                        .format(VK_FORMAT_R32G32B32A32_SFLOAT).offset(4 * Float.BYTES);
+                VkPipelineVertexInputStateCreateInfo vertexInput =
+                        VkPipelineVertexInputStateCreateInfo.calloc(stack).sType$Default()
+                                .pVertexBindingDescriptions(binding)
+                                .pVertexAttributeDescriptions(attributes);
+                VkPipelineInputAssemblyStateCreateInfo inputAssembly =
+                        VkPipelineInputAssemblyStateCreateInfo.calloc(stack).sType$Default()
+                                .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                                .primitiveRestartEnable(false);
+                VkPipelineViewportStateCreateInfo viewportState =
+                        VkPipelineViewportStateCreateInfo.calloc(stack).sType$Default()
+                                .viewportCount(1).scissorCount(1);
+                VkPipelineRasterizationStateCreateInfo rasterizer =
+                        VkPipelineRasterizationStateCreateInfo.calloc(stack).sType$Default()
+                                .depthClampEnable(false).rasterizerDiscardEnable(false)
+                                .polygonMode(VK_POLYGON_MODE_FILL).cullMode(VK_CULL_MODE_NONE)
+                                .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                                .depthBiasEnable(false).lineWidth(1.0f);
+                VkPipelineMultisampleStateCreateInfo multisampling =
+                        VkPipelineMultisampleStateCreateInfo.calloc(stack).sType$Default()
+                                .rasterizationSamples(VK_SAMPLE_COUNT_1_BIT)
+                                .sampleShadingEnable(false);
+                VkPipelineColorBlendAttachmentState.Buffer blendAttachment =
+                        VkPipelineColorBlendAttachmentState.calloc(1, stack);
+                blendAttachment.get(0)
+                        .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+                        .blendEnable(true)
+                        .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
+                        .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
+                        .colorBlendOp(VK_BLEND_OP_ADD)
+                        .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
+                        .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
+                        .alphaBlendOp(VK_BLEND_OP_ADD);
+                VkPipelineColorBlendStateCreateInfo colorBlending =
+                        VkPipelineColorBlendStateCreateInfo.calloc(stack).sType$Default()
+                                .logicOpEnable(false).pAttachments(blendAttachment);
+                VkPipelineDynamicStateCreateInfo dynamicState =
+                        VkPipelineDynamicStateCreateInfo.calloc(stack).sType$Default()
+                                .pDynamicStates(stack.ints(
+                                        VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
+                VkPipelineLayoutCreateInfo layoutInfo = VkPipelineLayoutCreateInfo.calloc(stack)
+                        .sType$Default().pSetLayouts(stack.longs(textureDescriptorSetLayout));
+                LongBuffer handle = stack.mallocLong(1);
+                check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
+                        "vkCreatePipelineLayout(texture)");
+                texturePipelineLayout = handle.get(0);
+                VkGraphicsPipelineCreateInfo.Buffer pipelineInfo =
+                        VkGraphicsPipelineCreateInfo.calloc(1, stack);
+                pipelineInfo.get(0).sType$Default().pStages(stages)
+                        .pVertexInputState(vertexInput).pInputAssemblyState(inputAssembly)
+                        .pViewportState(viewportState).pRasterizationState(rasterizer)
+                        .pMultisampleState(multisampling).pColorBlendState(colorBlending)
+                        .pDynamicState(dynamicState).layout(texturePipelineLayout)
+                        .renderPass(renderPass).subpass(0);
+                check(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE,
+                        pipelineInfo, null, handle), "vkCreateGraphicsPipelines(texturedQuad)");
+                texturePipeline = handle.get(0);
+            } finally {
+                if (fragmentModule != VK_NULL_HANDLE) {
+                    vkDestroyShaderModule(device, fragmentModule, null);
+                }
+                if (vertexModule != VK_NULL_HANDLE) {
+                    vkDestroyShaderModule(device, vertexModule, null);
+                }
+            }
+        }
+
         private long createShaderModule(MemoryStack stack, String source,
                                         int shaderKind, String name) {
             long compiler = shaderc_compiler_initialize();
@@ -755,6 +900,254 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
+        private long uploadTexture(VulkanTextureData texture) {
+            if (closed) throw new IllegalStateException("Vulkan surface is closed");
+            byte[] pixels = texture.copyRgba();
+            BufferAllocation staging = null;
+            TextureResource created = new TextureResource();
+            boolean complete = false;
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                ensureTextureDescriptors(stack);
+                staging = createBufferAllocation(stack, pixels.length,
+                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                PointerBuffer mapped = stack.mallocPointer(1);
+                check(vkMapMemory(device, staging.memory, 0, pixels.length, 0, mapped),
+                        "vkMapMemory(texture staging)");
+                try {
+                    MemoryUtil.memByteBuffer(mapped.get(0), pixels.length).put(pixels);
+                } finally {
+                    vkUnmapMemory(device, staging.memory);
+                }
+
+                VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack).sType$Default()
+                        .imageType(VK_IMAGE_TYPE_2D)
+                        .format(VK_FORMAT_R8G8B8A8_UNORM)
+                        .mipLevels(1).arrayLayers(1)
+                        .samples(VK_SAMPLE_COUNT_1_BIT)
+                        .tiling(VK_IMAGE_TILING_OPTIMAL)
+                        .usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+                        .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                        .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+                imageInfo.extent().width(texture.width()).height(texture.height()).depth(1);
+                LongBuffer handle = stack.mallocLong(1);
+                check(vkCreateImage(device, imageInfo, null, handle), "vkCreateImage(texture)");
+                created.image = handle.get(0);
+                VkMemoryRequirements requirements = VkMemoryRequirements.malloc(stack);
+                vkGetImageMemoryRequirements(device, created.image, requirements);
+                VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
+                        .sType$Default().allocationSize(requirements.size())
+                        .memoryTypeIndex(findMemoryType(stack, requirements.memoryTypeBits(),
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+                check(vkAllocateMemory(device, allocation, null, handle),
+                        "vkAllocateMemory(texture)");
+                created.memory = handle.get(0);
+                check(vkBindImageMemory(device, created.image, created.memory, 0),
+                        "vkBindImageMemory(texture)");
+                copyTextureToImage(stack, staging.buffer, created.image,
+                        texture.width(), texture.height());
+
+                VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
+                        .sType$Default().image(created.image)
+                        .viewType(VK_IMAGE_VIEW_TYPE_2D).format(VK_FORMAT_R8G8B8A8_UNORM);
+                viewInfo.components().r(VK_COMPONENT_SWIZZLE_IDENTITY)
+                        .g(VK_COMPONENT_SWIZZLE_IDENTITY)
+                        .b(VK_COMPONENT_SWIZZLE_IDENTITY)
+                        .a(VK_COMPONENT_SWIZZLE_IDENTITY);
+                viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
+                check(vkCreateImageView(device, viewInfo, null, handle),
+                        "vkCreateImageView(texture)");
+                created.view = handle.get(0);
+                VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
+                        .sType$Default()
+                        .magFilter(VK_FILTER_LINEAR).minFilter(VK_FILTER_LINEAR)
+                        .mipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+                        .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
+                        .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
+                        .minLod(0.0f).maxLod(0.0f)
+                        .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+                        .unnormalizedCoordinates(false);
+                check(vkCreateSampler(device, samplerInfo, null, handle),
+                        "vkCreateSampler(texture)");
+                created.sampler = handle.get(0);
+                allocateTextureDescriptor(stack, created);
+
+                long publicHandle = nextTextureHandle++;
+                if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
+                textures.put(publicHandle, created);
+                complete = true;
+                return publicHandle;
+            } finally {
+                if (staging != null) destroyBufferAllocation(staging);
+                if (!complete) destroyTextureResource(created, true);
+            }
+        }
+
+        private void ensureTextureDescriptors(MemoryStack stack) {
+            if (textureDescriptorSetLayout != VK_NULL_HANDLE) return;
+            VkDescriptorSetLayoutBinding.Buffer binding =
+                    VkDescriptorSetLayoutBinding.calloc(1, stack);
+            binding.get(0).binding(0).descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                    .descriptorCount(1).stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+            VkDescriptorSetLayoutCreateInfo layoutInfo =
+                    VkDescriptorSetLayoutCreateInfo.calloc(stack).sType$Default()
+                            .pBindings(binding);
+            LongBuffer handle = stack.mallocLong(1);
+            check(vkCreateDescriptorSetLayout(device, layoutInfo, null, handle),
+                    "vkCreateDescriptorSetLayout(texture)");
+            textureDescriptorSetLayout = handle.get(0);
+            VkDescriptorPoolSize.Buffer poolSize = VkDescriptorPoolSize.calloc(1, stack);
+            poolSize.get(0).type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                    .descriptorCount(1024);
+            VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack)
+                    .sType$Default().flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+                    .maxSets(1024).pPoolSizes(poolSize);
+            check(vkCreateDescriptorPool(device, poolInfo, null, handle),
+                    "vkCreateDescriptorPool(texture)");
+            textureDescriptorPool = handle.get(0);
+        }
+
+        private void allocateTextureDescriptor(MemoryStack stack, TextureResource texture) {
+            VkDescriptorSetAllocateInfo allocateInfo = VkDescriptorSetAllocateInfo.calloc(stack)
+                    .sType$Default().descriptorPool(textureDescriptorPool)
+                    .pSetLayouts(stack.longs(textureDescriptorSetLayout));
+            LongBuffer descriptor = stack.mallocLong(1);
+            check(vkAllocateDescriptorSets(device, allocateInfo, descriptor),
+                    "vkAllocateDescriptorSets(texture)");
+            texture.descriptorSet = descriptor.get(0);
+            VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack);
+            imageInfo.get(0).sampler(texture.sampler).imageView(texture.view)
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VkWriteDescriptorSet.Buffer write = VkWriteDescriptorSet.calloc(1, stack);
+            write.get(0).sType$Default().dstSet(texture.descriptorSet).dstBinding(0)
+                    .dstArrayElement(0).descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                    .descriptorCount(1).pImageInfo(imageInfo);
+            vkUpdateDescriptorSets(device, write, null);
+        }
+
+        private void copyTextureToImage(MemoryStack stack, long sourceBuffer, long image,
+                                        int width, int height) {
+            VkCommandBufferAllocateInfo allocateInfo = VkCommandBufferAllocateInfo.calloc(stack)
+                    .sType$Default().commandPool(commandPool)
+                    .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY).commandBufferCount(1);
+            PointerBuffer pointer = stack.mallocPointer(1);
+            check(vkAllocateCommandBuffers(device, allocateInfo, pointer),
+                    "vkAllocateCommandBuffers(texture upload)");
+            VkCommandBuffer command = new VkCommandBuffer(pointer.get(0), device);
+            try {
+                VkCommandBufferBeginInfo begin = VkCommandBufferBeginInfo.calloc(stack)
+                        .sType$Default().flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                check(vkBeginCommandBuffer(command, begin),
+                        "vkBeginCommandBuffer(texture upload)");
+                VkImageMemoryBarrier.Buffer toTransfer = VkImageMemoryBarrier.calloc(1, stack);
+                toTransfer.get(0).sType$Default()
+                        .oldLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                        .newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+                        .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .image(image).srcAccessMask(0)
+                        .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                toTransfer.get(0).subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
+                vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, null, null, toTransfer);
+                VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+                region.get(0).bufferOffset(0).bufferRowLength(0).bufferImageHeight(0);
+                region.get(0).imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .mipLevel(0).baseArrayLayer(0).layerCount(1);
+                region.get(0).imageOffset().x(0).y(0).z(0);
+                region.get(0).imageExtent().width(width).height(height).depth(1);
+                vkCmdCopyBufferToImage(command, sourceBuffer, image,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+                VkImageMemoryBarrier.Buffer toShader = VkImageMemoryBarrier.calloc(1, stack);
+                toShader.get(0).sType$Default()
+                        .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+                        .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                        .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .image(image).srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                        .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                toShader.get(0).subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
+                vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, null, null, toShader);
+                check(vkEndCommandBuffer(command), "vkEndCommandBuffer(texture upload)");
+                VkSubmitInfo submit = VkSubmitInfo.calloc(stack).sType$Default()
+                        .pCommandBuffers(stack.pointers(command.address()));
+                check(vkQueueSubmit(graphicsQueue, submit, VK_NULL_HANDLE),
+                        "vkQueueSubmit(texture upload)");
+                check(vkQueueWaitIdle(graphicsQueue), "vkQueueWaitIdle(texture upload)");
+            } finally {
+                vkFreeCommandBuffers(device, commandPool, command);
+            }
+        }
+
+        private BufferAllocation createBufferAllocation(MemoryStack stack, long size,
+                                                        int usage, int memoryFlags) {
+            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack).sType$Default()
+                    .size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            LongBuffer handle = stack.mallocLong(1);
+            check(vkCreateBuffer(device, bufferInfo, null, handle), "vkCreateBuffer");
+            BufferAllocation result = new BufferAllocation();
+            result.buffer = handle.get(0);
+            try {
+                VkMemoryRequirements requirements = VkMemoryRequirements.malloc(stack);
+                vkGetBufferMemoryRequirements(device, result.buffer, requirements);
+                VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
+                        .sType$Default().allocationSize(requirements.size())
+                        .memoryTypeIndex(findMemoryType(stack, requirements.memoryTypeBits(),
+                                memoryFlags));
+                check(vkAllocateMemory(device, allocation, null, handle), "vkAllocateMemory");
+                result.memory = handle.get(0);
+                check(vkBindBufferMemory(device, result.buffer, result.memory, 0),
+                        "vkBindBufferMemory");
+                return result;
+            } catch (Throwable failure) {
+                destroyBufferAllocation(result);
+                throw failure;
+            }
+        }
+
+        private void destroyBufferAllocation(BufferAllocation allocation) {
+            if (allocation.buffer != VK_NULL_HANDLE) {
+                vkDestroyBuffer(device, allocation.buffer, null);
+            }
+            if (allocation.memory != VK_NULL_HANDLE) vkFreeMemory(device, allocation.memory, null);
+        }
+
+        private void destroyTexture(long textureHandle) {
+            TextureResource texture = textures.remove(textureHandle);
+            if (texture == null) return;
+            check(vkDeviceWaitIdle(device), "vkDeviceWaitIdle(destroy texture)");
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                destroyTextureResource(texture, true, stack);
+            }
+        }
+
+        private void destroyTextureResource(TextureResource texture, boolean freeDescriptor) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                destroyTextureResource(texture, freeDescriptor, stack);
+            }
+        }
+
+        private void destroyTextureResource(TextureResource texture, boolean freeDescriptor,
+                                            MemoryStack stack) {
+            if (freeDescriptor && texture.descriptorSet != VK_NULL_HANDLE
+                    && textureDescriptorPool != VK_NULL_HANDLE) {
+                check(vkFreeDescriptorSets(device, textureDescriptorPool,
+                        stack.longs(texture.descriptorSet)), "vkFreeDescriptorSets(texture)");
+            }
+            if (texture.sampler != VK_NULL_HANDLE) vkDestroySampler(device, texture.sampler, null);
+            if (texture.view != VK_NULL_HANDLE) vkDestroyImageView(device, texture.view, null);
+            if (texture.image != VK_NULL_HANDLE) vkDestroyImage(device, texture.image, null);
+            if (texture.memory != VK_NULL_HANDLE) vkFreeMemory(device, texture.memory, null);
+        }
+
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
             if (closed) throw new IllegalStateException("Vulkan surface is closed");
             int width = frame.width();
@@ -772,6 +1165,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (!frame.coloredQuads().isEmpty() && colorPipeline == VK_NULL_HANDLE) {
                     createColorPipeline(stack);
                 }
+                if (!frame.texturedQuads().isEmpty() && texturePipeline == VK_NULL_HANDLE) {
+                    createTexturePipeline(stack);
+                }
                 check(vkWaitForFences(device, stack.longs(inFlightFence), true, Long.MAX_VALUE),
                         "vkWaitForFences");
                 IntBuffer imageIndex = stack.mallocInt(1);
@@ -786,7 +1182,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 }
                 check(vkResetFences(device, stack.longs(inFlightFence)), "vkResetFences");
                 int index = imageIndex.get(0);
-                int vertexCount = uploadColoredQuads(frame, stack);
+                FrameUpload upload = uploadFrame(frame, stack);
                 VkCommandBuffer commandBuffer = commandBuffers[index];
                 check(vkResetCommandBuffer(commandBuffer, 0), "vkResetCommandBuffer");
                 VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
@@ -802,9 +1198,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 renderPassBegin.renderArea().offset().x(0).y(0);
                 renderPassBegin.renderArea().extent().width(info.width()).height(info.height());
                 vkCmdBeginRenderPass(commandBuffer, renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-                if (vertexCount > 0) {
-                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            colorPipeline);
+                if (upload.totalVertexCount() > 0) {
                     VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
                     viewport.get(0).x(0.0f).y(0.0f)
                             .width(info.width()).height(info.height())
@@ -814,9 +1208,24 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     scissor.get(0).offset().x(0).y(0);
                     scissor.get(0).extent().width(info.width()).height(info.height());
                     vkCmdSetScissor(commandBuffer, 0, scissor);
+                }
+                if (upload.coloredVertexCount > 0) {
+                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            colorPipeline);
                     vkCmdBindVertexBuffers(commandBuffer, 0,
                             stack.longs(vertexBuffer), stack.longs(0L));
-                    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+                    vkCmdDraw(commandBuffer, upload.coloredVertexCount, 1, 0, 0);
+                }
+                if (!upload.textureBatches.isEmpty()) {
+                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            texturePipeline);
+                    vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer),
+                            stack.longs(upload.texturedByteOffset));
+                    for (TextureDrawBatch batch : upload.textureBatches) {
+                        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                texturePipelineLayout, 0, stack.longs(batch.descriptorSet), null);
+                        vkCmdDraw(commandBuffer, batch.vertexCount, 1, batch.firstVertex, 0);
+                    }
                 }
                 vkCmdEndRenderPass(commandBuffer);
                 check(vkEndCommandBuffer(commandBuffer), "vkEndCommandBuffer");
@@ -842,33 +1251,69 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private int uploadColoredQuads(VulkanFrameCommands frame, MemoryStack stack) {
-            int quadCount = frame.coloredQuads().size();
-            if (quadCount == 0) return 0;
-            int vertexCount = Math.multiplyExact(quadCount, 6);
-            int byteCount = Math.multiplyExact(vertexCount, VERTEX_STRIDE);
-            ensureVertexCapacity(byteCount, stack);
+        private FrameUpload uploadFrame(VulkanFrameCommands frame, MemoryStack stack) {
+            int coloredVertexCount = Math.multiplyExact(frame.coloredQuads().size(), 6);
+            int texturedVertexCount = Math.multiplyExact(frame.texturedQuads().size(), 6);
+            int coloredBytes = Math.multiplyExact(coloredVertexCount, VERTEX_STRIDE);
+            int texturedBytes = Math.multiplyExact(texturedVertexCount, TEXTURED_VERTEX_STRIDE);
+            int totalBytes = Math.addExact(coloredBytes, texturedBytes);
+            FrameUpload result = new FrameUpload(coloredVertexCount, coloredBytes);
+            if (totalBytes == 0) return result;
+            ensureVertexCapacity(totalBytes, stack);
             PointerBuffer mapped = stack.mallocPointer(1);
-            check(vkMapMemory(device, vertexMemory, 0, byteCount, 0, mapped), "vkMapMemory");
+            check(vkMapMemory(device, vertexMemory, 0, totalBytes, 0, mapped), "vkMapMemory");
             try {
-                FloatBuffer vertices = MemoryUtil.memByteBuffer(mapped.get(0), byteCount)
-                        .asFloatBuffer();
+                ByteBuffer bytes = MemoryUtil.memByteBuffer(mapped.get(0), totalBytes);
+                ByteBuffer coloredSlice = bytes.duplicate();
+                coloredSlice.limit(coloredBytes);
+                FloatBuffer coloredVertices = coloredSlice.slice().asFloatBuffer();
                 for (VulkanColoredQuad quad : frame.coloredQuads()) {
                     float left = pixelToNdcX(quad.x(), frame.width());
                     float right = pixelToNdcX(quad.x() + quad.width(), frame.width());
                     float top = pixelToNdcY(quad.y(), frame.height());
                     float bottom = pixelToNdcY(quad.y() + quad.height(), frame.height());
-                    putVertex(vertices, left, top, quad);
-                    putVertex(vertices, left, bottom, quad);
-                    putVertex(vertices, right, bottom, quad);
-                    putVertex(vertices, left, top, quad);
-                    putVertex(vertices, right, bottom, quad);
-                    putVertex(vertices, right, top, quad);
+                    putVertex(coloredVertices, left, top, quad);
+                    putVertex(coloredVertices, left, bottom, quad);
+                    putVertex(coloredVertices, right, bottom, quad);
+                    putVertex(coloredVertices, left, top, quad);
+                    putVertex(coloredVertices, right, bottom, quad);
+                    putVertex(coloredVertices, right, top, quad);
+                }
+
+                ByteBuffer texturedSlice = bytes.duplicate();
+                texturedSlice.position(coloredBytes).limit(totalBytes);
+                FloatBuffer texturedVertices = texturedSlice.slice().asFloatBuffer();
+                TextureDrawBatch currentBatch = null;
+                int firstVertex = 0;
+                for (VulkanTexturedQuad quad : frame.texturedQuads()) {
+                    TextureResource texture = textures.get(quad.textureHandle());
+                    if (texture == null) {
+                        throw new IllegalArgumentException(
+                                "unknown texture handle: " + quad.textureHandle());
+                    }
+                    if (currentBatch == null
+                            || currentBatch.textureHandle != quad.textureHandle()) {
+                        currentBatch = new TextureDrawBatch(quad.textureHandle(),
+                                texture.descriptorSet, firstVertex);
+                        result.textureBatches.add(currentBatch);
+                    }
+                    float left = pixelToNdcX(quad.x(), frame.width());
+                    float right = pixelToNdcX(quad.x() + quad.width(), frame.width());
+                    float top = pixelToNdcY(quad.y(), frame.height());
+                    float bottom = pixelToNdcY(quad.y() + quad.height(), frame.height());
+                    putTexturedVertex(texturedVertices, left, top, quad.u0(), quad.v0(), quad);
+                    putTexturedVertex(texturedVertices, left, bottom, quad.u0(), quad.v1(), quad);
+                    putTexturedVertex(texturedVertices, right, bottom, quad.u1(), quad.v1(), quad);
+                    putTexturedVertex(texturedVertices, left, top, quad.u0(), quad.v0(), quad);
+                    putTexturedVertex(texturedVertices, right, bottom, quad.u1(), quad.v1(), quad);
+                    putTexturedVertex(texturedVertices, right, top, quad.u1(), quad.v0(), quad);
+                    currentBatch.vertexCount += 6;
+                    firstVertex += 6;
                 }
             } finally {
                 vkUnmapMemory(device, vertexMemory);
             }
-            return vertexCount;
+            return result;
         }
 
         private void ensureVertexCapacity(int requiredBytes, MemoryStack stack) {
@@ -910,7 +1355,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if ((typeBits & (1 << index)) != 0
                         && (flags & requiredFlags) == requiredFlags) return index;
             }
-            throw new IllegalStateException("No host-visible coherent Vulkan memory type");
+            throw new IllegalStateException("No Vulkan memory type supports flags 0x"
+                    + Integer.toHexString(requiredFlags));
         }
 
         private static float pixelToNdcX(float value, int width) {
@@ -925,6 +1371,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                       VulkanColoredQuad quad) {
             output.put(x).put(y).put(quad.red()).put(quad.green())
                     .put(quad.blue()).put(quad.alpha());
+        }
+
+        private static void putTexturedVertex(FloatBuffer output, float x, float y,
+                                              float u, float v, VulkanTexturedQuad quad) {
+            output.put(x).put(y).put(u).put(v)
+                    .put(quad.red()).put(quad.green()).put(quad.blue()).put(quad.alpha());
         }
 
         private void recreateSwapchain(int width, int height) {
@@ -960,6 +1412,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vkDestroyPipelineLayout(device, pipelineLayout, null);
                 pipelineLayout = 0L;
             }
+            if (texturePipeline != 0L) {
+                vkDestroyPipeline(device, texturePipeline, null);
+                texturePipeline = 0L;
+            }
+            if (texturePipelineLayout != 0L) {
+                vkDestroyPipelineLayout(device, texturePipelineLayout, null);
+                texturePipelineLayout = 0L;
+            }
             if (renderPass != 0L) {
                 vkDestroyRenderPass(device, renderPass, null);
                 renderPass = 0L;
@@ -982,12 +1442,70 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vkDestroySemaphore(device, imageAvailableSemaphore, null);
             }
             destroySwapchainResources();
+            if (textureDescriptorPool != VK_NULL_HANDLE) {
+                vkDestroyDescriptorPool(device, textureDescriptorPool, null);
+                textureDescriptorPool = VK_NULL_HANDLE;
+            }
+            for (TextureResource texture : textures.values()) {
+                destroyTextureResource(texture, false);
+            }
+            textures.clear();
+            if (textureDescriptorSetLayout != VK_NULL_HANDLE) {
+                vkDestroyDescriptorSetLayout(device, textureDescriptorSetLayout, null);
+                textureDescriptorSetLayout = VK_NULL_HANDLE;
+            }
             if (vertexBuffer != 0L) vkDestroyBuffer(device, vertexBuffer, null);
             if (vertexMemory != 0L) vkFreeMemory(device, vertexMemory, null);
             vkDestroySwapchainKHR(device, swapchain, null);
             vkDestroyDevice(device, null);
             vkDestroySurfaceKHR(instance, surface, null);
             vkDestroyInstance(instance, null);
+        }
+
+        private static final class BufferAllocation {
+            private long buffer;
+            private long memory;
+        }
+
+        private static final class TextureResource {
+            private long image;
+            private long memory;
+            private long view;
+            private long sampler;
+            private long descriptorSet;
+        }
+
+        private static final class TextureDrawBatch {
+            private final long textureHandle;
+            private final long descriptorSet;
+            private final int firstVertex;
+            private int vertexCount;
+
+            private TextureDrawBatch(long textureHandle, long descriptorSet, int firstVertex) {
+                this.textureHandle = textureHandle;
+                this.descriptorSet = descriptorSet;
+                this.firstVertex = firstVertex;
+            }
+        }
+
+        private static final class FrameUpload {
+            private final int coloredVertexCount;
+            private final long texturedByteOffset;
+            private final List<TextureDrawBatch> textureBatches =
+                    new ArrayList<TextureDrawBatch>();
+
+            private FrameUpload(int coloredVertexCount, long texturedByteOffset) {
+                this.coloredVertexCount = coloredVertexCount;
+                this.texturedByteOffset = texturedByteOffset;
+            }
+
+            private int totalVertexCount() {
+                int total = coloredVertexCount;
+                for (TextureDrawBatch batch : textureBatches) {
+                    total = Math.addExact(total, batch.vertexCount);
+                }
+                return total;
+            }
         }
     }
 }

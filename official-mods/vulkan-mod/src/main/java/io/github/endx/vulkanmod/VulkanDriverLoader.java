@@ -5,6 +5,7 @@ import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
+import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -139,6 +140,17 @@ final class VulkanDriverLoader {
 
         VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request) {
             return invoke(() -> driver.createSurface(request));
+        }
+
+        long uploadTexture(VulkanTextureData texture) {
+            return invoke(() -> driver.uploadTexture(texture));
+        }
+
+        void destroyTexture(long textureHandle) {
+            invoke(() -> {
+                driver.destroyTexture(textureHandle);
+                return null;
+            });
         }
 
         VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {

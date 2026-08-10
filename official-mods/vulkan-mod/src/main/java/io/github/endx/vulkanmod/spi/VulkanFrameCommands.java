@@ -13,6 +13,7 @@ public final class VulkanFrameCommands {
     private final float clearBlue;
     private final float clearAlpha;
     private final List<VulkanColoredQuad> coloredQuads;
+    private final List<VulkanTexturedQuad> texturedQuads;
 
     private VulkanFrameCommands(Builder builder) {
         width = builder.width;
@@ -23,6 +24,8 @@ public final class VulkanFrameCommands {
         clearAlpha = builder.clearAlpha;
         coloredQuads = Collections.unmodifiableList(
                 new ArrayList<VulkanColoredQuad>(builder.coloredQuads));
+        texturedQuads = Collections.unmodifiableList(
+                new ArrayList<VulkanTexturedQuad>(builder.texturedQuads));
     }
 
     public static Builder builder(int width, int height) {
@@ -36,6 +39,7 @@ public final class VulkanFrameCommands {
     public float clearBlue() { return clearBlue; }
     public float clearAlpha() { return clearAlpha; }
     public List<VulkanColoredQuad> coloredQuads() { return coloredQuads; }
+    public List<VulkanTexturedQuad> texturedQuads() { return texturedQuads; }
 
     public static final class Builder {
         private final int width;
@@ -46,6 +50,8 @@ public final class VulkanFrameCommands {
         private float clearAlpha = 1.0f;
         private final List<VulkanColoredQuad> coloredQuads =
                 new ArrayList<VulkanColoredQuad>();
+        private final List<VulkanTexturedQuad> texturedQuads =
+                new ArrayList<VulkanTexturedQuad>();
 
         private Builder(int width, int height) {
             if (width <= 0 || height <= 0) {
@@ -68,6 +74,12 @@ public final class VulkanFrameCommands {
         public Builder coloredQuad(VulkanColoredQuad quad) {
             if (quad == null) throw new NullPointerException("quad");
             coloredQuads.add(quad);
+            return this;
+        }
+
+        public Builder texturedQuad(VulkanTexturedQuad quad) {
+            if (quad == null) throw new NullPointerException("quad");
+            texturedQuads.add(quad);
             return this;
         }
 

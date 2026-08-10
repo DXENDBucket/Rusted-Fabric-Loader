@@ -3,6 +3,8 @@ package io.github.endx.vulkanmod;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 
@@ -15,6 +17,7 @@ public final class VulkanRuntime {
     private static volatile VulkanSurfaceInfo surfaceInfo;
     private static VulkanMode configuredMode = VulkanMode.OFF;
     private static boolean frameTestAttempted;
+    private static long frameTestTexture;
 
     private VulkanRuntime() { }
 
@@ -71,6 +74,9 @@ public final class VulkanRuntime {
                     Lwjgl2Win32Window.current();
             int width = window.width();
             int height = window.height();
+            if (frameTestTexture == 0L) {
+                frameTestTexture = activeDriver.uploadTexture(checkerTexture());
+            }
             VulkanFrameCommands frame = VulkanFrameCommands.builder(width, height)
                     .clear(0.035f, 0.075f, 0.16f, 1.0f)
                     .coloredQuad(new VulkanColoredQuad(width * 0.20f, height * 0.28f,
@@ -85,16 +91,38 @@ public final class VulkanRuntime {
                     .coloredQuad(new VulkanColoredQuad(width * 0.225f, height * 0.49f,
                             width * 0.45f, height * 0.035f,
                             0.42f, 0.60f, 0.76f, 1.0f))
+                    .texturedQuad(new VulkanTexturedQuad(frameTestTexture,
+                            width * 0.60f, height * 0.405f,
+                            height * 0.19f, height * 0.19f,
+                            0.0f, 0.0f, 1.0f, 1.0f,
+                            1.0f, 1.0f, 1.0f, 0.92f))
                     .build();
             VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
             surfaceInfo = updated;
             log("Presented one Vulkan frame-test batch at "
                     + updated.width() + "x" + updated.height() + " with "
-                    + frame.coloredQuads().size() + " colored quads");
+                    + frame.coloredQuads().size() + " colored and "
+                    + frame.texturedQuads().size() + " textured quads");
         } catch (Throwable failure) {
             log("Vulkan frame test failed; retaining Slick/OpenGL: "
                     + failure.getClass().getSimpleName() + ": " + failure.getMessage());
         }
+    }
+
+    private static VulkanTextureData checkerTexture() {
+        int size = 32;
+        byte[] rgba = new byte[size * size * 4];
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                boolean bright = ((x / 4) + (y / 4)) % 2 == 0;
+                int offset = (y * size + x) * 4;
+                rgba[offset] = (byte) (bright ? 56 : 10);
+                rgba[offset + 1] = (byte) (bright ? 210 : 72);
+                rgba[offset + 2] = (byte) (bright ? 245 : 138);
+                rgba[offset + 3] = (byte) 255;
+            }
+        }
+        return new VulkanTextureData(size, size, rgba);
     }
 
     public static synchronized void attachToCurrentWindow() {
