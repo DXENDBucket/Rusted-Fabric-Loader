@@ -15,12 +15,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.LongConsumer;
 
 /** Small LRU of antialiased white glyph runs that Vulkan can tint per draw. */
 final class VulkanTextTextureCache implements AutoCloseable {
     private static final int MAX_ENTRIES = 768;
+    private static final int MAX_NEW_UPLOADS_PER_FRAME = 32;
 
     private final VulkanDriverLoader.LoadedDriver driver;
+    private final AsyncVulkanPresenter presenter;
+    private final LongConsumer textureDestroyer;
     private final Font regularFont;
     private final Font boldFont;
     private final Font cjkFont;
@@ -28,10 +32,15 @@ final class VulkanTextTextureCache implements AutoCloseable {
     private final LinkedHashMap<Key, Entry> entries =
             new LinkedHashMap<Key, Entry>(128, 0.75f, true);
     private boolean closed;
+    private int uploadsStartedThisFrame;
 
-    VulkanTextTextureCache(VulkanDriverLoader.LoadedDriver driver) {
+    VulkanTextTextureCache(VulkanDriverLoader.LoadedDriver driver,
+                           AsyncVulkanPresenter presenter,
+                           LongConsumer textureDestroyer) {
         if (driver == null) throw new NullPointerException("driver");
         this.driver = driver;
+        this.presenter = presenter;
+        this.textureDestroyer = textureDestroyer;
         regularFont = loadGameFont("font/Roboto-Regular.ttf", Font.PLAIN);
         boldFont = loadGameFont("font/Roboto-Bold.ttf", Font.BOLD);
         cjkFont = loadGameFont("font/NotoSansCJKsc-Regular.otf", Font.PLAIN);
@@ -44,29 +53,67 @@ final class VulkanTextTextureCache implements AutoCloseable {
         int size = Math.max(4, Math.min(256, requestedSize));
         Key key = new Key(text, size, bold);
         Entry current = entries.get(key);
-        if (current != null) return current;
+        if (current != null) return current.textureHandle == 0L ? null : current;
+        if (presenter != null && uploadsStartedThisFrame >= MAX_NEW_UPLOADS_PER_FRAME) {
+            return null;
+        }
+        uploadsStartedThisFrame++;
         Raster raster = rasterize(text, size, bold);
-        Entry created = new Entry(driver.uploadTexture(
-                new VulkanTextureData(raster.width, raster.height, raster.rgba)),
+        Entry created = new Entry(0L,
                 raster.width, raster.height, raster.lineHeight);
         entries.put(key, created);
+        VulkanTextureData textureData = new VulkanTextureData(
+                raster.width, raster.height, raster.rgba);
+        if (presenter == null) {
+            created.textureHandle = driver.uploadTexture(textureData);
+        } else {
+            presenter.uploadTexture(textureData,
+                    new AsyncVulkanPresenter.TextureUploadListener() {
+                        @Override public void uploaded(long textureHandle) {
+                            completeUpload(key, created, textureHandle);
+                        }
+
+                        @Override public void failed(Throwable failure) {
+                            failUpload(key, created);
+                        }
+                    });
+        }
         evictOldEntries();
-        return created;
+        return created.textureHandle == 0L ? null : created;
     }
 
     private void evictOldEntries() {
         while (entries.size() > MAX_ENTRIES) {
             Map.Entry<Key, Entry> oldest = entries.entrySet().iterator().next();
             entries.remove(oldest.getKey());
-            driver.destroyTexture(oldest.getValue().textureHandle);
+            release(oldest.getValue());
         }
+    }
+
+    private synchronized void completeUpload(Key key, Entry entry, long textureHandle) {
+        if (!closed && entries.get(key) == entry) entry.textureHandle = textureHandle;
+        else textureDestroyer.accept(textureHandle);
+    }
+
+    private synchronized void failUpload(Key key, Entry entry) {
+        if (entries.get(key) == entry) entries.remove(key);
+    }
+
+    private void release(Entry entry) {
+        if (entry != null && entry.textureHandle != 0L) {
+            textureDestroyer.accept(entry.textureHandle);
+        }
+    }
+
+    synchronized void beginFrame() {
+        uploadsStartedThisFrame = 0;
     }
 
     @Override public synchronized void close() {
         if (closed) return;
         closed = true;
         for (Entry entry : entries.values()) {
-            driver.destroyTexture(entry.textureHandle);
+            release(entry);
         }
         entries.clear();
     }
@@ -152,7 +199,7 @@ final class VulkanTextTextureCache implements AutoCloseable {
     }
 
     static final class Entry {
-        final long textureHandle;
+        volatile long textureHandle;
         final int width;
         final int height;
         final int lineHeight;

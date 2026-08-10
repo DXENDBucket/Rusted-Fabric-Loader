@@ -4,53 +4,132 @@ import io.github.endx.vulkanmod.spi.VulkanTextureData;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.imageio.ImageIO;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.LongConsumer;
 
 /** Caches LibRocket/Slick textures that are not represented by GameImage. */
 final class SlickImageVulkanTextureCache implements AutoCloseable {
+    private static final int MAX_NEW_UPLOADS_PER_FRAME = 8;
     private final VulkanDriverLoader.LoadedDriver driver;
+    private final AsyncVulkanPresenter presenter;
+    private final LongConsumer textureDestroyer;
     private final Map<Object, Entry> entries = new IdentityHashMap<Object, Entry>();
+    private final Map<Object, CpuPixels> cpuSources = new IdentityHashMap<Object, CpuPixels>();
+    private final Map<Object, Boolean> unavailableSources =
+            new IdentityHashMap<Object, Boolean>();
     private boolean closed;
+    private int uploadsStartedThisFrame;
 
-    SlickImageVulkanTextureCache(VulkanDriverLoader.LoadedDriver driver) {
+    SlickImageVulkanTextureCache(VulkanDriverLoader.LoadedDriver driver,
+                                AsyncVulkanPresenter presenter,
+                                LongConsumer textureDestroyer) {
         this.driver = driver;
+        this.presenter = presenter;
+        this.textureDestroyer = textureDestroyer;
     }
 
-    synchronized Entry texture(Object image) {
+    synchronized Entry texture(Object holder, Object image) {
         if (closed) throw new IllegalStateException("Slick image texture cache is closed");
         if (image == null || booleanCall(image, "isDestroyed")) return null;
         Entry current = entries.get(image);
-        if (current != null) return current;
-        Object source = call(image, "getTexture");
-        if (source == null) return null;
-        int width = intCall(source, "getTextureWidth");
-        int height = intCall(source, "getTextureHeight");
-        byte[] sourceBytes = (byte[]) call(source, "getTextureData");
-        int components = booleanCall(source, "hasAlpha") ? 4 : 3;
-        int expected = Math.multiplyExact(Math.multiplyExact(width, height), components);
-        if (sourceBytes == null || sourceBytes.length < expected) {
-            throw new IllegalArgumentException("Slick texture data is incomplete");
+        if (current != null) return current.textureHandle == 0L ? null : current;
+        if (presenter != null && uploadsStartedThisFrame >= MAX_NEW_UPLOADS_PER_FRAME) {
+            return null;
         }
-        byte[] rgba = new byte[Math.multiplyExact(Math.multiplyExact(width, height), 4)];
-        int input = 0;
-        int output = 0;
-        for (int pixel = 0; pixel < width * height; pixel++) {
-            rgba[output++] = sourceBytes[input++];
-            rgba[output++] = sourceBytes[input++];
-            rgba[output++] = sourceBytes[input++];
-            rgba[output++] = components == 4 ? sourceBytes[input++] : (byte) 255;
+        uploadsStartedThisFrame++;
+        CpuPixels pixels = cpuSources.get(holder);
+        if (pixels == null && !unavailableSources.containsKey(holder)) {
+            pixels = readCpuPixels(holder);
+            if (pixels != null) cpuSources.put(holder, pixels);
+            else {
+                unavailableSources.put(holder, Boolean.TRUE);
+                System.out.println("[Vulkan Mod] UI texture has no safe CPU source: "
+                        + "path=" + fieldValue(holder, "path")
+                        + ", holder=" + holder.getClass().getName()
+                        + ", size=" + intField(holder, "width") + "x"
+                        + intField(holder, "height")
+                        + ", fallback=" + fieldValue(holder, "usingFallbackImage")
+                        + ", pending=" + (fieldValue(holder, "pendingImageBuffer") != null)
+                        + ", image=" + image);
+            }
         }
-        Entry created = new Entry(driver.uploadTexture(
-                new VulkanTextureData(width, height, rgba)),
-                floatCall(image, "getTextureWidth"), floatCall(image, "getTextureHeight"));
+        if (pixels == null) return null;
+        float uScale = floatCall(image, "getTextureWidth");
+        float vScale = floatCall(image, "getTextureHeight");
+        int logicalWidth = intCall(image, "getWidth");
+        int logicalHeight = intCall(image, "getHeight");
+        int width = paddedDimension(pixels.width, logicalWidth, uScale);
+        int height = paddedDimension(pixels.height, logicalHeight, vScale);
+        byte[] rgba = pad(pixels, width, height);
+        Entry created = new Entry(0L,
+                uScale, vScale);
         entries.put(image, created);
-        return created;
+        VulkanTextureData textureData = new VulkanTextureData(width, height, rgba);
+        if (presenter == null) {
+            created.textureHandle = driver.uploadTexture(textureData);
+        } else {
+            presenter.uploadTexture(textureData,
+                    new AsyncVulkanPresenter.TextureUploadListener() {
+                        @Override public void uploaded(long textureHandle) {
+                            completeUpload(image, created, textureHandle);
+                        }
+
+                        @Override public void failed(Throwable failure) {
+                            failUpload(image, created);
+                        }
+                    });
+        }
+        return created.textureHandle == 0L ? null : created;
     }
 
     synchronized void invalidate(Object image) {
         Entry removed = entries.remove(image);
-        if (removed != null) driver.destroyTexture(removed.textureHandle);
+        release(removed);
+    }
+
+    synchronized void registerPixels(Object holder, int width, int height, byte[] rgba) {
+        if (closed || holder == null || rgba == null || width <= 0 || height <= 0) return;
+        int expected = Math.multiplyExact(Math.multiplyExact(width, height), 4);
+        if (rgba.length < expected) return;
+        byte[] copy = new byte[expected];
+        System.arraycopy(rgba, 0, copy, 0, expected);
+        cpuSources.put(holder, new CpuPixels(width, height, copy));
+        unavailableSources.remove(holder);
+    }
+
+    synchronized void observeHolder(Object holder) {
+        if (closed || holder == null || cpuSources.containsKey(holder)) return;
+        CpuPixels buffered = readPendingBuffer(holder);
+        if (buffered != null) {
+            cpuSources.put(holder, buffered);
+            unavailableSources.remove(holder);
+        }
+    }
+
+    private synchronized void completeUpload(Object image, Entry entry, long textureHandle) {
+        if (!closed && entries.get(image) == entry) entry.textureHandle = textureHandle;
+        else textureDestroyer.accept(textureHandle);
+    }
+
+    private synchronized void failUpload(Object image, Entry entry) {
+        if (entries.get(image) == entry) entries.remove(image);
+    }
+
+    private void release(Entry entry) {
+        if (entry != null && entry.textureHandle != 0L) {
+            textureDestroyer.accept(entry.textureHandle);
+        }
+    }
+
+    synchronized void beginFrame() {
+        uploadsStartedThisFrame = 0;
     }
 
     static Object imageFromHolder(Object holder) {
@@ -70,6 +149,114 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
             type = type.getSuperclass();
         }
         return null;
+    }
+
+    static int intField(Object target, String name) {
+        Object value = fieldValue(target, name);
+        return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    private static Object fieldValue(Object target, String name) {
+        if (target == null) return null;
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(target);
+            } catch (NoSuchFieldException ignored) {
+                type = type.getSuperclass();
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException("Could not read Slick " + name, failure);
+            }
+        }
+        return null;
+    }
+
+    private static CpuPixels readCpuPixels(Object holder) {
+        CpuPixels buffered = readPendingBuffer(holder);
+        if (buffered != null) return buffered;
+        Object rawPath = fieldValue(holder, "path");
+        if (!(rawPath instanceof String) || ((String) rawPath).isEmpty()) return null;
+        String path = (String) rawPath;
+        try (InputStream input = open(path)) {
+            if (input == null) return null;
+            BufferedImage image = ImageIO.read(input);
+            if (image == null) return null;
+            int width = image.getWidth();
+            int height = image.getHeight();
+            byte[] rgba = new byte[Math.multiplyExact(Math.multiplyExact(width, height), 4)];
+            int output = 0;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int argb = image.getRGB(x, y);
+                    rgba[output++] = (byte) (argb >>> 16);
+                    rgba[output++] = (byte) (argb >>> 8);
+                    rgba[output++] = (byte) argb;
+                    rgba[output++] = (byte) (argb >>> 24);
+                }
+            }
+            return new CpuPixels(width, height, rgba);
+        } catch (Exception failure) {
+            System.out.println("[Vulkan Mod] Could not retain CPU pixels for UI texture "
+                    + path + ": " + failure.getMessage());
+            return null;
+        }
+    }
+
+    private static CpuPixels readPendingBuffer(Object holder) {
+        Object buffer = fieldValue(holder, "pendingImageBuffer");
+        if (buffer == null) return null;
+        Object rgba = call(buffer, "getRGBA");
+        int width = intCall(buffer, "getWidth");
+        int height = intCall(buffer, "getHeight");
+        if (!(rgba instanceof byte[]) || width <= 0 || height <= 0) return null;
+        byte[] bytes = (byte[]) rgba;
+        int expected = Math.multiplyExact(Math.multiplyExact(width, height), 4);
+        if (bytes.length < expected) return null;
+        byte[] copy = new byte[expected];
+        System.arraycopy(bytes, 0, copy, 0, expected);
+        return new CpuPixels(width, height, copy);
+    }
+
+    private static InputStream open(String path) throws Exception {
+        try {
+            Class<?> registry = Class.forName(
+                    "rustedwarfare.io.VirtualFileSystemRegistry");
+            Object backend = registry.getMethod("getBackendForPath", String.class)
+                    .invoke(null, path);
+            if (backend != null) {
+                Object stream = backend.getClass()
+                        .getMethod("openInputStream", String.class, boolean.class)
+                        .invoke(backend, path, true);
+                if (stream instanceof InputStream) return (InputStream) stream;
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // Ordinary assets do not require the game's archive-aware filesystem.
+        }
+        String normalized = path.startsWith("drawable:")
+                ? "res/drawable/" + path.substring("drawable:".length())
+                : path.replace("assets:", "assets/");
+        Path file = Paths.get(normalized);
+        return Files.isRegularFile(file) ? Files.newInputStream(file) : null;
+    }
+
+    private static int paddedDimension(int source, int logical, float scale) {
+        if (scale > 0.0f && scale <= 1.0f && logical > 0) {
+            return Math.max(source, Math.round(logical / scale));
+        }
+        return source;
+    }
+
+    private static byte[] pad(CpuPixels source, int width, int height) {
+        if (source.width == width && source.height == height) return source.rgba;
+        byte[] padded = new byte[Math.multiplyExact(Math.multiplyExact(width, height), 4)];
+        int copyWidth = Math.min(source.width, width) * 4;
+        for (int y = 0; y < Math.min(source.height, height); y++) {
+            System.arraycopy(source.rgba, y * source.width * 4,
+                    padded, y * width * 4, copyWidth);
+        }
+        return padded;
     }
 
     private static Object call(Object target, String name) {
@@ -96,12 +283,14 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
     @Override public synchronized void close() {
         if (closed) return;
         closed = true;
-        for (Entry entry : entries.values()) driver.destroyTexture(entry.textureHandle);
+        for (Entry entry : entries.values()) release(entry);
         entries.clear();
+        cpuSources.clear();
+        unavailableSources.clear();
     }
 
     static final class Entry {
-        final long textureHandle;
+        volatile long textureHandle;
         final float uScale;
         final float vScale;
 
@@ -109,6 +298,18 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
             this.textureHandle = textureHandle;
             this.uScale = uScale;
             this.vScale = vScale;
+        }
+    }
+
+    private static final class CpuPixels {
+        private final int width;
+        private final int height;
+        private final byte[] rgba;
+
+        private CpuPixels(int width, int height, byte[] rgba) {
+            this.width = width;
+            this.height = height;
+            this.rgba = rgba;
         }
     }
 }

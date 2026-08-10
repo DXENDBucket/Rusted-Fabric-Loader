@@ -8,21 +8,30 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.LongConsumer;
 
 /** Converts game-owned ARGB images to cached driver-owned RGBA8 textures. */
 final class GameImageVulkanTextureCache implements AutoCloseable {
+    private static final int MAX_NEW_UPLOADS_PER_FRAME = 16;
     private static Method slickTextureUnbind;
     private static boolean slickTextureUnbindUnavailable;
 
     private final VulkanDriverLoader.LoadedDriver driver;
+    private final AsyncVulkanPresenter presenter;
+    private final LongConsumer textureDestroyer;
     private final Map<GameImage, Entry> entries = new IdentityHashMap<GameImage, Entry>();
     private final Map<GameImage, Boolean> renderTargets =
             new IdentityHashMap<GameImage, Boolean>();
     private boolean closed;
+    private int uploadsStartedThisFrame;
 
-    GameImageVulkanTextureCache(VulkanDriverLoader.LoadedDriver driver) {
+    GameImageVulkanTextureCache(VulkanDriverLoader.LoadedDriver driver,
+                                AsyncVulkanPresenter presenter,
+                                LongConsumer textureDestroyer) {
         if (driver == null) throw new NullPointerException("driver");
         this.driver = driver;
+        this.presenter = presenter;
+        this.textureDestroyer = textureDestroyer;
     }
 
     synchronized long texture(GameImage source) {
@@ -41,16 +50,33 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
                 && current.width == width && current.height == height) {
             return current.textureHandle;
         }
+        if (presenter != null && uploadsStartedThisFrame >= MAX_NEW_UPLOADS_PER_FRAME) {
+            return 0L;
+        }
+        uploadsStartedThisFrame++;
         VulkanTextureData pixels = readRgba(image, width, height);
         if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargets")
                 && renderTargets.containsKey(image)) {
             logRenderTarget(image, pixels);
         }
-        long uploaded = driver.uploadTexture(pixels);
-        Entry replacement = new Entry(uploaded, image.version, width, height);
+        Entry replacement = new Entry(0L, image.version, width, height);
         entries.put(image, replacement);
-        if (current != null) driver.destroyTexture(current.textureHandle);
-        return uploaded;
+        release(current);
+        if (presenter == null) {
+            replacement.textureHandle = driver.uploadTexture(pixels);
+        } else {
+            final GameImage cacheKey = image;
+            presenter.uploadTexture(pixels, new AsyncVulkanPresenter.TextureUploadListener() {
+                @Override public void uploaded(long textureHandle) {
+                    completeUpload(cacheKey, replacement, textureHandle);
+                }
+
+                @Override public void failed(Throwable failure) {
+                    failUpload(cacheKey, replacement);
+                }
+            });
+        }
+        return replacement.textureHandle;
     }
 
     synchronized void invalidate(Object candidate) {
@@ -58,7 +84,7 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         GameImage image = ((GameImage) candidate).getRealImage();
         if (image == null) image = (GameImage) candidate;
         Entry removed = entries.remove(image);
-        if (removed != null) driver.destroyTexture(removed.textureHandle);
+        release(removed);
     }
 
     synchronized void markRenderTarget(Object candidate) {
@@ -80,11 +106,30 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         return entries.size();
     }
 
+    synchronized void beginFrame() {
+        uploadsStartedThisFrame = 0;
+    }
+
+    private synchronized void completeUpload(GameImage image, Entry entry, long textureHandle) {
+        if (!closed && entries.get(image) == entry) entry.textureHandle = textureHandle;
+        else textureDestroyer.accept(textureHandle);
+    }
+
+    private synchronized void failUpload(GameImage image, Entry entry) {
+        if (entries.get(image) == entry) entries.remove(image);
+    }
+
+    private void release(Entry entry) {
+        if (entry != null && entry.textureHandle != 0L) {
+            textureDestroyer.accept(entry.textureHandle);
+        }
+    }
+
     @Override public synchronized void close() {
         if (closed) return;
         closed = true;
         for (Entry entry : entries.values()) {
-            driver.destroyTexture(entry.textureHandle);
+            release(entry);
         }
         entries.clear();
         renderTargets.clear();
@@ -211,7 +256,7 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
     }
 
     private static final class Entry {
-        private final long textureHandle;
+        private volatile long textureHandle;
         private final int version;
         private final int width;
         private final int height;

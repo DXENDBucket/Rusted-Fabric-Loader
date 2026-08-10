@@ -193,6 +193,7 @@ final class SlickRenderCapture {
         VulkanDrawState drawState = new VulkanDrawState(imageTransform,
                 clip(transform), blendMode(paint), textureFilter(paint));
         long texture = VulkanRuntime.textureForGameImage(image);
+        if (texture == 0L) return reject();
         float[] tint = paint == null ? WHITE : paintColor(paint);
         builder.texturedQuad(new VulkanTexturedQuad(texture,
                 screenLeft, screenTop, scaledWidth, scaledHeight,
@@ -211,6 +212,7 @@ final class SlickRenderCapture {
         boolean bold = paint.i() != null && paint.i().a();
         VulkanTextTextureCache.Entry texture = VulkanRuntime.textureForText(
                 text, Math.round(paint.k()), bold);
+        if (texture == null) return reject();
         float left = x;
         if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
@@ -354,6 +356,10 @@ final class SlickRenderCapture {
 
     void unsupported(SlickGraphicsBackend source) {
         if (ensure(source)) rejectedCount++;
+    }
+
+    void unsupportedExternal() {
+        if (builder != null) rejectedCount++;
     }
 
     private boolean isCapturing(SlickGraphicsBackend source) {

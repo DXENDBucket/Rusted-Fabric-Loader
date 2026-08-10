@@ -6,6 +6,7 @@ import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -142,6 +143,10 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.createSurface(request));
         }
 
+        VulkanSurfaceInfo createNativeWindowSurface(VulkanWindowRequest request) {
+            return invoke(() -> driver.createNativeWindowSurface(request));
+        }
+
         long uploadTexture(VulkanTextureData texture) {
             return invoke(() -> driver.uploadTexture(texture));
         }
@@ -155,6 +160,21 @@ final class VulkanDriverLoader {
 
         boolean setSurfaceVisible(boolean visible) {
             return invoke(() -> driver.setSurfaceVisible(visible));
+        }
+
+        boolean prepareSurfaceWindow(int width, int height, boolean visible) {
+            return invoke(() -> driver.prepareSurfaceWindow(width, height, visible));
+        }
+
+        void maintainSurfaceWindow() {
+            invoke(() -> {
+                driver.maintainSurfaceWindow();
+                return null;
+            });
+        }
+
+        boolean isSurfaceCloseRequested() {
+            return invoke(driver::isSurfaceCloseRequested);
         }
 
         VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {

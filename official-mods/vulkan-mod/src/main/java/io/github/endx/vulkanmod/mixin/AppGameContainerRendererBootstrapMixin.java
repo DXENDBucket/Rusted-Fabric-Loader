@@ -12,10 +12,14 @@ import java.lang.reflect.Method;
 /** Confirms the RFL renderer decision before Slick attempts Display.create(). */
 @Mixin(targets = "org.newdawn.slick.AppGameContainer", remap = false)
 public abstract class AppGameContainerRendererBootstrapMixin {
-    @Inject(method = "setup()V", at = @At("HEAD"), require = 1)
+    @Inject(method = "setup()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void vulkanmod$beforeDisplayCreation(CallbackInfo callback) {
         int[] size = targetDisplaySize(this);
-        VulkanRuntime.beforeLegacyDisplayCreation(size[0], size[1]);
+        if (VulkanRuntime.beforeLegacyDisplayCreation(size[0], size[1])) {
+            // Native mode owns the real top-level window and swapchain now. Continuing into
+            // AppGameContainer.setup would create a WGL context and undo that ownership.
+            callback.cancel();
+        }
     }
 
     private static int[] targetDisplaySize(Object container) {
