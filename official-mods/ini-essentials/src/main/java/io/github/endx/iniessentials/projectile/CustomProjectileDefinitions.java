@@ -20,6 +20,7 @@ import rustedwarfare.custom.CustomProjectileTemplate;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.CustomUnitMetadata;
 import rustedwarfare.custom.CustomTagList;
+import rustedwarfare.custom.config.ConfigVariableProcessor;
 import rustedwarfare.custom.graphics.DecalBehavior;
 import rustedwarfare.mod.ModInfo;
 import rustedwarfare.unit.MovementType;
@@ -143,6 +144,20 @@ public final class CustomProjectileDefinitions {
         if (!"customprojectile".equalsIgnoreCase(className)) {
             throw new IllegalArgumentException("expected class: CustomProjectile");
         }
+        CustomUnitMetadata metadata = new CustomUnitMetadata();
+        metadata.configPath = context.unitId();
+        metadata.resolvedConfigPath = context.unitId();
+        metadata.resourceLoadPath = context.unitId();
+        metadata.modInfo = context.modInfo() instanceof ModInfo ? (ModInfo) context.modInfo() : null;
+        metadata.modRootPath = context.resourceRoot();
+        metadata.templateRootPath = context.templateRoot();
+        metadata.internalName = context.unitId();
+
+        // This asset is intercepted before the native custom-unit parser reaches its own
+        // static-variable pass. Run that same pass here so @define/@global values and ${...}
+        // references work consistently in every CustomProjectile section.
+        ConfigVariableProcessor.processStaticConfigVariables(metadata, config);
+
         int schemaVersion = config.getInteger("core", "schemaVersion", Integer.valueOf(1));
         if (schemaVersion != 1) {
             throw new IllegalArgumentException("unsupported CustomProjectile schemaVersion: "
@@ -153,14 +168,6 @@ public final class CustomProjectileDefinitions {
             throw new IllegalArgumentException(id + " requires [projectile]");
         }
         rejectDeferredNativeLinks(config, id);
-
-        CustomUnitMetadata metadata = new CustomUnitMetadata();
-        metadata.configPath = context.unitId();
-        metadata.resolvedConfigPath = context.unitId();
-        metadata.resourceLoadPath = context.unitId();
-        metadata.modInfo = context.modInfo() instanceof ModInfo ? (ModInfo) context.modInfo() : null;
-        metadata.modRootPath = context.resourceRoot();
-        metadata.templateRootPath = context.templateRoot();
         metadata.internalName = id.toString();
 
         CustomProjectileAssets.parseEffects(metadata, config);

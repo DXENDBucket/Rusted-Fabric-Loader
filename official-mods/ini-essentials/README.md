@@ -95,6 +95,7 @@ pattern after the final `/`:
 class: CustomProjectile
 name: example:plasma_fan
 schemaVersion: 1
+@global baseSpeed: 5
 @memory phase: float
 @memory splitDone: bool
 
@@ -135,7 +136,7 @@ sweepAngle: 60
 originOffsetY: 18
 
 [motion]
-speed: 5+memory.phase
+speed: ${baseSpeed}
 turnSpeed: 2+projectile.age*0.05
 dx: sin(projectile.age*3)*1.5
 dy: cos(projectile.age*3)*1.5
@@ -154,6 +155,12 @@ ifCondition: not memory.splitDone
 setMemory: splitDone=true
 spawnCustomProjectile: example:fragment/main(centerDirection=projectile.direction,speed=projectile.speed*0.75)
 ```
+
+Independent CustomProjectile files run the game's native static-variable pass before their
+definition is parsed. Original `@global`, section-local `@define`, and `${...}` references therefore
+work in projectile, pattern, collision, motion, lifecycle, Decal, and Effect values. `${...}` is a
+load-time substitution; live unit/projectile memory and resources remain runtime expressions and
+use their ordinary `memory.*`, `self.resource.*`, or `projectile.*` forms.
 
 ```ini
 [action_fireFan]

@@ -82,7 +82,6 @@ public final class ProjectileRuleDefinitions {
                     rule.config = config;
                     rule.conditionKey = field.source().key();
                     rule.conditionSource = field.value();
-                    readNativeTags(rule, config, field.source().section(), prefix);
                     IniEssentials.activateSynchronizedRequirement();
                 })
                 .build());
@@ -119,7 +118,6 @@ public final class ProjectileRuleDefinitions {
                         rule.directMultiplierKey = field.source().key();
                         rule.directMultiplierSource = field.value();
                     }
-                    readNativeTags(rule, config, field.source().section(), prefix);
                     IniEssentials.activateSynchronizedRequirement();
                 })
                 .build());
@@ -238,6 +236,7 @@ public final class ProjectileRuleDefinitions {
                         rule.directMultiplierKey, rule.directMultiplierSource);
                 rule.areaMultiplierSource = currentSource(rule.config, section.getKey(),
                         rule.areaMultiplierKey, rule.areaMultiplierSource);
+                readNativeTags(rule, rule.config, section.getKey(), entry.getKey());
                 if (rule.conditionSource != null) {
                     rule.condition = BooleanExpression.compile(metadata, rule.conditionSource);
                 }

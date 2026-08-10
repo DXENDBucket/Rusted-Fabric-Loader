@@ -303,6 +303,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'unitCollisionIncludeTransported'].every {
                     customProjectileSource.contains('"' + it + '"') }
                 || !customProjectileSource.contains('NumericExpression.compile(')
+                || !customProjectileSource.contains(
+                    'ConfigVariableProcessor.processStaticConfigVariables(metadata, config)')
                 || !customProjectileActionSource.contains('"spawnCustomProjectile"')
                 || customProjectileActionSource.contains('"emitProjectilePattern"')
                 || !['"aimMode"', '"count"', '"centerDirection"', '"startAngle"',
@@ -327,6 +329,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !customProjectileTurretSource.contains('TurretProjectilePatternPlan')
                 || !customProjectileTurretSource.contains('projectilePatternRule_')
                 || !customProjectileTurretSource.contains('conditionSource')
+                || !customProjectileTurretSource.contains('DeferredReference')
+                || !customProjectileTurretSource.contains('resolveStaticValues')
                 || !customProjectileTurretSource.contains('iniEssentialsPatternPlaceholder')
                 || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
@@ -453,7 +457,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v25'
+                || multiplayer?.protocol != 'ini_essentials_v26'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

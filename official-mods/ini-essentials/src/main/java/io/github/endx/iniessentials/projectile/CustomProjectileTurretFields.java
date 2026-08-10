@@ -37,9 +37,9 @@ public final class CustomProjectileTurretFields {
     private static final String IF_TARGET_WITH_TAGS = "ifTargetWithTags";
     private static final String IF_TARGET_WITHOUT_TAGS = "ifTargetWithoutTags";
     private static final String PLACEHOLDER = "iniEssentialsPatternPlaceholder";
-    private static final Map<Object, Map<String, CustomProjectileDefinitions.Reference>> BY_METADATA =
+    private static final Map<Object, Map<String, DeferredReference>> BY_METADATA =
             Collections.synchronizedMap(
-                    new WeakHashMap<Object, Map<String, CustomProjectileDefinitions.Reference>>());
+                    new WeakHashMap<Object, Map<String, DeferredReference>>());
     private static final Map<Object, Map<String, LinkedHashMap<String, PatternRule>>> RULES =
             Collections.synchronizedMap(
                     new WeakHashMap<Object, Map<String, LinkedHashMap<String, PatternRule>>>());
@@ -48,23 +48,20 @@ public final class CustomProjectileTurretFields {
 
     public static void register() {
         IniExtensions.register(IniFieldDefinition
-                .<CustomProjectileDefinitions.Reference>builder(
+                .<String>builder(
                         IniEssentials.MOD_ID, "turret_projectile_pattern",
                         IniSectionSelector.prefix("turret_"), FIELD)
                 .applicationPhase(IniApplicationPhase.BEFORE_STATIC_VARIABLES)
-                .decoder(context -> {
-                    CustomProjectileDefinitions.Reference reference =
-                            CustomProjectileDefinitions.Reference.parse(context.rawValue());
-                    CustomProjectileDefinitions.noteReference(reference);
-                    return reference;
-                })
+                .decoder(context -> context.rawValue().trim())
                 .applier(field -> {
-                    ensureStandalonePlaceholder((UnitConfig) field.unitConfig(),
-                            field.source().section());
+                    UnitConfig config = (UnitConfig) field.unitConfig();
+                    ensureStandalonePlaceholder(config, field.source().section());
                     synchronized (BY_METADATA) {
                         BY_METADATA.computeIfAbsent(field.metadata(), ignored ->
-                                new LinkedHashMap<String, CustomProjectileDefinitions.Reference>())
-                                .put(field.source().section(), field.value());
+                                new LinkedHashMap<String, DeferredReference>())
+                                .put(field.source().section(), new DeferredReference(
+                                        config, field.source().section(), field.source().key(),
+                                        field.value()));
                     }
                     IniEssentials.activateSynchronizedRequirement();
                 })
@@ -87,7 +84,7 @@ public final class CustomProjectileTurretFields {
 
         TurretProjectilePatternEvents.PLAN.register(request -> {
             CustomUnit shooter = request.shooter();
-            Map<String, CustomProjectileDefinitions.Reference> fields = BY_METADATA.get(
+            Map<String, DeferredReference> fields = BY_METADATA.get(
                     shooter.unitMetadata);
             Map<String, LinkedHashMap<String, PatternRule>> metadataRules = RULES.get(
                     shooter.unitMetadata);
@@ -97,8 +94,11 @@ public final class CustomProjectileTurretFields {
             TurretTemplate turret = shooter.unitMetadata.turretTemplates[request.turretIndex()];
             CustomProjectileDefinitions.Reference reference = chooseRule(
                     metadataRules, turret, shooter, request.targetUnit().orElse(null));
-            if (reference == null && fields != null) reference = fields.get(turret.sectionName);
-            if (reference == null && fields != null) reference = fields.get("turret_" + turret.name);
+            if (reference == null && fields != null) {
+                DeferredReference field = fields.get(turret.sectionName);
+                if (field == null) field = fields.get("turret_" + turret.name);
+                if (field != null) reference = field.reference;
+            }
             if (reference == null) return;
 
             CustomProjectileDefinitions.Definition definition = reference.definition();
@@ -140,17 +140,19 @@ public final class CustomProjectileTurretFields {
                 .applier(field -> {
                     String name = ruleName(field.source().key(), suffix);
                     PatternRule rule = rule(field.metadata(), field.source().section(), name);
+                    rule.config = (UnitConfig) field.unitConfig();
                     if (RULE_PATTERN.equals(suffix)) {
-                        rule.reference = CustomProjectileDefinitions.Reference.parse(field.value());
-                        CustomProjectileDefinitions.noteReference(rule.reference);
+                        rule.referenceKey = field.source().key();
+                        rule.referenceSource = field.value();
                     } else if (IF_CONDITION.equals(suffix)) {
-                        rule.config = (UnitConfig) field.unitConfig();
                         rule.conditionKey = field.source().key();
                         rule.conditionSource = field.value();
                     } else if (IF_TARGET_WITH_TAGS.equals(suffix)) {
-                        rule.withTags = UnitTag.parseTagList(field.value());
+                        rule.withTagsKey = field.source().key();
+                        rule.withTagsSource = field.value();
                     } else if (IF_TARGET_WITHOUT_TAGS.equals(suffix)) {
-                        rule.withoutTags = UnitTag.parseTagList(field.value());
+                        rule.withoutTagsKey = field.source().key();
+                        rule.withoutTagsSource = field.value();
                     }
                     IniEssentials.activateSynchronizedRequirement();
                 })
@@ -210,6 +212,10 @@ public final class CustomProjectileTurretFields {
     }
 
     private static void validateRules(Object metadata) {
+        Map<String, DeferredReference> fields = BY_METADATA.get(metadata);
+        if (fields != null) {
+            for (DeferredReference field : fields.values()) field.resolve();
+        }
         Map<String, LinkedHashMap<String, PatternRule>> bySection = RULES.get(metadata);
         if (bySection == null) return;
         for (Map.Entry<String, LinkedHashMap<String, PatternRule>> section : bySection.entrySet()) {
@@ -217,6 +223,7 @@ public final class CustomProjectileTurretFields {
                 PatternRule rule = entry.getValue();
                 String location = "[" + section.getKey() + "] "
                         + RULE_PREFIX + entry.getKey();
+                rule.resolveStaticValues(section.getKey());
                 if (rule.reference == null) {
                     throw new IllegalArgumentException(location + " requires _pattern");
                 }
@@ -244,11 +251,58 @@ public final class CustomProjectileTurretFields {
     private static final class PatternRule {
         CustomProjectileDefinitions.Reference reference;
         UnitConfig config;
+        String referenceKey;
+        String referenceSource;
         String conditionKey;
         String conditionSource;
         BooleanExpression condition;
+        String withTagsKey;
+        String withTagsSource;
         CustomTagList withTags;
+        String withoutTagsKey;
+        String withoutTagsSource;
         CustomTagList withoutTags;
+
+        void resolveStaticValues(String section) {
+            referenceSource = currentSource(section, referenceKey, referenceSource);
+            conditionSource = currentSource(section, conditionKey, conditionSource);
+            withTagsSource = currentSource(section, withTagsKey, withTagsSource);
+            withoutTagsSource = currentSource(section, withoutTagsKey, withoutTagsSource);
+            if (referenceSource != null) {
+                reference = CustomProjectileDefinitions.Reference.parse(referenceSource);
+                CustomProjectileDefinitions.noteReference(reference);
+            }
+            if (withTagsSource != null) withTags = UnitTag.parseTagList(withTagsSource);
+            if (withoutTagsSource != null) withoutTags = UnitTag.parseTagList(withoutTagsSource);
+        }
+
+        private String currentSource(String section, String key, String fallback) {
+            if (config == null || key == null) return fallback;
+            String current = config.getRawValue(section, key);
+            return current != null ? current : fallback;
+        }
+    }
+
+    private static final class DeferredReference {
+        final UnitConfig config;
+        final String section;
+        final String key;
+        final String source;
+        CustomProjectileDefinitions.Reference reference;
+
+        DeferredReference(UnitConfig config, String section, String key, String source) {
+            this.config = config;
+            this.section = section;
+            this.key = key;
+            this.source = source;
+        }
+
+        void resolve() {
+            String current = config.getRawValue(section, key);
+            reference = CustomProjectileDefinitions.Reference.parse(
+                    current != null ? current : source);
+            CustomProjectileDefinitions.noteReference(reference);
+        }
     }
 
     private static float nativeTurretDirection(CustomUnit shooter, int turretIndex) {

@@ -92,7 +92,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v25",
-                "12fe282d75c51b7ff3c505933d916e74895ac0fed0a567411788120dd3dafb72"));
+                MOD_ID, version, "ini_essentials_v26",
+                "896874954edfa3661fa61287b4641c0aea1cde271040dff91966a391829717f2"));
     }
 }
