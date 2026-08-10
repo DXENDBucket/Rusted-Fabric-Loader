@@ -79,7 +79,9 @@ public final class ProjectileRuleDefinitions {
                     UnitConfig config = (UnitConfig) field.unitConfig();
                     ensureNativeMutatorCanParse(config, field.source().section(), prefix);
                     MutatorRule rule = mutatorRule(field.metadata(), field.source().section(), prefix);
-                    rule.condition = BooleanExpression.compile(field.metadata(), field.value());
+                    rule.config = config;
+                    rule.conditionKey = field.source().key();
+                    rule.conditionSource = field.value();
                     readNativeTags(rule, config, field.source().section(), prefix);
                     IniEssentials.activateSynchronizedRequirement();
                 })
@@ -109,9 +111,14 @@ public final class ProjectileRuleDefinitions {
                     UnitConfig config = (UnitConfig) field.unitConfig();
                     ensureNativeMutatorCanParse(config, field.source().section(), prefix);
                     MutatorRule rule = mutatorRule(field.metadata(), field.source().section(), prefix);
-                    NumericExpression expression = NumericExpression.compile(field.metadata(), field.value());
-                    if (area) rule.areaMultiplier = expression;
-                    else rule.directMultiplier = expression;
+                    rule.config = config;
+                    if (area) {
+                        rule.areaMultiplierKey = field.source().key();
+                        rule.areaMultiplierSource = field.value();
+                    } else {
+                        rule.directMultiplierKey = field.source().key();
+                        rule.directMultiplierSource = field.value();
+                    }
                     readNativeTags(rule, config, field.source().section(), prefix);
                     IniEssentials.activateSynchronizedRequirement();
                 })
@@ -124,7 +131,7 @@ public final class ProjectileRuleDefinitions {
                         "turret_projectile_rule_" + suffix.toLowerCase(Locale.ROOT),
                         IniSectionSelector.prefix("turret_"), SELECT_PREFIX)
                 .matchKeyPrefix()
-                .applicationPhase(IniApplicationPhase.BEFORE_STATIC_VARIABLES)
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .activatesWhen(context -> selectionName(context.key(), suffix) != null)
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> {
@@ -225,7 +232,24 @@ public final class ProjectileRuleDefinitions {
                 : rules.mutators.entrySet()) {
             for (Map.Entry<String, MutatorRule> entry : section.getValue().entrySet()) {
                 MutatorRule rule = entry.getValue();
-                if (rule.directMultiplier == null && rule.areaMultiplier == null) {
+                rule.conditionSource = currentSource(rule.config, section.getKey(),
+                        rule.conditionKey, rule.conditionSource);
+                rule.directMultiplierSource = currentSource(rule.config, section.getKey(),
+                        rule.directMultiplierKey, rule.directMultiplierSource);
+                rule.areaMultiplierSource = currentSource(rule.config, section.getKey(),
+                        rule.areaMultiplierKey, rule.areaMultiplierSource);
+                if (rule.conditionSource != null) {
+                    rule.condition = BooleanExpression.compile(metadata, rule.conditionSource);
+                }
+                if (rule.directMultiplierSource != null) {
+                    rule.directMultiplier = NumericExpression.compile(
+                            metadata, rule.directMultiplierSource);
+                }
+                if (rule.areaMultiplierSource != null) {
+                    rule.areaMultiplier = NumericExpression.compile(
+                            metadata, rule.areaMultiplierSource);
+                }
+                if (rule.directMultiplierSource == null && rule.areaMultiplierSource == null) {
                     throw new IllegalArgumentException("[" + section.getKey() + "] "
                             + entry.getKey() + IF_CONDITION
                             + " requires a directDamageMultiplier or areaDamageMultiplier");
@@ -312,6 +336,13 @@ public final class ProjectileRuleDefinitions {
         }
     }
 
+    private static String currentSource(UnitConfig config, String section, String key,
+                                        String fallback) {
+        if (config == null || key == null) return fallback;
+        String current = config.getRawValue(section, key);
+        return current != null ? current : fallback;
+    }
+
     private static final class MetadataRules {
         final LinkedHashMap<String, LinkedHashMap<String, MutatorRule>> mutators =
                 new LinkedHashMap<String, LinkedHashMap<String, MutatorRule>>();
@@ -320,6 +351,13 @@ public final class ProjectileRuleDefinitions {
     }
 
     private static final class MutatorRule {
+        UnitConfig config;
+        String conditionKey;
+        String directMultiplierKey;
+        String areaMultiplierKey;
+        String conditionSource;
+        String directMultiplierSource;
+        String areaMultiplierSource;
         BooleanExpression condition;
         NumericExpression directMultiplier;
         NumericExpression areaMultiplier;

@@ -144,7 +144,9 @@ public final class CustomProjectileTurretFields {
                         rule.reference = CustomProjectileDefinitions.Reference.parse(field.value());
                         CustomProjectileDefinitions.noteReference(rule.reference);
                     } else if (IF_CONDITION.equals(suffix)) {
-                        rule.condition = BooleanExpression.compile(field.metadata(), field.value());
+                        rule.config = (UnitConfig) field.unitConfig();
+                        rule.conditionKey = field.source().key();
+                        rule.conditionSource = field.value();
                     } else if (IF_TARGET_WITH_TAGS.equals(suffix)) {
                         rule.withTags = UnitTag.parseTagList(field.value());
                     } else if (IF_TARGET_WITHOUT_TAGS.equals(suffix)) {
@@ -218,7 +220,14 @@ public final class CustomProjectileTurretFields {
                 if (rule.reference == null) {
                     throw new IllegalArgumentException(location + " requires _pattern");
                 }
-                if (rule.condition == null && rule.withTags == null && rule.withoutTags == null) {
+                if (rule.conditionSource != null) {
+                    String current = rule.config != null && rule.conditionKey != null
+                            ? rule.config.getRawValue(section.getKey(), rule.conditionKey) : null;
+                    if (current != null) rule.conditionSource = current;
+                    rule.condition = BooleanExpression.compile(metadata, rule.conditionSource);
+                }
+                if (rule.conditionSource == null
+                        && rule.withTags == null && rule.withoutTags == null) {
                     throw new IllegalArgumentException(location + " requires at least one condition");
                 }
             }
@@ -234,6 +243,9 @@ public final class CustomProjectileTurretFields {
 
     private static final class PatternRule {
         CustomProjectileDefinitions.Reference reference;
+        UnitConfig config;
+        String conditionKey;
+        String conditionSource;
         BooleanExpression condition;
         CustomTagList withTags;
         CustomTagList withoutTags;

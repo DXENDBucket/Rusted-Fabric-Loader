@@ -43,7 +43,7 @@ sweepAngle: 60
 普通单位在 `[action_*]` 或 `[hiddenAction_*]` 中通过有命名空间的引用使用它：
 
 ```ini
-emitProjectilePattern: example:plasma_fan/main
+spawnCustomProjectile: example:plasma_fan/main(count=7,centerDirection=self.dir)
 ```
 
 `[projectile]` 复用原版 `[projectile_NAME]` 的字段语法；`[pattern_*]` 的数值字段在动作

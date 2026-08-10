@@ -18,6 +18,7 @@ import io.github.endx.rustedfabricapi.api.client.render.MaskAlphaMode;
 import io.github.endx.rustedfabricapi.api.client.render.MaskThresholdMode;
 import io.github.endx.rustedfabricapi.api.client.render.event.DecalRenderEvents;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMask;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
@@ -70,6 +71,7 @@ public final class DecalMaskDefinitions {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "decal_mask_fields",
                         IniSectionSelector.prefix(PREFIX), "mask")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .matchKeyPrefix()
                 .activatesWhen(context -> KEYS.contains(
                         context.key().toLowerCase(Locale.ROOT)))
@@ -87,6 +89,7 @@ public final class DecalMaskDefinitions {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "decal_bar_fields",
                         IniSectionSelector.prefix(PREFIX), "bar")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .matchKeyPrefix()
                 .activatesWhen(context -> BAR_KEYS.contains(
                         context.key().toLowerCase(Locale.ROOT)))

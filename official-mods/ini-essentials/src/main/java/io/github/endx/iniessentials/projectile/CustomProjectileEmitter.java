@@ -7,6 +7,7 @@ import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileSpawnSpec;
 import io.github.endx.rustedfabricapi.api.world.GameWorld;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.unit.Unit;
+import rustedwarfare.util.CommonUtils;
 
 /** Shared emission path for unit actions and projectile lifecycle actions. */
 final class CustomProjectileEmitter {
@@ -14,18 +15,27 @@ final class CustomProjectileEmitter {
 
     private CustomProjectileEmitter() { }
 
-    static void emit(CustomProjectileDefinitions.Reference reference, CustomUnit actor,
-                     float originX, float originY, float originHeight, float direction,
+    static void emit(CustomProjectileSpawnRequest.Resolved request, CustomUnit actor,
+                     float baseOriginX, float baseOriginY, float baseOriginHeight, float direction,
                      Unit targetUnit, boolean hasTargetPoint,
                      float targetX, float targetY, float targetHeight,
                      ProjectileSpawnContext.Cause cause, int recursionDepth) {
         if (recursionDepth > MAX_RECURSION) {
             throw new IllegalArgumentException("CustomProjectile recursion exceeds " + MAX_RECURSION);
         }
-        CustomProjectileDefinitions.Definition definition = reference.definition();
+        CustomProjectileDefinitions.Definition definition = request.reference.definition();
         CustomProjectileDefinitions.CompiledPattern pattern = definition
-                .requirePattern(reference.patternName()).compileFor(actor);
-        float resolvedDirection = pattern.centerDirection(actor, direction);
+                .requirePattern(request.reference.patternName()).compileFor(actor);
+        float resolvedDirection = request.valueOr("centerDirection",
+                pattern.centerDirection(actor, direction));
+        float localX = request.valueOr("originOffsetX", pattern.originOffsetX.evaluate(actor));
+        float localY = request.valueOr("originOffsetY", pattern.originOffsetY.evaluate(actor));
+        float sin = CommonUtils.fastSin(direction);
+        float cos = CommonUtils.fastCos(direction);
+        float originX = baseOriginX + cos * localY - sin * localX;
+        float originY = baseOriginY + sin * localY + cos * localX;
+        float originHeight = baseOriginHeight + request.valueOr("originOffsetHeight",
+                pattern.originOffsetHeight.evaluate(actor));
 
         ProjectileSpawnContext.Builder context = ProjectileSpawnContext.builder(actor)
                 .cause(cause)
@@ -39,8 +49,11 @@ final class CustomProjectileEmitter {
                         context.build(), definition.projectile())
                 .origin(originX, originY, originHeight)
                 .collision(definition.collision().compileFor(actor).resolve(actor))
-                .directionDistance(pattern.directionDistance.evaluate(actor));
-        switch (pattern.aimMode) {
+                .directionDistance(request.valueOr("directionDistance",
+                        pattern.directionDistance.evaluate(actor)));
+        io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileAimMode aimMode =
+                request.aimMode != null ? request.aimMode : pattern.aimMode;
+        switch (aimMode) {
             case DIRECTION:
                 spec.directionTarget(resolvedDirection);
                 break;
@@ -61,7 +74,22 @@ final class CustomProjectileEmitter {
             default:
                 throw new AssertionError(pattern.aimMode);
         }
-        ProjectilePatternSpec resolvedPattern = pattern.resolve(actor);
-        ProjectilePatternEmitter.emit(spec.build(), resolvedPattern);
+        ProjectilePatternSpec resolvedPattern = ProjectilePatternSpec.builder(pattern.type)
+                .count(Math.round(request.valueOr("count", pattern.count.evaluate(actor))))
+                .startAngle(request.valueOr("startAngle", pattern.startAngle.evaluate(actor)))
+                .sweepAngle(request.valueOr("sweepAngle", pattern.sweepAngle.evaluate(actor)))
+                .originSpacing(request.valueOr("originSpacing",
+                        pattern.originSpacing.evaluate(actor)))
+                .lineAngleOffset(request.valueOr("lineAngleOffset",
+                        pattern.lineAngleOffset.evaluate(actor)))
+                .build();
+        ProjectileSpawnSpec resolvedSpec = spec.build();
+        ProjectileSpawnContext spawnContext = resolvedSpec.context();
+        CustomProjectileRuntime.beginSpawnOverrides(spawnContext, request);
+        try {
+            ProjectilePatternEmitter.emit(resolvedSpec, resolvedPattern);
+        } finally {
+            CustomProjectileRuntime.endSpawnOverrides(spawnContext);
+        }
     }
 }

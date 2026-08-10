@@ -64,6 +64,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def customProjectileDefinitions = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileDefinitions.java')
     def customProjectileActionFields = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileActionFields.java')
     def customProjectileEmitter = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileEmitter.java')
+    def customProjectileSpawnRequest = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileSpawnRequest.java')
     def customProjectileRuntime = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileRuntime.java')
     def customProjectileExpression = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileExpression.java')
     def customProjectileTurretFields = file('src/main/java/io/github/endx/iniessentials/projectile/CustomProjectileTurretFields.java')
@@ -84,7 +85,8 @@ tasks.register('verifyIniEssentialsMetadata') {
             eventRuleFields,
             projectileRuleFields,
             customProjectileDefinitions, customProjectileActionFields,
-            customProjectileEmitter, customProjectileRuntime, customProjectileExpression,
+            customProjectileEmitter, customProjectileSpawnRequest, customProjectileRuntime,
+            customProjectileExpression,
             customProjectileTurretFields, customProjectileDecalRenderer,
             booleanExpression,
             geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
@@ -140,7 +142,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'class', 'name', 'schemaVersion', 'aimMode', 'count',
                 'centerDirection', 'originSpacing', 'lineAngleOffset',
                 'originOffsetX', 'originOffsetY', 'originOffsetHeight',
-                'directionDistance', 'emitProjectilePattern', 'spawnCustomProjectile',
+                'directionDistance', 'spawnCustomProjectile',
                 '@memory NAME', 'speed', 'turnSpeed', 'dx', 'dy',
                 'onCreate', 'onUpdate', 'onImpact', 'onRemove', 'ifCondition',
                 'setMemory', 'setSpeed', 'setTurnSpeed', 'setDx', 'setDy',
@@ -177,6 +179,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def customProjectileSource = customProjectileDefinitions.getText('UTF-8')
         def customProjectileActionSource = customProjectileActionFields.getText('UTF-8')
         def customProjectileEmitterSource = customProjectileEmitter.getText('UTF-8')
+        def customProjectileSpawnRequestSource = customProjectileSpawnRequest.getText('UTF-8')
         def customProjectileRuntimeSource = customProjectileRuntime.getText('UTF-8')
         def customProjectileExpressionSource = customProjectileExpression.getText('UTF-8')
         def customProjectileTurretSource = customProjectileTurretFields.getText('UTF-8')
@@ -207,12 +210,16 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !actionPositionSource.contains('UnitReferenceExpression.compile(')
                 || !actionPositionSource.contains('ACTION_TARGET')
                 || !initializerSource.contains('BooleanExpression.compile(')
+                || !initializerSource.contains('IniApplicationPhase.AFTER_METADATA_PARSED')
                 || !initializerSource.contains('CustomUnitRegistryEvents.BEFORE_NATIVE_LOAD.register(')
                 || !initializerSource.contains('ExtendedMathFunctions.register();')
                 || !initializerSource.contains('OverlayEvaluationContext.registerFunctions();')
                 || overlaySource.contains('OverlayEvaluationContext.registerFunctions();')
                 || !fogSource.contains('BooleanExpression.compile(')
+                || !fogSource.contains('IniApplicationPhase.AFTER_METADATA_PARSED')
+                || !fogSource.contains('validateReferences(metadata)')
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
+                || !geometrySource.contains('IniApplicationPhase.AFTER_METADATA_PARSED')
                 || !['layer', 'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
                     'isVisible', 'instanceCondition', 'priority', 'slot',
                     'maxInstances', 'columns', 'xOffsetAbsolute', 'yOffsetAbsolute', 'spacingX',
@@ -240,6 +247,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 }
                 || !overlaySource.contains('HudRenderEvents.BEFORE_HUD')
                 || !overlaySource.contains('HudRenderEvents.AFTER_HUD')
+                || !overlaySource.contains('IniApplicationPhase.AFTER_METADATA_PARSED')
                 || !overlaySource.contains('NEAREST_TO_CAMERA')
                 || !overlaySource.contains('FARTHEST_FROM_CAMERA')
                 || !overlaySource.contains('FrameLayout')
@@ -253,6 +261,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'barBackgroundColor', 'barBorderColor', 'barBorderWidth',
                     'barDirection'].every { decalMaskSource.contains('"' + it + '"') }
                 || !decalMaskSource.contains('DecalRenderEvents.BEFORE_LAYER')
+                || !decalMaskSource.contains('IniApplicationPhase.AFTER_METADATA_PARSED')
                 || !decalMaskSource.contains('ClientImages.createBar')
                 || !decalMaskSource.contains('AlphaMasks.imageAffine')
                 || !decalMaskSource.contains('GeometryDefinitions.require(')
@@ -266,6 +275,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !eventRuleSource.contains('CustomUnitTriggerEvents.PREPARE_QUEUE')
                 || !eventRuleSource.contains('CustomUnitOperationEvents.BEFORE_EVENT')
                 || !eventRuleSource.contains('CustomUnitEventEvaluation.withContext')
+                || !eventRuleSource.contains('IniApplicationPhase.AFTER_METADATA_PARSED')
                 || !eventRuleSource.contains('NumericExpression.compile(')
                 || !eventRuleSource.contains('BooleanExpression.compile(')
                 || !['mutator_if_condition', 'mutator_dynamic_direct_multiplier',
@@ -275,6 +285,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !projectileRuleSource.contains('ProjectileCombatEvents.MODIFY_DAMAGE')
                 || !projectileRuleSource.contains('ProjectileCombatEvents.SELECT_TURRET_PROJECTILE')
                 || !projectileRuleSource.contains('CustomUnitEventEvaluation.withContext')
+                || !projectileRuleSource.contains('conditionSource')
+                || !projectileRuleSource.contains('directMultiplierSource')
                 || !['class', 'schemaVersion', 'projectile', 'pattern_',
                     'spawnProjectilesOnCreate', 'spawnProjectilesOnExplode',
                     'spawnProjectilesOnEndOfLife'].every {
@@ -291,8 +303,16 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'unitCollisionIncludeTransported'].every {
                     customProjectileSource.contains('"' + it + '"') }
                 || !customProjectileSource.contains('NumericExpression.compile(')
-                || !customProjectileActionSource.contains('"emitProjectilePattern"')
                 || !customProjectileActionSource.contains('"spawnCustomProjectile"')
+                || customProjectileActionSource.contains('"emitProjectilePattern"')
+                || !['"aimMode"', '"count"', '"centerDirection"', '"startAngle"',
+                    '"sweepAngle"', '"originSpacing"', '"lineAngleOffset"',
+                    '"originOffsetX"', '"originOffsetY"', '"originOffsetHeight"',
+                    '"directionDistance"', '"speed"', '"turnSpeed"', '"dx"',
+                    '"dy"', '"offsetX"', '"offsetY"'].every {
+                    customProjectileSpawnRequestSource.contains(it)
+                }
+                || customProjectileRuntimeSource.contains('"emitProjectilePattern"')
                 || !customProjectileEmitterSource.contains('ProjectilePatternEmitter.emit(')
                 || !['"speed"', '"turnSpeed"', '"dx"', '"dy"', '"offsetX"',
                     '"offsetY"', '"onCreate"', '"onUpdate"', '"onImpact"',
@@ -306,6 +326,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !customProjectileTurretSource.contains('TurretProjectilePatternEvents.PLAN')
                 || !customProjectileTurretSource.contains('TurretProjectilePatternPlan')
                 || !customProjectileTurretSource.contains('projectilePatternRule_')
+                || !customProjectileTurretSource.contains('conditionSource')
                 || !customProjectileTurretSource.contains('iniEssentialsPatternPlaceholder')
                 || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
@@ -432,7 +453,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v24'
+                || multiplayer?.protocol != 'ini_essentials_v25'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

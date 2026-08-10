@@ -9,6 +9,7 @@ import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventEvaluation
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitOperationEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.MutableCustomUnitEventContext;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
@@ -42,6 +43,7 @@ public final class EventRuleDefinitions {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "event_rule",
                         IniSectionSelector.prefix(PREFIX), "event")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseEventType(value))
                 .applier(field -> {

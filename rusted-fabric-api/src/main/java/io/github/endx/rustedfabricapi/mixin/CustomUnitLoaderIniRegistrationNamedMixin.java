@@ -38,6 +38,9 @@ public abstract class CustomUnitLoaderIniRegistrationNamedMixin {
         RustedIniEvents.ParseStreamContext context = new RustedIniEvents.ParseStreamContext(
                 unitId, inputStream, sourceTimestamp, modInfo, namedInputStream, resourceRoot, templateRoot);
         Object metadata = cir.getReturnValue();
+        if (metadata != null) {
+            IniExtensionRuntime.applyAfterMetadataParsed(metadata);
+        }
         Object replacement = RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.invoker()
                 .afterMetadataParsed(context, metadata);
         if (replacement != metadata) {

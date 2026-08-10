@@ -13,6 +13,8 @@ import io.github.endx.rustedfabricapi.api.fog.FogSources;
 import io.github.endx.rustedfabricapi.api.fog.FogState;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMask;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMasks;
+import io.github.endx.rustedfabricapi.api.event.RustedCustomUnitRegistryEvents;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
@@ -37,6 +39,8 @@ public final class FogActionFields {
     private static final String PREFIX = "fog_";
     private static final Map<Object, Map<String, Template>> BY_METADATA =
             Collections.synchronizedMap(new WeakHashMap<Object, Map<String, Template>>());
+    private static final Map<Object, List<String>> REFERENCES =
+            Collections.synchronizedMap(new WeakHashMap<Object, List<String>>());
 
     private FogActionFields() { }
 
@@ -44,6 +48,7 @@ public final class FogActionFields {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "fog_definition",
                         IniSectionSelector.prefix(PREFIX), "operation")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseOperation(value))
                 .applier(field -> {
@@ -60,18 +65,24 @@ public final class FogActionFields {
                 .build());
 
         IniActionEffects.register(IniActionEffectDefinition
-                .<List<Template>>builder(IniEssentials.MOD_ID, "apply_fog", "applyFog")
+                .<List<String>>builder(IniEssentials.MOD_ID, "apply_fog", "applyFog")
                 .decoder(context -> {
                     IniEssentials.activateSynchronizedRequirement();
-                    ArrayList<Template> result = new ArrayList<Template>();
+                    ArrayList<String> result = new ArrayList<String>();
                     for (String raw : context.rawValue().split(",")) {
-                        result.add(require(context.metadata(), raw));
+                        result.add(normalize(raw));
                     }
                     if (result.isEmpty()) throw new IllegalArgumentException("applyFog requires a fog name");
+                    synchronized (REFERENCES) {
+                        REFERENCES.computeIfAbsent(context.metadata(), ignored ->
+                                new ArrayList<String>()).addAll(result);
+                    }
                     return Collections.unmodifiableList(result);
                 })
-                .handler((context, templates) -> {
-                    for (Template template : templates) template.execute(context);
+                .handler((context, names) -> {
+                    for (String name : names) {
+                        require(context.actor().unitMetadata, name).execute(context);
+                    }
                 })
                 .documentation(new IniFieldDocumentation(
                         "fog name[,fog name...]",
@@ -80,6 +91,11 @@ public final class FogActionFields {
                         "applyFog: revealFront",
                         IniMultiplayerImpact.GAMEPLAY_SYNCED))
                 .build());
+
+        RustedCustomUnitRegistryEvents.AFTER_METADATA_PARSED.register((context, metadata) -> {
+            validateReferences(metadata);
+            return metadata;
+        });
 
         IniActionEffects.register(IniActionEffectDefinition
                 .<FogMode>builder(IniEssentials.MOD_ID, "set_fog_mode", "setFogMode")
@@ -125,6 +141,12 @@ public final class FogActionFields {
         Template result = definitions != null ? definitions.get(normalize(name)) : null;
         if (result == null) throw new IllegalArgumentException("unknown fog definition: " + name);
         return result;
+    }
+
+    private static void validateReferences(Object metadata) {
+        List<String> references = REFERENCES.remove(metadata);
+        if (references == null) return;
+        for (String name : references) require(metadata, name);
     }
 
     private static FogOperation parseOperation(String raw) {

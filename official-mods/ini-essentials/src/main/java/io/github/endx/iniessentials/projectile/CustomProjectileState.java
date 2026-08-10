@@ -16,6 +16,7 @@ final class CustomProjectileState {
     final ProjectileSpawnSpec spawnSpec;
     final float originX;
     final float originY;
+    private final CustomProjectileSpawnRequest.Resolved spawnOverrides;
     private final Map<String, Float> memory = new LinkedHashMap<String, Float>();
     boolean impactActionRan;
     boolean removalActionRan;
@@ -24,15 +25,21 @@ final class CustomProjectileState {
 
     CustomProjectileState(CustomProjectileDefinitions.Definition definition,
                           Projectile projectile, CustomUnit source,
-                          ProjectileSpawnSpec spawnSpec) {
+                          ProjectileSpawnSpec spawnSpec,
+                          CustomProjectileSpawnRequest.Resolved spawnOverrides) {
         this.definition = definition;
         this.projectile = projectile;
         this.source = source;
         this.spawnSpec = spawnSpec;
+        this.spawnOverrides = spawnOverrides;
         // AFTER_SPAWN runs after the native template's created-effects pass, so these are the
         // actual initial coordinates seen by gameplay rather than only the requested spec origin.
         this.originX = projectile.x;
         this.originY = projectile.y;
+    }
+
+    Float spawnOverride(String name) {
+        return spawnOverrides != null ? spawnOverrides.value(name) : null;
     }
 
     float memory(String name) {

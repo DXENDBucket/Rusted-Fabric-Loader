@@ -21,6 +21,8 @@ import java.util.WeakHashMap;
 public final class IniExtensionRuntime {
     private static final Map<Object, State> STATES =
             Collections.synchronizedMap(new WeakHashMap<Object, State>());
+    private static final Map<Object, Object> CONFIG_BY_METADATA =
+            Collections.synchronizedMap(new WeakHashMap<Object, Object>());
 
     private IniExtensionRuntime() { }
 
@@ -82,7 +84,16 @@ public final class IniExtensionRuntime {
     }
 
     public static void applyAfterStaticVariables(Object metadata, Object rawConfig) {
+        CONFIG_BY_METADATA.put(metadata, rawConfig);
         apply(IniApplicationPhase.AFTER_STATIC_VARIABLES, metadata, rawConfig);
+    }
+
+    /** Applies fields which need the native parser's completed memory/resource schema. */
+    public static void applyAfterMetadataParsed(Object metadata) {
+        Object rawConfig = CONFIG_BY_METADATA.remove(metadata);
+        if (rawConfig != null) {
+            apply(IniApplicationPhase.AFTER_METADATA_PARSED, metadata, rawConfig);
+        }
     }
 
     public static void applyBeforeStaticVariables(Object metadata, Object rawConfig) {

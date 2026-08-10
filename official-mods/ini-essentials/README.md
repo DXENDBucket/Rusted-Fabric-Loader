@@ -152,12 +152,12 @@ setMemory: phase=memory.phase+0.02
 [action_split]
 ifCondition: not memory.splitDone
 setMemory: splitDone=true
-emitProjectilePattern: example:fragment/main
+spawnCustomProjectile: example:fragment/main(centerDirection=projectile.direction,speed=projectile.speed*0.75)
 ```
 
 ```ini
 [action_fireFan]
-spawnCustomProjectile: example:plasma_fan
+spawnCustomProjectile: example:plasma_fan(count=memory.shotCount,centerDirection=self.dir+15,speed=8+self.resource.projectileSpeed)
 
 [turret_main]
 projectilePattern: example:plasma_fan/main
@@ -214,11 +214,18 @@ speed, velocity, and spawn-relative offsets.
 `[lifecycle]` can bind `onCreate`, `onUpdate`, `onImpact`, and `onRemove` to local
 `[action_NAME]` or `[hiddenAction_NAME]` sections. The supported projectile-safe subset is
 `ifCondition`, `setMemory`, `setSpeed`, `setTurnSpeed`, `setDx`, `setDy`, `setOffsetX`,
-`setOffsetY`, and `emitProjectilePattern`. Impact/removal bindings run once. Child emission starts
-at the live projectile position and is capped at ten recursion levels; local actions also accept
-`spawnCustomProjectile` with the same default-main shorthand. Ordinary unit actions can
-use `spawnCustomProjectile: namespace:path` (default `main`) or the compatible
-`emitProjectilePattern: namespace:path/pattern` form.
+`setOffsetY`, and `spawnCustomProjectile`. Impact/removal bindings run once. Child emission starts
+at the live projectile position and is capped at ten recursion levels. Ordinary and projectile-local
+actions both use `spawnCustomProjectile: namespace:path[/pattern]`; omitted pattern names select
+`main`.
+
+An optional parenthesized argument list overrides only that emission and never mutates the shared
+CustomProjectile definition. It accepts `aimMode`, `count`, `centerDirection`, `startAngle`,
+`sweepAngle`, `originSpacing`, `lineAngleOffset`, `originOffsetX`, `originOffsetY`,
+`originOffsetHeight`, `directionDistance`, `speed`, `turnSpeed`, `dx`, `dy`, `offsetX`, and
+`offsetY`. Numeric arguments are runtime expressions evaluated when the action emits. Nested calls
+such as `count=max(1,memory.shots)` are parsed normally. Motion arguments are captured once for the
+new projectile instance and take precedence over its `[motion]` fields for that instance.
 
 The `[projectile]`, `[effect_NAME]`, and `[decal_NAME]` sections accept their ordinary native fields
 except deferred links to
@@ -289,6 +296,13 @@ Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`,
 convention. Invalid domains retain deterministic IEEE float behavior; geometry rejects non-finite
 results before changing gameplay state.
 
+All unit-backed INI Essentials LogicBoolean and runtime-number fields are compiled only after the
+native unit parser has registered that unit's memory and resources. This includes health policy,
+Geometry, Fog, event rules, projectile/mutator conditions, Decal bars and masks, and Overlay—not
+only the examples that explicitly show `memory.*` or `self.resource.*`. Action effects are parsed
+later in the native pipeline already, while standalone CustomProjectile expressions are compiled
+against the firing unit's completed metadata when first used.
+
 ## Screen-space overlays
 
 `[overlay_NAME]` draws a `bar`, `text`, or `image` in HUD coordinates while evaluating dynamic
@@ -329,7 +343,11 @@ can read `overlayIndex()`, `overlayStableIndex()`, `overlayCount()`, `overlayRow
 between the world and native HUD, which is useful for panels that native controls should cover.
 `scale`, `scaleX`, and `scaleY` remain Overlay-wide fields because they apply equally to bars,
 text, and images. `dirOffset` uses the same name as Decal. All four are runtime expressions applied
-around the overlay center. Negative axis scales mirror an element. Bars can fill `leftToRight`, `rightToLeft`,
+around the overlay center. Overlay expressions are compiled after the native parser has registered
+the unit's `@memory` and resources, so forms such as `scaleX: memory.hudScale` and
+`scaleY: self.resource.uiScale` are supported and are re-evaluated for the live unit every frame.
+Use native LogicBoolean expression syntax directly here; `${...}` is the separate static-variable
+substitution syntax. Negative axis scales mirror an element. Bars can fill `leftToRight`, `rightToLeft`,
 `topToBottom`, or `bottomToTop` through `barDirection`.
 
 For Decal-style image definitions, `type: image` may be omitted: the presence of `image` selects

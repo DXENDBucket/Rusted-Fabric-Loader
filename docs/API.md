@@ -1424,8 +1424,10 @@ Extended values and formats must provide `activatesWhen(...)`. A native key/valu
 that predicate is false remains entirely on the native path. An activated non-native format may
 provide `nativeFallback(...)` when the original loader still needs a compatible raw value. Only
 activated extension keys are marked as consumed before the native unused-key check. Decoded values
-can be applied immediately before or after static configuration variables; repeated scans caused by
-`copyFrom` remain idempotent.
+can be applied immediately before or after static configuration variables, or in
+`AFTER_METADATA_PARSED` after the native parser has registered unit memory, resources, actions,
+and projectiles. The late phase is intended for extension expressions that must compile against
+that completed metadata. Repeated scans caused by `copyFrom` remain idempotent.
 
 This contract deliberately permits documented additions to the value range or format of an
 existing field. It does not draw a permanent boundary around native keys; it draws the boundary at

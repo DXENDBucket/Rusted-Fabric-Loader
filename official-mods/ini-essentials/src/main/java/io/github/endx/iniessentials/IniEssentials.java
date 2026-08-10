@@ -13,9 +13,10 @@ import io.github.endx.iniessentials.projectile.CustomProjectileDecalRenderer;
 import io.github.endx.iniessentials.projectile.CustomProjectileDefinitions;
 import io.github.endx.iniessentials.projectile.CustomProjectileTurretFields;
 import io.github.endx.iniessentials.projectile.ProjectileRuleDefinitions;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
+import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
-import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
 import io.github.endx.rustedfabricapi.api.ini.IniSectionSelector;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents;
@@ -63,6 +64,7 @@ public final class IniEssentials implements ModInitializer {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(MOD_ID, "allow_negative_hp",
                         IniSectionSelector.exact("core"), "allowNegativeHp")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .decoder(context -> context.rawValue().trim())
                 .applier(field -> {
                     BooleanExpression expression = BooleanExpression.compile(
@@ -90,7 +92,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v24",
-                "4c01e92b815d672542a4911ccc360abcb4db3d1a208fe63359e85640f0a0c7b2"));
+                MOD_ID, version, "ini_essentials_v25",
+                "12fe282d75c51b7ff3c505933d916e74895ac0fed0a567411788120dd3dafb72"));
     }
 }

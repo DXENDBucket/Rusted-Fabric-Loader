@@ -1,5 +1,6 @@
 package io.github.endx.rustedfabricapi.verification;
 
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensionKind;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
@@ -19,7 +20,32 @@ final class IniExtensionContractVerification {
         verifyNativeValueIsNotActivated();
         verifyExplicitExtendedFormatUsesFallback();
         verifyPrefixKeyMatchingConsumesOnlyActivatedKeys();
+        verifyAfterMetadataParsedPhase();
         verifyInvalidExtendedValueHasLocation();
+    }
+
+    private static void verifyAfterMetadataParsedPhase() {
+        final int[] applications = {0};
+        IniFieldDefinition<String> definition = IniFieldDefinition
+                .<String>builder("test_mod", "late_value",
+                        IniSectionSelector.exact("overlay_test"), "scaleX")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .decoder(context -> context.rawValue())
+                .applier(field -> applications[0]++)
+                .build();
+        try (IniExtensions.Registration ignored = IniExtensions.register(definition)) {
+            Object metadata = new Object();
+            UnitConfig config = config("[overlay_test]\nscaleX: memory.scale\n");
+            IniExtensionRuntime.index(config);
+            IniExtensionRuntime.markActiveFieldsRead(config);
+            IniExtensionRuntime.applyAfterStaticVariables(metadata, config);
+            require(applications[0] == 0,
+                    "late extension ran before native metadata parsing completed");
+            IniExtensionRuntime.applyAfterMetadataParsed(metadata);
+            IniExtensionRuntime.applyAfterMetadataParsed(metadata);
+            require(applications[0] == 1,
+                    "late extension was not applied exactly once after metadata parsing");
+        }
     }
 
     private static void verifyEmptyRegistryDoesNotInspectUnknownObjects() {

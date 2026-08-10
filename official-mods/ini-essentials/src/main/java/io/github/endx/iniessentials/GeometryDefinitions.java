@@ -3,6 +3,7 @@ package io.github.endx.iniessentials;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMask;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMasks;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryPoint;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
@@ -32,6 +33,7 @@ public final class GeometryDefinitions {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "geometry_definition",
                         IniSectionSelector.prefix(PREFIX), "type")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseType(value))
                 .applier(field -> {

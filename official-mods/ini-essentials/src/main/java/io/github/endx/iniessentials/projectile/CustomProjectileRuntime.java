@@ -23,6 +23,9 @@ import java.util.WeakHashMap;
 final class CustomProjectileRuntime {
     private static final Map<Projectile, CustomProjectileState> STATES =
             Collections.synchronizedMap(new WeakHashMap<Projectile, CustomProjectileState>());
+    private static final Map<ProjectileSpawnContext, CustomProjectileSpawnRequest.Resolved>
+            SPAWN_OVERRIDES = Collections.synchronizedMap(
+                    new WeakHashMap<ProjectileSpawnContext, CustomProjectileSpawnRequest.Resolved>());
 
     private CustomProjectileRuntime() { }
 
@@ -41,6 +44,16 @@ final class CustomProjectileRuntime {
 
     static void beginReload() {
         STATES.clear();
+        SPAWN_OVERRIDES.clear();
+    }
+
+    static void beginSpawnOverrides(ProjectileSpawnContext context,
+                                    CustomProjectileSpawnRequest.Resolved overrides) {
+        SPAWN_OVERRIDES.put(context, overrides);
+    }
+
+    static void endSpawnOverrides(ProjectileSpawnContext context) {
+        SPAWN_OVERRIDES.remove(context);
     }
 
     private static void afterSpawn(Projectile projectile, ProjectileSpawnSpec spec) {
@@ -48,7 +61,7 @@ final class CustomProjectileRuntime {
                 CustomProjectileDefinitions.forTemplate(spec.template());
         if (definition == null || !(spec.context().source() instanceof CustomUnit)) return;
         CustomProjectileState state = new CustomProjectileState(definition, projectile,
-                (CustomUnit) spec.context().source(), spec);
+                (CustomUnit) spec.context().source(), spec, SPAWN_OVERRIDES.get(spec.context()));
         STATES.put(projectile, state);
         definition.lifecycle().onCreate.execute(state);
         definition.motion().apply(state);
@@ -195,15 +208,25 @@ final class CustomProjectileRuntime {
                         number(metadata, memory, offsetY));
                 compiled.put(metadata, value);
             }
-            if (value.speed != null) ProjectileMotion.setFlightSpeed(
+            Float speedOverride = state.spawnOverride("speed");
+            if (speedOverride != null) ProjectileMotion.setFlightSpeed(
+                    state.projectile, speedOverride.floatValue());
+            else if (value.speed != null) ProjectileMotion.setFlightSpeed(
                     state.projectile, value.speed.evaluate(state));
-            if (value.turnSpeed != null) ProjectileMotion.setTurnSpeed(
+            Float turnSpeedOverride = state.spawnOverride("turnSpeed");
+            if (turnSpeedOverride != null) ProjectileMotion.setTurnSpeed(
+                    state.projectile, turnSpeedOverride.floatValue());
+            else if (value.turnSpeed != null) ProjectileMotion.setTurnSpeed(
                     state.projectile, value.turnSpeed.evaluate(state));
-            float resolvedDx = value.dx != null ? value.dx.evaluate(state)
+            Float dxOverride = state.spawnOverride("dx");
+            Float dyOverride = state.spawnOverride("dy");
+            float resolvedDx = dxOverride != null ? dxOverride.floatValue()
+                    : value.dx != null ? value.dx.evaluate(state)
                     : state.projectile.initialUnguidedSpeedX;
-            float resolvedDy = value.dy != null ? value.dy.evaluate(state)
+            float resolvedDy = dyOverride != null ? dyOverride.floatValue()
+                    : value.dy != null ? value.dy.evaluate(state)
                     : state.projectile.initialUnguidedSpeedY;
-            if (value.dx != null || value.dy != null) {
+            if (dxOverride != null || dyOverride != null || value.dx != null || value.dy != null) {
                 ProjectileMotion.setVelocity(state.projectile, resolvedDx, resolvedDy);
             }
         }
@@ -215,7 +238,13 @@ final class CustomProjectileRuntime {
                 apply(state);
                 value = compiled.get(metadata);
             }
-            if (value.offsetX != null) {
+            Float offsetXOverride = state.spawnOverride("offsetX");
+            Float offsetYOverride = state.spawnOverride("offsetY");
+            if (offsetXOverride != null) {
+                ProjectileMotion.setPosition(state.projectile,
+                        state.originX + offsetXOverride.floatValue(), state.projectile.y);
+                state.requestedOffsetX = null;
+            } else if (value.offsetX != null) {
                 ProjectileMotion.setPosition(state.projectile,
                         state.originX + value.offsetX.evaluate(state), state.projectile.y);
                 state.requestedOffsetX = null;
@@ -224,7 +253,11 @@ final class CustomProjectileRuntime {
                         state.originX + state.requestedOffsetX.floatValue(), state.projectile.y);
                 state.requestedOffsetX = null;
             }
-            if (value.offsetY != null) {
+            if (offsetYOverride != null) {
+                ProjectileMotion.setPosition(state.projectile, state.projectile.x,
+                        state.originY + offsetYOverride.floatValue());
+                state.requestedOffsetY = null;
+            } else if (value.offsetY != null) {
                 ProjectileMotion.setPosition(state.projectile, state.projectile.x,
                         state.originY + value.offsetY.evaluate(state));
                 state.requestedOffsetY = null;
@@ -283,7 +316,7 @@ final class CustomProjectileRuntime {
         private static final ActionTemplate NO_OP = new ActionTemplate(null, null, null,
                 null, null, null, null, null, null, Collections.emptyList());
         private final String condition, speed, turnSpeed, dx, dy, offsetX, offsetY;
-        private final CustomProjectileDefinitions.Reference emit;
+        private final CustomProjectileSpawnRequest spawn;
         private final CustomProjectileExpression.MemorySchema memory;
         private final List<RawAssignment> assignments;
         private final Map<Object, CompiledAction> compiled =
@@ -291,34 +324,28 @@ final class CustomProjectileRuntime {
 
         private ActionTemplate(String condition, String speed, String turnSpeed,
                                String dx, String dy, String offsetX, String offsetY,
-                               CustomProjectileDefinitions.Reference emit,
+                               CustomProjectileSpawnRequest spawn,
                                CustomProjectileExpression.MemorySchema memory,
                                List<RawAssignment> assignments) {
             this.condition = condition; this.speed = speed; this.turnSpeed = turnSpeed;
-            this.dx = dx; this.dy = dy; this.emit = emit; this.memory = memory;
+            this.dx = dx; this.dy = dy; this.spawn = spawn; this.memory = memory;
             this.offsetX = offsetX; this.offsetY = offsetY;
             this.assignments = assignments;
         }
 
         static ActionTemplate parse(UnitConfig config, String section,
                                     CustomProjectileExpression.MemorySchema memory) {
-            String emitRaw = optional(config, section, "emitProjectilePattern");
             String spawnRaw = optional(config, section, "spawnCustomProjectile");
-            if (emitRaw != null && spawnRaw != null) {
-                throw new IllegalArgumentException("[" + section + "] cannot use both "
-                        + "spawnCustomProjectile and emitProjectilePattern");
-            }
-            String referenceRaw = spawnRaw != null ? spawnRaw : emitRaw;
-            CustomProjectileDefinitions.Reference emit = referenceRaw != null
-                    ? CustomProjectileDefinitions.Reference.parse(referenceRaw) : null;
-            if (emit != null) CustomProjectileDefinitions.noteReference(emit);
+            CustomProjectileSpawnRequest spawn = spawnRaw != null
+                    ? CustomProjectileSpawnRequest.parse(spawnRaw) : null;
+            if (spawn != null) CustomProjectileDefinitions.noteReference(spawn.reference);
             return new ActionTemplate(optional(config, section, "ifCondition"),
                     optional(config, section, "setSpeed"),
                     optional(config, section, "setTurnSpeed"),
                     optional(config, section, "setDx"), optional(config, section, "setDy"),
                     optional(config, section, "setOffsetX"),
                     optional(config, section, "setOffsetY"),
-                    emit, memory, parseAssignments(optional(config, section, "setMemory"), memory));
+                    spawn, memory, parseAssignments(optional(config, section, "setMemory"), memory));
         }
 
         void execute(CustomProjectileState state) {
@@ -348,7 +375,7 @@ final class CustomProjectileRuntime {
             if (action.offsetY != null) {
                 state.requestedOffsetY = Float.valueOf(action.offsetY.evaluate(state));
             }
-            if (emit != null) emitFromProjectile(state, emit);
+            if (action.spawn != null) emitFromProjectile(state, action.spawn);
         }
 
         private CompiledAction compile(Object metadata) {
@@ -373,7 +400,8 @@ final class CustomProjectileRuntime {
                     ? CustomProjectileExpression.compileBoolean(metadata, memory, condition) : null,
                     number(metadata, memory, speed), number(metadata, memory, turnSpeed),
                     number(metadata, memory, dx), number(metadata, memory, dy),
-                    number(metadata, memory, offsetX), number(metadata, memory, offsetY), result);
+                    number(metadata, memory, offsetX), number(metadata, memory, offsetY),
+                    spawn != null ? spawn.compileForProjectile(metadata, memory) : null, result);
         }
 
         private static List<RawAssignment> parseAssignments(
@@ -398,6 +426,7 @@ final class CustomProjectileRuntime {
     private static final class CompiledAction {
         private final CustomProjectileExpression.Condition condition;
         private final CustomProjectileExpression.Numeric speed, turnSpeed, dx, dy, offsetX, offsetY;
+        private final CustomProjectileSpawnRequest.Compiled spawn;
         private final List<MemoryAssignment> assignments;
 
         private CompiledAction(CustomProjectileExpression.Condition condition,
@@ -407,9 +436,11 @@ final class CustomProjectileRuntime {
                                CustomProjectileExpression.Numeric dy,
                                CustomProjectileExpression.Numeric offsetX,
                                CustomProjectileExpression.Numeric offsetY,
+                               CustomProjectileSpawnRequest.Compiled spawn,
                                List<MemoryAssignment> assignments) {
             this.condition = condition; this.speed = speed; this.turnSpeed = turnSpeed;
             this.dx = dx; this.dy = dy; this.offsetX = offsetX; this.offsetY = offsetY;
+            this.spawn = spawn;
             this.assignments = assignments;
         }
     }
@@ -420,9 +451,10 @@ final class CustomProjectileRuntime {
     }
 
     private static void emitFromProjectile(CustomProjectileState state,
-                                           CustomProjectileDefinitions.Reference reference) {
+                                           CustomProjectileSpawnRequest.Compiled request) {
         Unit target = state.projectile.targetUnit;
-        CustomProjectileEmitter.emit(reference, state.source, state.projectile.x,
+        CustomProjectileEmitter.emit(request.resolve(state.source, state), state.source,
+                state.projectile.x,
                 state.projectile.y, state.projectile.height, state.projectile.direction,
                 target, true, state.projectile.targetX, state.projectile.targetY,
                 state.projectile.targetHeight,

@@ -20,6 +20,7 @@ import io.github.endx.rustedfabricapi.api.client.render.MaskAlphaMode;
 import io.github.endx.rustedfabricapi.api.client.render.MaskThresholdMode;
 import io.github.endx.rustedfabricapi.api.client.render.TextAlignment;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMask;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
@@ -59,6 +60,7 @@ public final class OverlayDefinitions {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "overlay_definition",
                         IniSectionSelector.prefix(PREFIX), "type")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseEnum(Type.class, value, "overlay type"))
                 .applier(field -> parseAndStore((CustomUnitMetadata) field.metadata(),
@@ -75,6 +77,7 @@ public final class OverlayDefinitions {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "overlay_image_definition",
                         IniSectionSelector.prefix(PREFIX), "image")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .activatesWhen(context -> !((UnitConfig) context.unitConfig())
                         .hasKey(context.section(), "type"))
                 .decoder(context -> context.rawValue().trim())
