@@ -4,11 +4,12 @@
 Slick/OpenGL renderer with a Vulkan renderer. It is not a gameplay dependency and must never affect
 multiplayer compatibility.
 
-The foundation build probes Vulkan and, after Slick creates its Win32 window, validates a live
-surface, presentation-capable device/queue and swapchain. It deliberately leaves the existing
-renderer active and never acquires or presents a swapchain image yet.
-Use `-Drusted.fabric.vulkan.mode=off|probe|required`; `probe` is the development default, while
-`required` makes an unavailable driver fail startup.
+The foundation build probes Vulkan and, after Slick creates its Win32 window, creates a live
+surface, presentation-capable device/queues, swapchain, render pass, framebuffers, command buffers,
+and synchronization objects. The normal modes deliberately leave the existing renderer active.
+Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|required`; `probe` is the development default,
+`frame_test` presents one dark-blue Vulkan clear after an OpenGL frame, and `required` makes an
+unavailable driver fail startup. The one-shot test is diagnostic only, not renderer takeover.
 
 ## Boundary
 
@@ -25,8 +26,8 @@ Use `-Drusted.fabric.vulkan.mode=off|probe|required`; `probe` is the development
 
 1. Probe the Vulkan loader, API version and physical devices without changing rendering.
 2. Add native-window surface creation and queue-family selection while Slick still owns the desktop
-   window and input loop. Initial swapchain creation is complete; resize recreation and frame
-   synchronization remain.
+   window and input loop. Swapchain resize recreation, basic render targets, command submission,
+   synchronization, and an opt-in one-frame presentation test are complete.
 3. Implement GPU images, render targets, clipping, transforms, primitive drawing and a persistent
    mapped vertex/index ring; translate the game's `GraphicsEngine` calls into frame-local commands.
 4. Batch sprites by render state and texture descriptors, record a small number of command buffers,

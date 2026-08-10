@@ -140,6 +140,12 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.createSurface(request));
         }
 
+        VulkanSurfaceInfo presentClearFrame(int width, int height,
+                                            float red, float green, float blue, float alpha) {
+            return invoke(() -> driver.presentClearFrame(
+                    width, height, red, green, blue, alpha));
+        }
+
         private <T> T invoke(java.util.function.Supplier<T> operation) {
             Thread thread = Thread.currentThread();
             ClassLoader previous = thread.getContextClassLoader();

@@ -6,6 +6,7 @@ import java.util.Locale;
 public enum VulkanMode {
     OFF,
     PROBE,
+    FRAME_TEST,
     REQUIRED;
 
     static VulkanMode configured() {
@@ -15,6 +16,8 @@ public enum VulkanMode {
             case "off": return OFF;
             case "probe":
             case "auto": return PROBE;
+            case "frame-test":
+            case "frame_test": return FRAME_TEST;
             case "required": return REQUIRED;
             default: throw new IllegalArgumentException(
                     "Unknown rusted.fabric.vulkan.mode: " + raw);

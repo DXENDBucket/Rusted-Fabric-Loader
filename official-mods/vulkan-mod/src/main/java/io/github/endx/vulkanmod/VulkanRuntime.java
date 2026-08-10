@@ -12,6 +12,7 @@ public final class VulkanRuntime {
     private static VulkanDriverLoader.LoadedDriver activeDriver;
     private static volatile VulkanSurfaceInfo surfaceInfo;
     private static VulkanMode configuredMode = VulkanMode.OFF;
+    private static boolean frameTestAttempted;
 
     private VulkanRuntime() { }
 
@@ -55,6 +56,25 @@ public final class VulkanRuntime {
                     failure.getClass().getSimpleName() + ": " + failure.getMessage());
             if (mode == VulkanMode.REQUIRED) throw failure;
             log("Vulkan probe failed; retaining Slick/OpenGL: " + probeResult.diagnostic());
+        }
+    }
+
+    /** Called immediately after Slick presents an OpenGL frame. */
+    public static synchronized void afterOpenGlPresent() {
+        if (configuredMode != VulkanMode.FRAME_TEST || frameTestAttempted
+                || activeDriver == null || surfaceInfo == null) return;
+        frameTestAttempted = true;
+        try {
+            io.github.endx.vulkanmod.spi.VulkanSurfaceRequest window =
+                    Lwjgl2Win32Window.current();
+            VulkanSurfaceInfo updated = activeDriver.presentClearFrame(
+                    window.width(), window.height(), 0.035f, 0.075f, 0.16f, 1.0f);
+            surfaceInfo = updated;
+            log("Presented one Vulkan frame-test clear at "
+                    + updated.width() + "x" + updated.height());
+        } catch (Throwable failure) {
+            log("Vulkan frame test failed; retaining Slick/OpenGL: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
         }
     }
 

@@ -4,7 +4,8 @@
   "package": "io.github.endx.vulkanmod.mixin",
   "compatibilityLevel": "JAVA_13",
   "mixins": [
-    "SlickGameVulkanSurfaceNamedMixin"
+    "SlickGameVulkanSurfaceNamedMixin",
+    "RustedWarfareGameLoopVulkanPresentNamedMixin"
   ],
   "injectors": {
     "defaultRequire": 1
