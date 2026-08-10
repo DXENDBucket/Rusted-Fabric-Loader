@@ -20,6 +20,7 @@ import java.util.Properties;
 /** Extracts and child-first loads LWJGL 3 so it cannot replace the game's LWJGL 2 classes. */
 final class VulkanDriverLoader {
     private static final String ROOT = "META-INF/vulkan-driver/";
+    private static final String LWJGL_LIBRARY_PATH = "org.lwjgl.librarypath";
 
     private VulkanDriverLoader() { }
 
@@ -132,11 +133,13 @@ final class VulkanDriverLoader {
         VulkanProbeResult probe() {
             Thread thread = Thread.currentThread();
             ClassLoader previous = thread.getContextClassLoader();
+            String previousLibraryPath = System.getProperty(LWJGL_LIBRARY_PATH);
             try {
                 thread.setContextClassLoader(loader);
                 return driver.probe();
             } finally {
                 thread.setContextClassLoader(previous);
+                restoreProperty(LWJGL_LIBRARY_PATH, previousLibraryPath);
             }
         }
 
@@ -148,6 +151,11 @@ final class VulkanDriverLoader {
                 throw new IllegalStateException("Could not close Vulkan driver", failure);
             }
         }
+    }
+
+    private static void restoreProperty(String name, String previousValue) {
+        if (previousValue != null) System.setProperty(name, previousValue);
+        else System.clearProperty(name);
     }
 
     private static final class IsolatedDriverClassLoader extends URLClassLoader {

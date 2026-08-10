@@ -18,6 +18,7 @@ public final class VulkanDriverIsolationVerification {
             // The binding must only exist inside the driver loader.
         }
         Path cache = Files.createTempDirectory("rusted-fabric-vulkan-driver-test");
+        String libraryPathBefore = System.getProperty("org.lwjgl.librarypath");
         try (VulkanDriverLoader.LoadedDriver loaded = VulkanDriverLoader.loadDesktop(cache)) {
             VulkanProbeResult result = loaded.probe();
             if (loaded.name().trim().isEmpty()) {
@@ -28,6 +29,11 @@ public final class VulkanDriverIsolationVerification {
             }
             System.out.println("Isolated Vulkan driver contract passed: available="
                     + result.available() + ", devices=" + result.devices().size());
+        }
+        String libraryPathAfter = System.getProperty("org.lwjgl.librarypath");
+        if (libraryPathBefore == null ? libraryPathAfter != null
+                : !libraryPathBefore.equals(libraryPathAfter)) {
+            throw new AssertionError("LWJGL 3 polluted the parent org.lwjgl.librarypath");
         }
     }
 }
