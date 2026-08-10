@@ -286,7 +286,7 @@ anchor: topCenter
 team: enemy
 instanceMode: highestPriority
 priority: self.maxHp
-offsetY: 28
+yOffsetAbsolute: 28
 width: clamp(screenWidth()*0.55,280,640)
 height: 26
 value: self.hp
@@ -311,9 +311,14 @@ can read `overlayIndex()`, `overlayStableIndex()`, `overlayCount()`, `overlayRow
 
 `layer: afterHud` is the default and draws above the native interface. `layer: beforeHud` draws
 between the world and native HUD, which is useful for panels that native controls should cover.
-`scale`, `scaleX`, `scaleY`, and `rotation` are runtime expressions applied around the overlay
-center. Negative axis scales mirror an element. Bars can fill `leftToRight`, `rightToLeft`,
+`scale`, `scaleX`, and `scaleY` remain Overlay-wide fields because they apply equally to bars,
+text, and images. `dirOffset` uses the same name as Decal. All four are runtime expressions applied
+around the overlay center. Negative axis scales mirror an element. Bars can fill `leftToRight`, `rightToLeft`,
 `topToBottom`, or `bottomToTop` through `barDirection`.
+
+For Decal-style image definitions, `type: image` may be omitted: the presence of `image` selects
+the image primitive. Overlay also uses Decal's `xOffsetAbsolute`, `yOffsetAbsolute`, and
+`onlyWhileAlive` names directly instead of defining parallel aliases.
 
 Image overlays can use Decal-compatible atlas field names while keeping `frame` dynamic:
 
@@ -329,7 +334,7 @@ frame_height: 64
 frame_verticalOrdering: false
 frame: memory.phase
 scale: 1.25
-rotation: memory.hudAngle
+dirOffset: memory.hudAngle
 ```
 
 When explicit frame dimensions are omitted, a multi-frame image is split into one horizontal row,

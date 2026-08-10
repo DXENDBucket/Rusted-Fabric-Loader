@@ -114,8 +114,9 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'projectileRule_NAME_ifTargetWithTags',
                 'projectileRule_NAME_ifTargetWithoutTags',
                 'layer', 'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
-                'isVisible', 'instanceCondition', 'priority', 'slot',
-                'maxInstances', 'columns', 'spacingX', 'spacingY', 'alpha',
+                'onlyWhileAlive', 'isVisible', 'instanceCondition', 'priority', 'slot',
+                'maxInstances', 'columns', 'xOffsetAbsolute', 'yOffsetAbsolute',
+                'spacingX', 'spacingY', 'dirOffset', 'alpha',
                 'order', 'image', 'imageSmoothing', 'color', 'backgroundColor',
                 'borderColor', 'borderWidth', 'value', 'maxValue', 'text',
                 'textSize', 'textColor', 'textAlign', 'scale', 'scaleX', 'scaleY',
@@ -204,12 +205,12 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !geometryCodes.every { geometrySource.contains('"' + it + '"') }
                 || !['layer', 'anchor', 'instanceMode', 'indexMode', 'team', 'fogVisibility',
                     'isVisible', 'instanceCondition', 'priority', 'slot',
-                    'maxInstances', 'columns', 'offsetX', 'offsetY', 'spacingX',
+                    'maxInstances', 'columns', 'xOffsetAbsolute', 'yOffsetAbsolute', 'spacingX',
                     'spacingY', 'width', 'height', 'alpha', 'order', 'image',
                     'imageSmoothing', 'color', 'backgroundColor', 'borderColor',
                     'borderWidth', 'value', 'maxValue', 'text', 'textSize',
                     'textColor', 'textAlign', 'scale', 'scaleX', 'scaleY',
-                    'rotation', 'frame', 'total_frames', 'frame_width',
+                    'dirOffset', 'onlyWhileAlive', 'frame', 'total_frames', 'frame_width',
                     'frame_height', 'frame_verticalOrdering', 'barDirection',
                     'mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
                     'maskInvert', 'maskThresholdMode', 'maskAlphaMode',
@@ -232,6 +233,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !overlaySource.contains('NEAREST_TO_CAMERA')
                 || !overlaySource.contains('FARTHEST_FROM_CAMERA')
                 || !overlaySource.contains('FrameLayout')
+                || !overlaySource.contains('"overlay_image_definition"')
+                || !overlaySource.contains('Units.snapshot()')
                 || !overlaySource.contains('AlphaMasks.imageAffine')
                 || !overlaySource.contains('metadata.loadImageFromConfigWithSmoothing')
                 || !['mask', 'maskGeometry', 'maskRender', 'maskAlphaThreshold',
@@ -419,7 +422,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v22'
+                || multiplayer?.protocol != 'ini_essentials_v23'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

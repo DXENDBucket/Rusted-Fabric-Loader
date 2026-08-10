@@ -70,6 +70,23 @@ public final class OverlayDefinitions {
                         "[overlay_boss]\ntype: bar\nanchor: topCenter\nvalue: self.hp\nmaxValue: self.maxHp",
                         IniMultiplayerImpact.CLIENT_ONLY))
                 .build());
+        // A Decal-style image section often omits an explicit primitive type. The image key is a
+        // secondary trigger only in that case, so canonical definitions are still applied once.
+        IniExtensions.register(IniFieldDefinition
+                .<String>builder(IniEssentials.MOD_ID, "overlay_image_definition",
+                        IniSectionSelector.prefix(PREFIX), "image")
+                .activatesWhen(context -> !((UnitConfig) context.unitConfig())
+                        .hasKey(context.section(), "type"))
+                .decoder(context -> context.rawValue().trim())
+                .applier(field -> parseAndStore((CustomUnitMetadata) field.metadata(),
+                        (UnitConfig) field.unitConfig(), field.source().section()))
+                .documentation(new IniFieldDocumentation(
+                        "native image path",
+                        "Declares a type:image Overlay when a Decal-style section omits type.",
+                        "当 Decal 风格的 Overlay 省略 type 时，根据 image 自动推断为 type:image。",
+                        "[overlay_icon]\nimage: ROOT:icon.png",
+                        IniMultiplayerImpact.CLIENT_ONLY))
+                .build());
         HudRenderEvents.BEFORE_HUD.register((gameInterface, context) ->
                 render(context, Layer.BEFORE_HUD));
         HudRenderEvents.AFTER_HUD.register((gameInterface, context) ->
@@ -80,7 +97,18 @@ public final class OverlayDefinitions {
                                       String section) {
         String name = section.substring(PREFIX.length()).trim();
         if (name.isEmpty()) throw new IllegalArgumentException("overlay section name must not be empty");
-        Type type = parseEnum(Type.class, required(config, section, "type"), "overlay type");
+        rejectRenamedField(config, section, "offsetX", "xOffsetAbsolute");
+        rejectRenamedField(config, section, "offsetY", "yOffsetAbsolute");
+        rejectRenamedField(config, section, "rotation", "dirOffset");
+        rejectRenamedField(config, section, "imageScale", "scale");
+        rejectRenamedField(config, section, "imageScaleX", "scaleX");
+        rejectRenamedField(config, section, "imageScaleY", "scaleY");
+        String typeValue = optional(config, section, "type");
+        Type type = typeValue != null
+                ? parseEnum(Type.class, typeValue, "overlay type")
+                : config.hasKey(section, "image") ? Type.IMAGE : null;
+        if (type == null) throw new IllegalArgumentException(
+                "[" + section + "] requires type (or image for inferred type:image)");
         ClientImage image = null;
         if (type == Type.IMAGE) {
             if (!config.hasKey(section, "image")) {
@@ -135,21 +163,22 @@ public final class OverlayDefinitions {
                 parseEnum(IndexMode.class, optional(config, section, "indexMode", "compact"), "indexMode"),
                 parseEnum(TeamFilter.class, optional(config, section, "team", "any"), "team"),
                 parseEnum(FogVisibility.class, optional(config, section, "fogVisibility", "visible"), "fogVisibility"),
+                bool(config, section, "onlyWhileAlive", true),
                 BooleanExpression.compile(metadata, optional(config, section, "isVisible"), "true"),
                 BooleanExpression.compile(metadata, optional(config, section, "instanceCondition"), "true"),
                 NumericExpression.compile(metadata, optional(config, section, "priority"), "0"),
                 optionalExpression(metadata, config, section, "slot"),
                 positiveInt(config, section, "maxInstances", Integer.MAX_VALUE),
                 positiveInt(config, section, "columns", 1),
-                NumericExpression.compile(metadata, optional(config, section, "offsetX"), "0"),
-                NumericExpression.compile(metadata, optional(config, section, "offsetY"), "0"),
+                NumericExpression.compile(metadata, optional(config, section, "xOffsetAbsolute"), "0"),
+                NumericExpression.compile(metadata, optional(config, section, "yOffsetAbsolute"), "0"),
                 NumericExpression.compile(metadata, optional(config, section, "spacingX"), "0"),
                 NumericExpression.compile(metadata, optional(config, section, "spacingY"), "8"),
                 width, height,
                 NumericExpression.compile(metadata, optional(config, section, "scale"), "1"),
                 NumericExpression.compile(metadata, optional(config, section, "scaleX"), "1"),
                 NumericExpression.compile(metadata, optional(config, section, "scaleY"), "1"),
-                NumericExpression.compile(metadata, optional(config, section, "rotation"), "0"),
+                NumericExpression.compile(metadata, optional(config, section, "dirOffset"), "0"),
                 NumericExpression.compile(metadata, optional(config, section, "alpha"), "1"),
                 NumericExpression.compile(metadata, optional(config, section, "order"), "0"),
                 image, frameLayout,
@@ -243,7 +272,7 @@ public final class OverlayDefinitions {
 
     private static List<CustomUnit> customUnits() {
         ArrayList<CustomUnit> result = new ArrayList<CustomUnit>();
-        for (Unit unit : Units.alive()) if (unit instanceof CustomUnit) result.add((CustomUnit) unit);
+        for (Unit unit : Units.snapshot()) if (unit instanceof CustomUnit) result.add((CustomUnit) unit);
         return result;
     }
 
@@ -271,14 +300,6 @@ public final class OverlayDefinitions {
         }
     }
 
-    private static String required(UnitConfig config, String section, String key) {
-        String value = config.getString(section, key, null);
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("[" + section + "] requires " + key);
-        }
-        return value;
-    }
-
     private static String optional(UnitConfig config, String section, String key) {
         return config.getString(section, key, null);
     }
@@ -286,6 +307,14 @@ public final class OverlayDefinitions {
     private static String optional(UnitConfig config, String section, String key, String fallback) {
         String value = optional(config, section, key);
         return value != null ? value : fallback;
+    }
+
+    private static void rejectRenamedField(UnitConfig config, String section,
+                                           String oldName, String currentName) {
+        if (!config.hasKey(section, oldName)) return;
+        config.getString(section, oldName, null);
+        throw new IllegalArgumentException("[" + section + "] " + oldName
+                + " is not an Overlay field; use " + currentName);
     }
 
     private static NumericExpression optionalExpression(CustomUnitMetadata metadata,
@@ -425,6 +454,7 @@ public final class OverlayDefinitions {
         final IndexMode indexMode;
         final TeamFilter team;
         final FogVisibility fogVisibility;
+        final boolean onlyWhileAlive;
         final BooleanExpression visible;
         final BooleanExpression instanceCondition;
         final NumericExpression priority;
@@ -458,6 +488,7 @@ public final class OverlayDefinitions {
 
         Template(String name, Type type, Anchor anchor, Layer layer, InstanceMode instanceMode,
                  IndexMode indexMode, TeamFilter team, FogVisibility fogVisibility,
+                 boolean onlyWhileAlive,
                  BooleanExpression visible, BooleanExpression instanceCondition,
                  NumericExpression priority, NumericExpression slot, int maxInstances,
                  int columns, NumericExpression offsetX, NumericExpression offsetY,
@@ -476,7 +507,8 @@ public final class OverlayDefinitions {
             this.name = name; this.type = type; this.anchor = anchor;
             this.layer = layer;
             this.instanceMode = instanceMode; this.indexMode = indexMode;
-            this.team = team; this.fogVisibility = fogVisibility; this.visible = visible;
+            this.team = team; this.fogVisibility = fogVisibility;
+            this.onlyWhileAlive = onlyWhileAlive; this.visible = visible;
             this.instanceCondition = instanceCondition; this.priority = priority;
             this.slot = slot; this.maxInstances = maxInstances; this.columns = columns;
             this.offsetX = offsetX; this.offsetY = offsetY; this.spacingX = spacingX;
@@ -525,6 +557,7 @@ public final class OverlayDefinitions {
                      List<RenderEntry> output) {
             ArrayList<Candidate> candidates = new ArrayList<Candidate>();
             for (CustomUnit unit : units) {
+                if (unit.removed || (onlyWhileAlive && unit.dead)) continue;
                 if (!teamMatches(unit, team, player) || !fogVisible(unit, fogVisibility, player)) continue;
                 if (!instanceCondition.evaluate(unit)) continue;
                 candidates.add(new Candidate(unit, priority.evaluate(unit)));
