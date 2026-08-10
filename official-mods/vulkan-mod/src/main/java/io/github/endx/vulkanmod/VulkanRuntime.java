@@ -1,6 +1,8 @@
 package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
+import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 
@@ -67,11 +69,28 @@ public final class VulkanRuntime {
         try {
             io.github.endx.vulkanmod.spi.VulkanSurfaceRequest window =
                     Lwjgl2Win32Window.current();
-            VulkanSurfaceInfo updated = activeDriver.presentClearFrame(
-                    window.width(), window.height(), 0.035f, 0.075f, 0.16f, 1.0f);
+            int width = window.width();
+            int height = window.height();
+            VulkanFrameCommands frame = VulkanFrameCommands.builder(width, height)
+                    .clear(0.035f, 0.075f, 0.16f, 1.0f)
+                    .coloredQuad(new VulkanColoredQuad(width * 0.20f, height * 0.28f,
+                            width * 0.60f, height * 0.44f,
+                            0.08f, 0.18f, 0.34f, 1.0f))
+                    .coloredQuad(new VulkanColoredQuad(width * 0.225f, height * 0.32f,
+                            width * 0.55f, height * 0.06f,
+                            0.20f, 0.75f, 0.95f, 1.0f))
+                    .coloredQuad(new VulkanColoredQuad(width * 0.225f, height * 0.42f,
+                            width * 0.34f, height * 0.035f,
+                            0.72f, 0.84f, 0.94f, 1.0f))
+                    .coloredQuad(new VulkanColoredQuad(width * 0.225f, height * 0.49f,
+                            width * 0.45f, height * 0.035f,
+                            0.42f, 0.60f, 0.76f, 1.0f))
+                    .build();
+            VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
             surfaceInfo = updated;
-            log("Presented one Vulkan frame-test clear at "
-                    + updated.width() + "x" + updated.height());
+            log("Presented one Vulkan frame-test batch at "
+                    + updated.width() + "x" + updated.height() + " with "
+                    + frame.coloredQuads().size() + " colored quads");
         } catch (Throwable failure) {
             log("Vulkan frame test failed; retaining Slick/OpenGL: "
                     + failure.getClass().getSimpleName() + ": " + failure.getMessage());

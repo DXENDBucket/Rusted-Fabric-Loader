@@ -5,7 +5,6 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     String name();
     VulkanProbeResult probe();
     VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request);
-    VulkanSurfaceInfo presentClearFrame(int width, int height,
-                                        float red, float green, float blue, float alpha);
+    VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame);
     @Override default void close() { }
 }

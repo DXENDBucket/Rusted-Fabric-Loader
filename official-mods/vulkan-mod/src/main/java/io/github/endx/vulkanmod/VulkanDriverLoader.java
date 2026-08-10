@@ -2,6 +2,7 @@ package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanPlatformDriver;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
+import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
 import net.fabricmc.loader.api.FabricLoader;
@@ -140,10 +141,8 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.createSurface(request));
         }
 
-        VulkanSurfaceInfo presentClearFrame(int width, int height,
-                                            float red, float green, float blue, float alpha) {
-            return invoke(() -> driver.presentClearFrame(
-                    width, height, red, green, blue, alpha));
+        VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
+            return invoke(() -> driver.presentFrame(frame));
         }
 
         private <T> T invoke(java.util.function.Supplier<T> operation) {

@@ -6,10 +6,13 @@ multiplayer compatibility.
 
 The foundation build probes Vulkan and, after Slick creates its Win32 window, creates a live
 surface, presentation-capable device/queues, swapchain, render pass, framebuffers, command buffers,
-and synchronization objects. The normal modes deliberately leave the existing renderer active.
+and synchronization objects. It also has a binding-neutral frame command list and a first batched
+colored-quad pipeline backed by a growable host-visible vertex buffer. The normal modes deliberately
+leave the existing renderer active.
 Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|required`; `probe` is the development default,
-`frame_test` presents one dark-blue Vulkan clear after an OpenGL frame, and `required` makes an
-unavailable driver fail startup. The one-shot test is diagnostic only, not renderer takeover.
+`frame_test` presents one dark-blue Vulkan frame with a four-rectangle diagnostic batch after an
+OpenGL frame, and `required` makes an unavailable driver fail startup. The one-shot test is
+diagnostic only, not renderer takeover.
 
 ## Boundary
 
@@ -28,8 +31,9 @@ unavailable driver fail startup. The one-shot test is diagnostic only, not rende
 2. Add native-window surface creation and queue-family selection while Slick still owns the desktop
    window and input loop. Swapchain resize recreation, basic render targets, command submission,
    synchronization, and an opt-in one-frame presentation test are complete.
-3. Implement GPU images, render targets, clipping, transforms, primitive drawing and a persistent
-   mapped vertex/index ring; translate the game's `GraphicsEngine` calls into frame-local commands.
+3. Extend the current colored-quad path with GPU images, offscreen render targets, clipping,
+   transforms, and a persistent mapped vertex/index ring; translate the game's `GraphicsEngine`
+   calls into frame-local commands.
 4. Batch sprites by render state and texture descriptors, record a small number of command buffers,
    and remove per-sprite Java-to-native submissions.
 5. Replace Slick font and LibRocket glue, then remove the remaining OpenGL frame path.

@@ -15,7 +15,9 @@ dependencies {
     compileOnly files(project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs)
     implementation "org.lwjgl:lwjgl:${lwjglVersion}"
     implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-shaderc:${lwjglVersion}"
     runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-shaderc:${lwjglVersion}:natives-windows"
 }
 
 tasks.withType(JavaCompile).configureEach {
