@@ -2,6 +2,7 @@ package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
+import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 
 import java.util.Optional;
 
@@ -9,10 +10,13 @@ import java.util.Optional;
 public final class VulkanRuntime {
     private static volatile VulkanProbeResult probeResult;
     private static VulkanDriverLoader.LoadedDriver activeDriver;
+    private static volatile VulkanSurfaceInfo surfaceInfo;
+    private static VulkanMode configuredMode = VulkanMode.OFF;
 
     private VulkanRuntime() { }
 
     public static synchronized void initialize(VulkanMode mode) {
+        configuredMode = mode;
         if (mode == VulkanMode.OFF || probeResult != null) return;
         VulkanDriverLoader.LoadedDriver loaded = null;
         try {
@@ -54,8 +58,32 @@ public final class VulkanRuntime {
         }
     }
 
+    public static synchronized void attachToCurrentWindow() {
+        if (activeDriver == null || surfaceInfo != null) return;
+        try {
+            VulkanSurfaceInfo created = activeDriver.createSurface(Lwjgl2Win32Window.current());
+            surfaceInfo = created;
+            log("Win32 surface and swapchain ready on " + created.deviceName() + ": "
+                    + created.width() + "x" + created.height() + ", images="
+                    + created.imageCount() + ", format=" + created.imageFormat()
+                    + ", presentMode=" + created.presentMode() + ", queues="
+                    + created.graphicsQueueFamily() + "/" + created.presentQueueFamily());
+        } catch (Throwable failure) {
+            log("Vulkan surface validation failed; retaining Slick/OpenGL: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            if (configuredMode == VulkanMode.REQUIRED) {
+                if (failure instanceof Error) throw (Error) failure;
+                throw (RuntimeException) failure;
+            }
+        }
+    }
+
     public static Optional<VulkanProbeResult> probeResult() {
         return Optional.ofNullable(probeResult);
+    }
+
+    public static Optional<VulkanSurfaceInfo> surfaceInfo() {
+        return Optional.ofNullable(surfaceInfo);
     }
 
     private static void log(String message) {

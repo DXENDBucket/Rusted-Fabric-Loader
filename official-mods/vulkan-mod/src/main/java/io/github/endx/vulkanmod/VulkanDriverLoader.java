@@ -2,6 +2,8 @@ package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanPlatformDriver;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
+import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
+import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -131,12 +133,20 @@ final class VulkanDriverLoader {
         String name() { return driver.name(); }
 
         VulkanProbeResult probe() {
+            return invoke(driver::probe);
+        }
+
+        VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request) {
+            return invoke(() -> driver.createSurface(request));
+        }
+
+        private <T> T invoke(java.util.function.Supplier<T> operation) {
             Thread thread = Thread.currentThread();
             ClassLoader previous = thread.getContextClassLoader();
             String previousLibraryPath = System.getProperty(LWJGL_LIBRARY_PATH);
             try {
                 thread.setContextClassLoader(loader);
-                return driver.probe();
+                return operation.get();
             } finally {
                 thread.setContextClassLoader(previous);
                 restoreProperty(LWJGL_LIBRARY_PATH, previousLibraryPath);

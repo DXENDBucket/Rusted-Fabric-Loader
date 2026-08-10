@@ -4,5 +4,6 @@ package io.github.endx.vulkanmod.spi;
 public interface VulkanPlatformDriver extends AutoCloseable {
     String name();
     VulkanProbeResult probe();
+    VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request);
     @Override default void close() { }
 }

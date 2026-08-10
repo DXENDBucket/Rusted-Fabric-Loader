@@ -4,7 +4,9 @@
 Slick/OpenGL renderer with a Vulkan renderer. It is not a gameplay dependency and must never affect
 multiplayer compatibility.
 
-The foundation build only probes Vulkan. It deliberately leaves the existing renderer active.
+The foundation build probes Vulkan and, after Slick creates its Win32 window, validates a live
+surface, presentation-capable device/queue and swapchain. It deliberately leaves the existing
+renderer active and never acquires or presents a swapchain image yet.
 Use `-Drusted.fabric.vulkan.mode=off|probe|required`; `probe` is the development default, while
 `required` makes an unavailable driver fail startup.
 
@@ -22,8 +24,9 @@ Use `-Drusted.fabric.vulkan.mode=off|probe|required`; `probe` is the development
 ## Stages
 
 1. Probe the Vulkan loader, API version and physical devices without changing rendering.
-2. Add native-window surface creation, queue-family selection, swapchain recreation and frame
-   synchronization while Slick still owns the desktop window and input loop.
+2. Add native-window surface creation and queue-family selection while Slick still owns the desktop
+   window and input loop. Initial swapchain creation is complete; resize recreation and frame
+   synchronization remain.
 3. Implement GPU images, render targets, clipping, transforms, primitive drawing and a persistent
    mapped vertex/index ring; translate the game's `GraphicsEngine` calls into frame-local commands.
 4. Batch sprites by render state and texture descriptors, record a small number of command buffers,
