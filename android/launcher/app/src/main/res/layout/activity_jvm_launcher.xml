@@ -1,399 +1,562 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/launcher_background"
-    android:clipToPadding="false"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingTop="24dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="28dp">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <LinearLayout
+        <ScrollView
+            android:id="@+id/launch_page"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:contentDescription="@null"
-                android:src="@mipmap/ic_launcher" />
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true">
 
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="22dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:contentDescription="@null"
+                        android:src="@mipmap/ic_launcher" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/jvm_title"
+                            android:textColor="@color/rf_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/jvm_edition"
+                            android:textColor="@color/rf_text_secondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:background="@drawable/panel_background_emphasis"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/readiness_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.08"
+                        android:text="@string/jvm_setup_badge"
+                        android:textAllCaps="true"
+                        android:textColor="@color/rf_status_warning"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/readiness_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/jvm_setup_message"
+                        android:textColor="@color/rf_text_primary"
+                        android:textSize="17sp" />
+
+                    <Button
+                        android:id="@+id/launch_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="18dp"
+                        android:backgroundTint="@color/rf_accent"
+                        android:enabled="false"
+                        android:text="@string/jvm_launch_unavailable"
+                        android:textAllCaps="false"
+                        android:textColor="@color/rf_button_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/panel_background"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/jvm_environment_title"
+                        android:textColor="@color/rf_text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/game_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/jvm_game_checking"
+                        android:textColor="@color/rf_text_secondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/runtime_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/jvm_runtime_checking"
+                        android:textColor="@color/rf_text_secondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <ScrollView
+            android:id="@+id/content_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="22dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/jvm_title"
+                    android:text="@string/content_library_title"
                     android:textColor="@color/rf_text_primary"
-                    android:textSize="22sp"
+                    android:textSize="24sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="@string/jvm_edition"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/content_page_description"
                     android:textColor="@color/rf_text_secondary"
                     android:textSize="13sp" />
+
+                <LinearLayout
+                    android:id="@+id/content_unavailable_panel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/panel_background"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/content_game_required"
+                        android:textColor="@color/rf_status_warning"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/content_panel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/panel_background"
+                    android:orientation="vertical"
+                    android:padding="18dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/content_summary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/content_summary_empty"
+                        android:textColor="@color/rf_text_primary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/content_storage_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/content_storage_permission_required"
+                        android:textColor="@color/rf_status_warning"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/manage_ini_mods_button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/rf_control"
+                            android:text="@string/content_manage_ini"
+                            android:textAllCaps="false"
+                            android:textColor="@color/rf_text_primary" />
+
+                        <Button
+                            android:id="@+id/open_ini_folder_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:backgroundTint="@color/rf_control"
+                            android:text="@string/content_open_folder"
+                            android:textAllCaps="false"
+                            android:textColor="@color/rf_text_primary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/manage_maps_button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/rf_control"
+                            android:text="@string/content_manage_maps"
+                            android:textAllCaps="false"
+                            android:textColor="@color/rf_text_primary" />
+
+                        <Button
+                            android:id="@+id/open_maps_folder_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:backgroundTint="@color/rf_control"
+                            android:text="@string/content_open_folder"
+                            android:textAllCaps="false"
+                            android:textColor="@color/rf_text_primary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/manage_java_mods_button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/rf_control"
+                            android:text="@string/content_manage_java"
+                            android:textAllCaps="false"
+                            android:textColor="@color/rf_text_primary" />
+
+                        <Button
+                            android:id="@+id/open_java_folder_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:backgroundTint="@color/rf_control"
+                            android:text="@string/content_open_folder"
+                            android:textAllCaps="false"
+                            android:textColor="@color/rf_text_primary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/content_official_note"
+                        android:textColor="@color/rf_text_muted"
+                        android:textSize="11sp" />
+                </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
+        </ScrollView>
 
-        <LinearLayout
+        <ScrollView
+            android:id="@+id/settings_page"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:background="@drawable/panel_background_emphasis"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                android:id="@+id/readiness_badge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="@string/jvm_setup_badge"
-                android:textAllCaps="true"
-                android:textColor="@color/rf_status_warning"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/readiness_message"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/jvm_setup_message"
-                android:textColor="@color/rf_text_primary"
-                android:textSize="17sp" />
-
-            <Button
-                android:id="@+id/launch_button"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="18dp"
-                android:backgroundTint="@color/rf_accent"
-                android:enabled="false"
-                android:text="@string/jvm_launch_unavailable"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_button_text"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <ProgressBar
-                android:id="@+id/operation_progress"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="4dp"
-                android:layout_marginTop="12dp"
-                android:indeterminate="true"
-                android:indeterminateTint="@color/rf_accent"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/operation_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:lineSpacingExtra="2dp"
-                android:textColor="@color/rf_text_secondary"
-                android:textSize="13sp"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/panel_background"
-            android:orientation="vertical"
-            android:padding="18dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/jvm_environment_title"
-                android:textColor="@color/rf_text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/game_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/jvm_game_checking"
-                android:textColor="@color/rf_text_secondary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/import_game_button"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/jvm_import_archive"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="14dp"
-                android:background="@color/rf_divider" />
-
-            <TextView
-                android:id="@+id/runtime_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/jvm_runtime_checking"
-                android:textColor="@color/rf_text_secondary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/import_runtime_button"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/jvm_import_runtime"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/content_panel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/panel_background"
-            android:orientation="vertical"
-            android:padding="18dp"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true"
             android:visibility="gone">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/content_library_title"
-                android:textColor="@color/rf_text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/content_summary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/content_summary_empty"
-                android:textColor="@color/rf_text_secondary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/content_storage_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/content_storage_permission_required"
-                android:textColor="@color/rf_status_warning"
-                android:textSize="12sp" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="22dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="24dp">
 
-                <Button
-                    android:id="@+id/manage_ini_mods_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:backgroundTint="@color/rf_control"
-                    android:text="@string/content_manage_ini"
-                    android:textAllCaps="false"
-                    android:textColor="@color/rf_text_primary" />
-
-                <Button
-                    android:id="@+id/open_ini_folder_button"
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:backgroundTint="@color/rf_control"
-                    android:text="@string/content_open_folder"
+                    android:text="@string/settings_page_title"
+                    android:textColor="@color/rf_text_primary"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/settings_page_description"
+                    android:textColor="@color/rf_text_secondary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/panel_background"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/jvm_environment_title"
+                        android:textColor="@color/rf_text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/import_game_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:backgroundTint="@color/rf_control"
+                        android:text="@string/jvm_import_archive"
+                        android:textAllCaps="false"
+                        android:textColor="@color/rf_text_primary" />
+
+                    <Button
+                        android:id="@+id/import_runtime_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/rf_control"
+                        android:text="@string/jvm_import_runtime"
+                        android:textAllCaps="false"
+                        android:textColor="@color/rf_text_primary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/update_preserves_imports"
+                        android:textColor="@color/rf_text_muted"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/advanced_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:backgroundTint="@android:color/transparent"
+                    android:text="@string/jvm_show_advanced"
                     android:textAllCaps="false"
-                    android:textColor="@color/rf_text_primary" />
+                    android:textColor="@color/rf_text_secondary" />
+
+                <LinearLayout
+                    android:id="@+id/advanced_panel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/panel_background"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/jvm_diagnostics_title"
+                        android:textColor="@color/rf_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/diagnostic_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/jvm_no_diagnostics"
+                        android:textColor="@color/rf_text_secondary"
+                        android:textIsSelectable="true"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/import_directory_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:backgroundTint="@color/rf_control"
+                        android:text="@string/jvm_import_directory"
+                        android:textAllCaps="false"
+                        android:textColor="@color/rf_text_primary" />
+
+                    <Button
+                        android:id="@+id/test_runtime_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/rf_control"
+                        android:text="@string/jvm_test_runtime"
+                        android:textAllCaps="false"
+                        android:textColor="@color/rf_text_primary" />
+
+                    <Button
+                        android:id="@+id/test_renderer_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/rf_control"
+                        android:text="@string/jvm_test_renderer"
+                        android:textAllCaps="false"
+                        android:textColor="@color/rf_text_primary" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/license_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:backgroundTint="@android:color/transparent"
+                    android:text="@string/jvm_open_source_licenses"
+                    android:textAllCaps="false"
+                    android:textColor="@color/rf_text_secondary" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/jvm_boundary_short"
+                    android:textColor="@color/rf_text_muted"
+                    android:textSize="11sp" />
             </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+    <LinearLayout
+        android:id="@+id/operation_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E6182235"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
 
-                <Button
-                    android:id="@+id/manage_maps_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:backgroundTint="@color/rf_control"
-                    android:text="@string/content_manage_maps"
-                    android:textAllCaps="false"
-                    android:textColor="@color/rf_text_primary" />
-
-                <Button
-                    android:id="@+id/open_maps_folder_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:backgroundTint="@color/rf_control"
-                    android:text="@string/content_open_folder"
-                    android:textAllCaps="false"
-                    android:textColor="@color/rf_text_primary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/manage_java_mods_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:backgroundTint="@color/rf_control"
-                    android:text="@string/content_manage_java"
-                    android:textAllCaps="false"
-                    android:textColor="@color/rf_text_primary" />
-
-                <Button
-                    android:id="@+id/open_java_folder_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:backgroundTint="@color/rf_control"
-                    android:text="@string/content_open_folder"
-                    android:textAllCaps="false"
-                    android:textColor="@color/rf_text_primary" />
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/content_official_note"
-                android:textColor="@color/rf_text_muted"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/advanced_button"
-            style="?android:attr/buttonStyleSmall"
+        <ProgressBar
+            android:id="@+id/operation_progress"
+            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:backgroundTint="@android:color/transparent"
-            android:text="@string/jvm_show_advanced"
-            android:textAllCaps="false"
-            android:textColor="@color/rf_text_secondary" />
-
-        <LinearLayout
-            android:id="@+id/advanced_panel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/panel_background"
-            android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/jvm_diagnostics_title"
-                android:textColor="@color/rf_text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/diagnostic_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/jvm_no_diagnostics"
-                android:textColor="@color/rf_text_secondary"
-                android:textIsSelectable="true"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/import_directory_button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/jvm_import_directory"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
-
-            <Button
-                android:id="@+id/test_runtime_button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/jvm_test_runtime"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
-
-            <Button
-                android:id="@+id/test_renderer_button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/rf_control"
-                android:text="@string/jvm_test_renderer"
-                android:textAllCaps="false"
-                android:textColor="@color/rf_text_primary" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/license_button"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:backgroundTint="@android:color/transparent"
-            android:text="@string/jvm_open_source_licenses"
-            android:textAllCaps="false"
-            android:textColor="@color/rf_text_secondary" />
+            android:layout_height="3dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/rf_accent"
+            android:visibility="gone" />
 
         <TextView
+            android:id="@+id/operation_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:gravity="center"
-            android:lineSpacingExtra="2dp"
-            android:text="@string/jvm_boundary_short"
-            android:textColor="@color/rf_text_muted"
-            android:textSize="11sp" />
+            android:paddingTop="7dp"
+            android:paddingBottom="7dp"
+            android:textColor="@color/rf_text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
-</ScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/rf_divider" />
+
+    <LinearLayout
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="#F210141B"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <Button
+            android:id="@+id/nav_launch_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bottom_nav_item"
+            android:text="@string/nav_launch"
+            android:textAllCaps="false"
+            android:textColor="@color/bottom_nav_text"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/nav_content_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bottom_nav_item"
+            android:text="@string/nav_content"
+            android:textAllCaps="false"
+            android:textColor="@color/bottom_nav_text"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/nav_settings_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bottom_nav_item"
+            android:text="@string/nav_settings"
+            android:textAllCaps="false"
+            android:textColor="@color/bottom_nav_text"
+            android:textSize="13sp" />
+    </LinearLayout>
+</LinearLayout>

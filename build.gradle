@@ -20,11 +20,23 @@ subprojects {
 }
 
 group = 'io.github.endx'
-version = '0.1.0'
+
+def releaseVersions = new Properties()
+file('versions.properties').withInputStream { releaseVersions.load(it) }
+def requiredReleaseVersions = ['loader', 'api', 'javaModMenu', 'iniEssentials', 'vulkanMod', 'exampleMod']
+requiredReleaseVersions.each { key ->
+    if (!releaseVersions.getProperty(key)?.trim()) {
+        throw new GradleException("Missing ${key} in versions.properties")
+    }
+}
+version = releaseVersions.getProperty('loader')
 
 ext {
     rustedGameVersion = '1.15'
     rustedMappingsVersion = '1.1'
+    componentVersions = requiredReleaseVersions.collectEntries { key ->
+        [(key): releaseVersions.getProperty(key)]
+    }.asImmutable()
 }
 
 repositories {
@@ -321,16 +333,21 @@ tasks.register('verifyDistribution') {
 
     doLast {
         def providerJar = tasks.jar.archiveFile.get().asFile
-        def apiJar = project(':rusted-fabric-api').layout.buildDirectory
-                .file("libs/official/rusted-fabric-api-${project.version}.jar").get().asFile
-        def exampleJar = project(':official-mods:example-mod').layout.buildDirectory
-                .file("libs/rusted-fabric-example-mod-${project.version}-official.jar").get().asFile
-        def modMenuJar = project(':official-mods:java-mod-menu').layout.buildDirectory
-                .file("libs/java-mod-menu-${project.version}-official.jar").get().asFile
-        def iniEssentialsJar = project(':official-mods:ini-essentials').layout.buildDirectory
-                .file("libs/ini-essentials-${project.version}-official.jar").get().asFile
-        def vulkanModJar = project(':official-mods:vulkan-mod').layout.buildDirectory
-                .file("libs/vulkan-mod-${project.version}-official.jar").get().asFile
+        def apiProject = project(':rusted-fabric-api')
+        def exampleProject = project(':official-mods:example-mod')
+        def modMenuProject = project(':official-mods:java-mod-menu')
+        def iniEssentialsProject = project(':official-mods:ini-essentials')
+        def vulkanModProject = project(':official-mods:vulkan-mod')
+        def apiJar = apiProject.layout.buildDirectory
+                .file("libs/official/rusted-fabric-api-${apiProject.version}.jar").get().asFile
+        def exampleJar = exampleProject.layout.buildDirectory
+                .file("libs/rusted-fabric-example-mod-${exampleProject.version}-official.jar").get().asFile
+        def modMenuJar = modMenuProject.layout.buildDirectory
+                .file("libs/java-mod-menu-${modMenuProject.version}-official.jar").get().asFile
+        def iniEssentialsJar = iniEssentialsProject.layout.buildDirectory
+                .file("libs/ini-essentials-${iniEssentialsProject.version}-official.jar").get().asFile
+        def vulkanModJar = vulkanModProject.layout.buildDirectory
+                .file("libs/vulkan-mod-${vulkanModProject.version}-official.jar").get().asFile
         def namedGameJar = namedGameJarFile()
 
         [providerJar, apiJar, modMenuJar, iniEssentialsJar, vulkanModJar,
@@ -379,7 +396,7 @@ tasks.register('verifyDistribution') {
         new java.util.zip.ZipFile(apiJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
             def mixins = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'rustedfabricapi.mixins.json'))
-            if (mod.id != 'rusted_fabric_api' || mod.version != project.version.toString()
+            if (mod.id != 'rusted_fabric_api' || mod.version != apiProject.version.toString()
                     || mod.custom?.get('rusted_fabric_api:mappings_version') != rustedMappingsVersion.toString()) {
                 throw new GradleException('Official API identity or version metadata is inconsistent')
             }
@@ -711,7 +728,7 @@ tasks.register('verifyDistribution') {
 
         new java.util.zip.ZipFile(exampleJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
-            if (mod.id != 'rusted_fabric_example' || mod.version != project.version.toString()) {
+            if (mod.id != 'rusted_fabric_example' || mod.version != exampleProject.version.toString()) {
                 throw new GradleException('Official example-mod identity or version metadata is inconsistent')
             }
             [
@@ -743,7 +760,7 @@ tasks.register('verifyDistribution') {
 
         new java.util.zip.ZipFile(modMenuJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
-            if (mod.id != 'java_mod_menu' || mod.version != project.version.toString()
+            if (mod.id != 'java_mod_menu' || mod.version != modMenuProject.version.toString()
                     || zip.getEntry('io/github/endx/javamodmenu/JavaModMenu.class') == null) {
                 throw new GradleException('Official Java Mod Menu artifact is incomplete or inconsistent')
             }
@@ -752,7 +769,7 @@ tasks.register('verifyDistribution') {
         new java.util.zip.ZipFile(iniEssentialsJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
             def multiplayer = mod.custom?.get('rusted_fabric:multiplayer')
-            if (mod.id != 'ini_essentials' || mod.version != project.version.toString()
+            if (mod.id != 'ini_essentials' || mod.version != iniEssentialsProject.version.toString()
                     || multiplayer?.mode != 'optional'
                     || !(multiplayer?.syncHash ==~ /[0-9a-f]{64}/)
                     || zip.getEntry('io/github/endx/iniessentials/IniEssentials.class') == null
@@ -775,7 +792,7 @@ tasks.register('verifyDistribution') {
         new java.util.zip.ZipFile(vulkanModJar).withCloseable { zip ->
             def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
             def multiplayer = mod.custom?.get('rusted_fabric:multiplayer')
-            if (mod.id != 'vulkan_mod' || mod.version != project.version.toString()
+            if (mod.id != 'vulkan_mod' || mod.version != vulkanModProject.version.toString()
                     || multiplayer?.mode != 'client_only'
                     || zip.getEntry('io/github/endx/vulkanmod/VulkanMod.class') == null
                     || zip.getEntry('META-INF/vulkan-driver/driver-bundle.properties') == null

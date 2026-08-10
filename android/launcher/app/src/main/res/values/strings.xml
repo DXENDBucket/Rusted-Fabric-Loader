@@ -104,4 +104,12 @@
     <string name="content_official_installing">Installing official Java mods…</string>
     <string name="content_official_ready">Official Java mods are ready.</string>
     <string name="content_official_failed">Could not install official Java mods: %1$s</string>
+    <string name="nav_launch">Play</string>
+    <string name="nav_content">Mods &amp; files</string>
+    <string name="nav_settings">Setup</string>
+    <string name="content_page_description">Manage INI mods, maps, Java mods, and their file-manager-accessible folders.</string>
+    <string name="content_game_required">Import the desktop game from Setup before managing its content.</string>
+    <string name="settings_page_title">Setup</string>
+    <string name="settings_page_description">Import or replace the game and runtime, and access diagnostics and legal information.</string>
+    <string name="update_preserves_imports">Installing a newer launcher APK over this app keeps the imported game, Java runtime, user mods, maps, and settings. Bundled official mods are updated automatically.</string>
 </resources>

@@ -57,6 +57,10 @@ public final class JvmLauncherActivity extends Activity {
     private static final int REQUEST_MAP = 2005;
     private static final int REQUEST_JAVA_MOD = 2006;
     private static final int REQUEST_SHARED_STORAGE = 2007;
+    private static final String STATE_PAGE = "selected_page";
+    private static final int PAGE_LAUNCH = 0;
+    private static final int PAGE_CONTENT = 1;
+    private static final int PAGE_SETTINGS = 2;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private TextView readinessBadge;
@@ -82,6 +86,13 @@ public final class JvmLauncherActivity extends Activity {
     private Button openJavaFolderButton;
     private LinearLayout advancedPanel;
     private LinearLayout contentPanel;
+    private LinearLayout contentUnavailablePanel;
+    private View launchPage;
+    private View contentPage;
+    private View settingsPage;
+    private Button navLaunchButton;
+    private Button navContentButton;
+    private Button navSettingsButton;
     private TextView contentSummary;
     private TextView contentStorageStatus;
     private boolean busy;
@@ -95,6 +106,7 @@ public final class JvmLauncherActivity extends Activity {
     private boolean workspacePreparing;
     private boolean storagePromptShown;
     private Runnable pendingWorkspaceAction;
+    private int selectedPage = PAGE_LAUNCH;
 
     private final BroadcastReceiver smokeReceiver = new BroadcastReceiver() {
         @Override
@@ -118,8 +130,15 @@ public final class JvmLauncherActivity extends Activity {
         bindViews();
         bindActions();
         showAdvanced(false);
+        showPage(state == null ? PAGE_LAUNCH : state.getInt(STATE_PAGE, PAGE_LAUNCH));
         refresh();
         showRiskDisclaimerIfRequired();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putInt(STATE_PAGE, selectedPage);
+        super.onSaveInstanceState(state);
     }
 
     private void bindViews() {
@@ -146,8 +165,15 @@ public final class JvmLauncherActivity extends Activity {
         openJavaFolderButton = findViewById(R.id.open_java_folder_button);
         advancedPanel = findViewById(R.id.advanced_panel);
         contentPanel = findViewById(R.id.content_panel);
+        contentUnavailablePanel = findViewById(R.id.content_unavailable_panel);
         contentSummary = findViewById(R.id.content_summary);
         contentStorageStatus = findViewById(R.id.content_storage_status);
+        launchPage = findViewById(R.id.launch_page);
+        contentPage = findViewById(R.id.content_page);
+        settingsPage = findViewById(R.id.settings_page);
+        navLaunchButton = findViewById(R.id.nav_launch_button);
+        navContentButton = findViewById(R.id.nav_content_button);
+        navSettingsButton = findViewById(R.id.nav_settings_button);
     }
 
     private void bindActions() {
@@ -172,6 +198,20 @@ public final class JvmLauncherActivity extends Activity {
                 openSharedFolder(ManagedContentLibrary.Kind.MAP));
         openJavaFolderButton.setOnClickListener(ignored ->
                 openSharedFolder(ManagedContentLibrary.Kind.JAVA_MOD));
+        navLaunchButton.setOnClickListener(ignored -> showPage(PAGE_LAUNCH));
+        navContentButton.setOnClickListener(ignored -> showPage(PAGE_CONTENT));
+        navSettingsButton.setOnClickListener(ignored -> showPage(PAGE_SETTINGS));
+    }
+
+    private void showPage(int page) {
+        if (page < PAGE_LAUNCH || page > PAGE_SETTINGS) page = PAGE_LAUNCH;
+        selectedPage = page;
+        launchPage.setVisibility(page == PAGE_LAUNCH ? View.VISIBLE : View.GONE);
+        contentPage.setVisibility(page == PAGE_CONTENT ? View.VISIBLE : View.GONE);
+        settingsPage.setVisibility(page == PAGE_SETTINGS ? View.VISIBLE : View.GONE);
+        navLaunchButton.setSelected(page == PAGE_LAUNCH);
+        navContentButton.setSelected(page == PAGE_CONTENT);
+        navSettingsButton.setSelected(page == PAGE_SETTINGS);
     }
 
     private void showOpenSourceNotice() {
@@ -491,6 +531,7 @@ public final class JvmLauncherActivity extends Activity {
                 ? R.string.jvm_launch_game : R.string.jvm_launch_unavailable);
         smokeButton.setEnabled(!busy && smokeReady);
         contentPanel.setVisibility(gameReady ? View.VISIBLE : View.GONE);
+        contentUnavailablePanel.setVisibility(gameReady ? View.GONE : View.VISIBLE);
         setContentButtonsEnabled(gameReady && !busy);
         if (gameReady) {
             if (workspaceReady) {

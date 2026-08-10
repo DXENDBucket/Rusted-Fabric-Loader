@@ -302,8 +302,15 @@ public final class JvmLauncherCoreVerification {
                 game, api, "rusted_fabric_api", true);
         require("0.2.0".equals(preservedApi.version())
                         && !preservedApi.path().getFileName().toString().startsWith("official-"),
-                "Bundled provisioning overwrote a manual official-ID update");
-        ManagedContentLibrary.delete(game, preservedApi);
+                "An older bundled component overwrote a newer manual official-ID update");
+        Path nextApi = temporary.resolve("next-api.jar");
+        createFabricModJar(nextApi, "rusted_fabric_api", "Rusted Fabric API", "0.3.0");
+        ManagedContentLibrary.Item upgradedApi = ManagedContentLibrary.provisionOfficialJavaMod(
+                game, nextApi, "rusted_fabric_api", true);
+        require("0.3.0".equals(upgradedApi.version()) && upgradedApi.enabled()
+                        && upgradedApi.path().getFileName().toString().startsWith("official-"),
+                "A newer bundled component did not replace an older official-ID Jar");
+        ManagedContentLibrary.delete(game, upgradedApi);
         require(ManagedContentLibrary.list(game, ManagedContentLibrary.Kind.JAVA_MOD).stream()
                         .noneMatch(item -> "rusted_fabric_api".equals(item.id())),
                 "Updated API could not be deleted");

@@ -104,4 +104,12 @@
     <string name="content_official_installing">正在安装官方 Java 模组…</string>
     <string name="content_official_ready">官方 Java 模组已经就绪。</string>
     <string name="content_official_failed">无法安装官方 Java 模组：%1$s</string>
+    <string name="nav_launch">启动</string>
+    <string name="nav_content">模组与目录</string>
+    <string name="nav_settings">设置</string>
+    <string name="content_page_description">集中管理 INI 模组、地图、Java 模组及文件管理器可访问的目录。</string>
+    <string name="content_game_required">请先在“设置”中导入桌面版游戏，然后再管理游戏内容。</string>
+    <string name="settings_page_title">设置</string>
+    <string name="settings_page_description">导入或替换游戏与运行时，并查看诊断、许可和安全信息。</string>
+    <string name="update_preserves_imports">使用同一签名覆盖安装新版启动器会保留已导入的游戏、Java 运行时、用户模组、地图和设置，并自动更新内置官方模组。</string>
 </resources>

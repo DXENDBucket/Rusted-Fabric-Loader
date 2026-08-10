@@ -56,14 +56,12 @@ public final class ManagedContentLibrary {
 
     public static void prepare(Path gameRoot) throws IOException {
         requireGameRoot(gameRoot);
-        for (Kind kind : Kind.values()) Files.createDirectories(enabledRoot(gameRoot, kind));
-        Files.createDirectories(disabledRoot(gameRoot, Kind.MAP));
-        Files.createDirectories(disabledRoot(gameRoot, Kind.JAVA_MOD));
+        for (Kind kind : Kind.values()) prepareKind(gameRoot, kind);
     }
 
     public static List<Item> list(Path gameRoot, Kind kind) throws IOException {
         requireKind(kind);
-        prepare(gameRoot);
+        prepareKind(gameRoot, kind);
         List<Item> result = new ArrayList<>();
         scanRoot(enabledRoot(gameRoot, kind), kind, true, result);
         if (kind != Kind.INI_MOD) {
@@ -78,7 +76,7 @@ public final class ManagedContentLibrary {
     public static Item importContent(Path gameRoot, Kind kind, Path source,
                                      String displayName) throws IOException {
         requireKind(kind);
-        prepare(gameRoot);
+        prepareKind(gameRoot, kind);
         Path checkedSource = requireRegularFile(source, "import source");
         if (kind == Kind.JAVA_MOD) {
             JavaMetadata metadata = readJavaMetadata(checkedSource);
@@ -135,14 +133,15 @@ public final class ManagedContentLibrary {
     public static Item provisionOfficialJavaMod(Path gameRoot, Path source, String expectedId,
                                                 boolean defaultEnabled)
             throws IOException {
-        prepare(gameRoot);
+        prepareKind(gameRoot, Kind.JAVA_MOD);
         JavaMetadata metadata = readJavaMetadata(source);
         if (!metadata.id.equals(expectedId) || !OFFICIAL_JAVA_IDS.contains(expectedId)) {
             throw new IOException("Unexpected bundled official mod: " + metadata.id);
         }
         List<Item> current = findJavaModsById(gameRoot, expectedId);
         for (Item item : current) {
-            if (!isBundledOfficialAsset(item)) {
+            if (!isBundledOfficialAsset(item)
+                    && compareVersions(item.version(), metadata.version) > 0) {
                 for (Item candidate : current) {
                     if (candidate != item && isBundledOfficialAsset(candidate)) {
                         Files.deleteIfExists(candidate.path());
@@ -164,6 +163,31 @@ public final class ManagedContentLibrary {
             Files.deleteIfExists(candidate);
         }
         return javaItem(target, enabled);
+    }
+
+    /** Compares the numeric release core first, then treats a prerelease as older than a release. */
+    private static int compareVersions(String left, String right) {
+        String[] leftParts = left.split("[-+]", 2)[0].split("\\.");
+        String[] rightParts = right.split("[-+]", 2)[0].split("\\.");
+        int length = Math.max(leftParts.length, rightParts.length);
+        for (int index = 0; index < length; index++) {
+            String leftPart = index < leftParts.length ? leftParts[index] : "0";
+            String rightPart = index < rightParts.length ? rightParts[index] : "0";
+            int compared = compareVersionPart(leftPart, rightPart);
+            if (compared != 0) return compared;
+        }
+        boolean leftPrerelease = left.indexOf('-') >= 0;
+        boolean rightPrerelease = right.indexOf('-') >= 0;
+        if (leftPrerelease != rightPrerelease) return leftPrerelease ? -1 : 1;
+        return left.compareToIgnoreCase(right);
+    }
+
+    private static int compareVersionPart(String left, String right) {
+        try {
+            return Long.compare(Long.parseLong(left), Long.parseLong(right));
+        } catch (NumberFormatException ignored) {
+            return left.compareToIgnoreCase(right);
+        }
     }
 
     public static Item setEnabled(Path gameRoot, Item item, boolean enabled) throws IOException {
@@ -419,19 +443,49 @@ public final class ManagedContentLibrary {
     }
 
     private static Path enabledRoot(Path gameRoot, Kind kind) {
+        Path root;
         switch (kind) {
-            case INI_MOD: return gameRoot.resolve("mods/units");
-            case MAP: return gameRoot.resolve("mods/maps");
-            case JAVA_MOD: return gameRoot.resolve("javamods");
+            case INI_MOD: root = gameRoot.resolve("mods/units"); break;
+            case MAP: root = gameRoot.resolve("mods/maps"); break;
+            case JAVA_MOD: root = gameRoot.resolve("javamods"); break;
             default: throw new IllegalArgumentException("Unknown content kind");
+        }
+        return resolveManagedLink(root);
+    }
+
+    private static void prepareKind(Path gameRoot, Kind kind) throws IOException {
+        requireGameRoot(gameRoot);
+        requireKind(kind);
+        Path enabled = enabledRoot(gameRoot, kind);
+        if (!Files.exists(enabled, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            Files.createDirectories(enabled);
+        }
+        if (kind != Kind.INI_MOD) {
+            Path disabled = disabledRoot(gameRoot, kind);
+            if (!Files.exists(disabled, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                Files.createDirectories(disabled);
+            }
         }
     }
 
     private static Path disabledRoot(Path gameRoot, Kind kind) {
+        Path root;
         switch (kind) {
-            case MAP: return gameRoot.resolve("mods-disabled/maps");
-            case JAVA_MOD: return gameRoot.resolve("javamods-disabled");
+            case MAP: root = gameRoot.resolve("mods-disabled/maps"); break;
+            case JAVA_MOD: root = gameRoot.resolve("javamods-disabled"); break;
             default: throw new IllegalArgumentException("INI mods use the in-game mod menu");
+        }
+        return resolveManagedLink(root);
+    }
+
+    private static Path resolveManagedLink(Path path) {
+        if (!Files.isSymbolicLink(path)) return path;
+        try {
+            Path target = Files.readSymbolicLink(path);
+            if (!target.isAbsolute()) target = path.getParent().resolve(target);
+            return target.normalize();
+        } catch (IOException unreadable) {
+            return path;
         }
     }
 

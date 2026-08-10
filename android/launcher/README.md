@@ -16,14 +16,23 @@ launcher has an **Open folder** action. Android 11 and newer require the user to
 one-time **All files access**; this sideload-oriented permission is required because the embedded
 desktop JVM uses ordinary file APIs rather than Android document-provider streams.
 
-After setup, the same screen becomes a persistent content library. It imports and lists INI mods,
-custom maps, ordinary Fabric Jars, and `.javamod` packages. Maps and Java mods can be enabled or
-disabled without rewriting them; switch changes are staged until the user confirms the dialog.
+The main interface uses three persistent bottom destinations: **Launch**, **Mods & folders**, and
+**Settings**. Setup and game launching stay on the first page; the content library imports and
+lists INI mods, custom maps, ordinary Fabric Jars, and `.javamod` packages on the second page.
+Environment replacement and diagnostics live on the third page. Maps and Java mods can be enabled
+or disabled without rewriting them; switch changes are staged until the user confirms the dialog.
 All managed content, including the bundled API, can be disabled, deleted, or replaced by importing
 a newer Jar with the same mod ID. The APK supplies the same official Rusted Fabric API and Java Mod
 Menu selected by default on Windows, plus INI Essentials installed disabled by default. A manual
-official-ID replacement takes precedence over the bundled copy. None of these Jars contains the game
-itself.
+official-ID replacement is preserved when it is newer than the bundled copy; an equal or newer
+launcher bundle updates the managed official Jar while preserving its enabled/disabled state. None
+of these Jars contains the game itself.
+
+Installing a newer APK over the same application ID and signing identity is an in-place update.
+Android preserves the imported desktop game, ARM64 Java runtime, user mods, maps, and launcher
+settings; the launcher only refreshes its own official mods when the APK version advances. Release
+builds therefore must use a greater `versionCode` and the same release signing key. Importing the
+game or Java again is only needed when the user deliberately chooses their replacement actions.
 
 The application contains only Loader-owned code and reviewed third-party runtime components.
 `verifyNoGamePayload` rejects APKs that contain Rusted Warfare classes or game payloads.

@@ -190,6 +190,9 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
         new File(root, 'game-lib.jar').bytes = new byte[] { 0 }
         new File(root, 'jvm64/bin/java.exe').bytes = new byte[] { 0 }
         new File(root, 'javamods/third-party-keep.jar').bytes = new byte[] { 1, 2, 3 }
+        new File(root, 'javamods/rusted-fabric-api-0.0.9.jar').bytes = new byte[] { 4, 5, 6 }
+        new File(root, 'javamods/java-mod-menu-0.0.9.jar').bytes = new byte[] { 7, 8, 9 }
+        new File(root, 'user-settings-keep.txt').text = 'keep me'
         commandLine installerExe.get().asFile.absolutePath,
                 '--install-test', root.absolutePath
     }
@@ -200,7 +203,8 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
                 'RustedFabricLauncher.exe', 'run-rusted-fabric.bat',
                 'DISCLAIMER.md',
                 'rusted-fabric-loader/install-manifest.json',
-                'javamods/third-party-keep.jar'
+                'javamods/third-party-keep.jar',
+                'user-settings-keep.txt'
         ]
         required.each { relative ->
             if (!new File(root, relative).isFile()) {
@@ -215,6 +219,10 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
         if (!new File(root, 'javamods').listFiles().any { it.name.startsWith('rusted-fabric-api-') }
                 || !new File(root, 'javamods').listFiles().any { it.name.startsWith('java-mod-menu-') }) {
             throw new GradleException('Default player installation did not include API and Java Mod Menu')
+        }
+        if (new File(root, 'javamods/rusted-fabric-api-0.0.9.jar').exists()
+                || new File(root, 'javamods/java-mod-menu-0.0.9.jar').exists()) {
+            throw new GradleException('Windows update did not replace older official mod versions')
         }
     }
 }

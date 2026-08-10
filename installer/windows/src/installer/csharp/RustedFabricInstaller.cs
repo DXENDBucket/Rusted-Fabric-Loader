@@ -197,7 +197,7 @@ namespace RustedFabricInstaller
             progress.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(progress);
 
-            install.Text = "安装 / Install";
+            install.Text = "安装或更新 / Install or update";
             install.Location = new Point(525, 570);
             install.Size = new Size(135, 34);
             install.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
@@ -285,10 +285,11 @@ namespace RustedFabricInstaller
                 InstallSummary summary = await Task.Run(delegate {
                     return InstallerEngine.Install(options, ReportFromWorker);
                 });
-                AppendLog("安装完成，共写入 " + summary.FileCount + " 个文件。");
+                AppendLog("安装或更新完成，共写入 " + summary.FileCount + " 个文件。");
                 DialogResult launch = MessageBox.Show(this,
-                    "Rusted Fabric Loader 安装完成。\r\n\r\n是否立即启动？",
-                    "安装完成", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    "Rusted Fabric Loader 安装或更新完成。\r\n"
+                    + "游戏本体、用户模组和设置均已保留。\r\n\r\n是否立即启动？",
+                    "安装或更新完成", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                 if (launch == DialogResult.Yes)
                 {
                     Process.Start(new ProcessStartInfo {

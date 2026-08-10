@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'io.github.endx'
-version = rootProject.version
+version = rootProject.componentVersions.api
 
 java {
     withSourcesJar()

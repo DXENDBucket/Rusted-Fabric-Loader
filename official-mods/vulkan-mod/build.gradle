@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'io.github.endx'
-version = rootProject.version
+version = rootProject.componentVersions.vulkanMod
 
 ext.lwjglVersion = '3.4.2'
 

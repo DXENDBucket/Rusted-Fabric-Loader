@@ -28,6 +28,9 @@ The installer records its paths and SHA-256 hashes in
 `rusted-fabric-loader/install-manifest.json`. On update or component removal, a previously managed
 file is deleted only if its current hash still matches the manifest. Unrelated third-party Java
 mods are preserved. Writes are staged and existing destinations are backed up during the commit.
+Running a newer installer against an existing installation is the supported update path: it
+replaces Loader-owned runtime files and selected official mods, removes obsolete versioned copies,
+and leaves the game, settings, maps, INI mods, and unrelated Java mods in place.
 
 ## Build and verify
 

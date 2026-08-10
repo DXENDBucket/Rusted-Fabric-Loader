@@ -26,3 +26,10 @@ data may refer to it, so an ID must not be renamed after public release.
 Gradle project names, directories, Maven artifacts, and Jar names use readable kebab-case instead;
 for example, the Fabric ID `java_mod_menu` is built by `official-mods/java-mod-menu` and emitted as
 `java-mod-menu-<version>.jar`. Those names are packaging identifiers, not Fabric mod IDs.
+
+## Version management
+
+Loader/distribution and official-mod versions are declared independently in the repository-root
+`versions.properties`. A release may update only the components that actually changed. Installer
+and Android launcher builds resolve their bundled Jar names from that file, so changing a component
+version there is sufficient; do not add hard-coded version strings to packaging tasks.
