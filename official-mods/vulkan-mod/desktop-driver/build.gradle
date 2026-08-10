@@ -1,0 +1,37 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'io.github.endx'
+version = rootProject.version
+
+repositories {
+    mavenCentral()
+}
+
+def lwjglVersion = project(':official-mods:vulkan-mod').lwjglVersion
+
+dependencies {
+    compileOnly files(project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs)
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn project(':official-mods:vulkan-mod').tasks.named('compileJava')
+    options.release = 13
+}
+
+jar {
+    archiveBaseName.set('vulkan-mod-desktop-driver')
+}
+
+tasks.register('probeVulkan', JavaExec) {
+    group = 'verification'
+    description = 'Runs the standalone desktop Vulkan driver probe outside the LWJGL 2 game process.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneVulkanProbe')
+}

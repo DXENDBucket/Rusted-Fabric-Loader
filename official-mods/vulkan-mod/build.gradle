@@ -1,0 +1,141 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.github.endx'
+version = rootProject.version
+
+ext.lwjglVersion = '3.4.2'
+
+def namedGameJarFile = {
+    rootProject.hasProperty('namedGameJar')
+            ? rootProject.file(rootProject.property('namedGameJar'))
+            : rootProject.layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
+}
+
+def mappingsTinyFile = {
+    rootProject.hasProperty('mappingsTiny')
+            ? rootProject.file(rootProject.property('mappingsTiny'))
+            : rootProject.file("src/main/resources/mappings/mappings.tiny")
+}
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+}
+
+configurations {
+    desktopDriverBundle {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    compileOnly "net.fabricmc:fabric-loader:0.18.1"
+    testRuntimeOnly "net.fabricmc:fabric-loader:0.18.1"
+    desktopDriverBundle project(':official-mods:vulkan-mod:desktop-driver')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 13
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'lwjglVersion', lwjglVersion
+    filesMatching(['fabric.mod.json', 'META-INF/vulkan-driver/driver-bundle.properties']) {
+        expand version: project.version, lwjglVersion: lwjglVersion
+    }
+    from({ configurations.desktopDriverBundle }) {
+        into 'META-INF/vulkan-driver'
+    }
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+        rename { 'LICENSE-rusted-fabric.txt' }
+    }
+    from(rootProject.file('THIRD_PARTY_NOTICES.md')) {
+        into 'META-INF'
+    }
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+jar {
+    archiveBaseName.set('vulkan-mod')
+}
+
+tasks.register('verifyVulkanModBundle') {
+    group = 'verification'
+    description = 'Checks the Vulkan mod metadata and isolated desktop driver payload.'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+    doLast {
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            def mod = new groovy.json.JsonSlurper().parseText(
+                    zip.getInputStream(zip.getEntry('fabric.mod.json')).getText('UTF-8'))
+            if (mod.id != 'vulkan_mod' || mod.environment != 'client'
+                    || mod.custom?.get('rusted_fabric:multiplayer')?.mode != 'client_only') {
+                throw new GradleException('Vulkan Mod metadata is inconsistent')
+            }
+            def propertiesEntry = zip.getEntry(
+                    'META-INF/vulkan-driver/driver-bundle.properties')
+            if (propertiesEntry == null) {
+                throw new GradleException('Vulkan desktop driver manifest is missing')
+            }
+            if (zip.getEntry('META-INF/LICENSE-rusted-fabric.txt') == null
+                    || zip.getEntry('META-INF/THIRD_PARTY_NOTICES.md') == null) {
+                throw new GradleException('Vulkan Mod license or third-party notices are missing')
+            }
+            def properties = new Properties()
+            zip.getInputStream(propertiesEntry).withCloseable { properties.load(it) }
+            if (properties.getProperty('driverClass')
+                    != 'io.github.endx.vulkanmod.lwjgl3.Lwjgl3VulkanDriver') {
+                throw new GradleException('Vulkan desktop driver class changed unexpectedly')
+            }
+            properties.getProperty('files', '').split(',').findAll { !it.isBlank() }.each { name ->
+                if (zip.getEntry('META-INF/vulkan-driver/' + name.trim()) == null) {
+                    throw new GradleException("Vulkan desktop driver payload is missing ${name}")
+                }
+            }
+        }
+    }
+}
+
+tasks.register('verifyIsolatedVulkanDriver', JavaExec) {
+    group = 'verification'
+    description = 'Loads and probes the embedded LWJGL 3 driver without exposing it to the parent class path.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.vulkanmod.VulkanDriverIsolationVerification')
+}
+
+check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver')
+
+tasks.register('remapJarToOfficial', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Remaps Vulkan Mod from named names to official runtime names.'
+    dependsOn jar, rootProject.tasks.named('classes'), rootProject.tasks.named('generateNamedGameJar')
+
+    classpath = rootProject.sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
+
+    def outputJar = layout.buildDirectory.file(
+            "libs/vulkan-mod-${project.version}-official.jar")
+    inputs.file(tasks.jar.archiveFile)
+    inputs.file(provider { mappingsTinyFile() })
+    inputs.file(provider { namedGameJarFile() })
+    outputs.file outputJar
+
+    doFirst {
+        def output = outputJar.get().asFile
+        output.parentFile.mkdirs()
+        setArgs([
+                tasks.jar.archiveFile.get().asFile.absolutePath,
+                output.absolutePath,
+                mappingsTinyFile().absolutePath,
+                'named',
+                'official',
+                namedGameJarFile().absolutePath
+        ] + sourceSets.main.compileClasspath.files.collect { it.absolutePath })
+    }
+}

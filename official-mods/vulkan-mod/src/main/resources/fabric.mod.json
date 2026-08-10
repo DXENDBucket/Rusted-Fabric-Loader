@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "vulkan_mod",
+  "version": "${version}",
+  "name": "Vulkan Mod",
+  "description": "Experimental Vulkan renderer for Rusted Warfare with isolated platform drivers.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.endx.vulkanmod.VulkanMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1"
+  },
+  "custom": {
+    "rusted_fabric:multiplayer": {
+      "mode": "client_only"
+    }
+  }
+}

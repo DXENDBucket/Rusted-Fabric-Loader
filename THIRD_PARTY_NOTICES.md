@@ -145,10 +145,14 @@ The full MIT license text is packaged in the APK.
     - https://github.com/PojavLauncherTeam/lwjglx
 - License: BSD 3-Clause (LWJGL); compatibility changes are distributed through the FCL/Pojav bundle
   described above
-- Used for: Native Java/OpenGL binding and the desktop game's `org.lwjgl` compatibility surface
+- Used for: Native Java/OpenGL binding and the desktop game's `org.lwjgl` compatibility surface;
+  an isolated Vulkan binding in the optional official Vulkan Mod
 - LWJGL baseline in the Pojav bundle: `3.2.3`
+- LWJGL version embedded by the desktop Vulkan Mod: `3.4.2`
 
-The LWJGL BSD license text is packaged in the APK.
+The LWJGL BSD license text is packaged in the APK and retained inside the original JARs embedded by
+the Vulkan Mod. LWJGL 3 is loaded in a child-first driver class loader there so it does not replace
+the desktop game's incompatible LWJGL 2 classes.
 
 ---
 

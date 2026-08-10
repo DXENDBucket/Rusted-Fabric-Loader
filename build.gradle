@@ -315,6 +315,8 @@ tasks.register('verifyDistribution') {
             ':rusted-fabric-api:remapJarToOfficial', ':official-mods:java-mod-menu:remapJarToOfficial',
             ':official-mods:ini-essentials:check',
             ':official-mods:ini-essentials:remapJarToOfficial',
+            ':official-mods:vulkan-mod:check',
+            ':official-mods:vulkan-mod:remapJarToOfficial',
             ':official-mods:example-mod:remapJarToOfficial'
 
     doLast {
@@ -327,9 +329,12 @@ tasks.register('verifyDistribution') {
                 .file("libs/java-mod-menu-${project.version}-official.jar").get().asFile
         def iniEssentialsJar = project(':official-mods:ini-essentials').layout.buildDirectory
                 .file("libs/ini-essentials-${project.version}-official.jar").get().asFile
+        def vulkanModJar = project(':official-mods:vulkan-mod').layout.buildDirectory
+                .file("libs/vulkan-mod-${project.version}-official.jar").get().asFile
         def namedGameJar = namedGameJarFile()
 
-        [providerJar, apiJar, modMenuJar, iniEssentialsJar, exampleJar, namedGameJar].each { artifact ->
+        [providerJar, apiJar, modMenuJar, iniEssentialsJar, vulkanModJar,
+         exampleJar, namedGameJar].each { artifact ->
             if (!artifact.isFile() || artifact.length() == 0L) {
                 throw new GradleException("Missing distribution artifact: ${artifact}")
             }
@@ -764,6 +769,18 @@ tasks.register('verifyDistribution') {
                         throw new GradleException("Named game type remains in official INI Essentials class ${entry.name}")
                     }
                 }
+            }
+        }
+
+        new java.util.zip.ZipFile(vulkanModJar).withCloseable { zip ->
+            def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
+            def multiplayer = mod.custom?.get('rusted_fabric:multiplayer')
+            if (mod.id != 'vulkan_mod' || mod.version != project.version.toString()
+                    || multiplayer?.mode != 'client_only'
+                    || zip.getEntry('io/github/endx/vulkanmod/VulkanMod.class') == null
+                    || zip.getEntry('META-INF/vulkan-driver/driver-bundle.properties') == null
+                    || zip.getEntry('META-INF/THIRD_PARTY_NOTICES.md') == null) {
+                throw new GradleException('Official Vulkan Mod artifact is incomplete or inconsistent')
             }
         }
 

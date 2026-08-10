@@ -11,6 +11,7 @@ Project-owned Fabric runtime IDs are lowercase snake_case:
 - `rusted_fabric_api` — the shared API;
 - `java_mod_menu` — the official in-game Java mod list;
 - `ini_essentials` — opt-in custom-unit INI extensions;
+- `vulkan_mod` — experimental client renderer replacement and platform-isolated Vulkan runtime;
 - `rusted_fabric_example` — the development and contract example.
 
 `fabricloader` is the reserved upstream Fabric Loader ID. It intentionally keeps Fabric's standard
