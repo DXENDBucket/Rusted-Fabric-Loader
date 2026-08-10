@@ -33,6 +33,10 @@ final class SlickRenderCapture {
     private int height;
     private int commandCount;
     private int rejectedCount;
+    private SlickGraphicsBackend activeGlBackend;
+    private int diagnosedOffscreenImages;
+    private final java.util.IdentityHashMap<GameImage, Boolean> diagnosedRenderTargets =
+            new java.util.IdentityHashMap<GameImage, Boolean>();
 
     void begin(SlickGraphicsBackend source) {
         begin(Math.max(1, source.getWidth()), Math.max(1, source.getHeight()));
@@ -119,96 +123,84 @@ final class SlickRenderCapture {
         return true;
     }
 
-    boolean image(SlickGraphicsBackend source, GameImage image, Rect src, RectF dst,
-                  Paint paint) {
-        return image(source, image, src, dst, paint, null);
-    }
-
-    private boolean image(SlickGraphicsBackend source, GameImage image, Rect src, RectF dst,
-                          Paint paint, VulkanDrawState overrideState) {
+    boolean imageQuad(SlickGraphicsBackend source, GameImage image,
+                      float left, float top, float right, float bottom,
+                      float sourceLeft, float sourceTop,
+                      float sourceRight, float sourceBottom, Paint paint) {
+        if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargets")
+                && source != null && source.renderTargetImage != null
+                && source.renderTargetImage.getWidth() >= 1000
+                && diagnosedOffscreenImages++ < 80) {
+            System.out.println("[Vulkan Mod] Offscreen image draw target="
+                    + source.renderTargetImage.getName() + "("
+                    + source.renderTargetImage.getWidth() + "x"
+                    + source.renderTargetImage.getHeight() + ") source="
+                    + (image == null ? "null" : image.getName())
+                    + " src=" + sourceLeft + "," + sourceTop + ".."
+                    + sourceRight + "," + sourceBottom
+                    + " dst=" + left + "," + top + ".." + right + "," + bottom);
+        }
         if (!ensure(source)) return false;
-        if (image == null || src == null || dst == null
-                || dst.c < dst.a || dst.d < dst.b) return reject();
+        if (image == null || right < left || bottom < top) return reject();
         int imageWidth = image.getWidth();
         int imageHeight = image.getHeight();
         if (imageWidth <= 0 || imageHeight <= 0) return reject();
+        if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargets")
+                && VulkanRuntime.isRenderTargetImage(image)
+                && diagnosedRenderTargets.put(image, Boolean.TRUE) == null) {
+            System.out.println("[Vulkan Mod] Render-target draw " + image.getName()
+                    + " image=" + imageWidth + "x" + imageHeight
+                    + " src=" + sourceLeft + "," + sourceTop + ".."
+                    + sourceRight + "," + sourceBottom
+                    + " dst=" + left + "," + top + ".." + right + "," + bottom);
+        }
+
+        SlickTransformState raw = ((SlickGraphicsBackendStateAccessor) (Object) source)
+                .vulkanmod$getTransformState();
+        SlickTransformStateAccessor transform = (SlickTransformStateAccessor) (Object) raw;
+        float width = right - left;
+        float height = bottom - top;
+        float rotation = transform.vulkanmod$getRotationDegrees();
+        if (rotation != -90.0f) {
+            float halfWidth = width * 0.5f;
+            float halfHeight = height * 0.5f;
+            float relativeX = left + halfWidth - transform.vulkanmod$getRotationPivotX();
+            float relativeY = top + halfHeight - transform.vulkanmod$getRotationPivotY();
+            if (relativeX > 0.01f || relativeY > 0.01f
+                    || relativeX < -0.01f || relativeY < -0.01f) {
+                double radians = Math.toRadians(rotation + 180.0f);
+                float sine = (float) Math.sin(radians);
+                float cosine = (float) Math.cos(radians);
+                float rotatedX = cosine * relativeY - sine * relativeX;
+                float rotatedY = sine * relativeY + cosine * relativeX;
+                left = rotatedX + transform.vulkanmod$getRotationPivotX() - halfWidth;
+                top = rotatedY + transform.vulkanmod$getRotationPivotY() - halfHeight;
+            }
+        }
+
+        float scaledWidth = width * transform.vulkanmod$getScaleX();
+        float scaledHeight = height * transform.vulkanmod$getScaleY();
+        float screenLeft = left * transform.vulkanmod$getScaleX()
+                + transform.vulkanmod$getTranslateX();
+        float screenTop = top * transform.vulkanmod$getScaleY()
+                + transform.vulkanmod$getTranslateY();
+        float effectiveRotation = rotation + 90.0f;
+        VulkanTransform2D imageTransform = Math.abs(effectiveRotation) < 0.0001f
+                ? VulkanTransform2D.IDENTITY
+                : VulkanTransform2D.rotationAround(effectiveRotation,
+                        screenLeft + scaledWidth * 0.5f,
+                        screenTop + scaledHeight * 0.5f);
+        VulkanDrawState drawState = new VulkanDrawState(imageTransform,
+                clip(transform), blendMode(paint), textureFilter(paint));
         long texture = VulkanRuntime.textureForGameImage(image);
         float[] tint = paint == null ? WHITE : paintColor(paint);
         builder.texturedQuad(new VulkanTexturedQuad(texture,
-                dst.a, dst.b, dst.c - dst.a, dst.d - dst.b,
-                src.a / (float) imageWidth, src.b / (float) imageHeight,
-                src.c / (float) imageWidth, src.d / (float) imageHeight,
+                screenLeft, screenTop, scaledWidth, scaledHeight,
+                sourceLeft / imageWidth, sourceTop / imageHeight,
+                sourceRight / imageWidth, sourceBottom / imageHeight,
                 tint[0], tint[1], tint[2], tint[3],
-                overrideState == null ? state(source, paint) : overrideState));
+                drawState));
         commandCount++;
-        return true;
-    }
-
-    boolean imageRaw(SlickGraphicsBackend source, GameImage image, float x, float y,
-                     Paint paint) {
-        if (image == null) return reject();
-        return image(source, image, new Rect(0, 0, image.getWidth(), image.getHeight()),
-                new RectF(x, y, x + image.getWidth(), y + image.getHeight()), paint);
-    }
-
-    boolean imageCentered(SlickGraphicsBackend source, GameImage image, float x, float y,
-                          Paint paint) {
-        if (image == null) return reject();
-        return imageRaw(source, image, x - image.halfWidth, y - image.halfHeight, paint);
-    }
-
-    boolean imageRotated(SlickGraphicsBackend source, GameImage image, Rect src,
-                         float centerX, float centerY, float angle, Paint paint) {
-        if (image == null) return reject();
-        Rect sourceRect = src == null
-                ? new Rect(0, 0, image.getWidth(), image.getHeight()) : src;
-        RectF destination = new RectF(centerX - image.halfWidth,
-                centerY - image.halfHeight, centerX + image.halfWidth,
-                centerY + image.halfHeight);
-        VulkanTransform2D local = VulkanTransform2D.rotationAround(
-                angle, centerX, centerY);
-        return image(source, image, sourceRect, destination, paint,
-                stateWithLocalTransform(source, paint, local));
-    }
-
-    boolean imageTransformed(SlickGraphicsBackend source, GameImage image,
-                             float x, float y, Paint paint, float angle, float scale) {
-        if (image == null || !Float.isFinite(scale) || scale < 0.0f) return reject();
-        Rect sourceRect = new Rect(0, 0, image.getWidth(), image.getHeight());
-        RectF destination = new RectF(x, y,
-                x + image.getWidth() * scale, y + image.getHeight() * scale);
-        return image(source, image, sourceRect, destination, paint,
-                stateWithLocalTransform(source, paint,
-                        VulkanTransform2D.rotationAround(angle, x, y)));
-    }
-
-    boolean tiledImage(SlickGraphicsBackend source, GameImage image, RectF destination,
-                       Paint paint, float offsetX, float offsetY) {
-        if (!ensure(source)) return false;
-        if (image == null || destination == null) return reject();
-        int tileWidth = image.getWidth();
-        int tileHeight = image.getHeight();
-        if (tileWidth <= 0 || tileHeight <= 0
-                || destination.c <= destination.a || destination.d <= destination.b) {
-            return reject();
-        }
-        float startX = destination.a + positiveModulo(offsetX, tileWidth) - tileWidth;
-        float startY = destination.b + positiveModulo(offsetY, tileHeight) - tileHeight;
-        int guard = 0;
-        for (float y = startY; y < destination.d && guard < 16384; y += tileHeight) {
-            for (float x = startX; x < destination.c && guard < 16384; x += tileWidth) {
-                float left = Math.max(x, destination.a);
-                float top = Math.max(y, destination.b);
-                float right = Math.min(x + tileWidth, destination.c);
-                float bottom = Math.min(y + tileHeight, destination.d);
-                if (right > left && bottom > top) {
-                    Rect src = new Rect(Math.round(left - x), Math.round(top - y),
-                            Math.round(right - x), Math.round(bottom - y));
-                    image(source, image, src, new RectF(left, top, right, bottom), paint);
-                }
-                guard++;
-            }
-        }
         return true;
     }
 
@@ -257,13 +249,17 @@ final class SlickRenderCapture {
         if (!ensure(source)) return false;
         if (points == null || paint == null || count < 0) return reject();
         int start = Math.max(0, offset);
-        int availablePoints = Math.max(0, (points.length - start) / 2);
-        int pointCount = Math.min(count, availablePoints);
+        // GraphicsEngine follows Canvas.drawPoints here: offset and count are measured in
+        // floats, with each consecutive x/y pair describing one square point. MinimapLineBatch
+        // deliberately keeps a larger reusable array and passes only its populated float count.
+        // Treating count as a point count consumes the stale tail of that array and paints
+        // phantom unit markers over the minimap.
+        int end = Math.min(points.length, start + count);
+        if (((end - start) & 1) != 0) end--;
         float size = Math.max(1.0f, paint.g());
         float[] color = paintColor(paint);
         VulkanDrawState drawState = state(source, paint);
-        for (int index = 0; index < pointCount; index++) {
-            int point = start + index * 2;
+        for (int point = start; point + 1 < end; point += 2) {
             colored(points[point] - size * 0.5f, points[point + 1] - size * 0.5f,
                     size, size, color, drawState);
         }
@@ -367,15 +363,46 @@ final class SlickRenderCapture {
     private boolean ensure(SlickGraphicsBackend source) {
         if (source == null) return false;
         if (source.renderTargetImage != null) {
+            activateGlBackend(source);
             // Offscreen rendering still runs through Slick for now. Any intercepted draw means
             // the next screen-space use must upload the newly rendered pixels, even when the
             // game's public image version was not incremented by its Graphics path.
-            VulkanRuntime.invalidateCachedImage(source.renderTargetImage);
+            VulkanRuntime.markRenderTargetImage(source.renderTargetImage);
             return false;
         }
+        // Cancelling drawImageQuadInternal also skips applyPaintState(), which normally
+        // switches Slick away from the last offscreen FBO and back to the window graphics.
+        // Tile-cache rendering frequently leaves an FBO current immediately before its
+        // completed image is drawn to the screen. Keep Slick's context state transition even
+        // though Vulkan consumes the screen draw; otherwise later GL fallbacks and texture
+        // readback can still target the tile-cache FBO and corrupt the cached terrain.
+        activateGlBackend(source);
         if (builder == null) begin(source);
         if (backend == null) backend = source;
         return isCapturing(source);
+    }
+
+    private void activateGlBackend(SlickGraphicsBackend source) {
+        if (activeGlBackend == source) return;
+        // Vulkan cancels some of the original screen draws that normally drive Slick's
+        // Graphics.setCurrent transitions. Explicitly make each main/FBO backend transition,
+        // then pass through applyPaintState so the game's own currentSlickGraphics bookkeeping
+        // agrees with the actual GL target. This is especially important for the two-stage map
+        // cache (shared tile buffer -> per-region buffer -> screen).
+        // The region canvas deliberately leaves its Image.startUse batch pending and relies on
+        // the following screen draw to switch Graphics and flush it. Since takeover cancels that
+        // screen draw, flush the backend we are leaving before reading its texture on the CPU.
+        if (activeGlBackend != null) {
+            try {
+                activeGlBackend.flush();
+            } catch (NullPointerException notInitializedYet) {
+                // A short-lived bootstrap backend has no Slick Graphics object. It cannot have
+                // a pending FBO batch, so there is nothing useful to flush.
+            }
+        }
+        source.activateGraphicsContext();
+        source.applyPaint(null);
+        activeGlBackend = source;
     }
 
     private boolean reject() {
@@ -398,17 +425,15 @@ final class SlickRenderCapture {
                 state.vulkanmod$getScaleX(), state.vulkanmod$getScaleY())
                 .then(VulkanTransform2D.translation(
                         state.vulkanmod$getTranslateX(), state.vulkanmod$getTranslateY()));
-        float effectiveRotation = state.vulkanmod$getRotationDegrees() + 90.0f;
-        if (Math.abs(effectiveRotation) > 0.0001f) {
-            transform = transform.then(VulkanTransform2D.rotationAround(effectiveRotation,
-                    state.vulkanmod$getRotationPivotX(), state.vulkanmod$getRotationPivotY()));
-        }
+        return new VulkanDrawState(transform, clip(state), blendMode(paint),
+                textureFilter(paint));
+    }
+
+    private static VulkanClipRect clip(SlickTransformStateAccessor state) {
         RectF clip = state.vulkanmod$getClipRect();
-        VulkanClipRect vulkanClip = clip == null ? null : new VulkanClipRect(
+        return clip == null ? null : new VulkanClipRect(
                 clip.a, clip.b, Math.max(0.0f, clip.c - clip.a),
                 Math.max(0.0f, clip.d - clip.b));
-        return new VulkanDrawState(transform, vulkanClip, blendMode(paint),
-                textureFilter(paint));
     }
 
     private static VulkanDrawState stateWithLocalTransform(
@@ -416,11 +441,6 @@ final class SlickRenderCapture {
         VulkanDrawState base = state(backend, paint);
         return new VulkanDrawState(local.then(base.transform()), base.clip(), base.blendMode(),
                 base.textureFilter());
-    }
-
-    private static float positiveModulo(float value, int divisor) {
-        float result = value % divisor;
-        return result < 0.0f ? result + divisor : result;
     }
 
     private static float[] color(int argb) {

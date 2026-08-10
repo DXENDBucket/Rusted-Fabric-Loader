@@ -85,6 +85,7 @@ tasks.register('verifyVulkanModBundle') {
             if (!mixins.mixins.contains('SlickGameVulkanSurfaceNamedMixin')
                     || !mixins.mixins.contains('RustedWarfareGameLoopVulkanPresentNamedMixin')
                     || !mixins.mixins.contains('SlickBitmapVulkanTextureLifecycleNamedMixin')
+                    || !mixins.mixins.contains('SlickBitmapOrTextureDataAccessor')
                     || !mixins.mixins.contains('SlickGraphicsBackendStateAccessor')
                     || !mixins.mixins.contains('SlickTransformStateAccessor')
                     || !mixins.mixins.contains('SlickGraphicsBackendVulkanCaptureNamedMixin')
@@ -125,7 +126,16 @@ tasks.register('verifyIsolatedVulkanDriver', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.VulkanDriverIsolationVerification')
 }
 
-check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver')
+tasks.register('verifyTextureReadbackInference', JavaExec) {
+    group = 'verification'
+    description = 'Checks exact and power-of-two-padded Slick texture readback formats.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.vulkanmod.GameImageVulkanTextureCacheVerification')
+}
+
+check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
+        tasks.named('verifyTextureReadbackInference')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

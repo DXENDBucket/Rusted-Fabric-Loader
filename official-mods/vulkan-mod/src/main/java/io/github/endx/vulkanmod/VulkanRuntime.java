@@ -183,53 +183,14 @@ public final class VulkanRuntime {
         return captureSafely("rectangle", () -> takeoverCapture.rectangle(backend, rect, paint));
     }
 
-    public static synchronized boolean captureImage(SlickGraphicsBackend backend,
-                                                     GameImage image, android.graphics.Rect src,
-                                                     android.graphics.RectF dst,
-                                                     android.graphics.Paint paint) {
-        return captureSafely("image", () ->
-                takeoverCapture.image(backend, image, src, dst, paint));
-    }
-
-    public static synchronized boolean captureImageRaw(SlickGraphicsBackend backend,
-                                                        GameImage image, float x, float y,
-                                                        android.graphics.Paint paint) {
-        return captureSafely("image", () ->
-                takeoverCapture.imageRaw(backend, image, x, y, paint));
-    }
-
-    public static synchronized boolean captureImageCentered(SlickGraphicsBackend backend,
-                                                             GameImage image, float x, float y,
-                                                             android.graphics.Paint paint) {
-        return captureSafely("image", () ->
-                takeoverCapture.imageCentered(backend, image, x, y, paint));
-    }
-
-    public static synchronized boolean captureImageRotated(SlickGraphicsBackend backend,
-                                                            GameImage image,
-                                                            android.graphics.Rect src,
-                                                            float x, float y, float angle,
-                                                            android.graphics.Paint paint) {
-        return captureSafely("rotated image", () ->
-                takeoverCapture.imageRotated(backend, image, src, x, y, angle, paint));
-    }
-
-    public static synchronized boolean captureImageTransformed(SlickGraphicsBackend backend,
-                                                                GameImage image,
-                                                                float x, float y,
-                                                                android.graphics.Paint paint,
-                                                                float angle, float scale) {
-        return captureSafely("transformed image", () -> takeoverCapture.imageTransformed(
-                backend, image, x, y, paint, angle, scale));
-    }
-
-    public static synchronized boolean captureTiledImage(SlickGraphicsBackend backend,
-                                                          GameImage image,
-                                                          android.graphics.RectF destination,
-                                                          android.graphics.Paint paint,
-                                                          float offsetX, float offsetY) {
-        return captureSafely("tiled image", () -> takeoverCapture.tiledImage(
-                backend, image, destination, paint, offsetX, offsetY));
+    public static synchronized boolean captureImageQuad(
+            SlickGraphicsBackend backend, GameImage image,
+            float left, float top, float right, float bottom,
+            float sourceLeft, float sourceTop, float sourceRight, float sourceBottom,
+            android.graphics.Paint paint) {
+        return captureSafely("image quad", () -> takeoverCapture.imageQuad(
+                backend, image, left, top, right, bottom,
+                sourceLeft, sourceTop, sourceRight, sourceBottom, paint));
     }
 
     public static synchronized boolean captureText(SlickGraphicsBackend backend, String text,
@@ -320,6 +281,10 @@ public final class VulkanRuntime {
             throw new IllegalStateException("Vulkan game-image cache is unavailable");
         }
         return gameTextureCache.texture(image);
+    }
+
+    static synchronized boolean isRenderTargetImage(GameImage image) {
+        return gameTextureCache != null && gameTextureCache.isRenderTarget(image);
     }
 
     static synchronized VulkanTextTextureCache.Entry textureForText(
@@ -425,6 +390,10 @@ public final class VulkanRuntime {
 
     public static synchronized void invalidateCachedImage(Object image) {
         if (gameTextureCache != null) gameTextureCache.invalidate(image);
+    }
+
+    static synchronized void markRenderTargetImage(Object image) {
+        if (gameTextureCache != null) gameTextureCache.markRenderTarget(image);
     }
 
     public static synchronized void shutdown() {
