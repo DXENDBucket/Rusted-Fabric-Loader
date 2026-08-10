@@ -44,7 +44,10 @@ public final class VulkanDriverIsolationVerification {
                 || commands.coloredQuads().get(0).alpha() != 0.75f
                 || commands.texturedQuads().size() != 1
                 || commands.texturedQuads().get(0).textureHandle() != 7L
-                || commands.texturedQuads().get(0).state().clip() == null) {
+                || commands.texturedQuads().get(0).state().clip() == null
+                || commands.commands().size() != 2
+                || commands.commands().get(0) != commands.coloredQuads().get(0)
+                || commands.commands().get(1) != commands.texturedQuads().get(0)) {
             throw new AssertionError("binding-neutral frame command contract is invalid");
         }
         try {
@@ -58,6 +61,12 @@ public final class VulkanDriverIsolationVerification {
             throw new AssertionError("frame texture commands expose a mutable list");
         } catch (UnsupportedOperationException expected) {
             // Textured commands follow the same immutable frame contract.
+        }
+        try {
+            commands.commands().clear();
+            throw new AssertionError("ordered frame commands expose a mutable list");
+        } catch (UnsupportedOperationException expected) {
+            // Rendering order is immutable across the driver boundary too.
         }
         try {
             Class.forName("org.lwjgl.vulkan.VK", false,

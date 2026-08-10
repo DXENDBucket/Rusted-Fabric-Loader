@@ -14,6 +14,7 @@ public final class VulkanFrameCommands {
     private final float clearAlpha;
     private final List<VulkanColoredQuad> coloredQuads;
     private final List<VulkanTexturedQuad> texturedQuads;
+    private final List<VulkanDrawCommand> commands;
 
     private VulkanFrameCommands(Builder builder) {
         width = builder.width;
@@ -26,6 +27,8 @@ public final class VulkanFrameCommands {
                 new ArrayList<VulkanColoredQuad>(builder.coloredQuads));
         texturedQuads = Collections.unmodifiableList(
                 new ArrayList<VulkanTexturedQuad>(builder.texturedQuads));
+        commands = Collections.unmodifiableList(
+                new ArrayList<VulkanDrawCommand>(builder.commands));
     }
 
     public static Builder builder(int width, int height) {
@@ -40,6 +43,7 @@ public final class VulkanFrameCommands {
     public float clearAlpha() { return clearAlpha; }
     public List<VulkanColoredQuad> coloredQuads() { return coloredQuads; }
     public List<VulkanTexturedQuad> texturedQuads() { return texturedQuads; }
+    public List<VulkanDrawCommand> commands() { return commands; }
 
     public static final class Builder {
         private final int width;
@@ -52,6 +56,8 @@ public final class VulkanFrameCommands {
                 new ArrayList<VulkanColoredQuad>();
         private final List<VulkanTexturedQuad> texturedQuads =
                 new ArrayList<VulkanTexturedQuad>();
+        private final List<VulkanDrawCommand> commands =
+                new ArrayList<VulkanDrawCommand>();
 
         private Builder(int width, int height) {
             if (width <= 0 || height <= 0) {
@@ -74,12 +80,14 @@ public final class VulkanFrameCommands {
         public Builder coloredQuad(VulkanColoredQuad quad) {
             if (quad == null) throw new NullPointerException("quad");
             coloredQuads.add(quad);
+            commands.add(quad);
             return this;
         }
 
         public Builder texturedQuad(VulkanTexturedQuad quad) {
             if (quad == null) throw new NullPointerException("quad");
             texturedQuads.add(quad);
+            commands.add(quad);
             return this;
         }
 

@@ -15,7 +15,7 @@ import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 
 import java.util.Optional;
 
-/** Owns Vulkan startup state without touching the legacy renderer until takeover is implemented. */
+/** Owns Vulkan startup state and the explicitly opt-in takeover experiment. */
 public final class VulkanRuntime {
     private static volatile VulkanProbeResult probeResult;
     private static VulkanDriverLoader.LoadedDriver activeDriver;
@@ -27,6 +27,12 @@ public final class VulkanRuntime {
     private static int frameTestTextureWidth = 32;
     private static int frameTestTextureHeight = 32;
     private static GameImageVulkanTextureCache gameTextureCache;
+    private static final SlickRenderCapture takeoverCapture = new SlickRenderCapture();
+    private static VulkanFrameCommands pendingTakeoverFrame;
+    private static int pendingTakeoverCommands;
+    private static int pendingTakeoverUnsupported;
+    private static long takeoverFramesPresented;
+    private static boolean takeoverFailureLogged;
 
     private VulkanRuntime() { }
 
@@ -57,7 +63,11 @@ public final class VulkanRuntime {
                         + Integer.toHexString(device.deviceId()) + ", api="
                         + VulkanProbeResult.formatVersion(device.apiVersion()) + ")");
             }
-            log("Renderer takeover is not enabled in this foundation build");
+            if (mode == VulkanMode.TAKEOVER_TEST) {
+                log("Experimental Slick-to-Vulkan takeover capture is enabled");
+            } else {
+                log("Renderer takeover is disabled; Slick/OpenGL remains authoritative");
+            }
         } catch (RuntimeException failure) {
             if (loaded != null && loaded != activeDriver) {
                 try {
@@ -75,6 +85,11 @@ public final class VulkanRuntime {
 
     /** Called immediately after Slick presents an OpenGL frame. */
     public static synchronized void afterOpenGlPresent() {
+        if (configuredMode == VulkanMode.TAKEOVER_TEST) {
+            finishTakeoverFrame();
+            presentTakeoverFrame();
+            return;
+        }
         if (configuredMode != VulkanMode.FRAME_TEST || frameTestAttempted
                 || activeDriver == null || surfaceInfo == null) return;
         GameImage diagnosticImage = diagnosticGameImage();
@@ -140,6 +155,112 @@ public final class VulkanRuntime {
             log("Vulkan frame test failed; retaining Slick/OpenGL: "
                     + failure.getClass().getSimpleName() + ": " + failure.getMessage());
         }
+    }
+
+    public static synchronized boolean isTakeoverActive() {
+        return configuredMode == VulkanMode.TAKEOVER_TEST
+                && activeDriver != null && surfaceInfo != null;
+    }
+
+    private static void finishTakeoverFrame() {
+        if (!isTakeoverActive()) return;
+        int commands = takeoverCapture.commandCount();
+        int unsupported = takeoverCapture.rejectedCount();
+        VulkanFrameCommands frame = takeoverCapture.finish();
+        if (frame != null) {
+            pendingTakeoverFrame = frame;
+            pendingTakeoverCommands = commands;
+            pendingTakeoverUnsupported = unsupported;
+        }
+    }
+
+    public static synchronized boolean captureClear(SlickGraphicsBackend backend, int argb) {
+        return captureSafely("clear", () -> takeoverCapture.clear(backend, argb));
+    }
+
+    public static synchronized boolean captureRect(SlickGraphicsBackend backend,
+                                                    android.graphics.Rect rect,
+                                                    android.graphics.Paint paint) {
+        return captureSafely("rectangle", () -> takeoverCapture.rectangle(backend, rect, paint));
+    }
+
+    public static synchronized boolean captureRect(SlickGraphicsBackend backend,
+                                                    android.graphics.RectF rect,
+                                                    android.graphics.Paint paint) {
+        return captureSafely("rectangle", () -> takeoverCapture.rectangle(backend, rect, paint));
+    }
+
+    public static synchronized boolean captureImage(SlickGraphicsBackend backend,
+                                                     GameImage image, android.graphics.Rect src,
+                                                     android.graphics.RectF dst,
+                                                     android.graphics.Paint paint) {
+        return captureSafely("image", () ->
+                takeoverCapture.image(backend, image, src, dst, paint));
+    }
+
+    public static synchronized boolean captureImageRaw(SlickGraphicsBackend backend,
+                                                        GameImage image, float x, float y,
+                                                        android.graphics.Paint paint) {
+        return captureSafely("image", () ->
+                takeoverCapture.imageRaw(backend, image, x, y, paint));
+    }
+
+    public static synchronized boolean captureImageCentered(SlickGraphicsBackend backend,
+                                                             GameImage image, float x, float y,
+                                                             android.graphics.Paint paint) {
+        return captureSafely("image", () ->
+                takeoverCapture.imageCentered(backend, image, x, y, paint));
+    }
+
+    public static synchronized void noteUnsupportedDraw(SlickGraphicsBackend backend) {
+        if (isTakeoverActive()) takeoverCapture.unsupported(backend);
+    }
+
+    static synchronized long textureForGameImage(GameImage image) {
+        if (gameTextureCache == null) {
+            throw new IllegalStateException("Vulkan game-image cache is unavailable");
+        }
+        return gameTextureCache.texture(image);
+    }
+
+    private static boolean captureSafely(String operation, CaptureOperation capture) {
+        if (!isTakeoverActive()) return false;
+        try {
+            return capture.run();
+        } catch (Throwable failure) {
+            if (!takeoverFailureLogged) {
+                takeoverFailureLogged = true;
+                log("Could not capture Vulkan " + operation + "; leaving this call to OpenGL: "
+                        + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            }
+            return false;
+        }
+    }
+
+    private static void presentTakeoverFrame() {
+        VulkanFrameCommands frame = pendingTakeoverFrame;
+        if (activeDriver == null || surfaceInfo == null || frame == null) return;
+        pendingTakeoverFrame = null;
+        try {
+            surfaceInfo = activeDriver.presentFrame(frame);
+            takeoverFramesPresented++;
+            if (takeoverFramesPresented == 1 || takeoverFramesPresented % 300 == 0) {
+                log("Presented takeover frame #" + takeoverFramesPresented + " at "
+                        + surfaceInfo.width() + "x" + surfaceInfo.height() + " ("
+                        + pendingTakeoverCommands + " captured, "
+                        + pendingTakeoverUnsupported + " unsupported draw calls)");
+            }
+        } catch (Throwable failure) {
+            if (!takeoverFailureLogged) {
+                takeoverFailureLogged = true;
+                log("Vulkan takeover presentation failed; the experiment remains isolated: "
+                        + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            }
+        }
+    }
+
+    private interface CaptureOperation {
+        boolean run();
     }
 
     private static VulkanTextureData checkerTexture() {
@@ -209,6 +330,11 @@ public final class VulkanRuntime {
             activeDriver = null;
         }
         surfaceInfo = null;
+        pendingTakeoverFrame = null;
+        pendingTakeoverCommands = 0;
+        pendingTakeoverUnsupported = 0;
+        takeoverFramesPresented = 0;
+        takeoverFailureLogged = false;
         frameTestTexture = 0L;
         frameTestWaitFrames = 0;
         frameTestTextureWidth = 32;

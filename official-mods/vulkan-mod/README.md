@@ -9,16 +9,19 @@ surface, presentation-capable device/queues, swapchain, render pass, framebuffer
 and synchronization objects. It also has a binding-neutral frame command list and a first batched
 colored/textured-quad path backed by a growable host-visible vertex buffer. RGBA8 uploads use a
 staging buffer, device-local images, samplers, and per-texture descriptor sets; consecutive quads
-using the same texture share one draw call. The normal modes deliberately leave the existing
-renderer active.
+using the same texture share one draw call without changing the original colored/textured command
+order. The normal modes deliberately leave the existing renderer active.
 Game-owned `GameImage` objects can now be read back into an identity/version-aware Vulkan texture
 cache. Image reload and release hooks invalidate stale GPU copies. Draw commands also carry an
 affine screen-space transform and optional scissor rectangle; transforms are baked while batching,
 and scissor changes split otherwise compatible batches.
-Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|required`; `probe` is the development default,
-`frame_test` presents one dark-blue Vulkan frame with colored rectangles and a generated checker
-texture after an OpenGL frame, and `required` makes an unavailable driver fail startup. The one-shot
-test is diagnostic only, not renderer takeover.
+Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|required`; `probe` is the
+development default, `frame_test` presents one diagnostic Vulkan frame after an OpenGL frame, and
+`required` makes an unavailable driver fail startup. `takeover_test` is the first real presentation
+takeover: every visible game-loop frame captures supported Slick clears, filled rectangles and image
+draws into an ordered Vulkan frame, then presents it after the legacy frame. Text, lines, circles,
+tiling, shaders and direct Slick/LibRocket OpenGL still need Vulkan implementations, so this mode is
+an intentionally incomplete developer experiment and is not suitable as the normal launcher mode.
 
 ## Boundary
 

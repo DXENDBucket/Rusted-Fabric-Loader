@@ -7,6 +7,7 @@ public enum VulkanMode {
     OFF,
     PROBE,
     FRAME_TEST,
+    TAKEOVER_TEST,
     REQUIRED;
 
     static VulkanMode configured() {
@@ -18,6 +19,8 @@ public enum VulkanMode {
             case "auto": return PROBE;
             case "frame-test":
             case "frame_test": return FRAME_TEST;
+            case "takeover-test":
+            case "takeover_test": return TAKEOVER_TEST;
             case "required": return REQUIRED;
             default: throw new IllegalArgumentException(
                     "Unknown rusted.fabric.vulkan.mode: " + raw);

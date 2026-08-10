@@ -3,6 +3,7 @@ package io.github.endx.vulkanmod.lwjgl3;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
+import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
@@ -1207,24 +1208,23 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             .minDepth(0.0f).maxDepth(1.0f);
                     vkCmdSetViewport(commandBuffer, 0, viewport);
                 }
-                if (!upload.coloredBatches.isEmpty()) {
-                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            colorPipeline);
-                    vkCmdBindVertexBuffers(commandBuffer, 0,
-                            stack.longs(vertexBuffer), stack.longs(0L));
-                    for (ColoredDrawBatch batch : upload.coloredBatches) {
+                for (DrawBatch drawBatch : upload.batches) {
+                    if (drawBatch instanceof ColoredDrawBatch) {
+                        ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
+                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                colorPipeline);
+                        vkCmdBindVertexBuffers(commandBuffer, 0,
+                                stack.longs(vertexBuffer), stack.longs(0L));
                         if (setScissor(commandBuffer, batch.clip, stack)) {
                             vkCmdDraw(commandBuffer, batch.vertexCount, 1,
                                     batch.firstVertex, 0);
                         }
-                    }
-                }
-                if (!upload.textureBatches.isEmpty()) {
-                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            texturePipeline);
-                    vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer),
-                            stack.longs(upload.texturedByteOffset));
-                    for (TextureDrawBatch batch : upload.textureBatches) {
+                    } else {
+                        TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
+                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                texturePipeline);
+                        vkCmdBindVertexBuffers(commandBuffer, 0, stack.longs(vertexBuffer),
+                                stack.longs(upload.texturedByteOffset));
                         if (setScissor(commandBuffer, batch.clip, stack)) {
                             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     texturePipelineLayout, 0,
@@ -1273,14 +1273,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 ByteBuffer coloredSlice = bytes.duplicate();
                 coloredSlice.limit(coloredBytes);
                 FloatBuffer coloredVertices = coloredSlice.slice().asFloatBuffer();
-                ColoredDrawBatch coloredBatch = null;
-                int coloredFirstVertex = 0;
                 for (VulkanColoredQuad quad : frame.coloredQuads()) {
-                    VulkanClipRect clip = quad.state().clip();
-                    if (coloredBatch == null || !sameClip(coloredBatch.clip, clip)) {
-                        coloredBatch = new ColoredDrawBatch(clip, coloredFirstVertex);
-                        result.coloredBatches.add(coloredBatch);
-                    }
                     VulkanTransform2D transform = quad.state().transform();
                     float left = quad.x();
                     float right = quad.x() + quad.width();
@@ -1292,27 +1285,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     putVertex(coloredVertices, transform, left, top, frame, quad);
                     putVertex(coloredVertices, transform, right, bottom, frame, quad);
                     putVertex(coloredVertices, transform, right, top, frame, quad);
-                    coloredBatch.vertexCount += 6;
-                    coloredFirstVertex += 6;
                 }
 
                 ByteBuffer texturedSlice = bytes.duplicate();
                 texturedSlice.position(coloredBytes).limit(totalBytes);
                 FloatBuffer texturedVertices = texturedSlice.slice().asFloatBuffer();
-                TextureDrawBatch currentBatch = null;
-                int firstVertex = 0;
                 for (VulkanTexturedQuad quad : frame.texturedQuads()) {
                     TextureResource texture = textures.get(quad.textureHandle());
                     if (texture == null) {
                         throw new IllegalArgumentException(
                                 "unknown texture handle: " + quad.textureHandle());
-                    }
-                    if (currentBatch == null
-                            || currentBatch.textureHandle != quad.textureHandle()
-                            || !sameClip(currentBatch.clip, quad.state().clip())) {
-                        currentBatch = new TextureDrawBatch(quad.textureHandle(),
-                                texture.descriptorSet, quad.state().clip(), firstVertex);
-                        result.textureBatches.add(currentBatch);
                     }
                     VulkanTransform2D transform = quad.state().transform();
                     float left = quad.x();
@@ -1331,11 +1313,42 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             quad.u1(), quad.v1(), frame, quad);
                     putTexturedVertex(texturedVertices, transform, right, top,
                             quad.u1(), quad.v0(), frame, quad);
-                    currentBatch.vertexCount += 6;
-                    firstVertex += 6;
                 }
             } finally {
                 vkUnmapMemory(device, vertexMemory);
+            }
+            int coloredFirstVertex = 0;
+            int texturedFirstVertex = 0;
+            DrawBatch currentBatch = null;
+            for (VulkanDrawCommand command : frame.commands()) {
+                if (command instanceof VulkanColoredQuad) {
+                    VulkanColoredQuad quad = (VulkanColoredQuad) command;
+                    if (!(currentBatch instanceof ColoredDrawBatch)
+                            || !sameClip(currentBatch.clip, quad.state().clip())) {
+                        currentBatch = new ColoredDrawBatch(
+                                quad.state().clip(), coloredFirstVertex);
+                        result.batches.add(currentBatch);
+                    }
+                    currentBatch.vertexCount += 6;
+                    coloredFirstVertex += 6;
+                } else if (command instanceof VulkanTexturedQuad) {
+                    VulkanTexturedQuad quad = (VulkanTexturedQuad) command;
+                    TextureResource texture = textures.get(quad.textureHandle());
+                    TextureDrawBatch textureBatch = currentBatch instanceof TextureDrawBatch
+                            ? (TextureDrawBatch) currentBatch : null;
+                    if (textureBatch == null
+                            || textureBatch.textureHandle != quad.textureHandle()
+                            || !sameClip(textureBatch.clip, quad.state().clip())) {
+                        currentBatch = new TextureDrawBatch(quad.textureHandle(),
+                                texture.descriptorSet, quad.state().clip(), texturedFirstVertex);
+                        result.batches.add(currentBatch);
+                    }
+                    currentBatch.vertexCount += 6;
+                    texturedFirstVertex += 6;
+                } else {
+                    throw new IllegalArgumentException("unsupported draw command: "
+                            + command.getClass().getName());
+                }
             }
             return result;
         }
@@ -1529,39 +1542,38 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private long descriptorSet;
         }
 
-        private static final class TextureDrawBatch {
-            private final long textureHandle;
-            private final long descriptorSet;
-            private final VulkanClipRect clip;
-            private final int firstVertex;
-            private int vertexCount;
+        private abstract static class DrawBatch {
+            final VulkanClipRect clip;
+            final int firstVertex;
+            int vertexCount;
 
-            private TextureDrawBatch(long textureHandle, long descriptorSet,
-                                     VulkanClipRect clip, int firstVertex) {
-                this.textureHandle = textureHandle;
-                this.descriptorSet = descriptorSet;
+            private DrawBatch(VulkanClipRect clip, int firstVertex) {
                 this.clip = clip;
                 this.firstVertex = firstVertex;
             }
         }
 
-        private static final class ColoredDrawBatch {
-            private final VulkanClipRect clip;
-            private final int firstVertex;
-            private int vertexCount;
+        private static final class TextureDrawBatch extends DrawBatch {
+            private final long textureHandle;
+            private final long descriptorSet;
 
+            private TextureDrawBatch(long textureHandle, long descriptorSet,
+                                     VulkanClipRect clip, int firstVertex) {
+                super(clip, firstVertex);
+                this.textureHandle = textureHandle;
+                this.descriptorSet = descriptorSet;
+            }
+        }
+
+        private static final class ColoredDrawBatch extends DrawBatch {
             private ColoredDrawBatch(VulkanClipRect clip, int firstVertex) {
-                this.clip = clip;
-                this.firstVertex = firstVertex;
+                super(clip, firstVertex);
             }
         }
 
         private static final class FrameUpload {
             private final long texturedByteOffset;
-            private final List<ColoredDrawBatch> coloredBatches =
-                    new ArrayList<ColoredDrawBatch>();
-            private final List<TextureDrawBatch> textureBatches =
-                    new ArrayList<TextureDrawBatch>();
+            private final List<DrawBatch> batches = new ArrayList<DrawBatch>();
 
             private FrameUpload(long texturedByteOffset) {
                 this.texturedByteOffset = texturedByteOffset;
@@ -1569,10 +1581,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
             private int totalVertexCount() {
                 int total = 0;
-                for (ColoredDrawBatch batch : coloredBatches) {
-                    total = Math.addExact(total, batch.vertexCount);
-                }
-                for (TextureDrawBatch batch : textureBatches) {
+                for (DrawBatch batch : batches) {
                     total = Math.addExact(total, batch.vertexCount);
                 }
                 return total;

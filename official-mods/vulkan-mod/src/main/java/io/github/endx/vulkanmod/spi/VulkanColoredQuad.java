@@ -1,7 +1,7 @@
 package io.github.endx.vulkanmod.spi;
 
 /** A screen-space rectangle using top-left pixel coordinates and straight-alpha colour. */
-public final class VulkanColoredQuad {
+public final class VulkanColoredQuad implements VulkanDrawCommand {
     private final float x;
     private final float y;
     private final float width;

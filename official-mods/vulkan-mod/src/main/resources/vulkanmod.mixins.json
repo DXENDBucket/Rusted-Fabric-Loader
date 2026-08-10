@@ -6,7 +6,10 @@
   "mixins": [
     "SlickGameVulkanSurfaceNamedMixin",
     "RustedWarfareGameLoopVulkanPresentNamedMixin",
-    "SlickBitmapVulkanTextureLifecycleNamedMixin"
+    "SlickBitmapVulkanTextureLifecycleNamedMixin",
+    "SlickGraphicsBackendStateAccessor",
+    "SlickTransformStateAccessor",
+    "SlickGraphicsBackendVulkanCaptureNamedMixin"
   ],
   "injectors": {
     "defaultRequire": 1

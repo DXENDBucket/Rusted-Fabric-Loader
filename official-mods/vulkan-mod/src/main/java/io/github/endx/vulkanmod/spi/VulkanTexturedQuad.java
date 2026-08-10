@@ -1,7 +1,7 @@
 package io.github.endx.vulkanmod.spi;
 
 /** A screen-space textured rectangle with normalized UVs and a straight-alpha colour tint. */
-public final class VulkanTexturedQuad {
+public final class VulkanTexturedQuad implements VulkanDrawCommand {
     private final long textureHandle;
     private final float x;
     private final float y;
