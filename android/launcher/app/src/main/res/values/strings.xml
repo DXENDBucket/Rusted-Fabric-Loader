@@ -3,7 +3,7 @@
     <string name="module_name">Rusted Fabric</string>
     <string name="module_description">Runs user-imported Rusted Warfare desktop files through Fabric on Android.</string>
     <string name="jvm_title">Rusted Fabric</string>
-    <string name="jvm_edition">Android desktop-JVM edition · Preview</string>
+    <string name="jvm_edition">Android desktop-JVM edition</string>
     <string name="jvm_ready_badge">Ready to play</string>
     <string name="jvm_setup_badge">Setup required</string>
     <string name="jvm_ready_message">The game environment is ready. Continue your game through the same Fabric runtime used on desktop.</string>

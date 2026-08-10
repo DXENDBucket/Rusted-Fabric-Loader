@@ -11,7 +11,7 @@ android {
         minSdk 27
         targetSdk 35
         versionCode 17
-        versionName '0.13.0-preview'
+        versionName '0.13.0'
 
         ndk {
             abiFilters 'arm64-v8a'
@@ -41,6 +41,11 @@ android {
             versionNameSuffix '-debug'
         }
         release {
+            // v0.1.0 publicly shipped the .debug application ID with this machine's debug
+            // certificate. Keep both identities for in-place upgrades while producing a
+            // non-debuggable release build. A future signing-key migration needs its own plan.
+            applicationIdSuffix '.debug'
+            signingConfig signingConfigs.debug
             minifyEnabled false
         }
     }

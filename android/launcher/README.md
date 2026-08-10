@@ -33,6 +33,9 @@ Android preserves the imported desktop game, ARM64 Java runtime, user mods, maps
 settings; the launcher only refreshes its own official mods when the APK version advances. Release
 builds therefore must use a greater `versionCode` and the same release signing key. Importing the
 game or Java again is only needed when the user deliberately chooses their replacement actions.
+The v0.1.0 public APK used the `.debug` application ID and the repository maintainer's existing
+Android debug certificate. Current release builds temporarily retain those identities so that
+v0.1.0 users receive a true in-place update, while the release build itself is non-debuggable.
 
 The application contains only Loader-owned code and reviewed third-party runtime components.
 `verifyNoGamePayload` rejects APKs that contain Rusted Warfare classes or game payloads.
