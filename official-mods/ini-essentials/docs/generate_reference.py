@@ -27,6 +27,23 @@ ROOT = Path(__file__).resolve().parents[1]
 FIELD_SOURCE = ROOT / "src/main/resources/ini_essentials/fields.csv"
 EVENT_DATA_SOURCE = ROOT / "src/main/resources/ini_essentials/event-data.csv"
 OUTPUT = Path(__file__).with_name("INI Essentials Unit Modding Reference.xlsx")
+VERSIONS_SOURCE = ROOT.parents[1] / "versions.properties"
+
+
+def load_component_version() -> str:
+    with VERSIONS_SOURCE.open("r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key.strip() == "iniEssentials" and value.strip():
+                return value.strip()
+    raise RuntimeError(
+        f"Missing iniEssentials version in {VERSIONS_SOURCE}")
+
+
+INI_ESSENTIALS_VERSION = load_component_version()
 
 FONT_NAME = "Arial"
 TITLE_COLOR = "EFEFEF"
@@ -371,7 +388,7 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
 
     style_range(sheet, start_row, 1, 8,
                 background=section_color, font_color=WHITE, size=10.0)
-    sheet.cell(start_row, 1, "Version" if not chinese else "版本")
+    sheet.cell(start_row, 1, "Catalog" if not chinese else "目录")
     sheet.cell(start_row, 2, "Section" if not chinese else "节")
     sheet.cell(start_row, 4, section_name)
     sheet.cell(start_row, 5, summary)
@@ -391,10 +408,10 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
 
     header_row = start_row + 1
     headers = (
-        ["加入版本", "代码", "值类型", "说明与用法", "实际用法与示例",
+        ["目录修订", "代码", "值类型", "说明与用法", "实际用法与示例",
          "扩展类型", "默认值", "联机影响"]
         if chinese else
-        ["Version Added", "Code", "Value Type", "Description and usage",
+        ["Catalog Revision", "Code", "Value Type", "Description and usage",
          "Actual usage with examples", "Extension Type", "Default",
          "Multiplayer Impact"]
     )
@@ -443,8 +460,9 @@ def add_reference_sheet(workbook: Workbook, title: str,
     sheet.sheet_view.showGridLines = False
 
     sheet.merge_cells("A1:H1")
-    sheet["A1"] = ("INI Essentials Unit Modding Reference"
-                   if not chinese else "INI Essentials 单位模组代码表")
+    sheet["A1"] = (f"INI Essentials v{INI_ESSENTIALS_VERSION} Unit Modding Reference"
+                   if not chinese else
+                   f"INI Essentials v{INI_ESSENTIALS_VERSION} 单位模组代码表")
     style_range(sheet, 1, 1, 8,
                 background=TITLE_COLOR, bold=True, horizontal="center", size=14.0)
     sheet.row_dimensions[1].height = 38
@@ -611,12 +629,16 @@ def add_about_sheet(workbook: Workbook,
     sheet.title = "About 关于"
     sheet.sheet_view.showGridLines = False
     sheet.merge_cells("A1:H1")
-    sheet["A1"] = "INI Essentials Unit Modding Reference"
+    sheet["A1"] = (
+        f"INI Essentials v{INI_ESSENTIALS_VERSION} Unit Modding Reference")
     style_range(sheet, 1, 1, 8,
                 background=TITLE_COLOR, bold=True, horizontal="center", size=16.0)
     sheet.row_dimensions[1].height = 42
 
     lines = [
+        f"Current mod version / 当前模组版本: {INI_ESSENTIALS_VERSION}",
+        "Catalog Revision records feature-development batches; it is not the minimum installable mod version.",
+        "目录修订记录功能开发批次，并不表示所需安装的最低模组版本。",
         "Generated from fields.csv and event-data.csv. Do not edit this workbook as the source.",
         "本表由 fields.csv 和 event-data.csv 自动生成，请勿把工作簿作为源文件直接修改。",
         "Native keys with native-valid values stay on the native parser path.",
@@ -631,9 +653,11 @@ def add_about_sheet(workbook: Workbook,
                     background=WHITE if row % 2 else ROW_ALT_COLOR, size=11.0)
         sheet.row_dimensions[row].height = 27
 
+    link_start_row = 3 + len(lines) + 1
     for row, (label, target, color) in enumerate((
             ("Open English reference / 打开英文代码表", "English", "4A86E8"),
-            ("打开简体中文代码表 / Open Chinese reference", "简体中文", "0F9D58")), 10):
+            ("打开简体中文代码表 / Open Chinese reference", "简体中文", "0F9D58")),
+            link_start_row):
         sheet.merge_cells(start_row=row, start_column=2, end_row=row, end_column=7)
         cell = sheet.cell(row, 2, label)
         target_name = "rf_en_title" if target == "English" else "rf_zh_title"
@@ -656,9 +680,11 @@ def build_workbook() -> tuple[Workbook, list[NavigationButton]]:
     groups = make_groups(load_rows(FIELD_SOURCE), load_rows(EVENT_DATA_SOURCE))
     workbook = Workbook()
     buttons: list[NavigationButton] = []
-    workbook.properties.title = "INI Essentials Unit Modding Reference"
+    workbook.properties.title = (
+        f"INI Essentials v{INI_ESSENTIALS_VERSION} Unit Modding Reference")
     workbook.properties.creator = "Rusted Fabric Loader / INI Essentials"
-    workbook.properties.description = "Generated bilingual reference for INI Essentials"
+    workbook.properties.description = (
+        f"Generated bilingual reference for INI Essentials {INI_ESSENTIALS_VERSION}")
     add_about_sheet(workbook, buttons)
     add_reference_sheet(workbook, "English", groups, False, buttons)
     add_reference_sheet(workbook, "简体中文", groups, True, buttons)

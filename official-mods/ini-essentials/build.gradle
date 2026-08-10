@@ -80,6 +80,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def unitContextProperties = file('src/main/java/io/github/endx/iniessentials/UnitContextProperties.java')
     def referenceGenerator = file('docs/generate_reference.py')
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
+    def releaseVersions = rootProject.file('versions.properties')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
             autoTriggerCooldownFields, movementActionFields,
             actionPositionReference,
@@ -91,7 +92,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             customProjectileTurretFields, customProjectileDecalRenderer,
             booleanExpression,
             geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
-            unitContextProperties, referenceGenerator, referenceWorkbook
+            unitContextProperties, referenceGenerator, referenceWorkbook, releaseVersions
     doLast {
         def rows = catalog.readLines('UTF-8')
         if (rows.size() < 2 || !rows[0].startsWith('version_added,code,section,')) {
@@ -447,6 +448,9 @@ tasks.register('verifyIniEssentialsMetadata') {
                     }
                     || !sheetText.contains('CustomUnitMetadata sections')
                     || !sheetText.contains('CustomProjectile sections')
+                    || !sheetText.contains("INI Essentials v${project.version}")
+                    || !sheetText.contains('Catalog Revision')
+                    || !sheetText.contains('Catalog Revision records feature-development batches')
                     || !sheetText.contains('CustomUnitMetadata 节导航')
                     || !sheetText.contains('CustomProjectile 节导航')
                     || !(expectedCodes + expectedEventData).every { sheetText.contains(it) }) {

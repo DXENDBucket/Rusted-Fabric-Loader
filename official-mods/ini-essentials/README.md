@@ -599,6 +599,10 @@ The workbook is generated rather than edited by hand. Its English and Chinese pa
 original reference's five-column-first layout and matching section colors (`[core]` green,
 action/hiddenAction orange, `[geometry_*]` high-contrast indigo), followed by extension metadata columns. Native event-data additions
 live in a separate large catalog at the bottom instead of being mixed with regular INI sections.
+The title and About page read the current packaged INI Essentials version from the repository-root
+`versions.properties`. The first field column is explicitly named **Catalog Revision**: it records
+the chronological feature-development batch retained by the catalog and must not be interpreted as
+the minimum installable mod version.
 The compact top-level menu switches between `CustomUnitMetadata` and `CustomProjectile`; each class
 has its own section shortcuts, so projectile asset fields are not mixed into the ordinary unit
 section index. The separate event catalog at the bottom has its own per-event index, and every
