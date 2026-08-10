@@ -7,6 +7,10 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request);
     long uploadTexture(VulkanTextureData texture);
     void destroyTexture(long textureHandle);
+    /**
+     * Presents a frame, or returns {@code null} when the surface temporarily cannot acquire an
+     * image (for example while its Win32 window is occluded or minimized).
+     */
     VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame);
     @Override default void close() { }
 }

@@ -83,6 +83,10 @@ import org.lwjgl.vulkan.VkViewport;
 import org.lwjgl.vulkan.VkRect2D;
 import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.lwjgl.vulkan.VkWin32SurfaceCreateInfoKHR;
+import org.lwjgl.system.windows.User32;
+import org.lwjgl.system.windows.POINT;
+import org.lwjgl.system.windows.WNDCLASSEX;
+import org.lwjgl.system.windows.WindowProc;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -159,6 +163,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
         if (surfaceSession != null) return surfaceSession.info;
         SurfaceSession created = null;
+        Win32OverlayWindow overlay = null;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int instanceVersion = VK.getInstanceVersionSupported();
             VkInstanceCreateInfo instanceInfo = instanceCreateInfo(stack, instanceVersion, true);
@@ -167,14 +172,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             VkDevice device = null;
             long swapchain = 0L;
             try {
-                surface = createWin32Surface(stack, instance, request);
+                VulkanSurfaceRequest surfaceRequest = request;
+                if (request.childOverlay()) {
+                    overlay = Win32OverlayWindow.create(request);
+                    surfaceRequest = VulkanSurfaceRequest.win32(overlay.handle,
+                            request.instanceHandle(), request.width(), request.height());
+                }
+                surface = createWin32Surface(stack, instance, surfaceRequest);
                 DeviceCandidate candidate = selectDevice(stack, instance, surface);
                 device = createDevice(stack, candidate);
                 SwapchainResult swapchainResult = createSwapchain(stack, candidate, device,
                         surface, request.width(), request.height(), VK_NULL_HANDLE);
                 swapchain = swapchainResult.handle;
                 created = new SurfaceSession(instance, surface, candidate, device,
-                        swapchainResult);
+                        swapchainResult, overlay);
                 try {
                     created.initialize();
                 } catch (Throwable failure) {
@@ -191,6 +202,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     if (device != null) vkDestroyDevice(device, null);
                     if (surface != 0L) vkDestroySurfaceKHR(instance, surface, null);
                     vkDestroyInstance(instance, null);
+                    if (overlay != null) overlay.close();
                 }
             }
         }
@@ -525,6 +537,121 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
     }
 
+    /**
+     * A Vulkan-owned, non-activating owned window above Slick's WGL client area. Win32 does not
+     * reliably expose Vulkan presentation on an HWND that already owns a WGL swap chain, and WGL
+     * can also overdraw ordinary child windows. Hit testing falls through to the original game.
+     */
+    private static final class Win32OverlayWindow {
+        private static final String CLASS_NAME = "RustedFabricVulkanOverlay";
+        private static final WindowProc WINDOW_PROC = WindowProc.create(
+                (window, message, wParam, lParam) -> message == User32.WM_NCHITTEST
+                        ? User32.HTTRANSPARENT
+                        : User32.DefWindowProc(window, message, wParam, lParam));
+        private static long registeredInstance;
+
+        private final long handle;
+        private final long parentHandle;
+        private int width;
+        private int height;
+        private int x;
+        private int y;
+        private boolean closed;
+
+        private Win32OverlayWindow(long handle, long parentHandle,
+                                   int width, int height, int x, int y) {
+            this.handle = handle;
+            this.parentHandle = parentHandle;
+            this.width = width;
+            this.height = height;
+            this.x = x;
+            this.y = y;
+        }
+
+        private static synchronized Win32OverlayWindow create(VulkanSurfaceRequest request) {
+            long instance = request.instanceHandle();
+            if (registeredInstance == 0L) {
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    WNDCLASSEX windowClass = WNDCLASSEX.calloc(stack)
+                            .cbSize(WNDCLASSEX.SIZEOF)
+                            .style(0)
+                            .lpfnWndProc(WINDOW_PROC)
+                            .hInstance(instance)
+                            .lpszClassName(stack.UTF16(CLASS_NAME));
+                    short atom = User32.RegisterClassEx(null, windowClass);
+                    if (atom == 0) {
+                        throw new IllegalStateException(
+                                "RegisterClassEx(Vulkan overlay) failed");
+                    }
+                    registeredInstance = instance;
+                }
+            } else if (registeredInstance != instance) {
+                throw new IllegalStateException("Vulkan overlay HINSTANCE changed");
+            }
+            int extendedStyle = User32.WS_EX_TRANSPARENT | User32.WS_EX_NOACTIVATE
+                    | User32.WS_EX_TOOLWINDOW;
+            int style = User32.WS_POPUP | User32.WS_VISIBLE;
+            int x;
+            int y;
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                POINT origin = POINT.calloc(stack).set(0, 0);
+                if (!User32.ClientToScreen(request.windowHandle(), origin)) {
+                    throw new IllegalStateException(
+                            "ClientToScreen(Vulkan overlay) failed");
+                }
+                x = origin.x();
+                y = origin.y();
+            }
+            long window = User32.CreateWindowEx(null, extendedStyle, CLASS_NAME, "",
+                    style, x, y, request.width(), request.height(), request.windowHandle(),
+                    0L, instance, 0L);
+            if (window == 0L) {
+                throw new IllegalStateException("CreateWindowEx(Vulkan overlay) failed");
+            }
+            User32.SetWindowPos(null, window, User32.HWND_TOP, 0, 0,
+                    request.width(), request.height(), User32.SWP_NOACTIVATE
+                            | User32.SWP_SHOWWINDOW | User32.SWP_NOMOVE);
+            User32.ShowWindow(window, User32.SW_SHOWNOACTIVATE);
+            return new Win32OverlayWindow(window, request.windowHandle(),
+                    request.width(), request.height(), x, y);
+        }
+
+        private void resize(int requestedWidth, int requestedHeight) {
+            int nextWidth = Math.max(1, requestedWidth);
+            int nextHeight = Math.max(1, requestedHeight);
+            if (closed) return;
+            if (!User32.IsWindowVisible(parentHandle) || User32.IsIconic(parentHandle)) {
+                User32.ShowWindow(handle, User32.SW_HIDE);
+                return;
+            }
+            int nextX;
+            int nextY;
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                POINT origin = POINT.calloc(stack).set(0, 0);
+                if (!User32.ClientToScreen(parentHandle, origin)) return;
+                nextX = origin.x();
+                nextY = origin.y();
+            }
+            User32.ShowWindow(handle, User32.SW_SHOWNOACTIVATE);
+            if (nextWidth == width && nextHeight == height && nextX == x && nextY == y) return;
+            if (!User32.SetWindowPos(null, handle, User32.HWND_TOP, nextX, nextY,
+                    nextWidth, nextHeight,
+                    User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW)) {
+                throw new IllegalStateException("SetWindowPos(Vulkan overlay) failed");
+            }
+            width = nextWidth;
+            height = nextHeight;
+            x = nextX;
+            y = nextY;
+        }
+
+        private void close() {
+            if (closed) return;
+            closed = true;
+            User32.DestroyWindow(null, handle);
+        }
+    }
+
     private static final class SwapchainResult {
         private final long handle;
         private final long[] images;
@@ -544,6 +671,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private final VkDevice device;
         private final VkQueue graphicsQueue;
         private final VkQueue presentQueue;
+        private final Win32OverlayWindow overlay;
         private long swapchain;
         private long[] images;
         private VulkanSurfaceInfo info;
@@ -569,10 +697,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long vertexBuffer;
         private long vertexMemory;
         private int vertexCapacity;
+        private long acquireSkips;
+        private long successfulPresents;
         private boolean closed;
 
         private SurfaceSession(VkInstance instance, long surface, DeviceCandidate candidate,
-                               VkDevice device, SwapchainResult swapchain) {
+                               VkDevice device, SwapchainResult swapchain,
+                               Win32OverlayWindow overlay) {
             this.instance = instance;
             this.surface = surface;
             this.candidate = candidate;
@@ -580,6 +711,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.swapchain = swapchain.handle;
             this.images = swapchain.images;
             this.info = swapchain.info;
+            this.overlay = overlay;
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 PointerBuffer queue = stack.mallocPointer(1);
                 vkGetDeviceQueue(device, candidate.queues.graphics, 0, queue);
@@ -1216,6 +1348,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (closed) throw new IllegalStateException("Vulkan surface is closed");
             int width = frame.width();
             int height = frame.height();
+            if (overlay != null) overlay.resize(width, height);
             if (width > 0 && height > 0
                     && (width != info.width() || height != info.height())) {
                 recreateSwapchain(width, height);
@@ -1234,7 +1367,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 int acquire = vkAcquireNextImageKHR(device, swapchain, 16_000_000L,
                         imageAvailableSemaphore, VK_NULL_HANDLE, imageIndex);
                 if (acquire == VK_TIMEOUT || acquire == VK_NOT_READY) {
-                    return info;
+                    acquireSkips++;
+                    if (acquireSkips == 1 || acquireSkips % 300 == 0) {
+                        System.out.println("[Vulkan Mod/Driver] Swapchain acquire skipped #"
+                                + acquireSkips + " (VkResult " + acquire + ")");
+                    }
+                    return null;
                 }
                 if (acquire == VK_ERROR_OUT_OF_DATE_KHR && retryOutOfDate) {
                     recreateSwapchain(frame.width(), frame.height());
@@ -1319,6 +1457,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     // Replace this serialized baseline with per-frame sync objects when the
                     // renderer grows a proper frames-in-flight scheduler.
                     check(vkQueueWaitIdle(presentQueue), "vkQueueWaitIdle(present)");
+                    successfulPresents++;
+                    if (successfulPresents == 1) {
+                        System.out.println("[Vulkan Mod/Driver] First frame presented; clear RGBA="
+                                + frame.clearRed() + "," + frame.clearGreen() + ","
+                                + frame.clearBlue() + "," + frame.clearAlpha()
+                                + ", commands=" + frame.commands().size());
+                    }
                 }
                 return info;
             }
@@ -1688,6 +1833,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             vkDestroyDevice(device, null);
             vkDestroySurfaceKHR(instance, surface, null);
             vkDestroyInstance(instance, null);
+            if (overlay != null) overlay.close();
         }
 
         private static final class BufferAllocation {

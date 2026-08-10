@@ -50,6 +50,9 @@ final class SlickRenderCapture {
 
     VulkanFrameCommands finish() {
         if (builder == null) return null;
+        if (Boolean.getBoolean("rusted.fabric.vulkan.debugMagentaClear")) {
+            builder.clear(0.65f, 0.0f, 0.65f, 1.0f);
+        }
         VulkanFrameCommands frame = builder.build();
         builder = null;
         backend = null;

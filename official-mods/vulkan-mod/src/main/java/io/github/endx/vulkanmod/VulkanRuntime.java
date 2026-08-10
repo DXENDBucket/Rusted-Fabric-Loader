@@ -151,6 +151,10 @@ public final class VulkanRuntime {
                             1.0f, 1.0f, 1.0f, 0.92f, textureState))
                     .build();
             VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
+            if (updated == null) {
+                log("Vulkan frame-test surface was temporarily unavailable");
+                return;
+            }
             surfaceInfo = updated;
             log("Presented one Vulkan frame-test batch at "
                     + updated.width() + "x" + updated.height() + " with "
@@ -366,13 +370,17 @@ public final class VulkanRuntime {
         if (activeDriver == null || surfaceInfo == null || frame == null) return;
         pendingTakeoverFrame = null;
         try {
-            surfaceInfo = activeDriver.presentFrame(frame);
+            VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
+            if (updated == null) return;
+            surfaceInfo = updated;
             takeoverFramesPresented++;
             if (takeoverFramesPresented == 1 || takeoverFramesPresented % 300 == 0) {
                 log("Presented takeover frame #" + takeoverFramesPresented + " at "
                         + surfaceInfo.width() + "x" + surfaceInfo.height() + " ("
                         + pendingTakeoverCommands + " captured, "
-                        + pendingTakeoverUnsupported + " unsupported draw calls)");
+                        + pendingTakeoverUnsupported + " unsupported draw calls; clear RGBA "
+                        + frame.clearRed() + "," + frame.clearGreen() + ","
+                        + frame.clearBlue() + "," + frame.clearAlpha() + ")");
             }
         } catch (Throwable failure) {
             if (!takeoverFailureLogged) {
@@ -406,7 +414,12 @@ public final class VulkanRuntime {
     public static synchronized void attachToCurrentWindow() {
         if (activeDriver == null || surfaceInfo != null) return;
         try {
-            VulkanSurfaceInfo created = activeDriver.createSurface(Lwjgl2Win32Window.current());
+            io.github.endx.vulkanmod.spi.VulkanSurfaceRequest request =
+                    Lwjgl2Win32Window.current();
+            if (configuredMode == VulkanMode.TAKEOVER_TEST) {
+                request = request.asChildOverlay();
+            }
+            VulkanSurfaceInfo created = activeDriver.createSurface(request);
             surfaceInfo = created;
             gameTextureCache = new GameImageVulkanTextureCache(activeDriver);
             textTextureCache = new VulkanTextTextureCache(activeDriver);
