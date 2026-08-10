@@ -9,7 +9,10 @@
     "SlickBitmapVulkanTextureLifecycleNamedMixin",
     "SlickGraphicsBackendStateAccessor",
     "SlickTransformStateAccessor",
-    "SlickGraphicsBackendVulkanCaptureNamedMixin"
+    "SlickGraphicsBackendVulkanCaptureNamedMixin",
+    "LibRocketUiEngineStateAccessor",
+    "LibRocketTextureLifecycleNamedMixin",
+    "LibRocketSlickRendererVulkanCaptureNamedMixin"
   ],
   "injectors": {
     "defaultRequire": 1

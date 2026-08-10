@@ -14,6 +14,8 @@ public final class VulkanFrameCommands {
     private final float clearAlpha;
     private final List<VulkanColoredQuad> coloredQuads;
     private final List<VulkanTexturedQuad> texturedQuads;
+    private final List<VulkanColoredTriangle> coloredTriangles;
+    private final List<VulkanTexturedTriangle> texturedTriangles;
     private final List<VulkanDrawCommand> commands;
 
     private VulkanFrameCommands(Builder builder) {
@@ -27,6 +29,10 @@ public final class VulkanFrameCommands {
                 new ArrayList<VulkanColoredQuad>(builder.coloredQuads));
         texturedQuads = Collections.unmodifiableList(
                 new ArrayList<VulkanTexturedQuad>(builder.texturedQuads));
+        coloredTriangles = Collections.unmodifiableList(
+                new ArrayList<VulkanColoredTriangle>(builder.coloredTriangles));
+        texturedTriangles = Collections.unmodifiableList(
+                new ArrayList<VulkanTexturedTriangle>(builder.texturedTriangles));
         commands = Collections.unmodifiableList(
                 new ArrayList<VulkanDrawCommand>(builder.commands));
     }
@@ -43,6 +49,8 @@ public final class VulkanFrameCommands {
     public float clearAlpha() { return clearAlpha; }
     public List<VulkanColoredQuad> coloredQuads() { return coloredQuads; }
     public List<VulkanTexturedQuad> texturedQuads() { return texturedQuads; }
+    public List<VulkanColoredTriangle> coloredTriangles() { return coloredTriangles; }
+    public List<VulkanTexturedTriangle> texturedTriangles() { return texturedTriangles; }
     public List<VulkanDrawCommand> commands() { return commands; }
 
     public static final class Builder {
@@ -56,6 +64,10 @@ public final class VulkanFrameCommands {
                 new ArrayList<VulkanColoredQuad>();
         private final List<VulkanTexturedQuad> texturedQuads =
                 new ArrayList<VulkanTexturedQuad>();
+        private final List<VulkanColoredTriangle> coloredTriangles =
+                new ArrayList<VulkanColoredTriangle>();
+        private final List<VulkanTexturedTriangle> texturedTriangles =
+                new ArrayList<VulkanTexturedTriangle>();
         private final List<VulkanDrawCommand> commands =
                 new ArrayList<VulkanDrawCommand>();
 
@@ -88,6 +100,20 @@ public final class VulkanFrameCommands {
             if (quad == null) throw new NullPointerException("quad");
             texturedQuads.add(quad);
             commands.add(quad);
+            return this;
+        }
+
+        public Builder coloredTriangle(VulkanColoredTriangle triangle) {
+            if (triangle == null) throw new NullPointerException("triangle");
+            coloredTriangles.add(triangle);
+            commands.add(triangle);
+            return this;
+        }
+
+        public Builder texturedTriangle(VulkanTexturedTriangle triangle) {
+            if (triangle == null) throw new NullPointerException("triangle");
+            texturedTriangles.add(triangle);
+            commands.add(triangle);
             return this;
         }
 

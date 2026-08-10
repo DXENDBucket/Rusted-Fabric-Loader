@@ -6,11 +6,11 @@ multiplayer compatibility.
 
 The foundation build probes Vulkan and, after Slick creates its Win32 window, creates a live
 surface, presentation-capable device/queues, swapchain, render pass, framebuffers, command buffers,
-and synchronization objects. It also has a binding-neutral frame command list and a first batched
-colored/textured-quad path backed by a growable host-visible vertex buffer. RGBA8 uploads use a
-staging buffer, device-local images, samplers, and per-texture descriptor sets; consecutive quads
-using the same texture share one draw call without changing the original colored/textured command
-order. The normal modes deliberately leave the existing renderer active.
+and synchronization objects. It also has a binding-neutral frame command list and batched
+colored/textured quad and triangle paths backed by a growable host-visible vertex buffer. RGBA8
+uploads use a staging buffer, device-local images, samplers, and per-texture descriptor sets;
+compatible adjacent commands share a draw call without changing the original colored/textured
+command order. The normal modes deliberately leave the existing renderer active.
 Game-owned `GameImage` objects can now be read back into an identity/version-aware Vulkan texture
 cache. Image reload and release hooks invalidate stale GPU copies. Draw commands also carry an
 affine screen-space transform and optional scissor rectangle; transforms are baked while batching,
@@ -18,10 +18,13 @@ and scissor changes split otherwise compatible batches.
 Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|required`; `probe` is the
 development default, `frame_test` presents one diagnostic Vulkan frame after an OpenGL frame, and
 `required` makes an unavailable driver fail startup. `takeover_test` is the first real presentation
-takeover: every visible game-loop frame captures supported Slick clears, filled rectangles and image
-draws into an ordered Vulkan frame, then presents it after the legacy frame. Text, lines, circles,
-tiling, shaders and direct Slick/LibRocket OpenGL still need Vulkan implementations, so this mode is
-an intentionally incomplete developer experiment and is not suitable as the normal launcher mode.
+takeover: every game-loop frame captures Slick clears, image draws, transformed/tiled images,
+rectangles, lines, circles and text into an ordered Vulkan frame. It also translates LibRocket's
+indexed colored/textured geometry, including its scissor state, before presenting the completed
+frame. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the game
+thread. The text path currently rasterizes and caches complete AWT string runs rather than using a
+glyph atlas. Slick shaders, blend-mode parity, offscreen render targets and a proper frames-in-flight
+scheduler still need Vulkan implementations, so takeover remains an opt-in developer mode.
 
 ## Boundary
 
@@ -40,12 +43,13 @@ an intentionally incomplete developer experiment and is not suitable as the norm
 2. Add native-window surface creation and queue-family selection while Slick still owns the desktop
    window and input loop. Swapchain resize recreation, basic render targets, command submission,
    synchronization, and an opt-in one-frame presentation test are complete.
-3. Extend the current colored-quad path with GPU images, offscreen render targets, clipping,
-   transforms, and a persistent mapped vertex/index ring; translate the game's `GraphicsEngine`
-   calls into frame-local commands.
-4. Batch sprites by render state and texture descriptors, record a small number of command buffers,
-   and remove per-sprite Java-to-native submissions.
-5. Replace Slick font and LibRocket glue, then remove the remaining OpenGL frame path.
+3. Complete offscreen render targets, shader/blend-state translation and dynamic texture
+   invalidation. The current takeover already translates the commonly used `GraphicsEngine`, Slick
+   primitive/image and LibRocket geometry paths into frame-local commands.
+4. Replace the serialized safe baseline with persistent mapped vertex/index rings and multiple
+   frames in flight, then widen batching without changing draw order.
+5. Replace whole-string AWT textures with a glyph atlas and remove the remaining OpenGL fallback
+   paths.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
 
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or

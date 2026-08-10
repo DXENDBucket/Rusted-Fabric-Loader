@@ -8,8 +8,11 @@ import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
+import io.github.endx.vulkanmod.mixin.LibRocketUiEngineStateAccessor;
 import rustedwarfare.client.render.GameImage;
 import rustedwarfare.client.render.SlickGraphicsBackend;
+import rustedwarfare.ui.LibRocketSlickRenderer;
+import rustedwarfare.ui.LibRocketTextureHolder;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 
@@ -27,6 +30,8 @@ public final class VulkanRuntime {
     private static int frameTestTextureWidth = 32;
     private static int frameTestTextureHeight = 32;
     private static GameImageVulkanTextureCache gameTextureCache;
+    private static VulkanTextTextureCache textTextureCache;
+    private static SlickImageVulkanTextureCache slickImageTextureCache;
     private static final SlickRenderCapture takeoverCapture = new SlickRenderCapture();
     private static VulkanFrameCommands pendingTakeoverFrame;
     private static int pendingTakeoverCommands;
@@ -162,12 +167,17 @@ public final class VulkanRuntime {
                 && activeDriver != null && surfaceInfo != null;
     }
 
+    public static synchronized void beforeOpenGlFrame() {
+        if (!isTakeoverActive() || surfaceInfo == null) return;
+        takeoverCapture.begin(surfaceInfo.width(), surfaceInfo.height());
+    }
+
     private static void finishTakeoverFrame() {
         if (!isTakeoverActive()) return;
         int commands = takeoverCapture.commandCount();
         int unsupported = takeoverCapture.rejectedCount();
         VulkanFrameCommands frame = takeoverCapture.finish();
-        if (frame != null) {
+        if (frame != null && (commands > 0 || unsupported > 0)) {
             pendingTakeoverFrame = frame;
             pendingTakeoverCommands = commands;
             pendingTakeoverUnsupported = unsupported;
@@ -212,6 +222,112 @@ public final class VulkanRuntime {
                 takeoverCapture.imageCentered(backend, image, x, y, paint));
     }
 
+    public static synchronized boolean captureImageRotated(SlickGraphicsBackend backend,
+                                                            GameImage image,
+                                                            android.graphics.Rect src,
+                                                            float x, float y, float angle,
+                                                            android.graphics.Paint paint) {
+        return captureSafely("rotated image", () ->
+                takeoverCapture.imageRotated(backend, image, src, x, y, angle, paint));
+    }
+
+    public static synchronized boolean captureImageTransformed(SlickGraphicsBackend backend,
+                                                                GameImage image,
+                                                                float x, float y,
+                                                                android.graphics.Paint paint,
+                                                                float angle, float scale) {
+        return captureSafely("transformed image", () -> takeoverCapture.imageTransformed(
+                backend, image, x, y, paint, angle, scale));
+    }
+
+    public static synchronized boolean captureTiledImage(SlickGraphicsBackend backend,
+                                                          GameImage image,
+                                                          android.graphics.RectF destination,
+                                                          android.graphics.Paint paint,
+                                                          float offsetX, float offsetY) {
+        return captureSafely("tiled image", () -> takeoverCapture.tiledImage(
+                backend, image, destination, paint, offsetX, offsetY));
+    }
+
+    public static synchronized boolean captureText(SlickGraphicsBackend backend, String text,
+                                                    float x, float y,
+                                                    android.graphics.Paint paint) {
+        return captureSafely("text", () ->
+                takeoverCapture.text(backend, text, x, y, paint));
+    }
+
+    public static synchronized boolean captureLine(SlickGraphicsBackend backend,
+                                                    float x1, float y1, float x2, float y2,
+                                                    android.graphics.Paint paint) {
+        return captureSafely("line", () ->
+                takeoverCapture.line(backend, x1, y1, x2, y2, paint));
+    }
+
+    public static synchronized boolean captureLines(SlickGraphicsBackend backend,
+                                                     float[] points, int offset, int count,
+                                                     android.graphics.Paint paint) {
+        return captureSafely("lines", () ->
+                takeoverCapture.lines(backend, points, offset, count, paint));
+    }
+
+    public static synchronized boolean captureCircle(SlickGraphicsBackend backend,
+                                                      float x, float y, float radius,
+                                                      android.graphics.Paint paint) {
+        return captureSafely("circle", () ->
+                takeoverCapture.circle(backend, x, y, radius, paint));
+    }
+
+    public static synchronized boolean captureLibRocketGeometry(
+            LibRocketSlickRenderer renderer, float[] positions, float[] uvs,
+            int[] colors, int[] indices, int textureId,
+            float translationX, float translationY) {
+        if (!isTakeoverActive() || renderer == null) return false;
+        long textureHandle = 0L;
+        float uScale = 1.0f;
+        float vScale = 1.0f;
+        boolean noColor = false;
+        float alpha = 1.0f;
+        if (textureId != 0) {
+            Object candidate = renderer.findTextureHolder(textureId);
+            if (!(candidate instanceof LibRocketTextureHolder)
+                    || slickImageTextureCache == null) return false;
+            LibRocketTextureHolder holder = (LibRocketTextureHolder) candidate;
+            Object image = SlickImageVulkanTextureCache.imageFromHolder(candidate);
+            if (image == null) return false;
+            SlickImageVulkanTextureCache.Entry texture = slickImageTextureCache.texture(image);
+            if (texture == null) return false;
+            textureHandle = texture.textureHandle;
+            uScale = texture.uScale;
+            vScale = texture.vScale;
+            noColor = holder.noColor;
+            alpha = holder.alpha;
+        }
+        LibRocketUiEngineStateAccessor state =
+                (LibRocketUiEngineStateAccessor) (Object) renderer;
+        android.graphics.RectF clipRect = state.vulkanmod$isScissorEnabled()
+                ? state.vulkanmod$getScissorRectF() : null;
+        VulkanClipRect clip = clipRect == null ? null : new VulkanClipRect(
+                clipRect.a, clipRect.b, Math.max(0.0f, clipRect.c - clipRect.a),
+                Math.max(0.0f, clipRect.d - clipRect.b));
+        final long capturedTexture = textureHandle;
+        final float capturedUScale = uScale;
+        final float capturedVScale = vScale;
+        final boolean capturedNoColor = noColor;
+        final float capturedAlpha = alpha;
+        return captureSafely("LibRocket geometry", () -> takeoverCapture.libRocketGeometry(
+                positions, uvs, colors, indices, translationX, translationY,
+                capturedTexture, capturedUScale, capturedVScale,
+                capturedNoColor, capturedAlpha, clip));
+    }
+
+    public static synchronized void releaseLibRocketTexture(
+            LibRocketSlickRenderer renderer, int textureId) {
+        if (renderer == null || slickImageTextureCache == null) return;
+        Object holder = renderer.findTextureHolder(textureId);
+        Object image = SlickImageVulkanTextureCache.imageFromHolder(holder);
+        if (image != null) slickImageTextureCache.invalidate(image);
+    }
+
     public static synchronized void noteUnsupportedDraw(SlickGraphicsBackend backend) {
         if (isTakeoverActive()) takeoverCapture.unsupported(backend);
     }
@@ -221,6 +337,14 @@ public final class VulkanRuntime {
             throw new IllegalStateException("Vulkan game-image cache is unavailable");
         }
         return gameTextureCache.texture(image);
+    }
+
+    static synchronized VulkanTextTextureCache.Entry textureForText(
+            String text, int size, boolean bold) {
+        if (textTextureCache == null) {
+            throw new IllegalStateException("Vulkan text cache is unavailable");
+        }
+        return textTextureCache.texture(text, size, bold);
     }
 
     private static boolean captureSafely(String operation, CaptureOperation capture) {
@@ -285,6 +409,8 @@ public final class VulkanRuntime {
             VulkanSurfaceInfo created = activeDriver.createSurface(Lwjgl2Win32Window.current());
             surfaceInfo = created;
             gameTextureCache = new GameImageVulkanTextureCache(activeDriver);
+            textTextureCache = new VulkanTextTextureCache(activeDriver);
+            slickImageTextureCache = new SlickImageVulkanTextureCache(activeDriver);
             log("Win32 surface and swapchain ready on " + created.deviceName() + ": "
                     + created.width() + "x" + created.height() + ", images="
                     + created.imageCount() + ", format=" + created.imageFormat()
@@ -313,6 +439,22 @@ public final class VulkanRuntime {
     }
 
     public static synchronized void shutdown() {
+        if (slickImageTextureCache != null) {
+            try {
+                slickImageTextureCache.close();
+            } catch (RuntimeException failure) {
+                log("Could not release Vulkan Slick-image cache: " + failure.getMessage());
+            }
+            slickImageTextureCache = null;
+        }
+        if (textTextureCache != null) {
+            try {
+                textTextureCache.close();
+            } catch (RuntimeException failure) {
+                log("Could not release Vulkan text cache: " + failure.getMessage());
+            }
+            textTextureCache = null;
+        }
         if (gameTextureCache != null) {
             try {
                 gameTextureCache.close();

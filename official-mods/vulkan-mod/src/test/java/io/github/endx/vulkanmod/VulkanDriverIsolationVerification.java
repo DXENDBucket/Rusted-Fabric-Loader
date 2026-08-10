@@ -2,9 +2,11 @@ package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
@@ -39,15 +41,30 @@ public final class VulkanDriverIsolationVerification {
                         30.0f, 40.0f, 64.0f, 64.0f,
                         0.0f, 0.0f, 1.0f, 1.0f,
                         1.0f, 1.0f, 1.0f, 1.0f, drawState))
+                .coloredTriangle(new VulkanColoredTriangle(
+                        new float[] {0.0f, 0.0f, 4.0f, 0.0f, 0.0f, 4.0f},
+                        new float[] {1.0f, 0.0f, 0.0f, 1.0f,
+                                0.0f, 1.0f, 0.0f, 1.0f,
+                                0.0f, 0.0f, 1.0f, 1.0f}, drawState))
+                .texturedTriangle(new VulkanTexturedTriangle(7L,
+                        new float[] {4.0f, 4.0f, 8.0f, 4.0f, 4.0f, 8.0f},
+                        new float[] {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f},
+                        new float[] {1.0f, 1.0f, 1.0f, 1.0f,
+                                1.0f, 1.0f, 1.0f, 1.0f,
+                                1.0f, 1.0f, 1.0f, 1.0f}, drawState))
                 .build();
         if (commands.coloredQuads().size() != 1
                 || commands.coloredQuads().get(0).alpha() != 0.75f
                 || commands.texturedQuads().size() != 1
                 || commands.texturedQuads().get(0).textureHandle() != 7L
                 || commands.texturedQuads().get(0).state().clip() == null
-                || commands.commands().size() != 2
+                || commands.coloredTriangles().size() != 1
+                || commands.texturedTriangles().size() != 1
+                || commands.commands().size() != 4
                 || commands.commands().get(0) != commands.coloredQuads().get(0)
-                || commands.commands().get(1) != commands.texturedQuads().get(0)) {
+                || commands.commands().get(1) != commands.texturedQuads().get(0)
+                || commands.commands().get(2) != commands.coloredTriangles().get(0)
+                || commands.commands().get(3) != commands.texturedTriangles().get(0)) {
             throw new AssertionError("binding-neutral frame command contract is invalid");
         }
         try {
