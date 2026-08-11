@@ -151,6 +151,17 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.uploadTexture(texture));
         }
 
+        long createRenderTarget(int width, int height) {
+            return invoke(() -> driver.createRenderTarget(width, height));
+        }
+
+        void renderToTexture(long textureHandle, VulkanFrameCommands frame) {
+            invoke(() -> {
+                driver.renderToTexture(textureHandle, frame);
+                return null;
+            });
+        }
+
         void updateTexture(long textureHandle, VulkanTextureData texture) {
             invoke(() -> {
                 driver.updateTexture(textureHandle, texture);

@@ -367,6 +367,13 @@ public final class VulkanRuntime {
         if (nativeFrameBuilder == null || text == null || text.isEmpty() || paint == null) {
             return false;
         }
+        return recordNativeText(nativeFrameBuilder, text, x, y, paint, state);
+    }
+
+    public static synchronized boolean recordNativeText(
+            VulkanFrameCommands.Builder builder, String text, float x, float y,
+            Paint paint, VulkanDrawState state) {
+        if (builder == null || text == null || text.isEmpty() || paint == null) return false;
         boolean bold = paint.i() != null && paint.i().a();
         VulkanTextTextureCache.Entry texture = textureForText(
                 text, Math.round(paint.k()), bold);
@@ -375,7 +382,7 @@ public final class VulkanRuntime {
         if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
         float[] tint = argb(paint.e());
-        nativeFrameBuilder.texturedQuad(new VulkanTexturedQuad(texture.textureHandle,
+        builder.texturedQuad(new VulkanTexturedQuad(texture.textureHandle,
                 left, y - texture.lineHeight, texture.width, texture.height,
                 0.0f, 0.0f, 1.0f, 1.0f,
                 tint[0], tint[1], tint[2], tint[3], state));
@@ -761,6 +768,27 @@ public final class VulkanRuntime {
             throw new IllegalStateException("Vulkan game-image cache is unavailable");
         }
         return gameTextureCache.texture(image);
+    }
+
+    public static synchronized long createNativeRenderTarget(int width, int height) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan render targets are unavailable");
+        }
+        return activeDriver.createRenderTarget(width, height);
+    }
+
+    public static synchronized void renderNativeTarget(
+            long textureHandle, VulkanFrameCommands frame) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan render targets are unavailable");
+        }
+        activeDriver.renderToTexture(textureHandle, frame);
+    }
+
+    public static synchronized void destroyNativeRenderTarget(long textureHandle) {
+        if (textureHandle != 0L && activeDriver != null) {
+            activeDriver.destroyTexture(textureHandle);
+        }
     }
 
     static synchronized boolean isRenderTargetImage(GameImage image) {

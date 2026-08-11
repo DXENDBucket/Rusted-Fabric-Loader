@@ -14,6 +14,8 @@ import java.util.Arrays;
 public final class VulkanGameImage extends GameImage {
     private transient BufferedImage bufferedImage;
     private final boolean opaque;
+    private transient long nativeRenderTargetHandle;
+    private transient Runnable nativeRenderTargetFlusher;
 
     public VulkanGameImage(int width, int height, int[] argb) {
         this(width, height, argb, false);
@@ -46,6 +48,17 @@ public final class VulkanGameImage extends GameImage {
 
     public boolean isOpaque() { return opaque; }
 
+    public long nativeRenderTargetHandle() { return nativeRenderTargetHandle; }
+
+    public void setNativeRenderTargetHandle(long handle) {
+        if (handle < 0L) throw new IllegalArgumentException("negative Vulkan texture handle");
+        nativeRenderTargetHandle = handle;
+    }
+
+    public void setNativeRenderTargetFlusher(Runnable flusher) {
+        nativeRenderTargetFlusher = flusher;
+    }
+
     @Override public boolean canReadPixels() { return true; }
     @Override public void ensurePixelBuffer() { }
     @Override public void readPixelsFromBitmap() { }
@@ -53,7 +66,10 @@ public final class VulkanGameImage extends GameImage {
     @Override public void releaseImageData() { }
     @Override public void dropPixelBuffer() { }
     @Override public void discardPixelBuffer() { }
-    @Override public void flushPixelBufferToBitmap() { version++; }
+    @Override public void flushPixelBufferToBitmap() {
+        if (nativeRenderTargetFlusher != null) nativeRenderTargetFlusher.run();
+        version++;
+    }
     @Override public void releaseBitmap() { }
 
     /** Returns a persistent Java2D view over this image's stable ARGB pixel array. */

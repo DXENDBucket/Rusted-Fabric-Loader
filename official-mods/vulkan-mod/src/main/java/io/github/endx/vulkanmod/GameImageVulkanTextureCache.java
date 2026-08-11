@@ -40,6 +40,10 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         if (source == null) throw new NullPointerException("source");
         GameImage image = source.getRealImage();
         if (image == null) image = source;
+        if (image instanceof VulkanGameImage) {
+            long renderTarget = ((VulkanGameImage) image).nativeRenderTargetHandle();
+            if (renderTarget != 0L) return renderTarget;
+        }
         int width = image.getWidth();
         int height = image.getHeight();
         if (width <= 0 || height <= 0) {

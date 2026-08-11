@@ -17,6 +17,14 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     }
     VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request);
     long uploadTexture(VulkanTextureData texture);
+    /** Creates a sampled color image that can also be used as an offscreen render target. */
+    default long createRenderTarget(int width, int height) {
+        throw new UnsupportedOperationException("native render targets are not supported");
+    }
+    /** Replaces the contents of a render-target texture with the supplied draw commands. */
+    default void renderToTexture(long textureHandle, VulkanFrameCommands frame) {
+        throw new UnsupportedOperationException("native render targets are not supported");
+    }
     /** Replaces pixels in an existing same-sized texture without changing its public handle. */
     default void updateTexture(long textureHandle, VulkanTextureData texture) {
         throw new UnsupportedOperationException("in-place texture updates are not supported");

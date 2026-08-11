@@ -13,6 +13,7 @@ import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
+import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
@@ -63,6 +64,9 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     private final GraphicsEngine delegate;
     private final SlickGraphicsBackend slickDelegate;
     private final GameImage renderTarget;
+    private final long nativeRenderTargetHandle;
+    private final boolean ownsNativeRenderTarget;
+    private VulkanFrameCommands.Builder offscreenBuilder;
     private int width;
     private int height;
     private GameImage errorImage;
@@ -77,6 +81,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         this.delegate = null;
         this.slickDelegate = null;
         this.renderTarget = null;
+        this.nativeRenderTargetHandle = 0L;
+        this.ownsNativeRenderTarget = false;
         VulkanRuntime.onGraphicsEngineInstalled(this);
     }
 
@@ -87,6 +93,18 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         this.renderTarget = renderTarget.getRealImage();
         this.width = renderTarget.getWidth();
         this.height = renderTarget.getHeight();
+        long existing = this.renderTarget instanceof VulkanGameImage
+                ? ((VulkanGameImage) this.renderTarget).nativeRenderTargetHandle() : 0L;
+        this.nativeRenderTargetHandle = existing != 0L ? existing
+                : VulkanRuntime.createNativeRenderTarget(width, height);
+        this.ownsNativeRenderTarget = existing == 0L;
+        if (this.renderTarget instanceof VulkanGameImage) {
+            VulkanGameImage nativeImage = (VulkanGameImage) this.renderTarget;
+            nativeImage.setNativeRenderTargetHandle(nativeRenderTargetHandle);
+            nativeImage.setNativeRenderTargetFlusher(this::submitOffscreen);
+        }
+        resetOffscreenBuilder();
+        offscreenBuilder.clear(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
     public SlickGraphicsBackend compatibilityDelegate() {
@@ -120,7 +138,38 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private boolean cpuTarget() {
+        // Retained as the historical child-target predicate while the remaining pixel-readback
+        // helpers are migrated. Native children now record GPU commands before any CPU helper.
         return renderTarget != null;
+    }
+
+    private boolean nativeTarget() {
+        return renderTarget != null && nativeRenderTargetHandle != 0L;
+    }
+
+    private void resetOffscreenBuilder() {
+        if (!nativeTarget()) return;
+        offscreenBuilder = VulkanFrameCommands.builder(width, height);
+    }
+
+    private void submitOffscreen() {
+        if (nativeTarget() && offscreenBuilder != null) {
+            VulkanFrameCommands pending = offscreenBuilder.build();
+            if (pending.clearRequested() || !pending.commands().isEmpty()) {
+                VulkanRuntime.renderNativeTarget(nativeRenderTargetHandle, pending);
+            }
+            resetOffscreenBuilder();
+        }
+    }
+
+    private void recordColoredQuad(VulkanColoredQuad quad) {
+        if (nativeTarget()) offscreenBuilder.coloredQuad(quad);
+        else VulkanRuntime.recordNativeColoredQuad(quad);
+    }
+
+    private void recordTexturedQuad(VulkanTexturedQuad quad) {
+        if (nativeTarget()) offscreenBuilder.texturedQuad(quad);
+        else VulkanRuntime.recordNativeTexturedQuad(quad);
     }
 
     private VulkanDrawState state(Paint paint) {
@@ -141,7 +190,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     private void nativeQuad(float x, float y, float width, float height, Paint paint) {
         if (width < 0.0f || height < 0.0f) return;
         float[] rgba = color(paint == null ? 0xffffffff : paint.e());
-        VulkanRuntime.recordNativeColoredQuad(new VulkanColoredQuad(
+        recordColoredQuad(new VulkanColoredQuad(
                 x, y, width, height, rgba[0], rgba[1], rgba[2], rgba[3], state(paint)));
     }
 
@@ -168,7 +217,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         VulkanDrawState drawState = localTransform == null
                 ? base : new VulkanDrawState(localTransform.then(base.transform()), base.clip(),
                         base.blendMode(), base.textureFilter());
-        VulkanRuntime.recordNativeTexturedQuad(new VulkanTexturedQuad(texture,
+        recordTexturedQuad(new VulkanTexturedQuad(texture,
                 left, top, right - left, bottom - top,
                 source.a / (float) imageWidth, source.b / (float) imageHeight,
                 source.c / (float) imageWidth, source.d / (float) imageHeight,
@@ -411,6 +460,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawText(String text, float x, float y, Paint paint) {
         if (nativeRoot()) VulkanRuntime.recordNativeText(text, x, y, paint, state(paint));
+        else if (nativeTarget()) VulkanRuntime.recordNativeText(
+                offscreenBuilder, text, x, y, paint, state(paint));
         else if (cpuTarget()) drawCpuText(text, x, y, paint);
         else delegate.drawText(text, x, y, paint);
     }
@@ -425,10 +476,14 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawRect(rect, paint);
     }
     @Override public void beginFrame() {
-        if (renderTarget == null && !nativeRoot()) delegate.beginFrame();
+        if (nativeTarget()) resetOffscreenBuilder();
+        else if (renderTarget == null && !nativeRoot()) delegate.beginFrame();
     }
     @Override public void endFrame() {
-        if (renderTarget != null) renderTarget.version++;
+        if (nativeTarget()) {
+            submitOffscreen();
+            renderTarget.version++;
+        } else if (renderTarget != null) renderTarget.version++;
         else if (!nativeRoot()) delegate.endFrame();
     }
     @Override public void drawRectFromSize(Rect rect, Paint paint) {
@@ -458,7 +513,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawCircleDirect(x, y, radius, paint);
     }
     @Override public void drawLines(float[] points, int offset, int count, Paint paint) {
-        if (nativeRoot()) {
+        if (nativeRoot() || nativeTarget()) {
             if (points == null) return;
             int end = Math.min(points.length, Math.max(0, offset) + Math.max(0, count));
             float size = Math.max(1.0f, paint == null ? 1.0f : paint.g());
@@ -566,12 +621,23 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         // Glyph rasterization happens when VulkanTextTextureCache first sees a string.
     }
     @Override public void flush() {
-        if (renderTarget != null) renderTarget.version++;
+        if (nativeTarget()) {
+            submitOffscreen();
+            renderTarget.version++;
+        } else if (renderTarget != null) renderTarget.version++;
     }
     @Override public void dispose() {
         if (persistentCpuGraphics != null) {
             persistentCpuGraphics.dispose();
             persistentCpuGraphics = null;
+        }
+        if (ownsNativeRenderTarget) {
+            VulkanRuntime.destroyNativeRenderTarget(nativeRenderTargetHandle);
+            if (renderTarget instanceof VulkanGameImage) {
+                VulkanGameImage nativeImage = (VulkanGameImage) renderTarget;
+                nativeImage.setNativeRenderTargetFlusher(null);
+                nativeImage.setNativeRenderTargetHandle(0L);
+            }
         }
         if (renderTarget == null && !nativeRoot()) delegate.dispose();
     }
@@ -801,6 +867,16 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void fillTarget(int argb) {
+        if (nativeTarget()) {
+            // A full-target clear supersedes every command not submitted yet. Later flushes use
+            // a LOAD pass, so discarding this pending prefix also preserves the original ordering.
+            resetOffscreenBuilder();
+            offscreenBuilder.clear(((argb >>> 16) & 255) / 255.0f,
+                    ((argb >>> 8) & 255) / 255.0f,
+                    (argb & 255) / 255.0f,
+                    ((argb >>> 24) & 255) / 255.0f);
+            return;
+        }
         renderTarget.ensurePixelBuffer();
         if (renderTarget.pixelBuffer == null) {
             renderTarget.pixelBuffer = new int[Math.multiplyExact(
@@ -817,6 +893,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     private void drawImageCpu(GameImage sourceImage, Rect source,
                               float left, float top, float right, float bottom,
                               Paint paint, VulkanTransform2D localTransform) {
+        if (nativeTarget()) {
+            nativeImage(sourceImage, source, left, top, right, bottom, paint, localTransform);
+            return;
+        }
         if (sourceImage == null || source == null || right <= left || bottom <= top) return;
         GameImage sourceImageReal = sourceImage.getRealImage();
         if (sourceImageReal == null) sourceImageReal = sourceImage;
@@ -952,6 +1032,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void drawCpuRect(float left, float top, float right, float bottom, Paint paint) {
+        if (nativeTarget()) {
+            nativeRect(left, top, right, bottom, paint);
+            return;
+        }
         if (right < left || bottom < top) return;
         Graphics2D graphics = cpuGraphics(paint, false);
         try {
@@ -966,6 +1050,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void drawCpuCircle(float x, float y, float radius, Paint paint) {
+        if (nativeTarget()) {
+            nativeCircle(x, y, radius, paint);
+            return;
+        }
         if (radius < 0.0f || !Float.isFinite(radius)) return;
         Graphics2D graphics = cpuGraphics(paint, false);
         try {
@@ -980,6 +1068,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void drawCpuLine(float x1, float y1, float x2, float y2, Paint paint) {
+        if (nativeTarget()) {
+            nativeLine(x1, y1, x2, y2, paint);
+            return;
+        }
         Graphics2D graphics = cpuGraphics(paint, false);
         try {
             graphics.draw(new java.awt.geom.Line2D.Float(x1, y1, x2, y2));
@@ -989,6 +1081,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void drawCpuText(String text, float x, float y, Paint paint) {
+        if (nativeTarget()) {
+            VulkanRuntime.recordNativeText(offscreenBuilder, text, x, y, paint, state(paint));
+            return;
+        }
         if (text == null || text.isEmpty()) return;
         Graphics2D graphics = cpuGraphics(paint, false);
         try {

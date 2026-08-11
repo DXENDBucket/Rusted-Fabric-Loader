@@ -30,18 +30,27 @@ each texture has independently selectable linear and nearest-neighbour sampling.
 offscreen images remain a compatibility fallback and invalidate their Vulkan copy whenever they are
 drawn into. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the
 game thread. The text path currently rasterizes and caches complete AWT string runs rather than
-using a glyph atlas. Arbitrary Slick shaders, native Vulkan offscreen targets and a proper
-frames-in-flight scheduler still need implementations, so takeover remains an opt-in developer mode.
+using a glyph atlas. Arbitrary Slick shader translation is still incomplete, so takeover remains
+an opt-in developer mode.
 
-`native` is the first renderer-startup migration stage. The Vulkan mod registers as a renderer
+`native` is the renderer-startup replacement path. The Vulkan mod registers as a renderer
 provider during client-mod initialization, then RFL resolves the backend before invoking the game
 main class. A bootstrap hook confirms that decision at the start of `AppGameContainer.setup()`,
-before Slick calls `Display.create()`. The game now constructs `VulkanGraphicsEngine` as its
-`GraphicsEngine`; this first implementation delegates operations not yet migrated to Slick while
-the proven Vulkan capture path presents them. This stage intentionally retains Slick's compatibility
-window and OpenGL context for input, LibRocket and fallback assets. Removing that context requires
-a native platform window/input loop and completion of the renderer methods, not another overlay
-timing switch.
+before Slick calls `Display.create()`. The game constructs `VulkanGraphicsEngine` as its
+`GraphicsEngine`, while the driver owns the Win32 window, input queue, swapchain and presentation
+loop. `Display.create()` is cancelled and a runtime invariant verifies that no LWJGL 2 Display or
+OpenGL context was created. LibRocket geometry, the software game cursor, game images, primitives,
+text and map/minimap child images all feed Vulkan commands. Child `GraphicsEngine` instances use
+sampled Vulkan color images and native framebuffers; the original `GameImage.flushPixelBufferToBitmap`
+contract submits their pending render pass so the game's terrain-cache lifecycle remains valid
+without a CPU/Java2D redraw.
+
+Native offscreen submission currently waits conservatively for the graphics queue. This is an
+intentional correctness boundary while replacement coverage is completed; batching child passes
+into the top-level frame is performance work, not a return to a compatibility renderer. Remaining
+functional gaps are general Slick shader translation, a public GPU image-readback path, and a few
+legacy canvas bitmap mutation operations. Whole-string AWT rasterization is used for glyph pixels,
+but text presentation itself is Vulkan.
 
 Useful takeover diagnostics are:
 
@@ -54,6 +63,9 @@ Useful takeover diagnostics are:
   hidden or occluded.
 - `-Drusted.fabric.vulkan.debugInfiniteAcquire=true` removes the normal 16 ms swapchain-acquire
   timeout. This can deliberately block the game thread and is only for isolating WSI diagnostics.
+- `-Drusted.fabric.vulkan.debugRenderTargetPasses=true` logs the first native child passes, their
+  sampled texture dependencies, the first main-frame child samples, and a one-time large-target
+  GPU readback summary.
 
 Vulkan validation and Debug Utils are not wired yet; they are the next diagnostic layer after the
 solid-frame and safe-takeover sequence is confirmed.
@@ -72,17 +84,15 @@ solid-frame and safe-takeover sequence is confirmed.
 ## Stages
 
 1. Probe the Vulkan loader, API version and physical devices without changing rendering.
-2. Add native-window surface creation and queue-family selection while Slick still owns the desktop
-   window and input loop. Swapchain resize recreation, basic render targets, command submission,
-   synchronization, and an opt-in one-frame presentation test are complete.
-3. Complete native offscreen render targets and shader translation. Common blend modes, texture
-   filtering and dynamic fallback-texture invalidation are complete; the takeover already translates
-   the commonly used `GraphicsEngine`, Slick primitive/image and LibRocket geometry paths into
-   frame-local commands.
-4. Replace the serialized safe baseline with persistent mapped vertex/index rings and multiple
-   frames in flight, then widen batching without changing draw order.
-5. Replace whole-string AWT textures with a glyph atlas and remove the remaining OpenGL fallback
-   paths.
+2. Native Win32 window/input ownership, swapchain resize recreation, frame command submission and
+   the pre-`Display.create()` bootstrap are complete.
+3. Native `GraphicsEngine` images, Vulkan offscreen framebuffers, terrain/minimap cache submission,
+   common blend modes, texture filtering, and LibRocket geometry are complete. General Slick shader
+   translation and legacy bitmap mutation/readback semantics remain.
+4. After functional replacement, batch child render passes into the top-level submission, use
+   persistent mapped vertex/index rings, and widen batching without changing draw order.
+5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
+   compatibility surface after native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
 
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or

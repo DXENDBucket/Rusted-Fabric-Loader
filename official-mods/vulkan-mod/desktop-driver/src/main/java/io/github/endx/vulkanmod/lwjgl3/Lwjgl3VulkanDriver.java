@@ -6,6 +6,7 @@ import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
+import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
@@ -300,6 +301,22 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
         if (texture == null) throw new NullPointerException("texture");
         surfaceSession.updateTexture(textureHandle, texture);
+    }
+
+    @Override public synchronized long createRenderTarget(int width, int height) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        return surfaceSession.createRenderTarget(width, height);
+    }
+
+    @Override public synchronized void renderToTexture(
+            long textureHandle, VulkanFrameCommands frame) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        if (frame == null) throw new NullPointerException("frame");
+        surfaceSession.renderToTexture(textureHandle, frame);
     }
 
     @Override public synchronized void destroyTexture(long textureHandle) {
@@ -1190,6 +1207,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private VulkanSurfaceInfo info;
         private long[] imageViews = new long[0];
         private long renderPass;
+        private long offscreenClearRenderPass;
+        private long offscreenLoadRenderPass;
         private long pipelineLayout;
         private final long[] colorPipelines =
                 new long[VulkanBlendMode.values().length];
@@ -1220,6 +1239,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long fenceWaitSkips;
         private long successfulPresents;
         private long profiledSlowFrames;
+        private long renderTargetSubmissions;
+        private boolean debugLargeTargetReadBack;
+        private boolean debugMainTargetSamplesLogged;
         private boolean closed;
 
         private SurfaceSession(VkInstance instance, long surface, DeviceCandidate candidate,
@@ -1246,7 +1268,52 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private void initialize() {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 createSwapchainResources(stack);
+                offscreenClearRenderPass = createOffscreenRenderPass(stack, false);
+                offscreenLoadRenderPass = createOffscreenRenderPass(stack, true);
             }
+        }
+
+        private long createOffscreenRenderPass(MemoryStack stack, boolean preserveContents) {
+            VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.calloc(1, stack);
+            attachments.get(0)
+                    .format(info.imageFormat())
+                    .samples(VK_SAMPLE_COUNT_1_BIT)
+                    .loadOp(preserveContents
+                            ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR)
+                    .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
+                    .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                    .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                    .initialLayout(preserveContents
+                            ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                            : VK_IMAGE_LAYOUT_UNDEFINED)
+                    .finalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VkAttachmentReference.Buffer colorReference = VkAttachmentReference.calloc(1, stack);
+            colorReference.get(0).attachment(0).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            VkSubpassDescription.Buffer subpass = VkSubpassDescription.calloc(1, stack);
+            subpass.get(0).pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
+                    .colorAttachmentCount(1).pColorAttachments(colorReference);
+            VkSubpassDependency.Buffer dependencies = VkSubpassDependency.calloc(2, stack);
+            dependencies.get(0)
+                    .srcSubpass(VK_SUBPASS_EXTERNAL).dstSubpass(0)
+                    .srcStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                            | VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
+                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                    .srcAccessMask(VK_ACCESS_SHADER_READ_BIT)
+                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            dependencies.get(1)
+                    .srcSubpass(0).dstSubpass(VK_SUBPASS_EXTERNAL)
+                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                    .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+                    .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+            VkRenderPassCreateInfo createInfo = VkRenderPassCreateInfo.calloc(stack)
+                    .sType$Default().pAttachments(attachments)
+                    .pSubpasses(subpass).pDependencies(dependencies);
+            LongBuffer handle = stack.mallocLong(1);
+            check(vkCreateRenderPass(device, createInfo, null, handle),
+                    preserveContents ? "vkCreateRenderPass(offscreen load)"
+                            : "vkCreateRenderPass(offscreen clear)");
+            return handle.get(0);
         }
 
         private void createSwapchainResources(MemoryStack stack) {
@@ -1704,6 +1771,306 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
+        private long createRenderTarget(int width, int height) {
+            if (closed) throw new IllegalStateException("Vulkan surface is closed");
+            if (width <= 0 || height <= 0) {
+                throw new IllegalArgumentException("render-target size must be positive");
+            }
+            TextureResource created = new TextureResource();
+            boolean complete = false;
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                ensureTextureDescriptors(stack);
+                VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack).sType$Default()
+                        .imageType(VK_IMAGE_TYPE_2D)
+                        .format(info.imageFormat())
+                        .mipLevels(1).arrayLayers(1)
+                        .samples(VK_SAMPLE_COUNT_1_BIT)
+                        .tiling(VK_IMAGE_TILING_OPTIMAL)
+                        .usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                                | VK_IMAGE_USAGE_SAMPLED_BIT
+                                | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                        .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                        .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+                imageInfo.extent().width(width).height(height).depth(1);
+                LongBuffer handle = stack.mallocLong(1);
+                check(vkCreateImage(device, imageInfo, null, handle),
+                        "vkCreateImage(render target)");
+                created.image = handle.get(0);
+                created.width = width;
+                created.height = height;
+                created.renderTarget = true;
+                VkMemoryRequirements requirements = VkMemoryRequirements.malloc(stack);
+                vkGetImageMemoryRequirements(device, created.image, requirements);
+                VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
+                        .sType$Default().allocationSize(requirements.size())
+                        .memoryTypeIndex(findMemoryType(stack, requirements.memoryTypeBits(),
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+                check(vkAllocateMemory(device, allocation, null, handle),
+                        "vkAllocateMemory(render target)");
+                created.memory = handle.get(0);
+                check(vkBindImageMemory(device, created.image, created.memory, 0),
+                        "vkBindImageMemory(render target)");
+
+                VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
+                        .sType$Default().image(created.image)
+                        .viewType(VK_IMAGE_VIEW_TYPE_2D).format(info.imageFormat());
+                viewInfo.components().r(VK_COMPONENT_SWIZZLE_IDENTITY)
+                        .g(VK_COMPONENT_SWIZZLE_IDENTITY)
+                        .b(VK_COMPONENT_SWIZZLE_IDENTITY)
+                        .a(VK_COMPONENT_SWIZZLE_IDENTITY);
+                viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
+                check(vkCreateImageView(device, viewInfo, null, handle),
+                        "vkCreateImageView(render target)");
+                created.view = handle.get(0);
+                for (VulkanTextureFilter filter : VulkanTextureFilter.values()) {
+                    int vkFilter = filter == VulkanTextureFilter.LINEAR
+                            ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+                    VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
+                            .sType$Default().magFilter(vkFilter).minFilter(vkFilter)
+                            .mipmapMode(filter == VulkanTextureFilter.LINEAR
+                                    ? VK_SAMPLER_MIPMAP_MODE_LINEAR
+                                    : VK_SAMPLER_MIPMAP_MODE_NEAREST)
+                            .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
+                            .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
+                            .minLod(0.0f).maxLod(0.0f)
+                            .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+                            .unnormalizedCoordinates(false);
+                    check(vkCreateSampler(device, samplerInfo, null, handle),
+                            "vkCreateSampler(render target " + filter + ")");
+                    created.samplers[filter.ordinal()] = handle.get(0);
+                    allocateTextureDescriptor(stack, created, filter);
+                }
+                VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
+                        .sType$Default().renderPass(offscreenClearRenderPass)
+                        .pAttachments(stack.longs(created.view))
+                        .width(width).height(height).layers(1);
+                check(vkCreateFramebuffer(device, framebufferInfo, null, handle),
+                        "vkCreateFramebuffer(render target)");
+                created.framebuffer = handle.get(0);
+                long publicHandle = nextTextureHandle++;
+                if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
+                textures.put(publicHandle, created);
+                complete = true;
+                return publicHandle;
+            } finally {
+                if (!complete) destroyTextureResource(created, true);
+            }
+        }
+
+        private void renderToTexture(long textureHandle, VulkanFrameCommands frame) {
+            TextureResource target = textures.get(textureHandle);
+            if (target == null || !target.renderTarget) {
+                throw new IllegalArgumentException("unknown render-target handle "
+                        + textureHandle);
+            }
+            if (target.width != frame.width() || target.height != frame.height()) {
+                throw new IllegalArgumentException("render-target command size changed from "
+                        + target.width + "x" + target.height + " to "
+                        + frame.width() + "x" + frame.height());
+            }
+            // This first native implementation deliberately uses a conservative synchronization
+            // boundary. It proves complete GPU ownership of child images; batching these passes
+            // into the top-level frame is a later performance-only change.
+            check(vkDeviceWaitIdle(device), "vkDeviceWaitIdle(render target)");
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                destroyRetiredTextures(stack);
+                FrameUpload upload = uploadFrame(frame, stack, 0);
+                VkCommandBuffer command = commandBuffers[0];
+                check(vkResetCommandBuffer(command, 0),
+                        "vkResetCommandBuffer(render target)");
+                VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
+                        .sType$Default().flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                check(vkBeginCommandBuffer(command, beginInfo),
+                        "vkBeginCommandBuffer(render target)");
+                recordPendingTextureUploads(command, stack);
+                VkClearValue.Buffer clearValue = VkClearValue.calloc(1, stack);
+                clearValue.get(0).color()
+                        .float32(0, frame.clearRed()).float32(1, frame.clearGreen())
+                        .float32(2, frame.clearBlue()).float32(3, frame.clearAlpha());
+                boolean clearTarget = frame.clearRequested() || !target.initialized;
+                long targetRenderPass = clearTarget
+                        ? offscreenClearRenderPass : offscreenLoadRenderPass;
+                VkRenderPassBeginInfo renderPassBegin = VkRenderPassBeginInfo.calloc(stack)
+                        .sType$Default().renderPass(targetRenderPass)
+                        .framebuffer(target.framebuffer).pClearValues(clearValue);
+                renderPassBegin.renderArea().offset().x(0).y(0);
+                renderPassBegin.renderArea().extent()
+                        .width(target.width).height(target.height);
+                vkCmdBeginRenderPass(command, renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+                long vertexBuffer = vertexAllocations[0] == null
+                        ? VK_NULL_HANDLE : vertexAllocations[0].buffer;
+                if (upload.totalVertexCount() > 0) {
+                    VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+                    viewport.get(0).x(0.0f).y(0.0f)
+                            .width(target.width).height(target.height)
+                            .minDepth(0.0f).maxDepth(1.0f);
+                    vkCmdSetViewport(command, 0, viewport);
+                }
+                for (DrawBatch drawBatch : upload.batches) {
+                    if (drawBatch instanceof ColoredDrawBatch) {
+                        ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
+                        vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                colorPipeline(stack, batch.blendMode));
+                        vkCmdBindVertexBuffers(command, 0,
+                                stack.longs(vertexBuffer), stack.longs(0L));
+                        if (setScissor(command, batch.clip, target.width,
+                                target.height, stack)) {
+                            vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                        }
+                    } else {
+                        TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
+                        if (batch.textureHandle == textureHandle) {
+                            throw new IllegalArgumentException(
+                                    "a render target cannot sample itself in the same pass");
+                        }
+                        vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                texturePipeline(stack, batch.blendMode));
+                        vkCmdBindVertexBuffers(command, 0, stack.longs(vertexBuffer),
+                                stack.longs(upload.texturedByteOffset));
+                        if (setScissor(command, batch.clip, target.width,
+                                target.height, stack)) {
+                            vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    texturePipelineLayout, 0,
+                                    stack.longs(batch.descriptorSet), null);
+                            vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                        }
+                    }
+                }
+                vkCmdEndRenderPass(command);
+                check(vkEndCommandBuffer(command), "vkEndCommandBuffer(render target)");
+                VkSubmitInfo submit = VkSubmitInfo.calloc(stack).sType$Default()
+                        .pCommandBuffers(stack.pointers(command.address()));
+                check(vkQueueSubmit(graphicsQueue, submit, VK_NULL_HANDLE),
+                        "vkQueueSubmit(render target)");
+                check(vkQueueWaitIdle(graphicsQueue), "vkQueueWaitIdle(render target)");
+                target.initialized = true;
+                renderTargetSubmissions++;
+                if (renderTargetSubmissions == 1) {
+                    System.out.println("[Vulkan Mod/Driver] First native render target: "
+                            + target.width + "x" + target.height + ", commands="
+                            + frame.commands().size() + ", texture=" + textureHandle);
+                }
+                if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargetPasses")
+                        && renderTargetSubmissions <= 64) {
+                    java.util.LinkedHashSet<Long> sampled = new java.util.LinkedHashSet<Long>();
+                    for (VulkanDrawCommand draw : frame.commands()) {
+                        if (draw instanceof VulkanTexturedQuad) {
+                            sampled.add(((VulkanTexturedQuad) draw).textureHandle());
+                        } else if (draw instanceof VulkanTexturedTriangle) {
+                            sampled.add(((VulkanTexturedTriangle) draw).textureHandle());
+                        }
+                    }
+                    System.out.println("[Vulkan Mod/Driver] Native target pass #"
+                            + renderTargetSubmissions + ": texture=" + textureHandle
+                            + ", size=" + target.width + "x" + target.height
+                            + ", clear=" + frame.clearRed() + "," + frame.clearGreen()
+                            + "," + frame.clearBlue() + "," + frame.clearAlpha()
+                            + ", commands=" + frame.commands().size()
+                            + ", sampled=" + sampled);
+                }
+                if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargetPasses")
+                        && !debugLargeTargetReadBack
+                        && target.width >= 1000 && target.height >= 1000) {
+                    debugLargeTargetReadBack = true;
+                    logRenderTargetPixels(textureHandle, target);
+                }
+            }
+        }
+
+        private void logRenderTargetPixels(long textureHandle, TextureResource target) {
+            int byteCount = Math.multiplyExact(Math.multiplyExact(
+                    target.width, target.height), 4);
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                BufferAllocation readback = createBufferAllocation(stack, byteCount,
+                        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                try {
+                    VkCommandBuffer command = commandBuffers[0];
+                    check(vkResetCommandBuffer(command, 0),
+                            "vkResetCommandBuffer(render-target readback)");
+                    VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
+                            .sType$Default().flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                    check(vkBeginCommandBuffer(command, beginInfo),
+                            "vkBeginCommandBuffer(render-target readback)");
+                    VkImageMemoryBarrier.Buffer toCopy = VkImageMemoryBarrier.calloc(1, stack);
+                    toCopy.get(0).sType$Default()
+                            .oldLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                            .newLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+                            .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .image(target.image).srcAccessMask(VK_ACCESS_SHADER_READ_BIT)
+                            .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
+                    toCopy.get(0).subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                            .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
+                    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, null, null, toCopy);
+                    VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+                    region.get(0).bufferOffset(0).bufferRowLength(0).bufferImageHeight(0);
+                    region.get(0).imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                            .mipLevel(0).baseArrayLayer(0).layerCount(1);
+                    region.get(0).imageOffset().x(0).y(0).z(0);
+                    region.get(0).imageExtent()
+                            .width(target.width).height(target.height).depth(1);
+                    vkCmdCopyImageToBuffer(command, target.image,
+                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readback.buffer, region);
+                    VkImageMemoryBarrier.Buffer toSample = VkImageMemoryBarrier.calloc(1, stack);
+                    toSample.get(0).sType$Default()
+                            .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+                            .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                            .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .image(target.image).srcAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+                            .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                    toSample.get(0).subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                            .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
+                    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, null, null, toSample);
+                    check(vkEndCommandBuffer(command),
+                            "vkEndCommandBuffer(render-target readback)");
+                    VkSubmitInfo submit = VkSubmitInfo.calloc(stack).sType$Default()
+                            .pCommandBuffers(stack.pointers(command.address()));
+                    check(vkQueueSubmit(graphicsQueue, submit, VK_NULL_HANDLE),
+                            "vkQueueSubmit(render-target readback)");
+                    check(vkQueueWaitIdle(graphicsQueue),
+                            "vkQueueWaitIdle(render-target readback)");
+                    PointerBuffer mapped = stack.mallocPointer(1);
+                    check(vkMapMemory(device, readback.memory, 0, byteCount, 0, mapped),
+                            "vkMapMemory(render-target readback)");
+                    int sampledPixels = 0;
+                    int nonTransparent = 0;
+                    int nonBlack = 0;
+                    try {
+                        ByteBuffer pixels = MemoryUtil.memByteBuffer(mapped.get(0), byteCount);
+                        int stride = Math.max(1, target.width * target.height / 65536);
+                        for (int pixel = 0; pixel < target.width * target.height;
+                             pixel += stride) {
+                            int offset = pixel * 4;
+                            int first = pixels.get(offset) & 255;
+                            int second = pixels.get(offset + 1) & 255;
+                            int third = pixels.get(offset + 2) & 255;
+                            int alpha = pixels.get(offset + 3) & 255;
+                            sampledPixels++;
+                            if (alpha != 0) nonTransparent++;
+                            if (first != 0 || second != 0 || third != 0) nonBlack++;
+                        }
+                    } finally {
+                        vkUnmapMemory(device, readback.memory);
+                    }
+                    System.out.println("[Vulkan Mod/Driver] Native target readback: texture="
+                            + textureHandle + ", samples=" + sampledPixels
+                            + ", nonTransparent=" + nonTransparent
+                            + ", nonBlack=" + nonBlack);
+                } finally {
+                    destroyBufferAllocation(readback);
+                }
+            }
+        }
+
         private void updateTexture(long textureHandle, VulkanTextureData texture) {
             TextureResource target = textures.get(textureHandle);
             if (target == null) {
@@ -1907,6 +2274,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private void destroyTextureResource(TextureResource texture, boolean freeDescriptor,
                                             MemoryStack stack) {
+            if (texture.framebuffer != VK_NULL_HANDLE) {
+                vkDestroyFramebuffer(device, texture.framebuffer, null);
+            }
             for (long descriptorSet : texture.descriptorSets) {
                 if (freeDescriptor && descriptorSet != VK_NULL_HANDLE
                         && textureDescriptorPool != VK_NULL_HANDLE) {
@@ -1985,6 +2355,28 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                                boolean retryOutOfDate,
                                                boolean revealBeforePresent) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
+                if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargetPasses")
+                        && !debugMainTargetSamplesLogged) {
+                    int logged = 0;
+                    for (VulkanDrawCommand draw : frame.commands()) {
+                        if (!(draw instanceof VulkanTexturedQuad)) continue;
+                        VulkanTexturedQuad quad = (VulkanTexturedQuad) draw;
+                        TextureResource sampled = textures.get(quad.textureHandle());
+                        if (sampled == null || !sampled.renderTarget) continue;
+                        VulkanDrawState state = quad.state();
+                        System.out.println("[Vulkan Mod/Driver] Main samples native target "
+                                + quad.textureHandle() + " at " + quad.x() + "," + quad.y()
+                                + " size=" + quad.width() + "x" + quad.height()
+                                + " uv=" + quad.u0() + "," + quad.v0() + ".."
+                                + quad.u1() + "," + quad.v1()
+                                + " rgba=" + quad.red() + "," + quad.green() + ","
+                                + quad.blue() + "," + quad.alpha()
+                                + " transform=" + state.transform()
+                                + " clip=" + state.clip());
+                        if (++logged >= 16) break;
+                    }
+                    if (logged > 0) debugMainTargetSamplesLogged = true;
+                }
                 long profileStarted = System.nanoTime();
                 boolean infiniteWait = Boolean.getBoolean(
                         "rusted.fabric.vulkan.debugInfiniteAcquire");
@@ -2437,12 +2829,17 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private boolean setScissor(VkCommandBuffer commandBuffer, VulkanClipRect clip,
                                    MemoryStack stack) {
+            return setScissor(commandBuffer, clip, info.width(), info.height(), stack);
+        }
+
+        private boolean setScissor(VkCommandBuffer commandBuffer, VulkanClipRect clip,
+                                   int targetWidth, int targetHeight, MemoryStack stack) {
             int left = clip == null ? 0 : Math.max(0, (int) Math.floor(clip.x()));
             int top = clip == null ? 0 : Math.max(0, (int) Math.floor(clip.y()));
-            int right = clip == null ? info.width()
-                    : Math.min(info.width(), (int) Math.ceil(clip.x() + clip.width()));
-            int bottom = clip == null ? info.height()
-                    : Math.min(info.height(), (int) Math.ceil(clip.y() + clip.height()));
+            int right = clip == null ? targetWidth
+                    : Math.min(targetWidth, (int) Math.ceil(clip.x() + clip.width()));
+            int bottom = clip == null ? targetHeight
+                    : Math.min(targetHeight, (int) Math.ceil(clip.y() + clip.height()));
             if (right <= left || bottom <= top) return false;
             VkRect2D.Buffer scissor = VkRect2D.calloc(1, stack);
             scissor.get(0).offset().x(left).y(top);
@@ -2554,6 +2951,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 textureStaging = null;
                 textureStagingCapacity = 0;
             }
+            if (offscreenLoadRenderPass != VK_NULL_HANDLE) {
+                vkDestroyRenderPass(device, offscreenLoadRenderPass, null);
+                offscreenLoadRenderPass = VK_NULL_HANDLE;
+            }
+            if (offscreenClearRenderPass != VK_NULL_HANDLE) {
+                vkDestroyRenderPass(device, offscreenClearRenderPass, null);
+                offscreenClearRenderPass = VK_NULL_HANDLE;
+            }
             vkDestroySwapchainKHR(device, swapchain, null);
             vkDestroyDevice(device, null);
             vkDestroySurfaceKHR(instance, surface, null);
@@ -2574,6 +2979,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private int width;
             private int height;
             private boolean initialized;
+            private boolean renderTarget;
+            private long framebuffer;
             private final long[] samplers =
                     new long[VulkanTextureFilter.values().length];
             private final long[] descriptorSets =

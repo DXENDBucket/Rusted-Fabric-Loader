@@ -12,6 +12,7 @@ public final class VulkanFrameCommands {
     private final float clearGreen;
     private final float clearBlue;
     private final float clearAlpha;
+    private final boolean clearRequested;
     private final List<VulkanColoredQuad> coloredQuads;
     private final List<VulkanTexturedQuad> texturedQuads;
     private final List<VulkanColoredTriangle> coloredTriangles;
@@ -25,6 +26,7 @@ public final class VulkanFrameCommands {
         clearGreen = builder.clearGreen;
         clearBlue = builder.clearBlue;
         clearAlpha = builder.clearAlpha;
+        clearRequested = builder.clearRequested;
         coloredQuads = Collections.unmodifiableList(
                 new ArrayList<VulkanColoredQuad>(builder.coloredQuads));
         texturedQuads = Collections.unmodifiableList(
@@ -47,6 +49,7 @@ public final class VulkanFrameCommands {
     public float clearGreen() { return clearGreen; }
     public float clearBlue() { return clearBlue; }
     public float clearAlpha() { return clearAlpha; }
+    public boolean clearRequested() { return clearRequested; }
     public List<VulkanColoredQuad> coloredQuads() { return coloredQuads; }
     public List<VulkanTexturedQuad> texturedQuads() { return texturedQuads; }
     public List<VulkanColoredTriangle> coloredTriangles() { return coloredTriangles; }
@@ -60,6 +63,7 @@ public final class VulkanFrameCommands {
         private float clearGreen;
         private float clearBlue;
         private float clearAlpha = 1.0f;
+        private boolean clearRequested;
         private final List<VulkanColoredQuad> coloredQuads =
                 new ArrayList<VulkanColoredQuad>();
         private final List<VulkanTexturedQuad> texturedQuads =
@@ -86,6 +90,7 @@ public final class VulkanFrameCommands {
             clearGreen = color.green();
             clearBlue = color.blue();
             clearAlpha = color.alpha();
+            clearRequested = true;
             return this;
         }
 
