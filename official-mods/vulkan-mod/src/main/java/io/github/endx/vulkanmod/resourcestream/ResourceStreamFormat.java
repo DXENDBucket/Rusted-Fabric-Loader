@@ -14,6 +14,7 @@ public final class ResourceStreamFormat {
     public static final int ALIGNMENT = 8;
     public static final int MAX_STREAM_BYTES = 256 * 1024 * 1024;
     public static final int MAX_RECORDS = 1_048_576;
+    public static final int MAX_TEXTURE_DIMENSION = 32_768;
 
     public static final int FLAG_HAS_PAYLOAD_CRC32 = 1;
     public static final int FLAG_REQUIRES_COMPLETION = 1 << 1;
@@ -35,6 +36,26 @@ public final class ResourceStreamFormat {
     public static final int FLUSH = 9;
     public static final int LIFECYCLE_BARRIER = 10;
     public static final int REQUIRED_EXTENSION_BIT = 0x8000;
+
+    public static final int FORMAT_RGBA8_UNORM = 1;
+
+    public static final int TEXTURE_USAGE_SAMPLED = 1;
+    public static final int TEXTURE_USAGE_COLOR_ATTACHMENT = 1 << 1;
+    public static final int TEXTURE_USAGE_TRANSFER_SOURCE = 1 << 2;
+    public static final int TEXTURE_USAGE_TRANSFER_DESTINATION = 1 << 3;
+    public static final int KNOWN_TEXTURE_USAGE = TEXTURE_USAGE_SAMPLED
+            | TEXTURE_USAGE_COLOR_ATTACHMENT | TEXTURE_USAGE_TRANSFER_SOURCE
+            | TEXTURE_USAGE_TRANSFER_DESTINATION;
+
+    public static final int SAMPLER_NEAREST = 1;
+    public static final int SAMPLER_CLAMP_TO_EDGE = 1 << 1;
+    public static final int KNOWN_SAMPLER_FLAGS = SAMPLER_NEAREST | SAMPLER_CLAMP_TO_EDGE;
+
+    public static final int BARRIER_RESOURCE_TABLE = 1;
+    public static final int BARRIER_RENDERER_LIFECYCLE = 2;
+
+    public static final int SHADER_LANGUAGE_VULKAN_GLSL = 1;
+    public static final int SHADER_HAS_VERTEX_SOURCE = 1;
 
     static final int OFFSET_MAGIC = 0;
     static final int OFFSET_MAJOR = 4;

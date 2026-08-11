@@ -164,6 +164,33 @@ Record flags `HAS_EXTERNAL_PAYLOAD=1` and `EXPECTS_RESULT=2` are defined in vers
 containing any `EXPECTS_RESULT` record must set `REQUIRES_COMPLETION` and carry a positive
 `completionId`; the inverse is also required. Types with record bit 15 set are required extensions.
 
+Version-1 texture-create and render-target-create payloads are 32 bytes:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 4 | width |
+| 4 | 4 | height |
+| 8 | 4 | mip levels |
+| 12 | 4 | format; `1=RGBA8_UNORM` |
+| 16 | 4 | usage bits: sampled/color attachment/transfer source/transfer destination |
+| 20 | 4 | sampler bits: nearest/clamp-to-edge |
+| 24 | 8 | reserved, zero |
+
+Full uploads and region updates share a 48-byte prefix. It contains signed-origin-checked X/Y,
+width/height, row stride, format, exact data byte count, a zero reserved word, then a 64-bit upload
+arena ID and byte offset. Inline records set both arena fields to zero and append exactly
+`dataBytes`; external records set `HAS_EXTERNAL_PAYLOAD`, carry no inline bytes, and identify a
+previously registered bounded upload arena. Version 1 requires `dataBytes=rowStride*height`.
+
+Readback uses a 32-byte region/format/row-stride payload and must set `EXPECTS_RESULT`. Lifecycle
+barriers use `{scope:u32, flags:u32, waitThroughSequence:u64}`. Destroy and flush have no payload.
+
+Shader-program create begins with a 24-byte prefix containing language (`1=Vulkan GLSL`), flags,
+UTF-8 name length, vertex-source length, fragment-source length, and a zero reserved word. The
+three un-terminated byte strings follow in that order. A fragment-only program omits vertex bytes;
+`SHADER_HAS_VERTEX_SOURCE=1` requires a non-empty vertex source. Invalid UTF-8 is rejected before
+the platform compiler sees it.
+
 Logical handles are allocated by the shared Java resource manager before a create record is
 submitted. Native mirrors the typed slot/generation table. Java may immediately reference the
 handle in a later frame because `requiredResourceSequence` prevents that frame from overtaking its
@@ -509,9 +536,9 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 5. **Desktop done:** add three fixed direct arenas, live bounded submission, geometric safe-point
    growth, and blocking ownership/back-pressure tests. JNI address registration follows with the
    asynchronous native decoder.
-6. **Envelope done:** add the reliable ResourceStream header/record writer, hostile-input verifier,
-   typed handles, CRC, completion, and contiguous sequence tests. Type payload codecs and live
-   resource-manager migration remain.
+6. **Java ABI done:** add the reliable ResourceStream header/record writer, hostile-input verifier,
+   typed handles, CRC, completion, contiguous sequence tests, and exact texture/shader/control
+   payload codecs. Live resource-manager and driver migration remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 

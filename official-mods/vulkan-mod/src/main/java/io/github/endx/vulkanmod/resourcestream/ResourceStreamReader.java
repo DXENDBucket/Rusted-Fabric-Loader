@@ -117,8 +117,10 @@ public final class ResourceStreamReader {
                 "result-bearing records and completion flag disagree");
         ByteBuffer retained = bytes.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
         retained.position(0).limit(total);
-        return new ResourceStreamReader(retained, firstSequence, flags,
+        ResourceStreamReader result = new ResourceStreamReader(retained, firstSequence, flags,
                 completionId, records);
+        ResourceStreamRecords.validateKnownRecords(result);
+        return result;
     }
 
     public long firstSequence() { return firstSequence; }
