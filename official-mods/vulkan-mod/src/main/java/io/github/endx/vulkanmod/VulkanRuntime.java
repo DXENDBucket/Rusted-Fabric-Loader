@@ -62,7 +62,7 @@ public final class VulkanRuntime {
     private static NativeSlickGameBridge nativeGame;
     private static boolean nativeGameSystemsStarted;
     private static VulkanFrameCommands.Builder nativeFrameBuilder;
-    private static long nativeLastFrameNanos;
+    private static final NativeFrameClock nativeFrameClock = new NativeFrameClock();
     private static GraphicsEngine nativeGraphicsEngine;
     private static StartupPhase startupPhase = StartupPhase.MOD_INITIALIZED;
 
@@ -284,14 +284,11 @@ public final class VulkanRuntime {
             // A minimized Win32 surface has no drawable client extent. Keep pumping messages,
             // but do not run an expensive game/render frame against the stale swapchain.
             java.util.concurrent.locks.LockSupport.parkNanos(16_000_000L);
-            nativeLastFrameNanos = System.nanoTime();
+            nativeFrameClock.reset(System.nanoTime());
             return true;
         }
         long now = System.nanoTime();
-        int deltaMillis = nativeLastFrameNanos == 0L ? 16
-                : (int) Math.max(1L, Math.min(250L,
-                        (now - nativeLastFrameNanos) / 1_000_000L));
-        nativeLastFrameNanos = now;
+        int deltaMillis = nativeFrameClock.nextDeltaMillis(now);
         long frameWorkStarted = System.nanoTime();
         if (gameTextureCache != null) gameTextureCache.beginFrame();
         if (textTextureCache != null) textTextureCache.beginFrame();
@@ -1121,6 +1118,7 @@ public final class VulkanRuntime {
         takeoverFrameOpen = false;
         frameTestWaitFrames = 0;
         frameTestFramesPresented = 0;
+        nativeFrameClock.clear();
     }
 
     private static void log(String message) {

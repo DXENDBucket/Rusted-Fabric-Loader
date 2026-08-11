@@ -141,8 +141,16 @@ tasks.register('verifyTextureReadbackInference', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.GameImageVulkanTextureCacheVerification')
 }
 
+tasks.register('verifyNativeFrameClock', JavaExec) {
+    group = 'verification'
+    description = 'Checks that sub-millisecond native frames do not accelerate simulation time.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.vulkanmod.NativeFrameClockVerification')
+}
+
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
-        tasks.named('verifyTextureReadbackInference')
+        tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'
