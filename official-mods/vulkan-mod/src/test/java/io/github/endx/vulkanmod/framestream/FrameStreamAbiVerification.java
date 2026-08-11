@@ -219,6 +219,21 @@ public final class FrameStreamAbiVerification {
                 FrameStreamResourceMapper.generationOneSlots(),
                 FrameStreamShaderLayoutResolver.NO_CUSTOM_SHADERS);
         ByteBuffer encoded = encoder.encode(20, 4, submission);
+        ByteBuffer reusable = ByteBuffer.allocateDirect(encoded.remaining() + 11);
+        reusable.position(11);
+        ByteBuffer arenaEncoded = encoder.encodeTo(20, 4, submission, reusable);
+        require(reusable.position() == 11 + encoded.remaining(),
+                "arena encoding did not advance its target");
+        require(Arrays.equals(bytes(encoded), bytes(arenaEncoded)),
+                "arena and allocating encoders disagree");
+        try {
+            encoder.encodeTo(20, 4, submission,
+                    ByteBuffer.allocateDirect(encoded.remaining() - 1));
+            throw new AssertionError("undersized FrameStream arena was accepted");
+        } catch (FrameStreamCapacityException expected) {
+            require(expected.requiredBytes() == encoded.remaining(),
+                    "capacity error did not report the required size");
+        }
         DecodedFrameStream decoded = DecodedFrameStream.decode(encoded);
         require(decoded.frameId() == 20 && decoded.requiredResourceSequence() == 4,
                 "encoded frame identity changed");

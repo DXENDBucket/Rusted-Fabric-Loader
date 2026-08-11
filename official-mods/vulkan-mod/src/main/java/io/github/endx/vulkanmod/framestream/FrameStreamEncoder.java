@@ -37,6 +37,23 @@ public final class FrameStreamEncoder {
 
     public ByteBuffer encode(long frameId, long requiredResourceSequence,
                              VulkanFrameSubmission submission) {
+        return buildWriter(frameId, requiredResourceSequence, submission).toDirectBuffer();
+    }
+
+    /** Encodes into a reusable arena at its current position without allocating direct memory. */
+    public ByteBuffer encodeTo(long frameId, long requiredResourceSequence,
+                               VulkanFrameSubmission submission, ByteBuffer target) {
+        if (target == null) throw new NullPointerException("target");
+        FrameStreamWriter writer = buildWriter(frameId, requiredResourceSequence, submission);
+        int required = writer.encodedSize();
+        if (target.remaining() < required) {
+            throw new FrameStreamCapacityException(required, target.remaining());
+        }
+        return writer.writeTo(target);
+    }
+
+    private FrameStreamWriter buildWriter(long frameId, long requiredResourceSequence,
+                                          VulkanFrameSubmission submission) {
         if (submission == null) throw new NullPointerException("submission");
         VulkanFrameCommands presentation = submission.presentationFrame();
         int vertexBytes = countVertexBytes(submission);
@@ -70,8 +87,7 @@ public final class FrameStreamEncoder {
                 .section(FrameStreamFormat.SECTION_BATCHES, batches.size(), batchBytes)
                 .section(FrameStreamFormat.SECTION_VERTICES, totalVertices[0], vertexPayload)
                 .section(FrameStreamFormat.SECTION_MATERIALS,
-                        materialIndexes.size(), materialBytes)
-                .toDirectBuffer();
+                        materialIndexes.size(), materialBytes);
     }
 
     private int countVertexBytes(VulkanFrameSubmission submission) {

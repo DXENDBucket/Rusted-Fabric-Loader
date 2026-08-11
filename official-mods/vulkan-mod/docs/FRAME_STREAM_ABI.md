@@ -2,8 +2,9 @@
 
 Status: the Java envelope, structural/record verifier, fixed arena pool, shared batching, vertex
 encoder, and LWJGL3 desktop decoder are implemented. Native desktop mode consumes FrameStream by
-default; dependent-target readback, custom-vertex, and 20,000-batch GPU tests cover the new path.
-Version 1 becomes frozen after wider in-game visual equivalence testing.
+default through three reusable direct arenas; dependent-target readback, custom-vertex, and
+20,000-batch GPU tests cover the new path. Version 1 becomes frozen after wider in-game visual
+equivalence testing.
 
 ## Purpose
 
@@ -373,6 +374,11 @@ must retire that slot or reset the renderer process at a controlled boundary.
 Three frame arenas are allocated with `ByteBuffer.allocateDirect`, forced to little-endian, and
 registered once with the native backend. Registration caches their stable address and capacity.
 
+The synchronous LWJGL3 decoder already reuses this bounded set and creates no per-frame direct
+buffer. Its default is three 16 MiB arenas, configurable for diagnostics with
+`-Drusted.fabric.vulkan.frameArenaMiB=N`. JNI address registration begins with the asynchronous
+native decoder; until then desktop receives a read-only view of the same stable arena.
+
 ```text
 FREE
   -> WRITING       Java acquired the arena
@@ -481,8 +487,9 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 4. **Done:** make the LWJGL3 desktop driver decode FrameStream directly into persistent mapped
    vertex buffers. The old object submission is available only with the diagnostic JVM property
    `-Drusted.fabric.vulkan.objectSubmission=true` while in-game captures are compared.
-5. **Java side done:** add three fixed direct arenas and blocking ownership/back-pressure tests;
-   JNI registration is wired with the desktop decoder.
+5. **Desktop done:** add three fixed direct arenas, live bounded submission, geometric safe-point
+   growth, and blocking ownership/back-pressure tests. JNI address registration follows with the
+   asynchronous native decoder.
 6. Add the reliable ResourceStream, typed handles, and dependency-sequence tests.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.

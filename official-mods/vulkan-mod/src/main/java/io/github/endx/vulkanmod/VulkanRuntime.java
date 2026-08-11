@@ -1,6 +1,9 @@
 package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.framestream.FrameStreamEncoder;
+import io.github.endx.vulkanmod.framestream.FrameStreamArenaPool;
+import io.github.endx.vulkanmod.framestream.FrameStreamCapacityException;
+import io.github.endx.vulkanmod.framestream.FrameStreamFormat;
 import io.github.endx.vulkanmod.framestream.FrameStreamResourceMapper;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
@@ -76,6 +79,7 @@ public final class VulkanRuntime {
     private static GraphicsEngine nativeGraphicsEngine;
     private static StartupPhase startupPhase = StartupPhase.MOD_INITIALIZED;
     private static FrameStreamEncoder frameStreamEncoder;
+    private static FrameStreamArenaPool frameStreamArenas;
     private static long nextFrameStreamId;
 
     private enum StartupPhase {
@@ -469,14 +473,66 @@ public final class VulkanRuntime {
             frameStreamEncoder = new FrameStreamEncoder(
                     FrameStreamResourceMapper.generationOneSlots(),
                     activeDriver::customShaderUsesExpandedVertexInput);
-            log("RustedVK FrameStream desktop submission is active");
+            frameStreamArenas = new FrameStreamArenaPool(configuredFrameArenaBytes());
+            log("RustedVK FrameStream desktop submission is active with "
+                    + frameStreamArenas.arenaCount() + " x "
+                    + (frameStreamArenas.arenaCapacity() / (1024 * 1024))
+                    + " MiB direct arenas");
         }
         if (nextFrameStreamId == Long.MAX_VALUE) {
             throw new IllegalStateException("FrameStream frame IDs exhausted");
         }
         long frameId = ++nextFrameStreamId;
-        return activeDriver.presentFrameStream(
-                frameStreamEncoder.encode(frameId, 0L, submission));
+        for (;;) {
+            try (FrameStreamArenaPool.WriteLease writer = frameStreamArenas.acquireWriter()) {
+                frameStreamEncoder.encodeTo(frameId, 0L, submission, writer.buffer());
+                writer.publish();
+            } catch (FrameStreamCapacityException capacity) {
+                growFrameArenas(capacity.requiredBytes());
+                continue;
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted while acquiring a FrameStream arena",
+                        interrupted);
+            }
+            try (FrameStreamArenaPool.DecodeLease decoder =
+                         frameStreamArenas.acquireDecoder()) {
+                if (decoder.frameId() != frameId) {
+                    throw new IllegalStateException("FrameStream arena order changed: expected "
+                            + frameId + " but decoded " + decoder.frameId());
+                }
+                return activeDriver.presentFrameStream(decoder.buffer());
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted while decoding a FrameStream arena",
+                        interrupted);
+            }
+        }
+    }
+
+    private static int configuredFrameArenaBytes() {
+        int mib = Integer.getInteger("rusted.fabric.vulkan.frameArenaMiB", 16);
+        if (mib < 1 || mib > 256) {
+            throw new IllegalArgumentException(
+                    "rusted.fabric.vulkan.frameArenaMiB must be in [1,256]");
+        }
+        return Math.multiplyExact(mib, 1024 * 1024);
+    }
+
+    private static void growFrameArenas(int requiredBytes) {
+        int capacity = frameStreamArenas.arenaCapacity();
+        int grown = capacity;
+        while (grown < requiredBytes && grown < FrameStreamFormat.MAX_STREAM_BYTES) {
+            long doubled = (long) grown * 2L;
+            grown = (int) Math.min(doubled, FrameStreamFormat.MAX_STREAM_BYTES);
+        }
+        if (grown < requiredBytes || grown == capacity) {
+            throw new IllegalStateException("FrameStream exceeds the maximum arena capacity: "
+                    + requiredBytes);
+        }
+        frameStreamArenas = new FrameStreamArenaPool(grown);
+        log("Expanded the bounded FrameStream arena set from " + capacity + " to "
+                + grown + " bytes per arena");
     }
 
     public static synchronized boolean recordNativeText(
@@ -1307,6 +1363,7 @@ public final class VulkanRuntime {
         frameTestWaitFrames = 0;
         frameTestFramesPresented = 0;
         frameStreamEncoder = null;
+        frameStreamArenas = null;
         nextFrameStreamId = 0L;
         nativeFrameClock.clear();
     }
