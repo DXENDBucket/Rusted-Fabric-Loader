@@ -28,8 +28,10 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-/** Safe private-storage content library shared by the Android launcher UI and tests. */
+/** Safe managed-content library shared by the Android launcher UI and tests. */
 public final class ManagedContentLibrary {
+    /** Optional public content root used by the Android desktop-JVM port. */
+    public static final String CONTENT_ROOT_PROPERTY = "rusted.android.contentRoot";
     private static final String MARKER = ".rusted-fabric-managed.properties";
     private static final int MAX_ARCHIVE_FILES = 20_000;
     private static final int MAX_ARCHIVE_DEPTH = 24;
@@ -42,6 +44,7 @@ public final class ManagedContentLibrary {
         ids.add("rusted_fabric_api");
         ids.add("java_mod_menu");
         ids.add("ini_essentials");
+        ids.add("performance_profiler");
         OFFICIAL_JAVA_IDS = Collections.unmodifiableSet(ids);
     }
 
@@ -443,6 +446,15 @@ public final class ManagedContentLibrary {
     }
 
     private static Path enabledRoot(Path gameRoot, Kind kind) {
+        Path contentRoot = configuredContentRoot();
+        if (contentRoot != null) {
+            switch (kind) {
+                case INI_MOD: return contentRoot.resolve("units");
+                case MAP: return contentRoot.resolve("maps");
+                case JAVA_MOD: return contentRoot.resolve("javamods");
+                default: throw new IllegalArgumentException("Unknown content kind");
+            }
+        }
         Path root;
         switch (kind) {
             case INI_MOD: root = gameRoot.resolve("mods/units"); break;
@@ -469,6 +481,16 @@ public final class ManagedContentLibrary {
     }
 
     private static Path disabledRoot(Path gameRoot, Kind kind) {
+        Path contentRoot = configuredContentRoot();
+        if (contentRoot != null) {
+            switch (kind) {
+                case MAP: return contentRoot.resolve(".rusted-fabric-disabled/maps");
+                case JAVA_MOD:
+                    return contentRoot.resolve(".rusted-fabric-disabled/javamods");
+                default: throw new IllegalArgumentException(
+                        "INI mods use the in-game mod menu");
+            }
+        }
         Path root;
         switch (kind) {
             case MAP: root = gameRoot.resolve("mods-disabled/maps"); break;
@@ -476,6 +498,12 @@ public final class ManagedContentLibrary {
             default: throw new IllegalArgumentException("INI mods use the in-game mod menu");
         }
         return resolveManagedLink(root);
+    }
+
+    private static Path configuredContentRoot() {
+        String configured = System.getProperty(CONTENT_ROOT_PROPERTY, "").trim();
+        if (configured.isEmpty()) return null;
+        return java.nio.file.Paths.get(configured).toAbsolutePath().normalize();
     }
 
     private static Path resolveManagedLink(Path path) {

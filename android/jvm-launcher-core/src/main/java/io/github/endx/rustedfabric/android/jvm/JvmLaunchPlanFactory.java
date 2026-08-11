@@ -135,6 +135,16 @@ public final class JvmLaunchPlanFactory {
                 "--add-opens=java.base/java.net=ALL-UNNAMED",
                 "--add-opens=java.base/java.nio=ALL-UNNAMED",
                 "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"));
+        String sharedContent = System.getProperty(
+                ManagedContentLibrary.CONTENT_ROOT_PROPERTY, "").trim();
+        if (!sharedContent.isEmpty()) {
+            Path contentRoot = java.nio.file.Paths.get(sharedContent)
+                    .toAbsolutePath().normalize();
+            requireDirectory(contentRoot, "Android shared content root");
+            vmArguments.add("-D" + ManagedContentLibrary.CONTENT_ROOT_PROPERTY + "="
+                    + contentRoot);
+            vmArguments.add("-Drusted.javamodsDir=" + contentRoot.resolve("javamods"));
+        }
         Locale selectedLocale = locale == null ? Locale.getDefault() : locale;
         if (!selectedLocale.getLanguage().isEmpty()) {
             vmArguments.add("-Duser.language=" + selectedLocale.getLanguage());

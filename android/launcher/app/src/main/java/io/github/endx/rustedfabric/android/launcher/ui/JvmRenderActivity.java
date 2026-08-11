@@ -38,6 +38,7 @@ import io.github.endx.rustedfabric.android.jvm.DesktopGameLayout;
 import io.github.endx.rustedfabric.android.launcher.jvm.NativeJvmHost;
 import io.github.endx.rustedfabric.android.launcher.jvm.NativeRenderBridge;
 import io.github.endx.rustedfabric.android.launcher.jvm.DesktopGameImportService;
+import io.github.endx.rustedfabric.android.launcher.jvm.SharedContentWorkspace;
 
 /** Runs a real LWJGL2 call path from HotSpot into GL4ES and the Android Surface. */
 public final class JvmRenderActivity extends Activity implements SurfaceHolder.Callback {
@@ -445,6 +446,9 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
 
     private String runGameProbe(int width, int height) throws IOException {
         File desktopRoot = DesktopGameImportService.importedRoot(this);
+        // Configure this separate Android process too. It must pass the public roots into HotSpot
+        // instead of traversing the obsolete private-to-emulated-storage symlinks.
+        SharedContentWorkspace.ensureReady(this);
         // The initial desktop import deliberately omits user saves and mods. Recreate the writable
         // layout on every launch as a repair path; launcher-managed content remains in these dirs.
         DesktopGameLayout.prepareWritableDirectories(desktopRoot.toPath());

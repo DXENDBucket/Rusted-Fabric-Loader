@@ -30,6 +30,18 @@ public final class JvmLauncherCoreVerification {
                     "Writable desktop game directories were not prepared");
             verifyManagedContentLibrary(temporary, game);
 
+            Path sharedContent = Files.createDirectories(temporary.resolve("shared-content"));
+            System.setProperty(ManagedContentLibrary.CONTENT_ROOT_PROPERTY,
+                    sharedContent.toString());
+            ManagedContentLibrary.prepare(game);
+            Path sharedMapSource = temporary.resolve("shared-map.tmx");
+            Files.write(sharedMapSource, "<map/>".getBytes(
+                    java.nio.charset.StandardCharsets.UTF_8));
+            ManagedContentLibrary.Item sharedMap = ManagedContentLibrary.importContent(game,
+                    ManagedContentLibrary.Kind.MAP, sharedMapSource, "Shared map");
+            require(sharedMap.path().startsWith(sharedContent.resolve("maps")),
+                    "Configured Android content root was not used directly");
+
             Path runtime = createRuntime(temporary.resolve("runtime"));
             Path loader = Files.createDirectories(temporary.resolve("loader"));
             createJar(loader.resolve("fabric-loader.jar"),
@@ -56,6 +68,11 @@ public final class JvmLauncherCoreVerification {
                             .anyMatch(value -> value.startsWith("-Drusted.android.lwjglJar="))
                             && plan.virtualMachineArguments().stream()
                             .anyMatch(value -> value.startsWith("-Drusted.android.lwjglCompatJar="))
+                            && plan.virtualMachineArguments().contains("-D"
+                            + ManagedContentLibrary.CONTENT_ROOT_PROPERTY + "="
+                            + sharedContent.toAbsolutePath().normalize())
+                            && plan.virtualMachineArguments().contains("-Drusted.javamodsDir="
+                            + sharedContent.toAbsolutePath().normalize().resolve("javamods"))
                             && plan.virtualMachineArguments().stream()
                             .anyMatch(value -> value.startsWith("-Duser.language="))
                             && plan.workingDirectory().equals(game.toAbsolutePath().normalize()),
@@ -64,6 +81,7 @@ public final class JvmLauncherCoreVerification {
                     "Launch plan did not create its private Java temporary directory");
             require(plan.gameArguments().contains("1280") && plan.gameArguments().contains("720"),
                     "Launch surface was not forwarded");
+            System.clearProperty(ManagedContentLibrary.CONTENT_ROOT_PROPERTY);
 
             Path smokeJar = temporary.resolve("jvm-smoke.jar");
             createJar(smokeJar, JvmLaunchPlanFactory.SMOKE_MAIN_CLASS.replace('.', '/') + ".class");
@@ -208,6 +226,7 @@ public final class JvmLauncherCoreVerification {
                     "Incomplete user game files were accepted");
             System.out.println("Android desktop-JVM launcher core contracts passed");
         } finally {
+            System.clearProperty(ManagedContentLibrary.CONTENT_ROOT_PROPERTY);
             deleteRecursively(temporary);
         }
     }

@@ -615,7 +615,7 @@ public final class JvmLauncherActivity extends Activity {
         setBusy(true, getString(R.string.content_storage_preparing));
         worker.execute(() -> {
             try {
-                SharedContentWorkspace.ensureLinked(this);
+                SharedContentWorkspace.ensureReady(this);
                 runOnUiThread(() -> {
                     workspacePreparing = false;
                     setBusy(false, getString(R.string.content_storage_ready,

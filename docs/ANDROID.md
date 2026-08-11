@@ -38,7 +38,8 @@ font/ (optional)
 The importer rejects executables, DLLs, saves, existing mods, path traversal, ambiguous roots, and
 oversized archives. Saves, replays, screenshots, cache, game binaries, and Java are created or kept
 privately after validation. User-editable content is exposed under the shared
-`Internal storage/rustedWarfare` root and linked into the private game working directory.
+`Internal storage/rustedWarfare` root. The Android JVM receives that root explicitly; it does not
+use private-to-shared symbolic links, which Android's emulated-storage layer cannot traverse.
 
 Once the game is imported, the launcher manages new content independently of that bounded game
 import:

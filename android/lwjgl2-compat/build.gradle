@@ -32,8 +32,19 @@ tasks.register('verifyLwjgl2Compat') {
             if (zip.getEntry('org/lwjgl/system/RustedFabricTouch.class') == null) {
                 throw new GradleException('LWJGL2 compatibility JAR is missing the touch bridge')
             }
+            if (zip.getEntry('org/lwjgl/system/RustedFabricStorage.class') == null) {
+                throw new GradleException('LWJGL2 compatibility JAR is missing the storage bridge')
+            }
         }
     }
 }
 
+tasks.register('verifyStorageBridge', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('org.lwjgl.system.RustedFabricStorageVerification')
+}
+
 check.dependsOn tasks.named('verifyLwjgl2Compat')
+check.dependsOn tasks.named('verifyStorageBridge')

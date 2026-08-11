@@ -95,7 +95,8 @@ public class RustedWarfareGameProvider implements GameProvider {
     };
 
     private final GameTransformer transformer = new GameTransformer(
-            new AndroidLwjglMemoryPatch(), new AndroidTouchInputPatch(),
+            new AndroidLwjglMemoryPatch(), new AndroidSharedContentPatch(),
+            new AndroidTouchInputPatch(),
             new AndroidDefaultSettingsPatch(), new AndroidInitialResolutionPatch());
 
     private static AbstractInsnNode previousRealInstruction(AbstractInsnNode instruction) {
@@ -155,6 +156,74 @@ public class RustedWarfareGameProvider implements GameProvider {
             classEmitter.accept(memoryUtil);
             Log.info(LOG_CATEGORY,
                     "Patched Android LWJGL direct-buffer JNI bridge.");
+        }
+    }
+
+    /**
+     * Sends the game's ordinary INI/map paths directly to shared storage. Android deliberately
+     * blocks following a symlink from app-private data into emulated storage, so the path must be
+     * selected before java.io.File sees it.
+     */
+    private static final class AndroidSharedContentPatch extends GamePatch {
+        private static final String FILE_LOADER =
+                "com.corrodinggames.rts.gameFramework.e.c";
+        private static final String FILE_LOADER_INTERNAL =
+                "com/corrodinggames/rts/gameFramework/e/c";
+        private static final String CONVERT_DESCRIPTOR =
+                "(Ljava/lang/String;)Ljava/lang/String;";
+
+        @Override
+        public void process(FabricLauncher launcher,
+                            Function<String, ClassNode> classSource,
+                            Consumer<ClassNode> classEmitter) {
+            if (!isAndroidRuntime()) return;
+            ClassNode fileLoader = classSource.apply(FILE_LOADER);
+            if (fileLoader == null) {
+                throw new IllegalStateException("Android game file loader is unavailable");
+            }
+            MethodNode convert = findMethod(fileLoader, method ->
+                    method.name.equals("f") && method.desc.equals(CONVERT_DESCRIPTOR));
+            if (convert == null) {
+                throw new IllegalStateException("Unsupported game file-loader ABI");
+            }
+
+            AbstractInsnNode insertionPoint = null;
+            for (AbstractInsnNode instruction = convert.instructions.getFirst();
+                 instruction != null; instruction = instruction.getNext()) {
+                if (!(instruction instanceof MethodInsnNode)) continue;
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                if (call.getOpcode() != Opcodes.INVOKEVIRTUAL
+                        || !call.owner.equals(FILE_LOADER_INTERNAL)
+                        || !call.name.equals("d")
+                        || !call.desc.equals(CONVERT_DESCRIPTOR)) continue;
+                AbstractInsnNode store = instruction.getNext();
+                while (store != null && store.getOpcode() < 0) store = store.getNext();
+                if (!(store instanceof VarInsnNode) || store.getOpcode() != Opcodes.ASTORE
+                        || ((VarInsnNode) store).var != 1) {
+                    throw new IllegalStateException(
+                            "Unsupported game file-loader normalization sequence");
+                }
+                insertionPoint = store;
+                break;
+            }
+            if (insertionPoint == null) {
+                throw new IllegalStateException(
+                        "Game file-loader normalization call was not found");
+            }
+
+            InsnList redirect = new InsnList();
+            redirect.add(new VarInsnNode(Opcodes.ALOAD, 1));
+            redirect.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "org/lwjgl/system/RustedFabricStorage",
+                    "remap",
+                    CONVERT_DESCRIPTOR,
+                    false));
+            redirect.add(new VarInsnNode(Opcodes.ASTORE, 1));
+            convert.instructions.insert(insertionPoint, redirect);
+            classEmitter.accept(fileLoader);
+            Log.info(LOG_CATEGORY,
+                    "Patched Android INI/map paths for direct shared-storage access.");
         }
     }
 

@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
-import android.system.ErrnoException;
-import android.system.Os;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -18,7 +16,7 @@ import java.util.List;
 
 import io.github.endx.rustedfabric.android.jvm.ManagedContentLibrary;
 
-/** Public, file-manager-accessible content directories linked into the private game root. */
+/** Public, file-manager-accessible content directories used directly by the desktop JVM. */
 public final class SharedContentWorkspace {
     public static final String ROOT_NAME = "rustedWarfare";
 
@@ -48,33 +46,55 @@ public final class SharedContentWorkspace {
         return "primary:" + ROOT_NAME + "/" + directory(kind).getFileName();
     }
 
-    public static void ensureLinked(Context context) throws IOException {
+    /**
+     * Prepares public content and removes the obsolete private-to-public symlinks.
+     *
+     * Android's emulated-storage layer does not permit an app to traverse a symlink from its
+     * private data directory into /storage/emulated/0, even with all-files access. The embedded
+     * desktop JVM therefore receives the public root explicitly and never follows these paths.
+     */
+    public static void ensureReady(Context context) throws IOException {
         if (!hasStorageAccess(context)) {
             throw new IOException("Shared storage permission is required");
         }
         Path gameRoot = DesktopGameImportService.importedRoot(context).toPath();
         if (!Files.isDirectory(gameRoot)) throw new IOException("Desktop game is not imported");
+        configureManagedContent();
         Files.createDirectories(root());
         for (Link link : links(gameRoot)) {
             Files.createDirectories(link.shared);
-            migrateAndLink(link.privatePath, link.shared);
+            migrateAndDetach(link.privatePath, link.shared);
         }
     }
 
     public static boolean isReady(Context context) {
         if (!hasStorageAccess(context)) return false;
+        configureManagedContent();
         Path gameRoot = DesktopGameImportService.importedRoot(context).toPath();
         if (!Files.isDirectory(gameRoot)) return false;
         try {
             for (Link link : links(gameRoot)) {
-                if (!Files.isDirectory(link.shared) || !pointsTo(link.privatePath, link.shared)) {
+                if (!Files.isDirectory(link.shared) || !Files.isReadable(link.shared)
+                        || !Files.isWritable(link.shared)
+                        || Files.isSymbolicLink(link.privatePath)
+                        || !Files.isDirectory(link.privatePath, LinkOption.NOFOLLOW_LINKS)) {
                     return false;
+                }
+                // Opening the public directory catches FUSE/AppOps failures that simple metadata
+                // checks can otherwise hide until the game is already starting.
+                try (DirectoryStream<Path> ignored = Files.newDirectoryStream(link.shared)) {
+                    // Successful open is the readiness check.
                 }
             }
             return true;
         } catch (IOException failure) {
             return false;
         }
+    }
+
+    public static void configureManagedContent() {
+        System.setProperty(ManagedContentLibrary.CONTENT_ROOT_PROPERTY,
+                root().toAbsolutePath().normalize().toString());
     }
 
     private static List<Link> links(Path gameRoot) {
@@ -89,10 +109,13 @@ public final class SharedContentWorkspace {
         return result;
     }
 
-    private static void migrateAndLink(Path privatePath, Path shared) throws IOException {
+    private static void migrateAndDetach(Path privatePath, Path shared) throws IOException {
         Files.createDirectories(privatePath.getParent());
         if (Files.isSymbolicLink(privatePath)) {
-            if (pointsTo(privatePath, shared)) return;
+            if (!pointsTo(privatePath, shared)) {
+                throw new IOException("Managed content link points to an unexpected location: "
+                        + privatePath);
+            }
             Files.delete(privatePath);
         }
         if (Files.exists(privatePath, LinkOption.NOFOLLOW_LINKS)) {
@@ -100,9 +123,9 @@ public final class SharedContentWorkspace {
                 throw new IOException("Managed content path is not a directory: " + privatePath);
             }
             mergeDirectory(privatePath, shared);
-            Files.delete(privatePath);
+        } else {
+            Files.createDirectories(privatePath);
         }
-        createLink(privatePath, shared);
     }
 
     private static void mergeDirectory(Path source, Path target) throws IOException {
@@ -147,20 +170,6 @@ public final class SharedContentWorkspace {
             } else {
                 Files.copy(source, target);
                 Files.delete(source);
-            }
-        }
-    }
-
-    private static void createLink(Path link, Path target) throws IOException {
-        try {
-            Files.createSymbolicLink(link, target.toAbsolutePath());
-        } catch (UnsupportedOperationException | IOException javaFailure) {
-            try {
-                Os.symlink(target.toAbsolutePath().toString(), link.toString());
-            } catch (ErrnoException nativeFailure) {
-                javaFailure.addSuppressed(nativeFailure);
-                throw new IOException("Cannot link the shared content directory: " + link,
-                        javaFailure);
             }
         }
     }

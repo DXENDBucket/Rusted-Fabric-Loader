@@ -27,8 +27,8 @@ artifacts.
   excluded.
 - Imports are staged, validated, and atomically activated. A failed import leaves the previous
   verified copy intact. Game binaries and the imported JVM remain private, while managed user
-  content is linked from the shared `rustedWarfare/units`, `rustedWarfare/maps`, and
-  `rustedWarfare/javamods` directories.
+  content is read directly from the shared `rustedWarfare/units`, `rustedWarfare/maps`, and
+  `rustedWarfare/javamods` directories through an Android-only path bridge.
 - After activation, the setup UI becomes a persistent content library for INI mods, custom maps,
   Fabric Jars, and `.javamod` files. Map and Java-mod disable operations move content to hidden
   non-scan directories under the shared root and never rewrite the imported package. Switch changes are staged until
