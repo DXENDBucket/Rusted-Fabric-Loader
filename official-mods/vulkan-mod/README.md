@@ -44,13 +44,18 @@ text and map/minimap child images all feed Vulkan commands. Child `GraphicsEngin
 sampled Vulkan color images and native framebuffers; the original `GameImage.flushPixelBufferToBitmap`
 contract submits their pending render pass so the game's terrain-cache lifecycle remains valid
 without a CPU/Java2D redraw.
+Image draw commands also snapshot the game's mutable shader uniforms before crossing the driver
+boundary. The native texture pipeline implements the original `pureGreenTeamColor`,
+`hueAddTeamColor`, `hueShiftTeamColor`, and `post_base` fragment formulas through Vulkan push
+constants, so shader-based team coloring no longer falls back to per-team CPU texture copies.
 
 Native offscreen submission currently waits conservatively for the graphics queue. This is an
 intentional correctness boundary while replacement coverage is completed; batching child passes
 into the top-level frame is performance work, not a return to a compatibility renderer. Remaining
-functional gaps are general Slick shader translation, a public GPU image-readback path, and a few
-legacy canvas bitmap mutation operations. Whole-string AWT rasterization is used for glyph pixels,
-but text presentation itself is Vulkan.
+functional gaps are secondary-texture shaders such as `post_displacement`, general custom Slick
+shader translation, a public GPU image-readback path, and a few legacy canvas bitmap mutation
+operations. Whole-string AWT rasterization is used for glyph pixels, but text presentation itself
+is Vulkan.
 
 Useful takeover diagnostics are:
 
@@ -87,8 +92,9 @@ solid-frame and safe-takeover sequence is confirmed.
 2. Native Win32 window/input ownership, swapchain resize recreation, frame command submission and
    the pre-`Display.create()` bootstrap are complete.
 3. Native `GraphicsEngine` images, Vulkan offscreen framebuffers, terrain/minimap cache submission,
-   common blend modes, texture filtering, and LibRocket geometry are complete. General Slick shader
-   translation and legacy bitmap mutation/readback semantics remain.
+   common blend modes, texture filtering, LibRocket geometry, and built-in single-texture team/post
+   shaders are complete. Secondary-texture/custom shader translation and legacy bitmap
+   mutation/readback semantics remain.
 4. After functional replacement, batch child render passes into the top-level submission, use
    persistent mapped vertex/index rings, and widen batching without changing draw order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only

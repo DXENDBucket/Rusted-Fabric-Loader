@@ -12,6 +12,7 @@ import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
+import io.github.endx.vulkanmod.spi.VulkanShaderState;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +36,9 @@ public final class VulkanDriverIsolationVerification {
         }
         VulkanDrawState drawState = new VulkanDrawState(transform,
                 new VulkanClipRect(0.0f, 0.0f, 640.0f, 360.0f),
-                VulkanBlendMode.ADDITIVE, VulkanTextureFilter.NEAREST);
+                VulkanBlendMode.ADDITIVE, VulkanTextureFilter.NEAREST,
+                new VulkanShaderState(VulkanShaderState.HUE_ADD_TEAM_COLOR,
+                        0.25f, 0.5f, 0.75f, 1.0f, 0.2f));
         VulkanFrameCommands commands = VulkanFrameCommands.builder(1280, 720)
                 .clear(0.1f, 0.2f, 0.3f, 1.0f)
                 .coloredQuad(new VulkanColoredQuad(
@@ -65,6 +68,8 @@ public final class VulkanDriverIsolationVerification {
                         != VulkanBlendMode.ADDITIVE
                 || commands.texturedQuads().get(0).state().textureFilter()
                         != VulkanTextureFilter.NEAREST
+                || commands.texturedQuads().get(0).state().shaderState().effect()
+                        != VulkanShaderState.HUE_ADD_TEAM_COLOR
                 || commands.coloredTriangles().size() != 1
                 || commands.texturedTriangles().size() != 1
                 || commands.commands().size() != 4

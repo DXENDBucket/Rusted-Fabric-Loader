@@ -17,6 +17,7 @@ import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
+import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import rustedwarfare.client.render.GameImage;
 import rustedwarfare.client.render.SlickGraphicsBackend;
 import rustedwarfare.render.AndroidGlRenderer;
@@ -24,6 +25,8 @@ import rustedwarfare.render.CanvasDrawTarget;
 import rustedwarfare.render.DrawTimeCallback;
 import rustedwarfare.render.GraphicsEngine;
 import rustedwarfare.render.ShaderProgram;
+import rustedwarfare.render.ShaderParameter;
+import rustedwarfare.render.UniquePaint;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -173,9 +176,55 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private VulkanDrawState state(Paint paint) {
+        return state(paint, VulkanShaderState.DEFAULT);
+    }
+
+    private VulkanDrawState state(Paint paint, VulkanShaderState shaderState) {
         return new VulkanDrawState(transform, clip, VulkanBlendMode.NORMAL,
                 paint != null && paint.c()
-                        ? VulkanTextureFilter.LINEAR : VulkanTextureFilter.NEAREST);
+                        ? VulkanTextureFilter.LINEAR : VulkanTextureFilter.NEAREST,
+                shaderState);
+    }
+
+    private static VulkanShaderState shaderState(GameImage image, Paint paint) {
+        // Match SlickGraphicsBackend: a shader explicitly attached to UniquePaint overrides the
+        // image shader. Team-color wrappers use the latter, post-processing composites the former.
+        ShaderProgram shader = paint instanceof UniquePaint
+                ? ((UniquePaint) paint).getShader() : null;
+        if (shader == null) shader = image.getShader();
+        if (shader == null) return VulkanShaderState.DEFAULT;
+        shader.applyForImage(paint, image);
+        String name = shader.name == null ? "" : shader.name;
+        int effect;
+        if ("pureGreenTeamColor".equalsIgnoreCase(name)) {
+            effect = VulkanShaderState.PURE_GREEN_TEAM_COLOR;
+        } else if ("hueAddTeamColor".equalsIgnoreCase(name)) {
+            effect = VulkanShaderState.HUE_ADD_TEAM_COLOR;
+        } else if ("hueShiftTeamColor".equalsIgnoreCase(name)) {
+            effect = VulkanShaderState.HUE_SHIFT_TEAM_COLOR;
+        } else if ("post_base".equalsIgnoreCase(name)) {
+            effect = VulkanShaderState.POST_BASE;
+        } else {
+            return VulkanShaderState.DEFAULT;
+        }
+        float red = 1.0f;
+        float green = 1.0f;
+        float blue = 1.0f;
+        float alpha = 1.0f;
+        float amount = 0.15f;
+        for (ShaderParameter parameter : shader.parameters) {
+            if (parameter == null || parameter.floatValues == null) continue;
+            if ("teamColor".equals(parameter.name) && parameter.floatValues.length >= 4) {
+                red = parameter.floatValues[0];
+                green = parameter.floatValues[1];
+                blue = parameter.floatValues[2];
+                alpha = parameter.floatValues[3];
+            } else if ("teamColorAmount".equals(parameter.name)
+                    && parameter.floatValues.length >= 1) {
+                amount = parameter.floatValues[0];
+            }
+        }
+        return new VulkanShaderState(effect, red, green, blue, alpha, amount);
     }
 
     private static float[] color(int argb) {
@@ -200,6 +249,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (image == null || source == null || right < left || bottom < top) return;
         GameImage real = image.getRealImage();
         if (real == null) real = image;
+        // LazyTeamColorImage attaches its shared ShaderProgram while resolving the real source.
+        // Snapshot uniforms afterwards, but still apply them against the wrapper that owns the
+        // team color rather than against the unwrapped source image.
+        VulkanShaderState shaderState = shaderState(image, paint);
         int imageWidth = real.getWidth();
         int imageHeight = real.getHeight();
         if (imageWidth <= 0 || imageHeight <= 0) return;
@@ -213,10 +266,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
                     + ", texture=" + texture);
         }
         float[] tint = color(paint == null ? 0xffffffff : paint.e());
-        VulkanDrawState base = state(paint);
+        VulkanDrawState base = state(paint, shaderState);
         VulkanDrawState drawState = localTransform == null
                 ? base : new VulkanDrawState(localTransform.then(base.transform()), base.clip(),
-                        base.blendMode(), base.textureFilter());
+                        base.blendMode(), base.textureFilter(), base.shaderState());
         recordTexturedQuad(new VulkanTexturedQuad(texture,
                 left, top, right - left, bottom - top,
                 source.a / (float) imageWidth, source.b / (float) imageHeight,
