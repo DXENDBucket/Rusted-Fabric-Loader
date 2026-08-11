@@ -55,3 +55,12 @@ tasks.register('verifyCustomShaderTranslation', JavaExec) {
             sourceSets.main.runtimeClasspath)
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneCustomShaderVerification')
 }
+
+tasks.register('verifyLargeNativeBatchFrame', JavaExec) {
+    group = 'verification'
+    description = 'Presents 20,000 alternating batches without growing LWJGL MemoryStack per draw.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneLargeBatchVerification')
+}
