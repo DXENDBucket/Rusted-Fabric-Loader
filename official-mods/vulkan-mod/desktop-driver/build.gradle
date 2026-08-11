@@ -37,3 +37,12 @@ tasks.register('probeVulkan', JavaExec) {
             sourceSets.main.runtimeClasspath)
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneVulkanProbe')
 }
+
+tasks.register('verifyNativeReadback', JavaExec) {
+    group = 'verification'
+    description = 'Renders and reads back a small Vulkan target on the real desktop device.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneVulkanReadbackVerification')
+}

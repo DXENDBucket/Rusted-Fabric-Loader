@@ -169,6 +169,10 @@ final class VulkanDriverLoader {
             });
         }
 
+        VulkanTextureData readTexture(long textureHandle) {
+            return invoke(() -> driver.readTexture(textureHandle));
+        }
+
         void destroyTexture(long textureHandle) {
             invoke(() -> {
                 driver.destroyTexture(textureHandle);

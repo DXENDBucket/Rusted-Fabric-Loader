@@ -1,5 +1,7 @@
 package io.github.endx.vulkanmod.render;
 
+import io.github.endx.vulkanmod.VulkanRuntime;
+import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import rustedwarfare.client.render.GameImage;
 
 import java.awt.color.ColorSpace;
@@ -12,13 +14,15 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-/** CPU-backed game image whose pixels can be uploaded without an OpenGL readback. */
+/** Vulkan image with an on-demand CPU mirror for the game's legacy pixel-access contract. */
 public final class VulkanGameImage extends GameImage {
     private transient BufferedImage bufferedImage;
     private final boolean opaque;
     private transient long nativeRenderTargetHandle;
     private transient Runnable nativeRenderTargetFlusher;
     private transient Map<Object, Runnable> pendingNativeConsumers;
+    private transient boolean nativePixelsDirty;
+    private transient boolean cpuPixelsAccessed;
 
     public VulkanGameImage(int width, int height, int[] argb) {
         this(width, height, argb, false);
@@ -62,6 +66,12 @@ public final class VulkanGameImage extends GameImage {
         nativeRenderTargetFlusher = flusher;
     }
 
+    /** Marks the CPU mirror stale after the image has been written by a Vulkan render pass. */
+    public void markNativePixelsDirty() {
+        nativePixelsDirty = true;
+        cpuPixelsAccessed = false;
+    }
+
     /** Makes pending native draw commands visible before this image is sampled as a texture. */
     public void submitPendingNativeDraws() {
         if (nativeRenderTargetFlusher != null) nativeRenderTargetFlusher.run();
@@ -85,20 +95,37 @@ public final class VulkanGameImage extends GameImage {
     }
 
     @Override public boolean canReadPixels() { return true; }
-    @Override public void ensurePixelBuffer() { }
-    @Override public void readPixelsFromBitmap() { }
+    @Override public void ensurePixelBuffer() { syncNativePixels(true); }
+    @Override public void readPixelsFromBitmap() { syncNativePixels(true); }
     @Override public void ensureImageDataAvailable() { }
     @Override public void releaseImageData() { }
     @Override public void dropPixelBuffer() { }
     @Override public void discardPixelBuffer() { }
     @Override public void flushPixelBufferToBitmap() {
         submitPendingNativeDraws();
+        if (cpuPixelsAccessed && nativeRenderTargetHandle != 0L) {
+            VulkanRuntime.updateNativeTexture(nativeRenderTargetHandle,
+                    VulkanTextureData.fromArgb(width, height, pixelBuffer));
+            cpuPixelsAccessed = false;
+            nativePixelsDirty = false;
+        }
         version++;
     }
     @Override public void releaseBitmap() { }
 
+    @Override public int getPixel(int x, int y) {
+        syncNativePixels(false);
+        return pixelBuffer[x + y * width];
+    }
+
+    @Override public void setPixel(int x, int y, int color) {
+        syncNativePixels(true);
+        pixelBuffer[x + y * width] = color;
+    }
+
     /** Returns a persistent Java2D view over this image's stable ARGB pixel array. */
     public BufferedImage bufferedImage() {
+        syncNativePixels(true);
         if (bufferedImage == null) {
             DataBufferInt buffer = new DataBufferInt(pixelBuffer, width * height);
             int[] masks = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
@@ -114,6 +141,7 @@ public final class VulkanGameImage extends GameImage {
 
     /** Converts the stable backing array without virtual getPixel calls. */
     public byte[] copyRgbaBytes() {
+        syncNativePixels(false);
         byte[] rgba = new byte[Math.multiplyExact(pixelBuffer.length, 4)];
         int offset = 0;
         for (int argb : pixelBuffer) {
@@ -126,6 +154,7 @@ public final class VulkanGameImage extends GameImage {
     }
 
     @Override public GameImage copyImage() {
+        syncNativePixels(false);
         VulkanGameImage copy = new VulkanGameImage(width, height,
                 Arrays.copyOf(pixelBuffer, pixelBuffer.length), opaque);
         copy.smooth = smooth;
@@ -134,6 +163,7 @@ public final class VulkanGameImage extends GameImage {
 
     @Override public GameImage createImageCopyWithSize(int newWidth, int newHeight,
                                                        boolean copyPixels) {
+        if (copyPixels) syncNativePixels(false);
         VulkanGameImage copy = empty(newWidth, newHeight, !opaque);
         copy.smooth = smooth;
         if (copyPixels) {
@@ -145,5 +175,28 @@ public final class VulkanGameImage extends GameImage {
             }
         }
         return copy;
+    }
+
+    private void syncNativePixels(boolean writable) {
+        submitPendingNativeDraws();
+        if (nativePixelsDirty && nativeRenderTargetHandle != 0L) {
+            VulkanTextureData snapshot = VulkanRuntime.readNativeTexture(
+                    nativeRenderTargetHandle);
+            if (snapshot.width() != width || snapshot.height() != height) {
+                throw new IllegalStateException("native texture size changed from "
+                        + width + "x" + height + " to "
+                        + snapshot.width() + "x" + snapshot.height());
+            }
+            byte[] rgba = snapshot.copyRgba();
+            for (int pixel = 0; pixel < pixelBuffer.length; pixel++) {
+                int offset = pixel * 4;
+                pixelBuffer[pixel] = ((rgba[offset + 3] & 255) << 24)
+                        | ((rgba[offset] & 255) << 16)
+                        | ((rgba[offset + 1] & 255) << 8)
+                        | (rgba[offset + 2] & 255);
+            }
+            nativePixelsDirty = false;
+        }
+        if (writable) cpuPixelsAccessed = true;
     }
 }

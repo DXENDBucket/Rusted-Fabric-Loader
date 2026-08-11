@@ -9,6 +9,7 @@ import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanInputEvent;
+import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import android.graphics.Paint;
 import android.graphics.Paint$Align;
 import io.github.endx.vulkanmod.mixin.LibRocketUiEngineStateAccessor;
@@ -783,6 +784,21 @@ public final class VulkanRuntime {
             throw new IllegalStateException("native Vulkan render targets are unavailable");
         }
         activeDriver.renderToTexture(textureHandle, frame);
+    }
+
+    public static synchronized VulkanTextureData readNativeTexture(long textureHandle) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan texture readback is unavailable");
+        }
+        return activeDriver.readTexture(textureHandle);
+    }
+
+    public static synchronized void updateNativeTexture(
+            long textureHandle, VulkanTextureData texture) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan texture updates are unavailable");
+        }
+        activeDriver.updateTexture(textureHandle, texture);
     }
 
     public static synchronized void destroyNativeRenderTarget(long textureHandle) {

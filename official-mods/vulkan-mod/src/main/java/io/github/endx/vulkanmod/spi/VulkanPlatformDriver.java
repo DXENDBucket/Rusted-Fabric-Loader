@@ -29,6 +29,10 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default void updateTexture(long textureHandle, VulkanTextureData texture) {
         throw new UnsupportedOperationException("in-place texture updates are not supported");
     }
+    /** Returns an RGBA8 snapshot of a readable texture after all earlier GPU writes complete. */
+    default VulkanTextureData readTexture(long textureHandle) {
+        throw new UnsupportedOperationException("texture readback is not supported");
+    }
     void destroyTexture(long textureHandle);
     /**
      * Shows or hides the driver-owned presentation surface. Returns {@code true} when the driver

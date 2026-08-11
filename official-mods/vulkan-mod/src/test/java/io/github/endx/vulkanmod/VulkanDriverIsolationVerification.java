@@ -39,6 +39,27 @@ public final class VulkanDriverIsolationVerification {
                 VulkanBlendMode.ADDITIVE, VulkanTextureFilter.NEAREST,
                 new VulkanShaderState(VulkanShaderState.HUE_ADD_TEAM_COLOR,
                         0.25f, 0.5f, 0.75f, 1.0f, 0.2f));
+        VulkanShaderState displacement = new VulkanShaderState(
+                VulkanShaderState.POST_DISPLACEMENT,
+                1.0f, 1.0f, 1.0f, 1.0f, 0.15f,
+                11L, 1024.0f, 512.0f, 1920.0f, 1080.0f, 0.12f, 1.0f);
+        if (displacement.secondaryTextureHandle() != 11L
+                || displacement.screenBaseWidth() != 1024.0f
+                || displacement.screenBaseHeight() != 512.0f
+                || displacement.resolutionWidth() != 1920.0f
+                || displacement.resolutionHeight() != 1080.0f
+                || displacement.displacementOffset() != 0.12f
+                || displacement.uiScaling() != 1.0f
+                || displacement.equals(VulkanShaderState.DEFAULT)) {
+            throw new AssertionError("secondary-texture shader state is incomplete");
+        }
+        try {
+            new VulkanShaderState(VulkanShaderState.POST_DISPLACEMENT,
+                    1.0f, 1.0f, 1.0f, 1.0f, 0.15f);
+            throw new AssertionError("displacement state accepted no secondary texture");
+        } catch (IllegalArgumentException expected) {
+            // A driver must never receive a displacement draw without its screen-base image.
+        }
         VulkanFrameCommands commands = VulkanFrameCommands.builder(1280, 720)
                 .clear(0.1f, 0.2f, 0.3f, 1.0f)
                 .coloredQuad(new VulkanColoredQuad(

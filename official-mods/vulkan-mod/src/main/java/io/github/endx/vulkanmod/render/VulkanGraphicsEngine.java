@@ -59,8 +59,8 @@ import com.corrodinggames.rts.R$drawable;
  * Renderer selected by the game in native Vulkan mode.
  *
  * <p>The root engine records directly into the native Vulkan frame owned by {@link VulkanRuntime}.
- * CPU-backed child engines provide the game's offscreen image semantics without creating a Slick
- * renderer, LWJGL Display, or OpenGL context.</p>
+ * Child engines own Vulkan render targets with on-demand CPU readback for legacy pixel access,
+ * without creating a Slick renderer, LWJGL Display, or OpenGL context.</p>
  */
 public final class VulkanGraphicsEngine implements GraphicsEngine {
     private static boolean pointerDrawLogged;
@@ -160,6 +160,9 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             VulkanFrameCommands pending = offscreenBuilder.build();
             if (pending.clearRequested() || !pending.commands().isEmpty()) {
                 VulkanRuntime.renderNativeTarget(nativeRenderTargetHandle, pending);
+                if (renderTarget instanceof VulkanGameImage) {
+                    ((VulkanGameImage) renderTarget).markNativePixelsDirty();
+                }
             }
             resetOffscreenBuilder();
         }
@@ -216,6 +219,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             effect = VulkanShaderState.HUE_SHIFT_TEAM_COLOR;
         } else if ("post_base".equalsIgnoreCase(name)) {
             effect = VulkanShaderState.POST_BASE;
+        } else if ("post_displacement".equalsIgnoreCase(name)) {
+            effect = VulkanShaderState.POST_DISPLACEMENT;
         } else {
             return VulkanShaderState.DEFAULT;
         }
@@ -224,8 +229,33 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         float blue = 1.0f;
         float alpha = 1.0f;
         float amount = 0.15f;
+        long secondaryTexture = 0L;
+        float screenBaseWidth = 1.0f;
+        float screenBaseHeight = 1.0f;
+        float resolutionWidth = 1.0f;
+        float resolutionHeight = 1.0f;
+        float displacementOffset = 0.0f;
+        float uiScaling = 1.0f;
         for (ShaderParameter parameter : shader.parameters) {
-            if (parameter == null || parameter.floatValues == null) continue;
+            if (parameter == null) continue;
+            if (effect == VulkanShaderState.POST_DISPLACEMENT
+                    && parameter.texture != null) {
+                GameImage parameterImage = parameter.texture.getRealImage();
+                if (parameterImage == null) parameterImage = parameter.texture;
+                if (parameterImage instanceof VulkanGameImage) {
+                    ((VulkanGameImage) parameterImage).submitPendingNativeDraws();
+                }
+                if ("screenBase".equals(parameter.name) && !parameter.secondaryTexture) {
+                    secondaryTexture = VulkanRuntime.textureForGameImage(parameterImage);
+                    screenBaseWidth = Math.max(1, parameterImage.getWidth());
+                    screenBaseHeight = Math.max(1, parameterImage.getHeight());
+                } else if ("screenBaseSize".equals(parameter.name)
+                        && parameter.secondaryTexture) {
+                    screenBaseWidth = Math.max(1, parameterImage.getWidth());
+                    screenBaseHeight = Math.max(1, parameterImage.getHeight());
+                }
+            }
+            if (parameter.floatValues == null) continue;
             if ("teamColor".equals(parameter.name) && parameter.floatValues.length >= 4) {
                 red = parameter.floatValues[0];
                 green = parameter.floatValues[1];
@@ -234,9 +264,36 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             } else if ("teamColorAmount".equals(parameter.name)
                     && parameter.floatValues.length >= 1) {
                 amount = parameter.floatValues[0];
+            } else if (effect == VulkanShaderState.POST_DISPLACEMENT
+                    && "u_resolution".equals(parameter.name)
+                    && parameter.floatValues.length >= 2) {
+                resolutionWidth = positiveOr(parameter.floatValues[0], 1.0f);
+                resolutionHeight = positiveOr(parameter.floatValues[1], 1.0f);
+            } else if (effect == VulkanShaderState.POST_DISPLACEMENT
+                    && "u_offsetBy".equals(parameter.name)
+                    && parameter.floatValues.length >= 1) {
+                displacementOffset = finiteOr(parameter.floatValues[0], 0.0f);
+            } else if (effect == VulkanShaderState.POST_DISPLACEMENT
+                    && "u_uiScaling".equals(parameter.name)
+                    && parameter.floatValues.length >= 1) {
+                uiScaling = positiveOr(parameter.floatValues[0], 1.0f);
             }
         }
+        if (effect == VulkanShaderState.POST_DISPLACEMENT) {
+            if (secondaryTexture == 0L) return VulkanShaderState.DEFAULT;
+            return new VulkanShaderState(effect, red, green, blue, alpha, amount,
+                    secondaryTexture, screenBaseWidth, screenBaseHeight,
+                    resolutionWidth, resolutionHeight, displacementOffset, uiScaling);
+        }
         return new VulkanShaderState(effect, red, green, blue, alpha, amount);
+    }
+
+    private static float finiteOr(float value, float fallback) {
+        return Float.isFinite(value) ? value : fallback;
+    }
+
+    private static float positiveOr(float value, float fallback) {
+        return Float.isFinite(value) && value > 0.0f ? value : fallback;
     }
 
     private static float[] color(int argb) {

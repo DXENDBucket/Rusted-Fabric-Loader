@@ -13,9 +13,11 @@ public final class VulkanShaderState {
     public static final int HUE_ADD_TEAM_COLOR = 2;
     public static final int HUE_SHIFT_TEAM_COLOR = 3;
     public static final int POST_BASE = 4;
+    public static final int POST_DISPLACEMENT = 5;
 
     public static final VulkanShaderState DEFAULT =
-            new VulkanShaderState(PLAIN, 1.0f, 1.0f, 1.0f, 1.0f, 0.15f);
+            new VulkanShaderState(PLAIN, 1.0f, 1.0f, 1.0f, 1.0f, 0.15f,
+                    0L, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
 
     private final int effect;
     private final float red;
@@ -23,11 +25,42 @@ public final class VulkanShaderState {
     private final float blue;
     private final float alpha;
     private final float teamColorAmount;
+    private final long secondaryTextureHandle;
+    private final float screenBaseWidth;
+    private final float screenBaseHeight;
+    private final float resolutionWidth;
+    private final float resolutionHeight;
+    private final float displacementOffset;
+    private final float uiScaling;
 
     public VulkanShaderState(int effect, float red, float green, float blue, float alpha,
                              float teamColorAmount) {
-        if (effect < PLAIN || effect > POST_BASE) {
+        this(effect, red, green, blue, alpha, teamColorAmount,
+                0L, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
+    }
+
+    public VulkanShaderState(int effect, float red, float green, float blue, float alpha,
+                             float teamColorAmount, long secondaryTextureHandle,
+                             float screenBaseWidth, float screenBaseHeight,
+                             float resolutionWidth, float resolutionHeight,
+                             float displacementOffset, float uiScaling) {
+        if (effect < PLAIN || effect > POST_DISPLACEMENT) {
             throw new IllegalArgumentException("unknown built-in shader effect: " + effect);
+        }
+        if (secondaryTextureHandle < 0L) {
+            throw new IllegalArgumentException("secondary texture handle must not be negative");
+        }
+        requireFinitePositive("screenBaseWidth", screenBaseWidth);
+        requireFinitePositive("screenBaseHeight", screenBaseHeight);
+        requireFinitePositive("resolutionWidth", resolutionWidth);
+        requireFinitePositive("resolutionHeight", resolutionHeight);
+        if (!Float.isFinite(displacementOffset)) {
+            throw new IllegalArgumentException("displacementOffset must be finite");
+        }
+        requireFinitePositive("uiScaling", uiScaling);
+        if (effect == POST_DISPLACEMENT && secondaryTextureHandle == 0L) {
+            throw new IllegalArgumentException(
+                    "post displacement requires a secondary texture");
         }
         this.effect = effect;
         this.red = red;
@@ -35,6 +68,13 @@ public final class VulkanShaderState {
         this.blue = blue;
         this.alpha = alpha;
         this.teamColorAmount = teamColorAmount;
+        this.secondaryTextureHandle = secondaryTextureHandle;
+        this.screenBaseWidth = screenBaseWidth;
+        this.screenBaseHeight = screenBaseHeight;
+        this.resolutionWidth = resolutionWidth;
+        this.resolutionHeight = resolutionHeight;
+        this.displacementOffset = displacementOffset;
+        this.uiScaling = uiScaling;
     }
 
     public int effect() { return effect; }
@@ -43,6 +83,13 @@ public final class VulkanShaderState {
     public float blue() { return blue; }
     public float alpha() { return alpha; }
     public float teamColorAmount() { return teamColorAmount; }
+    public long secondaryTextureHandle() { return secondaryTextureHandle; }
+    public float screenBaseWidth() { return screenBaseWidth; }
+    public float screenBaseHeight() { return screenBaseHeight; }
+    public float resolutionWidth() { return resolutionWidth; }
+    public float resolutionHeight() { return resolutionHeight; }
+    public float displacementOffset() { return displacementOffset; }
+    public float uiScaling() { return uiScaling; }
 
     @Override public boolean equals(Object other) {
         if (this == other) return true;
@@ -54,7 +101,19 @@ public final class VulkanShaderState {
                 && Float.floatToIntBits(blue) == Float.floatToIntBits(state.blue)
                 && Float.floatToIntBits(alpha) == Float.floatToIntBits(state.alpha)
                 && Float.floatToIntBits(teamColorAmount)
-                        == Float.floatToIntBits(state.teamColorAmount);
+                        == Float.floatToIntBits(state.teamColorAmount)
+                && secondaryTextureHandle == state.secondaryTextureHandle
+                && Float.floatToIntBits(screenBaseWidth)
+                        == Float.floatToIntBits(state.screenBaseWidth)
+                && Float.floatToIntBits(screenBaseHeight)
+                        == Float.floatToIntBits(state.screenBaseHeight)
+                && Float.floatToIntBits(resolutionWidth)
+                        == Float.floatToIntBits(state.resolutionWidth)
+                && Float.floatToIntBits(resolutionHeight)
+                        == Float.floatToIntBits(state.resolutionHeight)
+                && Float.floatToIntBits(displacementOffset)
+                        == Float.floatToIntBits(state.displacementOffset)
+                && Float.floatToIntBits(uiScaling) == Float.floatToIntBits(state.uiScaling);
     }
 
     @Override public int hashCode() {
@@ -64,6 +123,19 @@ public final class VulkanShaderState {
         result = 31 * result + Float.floatToIntBits(blue);
         result = 31 * result + Float.floatToIntBits(alpha);
         result = 31 * result + Float.floatToIntBits(teamColorAmount);
+        result = 31 * result + Long.hashCode(secondaryTextureHandle);
+        result = 31 * result + Float.floatToIntBits(screenBaseWidth);
+        result = 31 * result + Float.floatToIntBits(screenBaseHeight);
+        result = 31 * result + Float.floatToIntBits(resolutionWidth);
+        result = 31 * result + Float.floatToIntBits(resolutionHeight);
+        result = 31 * result + Float.floatToIntBits(displacementOffset);
+        result = 31 * result + Float.floatToIntBits(uiScaling);
         return result;
+    }
+
+    private static void requireFinitePositive(String name, float value) {
+        if (!Float.isFinite(value) || value <= 0.0f) {
+            throw new IllegalArgumentException(name + " must be finite and positive");
+        }
     }
 }
