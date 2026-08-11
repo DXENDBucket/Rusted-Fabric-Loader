@@ -1,7 +1,8 @@
 # RustedVK FrameStream ABI
 
-Status: architecture contract for the next renderer stage. No released build consumes this binary
-format yet. Version 1 becomes frozen when the encoder, verifier, and desktop decoder land together.
+Status: the Java envelope, structural/record verifier, fixed arena pool, shared batching, and
+vertex encoder are implemented with contract tests. No released build consumes this binary format
+yet. Version 1 becomes frozen when the desktop decoder lands and visual equivalence is confirmed.
 
 ## Purpose
 
@@ -236,6 +237,23 @@ Each pass describes:
 - pre-rotation/target-orientation flags;
 - optional debug label index.
 
+Each version-1 pass record is 64 bytes:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 8 | typed target handle; zero for swapchain |
+| 8 | 4 | first batch index |
+| 12 | 4 | batch count |
+| 16 | 4 | flags: `CLEAR_COLOR=1`, `STORE=2`, `SWAPCHAIN=4` |
+| 20 | 4 | viewport X, signed pixels |
+| 24 | 4 | viewport Y, signed pixels |
+| 28 | 4 | viewport width |
+| 32 | 4 | viewport height |
+| 36 | 16 | clear RGBA, four binary32 values |
+| 52 | 4 | debug-label index, `0xffffffff` for none |
+| 56 | 4 | target orientation; zero in version 1 |
+| 60 | 4 | reserved, zero |
+
 The encoder removes a pass only when it proves that the pass has no draws, no required clear or
 side effect, and no later consumer. It may combine compatible target work without violating the
 ordered dependency graph.
@@ -253,25 +271,67 @@ A batch is an ordered run of primitives with compatible state. It contains:
 - primitive topology;
 - feature flags needed by the selected vertex layout.
 
+Each version-1 batch record is 64 bytes:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 4 | material index |
+| 4 | 4 | flags: `HAS_CLIP=1`, `TEXTURED=2`, `INDEXED=4` |
+| 8 | 8 | typed primary texture handle, or zero |
+| 16 | 8 | typed secondary texture handle, or zero |
+| 24 | 4 | byte offset in `VERTICES` |
+| 28 | 4 | vertex count |
+| 32 | 4 | byte offset in `INDICES`, zero when not indexed |
+| 36 | 4 | index count, zero when not indexed |
+| 40 | 16 | clip X/Y/width/height as binary32; all zero when disabled |
+| 56 | 2 | topology; `1` is triangle list |
+| 58 | 2 | index type: none/uint16/uint32 = `0/1/2` |
+| 60 | 2 | vertex layout |
+| 62 | 2 | reserved, zero |
+
 Version 1 supports triangle lists. Quads are encoded as indexed or expanded triangles according to
 the shared encoder's selected vertex format. A decoder cannot reinterpret batch order.
 
 The shared encoder bakes ordinary affine transforms into packed vertex positions. Custom vertex
-programs retain the local coordinates and receive the captured model-view/projection values in
-their material state, matching current RustedVK behavior.
+programs retain local coordinates and carry the six affine coefficients plus frame dimensions in
+each expanded vertex, matching current RustedVK behavior.
+
+Version-1 vertex layouts are:
+
+| Value | Bytes | Binary32 components |
+|---:|---:|---|
+| 1 | 24 | NDC position XY, color RGBA |
+| 2 | 32 | NDC position XY, UV, color RGBA |
+| 3 | 64 | local XY, UV, color RGBA, affine 2x3, frame width/height |
+
+`VERTICES.elementCount` is the total vertex count, not its byte length. Batch byte ranges are
+tightly ordered in version 1; a decoder rejects gaps, overlap, or unreferenced trailing bytes.
 
 ## Materials and shaders
 
-A material is an immutable snapshot used by one or more adjacent batches. It includes the existing
+A material is an immutable snapshot used by one or more batches. It includes the existing
 `VulkanShaderState` semantics:
 
 - built-in effect or typed custom-program handle;
 - tint and alpha;
 - team-color amount;
 - screen base, resolution, displacement offset, and UI scaling;
-- secondary sampler binding;
 - bounded custom scalar/vector values;
-- captured matrices required by a custom vertex program.
+
+Texture handles, including the optional secondary sampler, live in the batch so one material can
+be reused with different images. Each version-1 material record is 160 bytes:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 4 | flags, zero in version 1 |
+| 4 | 4 | blend: normal/additive/copy/modulate = `0..3` |
+| 8 | 4 | filter: linear/nearest = `0/1` |
+| 12 | 4 | `VulkanShaderState` effect |
+| 16 | 8 | typed custom shader-program handle, or zero |
+| 24 | 44 | tint RGBA, team amount, screen-base WH, resolution WH, displacement, UI scaling |
+| 68 | 4 | custom-value count, at most 20 |
+| 72 | 8 | reserved, zero |
+| 80 | 80 | 20 binary32 custom-value slots; unused slots are zero |
 
 Material records are deduplicated within one frame only. Native caches may intern equivalent
 pipeline objects across frames, but may not retain pointers into a Java arena.
@@ -414,12 +474,13 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 
 ## Implementation stages
 
-1. Add constants and a checked Java FrameStream writer/reader with golden-byte tests.
-2. Encode the current `VulkanFrameSubmission` without changing rendering behavior.
-3. Move desktop batching and vertex packing into the shared `FrameEncoder`.
+1. **Done:** constants and a checked Java FrameStream writer/reader with golden-byte tests.
+2. **Done:** encode the current `VulkanFrameSubmission` into ordered passes and batches.
+3. **Done:** move adjacent batching and vertex packing into the shared `FrameStreamEncoder`.
 4. Make the LWJGL3 desktop driver decode FrameStream; retain the object path behind a diagnostic
    comparison switch until captures match.
-5. Add three registered Java arenas and blocking ownership/back-pressure stress tests.
+5. **Java side done:** add three fixed direct arenas and blocking ownership/back-pressure tests;
+   JNI registration is wired with the desktop decoder.
 6. Add the reliable ResourceStream, typed handles, and dependency-sequence tests.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
