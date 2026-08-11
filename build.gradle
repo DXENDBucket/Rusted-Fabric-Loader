@@ -837,8 +837,8 @@ def installIniEssentialsEnabled = {
 }
 
 def installPerformanceProfilerEnabled = {
-    !project.hasProperty('installPerformanceProfiler')
-            || project.property('installPerformanceProfiler').toString().toBoolean()
+    project.hasProperty('installPerformanceProfiler')
+            && project.property('installPerformanceProfiler').toString().toBoolean()
 }
 
 tasks.register('installToGameDir') {

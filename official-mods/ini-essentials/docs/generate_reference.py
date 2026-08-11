@@ -131,12 +131,20 @@ def section_key(section: str) -> str:
             return "custom_projectile_core"
         if "[pattern_" in value:
             return "custom_projectile_pattern"
+        if "[motion]" in value:
+            return "custom_projectile_motion"
+        if "[lifecycle]" in value:
+            return "custom_projectile_lifecycle"
+        if "[action_" in value or "[hiddenaction_" in value:
+            return "custom_projectile_action"
         if "[collision]" in value:
             return "custom_projectile_collision"
         if "[effect_" in value:
             return "custom_projectile_effect"
         if "[decal_" in value:
             return "custom_projectile_decal"
+        if "runtime expression" in value:
+            return "custom_projectile_runtime"
         return "custom_projectile_other"
     if "overlay" in value:
         return "overlay"
@@ -196,6 +204,8 @@ def make_groups(field_rows: list[dict[str, str]],
     # fields for a section that did not previously have an Essentials group.
     established_order = [
         "core", "action", "custom_projectile_core", "custom_projectile_pattern",
+        "custom_projectile_motion", "custom_projectile_lifecycle",
+        "custom_projectile_action", "custom_projectile_runtime",
         "custom_projectile_collision", "custom_projectile_effect", "custom_projectile_decal",
         "custom_projectile_other", "geometry", "overlay", "decal", "fog", "math", "event",
         "projectile", "turret",
@@ -231,6 +241,24 @@ def make_groups(field_rows: list[dict[str, str]],
             section_en, section_zh = "[pattern_NAME]", "[pattern_NAME]"
             summary_en = "Deterministic same-tick layouts attached to this projectile asset"
             summary_zh = "附属于此弹体资源的确定性同帧弹幕排布"
+        elif key == "custom_projectile_motion":
+            section_en, section_zh = "[motion]", "[motion]"
+            summary_en = "Live motion overrides evaluated during projectile flight"
+            summary_zh = "弹体飞行过程中持续求值的运动覆盖"
+        elif key == "custom_projectile_lifecycle":
+            section_en, section_zh = "[lifecycle]", "[lifecycle]"
+            summary_en = "Projectile-local actions invoked at lifecycle boundaries"
+            summary_zh = "在弹体生命周期节点触发的局部动作"
+        elif key == "custom_projectile_action":
+            section_en = "[action_NAME] / [hiddenAction_NAME]"
+            section_zh = "[action_NAME] / [hiddenAction_NAME]"
+            summary_en = "Actions executed with the current projectile evaluation context"
+            summary_zh = "在当前弹体求值上下文中执行的动作"
+        elif key == "custom_projectile_runtime":
+            section_en = "CustomProjectile runtime expressions"
+            section_zh = "CustomProjectile 运行时表达式"
+            summary_en = "Projectile values available inside dynamic expressions; not an INI section"
+            summary_zh = "动态表达式中可读取的弹体值；这不是一个 INI 节"
         elif key == "custom_projectile_collision":
             section_en, section_zh = "[collision]", "[collision]"
             summary_en = "Native unit contact and hover-path terrain collision"

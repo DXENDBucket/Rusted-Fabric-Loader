@@ -150,8 +150,8 @@ namespace RustedFabricInstaller
             iniEssentials.Location = new Point(18, 84);
             components.Controls.Add(iniEssentials);
 
-            performanceProfiler.Text = "Performance Profiler (recommended, in-game diagnostics)";
-            performanceProfiler.Checked = true;
+            performanceProfiler.Text = "Performance Profiler (optional, in-game diagnostics)";
+            performanceProfiler.Checked = false;
             performanceProfiler.AutoSize = true;
             performanceProfiler.Location = new Point(18, 112);
             performanceProfiler.CheckedChanged += ComponentDependencyChanged;
