@@ -53,10 +53,12 @@ CPU texture copies.
 
 Native offscreen submission currently waits conservatively for the graphics queue. This is an
 intentional correctness boundary while replacement coverage is completed; batching child passes
-into the top-level frame is performance work, not a return to a compatibility renderer. Remaining
-functional gaps are general custom Slick shader translation and a few legacy canvas target-switch
-operations. Native render targets now expose synchronized RGBA readback and same-size CPU upload,
-so `GameImage` pixel reads/copies and explicit pixel-buffer flushes retain their original semantics.
+into the top-level frame is performance work, not a return to a compatibility renderer. Dynamic
+Canvas bitmap rebinding now reuses each image's single native target command stream, submits the
+outgoing target, and carries the live transform/clip stack across the framebuffer switch. Remaining
+functional gaps are general custom Slick shader translation. Native render targets expose
+synchronized RGBA readback and same-size CPU upload, so `GameImage` pixel reads/copies and explicit
+pixel-buffer flushes retain their original semantics.
 Whole-string AWT rasterization is used for glyph pixels, but text presentation itself is Vulkan.
 
 Useful takeover diagnostics are:
@@ -96,7 +98,8 @@ solid-frame and safe-takeover sequence is confirmed.
 3. Native `GraphicsEngine` images, Vulkan offscreen framebuffers, terrain/minimap cache submission,
    common blend modes, texture filtering, LibRocket geometry, built-in team/post shaders, and the
    secondary-texture displacement path are complete. Native image readback/upload covers legacy
-   pixel-buffer mutation; general custom shader translation and canvas target switching remain.
+   pixel-buffer mutation and dynamic Canvas target switching; general custom shader translation
+   remains.
 4. After functional replacement, batch child render passes into the top-level submission, use
    persistent mapped vertex/index rings, and widen batching without changing draw order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only

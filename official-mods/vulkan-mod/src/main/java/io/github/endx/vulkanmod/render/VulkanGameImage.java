@@ -20,6 +20,7 @@ public final class VulkanGameImage extends GameImage {
     private final boolean opaque;
     private transient long nativeRenderTargetHandle;
     private transient Runnable nativeRenderTargetFlusher;
+    private transient VulkanGraphicsEngine nativeRenderTargetBackend;
     private transient Map<Object, Runnable> pendingNativeConsumers;
     private transient boolean nativePixelsDirty;
     private transient boolean cpuPixelsAccessed;
@@ -64,6 +65,20 @@ public final class VulkanGameImage extends GameImage {
 
     public void setNativeRenderTargetFlusher(Runnable flusher) {
         nativeRenderTargetFlusher = flusher;
+    }
+
+    /** Returns the graphics backend that owns this image's Vulkan render-target command stream. */
+    synchronized VulkanGraphicsEngine nativeRenderTargetBackend() {
+        return nativeRenderTargetBackend;
+    }
+
+    /** Attaches the single backend allowed to record and flush this image's native target. */
+    synchronized void setNativeRenderTargetBackend(VulkanGraphicsEngine backend) {
+        nativeRenderTargetBackend = backend;
+    }
+
+    synchronized void clearNativeRenderTargetBackend(VulkanGraphicsEngine backend) {
+        if (nativeRenderTargetBackend == backend) nativeRenderTargetBackend = null;
     }
 
     /** Marks the CPU mirror stale after the image has been written by a Vulkan render pass. */

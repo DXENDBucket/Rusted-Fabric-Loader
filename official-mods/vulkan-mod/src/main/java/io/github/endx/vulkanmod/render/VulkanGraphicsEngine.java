@@ -105,6 +105,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             VulkanGameImage nativeImage = (VulkanGameImage) this.renderTarget;
             nativeImage.setNativeRenderTargetHandle(nativeRenderTargetHandle);
             nativeImage.setNativeRenderTargetFlusher(this::submitOffscreen);
+            nativeImage.setNativeRenderTargetBackend(this);
         }
         resetOffscreenBuilder();
         offscreenBuilder.clear(0.0f, 0.0f, 0.0f, 0.0f);
@@ -361,13 +362,24 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     @Override public GraphicsEngine createBackendForImage(GameImage image) {
-        VulkanRuntime.markRenderTargetImage(image);
-        return new VulkanGraphicsEngine(image);
+        return backendForImage(image);
     }
 
     @Override public GraphicsEngine createChildBackendForImage(GameImage image) {
+        return backendForImage(image);
+    }
+
+    private VulkanGraphicsEngine backendForImage(GameImage image) {
+        if (image == null) throw new NullPointerException("image");
         VulkanRuntime.markRenderTargetImage(image);
-        return new VulkanGraphicsEngine(image);
+        GameImage real = image.getRealImage();
+        if (real == null) real = image;
+        if (real != image) VulkanRuntime.markRenderTargetImage(real);
+        if (real instanceof VulkanGameImage) {
+            VulkanGraphicsEngine existing = ((VulkanGameImage) real).nativeRenderTargetBackend();
+            if (existing != null) return existing;
+        }
+        return new VulkanGraphicsEngine(real);
     }
 
     @Override public boolean a() { return renderTarget != null || nativeRoot() || delegate.a(); }
@@ -805,6 +817,9 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             persistentCpuGraphics.dispose();
             persistentCpuGraphics = null;
         }
+        if (renderTarget instanceof VulkanGameImage) {
+            ((VulkanGameImage) renderTarget).clearNativeRenderTargetBackend(this);
+        }
         if (ownsNativeRenderTarget) {
             VulkanRuntime.destroyNativeRenderTarget(nativeRenderTargetHandle);
             if (renderTarget instanceof VulkanGameImage) {
@@ -978,64 +993,88 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private final class NativeCanvasTarget implements CanvasDrawTarget {
-        @Override public void a(boolean value) { VulkanGraphicsEngine.this.a(value); }
+        private VulkanGraphicsEngine active = VulkanGraphicsEngine.this;
+
+        private VulkanGraphicsEngine target() {
+            return active;
+        }
+
+        private void bind(GameImage image) {
+            VulkanGraphicsEngine next = image == null
+                    ? VulkanGraphicsEngine.this : backendForImage(image);
+            if (next == active) return;
+
+            // GL's Canvas target closes the outgoing framebuffer batch before rebinding. Do the
+            // same here so a later target can safely sample everything drawn before the switch.
+            if (active.nativeTarget()) active.submitOffscreen();
+
+            // Canvas save/transform/clip state belongs to the command stream, not to the bitmap.
+            // Carry it over just as the original GL canvas does when only its framebuffer changes.
+            next.transform = active.transform;
+            next.clip = active.clip;
+            next.stateStack.clear();
+            next.stateStack.addAll(active.stateStack);
+            active = next;
+        }
+
+        @Override public void a(boolean value) { target().a(value); }
         @Override public boolean c() { return true; }
-        @Override public void clipRect(Rect rect) { setClipRect(rect); }
-        @Override public void clipRect(RectF rect) { setClipRect(rect); }
+        @Override public void clipRect(Rect rect) { target().setClipRect(rect); }
+        @Override public void clipRect(RectF rect) { target().setClipRect(rect); }
         @Override public void drawImage(GameImage image, float x, float y, Paint paint) {
-            drawImageRaw(image, x, y, paint);
+            target().drawImageRaw(image, x, y, paint);
         }
         @Override public void drawImage(GameImage image, Rect source, Rect destination,
                                         Paint paint) {
-            VulkanGraphicsEngine.this.drawImage(image, source, destination, paint);
+            target().drawImage(image, source, destination, paint);
         }
         @Override public void drawImage(GameImage image, Rect source, RectF destination,
                                         Paint paint) {
-            VulkanGraphicsEngine.this.drawImage(image, source, destination, paint);
+            target().drawImage(image, source, destination, paint);
         }
         @Override public void drawCircle(float x, float y, float radius, Paint paint) {
-            VulkanGraphicsEngine.this.drawCircle(x, y, radius, paint);
+            target().drawCircle(x, y, radius, paint);
         }
         @Override public void drawColor(int color, PorterDuff.Mode mode) {
-            VulkanGraphicsEngine.this.drawColor(color, mode);
+            target().drawColor(color, mode);
         }
-        @Override public void drawColor(int color) { VulkanGraphicsEngine.this.drawColor(color); }
+        @Override public void drawColor(int color) { target().drawColor(color); }
         @Override public void drawLine(float x1, float y1, float x2, float y2, Paint paint) {
-            VulkanGraphicsEngine.this.drawLine(x1, y1, x2, y2, paint);
+            target().drawLine(x1, y1, x2, y2, paint);
         }
         @Override public void drawLines(float[] points, int offset, int count, Paint paint) {
-            VulkanGraphicsEngine.this.drawLines(points, offset, count, paint);
+            target().drawLines(points, offset, count, paint);
         }
         @Override public void drawRect(Rect rect, Paint paint) {
-            VulkanGraphicsEngine.this.drawRect(rect, paint);
+            target().drawRect(rect, paint);
         }
         @Override public void drawRect(RectF rect, Paint paint) {
-            VulkanGraphicsEngine.this.drawRect(rect, paint);
+            target().drawRect(rect, paint);
         }
         @Override public void drawText(String text, float x, float y, Paint paint) {
-            VulkanGraphicsEngine.this.drawText(text, x, y, paint);
+            target().drawText(text, x, y, paint);
         }
-        @Override public void restore() { VulkanGraphicsEngine.this.restore(); }
+        @Override public void restore() { target().restore(); }
         @Override public void rotate(float angle, float x, float y) {
-            VulkanGraphicsEngine.this.rotate(angle, x, y);
+            target().rotate(angle, x, y);
         }
-        @Override public void save() { VulkanGraphicsEngine.this.save(); }
-        @Override public void scale(float x, float y) { VulkanGraphicsEngine.this.scale(x, y); }
+        @Override public void save() { target().save(); }
+        @Override public void scale(float x, float y) { target().scale(x, y); }
         @Override public void scale(float x, float y, float pivotX, float pivotY) {
-            VulkanGraphicsEngine.this.scaleAround(x, y, pivotX, pivotY);
+            target().scaleAround(x, y, pivotX, pivotY);
         }
-        @Override public void setBitmapFromImage(GameImage image) { }
+        @Override public void setBitmapFromImage(GameImage image) { bind(image); }
         @Override public void translate(float x, float y) {
-            VulkanGraphicsEngine.this.translate(x, y);
+            target().translate(x, y);
         }
         @Override public void runDrawTimeCallback(DrawTimeCallback callback) {
-            VulkanGraphicsEngine.this.runDrawTimeCallback(callback);
+            target().runDrawTimeCallback(callback);
         }
         @Override public void flushBitmap(Bitmap bitmap) { }
-        @Override public void enterLock(Lock lock) { VulkanGraphicsEngine.this.enterLock(lock); }
-        @Override public void leaveLock(Lock lock) { VulkanGraphicsEngine.this.leaveLock(lock); }
+        @Override public void enterLock(Lock lock) { target().enterLock(lock); }
+        @Override public void leaveLock(Lock lock) { target().leaveLock(lock); }
         @Override public boolean compileShader(ShaderProgram shader) {
-            VulkanGraphicsEngine.this.compileShader(shader);
+            target().compileShader(shader);
             return true;
         }
     }
