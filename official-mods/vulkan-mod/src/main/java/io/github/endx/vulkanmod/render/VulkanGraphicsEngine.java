@@ -165,13 +165,25 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         }
     }
 
+    private void beforeNativeTargetMutation() {
+        if (nativeTarget() && renderTarget instanceof VulkanGameImage) {
+            ((VulkanGameImage) renderTarget).submitPendingNativeConsumers();
+        }
+    }
+
     private void recordColoredQuad(VulkanColoredQuad quad) {
-        if (nativeTarget()) offscreenBuilder.coloredQuad(quad);
+        if (nativeTarget()) {
+            beforeNativeTargetMutation();
+            offscreenBuilder.coloredQuad(quad);
+        }
         else VulkanRuntime.recordNativeColoredQuad(quad);
     }
 
     private void recordTexturedQuad(VulkanTexturedQuad quad) {
-        if (nativeTarget()) offscreenBuilder.texturedQuad(quad);
+        if (nativeTarget()) {
+            beforeNativeTargetMutation();
+            offscreenBuilder.texturedQuad(quad);
+        }
         else VulkanRuntime.recordNativeTexturedQuad(quad);
     }
 
@@ -249,6 +261,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (image == null || source == null || right < left || bottom < top) return;
         GameImage real = image.getRealImage();
         if (real == null) real = image;
+        boolean samplesNativeRenderTarget = real instanceof VulkanGameImage
+                && ((VulkanGameImage) real).nativeRenderTargetHandle() != 0L;
         if (real instanceof VulkanGameImage && real != renderTarget) {
             // Slick makes render-to-texture draws visible before a later draw samples that image.
             // Native child backends batch commands, so explicitly close the producer pass here.
@@ -280,6 +294,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
                 source.a / (float) imageWidth, source.b / (float) imageHeight,
                 source.c / (float) imageWidth, source.d / (float) imageHeight,
                 tint[0], tint[1], tint[2], tint[3], drawState));
+        if (nativeTarget() && samplesNativeRenderTarget && real != renderTarget) {
+            // Delay the consumer normally, but make the source aware of it. If the game reuses
+            // that scratch image, its next mutation submits this consumer first. Stable render
+            // targets remain fully batched and avoid per-image queue-idle stalls during loading.
+            ((VulkanGameImage) real).registerPendingNativeConsumer(this,
+                    this::submitOffscreen);
+        }
     }
 
     @Override public GraphicsEngine createBackendForImage(GameImage image) {
@@ -455,30 +476,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawTiledImage(image, destination, paint);
     }
     @Override public void drawTiledImage(GameImage image, Rect destination, Paint paint,
-                                         int offsetX, int offsetY, int stepX, int stepY) {
-        if (renderTarget != null) {
-            int tileWidth = stepX > 0 ? stepX : image.getWidth();
-            int tileHeight = stepY > 0 ? stepY : image.getHeight();
-            for (int y = destination.b + offsetY; y < destination.d; y += tileHeight) {
-                for (int x = destination.a + offsetX; x < destination.c; x += tileWidth) {
-                    drawImageCpu(image, full(image), x, y,
-                            x + image.getWidth(), y + image.getHeight(), paint, null);
-                }
-            }
-        } else if (nativeRoot()) {
-            int tileWidth = stepX > 0 ? stepX : image.getWidth();
-            int tileHeight = stepY > 0 ? stepY : image.getHeight();
-            for (int y = destination.b + offsetY; y < destination.d; y += tileHeight) {
-                for (int x = destination.a + offsetX; x < destination.c; x += tileWidth) {
-                    float right = Math.min(destination.c, x + image.getWidth());
-                    float bottom = Math.min(destination.d, y + image.getHeight());
-                    Rect source = new Rect(0, 0, Math.max(0, Math.round(right - x)),
-                            Math.max(0, Math.round(bottom - y)));
-                    nativeImage(image, source, x, y, right, bottom, paint, null);
-                }
-            }
+                                         int offsetX, int offsetY,
+                                         int overlapX, int overlapY) {
+        if (nativeRoot() || nativeTarget()) {
+            drawTiledImageNative(image, destination, paint,
+                    offsetX, offsetY, overlapX, overlapY);
         } else delegate.drawTiledImage(image, destination, paint,
-                offsetX, offsetY, stepX, stepY);
+                offsetX, offsetY, overlapX, overlapY);
     }
     @Override public void drawTiledImage(GameImage image, RectF destination, Paint paint,
                                          float offsetX, float offsetY, int stepX, int stepY) {
@@ -494,6 +498,56 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
                     stepX, stepY);
         } else delegate.drawTiledImage(image, destination, paint,
                 offsetX, offsetY, stepX, stepY);
+    }
+
+    /** Exact native equivalent of the game's RenderUtils tiled-image clipping algorithm. */
+    private void drawTiledImageNative(GameImage image, Rect destination, Paint paint,
+                                      int offsetX, int offsetY,
+                                      int overlapX, int overlapY) {
+        if (image == null || destination == null) return;
+        int imageWidth = image.getWidth();
+        int imageHeight = image.getHeight();
+        if (imageWidth <= 0 || imageHeight <= 0) return;
+        offsetX %= imageWidth;
+        offsetY %= imageHeight;
+        if (offsetX < 0) offsetX += imageWidth;
+        if (offsetY < 0) offsetY += imageHeight;
+        int stepX = imageWidth - overlapX;
+        int stepY = imageHeight - overlapY;
+        if (stepX <= 0 || stepY <= 0) return;
+        int startX = destination.a - offsetX;
+        int draws = 0;
+        for (int x = startX; x < destination.c; x += stepX) {
+            int startY = destination.b - offsetY;
+            for (int y = startY; y < destination.d; y += stepY) {
+                if (++draws > 2000) return;
+                int drawWidth = Math.min(imageWidth, destination.c - x);
+                int drawHeight = Math.min(imageHeight, destination.d - y);
+                if (drawWidth <= 0 || drawHeight <= 0) break;
+                int sourceLeft = 0;
+                int sourceTop = 0;
+                int drawLeft = x;
+                int drawTop = y;
+                int drawRight = x + drawWidth;
+                int drawBottom = y + drawHeight;
+                if (drawLeft < destination.a) {
+                    sourceLeft += destination.a - drawLeft;
+                    drawLeft = destination.a;
+                }
+                if (drawTop < destination.b) {
+                    sourceTop += destination.b - drawTop;
+                    drawTop = destination.b;
+                }
+                Rect source = new Rect(sourceLeft, sourceTop, drawWidth, drawHeight);
+                if (nativeTarget()) {
+                    drawImageCpu(image, source, drawLeft, drawTop,
+                            drawRight, drawBottom, paint, null);
+                } else {
+                    nativeImage(image, source, drawLeft, drawTop,
+                            drawRight, drawBottom, paint, null);
+                }
+            }
+        }
     }
     @Override public void drawColor(int color) {
         if (renderTarget != null) fillTarget(color);
@@ -518,8 +572,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawText(String text, float x, float y, Paint paint) {
         if (nativeRoot()) VulkanRuntime.recordNativeText(text, x, y, paint, state(paint));
-        else if (nativeTarget()) VulkanRuntime.recordNativeText(
-                offscreenBuilder, text, x, y, paint, state(paint));
+        else if (nativeTarget()) {
+            beforeNativeTargetMutation();
+            VulkanRuntime.recordNativeText(offscreenBuilder, text, x, y, paint, state(paint));
+        }
         else if (cpuTarget()) drawCpuText(text, x, y, paint);
         else delegate.drawText(text, x, y, paint);
     }
@@ -534,7 +590,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawRect(rect, paint);
     }
     @Override public void beginFrame() {
-        if (nativeTarget()) resetOffscreenBuilder();
+        if (nativeTarget()) {
+            beforeNativeTargetMutation();
+            resetOffscreenBuilder();
+        }
         else if (renderTarget == null && !nativeRoot()) delegate.beginFrame();
     }
     @Override public void endFrame() {
@@ -926,6 +985,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
 
     private void fillTarget(int argb) {
         if (nativeTarget()) {
+            beforeNativeTargetMutation();
             // A full-target clear supersedes every command not submitted yet. Later flushes use
             // a LOAD pass, so discarding this pending prefix also preserves the original ordering.
             resetOffscreenBuilder();
@@ -1140,6 +1200,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
 
     private void drawCpuText(String text, float x, float y, Paint paint) {
         if (nativeTarget()) {
+            beforeNativeTargetMutation();
             VulkanRuntime.recordNativeText(offscreenBuilder, text, x, y, paint, state(paint));
             return;
         }

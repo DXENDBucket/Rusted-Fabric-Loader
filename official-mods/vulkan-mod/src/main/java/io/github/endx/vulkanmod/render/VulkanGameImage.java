@@ -9,6 +9,8 @@ import java.awt.image.DataBufferInt;
 import java.awt.image.DirectColorModel;
 import java.awt.image.WritableRaster;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /** CPU-backed game image whose pixels can be uploaded without an OpenGL readback. */
 public final class VulkanGameImage extends GameImage {
@@ -16,6 +18,7 @@ public final class VulkanGameImage extends GameImage {
     private final boolean opaque;
     private transient long nativeRenderTargetHandle;
     private transient Runnable nativeRenderTargetFlusher;
+    private transient Map<Object, Runnable> pendingNativeConsumers;
 
     public VulkanGameImage(int width, int height, int[] argb) {
         this(width, height, argb, false);
@@ -62,6 +65,23 @@ public final class VulkanGameImage extends GameImage {
     /** Makes pending native draw commands visible before this image is sampled as a texture. */
     public void submitPendingNativeDraws() {
         if (nativeRenderTargetFlusher != null) nativeRenderTargetFlusher.run();
+    }
+
+    /** Records a deferred render target whose commands currently sample this image. */
+    public void registerPendingNativeConsumer(Object key, Runnable submitter) {
+        if (key == null || submitter == null) throw new NullPointerException();
+        if (pendingNativeConsumers == null) {
+            pendingNativeConsumers = new IdentityHashMap<Object, Runnable>();
+        }
+        pendingNativeConsumers.put(key, submitter);
+    }
+
+    /** Executes deferred consumers before this scratch image is overwritten. */
+    public void submitPendingNativeConsumers() {
+        if (pendingNativeConsumers == null || pendingNativeConsumers.isEmpty()) return;
+        Runnable[] submitters = pendingNativeConsumers.values().toArray(new Runnable[0]);
+        pendingNativeConsumers.clear();
+        for (Runnable submitter : submitters) submitter.run();
     }
 
     @Override public boolean canReadPixels() { return true; }
