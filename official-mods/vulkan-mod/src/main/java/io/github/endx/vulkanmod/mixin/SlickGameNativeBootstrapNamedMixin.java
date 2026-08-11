@@ -146,7 +146,10 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
         vulkanmod$ensureLoadingFont(graphics);
         if (vulkanmod$loadingFont == null) return;
         int dots = vulkanmod$loadingAnimationFrame++ % 4 + 1;
-        StringBuilder loadingBuilder = new StringBuilder("Loading");
+        // Slick intentionally reserves four blank glyphs on the left, then pads the complete
+        // string to 17 characters. Centering that fixed-width run keeps the visible label in the
+        // same place while its dot count changes.
+        StringBuilder loadingBuilder = new StringBuilder("    Loading");
         for (int dot = 0; dot < dots; dot++) loadingBuilder.append('.');
         while (loadingBuilder.length() < 17) loadingBuilder.append(' ');
         String loading = loadingBuilder.toString();
