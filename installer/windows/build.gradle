@@ -66,6 +66,7 @@ tasks.register('prepareWindowsInstallerPayload', Zip) {
             project(':rusted-fabric-api').tasks.named('remapJarToOfficial'),
             project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial'),
             project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial'),
+            project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial'),
             tasks.named('compileWindowsLauncher'), tasks.named('generateInstallerPayloadMetadata')
 
     archiveFileName.set("rusted-fabric-installer-payload-${project.version}.zip")
@@ -92,6 +93,9 @@ tasks.register('prepareWindowsInstallerPayload', Zip) {
     }
     into('components/ini_essentials/javamods') {
         from project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/performance_profiler/javamods') {
+        from project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
     }
     into('metadata') {
         from generatedMetadata
@@ -145,6 +149,7 @@ tasks.register('verifyWindowsInstallerPayload') {
                     ~/components\/api\/javamods\/rusted-fabric-api-.*\.jar/,
                     ~/components\/mod_menu\/javamods\/java-mod-menu-.*\.jar/,
                     ~/components\/ini_essentials\/javamods\/ini-essentials-.*\.jar/,
+                    ~/components\/performance_profiler\/javamods\/performance-profiler-.*\.jar/,
                     ~/metadata\/version\.txt/
             ]
             required.each { pattern ->
@@ -259,6 +264,7 @@ tasks.register('prepareEndXiomDevSignedInstallerPayload', Zip) {
             project(':rusted-fabric-api').tasks.named('remapJarToOfficial'),
             project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial'),
             project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial'),
+            project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial'),
             tasks.named('signWindowsLauncherEndXiomDev'), tasks.named('generateInstallerPayloadMetadata')
 
     archiveFileName.set("rusted-fabric-installer-payload-${project.version}-EndXiom-dev-signed.zip")
@@ -285,6 +291,9 @@ tasks.register('prepareEndXiomDevSignedInstallerPayload', Zip) {
     }
     into('components/ini_essentials/javamods') {
         from project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/performance_profiler/javamods') {
+        from project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
     }
     into('metadata') {
         from generatedMetadata

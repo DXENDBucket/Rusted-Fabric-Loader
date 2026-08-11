@@ -159,7 +159,7 @@ android.sourceSets.main.jniLibs.srcDir(generatedLwjglNatives)
 def repositoryRoot = rootProject.file('../..')
 def repositoryVersions = new Properties()
 new File(repositoryRoot, 'versions.properties').withInputStream { repositoryVersions.load(it) }
-def requiredOfficialVersions = ['api', 'javaModMenu', 'iniEssentials']
+def requiredOfficialVersions = ['api', 'javaModMenu', 'iniEssentials', 'performanceProfiler']
 requiredOfficialVersions.each { key ->
     if (!repositoryVersions.getProperty(key)?.trim()) {
         throw new GradleException("Missing ${key} in repository versions.properties")
@@ -171,6 +171,8 @@ def officialMenuJar = repositoryRoot.toPath().resolve(
         "official-mods/java-mod-menu/build/libs/java-mod-menu-${repositoryVersions.getProperty('javaModMenu')}-official.jar").toFile()
 def officialIniJar = repositoryRoot.toPath().resolve(
         "official-mods/ini-essentials/build/libs/ini-essentials-${repositoryVersions.getProperty('iniEssentials')}-official.jar").toFile()
+def officialProfilerJar = repositoryRoot.toPath().resolve(
+        "official-mods/performance-profiler/build/libs/performance-profiler-${repositoryVersions.getProperty('performanceProfiler')}-official.jar").toFile()
 
 tasks.register('buildOfficialModAssets', Exec) {
     group = 'build setup'
@@ -180,17 +182,20 @@ tasks.register('buildOfficialModAssets', Exec) {
             ? [new File(repositoryRoot, 'gradlew.bat').absolutePath,
                ':rusted-fabric-api:remapJarToOfficial',
                ':official-mods:java-mod-menu:remapJarToOfficial',
-               ':official-mods:ini-essentials:remapJarToOfficial']
+               ':official-mods:ini-essentials:remapJarToOfficial',
+               ':official-mods:performance-profiler:remapJarToOfficial']
             : [new File(repositoryRoot, 'gradlew').absolutePath,
                ':rusted-fabric-api:remapJarToOfficial',
                ':official-mods:java-mod-menu:remapJarToOfficial',
-               ':official-mods:ini-essentials:remapJarToOfficial']
+               ':official-mods:ini-essentials:remapJarToOfficial',
+               ':official-mods:performance-profiler:remapJarToOfficial']
     inputs.files(fileTree(new File(repositoryRoot, 'rusted-fabric-api/src')),
             fileTree(new File(repositoryRoot, 'official-mods/java-mod-menu/src')),
             fileTree(new File(repositoryRoot, 'official-mods/ini-essentials/src')),
+            fileTree(new File(repositoryRoot, 'official-mods/performance-profiler/src')),
             new File(repositoryRoot, 'src/main/resources/mappings/mappings.tiny'),
             new File(repositoryRoot, 'versions.properties'))
-    outputs.files(officialApiJar, officialMenuJar, officialIniJar)
+    outputs.files(officialApiJar, officialMenuJar, officialIniJar, officialProfilerJar)
 }
 
 tasks.register('prepareOfficialModAssets', Copy) {
@@ -199,6 +204,7 @@ tasks.register('prepareOfficialModAssets', Copy) {
     from(officialApiJar) { rename { 'rusted-fabric-api.jar' } }
     from(officialMenuJar) { rename { 'java-mod-menu.jar' } }
     from(officialIniJar) { rename { 'ini-essentials.jar' } }
+    from(officialProfilerJar) { rename { 'performance-profiler.jar' } }
 }
 
 tasks.register('prepareComplianceAssets') {
@@ -646,8 +652,9 @@ tasks.register('verifyNoGamePayload') {
                 || !sourceOfferFound || !thirdPartyNoticesFound || !disclaimerFound) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
-        if (officialModsFound != 3 || officialModIds != [
-                'rusted_fabric_api', 'java_mod_menu', 'ini_essentials'] as Set) {
+        if (officialModsFound != 4 || officialModIds != [
+                'rusted_fabric_api', 'java_mod_menu', 'ini_essentials',
+                'performance_profiler'] as Set) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
         if (!forbidden.isEmpty()) {

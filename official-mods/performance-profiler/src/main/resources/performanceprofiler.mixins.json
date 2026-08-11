@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.endx.performanceprofiler.mixin",
+  "compatibilityLevel": "JAVA_13",
+  "mixins": [
+    "GameLoopProfilerNamedMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

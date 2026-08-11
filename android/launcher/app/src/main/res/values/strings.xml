@@ -71,7 +71,7 @@
     <string name="content_manage_ini">Manage and import INI mods</string>
     <string name="content_manage_maps">Manage and import maps</string>
     <string name="content_manage_java">Manage and import Java mods</string>
-    <string name="content_official_note">Rusted Fabric API and Java Mod Menu are enabled initially. INI Essentials is included but disabled initially.</string>
+    <string name="content_official_note">Rusted Fabric API, Java Mod Menu, and Performance Profiler are enabled initially. INI Essentials is included but disabled initially.</string>
     <string name="content_ini_title">INI mods</string>
     <string name="content_maps_title">Maps</string>
     <string name="content_java_title">Java mods</string>

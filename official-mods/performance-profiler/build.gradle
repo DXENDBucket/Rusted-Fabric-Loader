@@ -1,0 +1,104 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.github.endx'
+version = rootProject.componentVersions.performanceProfiler
+
+repositories {
+    if (rootProject.hasProperty('offlineRuntimeJars')) {
+        flatDir { dirs rootProject.file(rootProject.property('offlineRuntimeJars')) }
+    } else {
+        mavenCentral()
+        maven { url = "https://maven.fabricmc.net/" }
+    }
+}
+
+def namedGameJarFile = {
+    rootProject.hasProperty('namedGameJar')
+            ? rootProject.file(rootProject.property('namedGameJar'))
+            : rootProject.layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
+}
+
+def mappingsTinyFile = {
+    rootProject.hasProperty('mappingsTiny')
+            ? rootProject.file(rootProject.property('mappingsTiny'))
+            : rootProject.file("src/main/resources/mappings/mappings.tiny")
+}
+
+dependencies {
+    compileOnly "net.fabricmc:fabric-loader:0.18.1"
+    compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
+    compileOnly project(":rusted-fabric-api")
+    compileOnly files({ namedGameJarFile() })
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn rootProject.tasks.named('generateNamedGameJar')
+    options.release = 13
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+jar {
+    archiveBaseName.set("performance-profiler")
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+        rename { 'LICENSE-rusted-fabric.txt' }
+    }
+}
+
+tasks.register('verifyPerformanceProfiler') {
+    group = 'verification'
+    dependsOn jar
+    inputs.file(tasks.jar.archiveFile)
+    doLast {
+        new java.util.zip.ZipFile(tasks.jar.archiveFile.get().asFile).withCloseable { zip ->
+            def mod = new groovy.json.JsonSlurper().parseText(
+                    zip.getInputStream(zip.getEntry('fabric.mod.json')).getText('UTF-8'))
+            if (mod.id != 'performance_profiler'
+                    || mod.environment != 'client'
+                    || mod.custom?.get('rusted_fabric:multiplayer')?.mode != 'client_only'
+                    || zip.getEntry('io/github/endx/performanceprofiler/PerformanceProfiler.class') == null
+                    || zip.getEntry('performanceprofiler.mixins.json') == null) {
+                throw new GradleException('Performance Profiler artifact is incomplete')
+            }
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyPerformanceProfiler')
+
+tasks.register('remapJarToOfficial', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Remaps Performance Profiler from named names to official runtime names.'
+    dependsOn jar, rootProject.tasks.named('classes'), rootProject.tasks.named('generateNamedGameJar')
+
+    classpath = rootProject.sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.RemapJar')
+
+    def outputJar = layout.buildDirectory.file(
+            "libs/performance-profiler-${project.version}-official.jar")
+    inputs.file(tasks.jar.archiveFile)
+    inputs.file(provider { mappingsTinyFile() })
+    inputs.file(provider { namedGameJarFile() })
+    outputs.file(outputJar)
+
+    doFirst {
+        def output = outputJar.get().asFile
+        output.parentFile.mkdirs()
+        setArgs([
+                tasks.jar.archiveFile.get().asFile.absolutePath,
+                output.absolutePath,
+                mappingsTinyFile().absolutePath,
+                'named',
+                'official',
+                namedGameJarFile().absolutePath
+        ] + sourceSets.main.compileClasspath.files.collect { it.absolutePath })
+    }
+}

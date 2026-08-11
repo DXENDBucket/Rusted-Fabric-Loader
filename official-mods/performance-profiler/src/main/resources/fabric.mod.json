@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "performance_profiler",
+  "version": "${version}",
+  "name": "Performance Profiler",
+  "description": "Low-overhead frame metrics and on-demand Java sampling profiler for Rusted Fabric.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.endx.performanceprofiler.PerformanceProfiler"
+    ]
+  },
+  "mixins": [
+    "performanceprofiler.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "rusted_fabric_api": "*"
+  },
+  "custom": {
+    "rusted_fabric:multiplayer": {
+      "mode": "client_only"
+    }
+  }
+}

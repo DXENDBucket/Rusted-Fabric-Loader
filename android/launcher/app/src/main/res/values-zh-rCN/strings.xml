@@ -71,7 +71,7 @@
     <string name="content_manage_ini">管理和导入 INI 模组</string>
     <string name="content_manage_maps">管理和导入地图</string>
     <string name="content_manage_java">管理和导入 Java 模组</string>
-    <string name="content_official_note">Rusted Fabric API 和 Java Mod Menu 初始启用；INI Essentials 已随启动器提供，但初始禁用。</string>
+    <string name="content_official_note">Rusted Fabric API、Java Mod Menu 和 Performance Profiler 初始启用；INI Essentials 已随启动器提供，但初始禁用。</string>
     <string name="content_ini_title">INI 模组</string>
     <string name="content_maps_title">地图</string>
     <string name="content_java_title">Java 模组</string>

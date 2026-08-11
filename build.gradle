@@ -23,7 +23,8 @@ group = 'io.github.endx'
 
 def releaseVersions = new Properties()
 file('versions.properties').withInputStream { releaseVersions.load(it) }
-def requiredReleaseVersions = ['loader', 'api', 'javaModMenu', 'iniEssentials', 'vulkanMod', 'exampleMod']
+def requiredReleaseVersions = ['loader', 'api', 'javaModMenu', 'iniEssentials', 'vulkanMod',
+                               'performanceProfiler', 'exampleMod']
 requiredReleaseVersions.each { key ->
     if (!releaseVersions.getProperty(key)?.trim()) {
         throw new GradleException("Missing ${key} in versions.properties")
@@ -329,6 +330,8 @@ tasks.register('verifyDistribution') {
             ':official-mods:ini-essentials:remapJarToOfficial',
             ':official-mods:vulkan-mod:check',
             ':official-mods:vulkan-mod:remapJarToOfficial',
+            ':official-mods:performance-profiler:check',
+            ':official-mods:performance-profiler:remapJarToOfficial',
             ':official-mods:example-mod:remapJarToOfficial'
 
     doLast {
@@ -338,6 +341,7 @@ tasks.register('verifyDistribution') {
         def modMenuProject = project(':official-mods:java-mod-menu')
         def iniEssentialsProject = project(':official-mods:ini-essentials')
         def vulkanModProject = project(':official-mods:vulkan-mod')
+        def performanceProfilerProject = project(':official-mods:performance-profiler')
         def apiJar = apiProject.layout.buildDirectory
                 .file("libs/official/rusted-fabric-api-${apiProject.version}.jar").get().asFile
         def exampleJar = exampleProject.layout.buildDirectory
@@ -348,9 +352,11 @@ tasks.register('verifyDistribution') {
                 .file("libs/ini-essentials-${iniEssentialsProject.version}-official.jar").get().asFile
         def vulkanModJar = vulkanModProject.layout.buildDirectory
                 .file("libs/vulkan-mod-${vulkanModProject.version}-official.jar").get().asFile
+        def performanceProfilerJar = performanceProfilerProject.layout.buildDirectory
+                .file("libs/performance-profiler-${performanceProfilerProject.version}-official.jar").get().asFile
         def namedGameJar = namedGameJarFile()
 
-        [providerJar, apiJar, modMenuJar, iniEssentialsJar, vulkanModJar,
+        [providerJar, apiJar, modMenuJar, iniEssentialsJar, vulkanModJar, performanceProfilerJar,
          exampleJar, namedGameJar].each { artifact ->
             if (!artifact.isFile() || artifact.length() == 0L) {
                 throw new GradleException("Missing distribution artifact: ${artifact}")
@@ -801,6 +807,18 @@ tasks.register('verifyDistribution') {
             }
         }
 
+        new java.util.zip.ZipFile(performanceProfilerJar).withCloseable { zip ->
+            def mod = new groovy.json.JsonSlurper().parseText(readZipText(zip, 'fabric.mod.json'))
+            def multiplayer = mod.custom?.get('rusted_fabric:multiplayer')
+            if (mod.id != 'performance_profiler'
+                    || mod.version != performanceProfilerProject.version.toString()
+                    || multiplayer?.mode != 'client_only'
+                    || zip.getEntry('io/github/endx/performanceprofiler/PerformanceProfiler.class') == null
+                    || zip.getEntry('performanceprofiler.mixins.json') == null) {
+                throw new GradleException('Official Performance Profiler artifact is incomplete or inconsistent')
+            }
+        }
+
         logger.lifecycle("Verified distribution ${project.version} for Rusted Warfare ${rustedGameVersion} / mappings ${rustedMappingsVersion}")
     }
 }
@@ -816,6 +834,11 @@ def installExampleModEnabled = {
 def installIniEssentialsEnabled = {
     project.hasProperty('installIniEssentials')
             && project.property('installIniEssentials').toString().toBoolean()
+}
+
+def installPerformanceProfilerEnabled = {
+    !project.hasProperty('installPerformanceProfiler')
+            || project.property('installPerformanceProfiler').toString().toBoolean()
 }
 
 tasks.register('installToGameDir') {
@@ -885,6 +908,21 @@ tasks.register('installToGameDir') {
         copy {
             from modMenuRemapTask.outputs.files.singleFile
             into javaModsDir
+        }
+
+        if (installPerformanceProfilerEnabled()) {
+            def profilerRemapTask = project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial').get()
+            copy {
+                from profilerRemapTask.outputs.files.singleFile
+                into javaModsDir
+            }
+            def installedProfilerJar = new File(javaModsDir,
+                    profilerRemapTask.outputs.files.singleFile.name).canonicalFile
+            javaModsDir.eachFileMatch(~/performance-profiler-.*\.jar/) { candidate ->
+                if (candidate.canonicalFile != installedProfilerJar) {
+                    candidate.delete()
+                }
+            }
         }
         def installedModMenuJar = new File(javaModsDir, modMenuRemapTask.outputs.files.singleFile.name).canonicalFile
         javaModsDir.eachFileMatch(~/(?:rusted-fabric-mod-menu|java-mod-menu)-.*\.jar/) { candidate ->

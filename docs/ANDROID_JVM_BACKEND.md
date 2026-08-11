@@ -37,8 +37,8 @@ artifacts.
 - The launcher exposes an **Open folder** action for all three active content directories. Android
   11+ uses the system all-files-access grant so ordinary Java file APIs and the game hot-reload path
   see edits made by external file managers immediately.
-- The APK initially provisions Rusted Fabric API and Java Mod Menu enabled, matching the default
-  Windows install, and provisions INI Essentials disabled. Bundled updates preserve later enable
+- The APK initially provisions Rusted Fabric API, Java Mod Menu, and Performance Profiler enabled,
+  matching the default Windows install, and provisions INI Essentials disabled. Bundled updates preserve later enable
   state unless the user has installed a manual replacement with the same mod ID.
 - ZIP path traversal, ambiguous names, duplicate outputs, multiple game roots, excessive expansion,
   excessive size/file count, and deep nesting are rejected. Path-containment checks also protect the

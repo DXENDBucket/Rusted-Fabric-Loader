@@ -17,6 +17,7 @@ are:
 
 - Rusted Fabric API: selected by default.
 - Java Mod Menu: selected by default and requires the API.
+- Performance Profiler: selected by default and requires the API.
 - INI Essentials: optional and not selected by default.
 - Example Mod: development-only and never included.
 

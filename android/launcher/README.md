@@ -22,9 +22,10 @@ lists INI mods, custom maps, ordinary Fabric Jars, and `.javamod` packages on th
 Environment replacement and diagnostics live on the third page. Maps and Java mods can be enabled
 or disabled without rewriting them; switch changes are staged until the user confirms the dialog.
 All managed content, including the bundled API, can be disabled, deleted, or replaced by importing
-a newer Jar with the same mod ID. The APK supplies the same official Rusted Fabric API and Java Mod
-Menu selected by default on Windows, plus INI Essentials installed disabled by default. A manual
-official-ID replacement is preserved when it is newer than the bundled copy; an equal or newer
+a newer Jar with the same mod ID. The APK supplies the same official Rusted Fabric API, Java Mod
+Menu, and Performance Profiler selected by default on Windows, plus INI Essentials installed
+disabled by default. A manual official-ID replacement is preserved when it is newer than the
+bundled copy; an equal or newer
 launcher bundle updates the managed official Jar while preserving its enabled/disabled state. None
 of these Jars contains the game itself.
 

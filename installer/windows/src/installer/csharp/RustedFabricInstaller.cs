@@ -47,6 +47,7 @@ namespace RustedFabricInstaller
                         InstallApi = true,
                         InstallModMenu = true,
                         InstallIniEssentials = false,
+                        InstallPerformanceProfiler = true,
                         CreateShortcut = false
                     }, delegate(string ignored) { });
                     return 0;
@@ -71,6 +72,7 @@ namespace RustedFabricInstaller
         private readonly CheckBox api = new CheckBox();
         private readonly CheckBox modMenu = new CheckBox();
         private readonly CheckBox iniEssentials = new CheckBox();
+        private readonly CheckBox performanceProfiler = new CheckBox();
         private readonly CheckBox shortcut = new CheckBox();
         private readonly CheckBox riskAcceptance = new CheckBox();
         private readonly LinkLabel disclaimerLink = new LinkLabel();
@@ -125,7 +127,7 @@ namespace RustedFabricInstaller
             GroupBox components = new GroupBox();
             components.Text = "安装组件 / Components";
             components.Location = new Point(30, 158);
-            components.Size = new Size(630, 145);
+            components.Size = new Size(630, 173);
             components.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(components);
 
@@ -148,16 +150,23 @@ namespace RustedFabricInstaller
             iniEssentials.Location = new Point(18, 84);
             components.Controls.Add(iniEssentials);
 
+            performanceProfiler.Text = "Performance Profiler (recommended, in-game diagnostics)";
+            performanceProfiler.Checked = true;
+            performanceProfiler.AutoSize = true;
+            performanceProfiler.Location = new Point(18, 112);
+            performanceProfiler.CheckedChanged += ComponentDependencyChanged;
+            components.Controls.Add(performanceProfiler);
+
             shortcut.Text = "创建桌面快捷方式 / Create desktop shortcut";
             shortcut.Checked = true;
             shortcut.AutoSize = true;
-            shortcut.Location = new Point(18, 112);
+            shortcut.Location = new Point(18, 140);
             components.Controls.Add(shortcut);
             ComponentDependencyChanged(null, EventArgs.Empty);
 
             GroupBox safety = new GroupBox();
             safety.Text = "安全与免责声明 / Security notice";
-            safety.Location = new Point(30, 315);
+            safety.Location = new Point(30, 343);
             safety.Size = new Size(630, 125);
             safety.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(safety);
@@ -183,8 +192,8 @@ namespace RustedFabricInstaller
             disclaimerLink.LinkClicked += ShowDisclaimer;
             safety.Controls.Add(disclaimerLink);
 
-            log.Location = new Point(30, 452);
-            log.Size = new Size(630, 110);
+            log.Location = new Point(30, 480);
+            log.Size = new Size(630, 82);
             log.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             log.Multiline = true;
             log.ReadOnly = true;
@@ -220,7 +229,7 @@ namespace RustedFabricInstaller
 
         private void ComponentDependencyChanged(object sender, EventArgs args)
         {
-            if (modMenu.Checked)
+            if (modMenu.Checked || performanceProfiler.Checked)
             {
                 api.Checked = true;
                 api.Enabled = false;
@@ -277,6 +286,7 @@ namespace RustedFabricInstaller
             options.InstallApi = api.Checked;
             options.InstallModMenu = modMenu.Checked;
             options.InstallIniEssentials = iniEssentials.Checked;
+            options.InstallPerformanceProfiler = performanceProfiler.Checked;
             options.CreateShortcut = shortcut.Checked;
 
             SetBusy(true);
@@ -494,6 +504,7 @@ namespace RustedFabricInstaller
         public bool InstallApi;
         public bool InstallModMenu;
         public bool InstallIniEssentials;
+        public bool InstallPerformanceProfiler;
         public bool CreateShortcut;
     }
 
@@ -509,6 +520,8 @@ namespace RustedFabricInstaller
         public static InstallSummary Install(InstallOptions options, Action<string> log)
         {
             string game = ValidateGameDirectory(options.GameDirectory);
+            if (options.InstallPerformanceProfiler && !options.InstallApi)
+                throw new InvalidOperationException("Performance Profiler requires Rusted Fabric API.");
             if (options.InstallModMenu && !options.InstallApi)
                 throw new InvalidOperationException("Java Mod Menu 依赖 Rusted Fabric API。");
 
@@ -526,6 +539,7 @@ namespace RustedFabricInstaller
             if (options.InstallApi) installedComponents.Add("api");
             if (options.InstallModMenu) installedComponents.Add("mod_menu");
             if (options.InstallIniEssentials) installedComponents.Add("ini_essentials");
+            if (options.InstallPerformanceProfiler) installedComponents.Add("performance_profiler");
 
             try
             {
@@ -640,6 +654,13 @@ namespace RustedFabricInstaller
                 relative = entry.Substring("components/ini_essentials/".Length);
                 return true;
             }
+            if (options.InstallPerformanceProfiler
+                && entry.StartsWith("components/performance_profiler/", StringComparison.Ordinal))
+            {
+                component = "performance_profiler";
+                relative = entry.Substring("components/performance_profiler/".Length);
+                return true;
+            }
             return false;
         }
 
@@ -733,6 +754,8 @@ namespace RustedFabricInstaller
                 CleanupPattern(Path.Combine(game, "javamods"), "java-mod-menu-*.jar", retained, log);
             if (options.InstallIniEssentials)
                 CleanupPattern(Path.Combine(game, "javamods"), "ini-essentials-*.jar", retained, log);
+            if (options.InstallPerformanceProfiler)
+                CleanupPattern(Path.Combine(game, "javamods"), "performance-profiler-*.jar", retained, log);
         }
 
         private static void CleanupPattern(string directory, string pattern, HashSet<string> retained,
@@ -881,6 +904,7 @@ namespace RustedFabricInstaller
                 RequirePrefix(names, "components/api/javamods/rusted-fabric-api-");
                 RequirePrefix(names, "components/mod_menu/javamods/java-mod-menu-");
                 RequirePrefix(names, "components/ini_essentials/javamods/ini-essentials-");
+                RequirePrefix(names, "components/performance_profiler/javamods/performance-profiler-");
                 Require(names, "metadata/version.txt");
                 foreach (string name in names)
                 {

@@ -69,7 +69,7 @@ gradlew.bat windowsInstaller
 The single executable is written to
 `installer/windows/build/dist/Rusted-Fabric-Installer-<version>.exe`. It locates or asks for an
 existing Rusted Warfare directory and installs a small EXE launcher plus a BAT fallback. Rusted
-Fabric API and Java Mod Menu are selected by default; INI Essentials is optional. The installer
+Fabric API, Java Mod Menu, and Performance Profiler are selected by default; INI Essentials is optional. The installer
 never embeds the game, `game-lib.jar`, an APK, or the example mod, and preserves unrelated files in
 `javamods`. See [`installer/windows/README.md`](installer/windows/README.md).
 
@@ -106,7 +106,7 @@ By default it also builds and installs the official-runtime example mod. To avoi
 gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampleMod=false
 ```
 
-This preserves unrelated files in `javamods`. After copying a successful build, the installer removes older versioned `rusted-fabric-api-*.jar`, `rusted-fabric-example-mod-*.jar`, and provider jars so Fabric does not discover duplicate versions of loader-owned components.
+This preserves unrelated files in `javamods`. After copying a successful build, the installer removes older versioned `rusted-fabric-api-*.jar`, `performance-profiler-*.jar`, `rusted-fabric-example-mod-*.jar`, and provider jars so Fabric does not discover duplicate versions of loader-owned components. Performance Profiler is installed by default; pass `-PinstallPerformanceProfiler=false` to omit it.
 
 INI Essentials is built as an official artifact but is not installed by default yet. Install it for
 custom-unit development with:
@@ -262,6 +262,14 @@ It opens a native scrolling page containing Fabric's loaded mod metadata. Build 
 Jar with `gradlew.bat :official-mods:java-mod-menu:remapJarToOfficial`; `installToGameDir` installs it
 by default. Project-owned Fabric IDs use the underscore convention documented in
 [`official-mods/README.md`](official-mods/README.md).
+
+## Performance Profiler
+
+The `performance-profiler` official client mod adds an Example Mod-style expandable in-game panel.
+It reports rolling FPS and frame-time percentiles, game-loop time, heap use, and GC totals on both
+OpenGL and Vulkan. Press F8 to toggle the panel or F9 to start/stop the low-overhead Java sampler.
+Completed reports and collapsed stacks are written under `.rusted-fabric/profiles/` in the game
+directory. Player installers include it enabled by default.
 
 ## Modding with Fabric
 Rusted Fabric Loader uses the standard Fabric mod discovery process and adds a few conveniences for Rusted Warfare:

@@ -5,6 +5,7 @@ include 'official-mods:java-mod-menu'
 include 'official-mods:ini-essentials'
 include 'official-mods:vulkan-mod'
 include 'official-mods:vulkan-mod:desktop-driver'
+include 'official-mods:performance-profiler'
 include 'installer:windows'
 // Only the desktop-JVM Android port remains active. Retired native-APK experiments live in legacy/.
 include 'android:jvm-launcher-core'
