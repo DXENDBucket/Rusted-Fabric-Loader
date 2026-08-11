@@ -225,6 +225,13 @@ public final class VulkanRuntime {
                 .drawScreenImageRaw(image, x, y, null);
     }
 
+    public static synchronized void drawNativeImage(GameImage image, float x, float y) {
+        if (image == null || !(nativeGraphicsEngine
+                instanceof io.github.endx.vulkanmod.render.VulkanGraphicsEngine)) return;
+        ((io.github.endx.vulkanmod.render.VulkanGraphicsEngine) nativeGraphicsEngine)
+                .drawScreenImageRaw(image, x, y, null);
+    }
+
     /** Called from AppGameContainer.setup before its first Display.create attempt. */
     public static synchronized boolean beforeLegacyDisplayCreation(int width, int height) {
         if (startupPhase.ordinal() >= StartupPhase.NATIVE_WINDOW_READY.ordinal()) {
@@ -308,7 +315,8 @@ public final class VulkanRuntime {
         boolean frameBuilt = false;
         try {
             if (nativeGameSystemsStarted && nativeGame != null) {
-                nativeGame.vulkanmod$runNativeFrame(deltaMillis);
+                nativeGame.vulkanmod$runNativeFrame(
+                        deltaMillis, current.width(), current.height());
             }
             frame = nativeFrameBuilder.build();
             frameBuilt = true;
@@ -411,6 +419,41 @@ public final class VulkanRuntime {
                 ((argb >>> 8) & 255) / 255.0f,
                 (argb & 255) / 255.0f,
                 ((argb >>> 24) & 255) / 255.0f);
+    }
+
+    /**
+     * Presents the commands collected so far and opens a fresh builder inside the synchronous
+     * desktop loading pass. Rusted Warfare 1.15's misleadingly named startLoadingThreaded method
+     * actually performs the whole load on the game thread; progress callbacks therefore need an
+     * explicit mid-frame present to reproduce Slick's loading animation.
+     */
+    public static synchronized boolean presentNativeLoadingProgressFrame() {
+        if (!isNativeRendererSelected() || activeDriver == null || surfaceInfo == null
+                || nativeFrameBuilder == null || nativeRenderTargetPasses == null) {
+            return false;
+        }
+        activeDriver.maintainSurfaceWindow();
+        VulkanSurfaceInfo current = surfaceInfo;
+        VulkanFrameCommands progressFrame = nativeFrameBuilder.build();
+        List<VulkanRenderTargetPass> progressPasses = nativeRenderTargetPasses;
+        nativeFrameBuilder = VulkanFrameCommands.pooledBuilder(current.width(), current.height())
+                .clear(0.0f, 0.0f, 0.0f, 1.0f);
+        nativeRenderTargetPasses = new ArrayList<VulkanRenderTargetPass>();
+        VulkanFrameSubmission submission = new VulkanFrameSubmission(
+                progressPasses, progressFrame);
+        VulkanSurfaceInfo updated;
+        try {
+            updated = activeDriver.presentFrame(submission);
+        } finally {
+            submission.releasePooledCommands();
+        }
+        if (updated == null) return false;
+        surfaceInfo = updated;
+        nativeFramesPresented++;
+        if (nativeFramesPresented == 1) {
+            log("First native loading frame presented without creating LWJGL2 Display/OpenGL");
+        }
+        return true;
     }
 
     public static synchronized boolean recordNativeText(
@@ -817,10 +860,12 @@ public final class VulkanRuntime {
         }
         VulkanDrawState drawState = new VulkanDrawState(
                 io.github.endx.vulkanmod.spi.VulkanTransform2D.IDENTITY, clip);
+        // Reuse one scratch triangle for the whole LibRocket geometry call. Each pooled command
+        // copies into its retained arrays, so these buffers can be overwritten immediately.
+        float[] trianglePositions = new float[6];
+        float[] triangleUvs = textureHandle == 0L ? null : new float[6];
+        float[] triangleColors = new float[12];
         for (int triangleIndex = 0; triangleIndex < indices.length; triangleIndex += 3) {
-            float[] trianglePositions = new float[6];
-            float[] triangleUvs = textureHandle == 0L ? null : new float[6];
-            float[] triangleColors = new float[12];
             for (int vertex = 0; vertex < 3; vertex++) {
                 int sourceVertex = indices[triangleIndex + vertex];
                 if (sourceVertex < 0 || sourceVertex * 2 + 1 >= positions.length) return false;

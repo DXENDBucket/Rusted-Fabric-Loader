@@ -44,6 +44,13 @@ public final class StandaloneLargeBatchVerification {
                         frame.releasePooledCommands();
                     }
                 }
+                if (driver.frameUploadAllocationCount() != 1L) {
+                    throw new AssertionError("frame upload metadata was not recycled");
+                }
+                if (driver.drawBatchAllocationCount() != DRAW_BATCHES) {
+                    throw new AssertionError("draw batch metadata grew after the first frame: "
+                            + driver.drawBatchAllocationCount());
+                }
             } finally {
                 driver.destroyTexture(texture);
             }

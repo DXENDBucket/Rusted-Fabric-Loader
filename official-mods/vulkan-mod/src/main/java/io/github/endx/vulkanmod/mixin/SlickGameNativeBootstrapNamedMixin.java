@@ -18,6 +18,8 @@ import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import org.lwjgl.input.Keyboard;
 import com.corrodinggames.rts.R$drawable;
 import org.spongepowered.asm.mixin.Unique;
+import android.graphics.Paint;
+import io.github.endx.vulkanmod.render.SlickDefaultFontRenderer;
 
 /** Restores game-system initialization without entering SlickGame's OpenGL setup method. */
 @Mixin(SlickGame.class)
@@ -36,6 +38,15 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
             new java.util.HashSet<Integer>();
     @Unique private GameImage vulkanmod$pointerImage;
     @Unique private boolean vulkanmod$nativeInputReady;
+    @Unique private GameImage vulkanmod$loadingLogo;
+    @Unique private SlickDefaultFontRenderer vulkanmod$loadingFont;
+    @Unique private Paint vulkanmod$loadingTextPaint;
+    @Unique private Paint vulkanmod$loadingStatusPaint;
+    @Unique private int vulkanmod$loadingAnimationFrame;
+    @Unique private boolean vulkanmod$nativeLoadingStarted;
+    @Unique private volatile String vulkanmod$loadingStatus = "";
+    @Unique private long vulkanmod$lastLoadingPresentNanos;
+    @Unique private int vulkanmod$loadingFramesPresented;
 
     @Override
     public void vulkanmod$bindNativeContainer(GameContainer container) {
@@ -44,18 +55,35 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
 
     @Override
     public void vulkanmod$startNativeGameSystems() {
-        startLoadingThreaded();
+        // Defer the synchronous desktop load until runNativeFrame has opened a native command
+        // builder. Its status callbacks can then reproduce Slick's immediate progress presents.
     }
 
     @Override
-    public void vulkanmod$runNativeFrame(int deltaMillis) {
+    public void vulkanmod$runNativeFrame(int deltaMillis, int width, int height) {
+        lastDeltaMs = Math.max(0, Math.min(deltaMillis, 250));
+        if (!vulkanmod$nativeLoadingStarted) {
+            vulkanmod$nativeLoadingStarted = true;
+            startLoadingThreaded();
+            // Desktop 1.15 performs this load synchronously. GameEngine and LibRocket therefore
+            // did not exist when VulkanRuntime made its pre-load resolution sync above.
+            vulkanmod$syncNativeResolution(width, height);
+            System.out.println("[Vulkan Mod] Native loading animation presented "
+                    + vulkanmod$loadingFramesPresented + " progress frame(s)");
+            lastDeltaMs = 0;
+            return;
+        }
+        if (!finishedInitialLoad) {
+            vulkanmod$drawNativeLoadingFrame(width, height);
+            lastDeltaMs = 0;
+            return;
+        }
         if (gameEngine == null) gameEngine = GameEngine.getInstance();
         if (gameEngine == null || main == null) return;
         vulkanmod$ensureNativePointer();
         // SlickGame.render normally performs this assignment for the duration of a GL frame.
         // In native mode the Vulkan engine is the permanent window render target instead.
         gameEngine.renderGraphicsEngine = VulkanRuntime.nativeGraphicsEngine();
-        lastDeltaMs = Math.max(0, Math.min(deltaMillis, 250));
         float delta = lastDeltaMs * 0.060000002f;
         main.updateTaskQueue(delta);
         if (gameEngine.hasLoadedLevel) {
@@ -92,6 +120,63 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
                     vulkanmod$pointerImage, vulkanmod$pointerX, vulkanmod$pointerY);
         }
         lastDeltaMs = 0;
+    }
+
+    @Unique
+    private void vulkanmod$drawNativeLoadingFrame(int width, int height) {
+        rustedwarfare.render.GraphicsEngine graphics = VulkanRuntime.nativeGraphicsEngine();
+        if (graphics == null) return;
+        VulkanRuntime.clearNativeFrame(0xff000000);
+        if (vulkanmod$loadingLogo == null) {
+            try {
+                vulkanmod$loadingLogo = graphics.a(R$drawable.logo, true);
+                System.out.println("[Vulkan Mod] Native loading logo loaded: "
+                        + vulkanmod$loadingLogo.getWidth() + "x"
+                        + vulkanmod$loadingLogo.getHeight());
+            } catch (RuntimeException failure) {
+                System.out.println("[Vulkan Mod] Could not load native loading logo: "
+                        + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            }
+        }
+        if (vulkanmod$loadingLogo != null) {
+            VulkanRuntime.drawNativeImage(vulkanmod$loadingLogo,
+                    width / 2 - vulkanmod$loadingLogo.getWidth() / 2,
+                    height / 2 - vulkanmod$loadingLogo.getHeight() / 2);
+        }
+        vulkanmod$ensureLoadingFont(graphics);
+        if (vulkanmod$loadingFont == null) return;
+        int dots = vulkanmod$loadingAnimationFrame++ % 4 + 1;
+        StringBuilder loadingBuilder = new StringBuilder("Loading");
+        for (int dot = 0; dot < dots; dot++) loadingBuilder.append('.');
+        while (loadingBuilder.length() < 17) loadingBuilder.append(' ');
+        String loading = loadingBuilder.toString();
+        int textY = height - 70;
+        int loadingX = width / 2 - vulkanmod$loadingFont.width(loading) / 2;
+        vulkanmod$loadingFont.draw(loading, loadingX, textY, vulkanmod$loadingTextPaint);
+        String status = vulkanmod$loadingStatus;
+        if (!status.isEmpty()) {
+            int statusX = width / 2 - vulkanmod$loadingFont.width(status) / 2;
+            vulkanmod$loadingFont.draw(status, statusX, textY + 20,
+                    vulkanmod$loadingStatusPaint);
+        }
+    }
+
+    @Unique
+    private void vulkanmod$ensureLoadingFont(rustedwarfare.render.GraphicsEngine graphics) {
+        if (vulkanmod$loadingFont != null) return;
+        try {
+            vulkanmod$loadingFont = new SlickDefaultFontRenderer(graphics);
+        } catch (RuntimeException failure) {
+            System.out.println("[Vulkan Mod] Could not load Slick default loading font: "
+                    + failure.getMessage());
+            return;
+        }
+        vulkanmod$loadingTextPaint = new Paint();
+        vulkanmod$loadingTextPaint.a(true);
+        vulkanmod$loadingTextPaint.b(0xffffffff);
+        vulkanmod$loadingStatusPaint = new Paint();
+        vulkanmod$loadingStatusPaint.a(true);
+        vulkanmod$loadingStatusPaint.b(0x99ffffff);
     }
 
     @Unique
@@ -309,6 +394,20 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
             // the ordinary log until Vulkan's own loading UI is available.
             if (!status.startsWith("Loading units")) {
                 System.out.println("[Vulkan Mod/Native Load] " + status);
+            }
+            if (updateText) {
+                vulkanmod$loadingStatus = status;
+            }
+            long now = System.nanoTime();
+            if (VulkanRuntime.nativeGraphicsEngine() != null
+                    && now - vulkanmod$lastLoadingPresentNanos >= 80_000_000L) {
+                vulkanmod$drawNativeLoadingFrame(
+                        Math.max(1, gameContainer.getWidth()),
+                        Math.max(1, gameContainer.getHeight()));
+                if (VulkanRuntime.presentNativeLoadingProgressFrame()) {
+                    vulkanmod$lastLoadingPresentNanos = now;
+                    vulkanmod$loadingFramesPresented++;
+                }
             }
             callback.cancel();
         }

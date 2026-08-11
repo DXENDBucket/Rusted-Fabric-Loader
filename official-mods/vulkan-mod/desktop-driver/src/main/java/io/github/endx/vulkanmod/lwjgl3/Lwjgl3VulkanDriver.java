@@ -437,6 +437,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         return surfaceSession == null ? 0L : surfaceSession.frameGraphPassesSubmitted;
     }
 
+    synchronized long frameUploadAllocationCount() {
+        return surfaceSession == null ? 0L : surfaceSession.frameUploadAllocations;
+    }
+
+    synchronized long drawBatchAllocationCount() {
+        return surfaceSession == null ? 0L : surfaceSession.drawBatchAllocations;
+    }
+
     private static VkInstanceCreateInfo instanceCreateInfo(
             MemoryStack stack, int instanceVersion, boolean surfaceExtensions) {
         VkApplicationInfo application = VkApplicationInfo.calloc(stack)
@@ -1352,6 +1360,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private int[] offscreenVertexCapacities = new int[0];
         private int offscreenCursor;
         private int frameCursor;
+        private final ArrayDeque<FrameUpload> frameUploadPool = new ArrayDeque<FrameUpload>();
+        private final ArrayDeque<ColoredDrawBatch> coloredBatchPool =
+                new ArrayDeque<ColoredDrawBatch>();
+        private final ArrayDeque<TextureDrawBatch> textureBatchPool =
+                new ArrayDeque<TextureDrawBatch>();
         private BufferAllocation textureStaging;
         private int textureStagingCapacity;
         private long acquireSkips;
@@ -1362,6 +1375,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long immediateOffscreenQueueSubmissions;
         private long frameGraphQueueSubmissions;
         private long frameGraphPassesSubmitted;
+        private long frameUploadAllocations;
+        private long drawBatchAllocations;
         private List<VulkanRenderTargetPass> frameGraphPasses = Collections.emptyList();
         private boolean frameGraphSubmitted;
         private boolean debugLargeTargetReadBack;
@@ -2181,6 +2196,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                 }
             }
+            releaseFrameUpload(upload);
             vkCmdEndRenderPass(command);
             target.initialized = true;
             renderTargetSubmissions++;
@@ -2293,6 +2309,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         }
                     }
                 }
+                releaseFrameUpload(upload);
                 vkCmdEndRenderPass(command);
                 check(vkEndCommandBuffer(command), "vkEndCommandBuffer(render target)");
                 VkSubmitInfo submit = VkSubmitInfo.calloc(stack).sType$Default()
@@ -3056,6 +3073,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         }
                     }
                 }
+                releaseFrameUpload(upload);
                 vkCmdEndRenderPass(commandBuffer);
                 check(vkEndCommandBuffer(commandBuffer), "vkEndCommandBuffer");
                 long afterRecording = System.nanoTime();
@@ -3163,6 +3181,59 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return nativeWindow == null ? frame.height() : nativeWindow.clientHeight();
         }
 
+        private FrameUpload acquireFrameUpload(long texturedByteOffset,
+                                               long customTexturedByteOffset) {
+            FrameUpload upload = frameUploadPool.pollFirst();
+            if (upload == null) {
+                upload = new FrameUpload();
+                frameUploadAllocations++;
+            }
+            upload.texturedByteOffset = texturedByteOffset;
+            upload.customTexturedByteOffset = customTexturedByteOffset;
+            return upload;
+        }
+
+        private ColoredDrawBatch acquireColoredBatch(
+                VulkanClipRect clip, VulkanBlendMode blendMode, int firstVertex) {
+            ColoredDrawBatch batch = coloredBatchPool.pollFirst();
+            if (batch == null) {
+                batch = new ColoredDrawBatch();
+                drawBatchAllocations++;
+            }
+            batch.reset(clip, blendMode, firstVertex);
+            return batch;
+        }
+
+        private TextureDrawBatch acquireTextureBatch(
+                long textureHandle, long descriptorSet, VulkanClipRect clip,
+                VulkanBlendMode blendMode, VulkanShaderState shaderState,
+                int firstVertex, boolean expandedVertexInput) {
+            TextureDrawBatch batch = textureBatchPool.pollFirst();
+            if (batch == null) {
+                batch = new TextureDrawBatch();
+                drawBatchAllocations++;
+            }
+            batch.reset(textureHandle, descriptorSet, clip, blendMode,
+                    shaderState, firstVertex, expandedVertexInput);
+            return batch;
+        }
+
+        private void releaseFrameUpload(FrameUpload upload) {
+            if (upload == null) return;
+            for (DrawBatch batch : upload.batches) {
+                batch.clip = null;
+                if (batch instanceof TextureDrawBatch) {
+                    TextureDrawBatch texture = (TextureDrawBatch) batch;
+                    texture.shaderState = null;
+                    textureBatchPool.addFirst(texture);
+                } else {
+                    coloredBatchPool.addFirst((ColoredDrawBatch) batch);
+                }
+            }
+            upload.batches.clear();
+            frameUploadPool.addFirst(upload);
+        }
+
         private FrameUpload uploadFrame(VulkanFrameCommands frame, MemoryStack stack,
                                         int frameSlot, BufferAllocation[] allocations,
                                         int[] capacities) {
@@ -3197,7 +3268,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     CUSTOM_TEXTURED_VERTEX_STRIDE);
             int customTexturedOffset = Math.addExact(coloredBytes, texturedBytes);
             int totalBytes = Math.addExact(customTexturedOffset, customTexturedBytes);
-            FrameUpload result = new FrameUpload(coloredBytes, customTexturedOffset);
+            FrameUpload result = acquireFrameUpload(coloredBytes, customTexturedOffset);
             if (totalBytes == 0) return result;
             ensureVertexCapacity(frameSlot, totalBytes, stack, allocations, capacities);
             BufferAllocation vertexAllocation = allocations[frameSlot];
@@ -3295,7 +3366,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     if (!(currentBatch instanceof ColoredDrawBatch)
                             || !sameClip(currentBatch.clip, quad.state().clip())
                             || currentBatch.blendMode != quad.state().blendMode()) {
-                        currentBatch = new ColoredDrawBatch(
+                        currentBatch = acquireColoredBatch(
                                 quad.state().clip(), quad.state().blendMode(),
                                 coloredFirstVertex);
                         result.batches.add(currentBatch);
@@ -3307,7 +3378,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     if (!(currentBatch instanceof ColoredDrawBatch)
                             || !sameClip(currentBatch.clip, triangle.state().clip())
                             || currentBatch.blendMode != triangle.state().blendMode()) {
-                        currentBatch = new ColoredDrawBatch(
+                        currentBatch = acquireColoredBatch(
                                 triangle.state().clip(), triangle.state().blendMode(),
                                 coloredFirstVertex);
                         result.batches.add(currentBatch);
@@ -3330,7 +3401,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             || textureBatch.blendMode != quad.state().blendMode()
                             || !textureBatch.shaderState.equals(
                                     quad.state().shaderState())) {
-                        currentBatch = new TextureDrawBatch(quad.textureHandle(),
+                        currentBatch = acquireTextureBatch(quad.textureHandle(),
                                 descriptorSet,
                                 quad.state().clip(),
                                 quad.state().blendMode(), quad.state().shaderState(),
@@ -3357,7 +3428,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             || textureBatch.blendMode != triangle.state().blendMode()
                             || !textureBatch.shaderState.equals(
                                     triangle.state().shaderState())) {
-                        currentBatch = new TextureDrawBatch(triangle.textureHandle(),
+                        currentBatch = acquireTextureBatch(triangle.textureHandle(),
                                 descriptorSet,
                                 triangle.state().clip(),
                                 triangle.state().blendMode(), triangle.state().shaderState(),
@@ -3779,30 +3850,31 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private abstract static class DrawBatch {
-            final VulkanClipRect clip;
-            final VulkanBlendMode blendMode;
-            final int firstVertex;
+            VulkanClipRect clip;
+            VulkanBlendMode blendMode;
+            int firstVertex;
             int vertexCount;
 
-            private DrawBatch(VulkanClipRect clip, VulkanBlendMode blendMode,
-                              int firstVertex) {
+            void reset(VulkanClipRect clip, VulkanBlendMode blendMode,
+                       int firstVertex) {
                 this.clip = clip;
                 this.blendMode = blendMode;
                 this.firstVertex = firstVertex;
+                this.vertexCount = 0;
             }
         }
 
         private static final class TextureDrawBatch extends DrawBatch {
-            private final long textureHandle;
-            private final long descriptorSet;
-            private final VulkanShaderState shaderState;
-            private final boolean expandedVertexInput;
+            private long textureHandle;
+            private long descriptorSet;
+            private VulkanShaderState shaderState;
+            private boolean expandedVertexInput;
 
-            private TextureDrawBatch(long textureHandle, long descriptorSet,
-                                     VulkanClipRect clip, VulkanBlendMode blendMode,
-                                     VulkanShaderState shaderState, int firstVertex,
-                                     boolean expandedVertexInput) {
-                super(clip, blendMode, firstVertex);
+            private void reset(long textureHandle, long descriptorSet,
+                               VulkanClipRect clip, VulkanBlendMode blendMode,
+                               VulkanShaderState shaderState, int firstVertex,
+                               boolean expandedVertexInput) {
+                super.reset(clip, blendMode, firstVertex);
                 this.textureHandle = textureHandle;
                 this.descriptorSet = descriptorSet;
                 this.shaderState = shaderState;
@@ -3810,22 +3882,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private static final class ColoredDrawBatch extends DrawBatch {
-            private ColoredDrawBatch(VulkanClipRect clip, VulkanBlendMode blendMode,
-                                     int firstVertex) {
-                super(clip, blendMode, firstVertex);
-            }
-        }
+        private static final class ColoredDrawBatch extends DrawBatch { }
 
         private static final class FrameUpload {
-            private final long texturedByteOffset;
-            private final long customTexturedByteOffset;
+            private long texturedByteOffset;
+            private long customTexturedByteOffset;
             private final List<DrawBatch> batches = new ArrayList<DrawBatch>();
-
-            private FrameUpload(long texturedByteOffset, long customTexturedByteOffset) {
-                this.texturedByteOffset = texturedByteOffset;
-                this.customTexturedByteOffset = customTexturedByteOffset;
-            }
 
             private int totalVertexCount() {
                 int total = 0;

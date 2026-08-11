@@ -80,7 +80,19 @@ platform-driver submission, while the ordinary public `builder(...)` path remain
 snapshot for third-party drivers and tests. Typed compatibility lists are generated lazily from the
 single ordered command stream instead of five eagerly copied lists. Consecutive equivalent
 draw states are also shared, and desktop vertex packing writes colored and textured vertices in one
-command traversal.
+command traversal. Driver-side frame-upload and draw-batch metadata are retained at peak demand and
+recycled after command recording; a large-batch regression verifies that repeated 20,000-command
+frames do not allocate more metadata after their first frame. LibRocket geometry also reuses one
+set of triangle scratch arrays for an entire geometry submission instead of allocating them per
+triangle.
+
+The pre-OpenGL native bootstrap reproduces the original loading screen directly through
+`GraphicsEngine`: black background, centered game logo, animated `Loading` dots and the live loader
+status. Desktop 1.15 loads synchronously despite the legacy method name, so Native mode performs
+throttled immediate progress presents from the original status callbacks. This keeps the window
+responsive and visible without moving game initialization onto a different thread. Loading text is
+drawn from Slick's original AngelCode `defaultfont.fnt`/`defaultfont.png` atlas with its fixed-width
+padding and integer placement, rather than approximated with the ordinary game UI font.
 
 Useful takeover diagnostics are:
 
@@ -124,8 +136,9 @@ solid-frame and safe-takeover sequence is confirmed.
    pixel-buffer mutation and dynamic Canvas target switching; compatible linked custom
    vertex/fragment programs are translated and run in native Vulkan pipelines.
 4. Persistently mapped main/offscreen vertex rings, asynchronous standalone child submissions,
-   combined frame-graph submission and reusable Java frame-command arenas are complete. Next,
-   recycle driver-side draw-batch metadata and widen compatible batches without changing order.
+   combined frame-graph submission, reusable Java frame-command arenas and recyclable driver-side
+   draw-batch metadata are complete. Next, widen compatible batches without changing order and
+   profile the remaining texture/descriptors and text-upload hot paths.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
    compatibility surface after native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
