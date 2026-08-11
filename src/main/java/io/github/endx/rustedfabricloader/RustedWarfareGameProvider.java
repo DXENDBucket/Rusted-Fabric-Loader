@@ -171,6 +171,8 @@ public class RustedWarfareGameProvider implements GameProvider {
                 "com/corrodinggames/rts/gameFramework/e/c";
         private static final String CONVERT_DESCRIPTOR =
                 "(Ljava/lang/String;)Ljava/lang/String;";
+        private static final String OPEN_INPUT_DESCRIPTOR =
+                "(Ljava/lang/String;)Lcom/corrodinggames/rts/gameFramework/utility/j;";
 
         @Override
         public void process(FabricLauncher launcher,
@@ -221,9 +223,32 @@ public class RustedWarfareGameProvider implements GameProvider {
                     false));
             redirect.add(new VarInsnNode(Opcodes.ASTORE, 1));
             convert.instructions.insert(insertionPoint, redirect);
+
+            // FileSystemBackend.openInputStream resolves its argument into a separate local, but
+            // its legacy /SD/ branch subsequently reconstructs the path from the original
+            // argument. On the desktop build hosted by Android that reconstruction uses the PC
+            // external root (an empty string), so directory scans work while opening mod-info.txt
+            // unexpectedly falls back to a relative path. Remap the argument before any of those
+            // branches run so reads use the same public path as exists/listDirectory.
+            MethodNode openInput = findMethod(fileLoader, method ->
+                    method.name.equals("j") && method.desc.equals(OPEN_INPUT_DESCRIPTOR));
+            if (openInput == null) {
+                throw new IllegalStateException("Unsupported game file-loader input ABI");
+            }
+            InsnList inputRedirect = new InsnList();
+            inputRedirect.add(new VarInsnNode(Opcodes.ALOAD, 1));
+            inputRedirect.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "org/lwjgl/system/RustedFabricStorage",
+                    "remap",
+                    CONVERT_DESCRIPTOR,
+                    false));
+            inputRedirect.add(new VarInsnNode(Opcodes.ASTORE, 1));
+            openInput.instructions.insert(inputRedirect);
+
             classEmitter.accept(fileLoader);
             Log.info(LOG_CATEGORY,
-                    "Patched Android INI/map paths for direct shared-storage access.");
+                    "Patched Android INI/map paths and input streams for direct shared-storage access.");
         }
     }
 
