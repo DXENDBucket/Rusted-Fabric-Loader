@@ -5,6 +5,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Paint$Align;
 import android.graphics.Paint$Style;
 import android.graphics.Bitmap;
 import io.github.endx.vulkanmod.VulkanRuntime;
@@ -28,9 +29,20 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
+import java.awt.image.DirectColorModel;
+import java.awt.image.WritableRaster;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.RenderingHints;
+import java.awt.color.ColorSpace;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import javax.imageio.ImageIO;
 import java.util.concurrent.locks.Lock;
 import java.util.Arrays;
@@ -86,6 +98,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
 
     private boolean nativeRoot() {
         return renderTarget == null && VulkanRuntime.isNativeRendererSelected();
+    }
+
+    private boolean cpuTarget() {
+        return renderTarget != null;
     }
 
     private VulkanDrawState state(Paint paint) {
@@ -151,12 +167,14 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         errorImage = a(R$drawable.error_outmem, true);
         errorImage.setName("Out of memory");
     }
-    @Override public CanvasDrawTarget d() { return nativeRoot() ? nativeCanvasTarget : delegate.d(); }
+    @Override public CanvasDrawTarget d() {
+        return nativeRoot() || cpuTarget() ? nativeCanvasTarget : delegate.d();
+    }
     @Override public void a(CanvasDrawTarget target) {
-        if (!nativeRoot()) delegate.a(target);
+        if (!nativeRoot() && !cpuTarget()) delegate.a(target);
     }
     @Override public void a(AndroidGlRenderer renderer) {
-        if (!nativeRoot()) delegate.a(renderer);
+        if (!nativeRoot() && !cpuTarget()) delegate.a(renderer);
     }
     @Override public GameImage a(int resourceId) { return a(resourceId, true); }
     @Override public GameImage a(int resourceId, boolean option) {
@@ -193,7 +211,11 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     @Override public void drawImageRotated(GameImage image, float x, float y, float angle,
                                            Paint paint) {
         if (renderTarget != null) {
-            drawImageCentered(image, x, y, paint);
+            float left = x - image.getWidth() * 0.5f;
+            float top = y - image.getHeight() * 0.5f;
+            drawImageCpu(image, full(image), left, top,
+                    left + image.getWidth(), top + image.getHeight(), paint,
+                    VulkanTransform2D.rotationAround(angle, x, y));
         } else if (nativeRoot()) {
             float left = x - image.getWidth() * 0.5f;
             float top = y - image.getHeight() * 0.5f;
@@ -205,10 +227,11 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     @Override public void drawImageSectionRotated(GameImage image, Rect source, float x, float y,
                                                   float angle, Paint paint) {
         if (renderTarget != null) {
-            int width = source.c - source.a;
-            int height = source.d - source.b;
-            blit(image, source, Math.round(x - width * 0.5f),
-                    Math.round(y - height * 0.5f), width, height);
+            float width = source.c - source.a;
+            float height = source.d - source.b;
+            drawImageCpu(image, source, x - width * 0.5f, y - height * 0.5f,
+                    x + width * 0.5f, y + height * 0.5f, paint,
+                    VulkanTransform2D.rotationAround(angle, x, y));
         } else if (nativeRoot()) {
             float width = source.c - source.a;
             float height = source.d - source.b;
@@ -219,27 +242,25 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawImage(GameImage image, Rect source, Rect destination, Paint paint) {
         if (renderTarget != null) {
-            blit(image, source, destination.a, destination.b,
-                    destination.c - destination.a, destination.d - destination.b);
+            drawImageCpu(image, source, destination.a, destination.b,
+                    destination.c, destination.d, paint, null);
         } else if (nativeRoot()) nativeImage(image, source, destination.a, destination.b,
                 destination.c, destination.d, paint, null);
         else delegate.drawImage(image, source, destination, paint);
     }
     @Override public void drawImage(GameImage image, Rect source, RectF destination, Paint paint) {
         if (renderTarget != null) {
-            int left = Math.round(destination.a);
-            int top = Math.round(destination.b);
-            blit(image, source, left, top, Math.round(destination.c) - left,
-                    Math.round(destination.d) - top);
+            drawImageCpu(image, source, destination.a, destination.b,
+                    destination.c, destination.d, paint, null);
         } else if (nativeRoot()) nativeImage(image, source, destination.a, destination.b,
                 destination.c, destination.d, paint, null);
         else delegate.drawImage(image, source, destination, paint);
     }
     @Override public void drawImageCentered(GameImage image, float x, float y, Paint paint) {
         if (renderTarget != null) {
-            blit(image, full(image), Math.round(x - image.getWidth() * 0.5f),
-                    Math.round(y - image.getHeight() * 0.5f),
-                    image.getWidth(), image.getHeight());
+            drawImageCpu(image, full(image), x - image.getWidth() * 0.5f,
+                    y - image.getHeight() * 0.5f, x + image.getWidth() * 0.5f,
+                    y + image.getHeight() * 0.5f, paint, null);
         } else if (nativeRoot()) nativeImage(image, full(image),
                 x - image.getWidth() * 0.5f, y - image.getHeight() * 0.5f,
                 x + image.getWidth() * 0.5f, y + image.getHeight() * 0.5f, paint, null);
@@ -248,10 +269,12 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     @Override public void drawImageTransformed(GameImage image, float x, float y, Paint paint,
                                                float scale, float angle) {
         if (renderTarget != null) {
-            int scaledWidth = Math.max(1, Math.round(image.getWidth() * scale));
-            int scaledHeight = Math.max(1, Math.round(image.getHeight() * scale));
-            blit(image, full(image), Math.round(x - scaledWidth * 0.5f),
-                    Math.round(y - scaledHeight * 0.5f), scaledWidth, scaledHeight);
+            float scaledWidth = image.getWidth() * scale;
+            float scaledHeight = image.getHeight() * scale;
+            drawImageCpu(image, full(image), x - scaledWidth * 0.5f,
+                    y - scaledHeight * 0.5f, x + scaledWidth * 0.5f,
+                    y + scaledHeight * 0.5f, paint,
+                    VulkanTransform2D.rotationAround(angle, x, y));
         } else if (nativeRoot()) {
             float w = image.getWidth() * scale;
             float h = image.getHeight() * scale;
@@ -262,8 +285,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawImageRaw(GameImage image, float x, float y, Paint paint) {
         if (renderTarget != null) {
-            blit(image, full(image), Math.round(x), Math.round(y),
-                    image.getWidth(), image.getHeight());
+            drawImageCpu(image, full(image), x, y,
+                    x + image.getWidth(), y + image.getHeight(), paint, null);
         } else if (nativeRoot()) nativeImage(image, full(image), x, y,
                 x + image.getWidth(), y + image.getHeight(), paint, null);
         else delegate.drawImageRaw(image, x, y, paint);
@@ -275,7 +298,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawImageDirect(image, source, destination, paint);
     }
     @Override public void drawRect(Rect rect, Paint paint) {
-        if (renderTarget != null) fillRect(rect.a, rect.b, rect.c, rect.d, paint);
+        if (renderTarget != null) drawCpuRect(rect.a, rect.b, rect.c, rect.d, paint);
         else if (nativeRoot()) nativeRect(rect.a, rect.b, rect.c, rect.d, paint);
         else delegate.drawRect(rect, paint);
     }
@@ -300,7 +323,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             int tileHeight = stepY > 0 ? stepY : image.getHeight();
             for (int y = destination.b + offsetY; y < destination.d; y += tileHeight) {
                 for (int x = destination.a + offsetX; x < destination.c; x += tileWidth) {
-                    blit(image, full(image), x, y, image.getWidth(), image.getHeight());
+                    drawImageCpu(image, full(image), x, y,
+                            x + image.getWidth(), y + image.getHeight(), paint, null);
                 }
             }
         } else if (nativeRoot()) {
@@ -345,7 +369,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawTextWithBackground(String text, float x, float y, Paint textPaint,
                                                  Paint backgroundPaint, float padding) {
-        if (nativeRoot()) {
+        if (nativeRoot() || cpuTarget()) {
             float width = getTextWidth(text, textPaint);
             float height = getTextHeight(text, textPaint);
             nativeRect(x - padding, y - height - padding,
@@ -356,16 +380,16 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawText(String text, float x, float y, Paint paint) {
         if (nativeRoot()) VulkanRuntime.recordNativeText(text, x, y, paint, state(paint));
+        else if (cpuTarget()) drawCpuText(text, x, y, paint);
         else delegate.drawText(text, x, y, paint);
     }
     @Override public void drawRectDirect(Rect rect, Paint paint) {
-        if (renderTarget != null) fillRect(rect.a, rect.b, rect.c, rect.d, paint);
+        if (renderTarget != null) drawCpuRect(rect.a, rect.b, rect.c, rect.d, paint);
         else if (nativeRoot()) nativeRect(rect.a, rect.b, rect.c, rect.d, paint);
         else delegate.drawRectDirect(rect, paint);
     }
     @Override public void drawRect(RectF rect, Paint paint) {
-        if (renderTarget != null) fillRect(Math.round(rect.a), Math.round(rect.b),
-                Math.round(rect.c), Math.round(rect.d), paint);
+        if (renderTarget != null) drawCpuRect(rect.a, rect.b, rect.c, rect.d, paint);
         else if (nativeRoot()) nativeRect(rect.a, rect.b, rect.c, rect.d, paint);
         else delegate.drawRect(rect, paint);
     }
@@ -378,24 +402,28 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public void drawRectFromSize(Rect rect, Paint paint) {
         if (nativeRoot()) nativeRect(rect.a, rect.b, rect.a + rect.c, rect.b + rect.d, paint);
+        else if (cpuTarget()) drawCpuRect(rect.a, rect.b,
+                rect.a + rect.c, rect.b + rect.d, paint);
         else delegate.drawRectFromSize(rect, paint);
     }
     @Override public void setClipRect(Rect rect) {
-        if (nativeRoot()) clip = rect == null ? null : new VulkanClipRect(
+        if (nativeRoot() || cpuTarget()) clip = rect == null ? null : new VulkanClipRect(
                 rect.a, rect.b, Math.max(0, rect.c - rect.a), Math.max(0, rect.d - rect.b));
         else delegate.setClipRect(rect);
     }
     @Override public void setClipRect(RectF rect) {
-        if (nativeRoot()) clip = rect == null ? null : new VulkanClipRect(
+        if (nativeRoot() || cpuTarget()) clip = rect == null ? null : new VulkanClipRect(
                 rect.a, rect.b, Math.max(0, rect.c - rect.a), Math.max(0, rect.d - rect.b));
         else delegate.setClipRect(rect);
     }
     @Override public void drawCircle(float x, float y, float radius, Paint paint) {
         if (nativeRoot()) nativeCircle(x, y, radius, paint);
+        else if (cpuTarget()) drawCpuCircle(x, y, radius, paint);
         else delegate.drawCircle(x, y, radius, paint);
     }
     @Override public void drawCircleDirect(float x, float y, float radius, Paint paint) {
         if (nativeRoot()) nativeCircle(x, y, radius, paint);
+        else if (cpuTarget()) drawCpuCircle(x, y, radius, paint);
         else delegate.drawCircleDirect(x, y, radius, paint);
     }
     @Override public void drawLines(float[] points, int offset, int count, Paint paint) {
@@ -407,44 +435,57 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
                 nativeQuad(points[i] - size * 0.5f, points[i + 1] - size * 0.5f,
                         size, size, paint);
             }
+        } else if (cpuTarget()) {
+            if (points == null) return;
+            int end = Math.min(points.length, Math.max(0, offset) + Math.max(0, count));
+            Graphics2D graphics = cpuGraphics(paint, false);
+            try {
+                for (int i = Math.max(0, offset); i + 3 < end; i += 4) {
+                    graphics.draw(new java.awt.geom.Line2D.Float(
+                            points[i], points[i + 1], points[i + 2], points[i + 3]));
+                }
+            } finally {
+                finishCpuDraw(graphics);
+            }
         } else delegate.drawLines(points, offset, count, paint);
     }
     @Override public void save() {
-        if (nativeRoot()) stateStack.push(new NativeState(transform, clip));
+        if (nativeRoot() || cpuTarget()) stateStack.push(new NativeState(transform, clip));
         else delegate.save();
     }
     @Override public void restore() {
-        if (nativeRoot()) restoreNativeState();
+        if (nativeRoot() || cpuTarget()) restoreNativeState();
         else delegate.restore();
     }
     @Override public void saveTransform() { save(); }
     @Override public void restoreTransform() { restore(); }
     @Override public void rotate(float angle, float pivotX, float pivotY) {
-        if (nativeRoot()) transform = transform.then(
+        if (nativeRoot() || cpuTarget()) transform = transform.then(
                 VulkanTransform2D.rotationAround(angle, pivotX, pivotY));
         else delegate.rotate(angle, pivotX, pivotY);
     }
     @Override public void scale(float x, float y) {
-        if (nativeRoot()) transform = transform.then(VulkanTransform2D.scale(x, y));
+        if (nativeRoot() || cpuTarget()) transform = transform.then(VulkanTransform2D.scale(x, y));
         else delegate.scale(x, y);
     }
     @Override public void scaleAround(float x, float y, float pivotX, float pivotY) {
-        if (nativeRoot()) transform = transform.then(VulkanTransform2D.translation(-pivotX, -pivotY))
+        if (nativeRoot() || cpuTarget()) transform = transform.then(VulkanTransform2D.translation(-pivotX, -pivotY))
                 .then(VulkanTransform2D.scale(x, y))
                 .then(VulkanTransform2D.translation(pivotX, pivotY));
         else delegate.scaleAround(x, y, pivotX, pivotY);
     }
     @Override public void translate(float x, float y) {
-        if (nativeRoot()) transform = transform.then(VulkanTransform2D.translation(x, y));
+        if (nativeRoot() || cpuTarget()) transform = transform.then(VulkanTransform2D.translation(x, y));
         else delegate.translate(x, y);
     }
     @Override public void runDrawTimeCallback(DrawTimeCallback callback) {
-        if (nativeRoot()) callback.run(this);
+        if (nativeRoot() || cpuTarget()) callback.run(this);
         else delegate.runDrawTimeCallback(callback);
     }
     @Override public void drawLine(float startX, float startY, float endX, float endY,
                                    Paint paint) {
         if (nativeRoot()) nativeLine(startX, startY, endX, endY, paint);
+        else if (cpuTarget()) drawCpuLine(startX, startY, endX, endY, paint);
         else delegate.drawLine(startX, startY, endX, endY, paint);
     }
     @Override public int getWidth() {
@@ -486,14 +527,32 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public GameImage getErrorImage() { return errorImage; }
     @Override public void saveImageToFile(GameImage image, File file) {
-        if (!nativeRoot()) delegate.saveImageToFile(image, file);
+        if (nativeRoot() || cpuTarget()) {
+            if (image == null || file == null) return;
+            GameImage real = image.getRealImage();
+            if (real == null) real = image;
+            try {
+                ImageIO.write(wrapPixels(real), "png", file);
+            } catch (IOException failure) {
+                throw new IllegalStateException("Could not save native image to " + file,
+                        failure);
+            }
+        } else delegate.saveImageToFile(image, file);
     }
-    @Override public void enterLock(Lock lock) { if (!nativeRoot()) delegate.enterLock(lock); }
-    @Override public void leaveLock(Lock lock) { if (!nativeRoot()) delegate.leaveLock(lock); }
+    @Override public void enterLock(Lock lock) {
+        if (cpuTarget()) lock.lock();
+        else if (!nativeRoot()) delegate.enterLock(lock);
+    }
+    @Override public void leaveLock(Lock lock) {
+        if (cpuTarget()) lock.unlock();
+        else if (!nativeRoot()) delegate.leaveLock(lock);
+    }
     @Override public void compileShader(ShaderProgram shader) {
-        if (!nativeRoot()) delegate.compileShader(shader);
+        if (!nativeRoot() && !cpuTarget()) delegate.compileShader(shader);
     }
-    @Override public float getUiScale() { return nativeRoot() ? 1.0f : delegate.getUiScale(); }
+    @Override public float getUiScale() {
+        return nativeRoot() || cpuTarget() ? 1.0f : delegate.getUiScale();
+    }
 
     private static FontMetrics fontMetrics(Paint paint) {
         int size = Math.max(1, Math.round(paint == null ? 16.0f : paint.k()));
@@ -664,53 +723,140 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         renderTarget.version++;
     }
 
-    private void fillRect(int left, int top, int right, int bottom, Paint paint) {
-        renderTarget.ensurePixelBuffer();
-        int[] pixels = renderTarget.pixelBuffer;
-        if (pixels == null) return;
-        int imageWidth = renderTarget.getWidth();
-        int imageHeight = renderTarget.getHeight();
-        int x0 = Math.max(0, Math.min(imageWidth, left));
-        int y0 = Math.max(0, Math.min(imageHeight, top));
-        int x1 = Math.max(x0, Math.min(imageWidth, right));
-        int y1 = Math.max(y0, Math.min(imageHeight, bottom));
-        int color = paint == null ? 0xffffffff : paint.e();
-        for (int y = y0; y < y1; y++) {
-            Arrays.fill(pixels, y * imageWidth + x0, y * imageWidth + x1, color);
-        }
-        renderTarget.version++;
-    }
-
     private static Rect full(GameImage image) {
         return new Rect(0, 0, image.getWidth(), image.getHeight());
     }
 
-    private void blit(GameImage sourceImage, Rect source, int destinationX, int destinationY,
-                      int destinationWidth, int destinationHeight) {
-        if (sourceImage == null || source == null || destinationWidth <= 0
-                || destinationHeight <= 0) return;
+    private void drawImageCpu(GameImage sourceImage, Rect source,
+                              float left, float top, float right, float bottom,
+                              Paint paint, VulkanTransform2D localTransform) {
+        if (sourceImage == null || source == null || right <= left || bottom <= top) return;
         GameImage sourceImageReal = sourceImage.getRealImage();
         if (sourceImageReal == null) sourceImageReal = sourceImage;
         sourceImageReal.ensurePixelBuffer();
-        renderTarget.ensurePixelBuffer();
-        int[] destinationPixels = renderTarget.pixelBuffer;
-        if (destinationPixels == null) return;
-        int targetWidth = renderTarget.getWidth();
-        int targetHeight = renderTarget.getHeight();
-        int sourceWidth = Math.max(1, source.c - source.a);
-        int sourceHeight = Math.max(1, source.d - source.b);
-        int startX = Math.max(0, -destinationX);
-        int startY = Math.max(0, -destinationY);
-        int endX = Math.min(destinationWidth, targetWidth - destinationX);
-        int endY = Math.min(destinationHeight, targetHeight - destinationY);
-        for (int y = startY; y < endY; y++) {
-            int sourceY = source.b + (int) ((long) y * sourceHeight / destinationHeight);
-            int targetOffset = (destinationY + y) * targetWidth + destinationX;
-            for (int x = startX; x < endX; x++) {
-                int sourceX = source.a + (int) ((long) x * sourceWidth / destinationWidth);
-                destinationPixels[targetOffset + x] = sourceImageReal.getPixel(sourceX, sourceY);
-            }
+        if (sourceImageReal.pixelBuffer == null) return;
+        VulkanTransform2D previous = transform;
+        if (localTransform != null) transform = localTransform.then(transform);
+        Graphics2D graphics = cpuGraphics(paint, true);
+        try {
+            BufferedImage sourcePixels = wrapPixels(sourceImageReal);
+            graphics.drawImage(sourcePixels,
+                    Math.round(left), Math.round(top), Math.round(right), Math.round(bottom),
+                    source.a, source.b, source.c, source.d, null);
+        } finally {
+            transform = previous;
+            finishCpuDraw(graphics);
         }
+    }
+
+    private void drawCpuRect(float left, float top, float right, float bottom, Paint paint) {
+        if (right < left || bottom < top) return;
+        Graphics2D graphics = cpuGraphics(paint, false);
+        try {
+            Rectangle2D.Float rectangle = new Rectangle2D.Float(
+                    left, top, right - left, bottom - top);
+            Paint$Style style = paint == null ? Paint$Style.a : paint.d();
+            if (style != Paint$Style.b) graphics.fill(rectangle);
+            if (style == Paint$Style.b || style == Paint$Style.c) graphics.draw(rectangle);
+        } finally {
+            finishCpuDraw(graphics);
+        }
+    }
+
+    private void drawCpuCircle(float x, float y, float radius, Paint paint) {
+        if (radius < 0.0f || !Float.isFinite(radius)) return;
+        Graphics2D graphics = cpuGraphics(paint, false);
+        try {
+            java.awt.geom.Ellipse2D.Float circle = new java.awt.geom.Ellipse2D.Float(
+                    x - radius, y - radius, radius * 2.0f, radius * 2.0f);
+            Paint$Style style = paint == null ? Paint$Style.a : paint.d();
+            if (style != Paint$Style.b) graphics.fill(circle);
+            if (style == Paint$Style.b || style == Paint$Style.c) graphics.draw(circle);
+        } finally {
+            finishCpuDraw(graphics);
+        }
+    }
+
+    private void drawCpuLine(float x1, float y1, float x2, float y2, Paint paint) {
+        Graphics2D graphics = cpuGraphics(paint, false);
+        try {
+            graphics.draw(new java.awt.geom.Line2D.Float(x1, y1, x2, y2));
+        } finally {
+            finishCpuDraw(graphics);
+        }
+    }
+
+    private void drawCpuText(String text, float x, float y, Paint paint) {
+        if (text == null || text.isEmpty()) return;
+        Graphics2D graphics = cpuGraphics(paint, false);
+        try {
+            int size = Math.max(1, Math.round(paint == null ? 16.0f : paint.k()));
+            boolean bold = paint != null && paint.i() != null && paint.i().a();
+            graphics.setFont(new Font("SansSerif", bold ? Font.BOLD : Font.PLAIN, size));
+            FontMetrics metrics = graphics.getFontMetrics();
+            float drawX = x;
+            if (paint != null && paint.j() == Paint$Align.b) {
+                drawX -= metrics.stringWidth(text) * 0.5f;
+            } else if (paint != null && paint.j() == Paint$Align.c) {
+                drawX -= metrics.stringWidth(text);
+            }
+            graphics.drawString(text, drawX, y);
+        } finally {
+            finishCpuDraw(graphics);
+        }
+    }
+
+    private Graphics2D cpuGraphics(Paint paint, boolean image) {
+        BufferedImage target = wrapPixels(renderTarget);
+        Graphics2D graphics = target.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                paint != null && paint.c()
+                        ? RenderingHints.VALUE_ANTIALIAS_ON
+                        : RenderingHints.VALUE_ANTIALIAS_OFF);
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                paint != null && paint.c()
+                        ? RenderingHints.VALUE_INTERPOLATION_BILINEAR
+                        : RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        if (clip != null) {
+            graphics.setClip(Math.round(clip.x()), Math.round(clip.y()),
+                    Math.round(clip.width()), Math.round(clip.height()));
+        }
+        graphics.transform(new AffineTransform(
+                transform.m00(), transform.m10(), transform.m01(), transform.m11(),
+                transform.m02(), transform.m12()));
+        int argb = paint == null ? 0xffffffff : paint.e();
+        graphics.setColor(new Color(argb, true));
+        graphics.setStroke(new BasicStroke(Math.max(1.0f,
+                paint == null ? 1.0f : paint.g()), BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND));
+        if (image) {
+            graphics.setComposite(AlphaComposite.getInstance(
+                    AlphaComposite.SRC_OVER, ((argb >>> 24) & 255) / 255.0f));
+        } else {
+            graphics.setComposite(AlphaComposite.SrcOver);
+        }
+        return graphics;
+    }
+
+    private void finishCpuDraw(Graphics2D graphics) {
+        graphics.dispose();
         renderTarget.version++;
+    }
+
+    private static BufferedImage wrapPixels(GameImage image) {
+        image.ensurePixelBuffer();
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (image.pixelBuffer == null || image.pixelBuffer.length < width * height) {
+            image.pixelBuffer = new int[Math.multiplyExact(width, height)];
+        }
+        DataBufferInt buffer = new DataBufferInt(image.pixelBuffer, width * height);
+        int[] masks = { 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
+        WritableRaster raster = java.awt.image.Raster.createPackedRaster(
+                buffer, width, height, width, masks, null);
+        DirectColorModel colors = new DirectColorModel(
+                ColorSpace.getInstance(ColorSpace.CS_sRGB), 32,
+                masks[0], masks[1], masks[2], masks[3], false, DataBuffer.TYPE_INT);
+        return new BufferedImage(colors, raster, false, null);
     }
 }

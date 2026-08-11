@@ -855,6 +855,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     return User32.DefWindowProc(window, message, wParam, lParam);
                 });
         private static boolean registered;
+        private static boolean dpiAwarenessConfigured;
 
         private final long handle;
         private final long instance;
@@ -875,6 +876,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private static synchronized Win32NativeWindow create(VulkanWindowRequest request) {
             closeRequested = false;
+            configureDpiAwareness();
             long instance = WindowsLibrary.HINSTANCE;
             if (!registered) {
                 try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -915,6 +917,24 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     request.width(), request.height());
             activeWindow = result;
             return result;
+        }
+
+        private static void configureDpiAwareness() {
+            if (dpiAwarenessConfigured) return;
+            dpiAwarenessConfigured = true;
+            long previous = User32.SetThreadDpiAwarenessContext(
+                    User32.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+            if (previous == 0L) {
+                previous = User32.SetThreadDpiAwarenessContext(
+                        User32.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+            }
+            if (previous == 0L) {
+                System.out.println("[Vulkan Mod/Driver] Win32 per-monitor DPI awareness "
+                        + "is unavailable; window coordinates may be virtualized");
+            } else {
+                System.out.println("[Vulkan Mod/Driver] Win32 Vulkan window uses "
+                        + "per-monitor DPI-aware pixel coordinates");
+            }
         }
 
         private boolean handleMessage(int message, long wParam, long lParam) {

@@ -64,6 +64,12 @@ public final class VulkanTransform2D {
 
     public float transformX(float x, float y) { return m00 * x + m01 * y + m02; }
     public float transformY(float x, float y) { return m10 * x + m11 * y + m12; }
+    public float m00() { return m00; }
+    public float m01() { return m01; }
+    public float m02() { return m02; }
+    public float m10() { return m10; }
+    public float m11() { return m11; }
+    public float m12() { return m12; }
 
     private static void requireFinite(float value) {
         if (!Float.isFinite(value)) throw new IllegalArgumentException("transform must be finite");
