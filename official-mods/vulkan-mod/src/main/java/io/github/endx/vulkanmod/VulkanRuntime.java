@@ -206,6 +206,13 @@ public final class VulkanRuntime {
         return nativeGraphicsEngine;
     }
 
+    public static synchronized void drawNativePointer(GameImage image, float x, float y) {
+        if (image == null || !(nativeGraphicsEngine
+                instanceof io.github.endx.vulkanmod.render.VulkanGraphicsEngine)) return;
+        ((io.github.endx.vulkanmod.render.VulkanGraphicsEngine) nativeGraphicsEngine)
+                .drawScreenImageRaw(image, x, y, null);
+    }
+
     /** Called from AppGameContainer.setup before its first Display.create attempt. */
     public static synchronized boolean beforeLegacyDisplayCreation(int width, int height) {
         if (startupPhase.ordinal() >= StartupPhase.NATIVE_WINDOW_READY.ordinal()) {
@@ -232,6 +239,9 @@ public final class VulkanRuntime {
                 VulkanSurfaceInfo created = activeDriver.createNativeWindowSurface(
                         new VulkanWindowRequest("Rusted Warfare", width, height, true));
                 surfaceInfo = created;
+                // Rusted Warfare's pointer is drawn as the final screen-space command. Hide only
+                // the Win32 client-area cursor; non-client window chrome retains its system cursor.
+                activeDriver.setSystemCursorVisible(false);
                 initializeNativeTextureCaches();
                 startupPhase = StartupPhase.NATIVE_WINDOW_READY;
                 log("Native Vulkan window is authoritative before Display.create: "
@@ -278,6 +288,7 @@ public final class VulkanRuntime {
                 : (int) Math.max(1L, Math.min(250L,
                         (now - nativeLastFrameNanos) / 1_000_000L));
         nativeLastFrameNanos = now;
+        long frameWorkStarted = System.nanoTime();
         if (gameTextureCache != null) gameTextureCache.beginFrame();
         if (textTextureCache != null) textTextureCache.beginFrame();
         nativeFrameBuilder = VulkanFrameCommands.builder(current.width(), current.height())
@@ -293,7 +304,18 @@ public final class VulkanRuntime {
             // accidentally append to a command buffer already owned by the driver.
             nativeFrameBuilder = null;
         }
+        long gameWorkFinished = System.nanoTime();
         VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
+        long presentationFinished = System.nanoTime();
+        if (Boolean.getBoolean("rusted.fabric.vulkan.profileSlowFrames")) {
+            long gameMicros = (gameWorkFinished - frameWorkStarted) / 1_000L;
+            long presentMicros = (presentationFinished - gameWorkFinished) / 1_000L;
+            if (gameMicros + presentMicros >= 25_000L) {
+                log("Slow native frame: game/render=" + (gameMicros / 1000.0)
+                        + "ms, present=" + (presentMicros / 1000.0)
+                        + "ms, commands=" + frame.commands().size());
+            }
+        }
         if (updated != null) {
             boolean resolutionChanged = updated.width() != current.width()
                     || updated.height() != current.height();

@@ -2,6 +2,7 @@ package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.mixin.SlickBitmapOrTextureDataAccessor;
+import io.github.endx.vulkanmod.render.VulkanGameImage;
 import rustedwarfare.client.render.GameImage;
 
 import java.lang.reflect.Method;
@@ -58,6 +59,12 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargets")
                 && renderTargets.containsKey(image)) {
             logRenderTarget(image, pixels);
+        }
+        if (presenter == null && current != null && current.textureHandle != 0L
+                && current.width == width && current.height == height) {
+            driver.updateTexture(current.textureHandle, pixels);
+            current.version = image.version;
+            return current.textureHandle;
         }
         Entry replacement = new Entry(0L, image.version, width, height);
         entries.put(image, replacement);
@@ -136,6 +143,9 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
     }
 
     private static VulkanTextureData readRgba(GameImage image, int width, int height) {
+        if (image instanceof VulkanGameImage) {
+            return VulkanTextureData.fromArgb(width, height, image.pixelBuffer);
+        }
         int byteCount = Math.multiplyExact(Math.multiplyExact(width, height), 4);
         byte[] rgba = new byte[byteCount];
         invalidateSlickTextureBindingCache();
@@ -257,7 +267,7 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
 
     private static final class Entry {
         private volatile long textureHandle;
-        private final int version;
+        private int version;
         private final int width;
         private final int height;
 

@@ -13,8 +13,10 @@ import rustedwarfare.client.RustedWarfareMain;
 import rustedwarfare.core.GameEngine;
 import rustedwarfare.ui.LibRocketSlickRenderer;
 import rustedwarfare.client.DesktopAppFramework;
+import rustedwarfare.client.render.GameImage;
 import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import org.lwjgl.input.Keyboard;
+import com.corrodinggames.rts.R$drawable;
 import org.spongepowered.asm.mixin.Unique;
 
 /** Restores game-system initialization without entering SlickGame's OpenGL setup method. */
@@ -31,6 +33,7 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     @Unique private final boolean[] vulkanmod$buttons = new boolean[3];
     @Unique private final java.util.HashSet<Integer> vulkanmod$keys =
             new java.util.HashSet<Integer>();
+    @Unique private GameImage vulkanmod$pointerImage;
 
     @Override
     public void vulkanmod$bindNativeContainer(GameContainer container) {
@@ -46,6 +49,7 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     public void vulkanmod$runNativeFrame(int deltaMillis) {
         if (gameEngine == null) gameEngine = GameEngine.getInstance();
         if (gameEngine == null || main == null) return;
+        vulkanmod$ensureNativePointer();
         // SlickGame.render normally performs this assignment for the duration of a GL frame.
         // In native mode the Vulkan engine is the permanent window render target instead.
         gameEngine.renderGraphicsEngine = VulkanRuntime.nativeGraphicsEngine();
@@ -70,7 +74,28 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
             }
             ui.postUpdate();
         }
+        // Slick installs this image as the native cursor during its skipped OpenGL init. Draw the
+        // same asset last in native mode so menus and the game retain Rusted Warfare's pointer.
+        if (vulkanmod$pointerImage != null) {
+            VulkanRuntime.drawNativePointer(
+                    vulkanmod$pointerImage, vulkanmod$pointerX, vulkanmod$pointerY);
+        }
         lastDeltaMs = 0;
+    }
+
+    @Unique
+    private void vulkanmod$ensureNativePointer() {
+        if (vulkanmod$pointerImage != null || VulkanRuntime.nativeGraphicsEngine() == null) return;
+        try {
+            vulkanmod$pointerImage = VulkanRuntime.nativeGraphicsEngine()
+                    .a(R$drawable.pointer, true);
+            System.out.println("[Vulkan Mod] Native pointer loaded: "
+                    + vulkanmod$pointerImage.getWidth() + "x"
+                    + vulkanmod$pointerImage.getHeight());
+        } catch (RuntimeException failure) {
+            System.out.println("[Vulkan Mod] Could not load the native pointer image: "
+                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+        }
     }
 
     @Override

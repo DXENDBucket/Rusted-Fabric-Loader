@@ -59,6 +59,7 @@ import com.corrodinggames.rts.R$drawable;
  * renderer, LWJGL Display, or OpenGL context.</p>
  */
 public final class VulkanGraphicsEngine implements GraphicsEngine {
+    private static boolean pointerDrawLogged;
     private final GraphicsEngine delegate;
     private final SlickGraphicsBackend slickDelegate;
     private final GameImage renderTarget;
@@ -67,6 +68,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     private GameImage errorImage;
     private VulkanTransform2D transform = VulkanTransform2D.IDENTITY;
     private VulkanClipRect clip;
+    private BufferedImage cpuBufferedImage;
+    private Graphics2D persistentCpuGraphics;
     private final Deque<NativeState> stateStack = new ArrayDeque<NativeState>();
     private final CanvasDrawTarget nativeCanvasTarget = new NativeCanvasTarget();
 
@@ -88,6 +91,22 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
 
     public SlickGraphicsBackend compatibilityDelegate() {
         return slickDelegate;
+    }
+
+    /** Draws a top-level native image in physical screen space, independent of game transforms. */
+    public void drawScreenImageRaw(GameImage image, float x, float y, Paint paint) {
+        if (!nativeRoot()) return;
+        VulkanTransform2D previousTransform = transform;
+        VulkanClipRect previousClip = clip;
+        try {
+            transform = VulkanTransform2D.IDENTITY;
+            clip = null;
+            nativeImage(image, full(image), x, y,
+                    x + image.getWidth(), y + image.getHeight(), paint, null);
+        } finally {
+            transform = previousTransform;
+            clip = previousClip;
+        }
     }
 
     public static GraphicsEngine unwrapCompatibility(GraphicsEngine engine) {
@@ -137,6 +156,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (imageWidth <= 0 || imageHeight <= 0) return;
         long texture = VulkanRuntime.textureForGameImage(real);
         if (texture == 0L) return;
+        if (!pointerDrawLogged && image.getName() != null
+                && image.getName().toLowerCase(java.util.Locale.ROOT).contains("pointer")) {
+            pointerDrawLogged = true;
+            System.out.println("[Vulkan Mod] Native pointer recorded: " + image.getName()
+                    + " " + imageWidth + "x" + imageHeight + " at " + left + "," + top
+                    + ", texture=" + texture);
+        }
         float[] tint = color(paint == null ? 0xffffffff : paint.e());
         VulkanDrawState base = state(paint);
         VulkanDrawState drawState = localTransform == null
@@ -196,32 +222,37 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             int width = decoded.getWidth();
             int height = decoded.getHeight();
             int[] argb = decoded.getRGB(0, 0, width, height, null, 0, width);
-            return new VulkanGameImage(width, height, argb);
+            return new VulkanGameImage(width, height, argb,
+                    !decoded.getColorModel().hasAlpha());
         } catch (IOException failure) {
             throw new IllegalStateException("Could not decode native image", failure);
         }
     }
     @Override public GameImage createImage(int width, int height, boolean alpha) {
-        return VulkanGameImage.empty(width, height);
+        return VulkanGameImage.empty(width, height, alpha);
     }
     @Override public GameImage b(int width, int height, boolean alpha) {
-        return VulkanGameImage.empty(width, height);
+        return VulkanGameImage.empty(width, height, alpha);
     }
     @Override public void e() { if (renderTarget == null && !nativeRoot()) delegate.e(); }
     @Override public void drawImageRotated(GameImage image, float x, float y, float angle,
                                            Paint paint) {
+        // This API receives Rusted Warfare's body/shadow angle relative to "up". The original
+        // Slick backend converts it to image-space by adding 90 degrees here. Section rotation
+        // intentionally uses its angle directly and must not share this adjustment.
+        float imageAngle = angle + 90.0f;
         if (renderTarget != null) {
             float left = x - image.getWidth() * 0.5f;
             float top = y - image.getHeight() * 0.5f;
             drawImageCpu(image, full(image), left, top,
                     left + image.getWidth(), top + image.getHeight(), paint,
-                    safeRotation(angle, x, y));
+                    safeRotation(imageAngle, x, y));
         } else if (nativeRoot()) {
             float left = x - image.getWidth() * 0.5f;
             float top = y - image.getHeight() * 0.5f;
             nativeImage(image, full(image), left, top, left + image.getWidth(),
                     top + image.getHeight(), paint,
-                    safeRotation(angle, x, y));
+                    safeRotation(imageAngle, x, y));
         } else delegate.drawImageRotated(image, x, y, angle, paint);
     }
     @Override public void drawImageSectionRotated(GameImage image, Rect source, float x, float y,
@@ -538,6 +569,10 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (renderTarget != null) renderTarget.version++;
     }
     @Override public void dispose() {
+        if (persistentCpuGraphics != null) {
+            persistentCpuGraphics.dispose();
+            persistentCpuGraphics = null;
+        }
         if (renderTarget == null && !nativeRoot()) delegate.dispose();
     }
     @Override public int getTextHeight(String text, Paint paint) {
@@ -787,6 +822,11 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (sourceImageReal == null) sourceImageReal = sourceImage;
         sourceImageReal.ensurePixelBuffer();
         if (sourceImageReal.pixelBuffer == null) return;
+        if (localTransform == null && tryFastCpuImageBlit(sourceImageReal, source,
+                left, top, right, bottom, paint)) {
+            renderTarget.version++;
+            return;
+        }
         VulkanTransform2D previous = transform;
         if (localTransform != null) transform = localTransform.then(transform);
         Graphics2D graphics = cpuGraphics(paint, true);
@@ -799,6 +839,116 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             transform = previous;
             finishCpuDraw(graphics);
         }
+    }
+
+    private boolean tryFastCpuImageBlit(GameImage sourceImage, Rect source,
+                                        float left, float top, float right, float bottom,
+                                        Paint paint) {
+        // Terrain-cache rendering is overwhelmingly axis-aligned image-section copies. Java2D's
+        // per-call setup dominates when thousands of tiles rebuild after a large zoom change, so
+        // handle this common case directly against the stable ARGB arrays.
+        if (sourceImage == renderTarget) return false;
+        if (Math.abs(transform.m01()) > 0.00001f || Math.abs(transform.m10()) > 0.00001f
+                || transform.m00() <= 0.0f || transform.m11() <= 0.0f) return false;
+        int sourceWidth = source.c - source.a;
+        int sourceHeight = source.d - source.b;
+        if (sourceWidth <= 0 || sourceHeight <= 0) return true;
+
+        float transformedLeft = transform.transformX(Math.round(left), Math.round(top));
+        float transformedTop = transform.transformY(Math.round(left), Math.round(top));
+        float transformedRight = transform.transformX(Math.round(right), Math.round(bottom));
+        float transformedBottom = transform.transformY(Math.round(right), Math.round(bottom));
+        if (!(transformedRight > transformedLeft) || !(transformedBottom > transformedTop)) {
+            return true;
+        }
+        int firstX = Math.max(0, (int) Math.floor(transformedLeft));
+        int firstY = Math.max(0, (int) Math.floor(transformedTop));
+        int lastX = Math.min(renderTarget.getWidth(), (int) Math.ceil(transformedRight));
+        int lastY = Math.min(renderTarget.getHeight(), (int) Math.ceil(transformedBottom));
+        if (clip != null) {
+            firstX = Math.max(firstX, (int) Math.floor(clip.x()));
+            firstY = Math.max(firstY, (int) Math.floor(clip.y()));
+            lastX = Math.min(lastX, (int) Math.ceil(clip.x() + clip.width()));
+            lastY = Math.min(lastY, (int) Math.ceil(clip.y() + clip.height()));
+        }
+        if (lastX <= firstX || lastY <= firstY) return true;
+
+        int[] sourcePixels = sourceImage.pixelBuffer;
+        int[] destinationPixels = renderTarget.pixelBuffer;
+        if (destinationPixels == null) {
+            renderTarget.pixelBuffer = destinationPixels = new int[Math.multiplyExact(
+                    renderTarget.getWidth(), renderTarget.getHeight())];
+        }
+        int sourceImageWidth = sourceImage.getWidth();
+        int sourceImageHeight = sourceImage.getHeight();
+        float inverseWidth = 1.0f / (transformedRight - transformedLeft);
+        float inverseHeight = 1.0f / (transformedBottom - transformedTop);
+        int paintAlpha = paint == null ? 255 : (paint.e() >>> 24) & 255;
+        int destinationStride = renderTarget.getWidth();
+        boolean opaqueSource = paintAlpha == 255
+                && sourceImage instanceof VulkanGameImage
+                && ((VulkanGameImage) sourceImage).isOpaque();
+        int exactLeft = Math.round(transformedLeft);
+        int exactTop = Math.round(transformedTop);
+        boolean exactCopy = opaqueSource
+                && Math.abs(transformedLeft - exactLeft) < 0.0001f
+                && Math.abs(transformedTop - exactTop) < 0.0001f
+                && Math.abs((transformedRight - transformedLeft) - sourceWidth) < 0.0001f
+                && Math.abs((transformedBottom - transformedTop) - sourceHeight) < 0.0001f;
+        if (exactCopy) {
+            int sourceX = source.a + firstX - exactLeft;
+            int sourceY = source.b + firstY - exactTop;
+            int columns = lastX - firstX;
+            if (sourceX >= 0 && sourceY >= 0
+                    && sourceX + columns <= sourceImageWidth
+                    && sourceY + (lastY - firstY) <= sourceImageHeight) {
+                for (int y = firstY; y < lastY; y++, sourceY++) {
+                    System.arraycopy(sourcePixels, sourceY * sourceImageWidth + sourceX,
+                            destinationPixels, y * destinationStride + firstX, columns);
+                }
+                return true;
+            }
+        }
+        for (int y = firstY; y < lastY; y++) {
+            int sourceY = source.b + Math.min(sourceHeight - 1, Math.max(0,
+                    (int) ((y + 0.5f - transformedTop) * inverseHeight * sourceHeight)));
+            if (sourceY < 0 || sourceY >= sourceImageHeight) continue;
+            int sourceRow = sourceY * sourceImageWidth;
+            int destinationOffset = y * destinationStride + firstX;
+            for (int x = firstX; x < lastX; x++, destinationOffset++) {
+                int sourceX = source.a + Math.min(sourceWidth - 1, Math.max(0,
+                        (int) ((x + 0.5f - transformedLeft) * inverseWidth * sourceWidth)));
+                if (sourceX < 0 || sourceX >= sourceImageWidth) continue;
+                int sourceArgb = sourcePixels[sourceRow + sourceX];
+                if (opaqueSource) {
+                    destinationPixels[destinationOffset] = sourceArgb | 0xff000000;
+                    continue;
+                }
+                int alpha = ((sourceArgb >>> 24) & 255) * paintAlpha / 255;
+                if (alpha == 255) {
+                    destinationPixels[destinationOffset] = sourceArgb | 0xff000000;
+                } else if (alpha != 0) {
+                    destinationPixels[destinationOffset] = blendSrcOver(
+                            sourceArgb, destinationPixels[destinationOffset], alpha);
+                }
+            }
+        }
+        return true;
+    }
+
+    private static int blendSrcOver(int sourceArgb, int destinationArgb, int sourceAlpha) {
+        int inverse = 255 - sourceAlpha;
+        int destinationAlpha = (destinationArgb >>> 24) & 255;
+        int outputAlpha = sourceAlpha + (destinationAlpha * inverse + 127) / 255;
+        if (outputAlpha <= 0) return 0;
+        int destinationWeight = (destinationAlpha * inverse + 127) / 255;
+        int red = ((((sourceArgb >>> 16) & 255) * sourceAlpha)
+                + (((destinationArgb >>> 16) & 255) * destinationWeight)) / outputAlpha;
+        int green = ((((sourceArgb >>> 8) & 255) * sourceAlpha)
+                + (((destinationArgb >>> 8) & 255) * destinationWeight)) / outputAlpha;
+        int blue = (((sourceArgb & 255) * sourceAlpha)
+                + ((destinationArgb & 255) * destinationWeight)) / outputAlpha;
+        return outputAlpha << 24 | red << 16 | green << 8 | blue;
     }
 
     private void drawCpuRect(float left, float top, float right, float bottom, Paint paint) {
@@ -859,8 +1009,16 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private Graphics2D cpuGraphics(Paint paint, boolean image) {
-        BufferedImage target = wrapPixels(renderTarget);
-        Graphics2D graphics = target.createGraphics();
+        if (cpuBufferedImage == null) cpuBufferedImage = wrapPixels(renderTarget);
+        if (persistentCpuGraphics == null) {
+            persistentCpuGraphics = cpuBufferedImage.createGraphics();
+        }
+        Graphics2D graphics = persistentCpuGraphics;
+        // Wheel zoom can redraw hundreds of cached terrain tiles. Reusing the target Graphics2D
+        // avoids constructing and disposing an entire Java2D pipeline for each tile. Reset all
+        // mutable state so reuse remains equivalent to BufferedImage.createGraphics().
+        graphics.setTransform(new AffineTransform());
+        graphics.setClip(null);
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 paint != null && paint.c()
                         ? RenderingHints.VALUE_ANTIALIAS_ON
@@ -891,11 +1049,14 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void finishCpuDraw(Graphics2D graphics) {
-        graphics.dispose();
+        // The child backend owns this Graphics2D and releases it from dispose().
         renderTarget.version++;
     }
 
     private static BufferedImage wrapPixels(GameImage image) {
+        if (image instanceof VulkanGameImage) {
+            return ((VulkanGameImage) image).bufferedImage();
+        }
         image.ensurePixelBuffer();
         int width = image.getWidth();
         int height = image.getHeight();

@@ -17,6 +17,10 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     }
     VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request);
     long uploadTexture(VulkanTextureData texture);
+    /** Replaces pixels in an existing same-sized texture without changing its public handle. */
+    default void updateTexture(long textureHandle, VulkanTextureData texture) {
+        throw new UnsupportedOperationException("in-place texture updates are not supported");
+    }
     void destroyTexture(long textureHandle);
     /**
      * Shows or hides the driver-owned presentation surface. Returns {@code true} when the driver
@@ -34,6 +38,8 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default boolean isSurfaceCloseRequested() { return false; }
     /** Drains input collected by the driver-owned application window since the last poll. */
     default List<VulkanInputEvent> pollInputEvents() { return Collections.emptyList(); }
+    /** Shows or hides the platform cursor over the driver-owned client area. */
+    default void setSystemCursorVisible(boolean visible) { }
     /**
      * Presents the first prepared frame while revealing a driver-owned surface immediately before
      * the platform presentation call. Drivers without an independently controlled surface may use

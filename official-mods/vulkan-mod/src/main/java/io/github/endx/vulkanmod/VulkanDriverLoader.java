@@ -151,6 +151,13 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.uploadTexture(texture));
         }
 
+        void updateTexture(long textureHandle, VulkanTextureData texture) {
+            invoke(() -> {
+                driver.updateTexture(textureHandle, texture);
+                return null;
+            });
+        }
+
         void destroyTexture(long textureHandle) {
             invoke(() -> {
                 driver.destroyTexture(textureHandle);
@@ -179,6 +186,13 @@ final class VulkanDriverLoader {
 
         java.util.List<io.github.endx.vulkanmod.spi.VulkanInputEvent> pollInputEvents() {
             return invoke(driver::pollInputEvents);
+        }
+
+        void setSystemCursorVisible(boolean visible) {
+            invoke(() -> {
+                driver.setSystemCursorVisible(visible);
+                return null;
+            });
         }
 
         VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
