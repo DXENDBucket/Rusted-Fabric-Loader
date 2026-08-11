@@ -151,6 +151,18 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.uploadTexture(texture));
         }
 
+        long compileFragmentShader(
+                io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader shader) {
+            return invoke(() -> driver.compileFragmentShader(shader));
+        }
+
+        void destroyFragmentShader(long shaderHandle) {
+            invoke(() -> {
+                driver.destroyFragmentShader(shaderHandle);
+                return null;
+            });
+        }
+
         long createRenderTarget(int width, int height) {
             return invoke(() -> driver.createRenderTarget(width, height));
         }

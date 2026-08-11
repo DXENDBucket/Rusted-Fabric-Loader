@@ -159,7 +159,8 @@ tasks.register('verifyNativeShaderCoverage', JavaExec) {
 
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
         tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
-        tasks.named('verifyNativeShaderCoverage')
+        tasks.named('verifyNativeShaderCoverage'),
+        ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

@@ -10,6 +10,7 @@ import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
 import android.graphics.Paint;
 import android.graphics.Paint$Align;
 import io.github.endx.vulkanmod.mixin.LibRocketUiEngineStateAccessor;
@@ -837,6 +838,20 @@ public final class VulkanRuntime {
             throw new IllegalStateException("native Vulkan render targets are unavailable");
         }
         return activeDriver.createRenderTarget(width, height);
+    }
+
+    public static synchronized long compileNativeFragmentShader(
+            VulkanCustomFragmentShader shader) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan shader compiler is unavailable");
+        }
+        return activeDriver.compileFragmentShader(shader);
+    }
+
+    public static synchronized void destroyNativeFragmentShader(long shaderHandle) {
+        if (shaderHandle != 0L && activeDriver != null) {
+            activeDriver.destroyFragmentShader(shaderHandle);
+        }
     }
 
     public static synchronized void renderNativeTarget(

@@ -214,7 +214,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         String name = shader.name == null ? "" : shader.name;
         int effect = VulkanBuiltInShaders.effectForName(name);
         if (effect < 0) {
-            return VulkanShaderState.DEFAULT;
+            return customShaderState(shader);
         }
         float red = 1.0f;
         float green = 1.0f;
@@ -278,6 +278,26 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
                     resolutionWidth, resolutionHeight, displacementOffset, uiScaling);
         }
         return new VulkanShaderState(effect, red, green, blue, alpha, amount);
+    }
+
+    private static VulkanShaderState customShaderState(ShaderProgram shader) {
+        try {
+            NativeCustomShaderBinding binding = shader.backendShaderObject
+                    instanceof NativeCustomShaderBinding
+                    ? (NativeCustomShaderBinding) shader.backendShaderObject : null;
+            if (binding == null || !binding.matches(shader) || shader.reloadPending) {
+                if (binding != null) binding.destroy();
+                binding = NativeCustomShaderBinding.compile(shader);
+                shader.backendShaderObject = binding;
+                shader.reloadPending = false;
+                shader.compileFailureState = 0;
+            }
+            return binding.snapshot(shader);
+        } catch (RuntimeException failure) {
+            shader.logWarningAndMarkFailed("Vulkan compile failed: "
+                    + failure.getMessage());
+            return VulkanShaderState.DEFAULT;
+        }
     }
 
     private static float finiteOr(float value, float fallback) {
@@ -850,7 +870,11 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else if (!nativeRoot()) delegate.leaveLock(lock);
     }
     @Override public void compileShader(ShaderProgram shader) {
-        if (!nativeRoot() && !cpuTarget()) delegate.compileShader(shader);
+        if (nativeRoot() || cpuTarget()) {
+            if (shader != null && VulkanBuiltInShaders.effectForName(shader.name) < 0) {
+                customShaderState(shader);
+            }
+        } else delegate.compileShader(shader);
     }
     @Override public float getUiScale() {
         return nativeRoot() || cpuTarget() ? 1.0f : delegate.getUiScale();

@@ -60,6 +60,17 @@ public final class VulkanDriverIsolationVerification {
         } catch (IllegalArgumentException expected) {
             // A driver must never receive a displacement draw without its screen-base image.
         }
+        float[] customUniforms = {0.25f, 0.5f, 0.75f, 1.0f};
+        VulkanShaderState custom = VulkanShaderState.custom(9L, 0L, customUniforms);
+        customUniforms[0] = 99.0f;
+        float[] customSnapshot = custom.customValues();
+        customSnapshot[1] = 99.0f;
+        if (custom.effect() != VulkanShaderState.CUSTOM
+                || custom.customShaderHandle() != 9L
+                || custom.customValues()[0] != 0.25f
+                || custom.customValues()[1] != 0.5f) {
+            throw new AssertionError("custom shader uniforms are externally mutable");
+        }
         VulkanFrameCommands commands = VulkanFrameCommands.builder(1280, 720)
                 .clear(0.1f, 0.2f, 0.3f, 1.0f)
                 .coloredQuad(new VulkanColoredQuad(

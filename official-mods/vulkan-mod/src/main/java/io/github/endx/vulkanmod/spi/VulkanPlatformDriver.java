@@ -16,6 +16,12 @@ public interface VulkanPlatformDriver extends AutoCloseable {
         throw new UnsupportedOperationException("native Vulkan windows are not supported");
     }
     VulkanSurfaceInfo createSurface(VulkanSurfaceRequest request);
+    /** Compiles a renderer-neutral custom fragment shader for textured draw commands. */
+    default long compileFragmentShader(VulkanCustomFragmentShader shader) {
+        throw new UnsupportedOperationException("custom fragment shaders are not supported");
+    }
+    /** Releases a custom shader handle previously returned by {@link #compileFragmentShader}. */
+    default void destroyFragmentShader(long shaderHandle) { }
     long uploadTexture(VulkanTextureData texture);
     /** Creates a sampled color image that can also be used as an offscreen render target. */
     default long createRenderTarget(int width, int height) {
