@@ -1944,6 +1944,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             .minDepth(0.0f).maxDepth(1.0f);
                     vkCmdSetViewport(command, 0, viewport);
                 }
+                ByteBuffer shaderPushConstants =
+                        stack.malloc(24).order(ByteOrder.nativeOrder());
                 for (DrawBatch drawBatch : upload.batches) {
                     if (drawBatch instanceof ColoredDrawBatch) {
                         ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
@@ -1970,7 +1972,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     texturePipelineLayout, 0,
                                     stack.longs(batch.descriptorSet), null);
-                            pushShaderState(command, batch.shaderState, stack);
+                            pushShaderState(command, batch.shaderState,
+                                    shaderPushConstants);
                             vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
                         }
                     }
@@ -2503,6 +2506,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             .minDepth(0.0f).maxDepth(1.0f);
                     vkCmdSetViewport(commandBuffer, 0, viewport);
                 }
+                ByteBuffer shaderPushConstants =
+                        stack.malloc(24).order(ByteOrder.nativeOrder());
                 for (DrawBatch drawBatch : upload.batches) {
                     if (drawBatch instanceof ColoredDrawBatch) {
                         ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
@@ -2524,7 +2529,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     texturePipelineLayout, 0,
                                     stack.longs(batch.descriptorSet), null);
-                            pushShaderState(commandBuffer, batch.shaderState, stack);
+                            pushShaderState(commandBuffer, batch.shaderState,
+                                    shaderPushConstants);
                             vkCmdDraw(commandBuffer, batch.vertexCount, 1, batch.firstVertex, 0);
                         }
                     }
@@ -2801,8 +2807,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private void pushShaderState(VkCommandBuffer commandBuffer,
                                      VulkanShaderState shaderState,
-                                     MemoryStack stack) {
-            ByteBuffer values = stack.malloc(24).order(ByteOrder.nativeOrder());
+                                     ByteBuffer values) {
             values.putFloat(0, shaderState.red());
             values.putFloat(4, shaderState.green());
             values.putFloat(8, shaderState.blue());

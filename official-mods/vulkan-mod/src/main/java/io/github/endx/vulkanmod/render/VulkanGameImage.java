@@ -59,6 +59,11 @@ public final class VulkanGameImage extends GameImage {
         nativeRenderTargetFlusher = flusher;
     }
 
+    /** Makes pending native draw commands visible before this image is sampled as a texture. */
+    public void submitPendingNativeDraws() {
+        if (nativeRenderTargetFlusher != null) nativeRenderTargetFlusher.run();
+    }
+
     @Override public boolean canReadPixels() { return true; }
     @Override public void ensurePixelBuffer() { }
     @Override public void readPixelsFromBitmap() { }
@@ -67,7 +72,7 @@ public final class VulkanGameImage extends GameImage {
     @Override public void dropPixelBuffer() { }
     @Override public void discardPixelBuffer() { }
     @Override public void flushPixelBufferToBitmap() {
-        if (nativeRenderTargetFlusher != null) nativeRenderTargetFlusher.run();
+        submitPendingNativeDraws();
         version++;
     }
     @Override public void releaseBitmap() { }

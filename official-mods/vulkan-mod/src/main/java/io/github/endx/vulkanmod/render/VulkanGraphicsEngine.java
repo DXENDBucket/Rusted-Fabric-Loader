@@ -249,6 +249,11 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (image == null || source == null || right < left || bottom < top) return;
         GameImage real = image.getRealImage();
         if (real == null) real = image;
+        if (real instanceof VulkanGameImage && real != renderTarget) {
+            // Slick makes render-to-texture draws visible before a later draw samples that image.
+            // Native child backends batch commands, so explicitly close the producer pass here.
+            ((VulkanGameImage) real).submitPendingNativeDraws();
+        }
         // LazyTeamColorImage attaches its shared ShaderProgram while resolving the real source.
         // Snapshot uniforms afterwards, but still apply them against the wrapper that owns the
         // team color rather than against the unwrapped source image.
