@@ -215,13 +215,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             float top = y - image.getHeight() * 0.5f;
             drawImageCpu(image, full(image), left, top,
                     left + image.getWidth(), top + image.getHeight(), paint,
-                    VulkanTransform2D.rotationAround(angle, x, y));
+                    safeRotation(angle, x, y));
         } else if (nativeRoot()) {
             float left = x - image.getWidth() * 0.5f;
             float top = y - image.getHeight() * 0.5f;
             nativeImage(image, full(image), left, top, left + image.getWidth(),
                     top + image.getHeight(), paint,
-                    VulkanTransform2D.rotationAround(angle, x, y));
+                    safeRotation(angle, x, y));
         } else delegate.drawImageRotated(image, x, y, angle, paint);
     }
     @Override public void drawImageSectionRotated(GameImage image, Rect source, float x, float y,
@@ -231,13 +231,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             float height = source.d - source.b;
             drawImageCpu(image, source, x - width * 0.5f, y - height * 0.5f,
                     x + width * 0.5f, y + height * 0.5f, paint,
-                    VulkanTransform2D.rotationAround(angle, x, y));
+                    safeRotation(angle, x, y));
         } else if (nativeRoot()) {
             float width = source.c - source.a;
             float height = source.d - source.b;
             nativeImage(image, source, x - width * 0.5f, y - height * 0.5f,
                     x + width * 0.5f, y + height * 0.5f, paint,
-                    VulkanTransform2D.rotationAround(angle, x, y));
+                    safeRotation(angle, x, y));
         } else delegate.drawImageSectionRotated(image, source, x, y, angle, paint);
     }
     @Override public void drawImage(GameImage image, Rect source, Rect destination, Paint paint) {
@@ -274,13 +274,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
             drawImageCpu(image, full(image), x - scaledWidth * 0.5f,
                     y - scaledHeight * 0.5f, x + scaledWidth * 0.5f,
                     y + scaledHeight * 0.5f, paint,
-                    VulkanTransform2D.rotationAround(angle, x, y));
+                    safeRotation(angle, x, y));
         } else if (nativeRoot()) {
             float w = image.getWidth() * scale;
             float h = image.getHeight() * scale;
             nativeImage(image, full(image), x - w * 0.5f, y - h * 0.5f,
                     x + w * 0.5f, y + h * 0.5f, paint,
-                    VulkanTransform2D.rotationAround(angle, x, y));
+                    safeRotation(angle, x, y));
         } else delegate.drawImageTransformed(image, x, y, paint, scale, angle);
     }
     @Override public void drawImageRaw(GameImage image, float x, float y, Paint paint) {
@@ -407,13 +407,13 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawRectFromSize(rect, paint);
     }
     @Override public void setClipRect(Rect rect) {
-        if (nativeRoot() || cpuTarget()) clip = rect == null ? null : new VulkanClipRect(
-                rect.a, rect.b, Math.max(0, rect.c - rect.a), Math.max(0, rect.d - rect.b));
+        if (nativeRoot() || cpuTarget()) clip = rect == null ? null : transformedClip(
+                rect.a, rect.b, rect.c, rect.d);
         else delegate.setClipRect(rect);
     }
     @Override public void setClipRect(RectF rect) {
-        if (nativeRoot() || cpuTarget()) clip = rect == null ? null : new VulkanClipRect(
-                rect.a, rect.b, Math.max(0, rect.c - rect.a), Math.max(0, rect.d - rect.b));
+        if (nativeRoot() || cpuTarget()) clip = rect == null ? null : transformedClip(
+                rect.a, rect.b, rect.c, rect.d);
         else delegate.setClipRect(rect);
     }
     @Override public void drawCircle(float x, float y, float radius, Paint paint) {
@@ -460,22 +460,43 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     @Override public void saveTransform() { save(); }
     @Override public void restoreTransform() { restore(); }
     @Override public void rotate(float angle, float pivotX, float pivotY) {
-        if (nativeRoot() || cpuTarget()) transform = transform.then(
-                VulkanTransform2D.rotationAround(angle, pivotX, pivotY));
+        if (nativeRoot() || cpuTarget()) {
+            if (!Float.isFinite(angle) || !Float.isFinite(pivotX)
+                    || !Float.isFinite(pivotY)) {
+                collapseInvalidTransform();
+            } else {
+                transform = VulkanTransform2D.rotationAround(
+                        angle, pivotX, pivotY).then(transform);
+            }
+        }
         else delegate.rotate(angle, pivotX, pivotY);
     }
     @Override public void scale(float x, float y) {
-        if (nativeRoot() || cpuTarget()) transform = transform.then(VulkanTransform2D.scale(x, y));
+        if (nativeRoot() || cpuTarget()) {
+            if (!Float.isFinite(x) || !Float.isFinite(y)) collapseInvalidTransform();
+            else transform = VulkanTransform2D.scale(x, y).then(transform);
+        }
         else delegate.scale(x, y);
     }
     @Override public void scaleAround(float x, float y, float pivotX, float pivotY) {
-        if (nativeRoot() || cpuTarget()) transform = transform.then(VulkanTransform2D.translation(-pivotX, -pivotY))
-                .then(VulkanTransform2D.scale(x, y))
-                .then(VulkanTransform2D.translation(pivotX, pivotY));
+        if (nativeRoot() || cpuTarget()) {
+            if (!Float.isFinite(x) || !Float.isFinite(y)
+                    || !Float.isFinite(pivotX) || !Float.isFinite(pivotY)) {
+                collapseInvalidTransform();
+            } else {
+                transform = VulkanTransform2D.translation(-pivotX, -pivotY)
+                        .then(VulkanTransform2D.scale(x, y))
+                        .then(VulkanTransform2D.translation(pivotX, pivotY))
+                        .then(transform);
+            }
+        }
         else delegate.scaleAround(x, y, pivotX, pivotY);
     }
     @Override public void translate(float x, float y) {
-        if (nativeRoot() || cpuTarget()) transform = transform.then(VulkanTransform2D.translation(x, y));
+        if (nativeRoot() || cpuTarget()) {
+            if (!Float.isFinite(x) || !Float.isFinite(y)) collapseInvalidTransform();
+            else transform = VulkanTransform2D.translation(x, y).then(transform);
+        }
         else delegate.translate(x, y);
     }
     @Override public void runDrawTimeCallback(DrawTimeCallback callback) {
@@ -595,8 +616,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         }
         VulkanTransform2D previous = transform;
         try {
-            transform = transform.then(VulkanTransform2D.rotationAround(
-                    (float) Math.toDegrees(Math.atan2(dy, dx)), x1, y1));
+            transform = safeRotation(
+                    (float) Math.toDegrees(Math.atan2(dy, dx)), x1, y1).then(transform);
             nativeQuad(x1, y1 - thickness * 0.5f, length, thickness, paint);
         } finally {
             transform = previous;
@@ -638,6 +659,37 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         NativeState restored = stateStack.pop();
         transform = restored.transform;
         clip = restored.clip;
+    }
+
+    private void collapseInvalidTransform() {
+        // Slick/OpenGL tolerates NaN/Infinity in a single model transform by producing no useful
+        // fragments. Do the same without poisoning Vulkan vertices or terminating the game.
+        transform = VulkanTransform2D.scale(0.0f, 0.0f).then(transform);
+    }
+
+    private static VulkanTransform2D safeRotation(float angle, float pivotX, float pivotY) {
+        if (!Float.isFinite(angle) || !Float.isFinite(pivotX)
+                || !Float.isFinite(pivotY)) {
+            return VulkanTransform2D.scale(0.0f, 0.0f);
+        }
+        return VulkanTransform2D.rotationAround(angle, pivotX, pivotY);
+    }
+
+    private VulkanClipRect transformedClip(float left, float top, float right, float bottom) {
+        float x0 = transform.transformX(left, top);
+        float y0 = transform.transformY(left, top);
+        float x1 = transform.transformX(right, top);
+        float y1 = transform.transformY(right, top);
+        float x2 = transform.transformX(left, bottom);
+        float y2 = transform.transformY(left, bottom);
+        float x3 = transform.transformX(right, bottom);
+        float y3 = transform.transformY(right, bottom);
+        float minX = Math.min(Math.min(x0, x1), Math.min(x2, x3));
+        float minY = Math.min(Math.min(y0, y1), Math.min(y2, y3));
+        float maxX = Math.max(Math.max(x0, x1), Math.max(x2, x3));
+        float maxY = Math.max(Math.max(y0, y1), Math.max(y2, y3));
+        return new VulkanClipRect(minX, minY,
+                Math.max(0.0f, maxX - minX), Math.max(0.0f, maxY - minY));
     }
 
     private static final class NativeState {

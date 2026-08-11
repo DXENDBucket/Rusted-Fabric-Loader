@@ -861,6 +861,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private final long instance;
         private volatile int width;
         private volatile int height;
+        private volatile boolean minimized;
         private volatile boolean closed;
         private final ArrayDeque<VulkanInputEvent> inputEvents =
                 new ArrayDeque<VulkanInputEvent>();
@@ -939,6 +940,17 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private boolean handleMessage(int message, long wParam, long lParam) {
             switch (message) {
+                case 0x0005: { // WM_SIZE
+                    int nextWidth = unsignedLowWord(lParam);
+                    int nextHeight = unsignedHighWord(lParam);
+                    minimized = wParam == 1L || nextWidth == 0 || nextHeight == 0;
+                    if (!minimized) {
+                        width = nextWidth;
+                        height = nextHeight;
+                    }
+                    // Let DefWindowProc perform the ordinary non-client/window bookkeeping.
+                    return false;
+                }
                 case 0x0200: // WM_MOUSEMOVE
                     updatePointer(lParam);
                     enqueue(VulkanInputEvent.pointer(
@@ -1018,6 +1030,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private static int signedHighWord(long value) {
             return (short) ((value >>> 16) & 0xffffL);
         }
+        private static int unsignedLowWord(long value) { return (int) (value & 0xffffL); }
+        private static int unsignedHighWord(long value) {
+            return (int) ((value >>> 16) & 0xffffL);
+        }
 
         private void show() {
             if (closed) return;
@@ -1035,16 +1051,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private boolean isPreparedFor(int requestedWidth, int requestedHeight) {
-            if (closed || User32.IsIconic(handle)) return false;
-            return width == Math.max(1, requestedWidth)
-                    && height == Math.max(1, requestedHeight);
+            return !closed && !minimized && !User32.IsIconic(handle);
+        }
+
+        private int clientWidth() { return Math.max(1, width); }
+        private int clientHeight() { return Math.max(1, height); }
+        private boolean isMinimized() {
+            return closed || minimized || User32.IsIconic(handle);
         }
 
         private boolean prepare(int requestedWidth, int requestedHeight, boolean visible) {
             if (closed) return false;
             pumpMessages();
             if (visible && !User32.IsWindowVisible(handle)) show();
-            return !User32.IsIconic(handle);
+            return !isMinimized();
         }
 
         private void pumpMessages() {
@@ -1786,7 +1806,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             int width = frame.width();
             int height = frame.height();
             if (overlay != null && !overlay.isPreparedFor(width, height)) return null;
-            if (nativeWindow != null && !nativeWindow.isPreparedFor(width, height)) return null;
+            if (nativeWindow != null) {
+                if (nativeWindow.isMinimized()) return null;
+                width = nativeWindow.clientWidth();
+                height = nativeWindow.clientHeight();
+            }
             if (width > 0 && height > 0
                     && (width != info.width() || height != info.height())) {
                 recreateSwapchain(width, height);
@@ -1851,7 +1875,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     return null;
                 }
                 if (acquire == VK_ERROR_OUT_OF_DATE_KHR && retryOutOfDate) {
-                    recreateSwapchain(frame.width(), frame.height());
+                    recreateSwapchain(targetWidth(frame), targetHeight(frame));
                     return presentFrame(frame, false, revealBeforePresent);
                 }
                 if (acquire != VK_SUCCESS && acquire != VK_SUBOPTIMAL_KHR) {
@@ -1926,7 +1950,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 int presented = vkQueuePresentKHR(presentQueue, present);
                 if ((presented == VK_ERROR_OUT_OF_DATE_KHR || presented == VK_SUBOPTIMAL_KHR)
                         && retryOutOfDate) {
-                    recreateSwapchain(frame.width(), frame.height());
+                    recreateSwapchain(targetWidth(frame), targetHeight(frame));
                     return null;
                 } else if (presented != VK_SUCCESS) {
                     check(presented, "vkQueuePresentKHR");
@@ -1946,6 +1970,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 }
                 return info;
             }
+        }
+
+        private int targetWidth(VulkanFrameCommands frame) {
+            return nativeWindow == null ? frame.width() : nativeWindow.clientWidth();
+        }
+
+        private int targetHeight(VulkanFrameCommands frame) {
+            return nativeWindow == null ? frame.height() : nativeWindow.clientHeight();
         }
 
         private FrameUpload uploadFrame(VulkanFrameCommands frame, MemoryStack stack) {

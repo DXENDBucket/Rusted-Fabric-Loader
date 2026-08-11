@@ -266,6 +266,13 @@ public final class VulkanRuntime {
         }
         VulkanSurfaceInfo current = surfaceInfo;
         if (current == null) return true;
+        if (!activeDriver.prepareSurfaceWindow(current.width(), current.height(), true)) {
+            // A minimized Win32 surface has no drawable client extent. Keep pumping messages,
+            // but do not run an expensive game/render frame against the stale swapchain.
+            java.util.concurrent.locks.LockSupport.parkNanos(16_000_000L);
+            nativeLastFrameNanos = System.nanoTime();
+            return true;
+        }
         long now = System.nanoTime();
         int deltaMillis = nativeLastFrameNanos == 0L ? 16
                 : (int) Math.max(1L, Math.min(250L,
@@ -288,7 +295,15 @@ public final class VulkanRuntime {
         }
         VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
         if (updated != null) {
+            boolean resolutionChanged = updated.width() != current.width()
+                    || updated.height() != current.height();
             surfaceInfo = updated;
+            if (resolutionChanged && nativeGame != null) {
+                nativeGame.vulkanmod$syncNativeResolution(
+                        updated.width(), updated.height());
+                log("Native Vulkan resolution changed to " + updated.width()
+                        + "x" + updated.height());
+            }
             nativeFramesPresented++;
             if (nativeFramesPresented == 1) {
                 log("First native-only frame presented without creating LWJGL2 Display/OpenGL");
