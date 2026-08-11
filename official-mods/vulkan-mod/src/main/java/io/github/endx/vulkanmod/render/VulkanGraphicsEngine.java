@@ -16,6 +16,7 @@ import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
+import io.github.endx.vulkanmod.spi.VulkanTextMetrics;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
@@ -644,8 +645,14 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (nativeRoot() || cpuTarget()) {
             float width = getTextWidth(text, textPaint);
             float height = getTextHeight(text, textPaint);
-            nativeRect(x - padding, y - height - padding,
-                    x + width + padding, y + padding, backgroundPaint);
+            float left = x;
+            if (textPaint != null && textPaint.j() == Paint$Align.b) {
+                left -= width * 0.5f;
+            } else if (textPaint != null && textPaint.j() == Paint$Align.c) {
+                left -= width;
+            }
+            nativeRect(left - padding, y - height - padding,
+                    left + width + padding, y + padding, backgroundPaint);
             drawText(text, x, y, textPaint);
         } else delegate.drawTextWithBackground(text, x, y, textPaint,
                 backgroundPaint, padding);
@@ -842,9 +849,15 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (renderTarget == null && !nativeRoot()) delegate.dispose();
     }
     @Override public int getTextHeight(String text, Paint paint) {
+        if (nativeRoot() || nativeTarget()) {
+            return nativeTextMetrics(text, paint).height();
+        }
         return fontMetrics(paint).getHeight();
     }
     @Override public int getTextWidth(String text, Paint paint) {
+        if (nativeRoot() || nativeTarget()) {
+            return nativeTextMetrics(text, paint).width();
+        }
         return fontMetrics(paint).stringWidth(text == null ? "" : text);
     }
     @Override public GameImage getErrorImage() { return errorImage; }
@@ -891,6 +904,12 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         } finally {
             graphics.dispose();
         }
+    }
+
+    private static VulkanTextMetrics nativeTextMetrics(String text, Paint paint) {
+        int size = Math.max(1, Math.round(paint == null ? 16.0f : paint.k()));
+        boolean bold = paint != null && paint.i() != null && paint.i().a();
+        return VulkanRuntime.measureNativeText(text == null ? "" : text, size, bold);
     }
 
     private void nativeRect(float left, float top, float right, float bottom, Paint paint) {

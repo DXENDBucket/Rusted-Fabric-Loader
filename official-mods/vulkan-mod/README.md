@@ -59,9 +59,11 @@ so shader-based team coloring and displacement effects no longer fall back to Op
 CPU texture copies. Java mods can additionally attach compatible custom vertex/fragment pairs;
 their uniforms are snapshotted per draw and pipelines are rebuilt across swapchain changes.
 
-Native offscreen submission currently waits conservatively for the graphics queue. This is an
-intentional correctness boundary while replacement coverage is completed; batching child passes
-into the top-level frame is performance work, not a return to a compatibility renderer. Dynamic
+Desktop native offscreen submission uses an independently fenced command/vertex ring. Child passes
+remain ordered on the graphics queue without a host-side device/queue idle after every target, and
+main/offscreen vertex buffers stay persistently mapped. Texture mutation still performs the narrow
+shared-staging synchronization required for correctness. Batching child passes into fewer queue
+submissions remains further performance work. Dynamic
 Canvas bitmap rebinding now reuses each image's single native target command stream, submits the
 outgoing target, and carries the live transform/clip stack across the framebuffer switch. Native
 render targets expose
@@ -109,8 +111,9 @@ solid-frame and safe-takeover sequence is confirmed.
    secondary-texture displacement path are complete. Native image readback/upload covers legacy
    pixel-buffer mutation and dynamic Canvas target switching; compatible linked custom
    vertex/fragment programs are translated and run in native Vulkan pipelines.
-4. After functional replacement, batch child render passes into the top-level submission, use
-   persistent mapped vertex/index rings, and widen batching without changing draw order.
+4. Persistently mapped main/offscreen vertex rings and asynchronous child submissions are complete.
+   Next, batch child render passes into fewer queue submissions and widen draw batching without
+   changing draw order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
    compatibility surface after native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.

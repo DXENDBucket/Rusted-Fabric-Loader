@@ -10,6 +10,7 @@ import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanTextMetrics;
 import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import android.graphics.Paint;
@@ -908,6 +909,14 @@ public final class VulkanRuntime {
             throw new IllegalStateException("Vulkan text cache is unavailable");
         }
         return textTextureCache.texture(text, size, bold);
+    }
+
+    public static synchronized VulkanTextMetrics measureNativeText(
+            String text, int size, boolean bold) {
+        if (textTextureCache == null) {
+            throw new IllegalStateException("native Vulkan text cache is unavailable");
+        }
+        return textTextureCache.measure(text, size, bold);
     }
 
     private static boolean captureSafely(String operation, CaptureOperation capture) {

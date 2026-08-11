@@ -73,3 +73,12 @@ tasks.register('verifyCustomVertexPipeline', JavaExec) {
             sourceSets.main.runtimeClasspath)
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneCustomVertexPipelineVerification')
 }
+
+tasks.register('verifyAsyncOffscreenSubmissions', JavaExec) {
+    group = 'verification'
+    description = 'Queues dependent render-target passes without per-pass device/queue idle.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneAsyncOffscreenVerification')
+}

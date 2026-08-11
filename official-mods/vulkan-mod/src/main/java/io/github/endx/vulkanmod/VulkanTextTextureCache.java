@@ -1,6 +1,7 @@
 package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanTextMetrics;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -31,6 +32,8 @@ final class VulkanTextTextureCache implements AutoCloseable {
     private final Font legacyFallbackFont;
     private final LinkedHashMap<Key, Entry> entries =
             new LinkedHashMap<Key, Entry>(128, 0.75f, true);
+    private final LinkedHashMap<Key, MeasuredText> measurements =
+            new LinkedHashMap<Key, MeasuredText>(128, 0.75f, true);
     private boolean closed;
     private int uploadsStartedThisFrame;
 
@@ -116,31 +119,22 @@ final class VulkanTextTextureCache implements AutoCloseable {
             release(entry);
         }
         entries.clear();
+        measurements.clear();
     }
 
     private Raster rasterize(String text, int size, boolean bold) {
-        Font primary = (bold ? boldFont : regularFont).deriveFont((float) size);
-        Font font = selectFont(primary, text, size);
-        BufferedImage measurement = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D measureGraphics = measurement.createGraphics();
-        configure(measureGraphics);
-        measureGraphics.setFont(font);
-        FontMetrics metrics = measureGraphics.getFontMetrics();
+        MeasuredText measured = measureText(text, size, bold);
+        Font font = measured.font;
+        int width = measured.width;
+        int height = measured.height;
+        int lineHeight = measured.lineHeight;
+        int baseline = measured.ascent;
         String[] lines = text.split("\\n", -1);
-        int width = 1;
-        for (String line : lines) width = Math.max(width, metrics.stringWidth(line));
-        int lineHeight = Math.max(1, metrics.getHeight());
-        int height = Math.max(1, Math.multiplyExact(lineHeight, lines.length));
-        measureGraphics.dispose();
-
-        width = Math.min(4096, width);
-        height = Math.min(4096, height);
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         configure(graphics);
         graphics.setFont(font);
         graphics.setColor(Color.WHITE);
-        int baseline = metrics.getAscent();
         for (int index = 0; index < lines.length; index++) {
             int y = baseline + index * lineHeight;
             if (y > height + lineHeight) break;
@@ -160,6 +154,43 @@ final class VulkanTextTextureCache implements AutoCloseable {
             }
         }
         return new Raster(width, height, lineHeight, rgba);
+    }
+
+    synchronized VulkanTextMetrics measure(String text, int requestedSize, boolean bold) {
+        if (closed) throw new IllegalStateException("text texture cache is closed");
+        if (text == null) text = "";
+        int size = Math.max(4, Math.min(256, requestedSize));
+        MeasuredText measured = measureText(text, size, bold);
+        return new VulkanTextMetrics(measured.width, measured.height, measured.lineHeight);
+    }
+
+    private MeasuredText measureText(String text, int size, boolean bold) {
+        Key key = new Key(text, size, bold);
+        MeasuredText cached = measurements.get(key);
+        if (cached != null) return cached;
+        Font primary = (bold ? boldFont : regularFont).deriveFont((float) size);
+        Font font = selectFont(primary, text, size);
+        BufferedImage measurement = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D measureGraphics = measurement.createGraphics();
+        configure(measureGraphics);
+        measureGraphics.setFont(font);
+        FontMetrics metrics = measureGraphics.getFontMetrics();
+        String[] lines = text.split("\\n", -1);
+        int width = 1;
+        for (String line : lines) width = Math.max(width, metrics.stringWidth(line));
+        int lineHeight = Math.max(1, metrics.getHeight());
+        int height = Math.max(1, Math.multiplyExact(lineHeight, lines.length));
+        int ascent = metrics.getAscent();
+        measureGraphics.dispose();
+
+        width = Math.min(4096, width);
+        height = Math.min(4096, height);
+        MeasuredText created = new MeasuredText(font, width, height, lineHeight, ascent);
+        measurements.put(key, created);
+        while (measurements.size() > MAX_ENTRIES * 2) {
+            measurements.remove(measurements.entrySet().iterator().next().getKey());
+        }
+        return created;
     }
 
     private Font selectFont(Font primary, String text, int size) {
@@ -249,6 +280,23 @@ final class VulkanTextTextureCache implements AutoCloseable {
             this.height = height;
             this.lineHeight = lineHeight;
             this.rgba = rgba;
+        }
+    }
+
+    private static final class MeasuredText {
+        private final Font font;
+        private final int width;
+        private final int height;
+        private final int lineHeight;
+        private final int ascent;
+
+        private MeasuredText(Font font, int width, int height,
+                             int lineHeight, int ascent) {
+            this.font = font;
+            this.width = width;
+            this.height = height;
+            this.lineHeight = lineHeight;
+            this.ascent = ascent;
         }
     }
 }
