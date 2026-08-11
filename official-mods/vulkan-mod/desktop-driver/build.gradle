@@ -49,7 +49,7 @@ tasks.register('verifyNativeReadback', JavaExec) {
 
 tasks.register('verifyCustomShaderTranslation', JavaExec) {
     group = 'verification'
-    description = 'Compiles translated GLSL-130 fragment input with the isolated shaderc runtime.'
+    description = 'Compiles translated GLSL-130 vertex/fragment input with isolated shaderc.'
     classpath = files(
             project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
             sourceSets.main.runtimeClasspath)
@@ -63,4 +63,13 @@ tasks.register('verifyLargeNativeBatchFrame', JavaExec) {
             project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
             sourceSets.main.runtimeClasspath)
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneLargeBatchVerification')
+}
+
+tasks.register('verifyCustomVertexPipeline', JavaExec) {
+    group = 'verification'
+    description = 'Executes a translated custom vertex shader on the real Vulkan device.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneCustomVertexPipelineVerification')
 }

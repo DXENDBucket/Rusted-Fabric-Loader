@@ -22,6 +22,12 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     }
     /** Releases a custom shader handle previously returned by {@link #compileFragmentShader}. */
     default void destroyFragmentShader(long shaderHandle) { }
+    /** Compiles a linked custom vertex/fragment program for textured draw commands. */
+    default long compileShaderProgram(VulkanCustomShaderProgram program) {
+        throw new UnsupportedOperationException("custom shader programs are not supported");
+    }
+    /** Releases a custom program handle previously returned by {@link #compileShaderProgram}. */
+    default void destroyShaderProgram(long shaderHandle) { }
     long uploadTexture(VulkanTextureData texture);
     /** Creates a sampled color image that can also be used as an offscreen render target. */
     default long createRenderTarget(int width, int height) {

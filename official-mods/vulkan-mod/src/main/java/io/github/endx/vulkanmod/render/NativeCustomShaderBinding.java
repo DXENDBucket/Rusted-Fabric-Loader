@@ -1,7 +1,7 @@
 package io.github.endx.vulkanmod.render;
 
 import io.github.endx.vulkanmod.VulkanRuntime;
-import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
+import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import rustedwarfare.client.render.GameImage;
 import rustedwarfare.render.ShaderParameter;
@@ -14,11 +14,11 @@ final class NativeCustomShaderBinding {
     private final long handle;
     private final String vertexSource;
     private final String fragmentSource;
-    private final List<LegacyFragmentShaderTranslator.UniformSlot> uniforms;
+    private final List<LegacyShaderProgramTranslator.UniformSlot> uniforms;
     private final String secondarySampler;
 
     private NativeCustomShaderBinding(long handle, ShaderProgram shader,
-                                      LegacyFragmentShaderTranslator.Result translation) {
+                                      LegacyShaderProgramTranslator.Result translation) {
         this.handle = handle;
         this.vertexSource = shader.vertexSource;
         this.fragmentSource = shader.fragmentSource;
@@ -27,13 +27,12 @@ final class NativeCustomShaderBinding {
     }
 
     static NativeCustomShaderBinding compile(ShaderProgram shader) {
-        if (!LegacyFragmentShaderTranslator.usesStockVertexContract(shader.vertexSource)) {
-            throw new IllegalArgumentException("custom vertex shaders are not supported yet");
-        }
-        LegacyFragmentShaderTranslator.Result translation =
-                LegacyFragmentShaderTranslator.translate(shader.fragmentSource);
-        long handle = VulkanRuntime.compileNativeFragmentShader(
-                new VulkanCustomFragmentShader(shader.name, translation.source()));
+        LegacyShaderProgramTranslator.Result translation =
+                LegacyShaderProgramTranslator.translate(
+                        shader.vertexSource, shader.fragmentSource);
+        long handle = VulkanRuntime.compileNativeShaderProgram(
+                new VulkanCustomShaderProgram(shader.name,
+                        translation.vertexSource(), translation.fragmentSource()));
         return new NativeCustomShaderBinding(handle, shader, translation);
     }
 
@@ -43,7 +42,7 @@ final class NativeCustomShaderBinding {
 
     VulkanShaderState snapshot(ShaderProgram shader) {
         float[] values = new float[VulkanShaderState.MAX_CUSTOM_FLOATS];
-        for (LegacyFragmentShaderTranslator.UniformSlot slot : uniforms) {
+        for (LegacyShaderProgramTranslator.UniformSlot slot : uniforms) {
             ShaderParameter parameter = parameter(shader, slot.name());
             if (parameter == null || parameter.floatValues == null) continue;
             int count = Math.min(slot.components(), parameter.floatValues.length);
@@ -68,7 +67,7 @@ final class NativeCustomShaderBinding {
     }
 
     void destroy() {
-        VulkanRuntime.destroyNativeFragmentShader(handle);
+        VulkanRuntime.destroyNativeShaderProgram(handle);
     }
 
     private static ShaderParameter parameter(ShaderProgram shader, String name) {

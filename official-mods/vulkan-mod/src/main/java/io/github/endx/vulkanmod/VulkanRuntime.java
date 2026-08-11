@@ -11,6 +11,7 @@ import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
+import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import android.graphics.Paint;
 import android.graphics.Paint$Align;
 import io.github.endx.vulkanmod.mixin.LibRocketUiEngineStateAccessor;
@@ -851,6 +852,20 @@ public final class VulkanRuntime {
     public static synchronized void destroyNativeFragmentShader(long shaderHandle) {
         if (shaderHandle != 0L && activeDriver != null) {
             activeDriver.destroyFragmentShader(shaderHandle);
+        }
+    }
+
+    public static synchronized long compileNativeShaderProgram(
+            VulkanCustomShaderProgram program) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan shader compiler is unavailable");
+        }
+        return activeDriver.compileShaderProgram(program);
+    }
+
+    public static synchronized void destroyNativeShaderProgram(long shaderHandle) {
+        if (shaderHandle != 0L && activeDriver != null) {
+            activeDriver.destroyShaderProgram(shaderHandle);
         }
     }
 

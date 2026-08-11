@@ -30,9 +30,12 @@ each texture has independently selectable linear and nearest-neighbour sampling.
 offscreen images remain a compatibility fallback and invalidate their Vulkan copy whenever they are
 drawn into. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the
 game thread. The text path currently rasterizes and caches complete AWT string runs rather than
-using a glyph atlas. Native mode also translates GLSL-130 fragment programs that use the stock
-vertex contract, with up to five float/vec uniforms and one secondary sampler. Arbitrary custom
-vertex programs are still incomplete, so takeover remains an opt-in developer mode.
+using a glyph atlas. Native mode translates linked GLSL-130 vertex/fragment programs onto the
+Vulkan texture ABI. Desktop built-ins and GDX attributes, custom float/vec uniforms shared across
+both stages, custom float/vec varyings, and one fragment secondary sampler are supported. The five
+numeric-uniform limit is shared by the complete program. Geometry reaches the custom vertex stage
+after the renderer's ordinary CPU transform and projection, so custom matrix uniforms, vertex
+texture sampling, and shaders that require unprojected model coordinates remain unsupported.
 
 `native` is the renderer-startup replacement path. The Vulkan mod registers as a renderer
 provider during client-mod initialization, then RFL resolves the backend before invoking the game
@@ -50,17 +53,18 @@ boundary. The native texture pipeline implements the stock `plain`, `error`,
 `pureGreenTeamColor`, `hueAddTeamColor`, `hueShiftTeamColor`, `post_base`, and the two-texture
 `post_displacement` fragment formulas through Vulkan push constants and paired image descriptors,
 so shader-based team coloring and displacement effects no longer fall back to OpenGL or per-team
-CPU texture copies. Java mods can additionally attach compatible custom fragment shaders; their
-uniforms are snapshotted per draw and pipelines are rebuilt across swapchain changes.
+CPU texture copies. Java mods can additionally attach compatible custom vertex/fragment pairs;
+their uniforms are snapshotted per draw and pipelines are rebuilt across swapchain changes.
 
 Native offscreen submission currently waits conservatively for the graphics queue. This is an
 intentional correctness boundary while replacement coverage is completed; batching child passes
 into the top-level frame is performance work, not a return to a compatibility renderer. Dynamic
 Canvas bitmap rebinding now reuses each image's single native target command stream, submits the
-outgoing target, and carries the live transform/clip stack across the framebuffer switch. Remaining
-shader work is custom vertex-program translation. Native render targets expose
+outgoing target, and carries the live transform/clip stack across the framebuffer switch. Native
+render targets expose
 synchronized RGBA readback and same-size CPU upload, so `GameImage` pixel reads/copies and explicit
-pixel-buffer flushes retain their original semantics.
+pixel-buffer flushes retain their original semantics. Remaining shader work is broadening legacy
+syntax and model-coordinate/matrix compatibility beyond the current screen-space contract.
 Whole-string AWT rasterization is used for glyph pixels, but text presentation itself is Vulkan.
 
 Useful takeover diagnostics are:
@@ -100,8 +104,8 @@ solid-frame and safe-takeover sequence is confirmed.
 3. Native `GraphicsEngine` images, Vulkan offscreen framebuffers, terrain/minimap cache submission,
    common blend modes, texture filtering, LibRocket geometry, built-in team/post shaders, and the
    secondary-texture displacement path are complete. Native image readback/upload covers legacy
-   pixel-buffer mutation and dynamic Canvas target switching; compatible custom fragment programs
-   are translated while custom vertex programs remain.
+   pixel-buffer mutation and dynamic Canvas target switching; compatible linked custom
+   vertex/fragment programs are translated and run in native Vulkan pipelines.
 4. After functional replacement, batch child render passes into the top-level submission, use
    persistent mapped vertex/index rings, and widen batching without changing draw order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only

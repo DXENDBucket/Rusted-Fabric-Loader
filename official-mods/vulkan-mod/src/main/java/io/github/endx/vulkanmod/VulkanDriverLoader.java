@@ -163,6 +163,18 @@ final class VulkanDriverLoader {
             });
         }
 
+        long compileShaderProgram(
+                io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram program) {
+            return invoke(() -> driver.compileShaderProgram(program));
+        }
+
+        void destroyShaderProgram(long shaderHandle) {
+            invoke(() -> {
+                driver.destroyShaderProgram(shaderHandle);
+                return null;
+            });
+        }
+
         long createRenderTarget(int width, int height) {
             return invoke(() -> driver.createRenderTarget(width, height));
         }
