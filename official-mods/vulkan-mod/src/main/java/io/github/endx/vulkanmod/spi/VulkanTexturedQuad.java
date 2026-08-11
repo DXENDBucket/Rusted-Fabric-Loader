@@ -2,20 +2,23 @@ package io.github.endx.vulkanmod.spi;
 
 /** A screen-space textured rectangle with normalized UVs and a straight-alpha colour tint. */
 public final class VulkanTexturedQuad implements VulkanDrawCommand {
-    private final long textureHandle;
-    private final float x;
-    private final float y;
-    private final float width;
-    private final float height;
-    private final float u0;
-    private final float v0;
-    private final float u1;
-    private final float v1;
-    private final float red;
-    private final float green;
-    private final float blue;
-    private final float alpha;
-    private final VulkanDrawState state;
+    private long textureHandle;
+    private float x;
+    private float y;
+    private float width;
+    private float height;
+    private float u0;
+    private float v0;
+    private float u1;
+    private float v1;
+    private float red;
+    private float green;
+    private float blue;
+    private float alpha;
+    private VulkanDrawState state;
+    private VulkanFrameCommandPool owner;
+
+    VulkanTexturedQuad() { }
 
     public VulkanTexturedQuad(long textureHandle,
                               float x, float y, float width, float height,
@@ -30,6 +33,39 @@ public final class VulkanTexturedQuad implements VulkanDrawCommand {
                               float u0, float v0, float u1, float v1,
                               float red, float green, float blue, float alpha,
                               VulkanDrawState state) {
+        set(textureHandle, x, y, width, height, u0, v0, u1, v1,
+                red, green, blue, alpha, state);
+    }
+
+    static VulkanTexturedQuad acquire(VulkanFrameCommandPool pool, long textureHandle,
+                                      float x, float y, float width, float height,
+                                      float u0, float v0, float u1, float v1,
+                                      float red, float green, float blue, float alpha,
+                                      VulkanDrawState state) {
+        VulkanTexturedQuad command = pool.acquireTexturedQuad();
+        command.owner = pool;
+        try {
+            command.set(textureHandle, x, y, width, height, u0, v0, u1, v1,
+                    red, green, blue, alpha, state);
+            return command;
+        } catch (RuntimeException failure) {
+            command.release(pool);
+            throw failure;
+        }
+    }
+
+    void release(VulkanFrameCommandPool pool) {
+        if (owner != pool) return;
+        owner = null;
+        state = null;
+        pool.recycle(this);
+    }
+
+    private void set(long textureHandle,
+                     float x, float y, float width, float height,
+                     float u0, float v0, float u1, float v1,
+                     float red, float green, float blue, float alpha,
+                     VulkanDrawState state) {
         if (textureHandle <= 0L) throw new IllegalArgumentException("invalid texture handle");
         requireFinite("x", x);
         requireFinite("y", y);

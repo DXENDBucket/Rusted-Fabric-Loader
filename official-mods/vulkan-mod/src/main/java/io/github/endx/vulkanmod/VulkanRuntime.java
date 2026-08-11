@@ -300,26 +300,44 @@ public final class VulkanRuntime {
         long frameWorkStarted = System.nanoTime();
         if (gameTextureCache != null) gameTextureCache.beginFrame();
         if (textTextureCache != null) textTextureCache.beginFrame();
-        nativeFrameBuilder = VulkanFrameCommands.builder(current.width(), current.height())
+        nativeFrameBuilder = VulkanFrameCommands.pooledBuilder(current.width(), current.height())
                 .clear(0.035f, 0.045f, 0.06f, 1.0f);
         nativeRenderTargetPasses = new ArrayList<VulkanRenderTargetPass>();
         VulkanFrameCommands frame;
         List<VulkanRenderTargetPass> renderTargetPasses;
+        boolean frameBuilt = false;
         try {
             if (nativeGameSystemsStarted && nativeGame != null) {
                 nativeGame.vulkanmod$runNativeFrame(deltaMillis);
             }
             frame = nativeFrameBuilder.build();
+            frameBuilt = true;
             renderTargetPasses = nativeRenderTargetPasses;
         } finally {
             // Build before presentation so GraphicsEngine calls outside a native frame cannot
             // accidentally append to a command buffer already owned by the driver.
+            VulkanFrameCommands.Builder unfinishedBuilder = nativeFrameBuilder;
+            List<VulkanRenderTargetPass> unfinishedPasses = nativeRenderTargetPasses;
             nativeFrameBuilder = null;
             nativeRenderTargetPasses = null;
+            if (!frameBuilt) {
+                if (unfinishedBuilder != null) unfinishedBuilder.discard();
+                if (unfinishedPasses != null) {
+                    for (VulkanRenderTargetPass pass : unfinishedPasses) {
+                        pass.frame().releasePooledCommands();
+                    }
+                }
+            }
         }
         long gameWorkFinished = System.nanoTime();
-        VulkanSurfaceInfo updated = activeDriver.presentFrame(
-                new VulkanFrameSubmission(renderTargetPasses, frame));
+        int frameCommandCount = frame.commandCount();
+        VulkanFrameSubmission submission = new VulkanFrameSubmission(renderTargetPasses, frame);
+        VulkanSurfaceInfo updated;
+        try {
+            updated = activeDriver.presentFrame(submission);
+        } finally {
+            submission.releasePooledCommands();
+        }
         long presentationFinished = System.nanoTime();
         if (Boolean.getBoolean("rusted.fabric.vulkan.profileSlowFrames")) {
             long gameMicros = (gameWorkFinished - frameWorkStarted) / 1_000L;
@@ -327,7 +345,7 @@ public final class VulkanRuntime {
             if (gameMicros + presentMicros >= 25_000L) {
                 log("Slow native frame: game/render=" + (gameMicros / 1000.0)
                         + "ms, present=" + (presentMicros / 1000.0)
-                        + "ms, commands=" + frame.commands().size());
+                        + "ms, commands=" + frameCommandCount);
             }
         }
         if (updated != null) {
@@ -362,9 +380,28 @@ public final class VulkanRuntime {
         return true;
     }
 
+    public static synchronized boolean recordNativeColoredQuad(
+            float x, float y, float width, float height,
+            float red, float green, float blue, float alpha, VulkanDrawState state) {
+        if (nativeFrameBuilder == null) return false;
+        nativeFrameBuilder.coloredQuad(
+                x, y, width, height, red, green, blue, alpha, state);
+        return true;
+    }
+
     public static synchronized boolean recordNativeTexturedQuad(VulkanTexturedQuad quad) {
         if (nativeFrameBuilder == null || quad == null) return false;
         nativeFrameBuilder.texturedQuad(quad);
+        return true;
+    }
+
+    public static synchronized boolean recordNativeTexturedQuad(
+            long textureHandle, float x, float y, float width, float height,
+            float u0, float v0, float u1, float v1,
+            float red, float green, float blue, float alpha, VulkanDrawState state) {
+        if (nativeFrameBuilder == null) return false;
+        nativeFrameBuilder.texturedQuad(textureHandle, x, y, width, height,
+                u0, v0, u1, v1, red, green, blue, alpha, state);
         return true;
     }
 
@@ -395,11 +432,14 @@ public final class VulkanRuntime {
         float left = x;
         if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
-        float[] tint = argb(paint.e());
-        builder.texturedQuad(new VulkanTexturedQuad(texture.textureHandle,
+        int color = paint.e();
+        builder.texturedQuad(texture.textureHandle,
                 left, y - texture.lineHeight, texture.width, texture.height,
                 0.0f, 0.0f, 1.0f, 1.0f,
-                tint[0], tint[1], tint[2], tint[3], state));
+                ((color >>> 16) & 255) / 255.0f,
+                ((color >>> 8) & 255) / 255.0f,
+                (color & 255) / 255.0f,
+                ((color >>> 24) & 255) / 255.0f, state);
         return true;
     }
 
@@ -803,11 +843,11 @@ public final class VulkanRuntime {
                         : (packed & 255) / 255.0f) * alpha;
             }
             if (textureHandle == 0L) {
-                nativeFrameBuilder.coloredTriangle(new VulkanColoredTriangle(
-                        trianglePositions, triangleColors, drawState));
+                nativeFrameBuilder.coloredTriangle(
+                        trianglePositions, triangleColors, drawState);
             } else {
-                nativeFrameBuilder.texturedTriangle(new VulkanTexturedTriangle(textureHandle,
-                        trianglePositions, triangleUvs, triangleColors, drawState));
+                nativeFrameBuilder.texturedTriangle(textureHandle,
+                        trianglePositions, triangleUvs, triangleColors, drawState);
             }
         }
         return true;
@@ -888,16 +928,32 @@ public final class VulkanRuntime {
         if (nativeRenderTargetPasses != null) {
             nativeRenderTargetPasses.add(new VulkanRenderTargetPass(textureHandle, frame));
         } else {
-            activeDriver.renderToTexture(textureHandle, frame);
+            try {
+                activeDriver.renderToTexture(textureHandle, frame);
+            } finally {
+                frame.releasePooledCommands();
+            }
         }
     }
 
     private static void flushNativeRenderTargetPasses() {
         if (nativeRenderTargetPasses == null || nativeRenderTargetPasses.isEmpty()) return;
-        for (VulkanRenderTargetPass pass : nativeRenderTargetPasses) {
-            activeDriver.renderToTexture(pass.textureHandle(), pass.frame());
-        }
+        List<VulkanRenderTargetPass> pending =
+                new ArrayList<VulkanRenderTargetPass>(nativeRenderTargetPasses);
         nativeRenderTargetPasses.clear();
+        try {
+            for (VulkanRenderTargetPass pass : pending) {
+                try {
+                    activeDriver.renderToTexture(pass.textureHandle(), pass.frame());
+                } finally {
+                    pass.frame().releasePooledCommands();
+                }
+            }
+        } finally {
+            for (VulkanRenderTargetPass pass : pending) {
+                pass.frame().releasePooledCommands();
+            }
+        }
     }
 
     public static synchronized VulkanTextureData readNativeTexture(long textureHandle) {

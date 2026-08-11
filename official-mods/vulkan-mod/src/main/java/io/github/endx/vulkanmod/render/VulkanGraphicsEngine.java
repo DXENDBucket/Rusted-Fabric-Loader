@@ -12,12 +12,10 @@ import io.github.endx.vulkanmod.VulkanRuntime;
 import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanBuiltInShaders;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
-import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTextMetrics;
-import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import rustedwarfare.client.render.GameImage;
@@ -77,6 +75,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     private GameImage errorImage;
     private VulkanTransform2D transform = VulkanTransform2D.IDENTITY;
     private VulkanClipRect clip;
+    private VulkanDrawState cachedDrawState;
     private BufferedImage cpuBufferedImage;
     private Graphics2D persistentCpuGraphics;
     private final Deque<NativeState> stateStack = new ArrayDeque<NativeState>();
@@ -155,17 +154,20 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
 
     private void resetOffscreenBuilder() {
         if (!nativeTarget()) return;
-        offscreenBuilder = VulkanFrameCommands.builder(width, height);
+        if (offscreenBuilder != null) offscreenBuilder.discard();
+        offscreenBuilder = VulkanFrameCommands.pooledBuilder(width, height);
     }
 
     private void submitOffscreen() {
         if (nativeTarget() && offscreenBuilder != null) {
             VulkanFrameCommands pending = offscreenBuilder.build();
-            if (pending.clearRequested() || !pending.commands().isEmpty()) {
+            if (pending.clearRequested() || pending.commandCount() != 0) {
                 VulkanRuntime.renderNativeTarget(nativeRenderTargetHandle, pending);
                 if (renderTarget instanceof VulkanGameImage) {
                     ((VulkanGameImage) renderTarget).markNativePixelsDirty();
                 }
+            } else {
+                pending.releasePooledCommands();
             }
             resetOffscreenBuilder();
         }
@@ -177,20 +179,32 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         }
     }
 
-    private void recordColoredQuad(VulkanColoredQuad quad) {
+    private void recordColoredQuad(float x, float y, float width, float height,
+                                   float red, float green, float blue, float alpha,
+                                   VulkanDrawState drawState) {
         if (nativeTarget()) {
             beforeNativeTargetMutation();
-            offscreenBuilder.coloredQuad(quad);
+            offscreenBuilder.coloredQuad(
+                    x, y, width, height, red, green, blue, alpha, drawState);
+        } else {
+            VulkanRuntime.recordNativeColoredQuad(
+                    x, y, width, height, red, green, blue, alpha, drawState);
         }
-        else VulkanRuntime.recordNativeColoredQuad(quad);
     }
 
-    private void recordTexturedQuad(VulkanTexturedQuad quad) {
+    private void recordTexturedQuad(long textureHandle,
+                                    float x, float y, float width, float height,
+                                    float u0, float v0, float u1, float v1,
+                                    float red, float green, float blue, float alpha,
+                                    VulkanDrawState drawState) {
         if (nativeTarget()) {
             beforeNativeTargetMutation();
-            offscreenBuilder.texturedQuad(quad);
+            offscreenBuilder.texturedQuad(textureHandle, x, y, width, height,
+                    u0, v0, u1, v1, red, green, blue, alpha, drawState);
+        } else {
+            VulkanRuntime.recordNativeTexturedQuad(textureHandle, x, y, width, height,
+                    u0, v0, u1, v1, red, green, blue, alpha, drawState);
         }
-        else VulkanRuntime.recordNativeTexturedQuad(quad);
     }
 
     private VulkanDrawState state(Paint paint) {
@@ -198,10 +212,31 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private VulkanDrawState state(Paint paint, VulkanShaderState shaderState) {
-        return new VulkanDrawState(transform, clip, VulkanBlendMode.NORMAL,
-                paint != null && paint.c()
-                        ? VulkanTextureFilter.LINEAR : VulkanTextureFilter.NEAREST,
-                shaderState);
+        VulkanTextureFilter filter = paint != null && paint.c()
+                ? VulkanTextureFilter.LINEAR : VulkanTextureFilter.NEAREST;
+        VulkanDrawState cached = cachedDrawState;
+        if (cached != null
+                && sameTransform(cached.transform(), transform)
+                && (cached.clip() == clip
+                        || (cached.clip() != null && cached.clip().equals(clip)))
+                && cached.blendMode() == VulkanBlendMode.NORMAL
+                && cached.textureFilter() == filter
+                && cached.shaderState().equals(shaderState)) {
+            return cached;
+        }
+        cachedDrawState = new VulkanDrawState(transform, clip, VulkanBlendMode.NORMAL,
+                filter, shaderState);
+        return cachedDrawState;
+    }
+
+    private static boolean sameTransform(VulkanTransform2D first, VulkanTransform2D second) {
+        return first == second || (first != null && second != null
+                && Float.compare(first.m00(), second.m00()) == 0
+                && Float.compare(first.m01(), second.m01()) == 0
+                && Float.compare(first.m02(), second.m02()) == 0
+                && Float.compare(first.m10(), second.m10()) == 0
+                && Float.compare(first.m11(), second.m11()) == 0
+                && Float.compare(first.m12(), second.m12()) == 0);
     }
 
     private static VulkanShaderState shaderState(GameImage image, Paint paint) {
@@ -309,20 +344,14 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         return Float.isFinite(value) && value > 0.0f ? value : fallback;
     }
 
-    private static float[] color(int argb) {
-        return new float[] {
-                ((argb >>> 16) & 255) / 255.0f,
-                ((argb >>> 8) & 255) / 255.0f,
-                (argb & 255) / 255.0f,
-                ((argb >>> 24) & 255) / 255.0f
-        };
-    }
-
     private void nativeQuad(float x, float y, float width, float height, Paint paint) {
         if (width < 0.0f || height < 0.0f) return;
-        float[] rgba = color(paint == null ? 0xffffffff : paint.e());
-        recordColoredQuad(new VulkanColoredQuad(
-                x, y, width, height, rgba[0], rgba[1], rgba[2], rgba[3], state(paint)));
+        int color = paint == null ? 0xffffffff : paint.e();
+        recordColoredQuad(x, y, width, height,
+                ((color >>> 16) & 255) / 255.0f,
+                ((color >>> 8) & 255) / 255.0f,
+                (color & 255) / 255.0f,
+                ((color >>> 24) & 255) / 255.0f, state(paint));
     }
 
     private void nativeImage(GameImage image, Rect source, float left, float top,
@@ -354,16 +383,19 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
                     + " " + imageWidth + "x" + imageHeight + " at " + left + "," + top
                     + ", texture=" + texture);
         }
-        float[] tint = color(paint == null ? 0xffffffff : paint.e());
+        int tint = paint == null ? 0xffffffff : paint.e();
         VulkanDrawState base = state(paint, shaderState);
         VulkanDrawState drawState = localTransform == null
                 ? base : new VulkanDrawState(localTransform.then(base.transform()), base.clip(),
                         base.blendMode(), base.textureFilter(), base.shaderState());
-        recordTexturedQuad(new VulkanTexturedQuad(texture,
+        recordTexturedQuad(texture,
                 left, top, right - left, bottom - top,
                 source.a / (float) imageWidth, source.b / (float) imageHeight,
                 source.c / (float) imageWidth, source.d / (float) imageHeight,
-                tint[0], tint[1], tint[2], tint[3], drawState));
+                ((tint >>> 16) & 255) / 255.0f,
+                ((tint >>> 8) & 255) / 255.0f,
+                (tint & 255) / 255.0f,
+                ((tint >>> 24) & 255) / 255.0f, drawState);
         if (nativeTarget() && samplesNativeRenderTarget && real != renderTarget) {
             // Delay the consumer normally, but make the source aware of it. If the game reuses
             // that scratch image, its next mutation submits this consumer first. Stable render

@@ -1,17 +1,44 @@
 package io.github.endx.vulkanmod.spi;
 
-import java.util.Arrays;
-
 /** One independently coloured and textured screen-space triangle. */
 public final class VulkanTexturedTriangle implements VulkanDrawCommand {
-    private final long textureHandle;
-    private final float[] positions;
-    private final float[] uvs;
-    private final float[] colors;
-    private final VulkanDrawState state;
+    private long textureHandle;
+    private final float[] positions = new float[6];
+    private final float[] uvs = new float[6];
+    private final float[] colors = new float[12];
+    private VulkanDrawState state;
+    private VulkanFrameCommandPool owner;
+
+    VulkanTexturedTriangle() { }
 
     public VulkanTexturedTriangle(long textureHandle, float[] positions, float[] uvs,
                                   float[] colors, VulkanDrawState state) {
+        set(textureHandle, positions, uvs, colors, state);
+    }
+
+    static VulkanTexturedTriangle acquire(VulkanFrameCommandPool pool, long textureHandle,
+                                          float[] positions, float[] uvs, float[] colors,
+                                          VulkanDrawState state) {
+        VulkanTexturedTriangle command = pool.acquireTexturedTriangle();
+        command.owner = pool;
+        try {
+            command.set(textureHandle, positions, uvs, colors, state);
+            return command;
+        } catch (RuntimeException failure) {
+            command.release(pool);
+            throw failure;
+        }
+    }
+
+    void release(VulkanFrameCommandPool pool) {
+        if (owner != pool) return;
+        owner = null;
+        state = null;
+        pool.recycle(this);
+    }
+
+    private void set(long textureHandle, float[] positions, float[] uvs,
+                     float[] colors, VulkanDrawState state) {
         if (textureHandle <= 0L) throw new IllegalArgumentException("invalid texture handle");
         if (positions == null || positions.length != 6) {
             throw new IllegalArgumentException("triangle positions must contain 6 floats");
@@ -27,9 +54,11 @@ public final class VulkanTexturedTriangle implements VulkanDrawCommand {
         requireFinite(uvs);
         requireFinite(colors);
         this.textureHandle = textureHandle;
-        this.positions = Arrays.copyOf(positions, positions.length);
-        this.uvs = Arrays.copyOf(uvs, uvs.length);
-        this.colors = clampCopy(colors);
+        System.arraycopy(positions, 0, this.positions, 0, positions.length);
+        System.arraycopy(uvs, 0, this.uvs, 0, uvs.length);
+        for (int index = 0; index < colors.length; index++) {
+            this.colors[index] = Math.max(0.0f, Math.min(1.0f, colors[index]));
+        }
         this.state = state;
     }
 
@@ -55,11 +84,4 @@ public final class VulkanTexturedTriangle implements VulkanDrawCommand {
         }
     }
 
-    private static float[] clampCopy(float[] source) {
-        float[] result = Arrays.copyOf(source, source.length);
-        for (int index = 0; index < result.length; index++) {
-            result[index] = Math.max(0.0f, Math.min(1.0f, result[index]));
-        }
-        return result;
-    }
 }

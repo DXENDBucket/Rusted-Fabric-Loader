@@ -26,4 +26,12 @@ public final class VulkanFrameSubmission {
 
     public List<VulkanRenderTargetPass> renderTargetPasses() { return renderTargetPasses; }
     public VulkanFrameCommands presentationFrame() { return presentationFrame; }
+
+    /** Releases all arenas after a synchronous platform-driver call has consumed the graph. */
+    public void releasePooledCommands() {
+        for (VulkanRenderTargetPass pass : renderTargetPasses) {
+            pass.frame().releasePooledCommands();
+        }
+        presentationFrame.releasePooledCommands();
+    }
 }

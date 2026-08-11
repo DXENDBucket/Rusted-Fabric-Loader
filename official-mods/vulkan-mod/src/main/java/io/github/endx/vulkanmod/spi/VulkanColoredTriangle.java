@@ -1,14 +1,40 @@
 package io.github.endx.vulkanmod.spi;
 
-import java.util.Arrays;
-
 /** One independently coloured screen-space triangle. */
 public final class VulkanColoredTriangle implements VulkanDrawCommand {
-    private final float[] positions;
-    private final float[] colors;
-    private final VulkanDrawState state;
+    private final float[] positions = new float[6];
+    private final float[] colors = new float[12];
+    private VulkanDrawState state;
+    private VulkanFrameCommandPool owner;
+
+    VulkanColoredTriangle() { }
 
     public VulkanColoredTriangle(float[] positions, float[] colors, VulkanDrawState state) {
+        set(positions, colors, state);
+    }
+
+    static VulkanColoredTriangle acquire(VulkanFrameCommandPool pool,
+                                         float[] positions, float[] colors,
+                                         VulkanDrawState state) {
+        VulkanColoredTriangle command = pool.acquireColoredTriangle();
+        command.owner = pool;
+        try {
+            command.set(positions, colors, state);
+            return command;
+        } catch (RuntimeException failure) {
+            command.release(pool);
+            throw failure;
+        }
+    }
+
+    void release(VulkanFrameCommandPool pool) {
+        if (owner != pool) return;
+        owner = null;
+        state = null;
+        pool.recycle(this);
+    }
+
+    private void set(float[] positions, float[] colors, VulkanDrawState state) {
         if (positions == null || positions.length != 6) {
             throw new IllegalArgumentException("triangle positions must contain 6 floats");
         }
@@ -18,8 +44,10 @@ public final class VulkanColoredTriangle implements VulkanDrawCommand {
         if (state == null) throw new NullPointerException("state");
         requireFinite(positions);
         requireFinite(colors);
-        this.positions = Arrays.copyOf(positions, positions.length);
-        this.colors = clampCopy(colors);
+        System.arraycopy(positions, 0, this.positions, 0, positions.length);
+        for (int index = 0; index < colors.length; index++) {
+            this.colors[index] = Math.max(0.0f, Math.min(1.0f, colors[index]));
+        }
         this.state = state;
     }
 
@@ -42,11 +70,4 @@ public final class VulkanColoredTriangle implements VulkanDrawCommand {
         }
     }
 
-    private static float[] clampCopy(float[] source) {
-        float[] result = Arrays.copyOf(source, source.length);
-        for (int index = 0; index < result.length; index++) {
-            result[index] = Math.max(0.0f, Math.min(1.0f, result[index]));
-        }
-        return result;
-    }
 }

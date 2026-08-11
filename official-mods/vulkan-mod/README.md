@@ -74,6 +74,14 @@ pixel-buffer flushes retain their original semantics. Remaining shader work is b
 syntax beyond the parameter types exposed by the original game.
 Whole-string AWT rasterization is used for glyph pixels, but text presentation itself is Vulkan.
 
+Native frame construction uses a thread-confined command arena. Its growable command array and
+quad/triangle command objects are retained at peak capacity and recycled after the synchronous
+platform-driver submission, while the ordinary public `builder(...)` path remains an immutable
+snapshot for third-party drivers and tests. Typed compatibility lists are generated lazily from the
+single ordered command stream instead of five eagerly copied lists. Consecutive equivalent
+draw states are also shared, and desktop vertex packing writes colored and textured vertices in one
+command traversal.
+
 Useful takeover diagnostics are:
 
 - `-Drusted.fabric.vulkan.debugMagentaClear=true` overrides captured clears with magenta.
@@ -115,9 +123,9 @@ solid-frame and safe-takeover sequence is confirmed.
    secondary-texture displacement path are complete. Native image readback/upload covers legacy
    pixel-buffer mutation and dynamic Canvas target switching; compatible linked custom
    vertex/fragment programs are translated and run in native Vulkan pipelines.
-4. Persistently mapped main/offscreen vertex rings, asynchronous standalone child submissions and
-   combined frame-graph submission are complete. Next, widen Java-side draw batching and replace
-   per-command object allocation without changing draw order.
+4. Persistently mapped main/offscreen vertex rings, asynchronous standalone child submissions,
+   combined frame-graph submission and reusable Java frame-command arenas are complete. Next,
+   recycle driver-side draw-batch metadata and widen compatible batches without changing order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
    compatibility surface after native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.

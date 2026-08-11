@@ -2187,13 +2187,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (renderTargetSubmissions == 1) {
                 System.out.println("[Vulkan Mod/Driver] First native render target: "
                         + target.width + "x" + target.height + ", commands="
-                        + frame.commands().size() + ", texture=" + textureHandle);
+                        + frame.commandCount() + ", texture=" + textureHandle);
             }
             if (Boolean.getBoolean("rusted.fabric.vulkan.debugFrameGraph")
                     && renderTargetSubmissions <= 64) {
                 System.out.println("[Vulkan Mod/Driver] Frame graph target pass #"
                         + renderTargetSubmissions + ": texture=" + textureHandle
-                        + ", commands=" + frame.commands().size());
+                        + ", commands=" + frame.commandCount());
             }
         }
 
@@ -2309,12 +2309,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (renderTargetSubmissions == 1) {
                     System.out.println("[Vulkan Mod/Driver] First native render target: "
                             + target.width + "x" + target.height + ", commands="
-                            + frame.commands().size() + ", texture=" + textureHandle);
+                            + frame.commandCount() + ", texture=" + textureHandle);
                 }
                 if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargetPasses")
                         && renderTargetSubmissions <= 64) {
                     java.util.LinkedHashSet<Long> sampled = new java.util.LinkedHashSet<Long>();
-                    for (VulkanDrawCommand draw : frame.commands()) {
+                    for (int commandIndex = 0; commandIndex < frame.commandCount();
+                         commandIndex++) {
+                        VulkanDrawCommand draw = frame.command(commandIndex);
                         if (draw instanceof VulkanTexturedQuad) {
                             sampled.add(((VulkanTexturedQuad) draw).textureHandle());
                         } else if (draw instanceof VulkanTexturedTriangle) {
@@ -2326,7 +2328,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             + ", size=" + target.width + "x" + target.height
                             + ", clear=" + frame.clearRed() + "," + frame.clearGreen()
                             + "," + frame.clearBlue() + "," + frame.clearAlpha()
-                            + ", commands=" + frame.commands().size()
+                            + ", commands=" + frame.commandCount()
                             + ", sampled=" + sampled);
                 }
                 if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargetPasses")
@@ -2875,7 +2877,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (Boolean.getBoolean("rusted.fabric.vulkan.debugRenderTargetPasses")
                         && !debugMainTargetSamplesLogged) {
                     int logged = 0;
-                    for (VulkanDrawCommand draw : frame.commands()) {
+                    for (int commandIndex = 0; commandIndex < frame.commandCount();
+                         commandIndex++) {
+                        VulkanDrawCommand draw = frame.command(commandIndex);
                         if (!(draw instanceof VulkanTexturedQuad)) continue;
                         VulkanTexturedQuad quad = (VulkanTexturedQuad) draw;
                         TextureResource sampled = textures.get(quad.textureHandle());
@@ -3097,7 +3101,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         System.out.println("[Vulkan Mod/Driver] First frame presented; clear RGBA="
                                 + frame.clearRed() + "," + frame.clearGreen() + ","
                                 + frame.clearBlue() + "," + frame.clearAlpha()
-                                + ", commands=" + frame.commands().size());
+                                + ", commands=" + frame.commandCount());
                     }
                 }
                 frameCursor = (frameSlot + 1) % inFlightFences.length;
@@ -3114,7 +3118,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 + elapsedMillis(afterVertexUpload, afterRecording) + "ms, submit="
                                 + elapsedMillis(afterRecording, afterSubmit) + "ms, present="
                                 + elapsedMillis(afterSubmit, afterPresent) + "ms, commands="
-                                + frame.commands().size());
+                                + frame.commandCount());
                     }
                 }
                 return info;
@@ -3163,11 +3167,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                         int frameSlot, BufferAllocation[] allocations,
                                         int[] capacities) {
             int coloredVertexCount = Math.addExact(
-                    Math.multiplyExact(frame.coloredQuads().size(), 6),
-                    Math.multiplyExact(frame.coloredTriangles().size(), 3));
+                    Math.multiplyExact(frame.coloredQuadCount(), 6),
+                    Math.multiplyExact(frame.coloredTriangleCount(), 3));
             int texturedVertexCount = 0;
             int customTexturedVertexCount = 0;
-            for (VulkanDrawCommand command : frame.commands()) {
+            for (int commandIndex = 0; commandIndex < frame.commandCount(); commandIndex++) {
+                VulkanDrawCommand command = frame.command(commandIndex);
                 int vertices;
                 VulkanShaderState shaderState;
                 if (command instanceof VulkanTexturedQuad) {
@@ -3204,7 +3209,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 coloredSlice.limit(coloredBytes);
                 FloatBuffer coloredVertices = coloredSlice.slice()
                         .order(ByteOrder.nativeOrder()).asFloatBuffer();
-                for (VulkanDrawCommand command : frame.commands()) {
+                ByteBuffer texturedSlice = bytes.duplicate();
+                texturedSlice.position(coloredBytes).limit(customTexturedOffset);
+                FloatBuffer texturedVertices = texturedSlice.slice()
+                        .order(ByteOrder.nativeOrder()).asFloatBuffer();
+                ByteBuffer customTexturedSlice = bytes.duplicate();
+                customTexturedSlice.position(customTexturedOffset).limit(totalBytes);
+                FloatBuffer customTexturedVertices = customTexturedSlice.slice()
+                        .order(ByteOrder.nativeOrder()).asFloatBuffer();
+                for (int commandIndex = 0; commandIndex < frame.commandCount(); commandIndex++) {
+                    VulkanDrawCommand command = frame.command(commandIndex);
                     if (command instanceof VulkanColoredQuad) {
                         VulkanColoredQuad quad = (VulkanColoredQuad) command;
                         VulkanTransform2D transform = quad.state().transform();
@@ -3225,19 +3239,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             putColoredTriangleVertex(coloredVertices, transform,
                                     frame, triangle, vertex);
                         }
-                    }
-                }
-
-                ByteBuffer texturedSlice = bytes.duplicate();
-                texturedSlice.position(coloredBytes).limit(customTexturedOffset);
-                FloatBuffer texturedVertices = texturedSlice.slice()
-                        .order(ByteOrder.nativeOrder()).asFloatBuffer();
-                ByteBuffer customTexturedSlice = bytes.duplicate();
-                customTexturedSlice.position(customTexturedOffset).limit(totalBytes);
-                FloatBuffer customTexturedVertices = customTexturedSlice.slice()
-                        .order(ByteOrder.nativeOrder()).asFloatBuffer();
-                for (VulkanDrawCommand command : frame.commands()) {
-                    if (command instanceof VulkanTexturedQuad) {
+                    } else if (command instanceof VulkanTexturedQuad) {
                         VulkanTexturedQuad quad = (VulkanTexturedQuad) command;
                         if (!textures.containsKey(quad.textureHandle())) {
                             throw new IllegalArgumentException(
@@ -3286,7 +3288,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             int texturedFirstVertex = 0;
             int customTexturedFirstVertex = 0;
             DrawBatch currentBatch = null;
-            for (VulkanDrawCommand command : frame.commands()) {
+            for (int commandIndex = 0; commandIndex < frame.commandCount(); commandIndex++) {
+                VulkanDrawCommand command = frame.command(commandIndex);
                 if (command instanceof VulkanColoredQuad) {
                     VulkanColoredQuad quad = (VulkanColoredQuad) command;
                     if (!(currentBatch instanceof ColoredDrawBatch)

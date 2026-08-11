@@ -2,15 +2,18 @@ package io.github.endx.vulkanmod.spi;
 
 /** A screen-space rectangle using top-left pixel coordinates and straight-alpha colour. */
 public final class VulkanColoredQuad implements VulkanDrawCommand {
-    private final float x;
-    private final float y;
-    private final float width;
-    private final float height;
-    private final float red;
-    private final float green;
-    private final float blue;
-    private final float alpha;
-    private final VulkanDrawState state;
+    private float x;
+    private float y;
+    private float width;
+    private float height;
+    private float red;
+    private float green;
+    private float blue;
+    private float alpha;
+    private VulkanDrawState state;
+    private VulkanFrameCommandPool owner;
+
+    VulkanColoredQuad() { }
 
     public VulkanColoredQuad(float x, float y, float width, float height,
                              float red, float green, float blue, float alpha) {
@@ -20,6 +23,34 @@ public final class VulkanColoredQuad implements VulkanDrawCommand {
     public VulkanColoredQuad(float x, float y, float width, float height,
                              float red, float green, float blue, float alpha,
                              VulkanDrawState state) {
+        set(x, y, width, height, red, green, blue, alpha, state);
+    }
+
+    static VulkanColoredQuad acquire(VulkanFrameCommandPool pool,
+                                     float x, float y, float width, float height,
+                                     float red, float green, float blue, float alpha,
+                                     VulkanDrawState state) {
+        VulkanColoredQuad command = pool.acquireColoredQuad();
+        command.owner = pool;
+        try {
+            command.set(x, y, width, height, red, green, blue, alpha, state);
+            return command;
+        } catch (RuntimeException failure) {
+            command.release(pool);
+            throw failure;
+        }
+    }
+
+    void release(VulkanFrameCommandPool pool) {
+        if (owner != pool) return;
+        owner = null;
+        state = null;
+        pool.recycle(this);
+    }
+
+    private void set(float x, float y, float width, float height,
+                     float red, float green, float blue, float alpha,
+                     VulkanDrawState state) {
         requireFinite("x", x);
         requireFinite("y", y);
         requireFinite("width", width);
