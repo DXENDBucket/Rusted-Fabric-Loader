@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import rustedwarfare.ui.LibRocketSlickRenderer;
 
-/** Replaces LibRocket's immediate-mode triangles once their texture is Vulkan-readable. */
+/** Owns LibRocket geometry in native frames and captures it during compatibility takeover. */
 @Mixin(targets = "rustedwarfare.ui.LibRocketSlickRenderer", remap = false)
 public abstract class LibRocketSlickRendererVulkanCaptureNamedMixin {
     @Inject(method = "GenerateTexture(I[B)Z", at = @At("HEAD"),
@@ -29,8 +29,11 @@ public abstract class LibRocketSlickRendererVulkanCaptureNamedMixin {
                                           LibRocket$CompiledGeometry compiled,
                                           CallbackInfo callback) {
         LibRocketSlickRenderer renderer = (LibRocketSlickRenderer) (Object) this;
-        if (VulkanRuntime.captureLibRocketGeometry(renderer, positions, uvs, colors, indices,
-                textureId, translationX, translationY)) callback.cancel();
+        boolean captured = VulkanRuntime.captureLibRocketGeometry(renderer, positions, uvs,
+                colors, indices, textureId, translationX, translationY);
+        // A native frame has no Slick Graphics/OpenGL fallback. Invalid or not-yet-uploaded UI
+        // geometry may be skipped for one frame, but it must never enter the legacy renderer.
+        if (captured || VulkanRuntime.isNativeRendererSelected()) callback.cancel();
     }
 
     @Inject(method = "EnableScissorRegion(Z)V", at = @At("HEAD"),

@@ -24,7 +24,10 @@ import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 import java.util.Optional;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import rustedwarfare.core.GameEngine;
+import rustedwarfare.game.Team;
 import rustedwarfare.render.GraphicsEngine;
+import rustedwarfare.unit.BuiltinUnitType;
 
 /** Owns Vulkan startup state and the explicitly opt-in takeover experiment. */
 public final class VulkanRuntime {
@@ -659,14 +662,27 @@ public final class VulkanRuntime {
                     ? slickImageTextureCache.textureNative(holder)
                     : slickImageTextureCache.texture(holder, image);
             if (texture == null) {
-                if (!nativeFrame) takeoverCapture.unsupportedExternal();
-                return false;
+                if (!nativeFrame) {
+                    takeoverCapture.unsupportedExternal();
+                    return false;
+                }
+                // Slick deliberately permits a lazy texture to be absent for a frame. Unit icons
+                // are drawn through the game's GraphicsEngine, while ordinary lazy images get a
+                // faint untextured placeholder until their upload is available. Native mode has
+                // no GL Graphics to fall back to, so reproduce that behavior here.
+                if (holder.unitType != null && drawNativeLibRocketUnit(holder, positions, indices,
+                        translationX, translationY, renderer)) {
+                    return true;
+                }
+                noColor = holder.noColor;
+                alpha = holder.lazy ? 0.1f : holder.alpha;
+            } else {
+                textureHandle = texture.textureHandle;
+                uScale = texture.uScale;
+                vScale = texture.vScale;
+                noColor = holder.noColor;
+                alpha = holder.alpha;
             }
-            textureHandle = texture.textureHandle;
-            uScale = texture.uScale;
-            vScale = texture.vScale;
-            noColor = holder.noColor;
-            alpha = holder.alpha;
         }
         LibRocketUiEngineStateAccessor state =
                 (LibRocketUiEngineStateAccessor) (Object) renderer;
@@ -689,6 +705,53 @@ public final class VulkanRuntime {
                 positions, uvs, colors, indices, translationX, translationY,
                 capturedTexture, capturedUScale, capturedVScale,
                 capturedNoColor, capturedAlpha, clip));
+    }
+
+    private static boolean drawNativeLibRocketUnit(
+            LibRocketTextureHolder holder, float[] positions, int[] indices,
+            float translationX, float translationY, LibRocketSlickRenderer renderer) {
+        if (holder == null || holder.unitType == null || positions == null || indices == null
+                || positions.length < 2 || positions.length % 2 != 0 || indices.length == 0) {
+            return false;
+        }
+        float left = Float.POSITIVE_INFINITY;
+        float top = Float.POSITIVE_INFINITY;
+        float right = Float.NEGATIVE_INFINITY;
+        float bottom = Float.NEGATIVE_INFINITY;
+        for (int index : indices) {
+            int offset = index * 2;
+            if (index < 0 || offset + 1 >= positions.length) return false;
+            float x = positions[offset] + translationX;
+            float y = positions[offset + 1] + translationY;
+            if (!Float.isFinite(x) || !Float.isFinite(y)) return false;
+            left = Math.min(left, x);
+            top = Math.min(top, y);
+            right = Math.max(right, x);
+            bottom = Math.max(bottom, y);
+        }
+        float height = bottom - top;
+        if (!(height > 0.0f)) return false;
+        GameEngine game = GameEngine.getInstance();
+        if (game == null || game.renderGraphicsEngine == null) return false;
+        GraphicsEngine graphics = game.renderGraphicsEngine;
+        graphics.save();
+        try {
+            LibRocketUiEngineStateAccessor state =
+                    (LibRocketUiEngineStateAccessor) (Object) renderer;
+            if (state.vulkanmod$isScissorEnabled()) {
+                graphics.setClipRect(state.vulkanmod$getScissorRectF());
+            }
+            Team team = Team.getTeamById(0);
+            if (team == null) team = Team.i;
+            float angle = game.renderTimeMillis / 1000.0f / 10.0f * 360.0f % 360.0f;
+            BuiltinUnitType.a(holder.unitType, (left + right) * 0.5f,
+                    (top + bottom) * 0.5f, angle, 3.0f, team,
+                    height * 0.6f, height, false, false, 1, null);
+            graphics.flush();
+            return true;
+        } finally {
+            graphics.restore();
+        }
     }
 
     private static boolean appendNativeLibRocketGeometry(
@@ -746,6 +809,7 @@ public final class VulkanRuntime {
         Object holder = renderer.findTextureHolder(textureId);
         Object image = SlickImageVulkanTextureCache.imageFromHolder(holder);
         if (image != null) slickImageTextureCache.invalidate(image);
+        if (holder != null) slickImageTextureCache.invalidate(holder);
     }
 
     public static synchronized void registerGeneratedLibRocketTexture(
