@@ -19,10 +19,11 @@ public final class StandaloneCustomVertexPipelineVerification {
     public static void main(String[] arguments) {
         String vertex = "#version 130\n"
                 + "varying vec4 v_color; varying vec2 v_texCoords; varying float v_gain;\n"
-                + "uniform vec2 vertexOffset; uniform float gain;\n"
+                + "uniform sampler2D u_texture; uniform vec2 vertexOffset; uniform float gain;\n"
                 + "void main(){ vec4 p=gl_Vertex; p.xy+=vertexOffset;"
                 + "gl_Position=gl_ProjectionMatrix*gl_ModelViewMatrix*p;"
-                + "v_color=gl_Color; v_texCoords=vec2(gl_MultiTexCoord0); v_gain=gain; }";
+                + "v_color=gl_Color; v_texCoords=vec2(gl_MultiTexCoord0);"
+                + "v_gain=gain*texture2D(u_texture,vec2(0.5)).r; }";
         String fragment = "#version 130\n"
                 + "varying vec4 v_color; varying vec2 v_texCoords; varying float v_gain;\n"
                 + "uniform sampler2D u_texture; uniform float gain;\n"
@@ -41,25 +42,42 @@ public final class StandaloneCustomVertexPipelineVerification {
             long target = driver.createRenderTarget(8, 8);
             try {
                 // vertexOffset occupies slot 0; gain is shared by both stages in slot 1.
+                // Moving one local unit before a 2x ModelView scale must move two screen pixels.
                 VulkanShaderState shader = VulkanShaderState.custom(program, 0L,
-                        new float[] {0.0f, 0.0f, 0.0f, 0.0f,
+                        new float[] {1.0f, 0.0f, 0.0f, 0.0f,
                                 1.0f, 0.0f, 0.0f, 0.0f});
-                VulkanDrawState state = new VulkanDrawState(VulkanTransform2D.IDENTITY,
+                VulkanTransform2D transform = VulkanTransform2D.scale(2.0f, 2.0f)
+                        .then(VulkanTransform2D.translation(2.0f, 2.0f));
+                VulkanDrawState state = new VulkanDrawState(transform,
                         null, VulkanBlendMode.NORMAL, VulkanTextureFilter.NEAREST, shader);
                 driver.renderToTexture(target, VulkanFrameCommands.builder(8, 8)
                         .clear(0.0f, 0.0f, 0.0f, 1.0f)
                         .texturedQuad(new VulkanTexturedQuad(texture,
-                                0.0f, 0.0f, 8.0f, 8.0f,
+                                0.0f, 0.0f, 2.0f, 2.0f,
+                                0.0f, 0.0f, 1.0f, 1.0f,
+                                1.0f, 0.0f, 0.0f, 1.0f))
+                        .texturedQuad(new VulkanTexturedQuad(texture,
+                                0.0f, 0.0f, 2.0f, 2.0f,
                                 0.0f, 0.0f, 1.0f, 1.0f,
                                 1.0f, 1.0f, 1.0f, 1.0f, state))
                         .build());
                 byte[] rgba = driver.readTexture(target).copyRgba();
-                for (int index = 0; index < rgba.length; index += 4) {
-                    if ((rgba[index] & 255) < 250 || (rgba[index + 1] & 255) < 250
-                            || (rgba[index + 2] & 255) < 250
-                            || (rgba[index + 3] & 255) < 250) {
-                        throw new AssertionError("custom vertex pipeline output was not white at "
-                                + (index / 4));
+                for (int y = 0; y < 8; y++) {
+                    for (int x = 0; x < 8; x++) {
+                        int index = (y * 8 + x) * 4;
+                        boolean inside = x >= 4 && x < 8 && y >= 2 && y < 6;
+                        boolean stock = x < 2 && y < 2;
+                        int expectedRed = inside || stock ? 255 : 0;
+                        int expectedGreenBlue = inside ? 255 : 0;
+                        if (Math.abs((rgba[index] & 255) - expectedRed) > 1
+                                || Math.abs((rgba[index + 1] & 255)
+                                        - expectedGreenBlue) > 1
+                                || Math.abs((rgba[index + 2] & 255)
+                                        - expectedGreenBlue) > 1
+                                || (rgba[index + 3] & 255) < 250) {
+                            throw new AssertionError("custom local/model/projection output mismatch at "
+                                    + x + "," + y);
+                        }
                     }
                 }
             } finally {

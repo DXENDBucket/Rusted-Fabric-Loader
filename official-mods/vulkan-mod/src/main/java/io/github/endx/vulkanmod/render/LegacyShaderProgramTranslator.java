@@ -51,8 +51,9 @@ public final class LegacyShaderProgramTranslator {
         }
 
         LinkedHashMap<String, String> numericTypes = new LinkedHashMap<String, String>();
-        collectVertexUniforms(vertex, numericTypes);
-        String secondarySampler = collectFragmentUniforms(fragment, numericTypes);
+        String secondarySampler = collectVertexUniforms(vertex, numericTypes);
+        secondarySampler = collectFragmentUniforms(
+                fragment, numericTypes, secondarySampler);
         if (numericTypes.size() > VulkanShaderState.MAX_CUSTOM_FLOATS / 4) {
             throw new IllegalArgumentException("custom program exceeds five numeric uniforms");
         }
@@ -67,12 +68,16 @@ public final class LegacyShaderProgramTranslator {
         vertexBody = replaceWord(vertexBody, "gl_Vertex", "rf_vertex");
         vertexBody = replaceWord(vertexBody, "gl_Color", "rf_color");
         vertexBody = replaceWord(vertexBody, "gl_MultiTexCoord0", "rf_texCoord0");
-        vertexBody = replaceWord(vertexBody, "gl_ModelViewMatrix", "mat4(1.0)");
-        vertexBody = replaceWord(vertexBody, "gl_ProjectionMatrix", "mat4(1.0)");
+        vertexBody = replaceWord(vertexBody, "gl_ModelViewProjectionMatrix",
+                "(rf_projectionMatrix()*rf_modelViewMatrix())");
+        vertexBody = replaceWord(vertexBody, "gl_ModelViewMatrix", "rf_modelViewMatrix()");
+        vertexBody = replaceWord(vertexBody, "gl_ProjectionMatrix", "rf_projectionMatrix()");
         vertexBody = replaceWord(vertexBody, "a_position", "rf_vertex");
         vertexBody = replaceWord(vertexBody, "a_color", "rf_color");
         vertexBody = replaceWord(vertexBody, "a_texCoord0", "inUv");
-        vertexBody = replaceWord(vertexBody, "u_projTrans", "mat4(1.0)");
+        vertexBody = replaceWord(vertexBody, "u_projTrans",
+                "(rf_projectionMatrix()*rf_modelViewMatrix())");
+        vertexBody = vertexBody.replace("texture2D", "texture");
 
         String fragmentBody = stripDeclarations(fragment, false)
                 .replace("texture2D", "texture")
@@ -83,9 +88,27 @@ public final class LegacyShaderProgramTranslator {
                 .append("layout(location=0) in vec2 inPosition;\n")
                 .append("layout(location=1) in vec2 inUv;\n")
                 .append("layout(location=2) in vec4 inColor;\n")
+                .append("layout(location=3) in vec3 inModelRow0;\n")
+                .append("layout(location=4) in vec3 inModelRow1;\n")
+                .append("layout(location=5) in vec2 inViewportSize;\n")
+                .append("layout(set=0,binding=0) uniform sampler2D u_texture;\n");
+        if (secondarySampler != null) {
+            vertexPrefix.append("layout(set=0,binding=1) uniform sampler2D ")
+                    .append(secondarySampler).append(";\n");
+        }
+        vertexPrefix
                 .append("#define rf_vertex vec4(inPosition,0.0,1.0)\n")
                 .append("#define rf_color inColor\n")
                 .append("#define rf_texCoord0 vec4(inUv,0.0,1.0)\n")
+                .append("mat4 rf_modelViewMatrix(){ return mat4(\n")
+                .append("  inModelRow0.x,inModelRow1.x,0.0,0.0,\n")
+                .append("  inModelRow0.y,inModelRow1.y,0.0,0.0,\n")
+                .append("  0.0,0.0,1.0,0.0,\n")
+                .append("  inModelRow0.z,inModelRow1.z,0.0,1.0); }\n")
+                .append("mat4 rf_projectionMatrix(){ return mat4(\n")
+                .append("  2.0/inViewportSize.x,0.0,0.0,0.0,\n")
+                .append("  0.0,2.0/inViewportSize.y,0.0,0.0,\n")
+                .append("  0.0,0.0,1.0,0.0, -1.0,-1.0,0.0,1.0); }\n")
                 .append(pushConstantBlock());
         appendVaryings(vertexPrefix, orderedVaryings, "out");
         appendUniformAliases(vertexPrefix, uniforms);
@@ -107,33 +130,34 @@ public final class LegacyShaderProgramTranslator {
                 secondarySampler);
     }
 
-    private static void collectVertexUniforms(String source, Map<String, String> numeric) {
+    private static String collectVertexUniforms(String source, Map<String, String> numeric) {
+        String secondary = null;
         Matcher matcher = UNIFORM.matcher(source);
         while (matcher.find()) {
             String type = matcher.group(1);
             String name = matcher.group(2);
             if ("mat4".equals(type) && "u_projTrans".equals(name)) continue;
-            if ("sampler2D".equals(type) || "mat4".equals(type)) {
+            if ("sampler2D".equals(type)) {
+                if (!"u_texture".equals(name)) secondary = mergeSampler(secondary, name);
+            } else if ("mat4".equals(type)) {
                 throw new IllegalArgumentException("unsupported vertex uniform " + type
                         + " " + name);
+            } else {
+                putUniform(numeric, name, type);
             }
-            putUniform(numeric, name, type);
         }
+        return secondary;
     }
 
-    private static String collectFragmentUniforms(String source, Map<String, String> numeric) {
-        String secondary = null;
+    private static String collectFragmentUniforms(String source, Map<String, String> numeric,
+                                                   String secondary) {
         Matcher matcher = UNIFORM.matcher(source);
         while (matcher.find()) {
             String type = matcher.group(1);
             String name = matcher.group(2);
             if ("sampler2D".equals(type)) {
                 if (!"u_texture".equals(name)) {
-                    if (secondary != null && !secondary.equals(name)) {
-                        throw new IllegalArgumentException(
-                                "only one secondary sampler2D is currently supported");
-                    }
-                    secondary = name;
+                    secondary = mergeSampler(secondary, name);
                 }
             } else if ("mat4".equals(type)) {
                 throw new IllegalArgumentException("unsupported fragment uniform mat4 " + name);
@@ -142,6 +166,14 @@ public final class LegacyShaderProgramTranslator {
             }
         }
         return secondary;
+    }
+
+    private static String mergeSampler(String current, String name) {
+        if (current != null && !current.equals(name)) {
+            throw new IllegalArgumentException(
+                    "only one secondary sampler2D is currently supported");
+        }
+        return name;
     }
 
     private static void putUniform(Map<String, String> uniforms, String name, String type) {

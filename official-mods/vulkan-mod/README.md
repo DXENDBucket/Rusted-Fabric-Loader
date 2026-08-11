@@ -32,10 +32,13 @@ drawn into. A minimized or occluded window uses a bounded image-acquire wait so 
 game thread. The text path currently rasterizes and caches complete AWT string runs rather than
 using a glyph atlas. Native mode translates linked GLSL-130 vertex/fragment programs onto the
 Vulkan texture ABI. Desktop built-ins and GDX attributes, custom float/vec uniforms shared across
-both stages, custom float/vec varyings, and one fragment secondary sampler are supported. The five
-numeric-uniform limit is shared by the complete program. Geometry reaches the custom vertex stage
-after the renderer's ordinary CPU transform and projection, so custom matrix uniforms, vertex
-texture sampling, and shaders that require unprojected model coordinates remain unsupported.
+both stages, custom float/vec varyings, and one shared secondary sampler are supported. The five
+numeric-uniform limit is shared by the complete program. Custom draws retain their original local
+coordinates and carry the active affine ModelView plus target projection into the vertex stage;
+`gl_Vertex`, `gl_ModelViewMatrix`, `gl_ProjectionMatrix`, `gl_ModelViewProjectionMatrix`, and GDX
+`u_projTrans` therefore keep their legacy order. Vertex texture sampling is supported. User-defined
+`mat4` uniforms remain outside the contract because the game's `ShaderProgram` only publishes
+one-, two-, and four-component parameter values.
 
 `native` is the renderer-startup replacement path. The Vulkan mod registers as a renderer
 provider during client-mod initialization, then RFL resolves the backend before invoking the game
@@ -64,7 +67,7 @@ outgoing target, and carries the live transform/clip stack across the framebuffe
 render targets expose
 synchronized RGBA readback and same-size CPU upload, so `GameImage` pixel reads/copies and explicit
 pixel-buffer flushes retain their original semantics. Remaining shader work is broadening legacy
-syntax and model-coordinate/matrix compatibility beyond the current screen-space contract.
+syntax beyond the parameter types exposed by the original game.
 Whole-string AWT rasterization is used for glyph pixels, but text presentation itself is Vulkan.
 
 Useful takeover diagnostics are:

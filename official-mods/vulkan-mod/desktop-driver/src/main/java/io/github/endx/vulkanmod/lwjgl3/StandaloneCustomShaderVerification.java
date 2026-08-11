@@ -44,6 +44,17 @@ public final class StandaloneCustomShaderVerification {
                 + "*v_color*(0.75+0.25*v_wave+time*0.0); }\n";
         LegacyShaderProgramTranslator.Result program =
                 LegacyShaderProgramTranslator.translate(legacyVertex, pairedFragment);
+        LegacyShaderProgramTranslator.Result gdxProgram =
+                LegacyShaderProgramTranslator.translate(
+                        "attribute vec4 a_position; attribute vec4 a_color;"
+                                + "attribute vec2 a_texCoord0; uniform mat4 u_projTrans;"
+                                + "varying vec4 v_color; varying vec2 v_texCoords;"
+                                + "void main(){ v_color=a_color; v_texCoords=a_texCoord0;"
+                                + "gl_Position=u_projTrans*a_position; }",
+                        "varying vec4 v_color; varying vec2 v_texCoords;"
+                                + "uniform sampler2D u_texture;"
+                                + "void main(){ gl_FragColor=texture2D(u_texture,v_texCoords)"
+                                + "*v_color; }");
         if (program.uniforms().size() != 2
                 || !"time".equals(program.uniforms().get(0).name())
                 || !"sway".equals(program.uniforms().get(1).name())) {
@@ -76,6 +87,10 @@ public final class StandaloneCustomShaderVerification {
             result = MemoryUtil.NULL;
             result = compile(compiler, program.fragmentSource(),
                     shaderc_glsl_fragment_shader, "legacy-custom-paired.frag");
+            shaderc_result_release(result);
+            result = MemoryUtil.NULL;
+            result = compile(compiler, gdxProgram.vertexSource(),
+                    shaderc_glsl_vertex_shader, "legacy-gdx-custom.vert");
             System.out.println("Native custom vertex/fragment translation compiled successfully");
         } finally {
             if (result != MemoryUtil.NULL) shaderc_result_release(result);
