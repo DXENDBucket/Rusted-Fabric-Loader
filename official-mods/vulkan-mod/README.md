@@ -120,8 +120,9 @@ solid-frame and safe-takeover sequence is confirmed.
   implementation of Rusted Warfare's `GraphicsEngine` contract.
 - `desktop-driver` owns LWJGL 3 and Vulkan binding objects. It is loaded child-first from embedded
   jars so LWJGL 3 cannot replace the game's LWJGL 2 classes.
-- A later Android driver will implement the same small SPI through a Vulkan JNI bridge. No LWJGL or
-  Win32 type may cross that boundary.
+- The current object SPI is a desktop implementation boundary, not the future JNI ABI. Shared
+  batching will encode a validated whole-frame `FrameStream`; the Android adapter will submit
+  registered arena indices to an NDK Vulkan decoder. No LWJGL or Win32 type crosses that boundary.
 - Game-specific mixins, Slick compatibility and low-level takeover code stay in this mod. A hook is
   promoted to Rusted Fabric API only when another renderer or ordinary mod can reuse it safely.
 
@@ -146,3 +147,8 @@ solid-frame and safe-takeover sequence is confirmed.
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or
 timeline semaphore paths behind capability checks. The primary performance target is CPU submission
 cost: draw collection and batching must happen before any platform-driver calls.
+
+The next cross-platform boundary is specified in
+[FrameStream ABI](docs/FRAME_STREAM_ABI.md). Android ownership, JNI, lifecycle, pacing, and
+AWT-free rendering requirements are specified separately in the
+[Android native backend plan](docs/ANDROID_NATIVE_BACKEND.md).
