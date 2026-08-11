@@ -12,11 +12,13 @@ import rustedwarfare.ui.LibRocketSlickRenderer;
 /** Replaces LibRocket's immediate-mode triangles once their texture is Vulkan-readable. */
 @Mixin(targets = "rustedwarfare.ui.LibRocketSlickRenderer", remap = false)
 public abstract class LibRocketSlickRendererVulkanCaptureNamedMixin {
-    @Inject(method = "GenerateTexture(I[B)Z", at = @At("HEAD"), require = 1)
+    @Inject(method = "GenerateTexture(I[B)Z", at = @At("HEAD"),
+            cancellable = true, require = 1)
     private void vulkanmod$captureGeneratedTexture(
             int textureId, byte[] rgba, CallbackInfoReturnable<Boolean> callback) {
         VulkanRuntime.registerGeneratedLibRocketTexture(
                 (LibRocketSlickRenderer) (Object) this, textureId, rgba);
+        if (VulkanRuntime.isNativeRendererSelected()) callback.setReturnValue(true);
     }
 
     @Inject(method = "RenderGeometryPossiblyCompiled([F[F[I[IIFFLcom/LibRocket$CompiledGeometry;)V",
@@ -29,5 +31,14 @@ public abstract class LibRocketSlickRendererVulkanCaptureNamedMixin {
         LibRocketSlickRenderer renderer = (LibRocketSlickRenderer) (Object) this;
         if (VulkanRuntime.captureLibRocketGeometry(renderer, positions, uvs, colors, indices,
                 textureId, translationX, translationY)) callback.cancel();
+    }
+
+    @Inject(method = "EnableScissorRegion(Z)V", at = @At("HEAD"),
+            cancellable = true, require = 1)
+    private void vulkanmod$enableNativeScissor(boolean enabled, CallbackInfo callback) {
+        if (!VulkanRuntime.isNativeRendererSelected()) return;
+        ((LibRocketUiEngineStateAccessor) (Object) this)
+                .vulkanmod$setScissorEnabled(enabled);
+        callback.cancel();
     }
 }

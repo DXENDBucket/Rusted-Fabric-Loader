@@ -8,5 +8,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(targets = "rustedwarfare.ui.LibRocketUiEngine", remap = false)
 public interface LibRocketUiEngineStateAccessor {
     @Accessor("scissorEnabled") boolean vulkanmod$isScissorEnabled();
+    @Accessor("scissorEnabled") void vulkanmod$setScissorEnabled(boolean enabled);
     @Accessor("scissorRectF") RectF vulkanmod$getScissorRectF();
 }

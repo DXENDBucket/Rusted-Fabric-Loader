@@ -48,6 +48,8 @@ __pycache__/
 ### Rusted Warfare game-lib ###
 /libs/game-lib.jar
 /libs/android.jar
+/libs/slick.jar
+/libs/lwjgl.jar
 /libs/*.apk
 /libs/**/*.apk
 /libs/android-jvm/

@@ -3,6 +3,13 @@ package io.github.endx.vulkanmod;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanDrawState;
+import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
+import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
+import android.graphics.Paint;
+import android.graphics.Paint$Align;
 import io.github.endx.vulkanmod.mixin.LibRocketUiEngineStateAccessor;
 import rustedwarfare.client.render.GameImage;
 import rustedwarfare.client.render.SlickGraphicsBackend;
@@ -13,7 +20,9 @@ import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 
 import java.util.Optional;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import rustedwarfare.render.GraphicsEngine;
 
 /** Owns Vulkan startup state and the explicitly opt-in takeover experiment. */
 public final class VulkanRuntime {
@@ -45,12 +54,19 @@ public final class VulkanRuntime {
     private static boolean displayStateUnavailableLogged;
     private static long nativeFramesPresented;
     private static boolean legacyDisplayInvariantChecked;
+    private static NativeSlickGameBridge nativeGame;
+    private static boolean nativeGameSystemsStarted;
+    private static VulkanFrameCommands.Builder nativeFrameBuilder;
+    private static long nativeLastFrameNanos;
+    private static GraphicsEngine nativeGraphicsEngine;
     private static StartupPhase startupPhase = StartupPhase.MOD_INITIALIZED;
 
     private enum StartupPhase {
         MOD_INITIALIZED,
         RENDERER_SELECTED,
         NATIVE_WINDOW_READY,
+        NATIVE_GAME_BOUND,
+        NATIVE_GAME_SYSTEMS_READY,
         LEGACY_DISPLAY_CREATED,
         COMPATIBILITY_SURFACE_READY,
         GAME_GRAPHICS_ENGINE_READY
@@ -175,13 +191,18 @@ public final class VulkanRuntime {
                         "rusted.fabric.renderer.resolved", "opengl"));
     }
 
-    public static synchronized void onGraphicsEngineInstalled() {
+    public static synchronized void onGraphicsEngineInstalled(GraphicsEngine engine) {
         if (!isNativeRendererSelected()) return;
+        nativeGraphicsEngine = engine;
         if (startupPhase.ordinal() < StartupPhase.GAME_GRAPHICS_ENGINE_READY.ordinal()) {
             startupPhase = StartupPhase.GAME_GRAPHICS_ENGINE_READY;
-            log("VulkanGraphicsEngine installed as the game's renderer; "
-                    + "Slick remains its compatibility delegate during migration");
+            log("VulkanGraphicsEngine installed as the native game renderer; "
+                    + "no Slick/OpenGL delegate was created");
         }
+    }
+
+    public static synchronized GraphicsEngine nativeGraphicsEngine() {
+        return nativeGraphicsEngine;
     }
 
     /** Called from AppGameContainer.setup before its first Display.create attempt. */
@@ -210,6 +231,7 @@ public final class VulkanRuntime {
                 VulkanSurfaceInfo created = activeDriver.createNativeWindowSurface(
                         new VulkanWindowRequest("Rusted Warfare", width, height, true));
                 surfaceInfo = created;
+                initializeNativeTextureCaches();
                 startupPhase = StartupPhase.NATIVE_WINDOW_READY;
                 log("Native Vulkan window is authoritative before Display.create: "
                         + created.width() + "x" + created.height() + ", device="
@@ -233,14 +255,31 @@ public final class VulkanRuntime {
             return true;
         }
         assertLegacyDisplayWasNotCreated();
+        startNativeGameSystems();
         activeDriver.maintainSurfaceWindow();
         if (activeDriver.isSurfaceCloseRequested()) return false;
         VulkanSurfaceInfo current = surfaceInfo;
         if (current == null) return true;
-        VulkanFrameCommands frame = VulkanFrameCommands.builder(
-                        current.width(), current.height())
-                .clear(0.035f, 0.045f, 0.06f, 1.0f)
-                .build();
+        long now = System.nanoTime();
+        int deltaMillis = nativeLastFrameNanos == 0L ? 16
+                : (int) Math.max(1L, Math.min(250L,
+                        (now - nativeLastFrameNanos) / 1_000_000L));
+        nativeLastFrameNanos = now;
+        if (gameTextureCache != null) gameTextureCache.beginFrame();
+        if (textTextureCache != null) textTextureCache.beginFrame();
+        nativeFrameBuilder = VulkanFrameCommands.builder(current.width(), current.height())
+                .clear(0.035f, 0.045f, 0.06f, 1.0f);
+        VulkanFrameCommands frame;
+        try {
+            if (nativeGameSystemsStarted && nativeGame != null) {
+                nativeGame.vulkanmod$runNativeFrame(deltaMillis);
+            }
+            frame = nativeFrameBuilder.build();
+        } finally {
+            // Build before presentation so GraphicsEngine calls outside a native frame cannot
+            // accidentally append to a command buffer already owned by the driver.
+            nativeFrameBuilder = null;
+        }
         VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
         if (updated != null) {
             surfaceInfo = updated;
@@ -250,6 +289,144 @@ public final class VulkanRuntime {
             }
         }
         return true;
+    }
+
+    private static void initializeNativeTextureCaches() {
+        if (activeDriver == null || gameTextureCache != null) return;
+        java.util.function.LongConsumer destroyer = activeDriver::destroyTexture;
+        gameTextureCache = new GameImageVulkanTextureCache(activeDriver, null, destroyer);
+        textTextureCache = new VulkanTextTextureCache(activeDriver, null, destroyer);
+        slickImageTextureCache = new SlickImageVulkanTextureCache(activeDriver, null, destroyer);
+    }
+
+    public static synchronized boolean recordNativeColoredQuad(VulkanColoredQuad quad) {
+        if (nativeFrameBuilder == null || quad == null) return false;
+        nativeFrameBuilder.coloredQuad(quad);
+        return true;
+    }
+
+    public static synchronized boolean recordNativeTexturedQuad(VulkanTexturedQuad quad) {
+        if (nativeFrameBuilder == null || quad == null) return false;
+        nativeFrameBuilder.texturedQuad(quad);
+        return true;
+    }
+
+    public static synchronized void clearNativeFrame(int argb) {
+        if (nativeFrameBuilder == null) return;
+        nativeFrameBuilder.clear(((argb >>> 16) & 255) / 255.0f,
+                ((argb >>> 8) & 255) / 255.0f,
+                (argb & 255) / 255.0f,
+                ((argb >>> 24) & 255) / 255.0f);
+    }
+
+    public static synchronized boolean recordNativeText(
+            String text, float x, float y, Paint paint, VulkanDrawState state) {
+        if (nativeFrameBuilder == null || text == null || text.isEmpty() || paint == null) {
+            return false;
+        }
+        boolean bold = paint.i() != null && paint.i().a();
+        VulkanTextTextureCache.Entry texture = textureForText(
+                text, Math.round(paint.k()), bold);
+        if (texture == null) return false;
+        float left = x;
+        if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
+        else if (paint.j() == Paint$Align.c) left -= texture.width;
+        float[] tint = argb(paint.e());
+        nativeFrameBuilder.texturedQuad(new VulkanTexturedQuad(texture.textureHandle,
+                left, y - texture.lineHeight, texture.width, texture.height,
+                0.0f, 0.0f, 1.0f, 1.0f,
+                tint[0], tint[1], tint[2], tint[3], state));
+        return true;
+    }
+
+    public static synchronized void registerNativeLibRocketTexture(
+            Object holder, int width, int height, byte[] rgba) {
+        if (slickImageTextureCache != null) {
+            slickImageTextureCache.registerPixels(holder, width, height, rgba);
+        }
+    }
+
+    public static synchronized void releaseNativeLibRocketTexture(Object holder) {
+        if (slickImageTextureCache != null) slickImageTextureCache.invalidate(holder);
+    }
+
+    private static float[] argb(int color) {
+        return new float[] {
+                ((color >>> 16) & 255) / 255.0f,
+                ((color >>> 8) & 255) / 255.0f,
+                (color & 255) / 255.0f,
+                ((color >>> 24) & 255) / 255.0f
+        };
+    }
+
+    /**
+     * Replaces the non-window portion of AppGameContainer.setup. Slick's original implementation
+     * cannot be entered because it treats a live LWJGL2 Display and Graphics as invariants.
+     */
+    public static synchronized void bindNativeGameContainer(Object container) {
+        if (!isNativeRendererSelected()) return;
+        if (startupPhase.ordinal() < StartupPhase.NATIVE_WINDOW_READY.ordinal()) {
+            throw new IllegalStateException("Native window must exist before binding the game");
+        }
+        if (nativeGame != null) return;
+        try {
+            Field gameField = findField(container.getClass(), "game");
+            gameField.setAccessible(true);
+            Object game = gameField.get(container);
+            if (game == null) throw new IllegalStateException("Slick game instance is null");
+
+            invokeContainerOption(container, "setAlwaysRender", boolean.class, true);
+            invokeContainerOption(container, "setForceExit", boolean.class, true);
+            invokeContainerOption(container, "setShowFPS", boolean.class, false);
+            invokeContainerOption(container, "setTargetFrameRate", int.class, 300);
+            invokeContainerOption(container, "setUpdateOnlyWhenVisible", boolean.class, false);
+
+            if (!(game instanceof NativeSlickGameBridge)) {
+                throw new IllegalStateException("SlickGame native bridge was not applied to "
+                        + game.getClass().getName());
+            }
+            NativeSlickGameBridge bridge = (NativeSlickGameBridge) game;
+            bridge.vulkanmod$bindNativeContainer(
+                    (org.newdawn.slick.GameContainer) container);
+            nativeGame = bridge;
+            startupPhase = StartupPhase.NATIVE_GAME_BOUND;
+            log("Bound SlickGame to the native container without running SlickGame.init/OpenGL");
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Could not bind the native game container", failure);
+        }
+    }
+
+    private static void startNativeGameSystems() {
+        if (nativeGameSystemsStarted || nativeGame == null) return;
+        nativeGameSystemsStarted = true;
+        try {
+            nativeGame.vulkanmod$startNativeGameSystems();
+            startupPhase = StartupPhase.NATIVE_GAME_SYSTEMS_READY;
+            log("Native game systems initialized without an LWJGL2 Display");
+        } catch (Throwable failure) {
+            Throwable cause = failure.getCause() == null ? failure : failure.getCause();
+            throw new IllegalStateException(
+                    "Native game-system initialization reached an unsupported legacy boundary: "
+                            + cause.getClass().getName() + ": " + cause.getMessage(), cause);
+        }
+    }
+
+    private static void invokeContainerOption(Object target, String name,
+                                              Class<?> parameterType, Object value)
+            throws ReflectiveOperationException {
+        target.getClass().getMethod(name, parameterType).invoke(target, value);
+    }
+
+    private static Field findField(Class<?> type, String name) throws NoSuchFieldException {
+        Class<?> current = type;
+        while (current != null) {
+            try {
+                return current.getDeclaredField(name);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(name);
     }
 
     private static void assertLegacyDisplayWasNotCreated() {
@@ -405,7 +582,9 @@ public final class VulkanRuntime {
             LibRocketSlickRenderer renderer, float[] positions, float[] uvs,
             int[] colors, int[] indices, int textureId,
             float translationX, float translationY) {
-        if (!isTakeoverCaptureActive() || !takeoverFrameOpen || renderer == null) return false;
+        boolean nativeFrame = isNativeRendererSelected() && nativeFrameBuilder != null;
+        if ((!nativeFrame && (!isTakeoverCaptureActive() || !takeoverFrameOpen))
+                || renderer == null) return false;
         long textureHandle = 0L;
         float uScale = 1.0f;
         float vScale = 1.0f;
@@ -421,14 +600,11 @@ public final class VulkanRuntime {
             LibRocketTextureHolder holder = (LibRocketTextureHolder) candidate;
             slickImageTextureCache.observeHolder(holder);
             Object image = SlickImageVulkanTextureCache.imageFromHolder(candidate);
-            if (image == null) {
-                takeoverCapture.unsupportedExternal();
-                return false;
-            }
-            SlickImageVulkanTextureCache.Entry texture =
-                    slickImageTextureCache.texture(holder, image);
+            SlickImageVulkanTextureCache.Entry texture = nativeFrame
+                    ? slickImageTextureCache.textureNative(holder)
+                    : slickImageTextureCache.texture(holder, image);
             if (texture == null) {
-                takeoverCapture.unsupportedExternal();
+                if (!nativeFrame) takeoverCapture.unsupportedExternal();
                 return false;
             }
             textureHandle = texture.textureHandle;
@@ -449,10 +625,64 @@ public final class VulkanRuntime {
         final float capturedVScale = vScale;
         final boolean capturedNoColor = noColor;
         final float capturedAlpha = alpha;
+        if (nativeFrame) {
+            return appendNativeLibRocketGeometry(positions, uvs, colors, indices,
+                    translationX, translationY, capturedTexture, capturedUScale,
+                    capturedVScale, capturedNoColor, capturedAlpha, clip);
+        }
         return captureSafely("LibRocket geometry", () -> takeoverCapture.libRocketGeometry(
                 positions, uvs, colors, indices, translationX, translationY,
                 capturedTexture, capturedUScale, capturedVScale,
                 capturedNoColor, capturedAlpha, clip));
+    }
+
+    private static boolean appendNativeLibRocketGeometry(
+            float[] positions, float[] uvs, int[] packedColors, int[] indices,
+            float translationX, float translationY, long textureHandle,
+            float uScale, float vScale, boolean ignoreVertexColor, float alpha,
+            VulkanClipRect clip) {
+        if (nativeFrameBuilder == null || positions == null || uvs == null
+                || packedColors == null || indices == null
+                || positions.length % 2 != 0 || uvs.length < positions.length
+                || packedColors.length < positions.length / 2 || indices.length % 3 != 0) {
+            return false;
+        }
+        VulkanDrawState drawState = new VulkanDrawState(
+                io.github.endx.vulkanmod.spi.VulkanTransform2D.IDENTITY, clip);
+        for (int triangleIndex = 0; triangleIndex < indices.length; triangleIndex += 3) {
+            float[] trianglePositions = new float[6];
+            float[] triangleUvs = textureHandle == 0L ? null : new float[6];
+            float[] triangleColors = new float[12];
+            for (int vertex = 0; vertex < 3; vertex++) {
+                int sourceVertex = indices[triangleIndex + vertex];
+                if (sourceVertex < 0 || sourceVertex * 2 + 1 >= positions.length) return false;
+                trianglePositions[vertex * 2] = positions[sourceVertex * 2] + translationX;
+                trianglePositions[vertex * 2 + 1] = positions[sourceVertex * 2 + 1]
+                        + translationY;
+                if (triangleUvs != null) {
+                    triangleUvs[vertex * 2] = uvs[sourceVertex * 2] * uScale;
+                    triangleUvs[vertex * 2 + 1] = uvs[sourceVertex * 2 + 1] * vScale;
+                }
+                int packed = packedColors[sourceVertex];
+                int colorOffset = vertex * 4;
+                triangleColors[colorOffset] = ignoreVertexColor ? 1.0f
+                        : ((packed >>> 24) & 255) / 255.0f;
+                triangleColors[colorOffset + 1] = ignoreVertexColor ? 1.0f
+                        : ((packed >>> 16) & 255) / 255.0f;
+                triangleColors[colorOffset + 2] = ignoreVertexColor ? 1.0f
+                        : ((packed >>> 8) & 255) / 255.0f;
+                triangleColors[colorOffset + 3] = (ignoreVertexColor ? 1.0f
+                        : (packed & 255) / 255.0f) * alpha;
+            }
+            if (textureHandle == 0L) {
+                nativeFrameBuilder.coloredTriangle(new VulkanColoredTriangle(
+                        trianglePositions, triangleColors, drawState));
+            } else {
+                nativeFrameBuilder.texturedTriangle(new VulkanTexturedTriangle(textureHandle,
+                        trianglePositions, triangleUvs, triangleColors, drawState));
+            }
+        }
+        return true;
     }
 
     public static synchronized void releaseLibRocketTexture(
@@ -479,7 +709,7 @@ public final class VulkanRuntime {
         }
     }
 
-    static synchronized long textureForGameImage(GameImage image) {
+    public static synchronized long textureForGameImage(GameImage image) {
         if (gameTextureCache == null) {
             throw new IllegalStateException("Vulkan game-image cache is unavailable");
         }
@@ -659,7 +889,7 @@ public final class VulkanRuntime {
         if (gameTextureCache != null) gameTextureCache.invalidate(image);
     }
 
-    static synchronized void markRenderTargetImage(Object image) {
+    public static synchronized void markRenderTargetImage(Object image) {
         if (gameTextureCache != null) gameTextureCache.markRenderTarget(image);
     }
 

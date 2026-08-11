@@ -36,6 +36,8 @@ dependencies {
     compileOnly "net.fabricmc:sponge-mixin:0.13.4+mixin.0.8.5"
     compileOnly files({ namedGameJarFile() })
     compileOnly files(rootProject.file('libs/android.jar'))
+    compileOnly files(rootProject.file('libs/slick.jar'))
+    compileOnly files(rootProject.file('libs/lwjgl.jar'))
     testRuntimeOnly "net.fabricmc:fabric-loader:0.18.1"
     desktopDriverBundle project(':official-mods:vulkan-mod:desktop-driver')
 }

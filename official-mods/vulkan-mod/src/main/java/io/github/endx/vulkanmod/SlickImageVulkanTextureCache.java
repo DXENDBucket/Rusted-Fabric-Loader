@@ -89,6 +89,26 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
         return created.textureHandle == 0L ? null : created;
     }
 
+    synchronized Entry textureNative(Object holder) {
+        if (closed) throw new IllegalStateException("UI texture cache is closed");
+        if (holder == null) return null;
+        Entry current = entries.get(holder);
+        if (current != null) return current.textureHandle == 0L ? null : current;
+        CpuPixels pixels = cpuSources.get(holder);
+        if (pixels == null && !unavailableSources.containsKey(holder)) {
+            pixels = readCpuPixels(holder);
+            if (pixels != null) cpuSources.put(holder, pixels);
+            else unavailableSources.put(holder, Boolean.TRUE);
+        }
+        if (pixels == null) return null;
+        uploadsStartedThisFrame++;
+        Entry created = new Entry(0L, 1.0f, 1.0f);
+        entries.put(holder, created);
+        VulkanTextureData data = new VulkanTextureData(pixels.width, pixels.height, pixels.rgba);
+        created.textureHandle = driver.uploadTexture(data);
+        return created;
+    }
+
     synchronized void invalidate(Object image) {
         Entry removed = entries.remove(image);
         release(removed);

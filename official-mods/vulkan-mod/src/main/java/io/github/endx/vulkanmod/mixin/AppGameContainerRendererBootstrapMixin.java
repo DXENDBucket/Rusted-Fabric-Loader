@@ -18,6 +18,7 @@ public abstract class AppGameContainerRendererBootstrapMixin {
         if (VulkanRuntime.beforeLegacyDisplayCreation(size[0], size[1])) {
             // Native mode owns the real top-level window and swapchain now. Continuing into
             // AppGameContainer.setup would create a WGL context and undo that ownership.
+            VulkanRuntime.bindNativeGameContainer(this);
             callback.cancel();
         }
     }
