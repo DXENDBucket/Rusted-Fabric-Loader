@@ -1,5 +1,8 @@
 package io.github.endx.vulkanmod.spi;
 
+import java.util.Collections;
+import java.util.List;
+
 /** Minimal ABI shared by the mod and class-loader-isolated platform implementations. */
 public interface VulkanPlatformDriver extends AutoCloseable {
     String name();
@@ -29,6 +32,8 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default void maintainSurfaceWindow() { }
     /** Returns whether the driver-owned top-level window has requested application shutdown. */
     default boolean isSurfaceCloseRequested() { return false; }
+    /** Drains input collected by the driver-owned application window since the last poll. */
+    default List<VulkanInputEvent> pollInputEvents() { return Collections.emptyList(); }
     /**
      * Presents the first prepared frame while revealing a driver-owned surface immediately before
      * the platform presentation call. Drivers without an independently controlled surface may use

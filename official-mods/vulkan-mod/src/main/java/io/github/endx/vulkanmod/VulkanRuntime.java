@@ -8,6 +8,7 @@ import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
+import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import android.graphics.Paint;
 import android.graphics.Paint$Align;
 import io.github.endx.vulkanmod.mixin.LibRocketUiEngineStateAccessor;
@@ -258,6 +259,11 @@ public final class VulkanRuntime {
         startNativeGameSystems();
         activeDriver.maintainSurfaceWindow();
         if (activeDriver.isSurfaceCloseRequested()) return false;
+        if (nativeGame != null) {
+            for (VulkanInputEvent event : activeDriver.pollInputEvents()) {
+                nativeGame.vulkanmod$handleNativeInput(event);
+            }
+        }
         VulkanSurfaceInfo current = surfaceInfo;
         if (current == null) return true;
         long now = System.nanoTime();
@@ -401,6 +407,10 @@ public final class VulkanRuntime {
         nativeGameSystemsStarted = true;
         try {
             nativeGame.vulkanmod$startNativeGameSystems();
+            VulkanSurfaceInfo current = surfaceInfo;
+            if (current != null) {
+                nativeGame.vulkanmod$syncNativeResolution(current.width(), current.height());
+            }
             startupPhase = StartupPhase.NATIVE_GAME_SYSTEMS_READY;
             log("Native game systems initialized without an LWJGL2 Display");
         } catch (Throwable failure) {

@@ -17,6 +17,7 @@ import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
+import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -98,6 +99,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -265,6 +268,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     @Override public boolean isSurfaceCloseRequested() {
         SurfaceSession session = surfaceSession;
         return session != null && session.isCloseRequested();
+    }
+
+    @Override public List<VulkanInputEvent> pollInputEvents() {
+        SurfaceSession session = surfaceSession;
+        return session == null ? Collections.emptyList() : session.pollInputEvents();
     }
 
     @Override public synchronized long uploadTexture(VulkanTextureData texture) {
@@ -832,8 +840,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     private static final class Win32NativeWindow {
         private static final String CLASS_NAME = "RustedFabricVulkanWindow";
         private static volatile boolean closeRequested;
+        private static volatile Win32NativeWindow activeWindow;
         private static final WindowProc WINDOW_PROC = WindowProc.create(
                 (window, message, wParam, lParam) -> {
+                    Win32NativeWindow active = activeWindow;
+                    if (active != null && active.handle == window
+                            && active.handleMessage(message, wParam, lParam)) {
+                        return 0L;
+                    }
                     if (message == User32.WM_CLOSE) {
                         closeRequested = true;
                         return 0L;
@@ -847,6 +861,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private volatile int width;
         private volatile int height;
         private volatile boolean closed;
+        private final ArrayDeque<VulkanInputEvent> inputEvents =
+                new ArrayDeque<VulkanInputEvent>();
+        private int pointerX;
+        private int pointerY;
 
         private Win32NativeWindow(long handle, long instance, int width, int height) {
             this.handle = handle;
@@ -893,8 +911,92 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (window == 0L) {
                 throw new IllegalStateException("CreateWindowEx(Vulkan native window) failed");
             }
-            return new Win32NativeWindow(window, instance,
+            Win32NativeWindow result = new Win32NativeWindow(window, instance,
                     request.width(), request.height());
+            activeWindow = result;
+            return result;
+        }
+
+        private boolean handleMessage(int message, long wParam, long lParam) {
+            switch (message) {
+                case 0x0200: // WM_MOUSEMOVE
+                    updatePointer(lParam);
+                    enqueue(VulkanInputEvent.pointer(
+                            VulkanInputEvent.Type.POINTER_MOVE, pointerX, pointerY, -1));
+                    return true;
+                case 0x0201: // WM_LBUTTONDOWN
+                    return enqueueButton(lParam, 0, true);
+                case 0x0202: // WM_LBUTTONUP
+                    return enqueueButton(lParam, 0, false);
+                case 0x0204: // WM_RBUTTONDOWN
+                    return enqueueButton(lParam, 1, true);
+                case 0x0205: // WM_RBUTTONUP
+                    return enqueueButton(lParam, 1, false);
+                case 0x0207: // WM_MBUTTONDOWN
+                    return enqueueButton(lParam, 2, true);
+                case 0x0208: // WM_MBUTTONUP
+                    return enqueueButton(lParam, 2, false);
+                case 0x020A: // WM_MOUSEWHEEL (coordinates are screen-relative)
+                    // Keep the last client-space pointer position. WM_MOUSEWHEEL carries screen
+                    // coordinates, while the game only needs the wheel delta here.
+                    enqueue(VulkanInputEvent.wheel(pointerX, pointerY,
+                            signedHighWord(wParam)));
+                    return true;
+                case 0x0100: // WM_KEYDOWN
+                case 0x0104: // WM_SYSKEYDOWN
+                    enqueue(VulkanInputEvent.key(VulkanInputEvent.Type.KEY_DOWN,
+                            (int) wParam, Math.max(1, (int) (lParam & 0xffffL))));
+                    return true;
+                case 0x0101: // WM_KEYUP
+                case 0x0105: // WM_SYSKEYUP
+                    enqueue(VulkanInputEvent.key(VulkanInputEvent.Type.KEY_UP,
+                            (int) wParam, 0));
+                    return true;
+                case 0x0102: // WM_CHAR
+                    enqueue(VulkanInputEvent.character((char) wParam));
+                    return true;
+                case 0x0008: // WM_KILLFOCUS
+                    enqueue(VulkanInputEvent.focusLost());
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
+        private boolean enqueueButton(long lParam, int button, boolean down) {
+            updatePointer(lParam);
+            enqueue(VulkanInputEvent.pointer(down ? VulkanInputEvent.Type.BUTTON_DOWN
+                    : VulkanInputEvent.Type.BUTTON_UP, pointerX, pointerY, button));
+            return true;
+        }
+
+        private void updatePointer(long lParam) {
+            pointerX = signedLowWord(lParam);
+            pointerY = signedHighWord(lParam);
+        }
+
+        private synchronized void enqueue(VulkanInputEvent event) {
+            // Coalesce consecutive motion messages so a stalled render frame cannot accumulate
+            // an unbounded queue while retaining every button/key transition in order.
+            if (event.type() == VulkanInputEvent.Type.POINTER_MOVE
+                    && !inputEvents.isEmpty()
+                    && inputEvents.peekLast().type() == VulkanInputEvent.Type.POINTER_MOVE) {
+                inputEvents.removeLast();
+            }
+            inputEvents.addLast(event);
+        }
+
+        private synchronized List<VulkanInputEvent> drainInputEvents() {
+            if (inputEvents.isEmpty()) return Collections.emptyList();
+            ArrayList<VulkanInputEvent> drained =
+                    new ArrayList<VulkanInputEvent>(inputEvents);
+            inputEvents.clear();
+            return drained;
+        }
+
+        private static int signedLowWord(long value) { return (short) (value & 0xffffL); }
+        private static int signedHighWord(long value) {
+            return (short) ((value >>> 16) & 0xffffL);
         }
 
         private void show() {
@@ -943,6 +1045,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private void close() {
             if (closed) return;
             closed = true;
+            if (activeWindow == this) activeWindow = null;
             User32.DestroyWindow(null, handle);
         }
     }
@@ -1690,6 +1793,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private boolean isCloseRequested() {
             return nativeWindow != null && nativeWindow.isCloseRequested();
+        }
+
+        private List<VulkanInputEvent> pollInputEvents() {
+            return nativeWindow == null
+                    ? Collections.emptyList() : nativeWindow.drainInputEvents();
         }
 
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame,

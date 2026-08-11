@@ -177,6 +177,10 @@ final class VulkanDriverLoader {
             return invoke(driver::isSurfaceCloseRequested);
         }
 
+        java.util.List<io.github.endx.vulkanmod.spi.VulkanInputEvent> pollInputEvents() {
+            return invoke(driver::pollInputEvents);
+        }
+
         VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
             return invoke(() -> driver.presentFrame(frame));
         }
