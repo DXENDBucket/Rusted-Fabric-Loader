@@ -176,6 +176,14 @@ final class VulkanDriverLoader {
             });
         }
 
+        boolean supportsFrameStream() {
+            return invoke(driver::supportsFrameStream);
+        }
+
+        boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
+            return invoke(() -> driver.customShaderUsesExpandedVertexInput(shaderHandle));
+        }
+
         long createRenderTarget(int width, int height) {
             return invoke(() -> driver.createRenderTarget(width, height));
         }
@@ -241,6 +249,10 @@ final class VulkanDriverLoader {
 
         VulkanSurfaceInfo presentFrame(VulkanFrameSubmission submission) {
             return invoke(() -> driver.presentFrame(submission));
+        }
+
+        VulkanSurfaceInfo presentFrameStream(java.nio.ByteBuffer frameStream) {
+            return invoke(() -> driver.presentFrameStream(frameStream));
         }
 
         VulkanSurfaceInfo presentFrameAndReveal(VulkanFrameCommands frame) {

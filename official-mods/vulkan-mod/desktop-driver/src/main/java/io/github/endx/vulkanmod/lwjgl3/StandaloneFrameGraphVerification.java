@@ -1,5 +1,8 @@
 package io.github.endx.vulkanmod.lwjgl3;
 
+import io.github.endx.vulkanmod.framestream.FrameStreamEncoder;
+import io.github.endx.vulkanmod.framestream.FrameStreamResourceMapper;
+import io.github.endx.vulkanmod.framestream.FrameStreamShaderLayoutResolver;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
 import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
@@ -22,6 +25,9 @@ public final class StandaloneFrameGraphVerification {
             long source = driver.createRenderTarget(8, 8);
             long destination = driver.createRenderTarget(8, 8);
             try {
+                FrameStreamEncoder encoder = new FrameStreamEncoder(
+                        FrameStreamResourceMapper.generationOneSlots(),
+                        FrameStreamShaderLayoutResolver.NO_CUSTOM_SHADERS);
                 for (int frameIndex = 0; frameIndex < FRAMES; frameIndex++) {
                     float red = (frameIndex & 1) == 0 ? 1.0f : 0.0f;
                     float green = 1.0f - red;
@@ -37,7 +43,8 @@ public final class StandaloneFrameGraphVerification {
                             new VulkanRenderTargetPass(source, sourceFrame),
                             new VulkanRenderTargetPass(destination, destinationFrame)),
                             presentation);
-                    if (driver.presentFrame(graph) == null) {
+                    if (driver.presentFrameStream(encoder.encode(
+                            frameIndex + 1L, 0L, graph)) == null) {
                         throw new AssertionError("frame graph presentation was unavailable");
                     }
                 }
@@ -64,7 +71,7 @@ public final class StandaloneFrameGraphVerification {
                 driver.destroyTexture(source);
             }
         }
-        System.out.println("Native Vulkan frame graph passed: " + FRAMES
+        System.out.println("Native Vulkan FrameStream graph passed: " + FRAMES
                 + " queue submissions for " + (FRAMES * 2) + " dependent target passes");
     }
 

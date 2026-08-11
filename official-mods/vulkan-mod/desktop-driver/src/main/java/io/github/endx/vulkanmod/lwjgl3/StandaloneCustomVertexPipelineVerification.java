@@ -1,16 +1,22 @@
 package io.github.endx.vulkanmod.lwjgl3;
 
+import io.github.endx.vulkanmod.framestream.FrameStreamEncoder;
+import io.github.endx.vulkanmod.framestream.FrameStreamResourceMapper;
 import io.github.endx.vulkanmod.render.LegacyShaderProgramTranslator;
 import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
+import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
+
+import java.util.Collections;
 
 /** Builds and executes a real graphics pipeline containing a translated custom vertex stage. */
 public final class StandaloneCustomVertexPipelineVerification {
@@ -50,7 +56,7 @@ public final class StandaloneCustomVertexPipelineVerification {
                         .then(VulkanTransform2D.translation(2.0f, 2.0f));
                 VulkanDrawState state = new VulkanDrawState(transform,
                         null, VulkanBlendMode.NORMAL, VulkanTextureFilter.NEAREST, shader);
-                driver.renderToTexture(target, VulkanFrameCommands.builder(8, 8)
+                VulkanFrameCommands targetFrame = VulkanFrameCommands.builder(8, 8)
                         .clear(0.0f, 0.0f, 0.0f, 1.0f)
                         .texturedQuad(new VulkanTexturedQuad(texture,
                                 0.0f, 0.0f, 2.0f, 2.0f,
@@ -60,7 +66,18 @@ public final class StandaloneCustomVertexPipelineVerification {
                                 0.0f, 0.0f, 2.0f, 2.0f,
                                 0.0f, 0.0f, 1.0f, 1.0f,
                                 1.0f, 1.0f, 1.0f, 1.0f, state))
-                        .build());
+                        .build();
+                VulkanFrameCommands presentation = VulkanFrameCommands.builder(64, 64)
+                        .clear(0.0f, 0.0f, 0.0f, 1.0f).build();
+                VulkanFrameSubmission submission = new VulkanFrameSubmission(
+                        Collections.singletonList(new VulkanRenderTargetPass(target, targetFrame)),
+                        presentation);
+                FrameStreamEncoder encoder = new FrameStreamEncoder(
+                        FrameStreamResourceMapper.generationOneSlots(),
+                        driver::customShaderUsesExpandedVertexInput);
+                if (driver.presentFrameStream(encoder.encode(1L, 0L, submission)) == null) {
+                    throw new AssertionError("custom FrameStream frame was unavailable");
+                }
                 byte[] rgba = driver.readTexture(target).copyRgba();
                 for (int y = 0; y < 8; y++) {
                     for (int x = 0; x < 8; x++) {

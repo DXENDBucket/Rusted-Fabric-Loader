@@ -1,9 +1,15 @@
 package io.github.endx.vulkanmod.lwjgl3;
 
+import io.github.endx.vulkanmod.framestream.FrameStreamEncoder;
+import io.github.endx.vulkanmod.framestream.FrameStreamResourceMapper;
+import io.github.endx.vulkanmod.framestream.FrameStreamShaderLayoutResolver;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
+
+import java.util.Collections;
 
 /** Reproduces the many-unit workload that previously exhausted LWJGL's MemoryStack. */
 public final class StandaloneLargeBatchVerification {
@@ -19,6 +25,9 @@ public final class StandaloneLargeBatchVerification {
             long texture = driver.uploadTexture(new VulkanTextureData(1, 1,
                     new byte[] {(byte) 255, (byte) 255, (byte) 255, (byte) 255}));
             try {
+                FrameStreamEncoder encoder = new FrameStreamEncoder(
+                        FrameStreamResourceMapper.generationOneSlots(),
+                        FrameStreamShaderLayoutResolver.NO_CUSTOM_SHADERS);
                 for (int frameIndex = 0; frameIndex < FRAMES; frameIndex++) {
                     VulkanFrameCommands.Builder builder = VulkanFrameCommands
                             .pooledBuilder(64, 64).clear(0.0f, 0.0f, 0.0f, 1.0f);
@@ -37,7 +46,10 @@ public final class StandaloneLargeBatchVerification {
                     }
                     VulkanFrameCommands frame = builder.build();
                     try {
-                        if (driver.presentFrame(frame) == null) {
+                        VulkanFrameSubmission submission = new VulkanFrameSubmission(
+                                Collections.emptyList(), frame);
+                        if (driver.presentFrameStream(encoder.encode(
+                                frameIndex + 1L, 0L, submission)) == null) {
                             throw new AssertionError("large native batch frame was not presented");
                         }
                     } finally {
@@ -55,7 +67,7 @@ public final class StandaloneLargeBatchVerification {
                 driver.destroyTexture(texture);
             }
         }
-        System.out.println("Native Vulkan pooled large-batch frames passed: " + FRAMES
+        System.out.println("Native Vulkan FrameStream large-batch frames passed: " + FRAMES
                 + " x " + DRAW_BATCHES + " commands");
     }
 }

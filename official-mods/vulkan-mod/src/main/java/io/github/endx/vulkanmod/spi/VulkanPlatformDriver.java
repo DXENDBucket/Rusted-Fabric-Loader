@@ -1,5 +1,6 @@
 package io.github.endx.vulkanmod.spi;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,6 +29,12 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     }
     /** Releases a custom program handle previously returned by {@link #compileShaderProgram}. */
     default void destroyShaderProgram(long shaderHandle) { }
+    /** True when this backend consumes validated RustedVK FrameStream submissions directly. */
+    default boolean supportsFrameStream() { return false; }
+    /** Resource metadata needed by the shared encoder's custom vertex layout selection. */
+    default boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
+        throw new UnsupportedOperationException("custom shader metadata is not available");
+    }
     long uploadTexture(VulkanTextureData texture);
     /** Creates a sampled color image that can also be used as an offscreen render target. */
     default long createRenderTarget(int width, int height) {
@@ -82,6 +89,10 @@ public interface VulkanPlatformDriver extends AutoCloseable {
             renderToTexture(pass.textureHandle(), pass.frame());
         }
         return presentFrame(submission.presentationFrame());
+    }
+    /** Presents one complete FrameStream. The backend must validate it before GPU access. */
+    default VulkanSurfaceInfo presentFrameStream(ByteBuffer frameStream) {
+        throw new UnsupportedOperationException("FrameStream submission is not supported");
     }
     /**
      * Presents a frame, or returns {@code null} when the surface temporarily cannot acquire an

@@ -1,5 +1,7 @@
 package io.github.endx.vulkanmod;
 
+import io.github.endx.vulkanmod.framestream.FrameStreamEncoder;
+import io.github.endx.vulkanmod.framestream.FrameStreamResourceMapper;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
@@ -73,6 +75,8 @@ public final class VulkanRuntime {
     private static final NativeFrameClock nativeFrameClock = new NativeFrameClock();
     private static GraphicsEngine nativeGraphicsEngine;
     private static StartupPhase startupPhase = StartupPhase.MOD_INITIALIZED;
+    private static FrameStreamEncoder frameStreamEncoder;
+    private static long nextFrameStreamId;
 
     private enum StartupPhase {
         MOD_INITIALIZED,
@@ -342,7 +346,7 @@ public final class VulkanRuntime {
         VulkanFrameSubmission submission = new VulkanFrameSubmission(renderTargetPasses, frame);
         VulkanSurfaceInfo updated;
         try {
-            updated = activeDriver.presentFrame(submission);
+            updated = presentSubmission(submission);
         } finally {
             submission.releasePooledCommands();
         }
@@ -443,7 +447,7 @@ public final class VulkanRuntime {
                 progressPasses, progressFrame);
         VulkanSurfaceInfo updated;
         try {
-            updated = activeDriver.presentFrame(submission);
+            updated = presentSubmission(submission);
         } finally {
             submission.releasePooledCommands();
         }
@@ -454,6 +458,25 @@ public final class VulkanRuntime {
             log("First native loading frame presented without creating LWJGL2 Display/OpenGL");
         }
         return true;
+    }
+
+    private static VulkanSurfaceInfo presentSubmission(VulkanFrameSubmission submission) {
+        if (!activeDriver.supportsFrameStream()
+                || Boolean.getBoolean("rusted.fabric.vulkan.objectSubmission")) {
+            return activeDriver.presentFrame(submission);
+        }
+        if (frameStreamEncoder == null) {
+            frameStreamEncoder = new FrameStreamEncoder(
+                    FrameStreamResourceMapper.generationOneSlots(),
+                    activeDriver::customShaderUsesExpandedVertexInput);
+            log("RustedVK FrameStream desktop submission is active");
+        }
+        if (nextFrameStreamId == Long.MAX_VALUE) {
+            throw new IllegalStateException("FrameStream frame IDs exhausted");
+        }
+        long frameId = ++nextFrameStreamId;
+        return activeDriver.presentFrameStream(
+                frameStreamEncoder.encode(frameId, 0L, submission));
     }
 
     public static synchronized boolean recordNativeText(
@@ -1283,6 +1306,8 @@ public final class VulkanRuntime {
         takeoverFrameOpen = false;
         frameTestWaitFrames = 0;
         frameTestFramesPresented = 0;
+        frameStreamEncoder = null;
+        nextFrameStreamId = 0L;
         nativeFrameClock.clear();
     }
 
