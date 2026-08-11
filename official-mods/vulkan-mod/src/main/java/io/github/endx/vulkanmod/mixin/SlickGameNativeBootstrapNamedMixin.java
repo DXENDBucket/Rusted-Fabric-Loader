@@ -27,6 +27,7 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     @Shadow GameEngine gameEngine;
     @Shadow DesktopAppFramework appFramework;
     @Shadow int lastDeltaMs;
+    @Shadow boolean finishedInitialLoad;
     @Shadow public abstract void startLoadingThreaded();
     @Unique private int vulkanmod$pointerX;
     @Unique private int vulkanmod$pointerY;
@@ -34,6 +35,7 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     @Unique private final java.util.HashSet<Integer> vulkanmod$keys =
             new java.util.HashSet<Integer>();
     @Unique private GameImage vulkanmod$pointerImage;
+    @Unique private boolean vulkanmod$nativeInputReady;
 
     @Override
     public void vulkanmod$bindNativeContainer(GameContainer container) {
@@ -73,6 +75,15 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
                 ui.debug = false;
             }
             ui.postUpdate();
+            if (!vulkanmod$nativeInputReady && finishedInitialLoad
+                    && ui.getActiveDocument() != null) {
+                // Win32 begins queuing pointer motion as soon as its HWND is visible, while
+                // LibRocket's Java renderer can already exist before its native context and first
+                // document are ready. Calling processMouseMove in that interval dereferences a
+                // null native context. An active document proves setup/loadDocument completed.
+                vulkanmod$nativeInputReady = true;
+                System.out.println("[Vulkan Mod] Native input enabled after the first UI document");
+            }
         }
         // Slick installs this image as the native cursor during its skipped OpenGL init. Draw the
         // same asset last in native mode so menus and the game retain Rusted Warfare's pointer.
@@ -101,6 +112,25 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     @Override
     public void vulkanmod$handleNativeInput(VulkanInputEvent event) {
         if (event == null) return;
+        if (!vulkanmod$nativeInputReady) {
+            // Retain the latest pointer position so the software cursor does not jump when input
+            // becomes active, but never enter Slick/LibRocket callbacks during native startup.
+            switch (event.type()) {
+                case POINTER_MOVE:
+                case BUTTON_DOWN:
+                case BUTTON_UP:
+                case WHEEL:
+                    vulkanmod$pointerX = event.x();
+                    vulkanmod$pointerY = event.y();
+                    break;
+                case FOCUS_LOST:
+                    vulkanmod$clearNativeInputState();
+                    break;
+                default:
+                    break;
+            }
+            return;
+        }
         switch (event.type()) {
             case POINTER_MOVE: {
                 int oldX = vulkanmod$pointerX;
@@ -203,6 +233,12 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
         for (int key : new java.util.ArrayList<Integer>(vulkanmod$keys)) {
             vulkanmod$self().keyReleased(key, '\0');
         }
+        vulkanmod$keys.clear();
+    }
+
+    @Unique
+    private void vulkanmod$clearNativeInputState() {
+        java.util.Arrays.fill(vulkanmod$buttons, false);
         vulkanmod$keys.clear();
     }
 
