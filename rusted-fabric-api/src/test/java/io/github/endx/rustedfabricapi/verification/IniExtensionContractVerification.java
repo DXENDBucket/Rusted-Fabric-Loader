@@ -20,6 +20,7 @@ final class IniExtensionContractVerification {
         verifyNativeValueIsNotActivated();
         verifyExplicitExtendedFormatUsesFallback();
         verifyPrefixKeyMatchingConsumesOnlyActivatedKeys();
+        verifySectionDefinitionConsumesOnlyClaimedCompanionKeys();
         verifyAfterMetadataParsedPhase();
         verifyInvalidExtendedValueHasLocation();
     }
@@ -149,6 +150,33 @@ final class IniExtensionContractVerification {
             require(IniExtensionRuntime.nativeFallback(
                     config, "projectile_main", "mutatorArmour_nativeField") == null,
                     "inactive sibling prefix key was intercepted");
+        }
+    }
+
+    private static void verifySectionDefinitionConsumesOnlyClaimedCompanionKeys() {
+        IniFieldDefinition<String> definition = IniFieldDefinition
+                .<String>builder("test_mod", "geometry_definition",
+                        IniSectionSelector.prefix("geometry_"), "type")
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .claimsKeys("radius", "sweepAngle")
+                .decoder(context -> context.rawValue())
+                .build();
+        try (IniExtensions.Registration ignored = IniExtensions.register(definition)) {
+            UnitConfig valid = config("[geometry_light]\n"
+                    + "type: sector\nradius: 240\nsweepAngle: 30\n");
+            IniExtensionRuntime.markActiveFieldsRead(valid);
+            valid.checkUnusedKeys();
+
+            UnitConfig invalid = config("[geometry_light]\n"
+                    + "type: sector\nradius: 240\nmisspelledRadius: 30\n");
+            IniExtensionRuntime.markActiveFieldsRead(invalid);
+            boolean rejected = false;
+            try {
+                invalid.checkUnusedKeys();
+            } catch (RuntimeException expected) {
+                rejected = expected.getMessage().contains("misspelledRadius");
+            }
+            require(rejected, "section definition hid an unclaimed companion key");
         }
     }
 

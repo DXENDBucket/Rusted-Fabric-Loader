@@ -1,5 +1,9 @@
 package io.github.endx.rustedfabricapi.api.ini;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -25,6 +29,7 @@ public final class IniFieldDefinition<T> {
     private final IniSectionSelector section;
     private final String key;
     private final boolean keyPrefix;
+    private final List<String> claimedKeys;
     private final IniExtensionKind kind;
     private final IniApplicationPhase applicationPhase;
     private final Activation activation;
@@ -40,6 +45,7 @@ public final class IniFieldDefinition<T> {
         section = Objects.requireNonNull(builder.section, "section");
         key = requireText(builder.key, "key");
         keyPrefix = builder.keyPrefix;
+        claimedKeys = immutableKeys(builder.claimedKeys);
         kind = Objects.requireNonNull(builder.kind, "kind");
         applicationPhase = Objects.requireNonNull(builder.applicationPhase, "applicationPhase");
         decoder = Objects.requireNonNull(builder.decoder, "decoder");
@@ -65,6 +71,8 @@ public final class IniFieldDefinition<T> {
     public IniSectionSelector section() { return section; }
     public String key() { return key; }
     public boolean matchesKeyPrefix() { return keyPrefix; }
+    /** Additional keys consumed by the same section-level extension definition. */
+    public List<String> claimedKeys() { return claimedKeys; }
     public IniExtensionKind kind() { return kind; }
     public IniApplicationPhase applicationPhase() { return applicationPhase; }
     public IniFieldDocumentation documentation() { return documentation; }
@@ -100,6 +108,7 @@ public final class IniFieldDefinition<T> {
         private Applier<T> applier;
         private IniFieldDocumentation documentation;
         private boolean keyPrefix;
+        private final LinkedHashSet<String> claimedKeys = new LinkedHashSet<String>();
 
         private Builder(String ownerId, String fieldId, IniSectionSelector section, String key) {
             this.ownerId = ownerId;
@@ -118,7 +127,20 @@ public final class IniFieldDefinition<T> {
         public Builder<T> documentation(IniFieldDocumentation value) { documentation = value; return this; }
         /** Matches all keys beginning with the builder key; activation can narrow suffixes. */
         public Builder<T> matchKeyPrefix() { keyPrefix = true; return this; }
+        /**
+         * Claims companion keys parsed by this definition's applier. Unknown keys remain subject
+         * to the game's normal unused-key validation.
+         */
+        public Builder<T> claimsKeys(String... values) {
+            Objects.requireNonNull(values, "values");
+            for (String value : values) claimedKeys.add(requireText(value, "claimedKey"));
+            return this;
+        }
         public IniFieldDefinition<T> build() { return new IniFieldDefinition<T>(this); }
+    }
+
+    private static List<String> immutableKeys(LinkedHashSet<String> values) {
+        return Collections.unmodifiableList(new ArrayList<String>(values));
     }
 
     private static String requireId(String value, String label, Pattern pattern) {

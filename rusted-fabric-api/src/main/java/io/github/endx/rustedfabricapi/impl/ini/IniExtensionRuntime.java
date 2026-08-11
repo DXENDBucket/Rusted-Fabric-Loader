@@ -80,6 +80,11 @@ public final class IniExtensionRuntime {
         State state = STATES.get(rawConfig);
         for (ActiveField<?> field : state.active) {
             config.markKeyReadUnknownType(field.context.section(), field.context.key());
+            for (String claimedKey : field.definition.claimedKeys()) {
+                if (config.hasKey(field.context.section(), claimedKey)) {
+                    config.markKeyReadUnknownType(field.context.section(), claimedKey);
+                }
+            }
         }
     }
 

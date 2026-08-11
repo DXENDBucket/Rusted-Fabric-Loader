@@ -49,6 +49,7 @@ public final class FogActionFields {
                 .<String>builder(IniEssentials.MOD_ID, "fog_definition",
                         IniSectionSelector.prefix(PREFIX), "operation")
                 .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .claimsKeys("geometry", "team", "anchor", "duration", "follow")
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseOperation(value))
                 .applier(field -> {

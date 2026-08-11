@@ -34,6 +34,9 @@ public final class GeometryDefinitions {
                 .<String>builder(IniEssentials.MOD_ID, "geometry_definition",
                         IniSectionSelector.prefix(PREFIX), "type")
                 .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .claimsKeys("radius", "radiusX", "radiusY", "width", "height",
+                        "innerRadius", "startAngle", "sweepAngle", "rotation",
+                        "offsetX", "offsetY", "thickness", "points", "components")
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseType(value))
                 .applier(field -> {

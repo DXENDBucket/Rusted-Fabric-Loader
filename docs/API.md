@@ -1429,6 +1429,10 @@ can be applied immediately before or after static configuration variables, or in
 and projectiles. The late phase is intended for extension expressions that must compile against
 that completed metadata. Repeated scans caused by `copyFrom` remain idempotent.
 
+A section-level definition whose applier parses several related keys can declare those exact
+companions with `claimsKeys(...)`. They are consumed only when the definition's trigger is active;
+unclaimed or misspelled keys still fail the game's native unused-key validation.
+
 This contract deliberately permits documented additions to the value range or format of an
 existing field. It does not draw a permanent boundary around native keys; it draws the boundary at
 the actual value that activates an extension.

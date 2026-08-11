@@ -61,6 +61,20 @@ public final class OverlayDefinitions {
                 .<String>builder(IniEssentials.MOD_ID, "overlay_definition",
                         IniSectionSelector.prefix(PREFIX), "type")
                 .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .claimsKeys("image", "imageSmoothing", "text", "width", "height",
+                        "total_frames", "frame_width", "frame_height",
+                        "frame_verticalOrdering", "anchor", "layer", "instanceMode",
+                        "indexMode", "team", "fogVisibility", "onlyWhileAlive",
+                        "isVisible", "instanceCondition", "priority", "slot",
+                        "maxInstances", "columns", "xOffsetAbsolute", "yOffsetAbsolute",
+                        "spacingX", "spacingY", "scale", "scaleX", "scaleY",
+                        "dirOffset", "alpha", "order", "frame", "color",
+                        "backgroundColor", "borderColor", "borderWidth", "value",
+                        "maxValue", "textSize", "textColor", "textAlign",
+                        "barDirection", "mask", "maskGeometry", "maskRender",
+                        "maskAlphaThreshold", "maskInvert", "maskThresholdMode",
+                        "maskAlphaMode", "maskUsesSourceAlpha", "offsetX", "offsetY",
+                        "rotation", "imageScale", "imageScaleX", "imageScaleY")
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseEnum(Type.class, value, "overlay type"))
                 .applier(field -> parseAndStore((CustomUnitMetadata) field.metadata(),
@@ -78,6 +92,19 @@ public final class OverlayDefinitions {
                 .<String>builder(IniEssentials.MOD_ID, "overlay_image_definition",
                         IniSectionSelector.prefix(PREFIX), "image")
                 .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .claimsKeys("imageSmoothing", "text", "width", "height", "total_frames",
+                        "frame_width", "frame_height", "frame_verticalOrdering", "anchor",
+                        "layer", "instanceMode", "indexMode", "team", "fogVisibility",
+                        "onlyWhileAlive", "isVisible", "instanceCondition", "priority",
+                        "slot", "maxInstances", "columns", "xOffsetAbsolute",
+                        "yOffsetAbsolute", "spacingX", "spacingY", "scale", "scaleX",
+                        "scaleY", "dirOffset", "alpha", "order", "frame", "color",
+                        "backgroundColor", "borderColor", "borderWidth", "value",
+                        "maxValue", "textSize", "textColor", "textAlign", "barDirection",
+                        "mask", "maskGeometry", "maskRender", "maskAlphaThreshold",
+                        "maskInvert", "maskThresholdMode", "maskAlphaMode",
+                        "maskUsesSourceAlpha", "offsetX", "offsetY", "rotation",
+                        "imageScale", "imageScaleX", "imageScaleY")
                 .activatesWhen(context -> !((UnitConfig) context.unitConfig())
                         .hasKey(context.section(), "type"))
                 .decoder(context -> context.rawValue().trim())

@@ -44,6 +44,10 @@ public final class EventRuleDefinitions {
                 .<String>builder(IniEssentials.MOD_ID, "event_rule",
                         IniSectionSelector.prefix(PREFIX), "event")
                 .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
+                .claimsKeys("phase", "when", "cancelEventActions", "setEventNumber",
+                        "addEventNumber", "multiplyEventNumber", "setEventBoolean",
+                        "cancelEvent", "setEventValue", "addEventValue",
+                        "multiplyEventValue")
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> parseEventType(value))
                 .applier(field -> {
