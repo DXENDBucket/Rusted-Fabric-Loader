@@ -8,6 +8,8 @@ import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
+import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
@@ -403,6 +405,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         surfaceSession.renderToTexture(textureHandle, frame);
     }
 
+    @Override public synchronized VulkanSurfaceInfo presentFrame(
+            VulkanFrameSubmission submission) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        if (submission == null) throw new NullPointerException("submission");
+        return surfaceSession.presentFrame(submission);
+    }
+
     @Override public synchronized void destroyTexture(long textureHandle) {
         if (surfaceSession != null) surfaceSession.destroyTexture(textureHandle);
     }
@@ -412,6 +423,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             surfaceSession.close();
             surfaceSession = null;
         }
+    }
+
+    synchronized long frameGraphQueueSubmissionCount() {
+        return surfaceSession == null ? 0L : surfaceSession.frameGraphQueueSubmissions;
+    }
+
+    synchronized long immediateOffscreenQueueSubmissionCount() {
+        return surfaceSession == null ? 0L : surfaceSession.immediateOffscreenQueueSubmissions;
+    }
+
+    synchronized long frameGraphPassCount() {
+        return surfaceSession == null ? 0L : surfaceSession.frameGraphPassesSubmitted;
     }
 
     private static VkInstanceCreateInfo instanceCreateInfo(
@@ -1323,6 +1346,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private int[] vertexCapacities = new int[0];
         private VkCommandBuffer[] offscreenCommandBuffers = new VkCommandBuffer[0];
         private long[] offscreenFences = new long[0];
+        /** Fence of the submission that most recently used each offscreen upload slot. */
+        private long[] offscreenSlotOwnerFences = new long[0];
         private BufferAllocation[] offscreenVertexAllocations = new BufferAllocation[0];
         private int[] offscreenVertexCapacities = new int[0];
         private int offscreenCursor;
@@ -1334,6 +1359,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long successfulPresents;
         private long profiledSlowFrames;
         private long renderTargetSubmissions;
+        private long immediateOffscreenQueueSubmissions;
+        private long frameGraphQueueSubmissions;
+        private long frameGraphPassesSubmitted;
+        private List<VulkanRenderTargetPass> frameGraphPasses = Collections.emptyList();
+        private boolean frameGraphSubmitted;
         private boolean debugLargeTargetReadBack;
         private boolean debugMainTargetSamplesLogged;
         private boolean closed;
@@ -1559,6 +1589,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             vertexAllocations = new BufferAllocation[images.length];
             vertexCapacities = new int[images.length];
             offscreenFences = new long[OFFSCREEN_SUBMISSION_SLOTS];
+            offscreenSlotOwnerFences = new long[OFFSCREEN_SUBMISSION_SLOTS];
             offscreenVertexAllocations = new BufferAllocation[OFFSCREEN_SUBMISSION_SLOTS];
             offscreenVertexCapacities = new int[OFFSCREEN_SUBMISSION_SLOTS];
             VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack)
@@ -1575,6 +1606,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkCreateFence(device, fenceInfo, null, handle),
                         "vkCreateFence(offscreen[" + index + "])");
                 offscreenFences[index] = handle.get(0);
+                offscreenSlotOwnerFences[index] = offscreenFences[index];
             }
             frameCursor = 0;
             offscreenCursor = 0;
@@ -2067,7 +2099,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private void renderToTexture(long textureHandle, VulkanFrameCommands frame) {
+        private TextureResource requireRenderTarget(long textureHandle,
+                                                    VulkanFrameCommands frame) {
             TextureResource target = textures.get(textureHandle);
             if (target == null || !target.renderTarget) {
                 throw new IllegalArgumentException("unknown render-target handle "
@@ -2078,10 +2111,99 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         + target.width + "x" + target.height + " to "
                         + frame.width() + "x" + frame.height());
             }
+            return target;
+        }
+
+        private void recordFrameGraphTarget(VkCommandBuffer command, MemoryStack stack,
+                                            long textureHandle, VulkanFrameCommands frame,
+                                            TextureResource target, FrameUpload upload,
+                                            int vertexSlot) {
+            VkClearValue.Buffer clearValue = VkClearValue.calloc(1, stack);
+            clearValue.get(0).color()
+                    .float32(0, frame.clearRed()).float32(1, frame.clearGreen())
+                    .float32(2, frame.clearBlue()).float32(3, frame.clearAlpha());
+            boolean clearTarget = frame.clearRequested() || !target.initialized;
+            long targetRenderPass = clearTarget
+                    ? offscreenClearRenderPass : offscreenLoadRenderPass;
+            VkRenderPassBeginInfo renderPassBegin = VkRenderPassBeginInfo.calloc(stack)
+                    .sType$Default().renderPass(targetRenderPass)
+                    .framebuffer(target.framebuffer).pClearValues(clearValue);
+            renderPassBegin.renderArea().offset().x(0).y(0);
+            renderPassBegin.renderArea().extent().width(target.width).height(target.height);
+            vkCmdBeginRenderPass(command, renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+            long vertexBuffer = offscreenVertexAllocations[vertexSlot] == null
+                    ? VK_NULL_HANDLE : offscreenVertexAllocations[vertexSlot].buffer;
+            if (upload.totalVertexCount() > 0) {
+                VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+                viewport.get(0).x(0.0f).y(0.0f)
+                        .width(target.width).height(target.height)
+                        .minDepth(0.0f).maxDepth(1.0f);
+                vkCmdSetViewport(command, 0, viewport);
+            }
+            ByteBuffer shaderPushConstants = stack.malloc(128).order(ByteOrder.nativeOrder());
+            LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
+            LongBuffer drawVertexOffset = stack.mallocLong(1);
+            LongBuffer drawDescriptorSet = stack.mallocLong(1);
+            VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
+            for (DrawBatch drawBatch : upload.batches) {
+                if (drawBatch instanceof ColoredDrawBatch) {
+                    ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
+                    vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            colorPipeline(stack, batch.blendMode));
+                    drawVertexOffset.put(0, 0L);
+                    vkCmdBindVertexBuffers(command, 0, drawVertexBuffer, drawVertexOffset);
+                    if (setScissor(command, batch.clip, target.width, target.height,
+                            drawScissor)) {
+                        vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                    }
+                } else {
+                    TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
+                    if (batch.textureHandle == textureHandle) {
+                        throw new IllegalArgumentException(
+                                "a render target cannot sample itself in the same pass");
+                    }
+                    if (batch.shaderState.secondaryTextureHandle() == textureHandle) {
+                        throw new IllegalArgumentException(
+                                "a render target cannot be its own secondary texture");
+                    }
+                    vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            texturePipeline(stack, batch.blendMode, batch.shaderState));
+                    drawVertexOffset.put(0, batch.expandedVertexInput
+                            ? upload.customTexturedByteOffset : upload.texturedByteOffset);
+                    vkCmdBindVertexBuffers(command, 0, drawVertexBuffer, drawVertexOffset);
+                    if (setScissor(command, batch.clip, target.width, target.height,
+                            drawScissor)) {
+                        drawDescriptorSet.put(0, batch.descriptorSet);
+                        vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                texturePipelineLayout, 0, drawDescriptorSet, null);
+                        pushShaderState(command, batch.shaderState, shaderPushConstants);
+                        vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                    }
+                }
+            }
+            vkCmdEndRenderPass(command);
+            target.initialized = true;
+            renderTargetSubmissions++;
+            if (renderTargetSubmissions == 1) {
+                System.out.println("[Vulkan Mod/Driver] First native render target: "
+                        + target.width + "x" + target.height + ", commands="
+                        + frame.commands().size() + ", texture=" + textureHandle);
+            }
+            if (Boolean.getBoolean("rusted.fabric.vulkan.debugFrameGraph")
+                    && renderTargetSubmissions <= 64) {
+                System.out.println("[Vulkan Mod/Driver] Frame graph target pass #"
+                        + renderTargetSubmissions + ": texture=" + textureHandle
+                        + ", commands=" + frame.commands().size());
+            }
+        }
+
+        private void renderToTexture(long textureHandle, VulkanFrameCommands frame) {
+            TextureResource target = requireRenderTarget(textureHandle, frame);
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 int slot = offscreenCursor;
                 long fence = offscreenFences[slot];
-                check(vkWaitForFences(device, stack.longs(fence), true, -1L),
+                long ownerFence = offscreenSlotOwnerFences[slot];
+                check(vkWaitForFences(device, stack.longs(ownerFence), true, -1L),
                         "vkWaitForFences(render target slot)");
                 if (!pendingTextureUploads.isEmpty()) {
                     // Texture uploads share one staging allocation. They are rare after startup;
@@ -2179,6 +2301,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         "vkResetFences(render target)");
                 check(vkQueueSubmit(graphicsQueue, submit, fence),
                         "vkQueueSubmit(render target)");
+                immediateOffscreenQueueSubmissions++;
+                offscreenSlotOwnerFences[slot] = fence;
                 offscreenCursor = (slot + 1) % offscreenFences.length;
                 target.initialized = true;
                 renderTargetSubmissions++;
@@ -2660,6 +2784,35 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return prepareAndPresentFrame(frame, false);
         }
 
+        private VulkanSurfaceInfo presentFrame(VulkanFrameSubmission submission) {
+            List<VulkanRenderTargetPass> passes = submission.renderTargetPasses();
+            if (passes.isEmpty()) return presentFrame(submission.presentationFrame());
+            if (passes.size() > offscreenVertexAllocations.length) {
+                // Preserve correctness for unusually deep graphs. The common terrain/minimap/UI
+                // path fits the bounded ring and is encoded into one queue submission below.
+                for (VulkanRenderTargetPass pass : passes) {
+                    renderToTexture(pass.textureHandle(), pass.frame());
+                }
+                return presentFrame(submission.presentationFrame());
+            }
+            frameGraphPasses = passes;
+            frameGraphSubmitted = false;
+            try {
+                VulkanSurfaceInfo result = presentFrame(submission.presentationFrame());
+                if (result == null && !frameGraphSubmitted) {
+                    // Acquisition can be unavailable while occluded. Offscreen caches must still
+                    // become durable or a one-shot terrain/minimap rebuild would be lost.
+                    for (VulkanRenderTargetPass pass : passes) {
+                        renderToTexture(pass.textureHandle(), pass.frame());
+                    }
+                }
+                return result;
+            } finally {
+                frameGraphPasses = Collections.emptyList();
+                frameGraphSubmitted = false;
+            }
+        }
+
         private VulkanSurfaceInfo presentFrameAndReveal(VulkanFrameCommands frame) {
             if (overlay == null) {
                 throw new IllegalStateException("Vulkan surface has no independently owned overlay");
@@ -2778,6 +2931,26 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     destroyRetiredTextures();
                 }
                 long afterFence = System.nanoTime();
+                int graphCount = frameGraphPasses.size();
+                FrameUpload[] graphUploads = graphCount == 0
+                        ? null : new FrameUpload[graphCount];
+                TextureResource[] graphTargets = graphCount == 0
+                        ? null : new TextureResource[graphCount];
+                int[] graphSlots = graphCount == 0 ? null : new int[graphCount];
+                for (int graphIndex = 0; graphIndex < graphCount; graphIndex++) {
+                    VulkanRenderTargetPass pass = frameGraphPasses.get(graphIndex);
+                    TextureResource target = requireRenderTarget(
+                            pass.textureHandle(), pass.frame());
+                    int graphSlot = (offscreenCursor + graphIndex)
+                            % offscreenVertexAllocations.length;
+                    check(vkWaitForFences(device,
+                                    stack.longs(offscreenSlotOwnerFences[graphSlot]), true, -1L),
+                            "vkWaitForFences(frame graph slot)");
+                    graphTargets[graphIndex] = target;
+                    graphSlots[graphIndex] = graphSlot;
+                    graphUploads[graphIndex] = uploadFrame(pass.frame(), stack, graphSlot,
+                            offscreenVertexAllocations, offscreenVertexCapacities);
+                }
                 IntBuffer imageIndex = stack.mallocInt(1);
                 // A minimized/occluded Win32 surface is allowed to stop returning images.
                 // Never let that suspend Rusted Warfare's game thread indefinitely.
@@ -2814,6 +2987,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 // both the sampled images and the reusable staging buffer, so no queue-idle stall
                 // is needed for terrain-cache refreshes.
                 recordPendingTextureUploads(commandBuffer, stack);
+                for (int graphIndex = 0; graphIndex < graphCount; graphIndex++) {
+                    VulkanRenderTargetPass pass = frameGraphPasses.get(graphIndex);
+                    recordFrameGraphTarget(commandBuffer, stack, pass.textureHandle(),
+                            pass.frame(), graphTargets[graphIndex], graphUploads[graphIndex],
+                            graphSlots[graphIndex]);
+                }
                 VkClearValue.Buffer clearValue = VkClearValue.calloc(1, stack);
                 clearValue.get(0).color()
                         .float32(0, frame.clearRed()).float32(1, frame.clearGreen())
@@ -2885,6 +3064,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         .pCommandBuffers(stack.pointers(commandBuffer.address()))
                         .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
                 check(vkQueueSubmit(graphicsQueue, submit, inFlightFence), "vkQueueSubmit");
+                for (int graphIndex = 0; graphIndex < graphCount; graphIndex++) {
+                    offscreenSlotOwnerFences[graphSlots[graphIndex]] = inFlightFence;
+                }
+                if (graphCount > 0) {
+                    offscreenCursor = (offscreenCursor + graphCount)
+                            % offscreenVertexAllocations.length;
+                    frameGraphSubmitted = true;
+                    frameGraphQueueSubmissions++;
+                    frameGraphPassesSubmitted += graphCount;
+                }
                 long afterSubmit = System.nanoTime();
                 VkPresentInfoKHR present = VkPresentInfoKHR.calloc(stack).sType$Default()
                         .pWaitSemaphores(stack.longs(renderFinishedSemaphore))
@@ -3384,6 +3573,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (fence != VK_NULL_HANDLE) vkDestroyFence(device, fence, null);
             }
             offscreenFences = new long[0];
+            offscreenSlotOwnerFences = new long[0];
             for (long fence : inFlightFences) {
                 if (fence != VK_NULL_HANDLE) vkDestroyFence(device, fence, null);
             }

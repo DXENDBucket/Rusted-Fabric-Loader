@@ -3,6 +3,7 @@ package io.github.endx.vulkanmod;
 import io.github.endx.vulkanmod.spi.VulkanPlatformDriver;
 import io.github.endx.vulkanmod.spi.VulkanProbeResult;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
@@ -236,6 +237,10 @@ final class VulkanDriverLoader {
 
         VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
             return invoke(() -> driver.presentFrame(frame));
+        }
+
+        VulkanSurfaceInfo presentFrame(VulkanFrameSubmission submission) {
+            return invoke(() -> driver.presentFrame(submission));
         }
 
         VulkanSurfaceInfo presentFrameAndReveal(VulkanFrameCommands frame) {

@@ -59,11 +59,13 @@ so shader-based team coloring and displacement effects no longer fall back to Op
 CPU texture copies. Java mods can additionally attach compatible custom vertex/fragment pairs;
 their uniforms are snapshotted per draw and pipelines are rebuilt across swapchain changes.
 
-Desktop native offscreen submission uses an independently fenced command/vertex ring. Child passes
-remain ordered on the graphics queue without a host-side device/queue idle after every target, and
-main/offscreen vertex buffers stay persistently mapped. Texture mutation still performs the narrow
-shared-staging synchronization required for correctness. Batching child passes into fewer queue
-submissions remains further performance work. Dynamic
+The shared renderer now collects each native frame as a platform-neutral frame graph: ordered
+offscreen writes followed by their final presentation consumer. The desktop driver records graphs
+of up to eight child passes into the presentation command buffer, so terrain, minimap and Canvas
+dependencies use one graphics-queue submission per frame instead of one submission per target.
+Deeper graphs retain an ordered correctness fallback. Independently fenced, persistently mapped
+main/offscreen vertex rings protect reuse without a per-target device/queue idle; texture mutation
+still performs the narrow shared-staging synchronization required for correctness. Dynamic
 Canvas bitmap rebinding now reuses each image's single native target command stream, submits the
 outgoing target, and carries the live transform/clip stack across the framebuffer switch. Native
 render targets expose
@@ -86,6 +88,8 @@ Useful takeover diagnostics are:
 - `-Drusted.fabric.vulkan.debugRenderTargetPasses=true` logs the first native child passes, their
   sampled texture dependencies, the first main-frame child samples, and a one-time large-target
   GPU readback summary.
+- `-Drusted.fabric.vulkan.debugFrameGraph=true` logs child passes encoded into the combined native
+  frame submission.
 
 Vulkan validation and Debug Utils are not wired yet; they are the next diagnostic layer after the
 solid-frame and safe-takeover sequence is confirmed.
@@ -111,9 +115,9 @@ solid-frame and safe-takeover sequence is confirmed.
    secondary-texture displacement path are complete. Native image readback/upload covers legacy
    pixel-buffer mutation and dynamic Canvas target switching; compatible linked custom
    vertex/fragment programs are translated and run in native Vulkan pipelines.
-4. Persistently mapped main/offscreen vertex rings and asynchronous child submissions are complete.
-   Next, batch child render passes into fewer queue submissions and widen draw batching without
-   changing draw order.
+4. Persistently mapped main/offscreen vertex rings, asynchronous standalone child submissions and
+   combined frame-graph submission are complete. Next, widen Java-side draw batching and replace
+   per-command object allocation without changing draw order.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
    compatibility surface after native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.

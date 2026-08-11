@@ -82,3 +82,12 @@ tasks.register('verifyAsyncOffscreenSubmissions', JavaExec) {
             sourceSets.main.runtimeClasspath)
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneAsyncOffscreenVerification')
 }
+
+tasks.register('verifyFrameGraphSubmission', JavaExec) {
+    group = 'verification'
+    description = 'Executes dependent offscreen passes and presentation in one queue submit.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneFrameGraphVerification')
+}

@@ -73,6 +73,17 @@ public interface VulkanPlatformDriver extends AutoCloseable {
         return presentFrame(frame);
     }
     /**
+     * Executes ordered offscreen passes and presents their final consumer as one logical frame.
+     * Platform drivers can override this to collapse the graph into fewer queue submissions.
+     */
+    default VulkanSurfaceInfo presentFrame(VulkanFrameSubmission submission) {
+        if (submission == null) throw new NullPointerException("submission");
+        for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
+            renderToTexture(pass.textureHandle(), pass.frame());
+        }
+        return presentFrame(submission.presentationFrame());
+    }
+    /**
      * Presents a frame, or returns {@code null} when the surface temporarily cannot acquire an
      * image (for example while its Win32 window is occluded or minimized).
      */

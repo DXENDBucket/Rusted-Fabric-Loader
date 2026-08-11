@@ -3,6 +3,8 @@ package io.github.endx.vulkanmod;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
+import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
@@ -25,6 +27,8 @@ import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import rustedwarfare.core.GameEngine;
@@ -65,6 +69,7 @@ public final class VulkanRuntime {
     private static NativeSlickGameBridge nativeGame;
     private static boolean nativeGameSystemsStarted;
     private static VulkanFrameCommands.Builder nativeFrameBuilder;
+    private static List<VulkanRenderTargetPass> nativeRenderTargetPasses;
     private static final NativeFrameClock nativeFrameClock = new NativeFrameClock();
     private static GraphicsEngine nativeGraphicsEngine;
     private static StartupPhase startupPhase = StartupPhase.MOD_INITIALIZED;
@@ -297,19 +302,24 @@ public final class VulkanRuntime {
         if (textTextureCache != null) textTextureCache.beginFrame();
         nativeFrameBuilder = VulkanFrameCommands.builder(current.width(), current.height())
                 .clear(0.035f, 0.045f, 0.06f, 1.0f);
+        nativeRenderTargetPasses = new ArrayList<VulkanRenderTargetPass>();
         VulkanFrameCommands frame;
+        List<VulkanRenderTargetPass> renderTargetPasses;
         try {
             if (nativeGameSystemsStarted && nativeGame != null) {
                 nativeGame.vulkanmod$runNativeFrame(deltaMillis);
             }
             frame = nativeFrameBuilder.build();
+            renderTargetPasses = nativeRenderTargetPasses;
         } finally {
             // Build before presentation so GraphicsEngine calls outside a native frame cannot
             // accidentally append to a command buffer already owned by the driver.
             nativeFrameBuilder = null;
+            nativeRenderTargetPasses = null;
         }
         long gameWorkFinished = System.nanoTime();
-        VulkanSurfaceInfo updated = activeDriver.presentFrame(frame);
+        VulkanSurfaceInfo updated = activeDriver.presentFrame(
+                new VulkanFrameSubmission(renderTargetPasses, frame));
         long presentationFinished = System.nanoTime();
         if (Boolean.getBoolean("rusted.fabric.vulkan.profileSlowFrames")) {
             long gameMicros = (gameWorkFinished - frameWorkStarted) / 1_000L;
@@ -875,13 +885,26 @@ public final class VulkanRuntime {
         if (!isNativeRendererSelected() || activeDriver == null) {
             throw new IllegalStateException("native Vulkan render targets are unavailable");
         }
-        activeDriver.renderToTexture(textureHandle, frame);
+        if (nativeRenderTargetPasses != null) {
+            nativeRenderTargetPasses.add(new VulkanRenderTargetPass(textureHandle, frame));
+        } else {
+            activeDriver.renderToTexture(textureHandle, frame);
+        }
+    }
+
+    private static void flushNativeRenderTargetPasses() {
+        if (nativeRenderTargetPasses == null || nativeRenderTargetPasses.isEmpty()) return;
+        for (VulkanRenderTargetPass pass : nativeRenderTargetPasses) {
+            activeDriver.renderToTexture(pass.textureHandle(), pass.frame());
+        }
+        nativeRenderTargetPasses.clear();
     }
 
     public static synchronized VulkanTextureData readNativeTexture(long textureHandle) {
         if (!isNativeRendererSelected() || activeDriver == null) {
             throw new IllegalStateException("native Vulkan texture readback is unavailable");
         }
+        flushNativeRenderTargetPasses();
         return activeDriver.readTexture(textureHandle);
     }
 
@@ -890,11 +913,13 @@ public final class VulkanRuntime {
         if (!isNativeRendererSelected() || activeDriver == null) {
             throw new IllegalStateException("native Vulkan texture updates are unavailable");
         }
+        flushNativeRenderTargetPasses();
         activeDriver.updateTexture(textureHandle, texture);
     }
 
     public static synchronized void destroyNativeRenderTarget(long textureHandle) {
         if (textureHandle != 0L && activeDriver != null) {
+            flushNativeRenderTargetPasses();
             activeDriver.destroyTexture(textureHandle);
         }
     }
