@@ -145,6 +145,25 @@ Records are contiguous, 8-byte aligned, and carry type-specific payloads bounded
 destroy, custom-program create/destroy, readback, flush, and lifecycle barrier. Exact type payloads
 are frozen alongside the version-1 encoder rather than inferred from C++ structures.
 
+Initial record type values are:
+
+| Value | Record |
+|---:|---|
+| 1 | texture create |
+| 2 | full texture upload |
+| 3 | texture region update |
+| 4 | texture destroy |
+| 5 | render-target create |
+| 6 | shader-program create |
+| 7 | shader-program destroy |
+| 8 | texture readback |
+| 9 | flush |
+| 10 | lifecycle barrier |
+
+Record flags `HAS_EXTERNAL_PAYLOAD=1` and `EXPECTS_RESULT=2` are defined in version 1. A stream
+containing any `EXPECTS_RESULT` record must set `REQUIRES_COMPLETION` and carry a positive
+`completionId`; the inverse is also required. Types with record bit 15 set are required extensions.
+
 Logical handles are allocated by the shared Java resource manager before a create record is
 submitted. Native mirrors the typed slot/generation table. Java may immediately reference the
 handle in a later frame because `requiredResourceSequence` prevents that frame from overtaking its
@@ -490,7 +509,9 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 5. **Desktop done:** add three fixed direct arenas, live bounded submission, geometric safe-point
    growth, and blocking ownership/back-pressure tests. JNI address registration follows with the
    asynchronous native decoder.
-6. Add the reliable ResourceStream, typed handles, and dependency-sequence tests.
+6. **Envelope done:** add the reliable ResourceStream header/record writer, hostile-input verifier,
+   typed handles, CRC, completion, and contiguous sequence tests. Type payload codecs and live
+   resource-manager migration remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 

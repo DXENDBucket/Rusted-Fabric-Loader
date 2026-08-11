@@ -165,6 +165,14 @@ tasks.register('verifyFrameStreamAbi', JavaExec) {
     dependsOn tasks.named('testClasses')
 }
 
+tasks.register('verifyResourceStreamAbi', JavaExec) {
+    group = 'verification'
+    description = 'Verifies RustedVK reliable ResourceStream binary contracts.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.endx.vulkanmod.resourcestream.ResourceStreamAbiVerification'
+    dependsOn tasks.named('testClasses')
+}
+
 tasks.register('verifyNativeShaderCoverage', JavaExec) {
     group = 'verification'
     description = 'Checks native mappings for every fragment shader shipped by the stock game.'
@@ -176,6 +184,7 @@ tasks.register('verifyNativeShaderCoverage', JavaExec) {
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
         tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
         tasks.named('verifyFrameCommandArena'), tasks.named('verifyFrameStreamAbi'),
+        tasks.named('verifyResourceStreamAbi'),
         tasks.named('verifyNativeShaderCoverage'),
         ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
 
