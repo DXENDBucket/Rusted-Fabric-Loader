@@ -10,6 +10,7 @@ import android.graphics.Paint$Style;
 import android.graphics.Bitmap;
 import io.github.endx.vulkanmod.VulkanRuntime;
 import io.github.endx.vulkanmod.spi.VulkanBlendMode;
+import io.github.endx.vulkanmod.spi.VulkanBuiltInShaders;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
@@ -211,18 +212,8 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         if (shader == null) return VulkanShaderState.DEFAULT;
         shader.applyForImage(paint, image);
         String name = shader.name == null ? "" : shader.name;
-        int effect;
-        if ("pureGreenTeamColor".equalsIgnoreCase(name)) {
-            effect = VulkanShaderState.PURE_GREEN_TEAM_COLOR;
-        } else if ("hueAddTeamColor".equalsIgnoreCase(name)) {
-            effect = VulkanShaderState.HUE_ADD_TEAM_COLOR;
-        } else if ("hueShiftTeamColor".equalsIgnoreCase(name)) {
-            effect = VulkanShaderState.HUE_SHIFT_TEAM_COLOR;
-        } else if ("post_base".equalsIgnoreCase(name)) {
-            effect = VulkanShaderState.POST_BASE;
-        } else if ("post_displacement".equalsIgnoreCase(name)) {
-            effect = VulkanShaderState.POST_DISPLACEMENT;
-        } else {
+        int effect = VulkanBuiltInShaders.effectForName(name);
+        if (effect < 0) {
             return VulkanShaderState.DEFAULT;
         }
         float red = 1.0f;

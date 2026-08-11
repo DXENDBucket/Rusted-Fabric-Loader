@@ -45,8 +45,8 @@ sampled Vulkan color images and native framebuffers; the original `GameImage.flu
 contract submits their pending render pass so the game's terrain-cache lifecycle remains valid
 without a CPU/Java2D redraw.
 Image draw commands also snapshot the game's mutable shader uniforms before crossing the driver
-boundary. The native texture pipeline implements the original `pureGreenTeamColor`,
-`hueAddTeamColor`, `hueShiftTeamColor`, `post_base`, and the two-texture
+boundary. The native texture pipeline implements the stock `plain`, `error`,
+`pureGreenTeamColor`, `hueAddTeamColor`, `hueShiftTeamColor`, `post_base`, and the two-texture
 `post_displacement` fragment formulas through Vulkan push constants and paired image descriptors,
 so shader-based team coloring and displacement effects no longer fall back to OpenGL or per-team
 CPU texture copies.

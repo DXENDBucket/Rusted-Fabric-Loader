@@ -184,6 +184,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             + "    vec2 displacedUv=clamp(screenUv+screenOffset,vec2(0.0),usedScreenSize);\n"
             + "    outColor=texture(secondaryImage,displacedUv);\n"
             + "    return;\n"
+            + "  }else if(shaderState.effect==6){\n"
+            + "    sampled.rgb=vec3(1.0,1.0,0.0);\n"
             + "  }\n"
             + "  outColor=sampled*color;\n"
             + "}\n";

@@ -14,6 +14,7 @@ public final class VulkanShaderState {
     public static final int HUE_SHIFT_TEAM_COLOR = 3;
     public static final int POST_BASE = 4;
     public static final int POST_DISPLACEMENT = 5;
+    public static final int ERROR = 6;
 
     public static final VulkanShaderState DEFAULT =
             new VulkanShaderState(PLAIN, 1.0f, 1.0f, 1.0f, 1.0f, 0.15f,
@@ -44,7 +45,7 @@ public final class VulkanShaderState {
                              float screenBaseWidth, float screenBaseHeight,
                              float resolutionWidth, float resolutionHeight,
                              float displacementOffset, float uiScaling) {
-        if (effect < PLAIN || effect > POST_DISPLACEMENT) {
+        if (effect < PLAIN || effect > ERROR) {
             throw new IllegalArgumentException("unknown built-in shader effect: " + effect);
         }
         if (secondaryTextureHandle < 0L) {

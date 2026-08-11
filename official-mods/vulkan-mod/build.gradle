@@ -149,8 +149,17 @@ tasks.register('verifyNativeFrameClock', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.NativeFrameClockVerification')
 }
 
+tasks.register('verifyNativeShaderCoverage', JavaExec) {
+    group = 'verification'
+    description = 'Checks native mappings for every fragment shader shipped by the stock game.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.vulkanmod.render.NativeShaderCoverageVerification')
+}
+
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
-        tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock')
+        tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
+        tasks.named('verifyNativeShaderCoverage')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'
