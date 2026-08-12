@@ -58,6 +58,11 @@ public final class CustomUnitHandle {
     /** Stable identity of the owning native team, or an empty result before ownership is assigned. */
     public Optional<Object> teamIdentity() { return Optional.ofNullable(unit.team); }
 
+    /** Rebuilds the owning team's cached unit economy after a runtime production mode changes. */
+    public void refreshTeamEconomyStats() {
+        if (unit.team != null) unit.team.refreshCachedTeamStats(true);
+    }
+
     /** Reads a built-in or unit-local resource by the name used in INI expressions. */
     public double resourceAmount(String name) {
         return resourceType(name).getAmount(unit);

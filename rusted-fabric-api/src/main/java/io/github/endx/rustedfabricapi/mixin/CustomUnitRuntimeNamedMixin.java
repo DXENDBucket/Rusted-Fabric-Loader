@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Map;
+
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitRuntimeNamedMixin {
     @Shadow private float autoTriggerCooldownTimer;
@@ -47,6 +49,57 @@ public abstract class CustomUnitRuntimeNamedMixin {
                 .BEFORE_PERIODIC_GENERATION.invoker().beforeGeneration(context)) {
             amount.addToUnitAndRecordIncome(generatedFor);
         }
+    }
+
+    @Inject(method = "getCreditGenerationPerSecond()F", at = @At("RETURN"),
+            cancellable = true, require = 1)
+    private void rustedfabricapi$modifyDisplayedCreditGeneration(
+            CallbackInfoReturnable<Float> cir) {
+        io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationDisplayContext context =
+                rustedfabricapi$generationDisplayContext(cir.getReturnValue().doubleValue());
+        cir.setReturnValue(Float.valueOf((float) context.creditRatePerSecond()));
+    }
+
+    @Inject(
+            method = "getGenerationResourcesPerSecond()Lrustedwarfare/custom/resource/StoredResourceSet;",
+            at = @At("RETURN"), cancellable = true, require = 1)
+    private void rustedfabricapi$modifyDisplayedResourceGeneration(
+            CallbackInfoReturnable<rustedwarfare.custom.resource.StoredResourceSet> cir) {
+        rustedwarfare.custom.resource.StoredResourceSet original = cir.getReturnValue();
+        double credits = original.getAmount(
+                rustedwarfare.custom.resource.ResourceType.CREDITS);
+        io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationDisplayContext context =
+                rustedfabricapi$generationDisplayContext(credits);
+        if (!context.modified()) return;
+
+        rustedwarfare.custom.CustomUnit unit =
+                (rustedwarfare.custom.CustomUnit) (Object) this;
+        rustedwarfare.custom.resource.StoredResourceSet modified =
+                rustedwarfare.custom.resource.StoredResourceSet.copy(original);
+        modified.setAmount(rustedwarfare.custom.resource.ResourceType.CREDITS,
+                context.creditRatePerSecond());
+        for (Map.Entry<String, Double> override
+                : context.resourceRateOverridesPerSecond().entrySet()) {
+            rustedwarfare.custom.resource.ResourceType type =
+                    unit.unitMetadata.getResourceTypeByNameOrBuiltin(override.getKey());
+            if (type == null) {
+                throw new IllegalArgumentException("Unknown displayed generation resource '"
+                        + override.getKey() + "' for " + unit.unitMetadata.getInternalName());
+            }
+            modified.setAmount(type, override.getValue().doubleValue());
+        }
+        cir.setReturnValue(modified);
+    }
+
+    private io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationDisplayContext
+            rustedfabricapi$generationDisplayContext(double nativeCreditRate) {
+        io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationDisplayContext context =
+                new io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationDisplayContext(
+                        io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle.of(this),
+                        nativeCreditRate);
+        io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEconomyEvents
+                .MODIFY_PERIODIC_GENERATION_DISPLAY.invoker().modifyDisplay(context);
+        return context;
     }
 
     @Inject(method = "b(FZ)V", at = @At("HEAD"), require = 1)

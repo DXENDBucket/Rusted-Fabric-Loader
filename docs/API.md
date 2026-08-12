@@ -253,11 +253,17 @@ The first typed desktop layer contains:
   persistent components, and composable stat modifiers. `CustomUnitHandle` also exposes current
   type, position, team identity, and stable unit ID without mapped classes. Mutable synchronous
   event contexts expose portable number/boolean memory and event-tag helpers, so a gameplay mod can
-  implement global INI mechanics without importing mapped game classes.
+  implement global INI mechanics without importing mapped game classes. Runtime production modes
+  can call `CustomUnitHandle.refreshTeamEconomyStats()` after a mode transition so the native
+  cached team-income total is rebuilt using current display-rate modifiers.
 - `CustomUnitEconomyEvents.BEFORE_PERIODIC_GENERATION` runs only when the native
   `generation_delay` timer settles. A listener may replace the complete native amount and return
   `true`; returning `false` preserves normal generation and recorded-income behavior. This is the
   preferred hook for routed or transformed income because it does not add a per-frame timer.
+  `MODIFY_PERIODIC_GENERATION_DISPLAY` separately changes the query-only per-second rates used by
+  team income totals and selected-unit details. It can replace the credit rate and add or replace
+  built-in/local resource rates without changing settlement. Listeners must be side-effect free
+  because UI and statistics code may query the same unit more than once per frame.
 - `CustomUnitMessageEvents` exposes enriched `newMessage` data before configured INI actions and
   can consume a message. `CustomUnitUpdateEvents` supplies deterministic per-instance simulation
   updates; both use namespace-stable contexts suitable for exploded Java workspaces.

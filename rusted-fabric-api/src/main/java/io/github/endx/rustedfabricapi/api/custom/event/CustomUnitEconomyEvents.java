@@ -17,10 +17,27 @@ public final class CustomUnitEconomyEvents {
                 return cancelled;
             });
 
+    /**
+     * Modifies query-only generation rates used by team income totals and selected-unit details.
+     * Listeners must be side-effect free: the game can query these values multiple times per frame.
+     */
+    public static final RustedFabricEvent<ModifyPeriodicGenerationDisplay>
+            MODIFY_PERIODIC_GENERATION_DISPLAY =
+            RustedFabricEvent.create(listeners -> context -> {
+                for (ModifyPeriodicGenerationDisplay listener : listeners) {
+                    listener.modifyDisplay(context);
+                }
+            });
+
     private CustomUnitEconomyEvents() { }
 
     @FunctionalInterface
     public interface BeforePeriodicGeneration {
         boolean beforeGeneration(PeriodicGenerationContext context);
+    }
+
+    @FunctionalInterface
+    public interface ModifyPeriodicGenerationDisplay {
+        void modifyDisplay(PeriodicGenerationDisplayContext context);
     }
 }
