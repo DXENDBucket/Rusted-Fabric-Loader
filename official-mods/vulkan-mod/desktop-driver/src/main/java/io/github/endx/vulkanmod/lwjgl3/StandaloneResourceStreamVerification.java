@@ -91,7 +91,11 @@ public final class StandaloneResourceStreamVerification {
                 arena.put((byte) 255).put((byte) 0).put((byte) 0).put((byte) 255);
             }
             arena.flip();
-            driver.registerResourceUploadArena(99L, arena);
+            io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration registration =
+                    driver.registerResourceUploadArena(99L, arena);
+            if (!registration.hasNativeAddress() || registration.capacity() != arena.capacity()) {
+                throw new AssertionError("desktop arena did not expose stable native registration");
+            }
             ResourceStreamWriter mutations = new ResourceStreamWriter(5L, 0, 0L);
             ResourceStreamRecords.externalTextureTransfer(mutations,
                     ResourceStreamFormat.TEXTURE_REGION_UPDATE, target,
@@ -109,8 +113,15 @@ public final class StandaloneResourceStreamVerification {
                     ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, 55L);
             ResourceStreamRecords.textureReadback(read, target, 0, 0, 8, 8,
                     ResourceStreamFormat.FORMAT_RGBA8_UNORM);
-            VulkanResourceStreamResult readResult =
+            VulkanResourceStreamResult acceptedRead =
                     driver.submitResourceStream(read.toDirectBuffer());
+            if (!acceptedRead.completionPending()
+                    || acceptedRead.appliedSequence() != 7L
+                    || acceptedRead.completionId() != 55L) {
+                throw new AssertionError("desktop readback was not accepted asynchronously");
+            }
+            VulkanResourceStreamResult readResult =
+                    driver.awaitResourceStreamCompletion(55L, -1L);
             byte[] mutated = readResult.textureReadback().copyRgba();
             if (readResult.appliedSequence() != 7L || readResult.completionId() != 55L
                     || (mutated[0] & 255) != 0 || (mutated[1] & 255) != 255

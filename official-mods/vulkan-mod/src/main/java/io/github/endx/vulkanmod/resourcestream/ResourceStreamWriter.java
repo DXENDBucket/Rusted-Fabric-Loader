@@ -30,6 +30,8 @@ public final class ResourceStreamWriter {
         this.completionId = completionId;
     }
 
+    public long completionId() { return completionId; }
+
     public ResourceStreamWriter record(int type, int recordFlags,
                                        long handle, byte[] payload) {
         if (payload == null) throw new NullPointerException("payload");

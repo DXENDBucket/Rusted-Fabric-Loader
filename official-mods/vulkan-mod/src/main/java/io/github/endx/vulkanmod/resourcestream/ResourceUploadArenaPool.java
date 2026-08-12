@@ -1,12 +1,14 @@
 package io.github.endx.vulkanmod.resourcestream;
 
+import io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /** Bounded registered direct-memory arenas for large reliable resource payloads. */
 public final class ResourceUploadArenaPool implements AutoCloseable {
     public interface Registry {
-        void register(long arenaId, ByteBuffer memory);
+        VulkanResourceArenaRegistration register(long arenaId, ByteBuffer memory);
         void unregister(long arenaId);
     }
 
@@ -91,8 +93,16 @@ public final class ResourceUploadArenaPool implements AutoCloseable {
                 long id = nextArenaId++;
                 ByteBuffer memory = ByteBuffer.allocateDirect(capacity)
                         .order(ByteOrder.LITTLE_ENDIAN);
-                registry.register(id, memory.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN));
-                result[index] = new Arena(id, memory);
+                VulkanResourceArenaRegistration registration = registry.register(id,
+                        memory.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN));
+                try {
+                    validateRegistration(id, capacity, registration);
+                } catch (RuntimeException | Error invalid) {
+                    try { registry.unregister(id); }
+                    catch (RuntimeException cleanup) { invalid.addSuppressed(cleanup); }
+                    throw invalid;
+                }
+                result[index] = new Arena(id, memory, registration);
                 registered++;
             }
             return result;
@@ -123,6 +133,15 @@ public final class ResourceUploadArenaPool implements AutoCloseable {
         }
     }
 
+    private static void validateRegistration(long id, int capacity,
+                                               VulkanResourceArenaRegistration registration) {
+        if (registration == null) throw new IllegalStateException(
+                "resource arena registry returned no registration");
+        if (registration.arenaId() != id || registration.capacity() != capacity) {
+            throw new IllegalStateException("resource arena registry changed arena identity");
+        }
+    }
+
     @Override public synchronized void close() {
         if (closed) return;
         for (Arena arena : arenas) {
@@ -137,9 +156,13 @@ public final class ResourceUploadArenaPool implements AutoCloseable {
     private static final class Arena {
         private final long id;
         private final ByteBuffer memory;
+        private final VulkanResourceArenaRegistration registration;
         private long generation;
         private boolean owned;
-        private Arena(long id, ByteBuffer memory) { this.id = id; this.memory = memory; }
+        private Arena(long id, ByteBuffer memory,
+                      VulkanResourceArenaRegistration registration) {
+            this.id = id; this.memory = memory; this.registration = registration;
+        }
     }
 
     public static final class Lease implements AutoCloseable {
@@ -157,6 +180,10 @@ public final class ResourceUploadArenaPool implements AutoCloseable {
 
         public long arenaId() { requireOpen(); return arena.id; }
         public ByteBuffer buffer() { requireOpen(); return buffer; }
+        public VulkanResourceArenaRegistration registration() {
+            requireOpen();
+            return arena.registration;
+        }
 
         private void requireOpen() {
             if (closed) throw new IllegalStateException("resource arena lease is closed");

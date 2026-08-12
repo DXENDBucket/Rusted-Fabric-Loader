@@ -78,12 +78,17 @@ JNI stays narrow and coarse-grained. Expected operation groups are:
 - one-time frame/resource arena registration;
 - frame-arena acquire and one submit per frame;
 - reliable resource-stream submit;
-- rare synchronous completion/readback;
+- completion poll or bounded wait for rare readback/synchronization results;
 - statistics polling and shutdown.
 
 There is no JNI entry point for a quad, triangle, clip change, texture bind, uniform, or draw call.
 Native caches direct-buffer addresses during registration and validates the used length on every
 submit.
+
+The shared SPI already represents resource-arena registration as `(id, capacity, nativeAddress)`
+and separates ordered stream acceptance from `pending -> ready` completion. Android JNI must
+derive the address itself with `GetDirectBufferAddress`; the Java-visible address is diagnostic
+metadata, not a pointer API for mods.
 
 ## Thread model
 
@@ -278,4 +283,3 @@ The Android backend is complete only when:
 - pacing is stable at the selected tier without queue stuffing;
 - unsupported devices fall back with a useful diagnostic;
 - performance is measured on physical Adreno, Mali, and at least one additional driver family.
-

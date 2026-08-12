@@ -1,5 +1,7 @@
 package io.github.endx.vulkanmod.resourcestream;
 
+import io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,10 +15,13 @@ public final class ResourceUploadArenaVerification {
         Map<Long, ByteBuffer> registered = new LinkedHashMap<Long, ByteBuffer>();
         ResourceUploadArenaPool pool = new ResourceUploadArenaPool(
                 new ResourceUploadArenaPool.Registry() {
-                    @Override public synchronized void register(long id, ByteBuffer memory) {
+                    @Override public synchronized VulkanResourceArenaRegistration register(
+                            long id, ByteBuffer memory) {
                         require(memory.isDirect(), "registered upload arena is not direct");
                         require(registered.put(id, memory) == null,
                                 "duplicate upload arena registration");
+                        return new VulkanResourceArenaRegistration(
+                                id, memory.capacity(), 0x100000L * id);
                     }
                     @Override public synchronized void unregister(long id) {
                         require(registered.remove(id) != null,
@@ -26,6 +31,10 @@ public final class ResourceUploadArenaVerification {
         require(registered.size() == 2, "initial upload arenas were not registered");
         ResourceUploadArenaPool.Lease first = pool.acquire(16);
         ResourceUploadArenaPool.Lease second = pool.acquire(16);
+        require(first.registration().hasNativeAddress()
+                        && first.registration().nativeAddressAt(8L, 4)
+                        == first.registration().nativeAddress() + 8L,
+                "upload arena did not preserve its native registration");
         first.buffer().putInt(0, 0x12345678);
         require(registered.get(first.arenaId()).getInt(0) == 0x12345678,
                 "registry does not observe arena writes");

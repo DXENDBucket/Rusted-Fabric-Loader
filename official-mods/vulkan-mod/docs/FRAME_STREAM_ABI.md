@@ -116,6 +116,10 @@ for transfers of at least 256 KiB. The count, initial size, and threshold are di
 256 MiB each. A synchronous desktop acknowledgement guarantees that the driver has copied the
 referenced range into driver-owned direct memory, so the writer lease may then be reused. The
 future asynchronous decoder must delay that acknowledgement until it has stopped reading it.
+Registration now returns an opaque arena descriptor containing the verified ID, capacity, and an
+optional stable native base address. The LWJGL3 reference driver exposes a real address; shared
+Java code only range-checks it and never dereferences it. A JNI backend obtains and owns the same
+address through `GetDirectBufferAddress` for the full registration lifetime.
 
 Destruction is logically ordered but physically deferred until no queued frame references the
 handle and all relevant native GPU frame slots have completed.
@@ -500,6 +504,12 @@ The following operations force ordered progress and cannot be dropped:
 
 The common fast path stays asynchronous. A synchronization point carries a 64-bit completion ID;
 native signals success or a structured failure only after its documented dependency is complete.
+Submission acknowledgement and completion are separate SPI states. `pending(sequence, id)` means
+the ordered records were accepted but their result is not ready; `poll` is non-blocking and
+`await(id, timeout)` is the bounded blocking path. The desktop reference driver now dispatches
+texture readback to a daemon completion worker and performs the actual Vulkan wait under the
+driver lock. It waits on a fence dedicated to that readback submission instead of idling the whole
+device/queue, so this state transition is covered rather than simulated by an immediate result.
 
 ## Decoder validation
 
@@ -551,8 +561,10 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
    create/upload/full update/render-target create/destroy and shader create/destroy records, maps
    them to native Vulkan resources, and rejects a FrameStream whose `requiredResourceSequence` is
    not applied. Registered bounded external upload arenas, ordered partial RGBA8 updates, and
-   completion-ID texture readback results are live and covered by real-GPU tests. Native/JNI arena
-   address registration, asynchronous acknowledgements, and partial readback remain.
+   completion-ID texture readback results are live and covered by real-GPU tests. Arena
+   registration returns a stable native-address descriptor, and desktop readback exercises the
+   accepted/pending/ready completion protocol on a separate worker. The actual JNI registration
+   calls, asynchronous resource decoding/arena release, and partial readback remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 

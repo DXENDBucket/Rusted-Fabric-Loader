@@ -7,6 +7,7 @@ import io.github.endx.vulkanmod.resourcestream.ResourceUploadArenaPool;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
+import io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,17 +22,31 @@ public final class ResourceStreamClientVerification {
     public static void main(String[] arguments) {
         List<ResourceStreamReader> streams = new ArrayList<ResourceStreamReader>();
         Map<Long, ByteBuffer> arenas = new LinkedHashMap<Long, ByteBuffer>();
-        ResourceStreamClient client = new ResourceStreamClient(bytes -> {
-            ResourceStreamReader stream = ResourceStreamReader.read(bytes);
-            streams.add(stream);
-            if (stream.completionId() != 0L) {
-                return VulkanResourceStreamResult.textureReadback(stream.lastSequence(),
-                        stream.completionId(), new VulkanTextureData(2, 3, new byte[24]));
+        ResourceStreamClient client = new ResourceStreamClient(
+                new ResourceStreamClient.Submitter() {
+            private long pendingSequence;
+            @Override public VulkanResourceStreamResult submit(ByteBuffer bytes) {
+                ResourceStreamReader stream = ResourceStreamReader.read(bytes);
+                streams.add(stream);
+                if (stream.completionId() != 0L) {
+                    pendingSequence = stream.lastSequence();
+                    return VulkanResourceStreamResult.pending(stream.lastSequence(),
+                            stream.completionId());
+                }
+                return VulkanResourceStreamResult.applied(stream.lastSequence());
             }
-            return VulkanResourceStreamResult.applied(stream.lastSequence());
+            @Override public VulkanResourceStreamResult awaitCompletion(
+                    long completionId, long timeoutNanos) {
+                require(timeoutNanos == -1L, "readback did not request an unbounded wait");
+                return VulkanResourceStreamResult.textureReadback(pendingSequence,
+                        completionId, new VulkanTextureData(2, 3, new byte[24]));
+            }
         }, new ResourceUploadArenaPool.Registry() {
-            @Override public void register(long arenaId, ByteBuffer memory) {
+            @Override public VulkanResourceArenaRegistration register(
+                    long arenaId, ByteBuffer memory) {
                 require(arenas.put(arenaId, memory) == null, "duplicate registered arena");
+                return new VulkanResourceArenaRegistration(
+                        arenaId, memory.capacity(), 0L);
             }
             @Override public void unregister(long arenaId) {
                 require(arenas.remove(arenaId) != null, "unknown unregistered arena");

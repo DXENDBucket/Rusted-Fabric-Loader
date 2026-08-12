@@ -31,6 +31,7 @@ import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
+import io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -118,6 +119,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -207,6 +212,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     private SurfaceSession surfaceSession;
     private final Map<Long, ByteBuffer> resourceUploadArenas =
             new LinkedHashMap<Long, ByteBuffer>();
+    private final Map<Long, VulkanResourceStreamResult> readyResourceCompletions =
+            new LinkedHashMap<Long, VulkanResourceStreamResult>();
+    private final Map<Long, Throwable> failedResourceCompletions =
+            new LinkedHashMap<Long, Throwable>();
+    private final Set<Long> outstandingResourceCompletions =
+            new LinkedHashSet<Long>();
+    private final ExecutorService resourceCompletionExecutor =
+            Executors.newSingleThreadExecutor(task -> {
+                Thread worker = new Thread(task, "RustedVK resource completion");
+                worker.setDaemon(true);
+                return worker;
+            });
 
     @Override public String name() { return "LWJGL 3 Vulkan"; }
 
@@ -456,12 +473,105 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             throw new IllegalStateException("Vulkan surface has not been created");
         }
         if (resourceStream == null) throw new NullPointerException("resourceStream");
-        return surfaceSession.submitResourceStream(ResourceStreamReader.read(resourceStream),
-                resourceUploadArenas);
+        VulkanResourceStreamResult result = surfaceSession.submitResourceStream(
+                ResourceStreamReader.read(resourceStream), resourceUploadArenas);
+        if (result.completionPending()) scheduleResourceCompletion(result.completionId());
+        return result;
     }
 
-    @Override public synchronized void registerResourceUploadArena(long arenaId,
-                                                                    ByteBuffer memory) {
+    private void scheduleResourceCompletion(long completionId) {
+        if (!outstandingResourceCompletions.add(completionId)) {
+            throw new IllegalArgumentException("duplicate outstanding completion ID");
+        }
+        try {
+            resourceCompletionExecutor.execute(() -> {
+                synchronized (Lwjgl3VulkanDriver.this) {
+                    try {
+                        if (surfaceSession == null) throw new IllegalStateException(
+                                "Vulkan surface closed before resource completion");
+                        VulkanResourceStreamResult result =
+                                surfaceSession.completeResourceStream(completionId);
+                        readyResourceCompletions.put(completionId, result);
+                    } catch (Throwable failure) {
+                        failedResourceCompletions.put(completionId, failure);
+                    } finally {
+                        Lwjgl3VulkanDriver.this.notifyAll();
+                    }
+                }
+            });
+        } catch (RuntimeException rejected) {
+            outstandingResourceCompletions.remove(completionId);
+            throw rejected;
+        }
+    }
+
+    @Override public synchronized VulkanResourceStreamResult pollResourceStreamCompletion(
+            long completionId) {
+        requireCompletionId(completionId);
+        throwCompletionFailure(completionId);
+        VulkanResourceStreamResult result = readyResourceCompletions.remove(completionId);
+        if (result != null) {
+            outstandingResourceCompletions.remove(completionId);
+            return result;
+        }
+        if (!outstandingResourceCompletions.contains(completionId)) {
+            throw new IllegalArgumentException("unknown resource completion ID " + completionId);
+        }
+        return null;
+    }
+
+    @Override public synchronized VulkanResourceStreamResult awaitResourceStreamCompletion(
+            long completionId, long timeoutNanos) {
+        requireCompletionId(completionId);
+        if (timeoutNanos < -1L) throw new IllegalArgumentException("invalid completion timeout");
+        long started = timeoutNanos < 0L ? 0L : System.nanoTime();
+        for (;;) {
+            throwCompletionFailure(completionId);
+            VulkanResourceStreamResult result = readyResourceCompletions.remove(completionId);
+            if (result != null) {
+                outstandingResourceCompletions.remove(completionId);
+                return result;
+            }
+            if (!outstandingResourceCompletions.contains(completionId)) {
+                throw new IllegalArgumentException(
+                        "unknown resource completion ID " + completionId);
+            }
+            if (timeoutNanos == 0L) return null;
+            try {
+                if (timeoutNanos < 0L) {
+                    wait();
+                } else {
+                    long elapsed = System.nanoTime() - started;
+                    long remaining = timeoutNanos - elapsed;
+                    if (remaining <= 0L) return null;
+                    long millis = remaining / 1_000_000L;
+                    int nanos = (int) (remaining % 1_000_000L);
+                    wait(millis, nanos);
+                }
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(
+                        "interrupted while waiting for resource completion", interrupted);
+            }
+        }
+    }
+
+    private static void requireCompletionId(long completionId) {
+        if (completionId <= 0L) throw new IllegalArgumentException(
+                "completion ID must be positive");
+    }
+
+    private void throwCompletionFailure(long completionId) {
+        Throwable failure = failedResourceCompletions.remove(completionId);
+        if (failure != null) {
+            outstandingResourceCompletions.remove(completionId);
+            throw new IllegalStateException(
+                    "asynchronous ResourceStream completion failed", failure);
+        }
+    }
+
+    @Override public synchronized VulkanResourceArenaRegistration registerResourceUploadArena(
+            long arenaId, ByteBuffer memory) {
         if (arenaId <= 0L) throw new IllegalArgumentException("resource arena ID must be positive");
         if (memory == null || !memory.isDirect()) {
             throw new IllegalArgumentException("resource arena must be a direct buffer");
@@ -473,6 +583,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         registered.clear();
         resourceUploadArenas.put(arenaId, registered.asReadOnlyBuffer()
                 .order(ByteOrder.LITTLE_ENDIAN));
+        return new VulkanResourceArenaRegistration(arenaId, registered.capacity(),
+                MemoryUtil.memAddress(registered));
     }
 
     @Override public synchronized void unregisterResourceUploadArena(long arenaId) {
@@ -491,6 +603,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             surfaceSession = null;
         }
         resourceUploadArenas.clear();
+        readyResourceCompletions.clear();
+        failedResourceCompletions.clear();
+        outstandingResourceCompletions.clear();
+        resourceCompletionExecutor.shutdownNow();
+        notifyAll();
     }
 
     synchronized long frameGraphQueueSubmissionCount() {
@@ -1415,6 +1532,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 pendingResourceTextures =
                 new LinkedHashMap<Long, ResourceStreamRecords.TextureDescriptor>();
         private final Map<Long, Long> resourceShaders = new LinkedHashMap<Long, Long>();
+        private final Map<Long, PendingResourceReadback> pendingResourceReadbacks =
+                new LinkedHashMap<Long, PendingResourceReadback>();
         private long appliedResourceSequence;
         private boolean resourceStreamActive;
         private Throwable resourceStreamFault;
@@ -1637,9 +1756,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             resourceStreamActive = true;
             try {
-                VulkanTextureData readback = null;
+                PendingResourceReadback readback = null;
                 for (int index = 0; index < stream.recordCount(); index++) {
-                    VulkanTextureData recordResult = applyResourceRecord(stream, index, arenas);
+                    PendingResourceReadback recordResult =
+                            applyResourceRecord(stream, index, arenas);
                     if (recordResult != null) {
                         if (readback != null) throw new IllegalArgumentException(
                                 "ResourceStream contains multiple completion payloads");
@@ -1653,8 +1773,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             + ".." + stream.lastSequence());
                 }
                 if (readback != null) {
-                    return VulkanResourceStreamResult.textureReadback(appliedResourceSequence,
-                            stream.completionId(), readback);
+                    if (pendingResourceReadbacks.put(stream.completionId(),
+                            readback.withSequence(appliedResourceSequence)) != null) {
+                        throw new IllegalArgumentException("duplicate pending completion ID");
+                    }
+                    return VulkanResourceStreamResult.pending(appliedResourceSequence,
+                            stream.completionId());
                 }
                 if (stream.completionId() != 0L) {
                     return VulkanResourceStreamResult.completed(appliedResourceSequence,
@@ -1667,8 +1791,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private VulkanTextureData applyResourceRecord(ResourceStreamReader stream, int index,
-                                                       Map<Long, ByteBuffer> arenas) {
+        private PendingResourceReadback applyResourceRecord(ResourceStreamReader stream, int index,
+                                                             Map<Long, ByteBuffer> arenas) {
             ResourceStreamReader.Record record = stream.record(index);
             long logical = record.handle();
             switch (record.type()) {
@@ -1760,7 +1884,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         throw new UnsupportedOperationException(
                                 "partial ResourceStream readback is not implemented");
                     }
-                    return readTexture(binding.rawHandle);
+                    return new PendingResourceReadback(binding.rawHandle, 0L);
                 }
                 case ResourceStreamFormat.FLUSH:
                 case ResourceStreamFormat.LIFECYCLE_BARRIER:
@@ -1768,6 +1892,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 default:
                     return null; // Unknown optional records were validated and skipped.
             }
+        }
+
+        private VulkanResourceStreamResult completeResourceStream(long completionId) {
+            PendingResourceReadback request = pendingResourceReadbacks.remove(completionId);
+            if (request == null) throw new IllegalArgumentException(
+                    "unknown pending resource completion " + completionId);
+            VulkanTextureData texture = readTexture(request.rawTextureHandle);
+            return VulkanResourceStreamResult.textureReadback(
+                    request.appliedSequence, completionId, texture);
         }
 
         private static void requireFullTextureTransfer(
@@ -2779,10 +2912,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 throw new IllegalArgumentException(
                         "texture " + textureHandle + " is not a readable render target");
             }
-            check(vkDeviceWaitIdle(device), "vkDeviceWaitIdle(texture readback)");
             int byteCount = Math.multiplyExact(Math.multiplyExact(
                     target.width, target.height), 4);
             try (MemoryStack stack = MemoryStack.stackPush()) {
+                // The shared command buffer and texture staging allocation must no longer be in
+                // flight, but unrelated future queue work need not be held behind a device idle.
+                waitForAllSubmissionFences(stack);
                 BufferAllocation readback = createBufferAllocation(stack, byteCount,
                         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -2835,10 +2970,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             "vkEndCommandBuffer(render-target readback)");
                     VkSubmitInfo submit = VkSubmitInfo.calloc(stack).sType$Default()
                             .pCommandBuffers(stack.pointers(command.address()));
-                    check(vkQueueSubmit(graphicsQueue, submit, VK_NULL_HANDLE),
-                            "vkQueueSubmit(render-target readback)");
-                    check(vkQueueWaitIdle(graphicsQueue),
-                            "vkQueueWaitIdle(render-target readback)");
+                    LongBuffer fenceHandle = stack.mallocLong(1);
+                    VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack).sType$Default();
+                    check(vkCreateFence(device, fenceInfo, null, fenceHandle),
+                            "vkCreateFence(render-target readback)");
+                    long readbackFence = fenceHandle.get(0);
+                    try {
+                        check(vkQueueSubmit(graphicsQueue, submit, readbackFence),
+                                "vkQueueSubmit(render-target readback)");
+                        check(vkWaitForFences(device, stack.longs(readbackFence), true, -1L),
+                                "vkWaitForFences(render-target readback)");
+                    } finally {
+                        vkDestroyFence(device, readbackFence, null);
+                    }
                     PointerBuffer mapped = stack.mallocPointer(1);
                     check(vkMapMemory(device, readback.memory, 0, byteCount, 0, mapped),
                             "vkMapMemory(render-target readback)");
@@ -4326,6 +4470,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             textures.clear();
             pendingTextureUploads.clear();
+            pendingResourceReadbacks.clear();
             while (!retiredTextures.isEmpty()) {
                 destroyTextureResource(retiredTextures.removeFirst(), false);
             }
@@ -4387,6 +4532,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 this.width = width;
                 this.height = height;
                 this.renderTarget = renderTarget;
+            }
+        }
+
+        private static final class PendingResourceReadback {
+            private final long rawTextureHandle;
+            private final long appliedSequence;
+
+            private PendingResourceReadback(long rawTextureHandle, long appliedSequence) {
+                this.rawTextureHandle = rawTextureHandle;
+                this.appliedSequence = appliedSequence;
+            }
+
+            private PendingResourceReadback withSequence(long sequence) {
+                return new PendingResourceReadback(rawTextureHandle, sequence);
             }
         }
 

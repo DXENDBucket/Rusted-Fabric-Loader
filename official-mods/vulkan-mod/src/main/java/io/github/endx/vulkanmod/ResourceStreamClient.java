@@ -14,9 +14,16 @@ import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 
 import java.nio.ByteBuffer;
 
-/** Shared synchronous reference client for the reliable RustedVK resource channel. */
+/** Shared ordered client for the reliable RustedVK resource channel. */
 final class ResourceStreamClient implements AutoCloseable {
-    interface Submitter { VulkanResourceStreamResult submit(ByteBuffer stream); }
+    interface Submitter {
+        VulkanResourceStreamResult submit(ByteBuffer stream);
+        default VulkanResourceStreamResult awaitCompletion(long completionId,
+                                                            long timeoutNanos) {
+            throw new UnsupportedOperationException(
+                    "asynchronous ResourceStream completions are not supported");
+        }
+    }
 
     private static final int DEFAULT_EXTERNAL_THRESHOLD = 256 * 1024;
 
@@ -198,7 +205,8 @@ final class ResourceStreamClient implements AutoCloseable {
                 ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, completionId);
         ResourceStreamRecords.textureReadback(writer, handle, 0, 0,
                 metadata.width, metadata.height, ResourceStreamFormat.FORMAT_RGBA8_UNORM);
-        VulkanResourceStreamResult result = submit(reservation, writer);
+        VulkanResourceStreamResult result = resolveCompletion(
+                submit(reservation, writer), completionId);
         if (result.completionId() != completionId || result.textureReadback() == null) {
             fault = new IllegalStateException("ResourceStream readback completion mismatch");
             throw fault;
@@ -253,8 +261,34 @@ final class ResourceStreamClient implements AutoCloseable {
                     + " but submission ended at " + reservation.last);
             throw fault;
         }
+        if (result.completionId() != writer.completionId()) {
+            fault = new IllegalStateException("ResourceStream backend acknowledged completion "
+                    + result.completionId() + " but submission requested "
+                    + writer.completionId());
+            throw fault;
+        }
         sequences.markApplied(reservation);
         return result;
+    }
+
+    private VulkanResourceStreamResult resolveCompletion(VulkanResourceStreamResult accepted,
+                                                          long completionId) {
+        if (!accepted.completionPending()) return accepted;
+        VulkanResourceStreamResult completed;
+        try {
+            completed = submitter.awaitCompletion(completionId, -1L);
+        } catch (RuntimeException failure) {
+            fault = failure;
+            throw failure;
+        }
+        if (completed == null || completed.completionPending()
+                || completed.completionId() != completionId
+                || completed.appliedSequence() < accepted.appliedSequence()) {
+            fault = new IllegalStateException(
+                    "ResourceStream backend returned an invalid completion result");
+            throw fault;
+        }
+        return completed;
     }
 
     private void requireHealthy() {

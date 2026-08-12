@@ -101,12 +101,24 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default VulkanSurfaceInfo presentFrameStream(ByteBuffer frameStream) {
         throw new UnsupportedOperationException("FrameStream submission is not supported");
     }
-    /** Applies one complete reliable ResourceStream and returns its final applied sequence. */
+    /** Accepts one complete reliable ResourceStream and returns its ordered acknowledgement. */
     default VulkanResourceStreamResult submitResourceStream(ByteBuffer resourceStream) {
         throw new UnsupportedOperationException("ResourceStream submission is not supported");
     }
+    /** Polls a previously accepted asynchronous completion, returning null while it is pending. */
+    default VulkanResourceStreamResult pollResourceStreamCompletion(long completionId) {
+        throw new UnsupportedOperationException("asynchronous resource completions are not supported");
+    }
+    /** Waits for one asynchronous completion. A negative timeout means an unbounded wait. */
+    default VulkanResourceStreamResult awaitResourceStreamCompletion(long completionId,
+                                                                      long timeoutNanos) {
+        VulkanResourceStreamResult result = pollResourceStreamCompletion(completionId);
+        if (result != null) return result;
+        throw new UnsupportedOperationException("blocking resource completions are not supported");
+    }
     /** Registers stable direct memory referenced by external ResourceStream upload records. */
-    default void registerResourceUploadArena(long arenaId, ByteBuffer memory) {
+    default VulkanResourceArenaRegistration registerResourceUploadArena(long arenaId,
+                                                                          ByteBuffer memory) {
         throw new UnsupportedOperationException("external resource arenas are not supported");
     }
     /** Unregisters an upload arena only after all submissions referencing it have completed. */

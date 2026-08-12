@@ -135,15 +135,22 @@ final class VulkanDriverLoader {
             this.loader = loader;
             this.resources = driver.supportsResourceStream()
                     && !Boolean.getBoolean("rusted.fabric.vulkan.objectResources")
-                    ? new ResourceStreamClient(stream -> invoke(
-                            () -> driver.submitResourceStream(stream)),
+                    ? new ResourceStreamClient(new ResourceStreamClient.Submitter() {
+                                @Override public io.github.endx.vulkanmod.spi.VulkanResourceStreamResult
+                                        submit(java.nio.ByteBuffer stream) {
+                                    return invoke(() -> driver.submitResourceStream(stream));
+                                }
+                                @Override public io.github.endx.vulkanmod.spi.VulkanResourceStreamResult
+                                        awaitCompletion(long completionId, long timeoutNanos) {
+                                    return invoke(() -> driver.awaitResourceStreamCompletion(
+                                            completionId, timeoutNanos));
+                                }
+                            },
                             new io.github.endx.vulkanmod.resourcestream.ResourceUploadArenaPool.Registry() {
-                                @Override public void register(long arenaId,
-                                                               java.nio.ByteBuffer memory) {
-                                    invoke(() -> {
-                                        driver.registerResourceUploadArena(arenaId, memory);
-                                        return null;
-                                    });
+                                @Override public io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration
+                                        register(long arenaId, java.nio.ByteBuffer memory) {
+                                    return invoke(() -> driver.registerResourceUploadArena(
+                                            arenaId, memory));
                                 }
                                 @Override public void unregister(long arenaId) {
                                     invoke(() -> {
