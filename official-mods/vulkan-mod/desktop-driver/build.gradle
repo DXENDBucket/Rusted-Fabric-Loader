@@ -65,6 +65,15 @@ tasks.register('verifyLargeNativeBatchFrame', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneLargeBatchVerification')
 }
 
+tasks.register('verifySpriteRunSubmission', JavaExec) {
+    group = 'verification'
+    description = 'Presents 12,000 transformed sprites as one recycled Java command and batch.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneSpriteRunVerification')
+}
+
 tasks.register('verifyCustomVertexPipeline', JavaExec) {
     group = 'verification'
     description = 'Executes a translated custom vertex shader on the real Vulkan device.'

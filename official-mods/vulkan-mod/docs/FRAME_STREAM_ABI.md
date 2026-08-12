@@ -76,6 +76,8 @@ The current desktop driver's results define compatibility. In particular:
   batch compatibility;
 - a Java textured-quad batch may contribute many indexed quads to one ordinary version-1 batch
   record; this reduces producer command objects without adding a text-specific wire record;
+- pooled ordinary sprite collection may also use one run command with per-quad tint and transform;
+  only texture/material/clip are shared, and an intervening draw terminates the run;
 - only adjacent compatible draws become one batch.
 
 Batching moves into the shared encoder before the Android decoder is considered complete. This

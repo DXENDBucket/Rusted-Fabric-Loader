@@ -4,6 +4,7 @@ import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
+import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 
 /** Real-device smoke test for native render-target readback and channel normalization. */
 public final class StandaloneVulkanReadbackVerification {
@@ -29,20 +30,37 @@ public final class StandaloneVulkanReadbackVerification {
                     expect("blue", 128, rgba[offset + 2] & 255);
                     expect("alpha", 255, rgba[offset + 3] & 255);
                 }
-                driver.renderToTexture(target, VulkanFrameCommands.builder(4, 4)
+                VulkanDrawState translated = VulkanDrawState.transformed(
+                        VulkanTransform2D.translation(2.0f, 0.0f));
+                VulkanFrameCommands spriteRun = VulkanFrameCommands.pooledBuilder(4, 4)
                         .clear(0.0f, 0.0f, 0.0f, 1.0f)
-                        .texturedQuadBatch(white, 0.0f, 0.0f,
-                                new float[] {0.0f, 0.0f, 4.0f, 4.0f,
-                                        0.0f, 0.0f, 1.0f, 1.0f},
+                        .texturedQuad(white, 0.0f, 0.0f, 2.0f, 4.0f,
+                                0.0f, 0.0f, 1.0f, 1.0f,
                                 1.0f, 0.0f, 0.0f, 1.0f, VulkanDrawState.DEFAULT)
-                        .build());
+                        .texturedQuad(white, 0.0f, 0.0f, 2.0f, 4.0f,
+                                0.0f, 0.0f, 1.0f, 1.0f,
+                                0.0f, 1.0f, 0.0f, 1.0f, translated)
+                        .build();
+                if (spriteRun.commandCount() != 1 || spriteRun.texturedQuadRunCount() != 1
+                        || spriteRun.texturedQuadRunQuadCount() != 2) {
+                    throw new AssertionError("sprite run was not compacted before object submit");
+                }
+                try {
+                    driver.renderToTexture(target, spriteRun);
+                } finally {
+                    spriteRun.releasePooledCommands();
+                }
                 byte[] batched = driver.readTexture(target).copyRgba();
-                for (int pixel = 0; pixel < 16; pixel++) {
-                    int offset = pixel * 4;
-                    expect("batched red", 255, batched[offset] & 255);
-                    expect("batched green", 0, batched[offset + 1] & 255);
-                    expect("batched blue", 0, batched[offset + 2] & 255);
-                    expect("batched alpha", 255, batched[offset + 3] & 255);
+                for (int y = 0; y < 4; y++) {
+                    for (int x = 0; x < 4; x++) {
+                        int offset = (y * 4 + x) * 4;
+                        expect("sprite run red", x < 2 ? 255 : 0,
+                                batched[offset] & 255);
+                        expect("sprite run green", x < 2 ? 0 : 255,
+                                batched[offset + 1] & 255);
+                        expect("sprite run blue", 0, batched[offset + 2] & 255);
+                        expect("sprite run alpha", 255, batched[offset + 3] & 255);
+                    }
                 }
                 byte[] replacement = new byte[4 * 4 * 4];
                 for (int pixel = 0; pixel < 16; pixel++) {

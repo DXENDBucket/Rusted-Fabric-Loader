@@ -174,6 +174,10 @@ Android GPUs are commonly tile based. The backend therefore prioritizes:
 - compact vertex formats and reduced precision only after visual/profiling validation;
 - pipeline and shader caches keyed by device, driver, ABI, and shader version.
 
+The shared Java producer already folds adjacent ordinary sprites into recyclable runs while
+retaining per-sprite tint and affine transforms. Android consumes their ordinary indexed
+FrameStream batches and must not rebuild per-sprite JNI calls or object metadata.
+
 Global texture sorting remains forbidden because Rusted Warfare relies on ordered alpha blending.
 Only adjacent compatible work is combined.
 

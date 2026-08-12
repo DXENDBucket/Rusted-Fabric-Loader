@@ -15,6 +15,8 @@ final class VulkanFrameCommandPool {
             new ArrayDeque<VulkanTexturedQuad>();
     private final ArrayDeque<VulkanTexturedQuadBatch> texturedQuadBatches =
             new ArrayDeque<VulkanTexturedQuadBatch>();
+    private final ArrayDeque<VulkanTexturedQuadRun> texturedQuadRuns =
+            new ArrayDeque<VulkanTexturedQuadRun>();
     private final ArrayDeque<VulkanColoredTriangle> coloredTriangles =
             new ArrayDeque<VulkanColoredTriangle>();
     private final ArrayDeque<VulkanColoredLine> coloredLines =
@@ -51,6 +53,11 @@ final class VulkanFrameCommandPool {
         return command == null ? new VulkanTexturedQuadBatch() : command;
     }
 
+    VulkanTexturedQuadRun acquireTexturedQuadRun() {
+        VulkanTexturedQuadRun command = texturedQuadRuns.pollFirst();
+        return command == null ? new VulkanTexturedQuadRun() : command;
+    }
+
     VulkanColoredTriangle acquireColoredTriangle() {
         VulkanColoredTriangle command = coloredTriangles.pollFirst();
         return command == null ? new VulkanColoredTriangle() : command;
@@ -74,6 +81,7 @@ final class VulkanFrameCommandPool {
     void recycle(VulkanColoredQuad command) { coloredQuads.addFirst(command); }
     void recycle(VulkanTexturedQuad command) { texturedQuads.addFirst(command); }
     void recycle(VulkanTexturedQuadBatch command) { texturedQuadBatches.addFirst(command); }
+    void recycle(VulkanTexturedQuadRun command) { texturedQuadRuns.addFirst(command); }
     void recycle(VulkanColoredTriangle command) { coloredTriangles.addFirst(command); }
     void recycle(VulkanColoredLine command) { coloredLines.addFirst(command); }
     void recycle(VulkanColoredCircle command) { coloredCircles.addFirst(command); }

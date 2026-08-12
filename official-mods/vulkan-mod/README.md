@@ -85,7 +85,11 @@ platform-driver submission, while the ordinary public `builder(...)` path remain
 snapshot for third-party drivers and tests. Typed compatibility lists are generated lazily from the
 single ordered command stream instead of five eagerly copied lists. Consecutive equivalent
 draw states are also shared, and desktop vertex packing writes colored and textured vertices in one
-command traversal. Driver-side frame-upload and draw-batch metadata are retained at peak demand and
+command traversal. The pooled builder now collapses adjacent ordinary sprites with the same
+texture/material/clip into a single recyclable run even when their tint and affine transforms
+differ. Its primitive arrays remain at peak capacity across frames, and an intervening draw always
+ends the run so alpha ordering is unchanged. Driver-side frame-upload and draw-batch metadata are
+retained at peak demand and
 recycled after command recording; a large-batch regression verifies that repeated 20,000-command
 frames do not allocate more metadata after their first frame. LibRocket geometry also reuses one
 set of triangle scratch arrays for an entire geometry submission instead of allocating them per
@@ -98,6 +102,7 @@ the pass-local vertex and index ranges into the same persistently mapped frame s
 Atlas text additionally stores reusable relative glyph geometry and records one Java command per
 consecutive atlas page rather than one command object per glyph. Cumulative `text.runs`,
 `text.glyphQuads`, and `text.batchCommands` counters expose the achieved compaction to the profiler.
+Ordinary sprite compaction is reported separately as `sprite.quads` and `sprite.runCommands`.
 
 The pre-OpenGL native bootstrap reproduces the original loading screen directly through
 `GraphicsEngine`: black background, centered game logo, animated `Loading` dots and the live loader
@@ -155,8 +160,10 @@ performance runs remain unaffected.
 4. Persistently mapped main/offscreen vertex/index rings, asynchronous standalone child submissions,
    combined frame-graph submission, reusable Java frame-command arenas and recyclable driver-side
    draw-batch metadata are complete. Indexed quad batches now reduce repeated vertices without
-   changing order. Homogeneous textured-quad runs can now cross the Java/FrameStream boundary as a
-   single command. Next, continue widening compatible non-text batches and profile descriptors.
+   changing order. Ordinary sprites with independent transforms/tints can now cross the
+   Java/FrameStream boundary as a single recycled run command; a 12,000-sprite multi-frame GPU
+   regression verifies stable producer, encoder, and driver metadata after warm-up. Next, continue
+   widening compatible non-text batches and profile descriptors.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
    the common atlas is ready for an Android FreeType/Skia implementation. Next, add that Android

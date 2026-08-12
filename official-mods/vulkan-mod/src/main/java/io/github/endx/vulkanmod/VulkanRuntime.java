@@ -85,6 +85,8 @@ public final class VulkanRuntime {
     private static long textRunsSubmitted;
     private static long textGlyphQuadsSubmitted;
     private static long textBatchCommandsSubmitted;
+    private static long spriteQuadsSubmitted;
+    private static long spriteRunCommandsSubmitted;
 
     private enum StartupPhase {
         MOD_INITIALIZED,
@@ -489,6 +491,10 @@ public final class VulkanRuntime {
     }
 
     private static VulkanSurfaceInfo presentSubmission(VulkanFrameSubmission submission) {
+        countSpriteRuns(submission.presentationFrame());
+        for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
+            countSpriteRuns(pass.frame());
+        }
         if (!activeDriver.supportsFrameStream()
                 || Boolean.getBoolean("rusted.fabric.vulkan.objectSubmission")) {
             return activeDriver.presentFrame(submission);
@@ -535,6 +541,11 @@ public final class VulkanRuntime {
                         interrupted);
             }
         }
+    }
+
+    private static void countSpriteRuns(VulkanFrameCommands frame) {
+        spriteQuadsSubmitted += frame.texturedQuadRunQuadCount();
+        spriteRunCommandsSubmitted += frame.texturedQuadRunCount();
     }
 
     private static int configuredFrameArenaBytes() {
@@ -1350,6 +1361,8 @@ public final class VulkanRuntime {
         statistics.put("text.runs", textRunsSubmitted);
         statistics.put("text.glyphQuads", textGlyphQuadsSubmitted);
         statistics.put("text.batchCommands", textBatchCommandsSubmitted);
+        statistics.put("sprite.quads", spriteQuadsSubmitted);
+        statistics.put("sprite.runCommands", spriteRunCommandsSubmitted);
         return java.util.Collections.unmodifiableMap(statistics);
     }
 
@@ -1441,6 +1454,8 @@ public final class VulkanRuntime {
         textRunsSubmitted = 0L;
         textGlyphQuadsSubmitted = 0L;
         textBatchCommandsSubmitted = 0L;
+        spriteQuadsSubmitted = 0L;
+        spriteRunCommandsSubmitted = 0L;
         nativeFrameClock.clear();
     }
 

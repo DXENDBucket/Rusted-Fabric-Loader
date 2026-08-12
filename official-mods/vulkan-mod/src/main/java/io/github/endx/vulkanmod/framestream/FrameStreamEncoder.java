@@ -15,6 +15,7 @@ import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuadBatch;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuadRun;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 
@@ -633,7 +634,8 @@ public final class FrameStreamEncoder {
     }
 
     private static int encodedVertexCount(VulkanDrawCommand command) {
-        return command instanceof VulkanTexturedQuadBatch
+        return (command instanceof VulkanTexturedQuadBatch
+                || command instanceof VulkanTexturedQuadRun)
                 ? command.vertexCount()
                 : isIndexedQuad(command) ? QUAD_VERTEX_COUNT : command.vertexCount();
     }
@@ -644,12 +646,16 @@ public final class FrameStreamEncoder {
 
     private static boolean isIndexedQuad(VulkanDrawCommand command) {
         return command instanceof VulkanColoredQuad || command instanceof VulkanTexturedQuad
-                || command instanceof VulkanTexturedQuadBatch;
+                || command instanceof VulkanTexturedQuadBatch
+                || command instanceof VulkanTexturedQuadRun;
     }
 
     private static int indexedQuadCount(VulkanDrawCommand command) {
-        return command instanceof VulkanTexturedQuadBatch
-                ? ((VulkanTexturedQuadBatch) command).quadCount() : 1;
+        if (command instanceof VulkanTexturedQuadBatch) {
+            return ((VulkanTexturedQuadBatch) command).quadCount();
+        }
+        return command instanceof VulkanTexturedQuadRun
+                ? ((VulkanTexturedQuadRun) command).quadCount() : 1;
     }
 
     private static void putQuadIndices(ByteBuffer output, int baseVertex, int quadCount) {
@@ -685,6 +691,24 @@ public final class FrameStreamEncoder {
                     quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), right, top,
                     quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
+            return;
+        }
+        if (command instanceof VulkanTexturedQuadRun) {
+            VulkanTexturedQuadRun run = (VulkanTexturedQuadRun) command;
+            for (int quad = 0; quad < run.quadCount(); quad++) {
+                float left = run.x(quad);
+                float right = left + run.width(quad);
+                float top = run.y(quad);
+                float bottom = top + run.height(quad);
+                putTexturedRun(output, frame, run, quad, layout, left, top,
+                        run.u0(quad), run.v0(quad), ndcScaleX, ndcScaleY);
+                putTexturedRun(output, frame, run, quad, layout, left, bottom,
+                        run.u0(quad), run.v1(quad), ndcScaleX, ndcScaleY);
+                putTexturedRun(output, frame, run, quad, layout, right, bottom,
+                        run.u1(quad), run.v1(quad), ndcScaleX, ndcScaleY);
+                putTexturedRun(output, frame, run, quad, layout, right, top,
+                        run.u1(quad), run.v0(quad), ndcScaleX, ndcScaleY);
+            }
             return;
         }
         if (command instanceof VulkanColoredLine) {
@@ -896,6 +920,33 @@ public final class FrameStreamEncoder {
         output.putFloat(transform.transformX(x, y) * ndcScaleX - 1.0f);
         output.putFloat(transform.transformY(x, y) * ndcScaleY - 1.0f);
         output.putFloat(u).putFloat(v).putFloat(red).putFloat(green)
+                .putFloat(blue).putFloat(alpha);
+    }
+
+    private static void putTexturedRun(ByteBuffer output, VulkanFrameCommands frame,
+                                       VulkanTexturedQuadRun run, int quad, int layout,
+                                       float x, float y, float u, float v,
+                                       float ndcScaleX, float ndcScaleY) {
+        float red = run.red(quad);
+        float green = run.green(quad);
+        float blue = run.blue(quad);
+        float alpha = run.alpha(quad);
+        if (layout == FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED) {
+            output.putFloat(x).putFloat(y).putFloat(u).putFloat(v)
+                    .putFloat(red).putFloat(green).putFloat(blue).putFloat(alpha)
+                    .putFloat(run.transformM00(quad)).putFloat(run.transformM01(quad))
+                    .putFloat(run.transformM02(quad)).putFloat(run.transformM10(quad))
+                    .putFloat(run.transformM11(quad)).putFloat(run.transformM12(quad))
+                    .putFloat(frame.width()).putFloat(frame.height());
+            return;
+        }
+        float transformedX = run.transformM00(quad) * x
+                + run.transformM01(quad) * y + run.transformM02(quad);
+        float transformedY = run.transformM10(quad) * x
+                + run.transformM11(quad) * y + run.transformM12(quad);
+        output.putFloat(transformedX * ndcScaleX - 1.0f)
+                .putFloat(transformedY * ndcScaleY - 1.0f)
+                .putFloat(u).putFloat(v).putFloat(red).putFloat(green)
                 .putFloat(blue).putFloat(alpha);
     }
 

@@ -296,6 +296,35 @@ public final class FrameStreamAbiVerification {
                         && customDecoded.material(0).customValue(1) == 4.0f,
                 "custom shader values changed");
 
+        VulkanDrawState customRunState = new VulkanDrawState(
+                VulkanTransform2D.translation(5, 7), null,
+                VulkanBlendMode.NORMAL, VulkanTextureFilter.LINEAR, custom);
+        VulkanFrameCommands customRun = VulkanFrameCommands.pooledBuilder(32, 32)
+                .texturedQuad(9, 0, 0, 2, 2, 0, 0, 1, 1,
+                        1, 0, 0, 1, customState)
+                .texturedQuad(9, 0, 0, 2, 2, 0, 0, 1, 1,
+                        0, 1, 0, 1, customRunState)
+                .build();
+        DecodedFrameStream customRunDecoded = DecodedFrameStream.decode(customEncoder.encode(
+                22, 5, new VulkanFrameSubmission(Collections.emptyList(), customRun)));
+        require(customRun.commandCount() == 1
+                        && customRun.texturedQuadRunQuadCount() == 2
+                        && customRunDecoded.batchCount() == 1
+                        && customRunDecoded.batch(0).vertexLayout()
+                                == FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED,
+                "custom shader sprites did not preserve expanded run layout");
+        ByteBuffer customRunVertices = customRunDecoded.vertices()
+                .order(ByteOrder.LITTLE_ENDIAN);
+        int customStride = FrameStreamRecordFormat.vertexStride(
+                FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED);
+        int secondCustomSprite = 4 * customStride;
+        require(customRunVertices.getFloat(40) == 2.0f
+                        && customRunVertices.getFloat(52) == 3.0f
+                        && customRunVertices.getFloat(secondCustomSprite + 40) == 5.0f
+                        && customRunVertices.getFloat(secondCustomSprite + 52) == 7.0f,
+                "per-sprite custom shader transforms were flattened");
+        customRun.releasePooledCommands();
+
         VulkanFrameCommands compactPrimitives = VulkanFrameCommands.builder(64, 64)
                 .coloredLine(1, 2, 9, 6, 2, 1, 0, 0, 1, VulkanDrawState.DEFAULT)
                 .coloredCircle(16, 16, 8, 2, 0, 1, 0, 1,
@@ -304,7 +333,7 @@ public final class FrameStreamAbiVerification {
                         8, true, VulkanDrawState.DEFAULT)
                 .build();
         DecodedFrameStream compactDecoded = DecodedFrameStream.decode(encoder.encode(
-                22, 5, new VulkanFrameSubmission(Collections.emptyList(), compactPrimitives)));
+                23, 5, new VulkanFrameSubmission(Collections.emptyList(), compactPrimitives)));
         require(compactPrimitives.commandCount() == 3
                         && compactDecoded.batchCount() == 1
                         && compactDecoded.batch(0).vertexCount() == 78
@@ -321,7 +350,7 @@ public final class FrameStreamAbiVerification {
             manyQuads.coloredQuad(0, 0, 1, 1, 1, 1, 1, 1, VulkanDrawState.DEFAULT);
         }
         DecodedFrameStream splitDecoded = DecodedFrameStream.decode(encoder.encode(
-                23, 5, new VulkanFrameSubmission(Collections.emptyList(), manyQuads.build())));
+                24, 5, new VulkanFrameSubmission(Collections.emptyList(), manyQuads.build())));
         require(splitDecoded.batchCount() == 2
                         && splitDecoded.batch(0).vertexCount() == 65_536
                         && splitDecoded.batch(0).indexCount() == 98_304
@@ -347,7 +376,7 @@ public final class FrameStreamAbiVerification {
                 .build();
         glyphQuads[0] = Float.NaN;
         DecodedFrameStream compactTextDecoded = DecodedFrameStream.decode(encoder.encode(
-                24, 5, new VulkanFrameSubmission(Collections.emptyList(), compactText)));
+                25, 5, new VulkanFrameSubmission(Collections.emptyList(), compactText)));
         require(compactText.commandCount() == 1
                         && compactText.texturedQuadBatchCount() == 1
                         && compactTextDecoded.batchCount() == 1
@@ -355,6 +384,39 @@ public final class FrameStreamAbiVerification {
                         && compactTextDecoded.batch(0).indexCount() == 6_000,
                 "textured quad batch did not compact Java commands or indexed geometry");
         compactText.releasePooledCommands();
+
+        VulkanFrameCommands.Builder spriteBuilder = VulkanFrameCommands.pooledBuilder(128, 128);
+        for (int sprite = 0; sprite < 3_000; sprite++) {
+            VulkanDrawState spriteState = VulkanDrawState.transformed(
+                    VulkanTransform2D.translation(sprite, sprite % 17));
+            spriteBuilder.texturedQuad(9, 0, 0, 1, 1, 0, 0, 1, 1,
+                    (sprite & 1) == 0 ? 1 : 0,
+                    (sprite & 1) == 0 ? 0 : 1,
+                    0, 1, spriteState);
+        }
+        VulkanFrameCommands spriteRuns = spriteBuilder.build();
+        DecodedFrameStream spriteDecoded = DecodedFrameStream.decode(encoder.encode(
+                26, 5, new VulkanFrameSubmission(Collections.emptyList(), spriteRuns)));
+        require(spriteRuns.commandCount() == 1
+                        && spriteRuns.texturedQuadRunCount() == 1
+                        && spriteRuns.texturedQuadRunQuadCount() == 3_000
+                        && spriteDecoded.batchCount() == 1
+                        && spriteDecoded.batch(0).vertexCount() == 12_000
+                        && spriteDecoded.batch(0).indexCount() == 18_000,
+                "ordinary transformed sprites did not compact into one indexed run");
+        ByteBuffer spriteVertices = spriteDecoded.vertices().order(ByteOrder.LITTLE_ENDIAN);
+        require(Math.abs(spriteVertices.getFloat(0) + 1.0f) < 0.0001f
+                        && spriteVertices.getFloat(16) == 1.0f
+                        && spriteVertices.getFloat(20) == 0.0f,
+                "first sprite transform or tint changed");
+        int secondSprite = 4 * FrameStreamRecordFormat.vertexStride(
+                FrameStreamRecordFormat.VERTEX_TEXTURED);
+        require(Math.abs(spriteVertices.getFloat(secondSprite)
+                        - (2.0f / 128.0f - 1.0f)) < 0.0001f
+                        && spriteVertices.getFloat(secondSprite + 16) == 0.0f
+                        && spriteVertices.getFloat(secondSprite + 20) == 1.0f,
+                "per-sprite transform or tint was flattened by run compaction");
+        spriteRuns.releasePooledCommands();
 
         byte[] corrupt = bytes(encoded);
         FrameStreamReader envelope = FrameStreamReader.read(ByteBuffer.wrap(corrupt));
