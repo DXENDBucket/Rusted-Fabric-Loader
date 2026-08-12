@@ -68,6 +68,8 @@ public final class AwtTextRasterizerVerification {
                 require(multiline.glyph(1).y() - multiline.glyph(0).y()
                                 == multiline.lineHeight(),
                         "multiline baseline advance changed");
+
+                verifyUnicodeFallback(rasterizer);
             } finally {
                 graphics.dispose();
             }
@@ -75,6 +77,30 @@ public final class AwtTextRasterizerVerification {
             rasterizer.close();
         }
         System.out.println("Desktop Slick-compatible text metrics passed");
+    }
+
+    private static void verifyUnicodeFallback(AwtTextRasterizer rasterizer) {
+        // U+1FAE0 is deliberately outside the old DroidSansFallback coverage. On current
+        // Windows it resolves to Segoe UI Emoji and also verifies that a surrogate pair is
+        // treated as one code point rather than two replacement characters.
+        String emoji = new String(Character.toChars(0x1fae0));
+        VulkanTextLayout emojiLayout = rasterizer.layout(emoji, 28, false);
+        require(emojiLayout.glyphCount() == 1,
+                "supplementary emoji was split into UTF-16 surrogate glyphs");
+        require(!rasterizer.usesMissingGlyph(emojiLayout.glyph(0).glyphKey()),
+                "installed system emoji fallback was not selected");
+        VulkanGlyphBitmap emojiBitmap = rasterizer.rasterizeGlyph(
+                emojiLayout.glyph(0).glyphKey());
+        require(!emojiBitmap.empty(), "emoji fallback rasterized an empty glyph");
+
+        String extensionB = new String(Character.toChars(0x20000));
+        VulkanTextLayout mixed = rasterizer.layout(
+                "A汉龘" + extensionB + emoji + "Z", 24, false);
+        require(mixed.glyphCount() >= 6, "mixed fallback run dropped characters");
+        for (int glyph = 0; glyph < mixed.glyphCount(); glyph++) {
+            require(!rasterizer.usesMissingGlyph(mixed.glyph(glyph).glyphKey()),
+                    "mixed Latin/CJK/emoji text retained a missing glyph");
+        }
     }
 
     private static Font sourceFont(AwtTextRasterizer rasterizer) throws Exception {

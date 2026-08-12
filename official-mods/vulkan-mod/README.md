@@ -29,7 +29,11 @@ text service to shape and rasterize individual glyphs into
 reusable 1024x1024 atlas pages and emits indexed quads for visible glyphs. The Windows
 implementation uses AWT inside the isolated desktop driver; no AWT font object crosses the shared
 atlas boundary. Repeated strings and characters reuse atlas regions; whole-string texture uploads
-are no longer part of the text SPI. Native
+are no longer part of the text SPI. Desktop shaping preserves the original Roboto and
+DroidSansFallback metrics when those fonts cover a run, then resolves missing Unicode grapheme
+clusters through installed platform fonts. Supplementary code points, combining sequences, CJK
+extensions, and Emoji therefore no longer become one or two replacement glyphs merely because the
+game fonts lack them. Native
 mode translates linked GLSL-130 vertex/fragment programs onto the
 Vulkan texture ABI. Desktop built-ins and GDX attributes, custom float/vec uniforms shared across
 both stages, custom float/vec varyings, and one shared secondary sampler are supported. The five

@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
@@ -22,13 +23,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Desktop text service kept inside the isolated driver so the shared atlas is AWT-neutral. */
 final class AwtTextRasterizer implements VulkanTextRasterizer {
     private final Font regularFont;
     private final Font boldFont;
     private final Font legacyFallbackFont;
+    private final List<Font> systemFallbackFonts;
+    private final Map<String, Font> systemFallbackCache = new HashMap<String, Font>();
+    private final Set<String> missingFallbackCache = new HashSet<String>();
     private final Map<GlyphKey, Long> glyphKeys = new HashMap<GlyphKey, Long>();
     private final Map<Long, GlyphKey> glyphs = new HashMap<Long, GlyphKey>();
     private long nextGlyphKey = 1L;
@@ -37,51 +45,76 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         regularFont = loadGameFont("font/Roboto-Regular.ttf", Font.PLAIN);
         boldFont = loadGameFont("font/Roboto-Bold.ttf", Font.BOLD);
         legacyFallbackFont = loadGameFont("font/DroidSansFallback.ttf", Font.PLAIN);
+        systemFallbackFonts = discoverSystemFallbackFonts();
     }
 
     @Override public synchronized VulkanTextLayout layout(
             String text, int requestedSize, boolean bold) {
         if (text == null) throw new NullPointerException("text");
         int size = clampSize(requestedSize);
-        Font font = slickFont(selectFont(
-                (bold ? boldFont : regularFont).deriveFont((float) size), text, size));
+        Font primary = slickFont((bold ? boldFont : regularFont).deriveFont((float) size));
+        Font legacy = slickFont(legacyFallbackFont.deriveFont((float) size));
+        boolean preferLegacy = containsNonAscii(text);
         BufferedImage contextImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = contextImage.createGraphics();
         configure(graphics);
-        graphics.setFont(font);
         try {
-            FontMetrics metrics = graphics.getFontMetrics();
             String[] lines = text.split("\\n", -1);
+            ArrayList<List<FontRun>> lineRuns = new ArrayList<List<FontRun>>(lines.length);
+            int lineHeight = 1;
+            int baselineTail = 0;
+            for (String line : lines) {
+                List<FontRun> runs = fontRuns(line, primary, legacy, size,
+                        bold, preferLegacy);
+                lineRuns.add(runs);
+                if (runs.isEmpty()) {
+                    graphics.setFont(preferLegacy ? legacy : primary);
+                    FontMetrics metrics = graphics.getFontMetrics();
+                    lineHeight = Math.max(lineHeight, metrics.getHeight());
+                    baselineTail = Math.max(baselineTail,
+                            metrics.getDescent() + metrics.getLeading());
+                } else {
+                    for (FontRun run : runs) {
+                        graphics.setFont(run.font);
+                        FontMetrics metrics = graphics.getFontMetrics();
+                        lineHeight = Math.max(lineHeight, metrics.getHeight());
+                        baselineTail = Math.max(baselineTail,
+                                metrics.getDescent() + metrics.getLeading());
+                    }
+                }
+            }
             int width = 1;
-            int lineHeight = Math.max(1, metrics.getHeight());
-            int baselineTail = metrics.getDescent() + metrics.getLeading();
             int height = Math.max(1, Math.multiplyExact(lineHeight, lines.length));
             FontRenderContext context = graphics.getFontRenderContext();
-            GlyphVector space = font.layoutGlyphVector(context, new char[] {' '}, 0, 1,
-                    Font.LAYOUT_LEFT_TO_RIGHT);
-            int spaceWidth = space.getGlyphLogicalBounds(0).getBounds().width;
             ArrayList<VulkanGlyphPlacement> placements =
                     new ArrayList<VulkanGlyphPlacement>(text.length());
             for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-                char[] characters = lines[lineIndex].toCharArray();
-                GlyphVector run = font.layoutGlyphVector(context, characters,
-                        0, characters.length, Font.LAYOUT_LEFT_TO_RIGHT);
-                for (int glyphIndex = 0; glyphIndex < run.getNumGlyphs(); glyphIndex++) {
-                    int glyphCode = run.getGlyphCode(glyphIndex);
-                    int characterIndex = run.getGlyphCharIndex(glyphIndex);
-                    int codePoint = lines[lineIndex].codePointAt(characterIndex);
-                    Rectangle bounds = run.getGlyphPixelBounds(
-                            glyphIndex, context, 0.0f, 0.0f);
-                    if (codePoint == ' ') bounds.width = spaceWidth;
-                    width = Math.max(width, bounds.x + bounds.width);
-                    GlyphVector isolated = font.createGlyphVector(context,
-                            new int[] { glyphCode });
-                    Rectangle isolatedBounds = isolated.getGlyphPixelBounds(
-                            0, context, 0.0f, 0.0f);
-                    placements.add(new VulkanGlyphPlacement(key(font, glyphCode),
-                            bounds.x - isolatedBounds.x,
-                            lineIndex * lineHeight - baselineTail
-                                    + bounds.y - isolatedBounds.y));
+                float penX = 0.0f;
+                for (FontRun fontRun : lineRuns.get(lineIndex)) {
+                    char[] characters = fontRun.text.toCharArray();
+                    GlyphVector run = fontRun.font.layoutGlyphVector(context, characters,
+                            0, characters.length, Font.LAYOUT_LEFT_TO_RIGHT);
+                    int spaceWidth = spaceWidth(fontRun.font, context);
+                    for (int glyphIndex = 0; glyphIndex < run.getNumGlyphs(); glyphIndex++) {
+                        int glyphCode = run.getGlyphCode(glyphIndex);
+                        int characterIndex = run.getGlyphCharIndex(glyphIndex);
+                        int codePoint = fontRun.text.codePointAt(characterIndex);
+                        Rectangle bounds = run.getGlyphPixelBounds(
+                                glyphIndex, context, penX, 0.0f);
+                        if (codePoint == ' ') bounds.width = spaceWidth;
+                        width = Math.max(width, bounds.x + bounds.width);
+                        GlyphVector isolated = fontRun.font.createGlyphVector(context,
+                                new int[] { glyphCode });
+                        Rectangle isolatedBounds = isolated.getGlyphPixelBounds(
+                                0, context, 0.0f, 0.0f);
+                        placements.add(new VulkanGlyphPlacement(
+                                key(fontRun.font, glyphCode),
+                                bounds.x - isolatedBounds.x,
+                                lineIndex * lineHeight - baselineTail
+                                        + bounds.y - isolatedBounds.y));
+                    }
+                    penX += (float) run.getGlyphPosition(run.getNumGlyphs()).getX();
+                    width = Math.max(width, (int) Math.ceil(penX));
                 }
             }
             return new VulkanTextLayout(Math.min(4096, width), Math.min(4096, height),
@@ -117,6 +150,12 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
                 rgba(image));
     }
 
+    synchronized boolean usesMissingGlyph(long glyphKey) {
+        GlyphKey glyph = glyphs.get(Long.valueOf(glyphKey));
+        if (glyph == null) throw new IllegalArgumentException("unknown glyph key " + glyphKey);
+        return glyph.glyphCode == glyph.font.getMissingGlyphCode();
+    }
+
     private long key(Font font, int glyphCode) {
         GlyphKey candidate = new GlyphKey(font, glyphCode);
         Long known = glyphKeys.get(candidate);
@@ -133,18 +172,138 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
     @Override public synchronized void close() {
         glyphKeys.clear();
         glyphs.clear();
+        systemFallbackCache.clear();
+        missingFallbackCache.clear();
     }
 
-    private Font selectFont(Font primary, String text, int size) {
-        // Match SlickGraphicsBackend: any non-ASCII text selects DroidSansFallback for the
-        // complete run. Using a different CJK font changes both its small-size strokes and
-        // vertical metrics, so seemingly equivalent fallback logic visibly shifts game UI.
-        for (int index = 0; index < text.length(); index++) {
-            if (text.charAt(index) > 127) {
-                return legacyFallbackFont.deriveFont((float) size);
+    private List<FontRun> fontRuns(String text, Font primary, Font legacy,
+                                   int size, boolean bold, boolean preferLegacy) {
+        ArrayList<FontRun> runs = new ArrayList<FontRun>();
+        int offset = 0;
+        while (offset < text.length()) {
+            int end = nextClusterEnd(text, offset);
+            String cluster = text.substring(offset, end);
+            Font font = selectFont(cluster, primary, legacy, size, bold, preferLegacy);
+            if (!runs.isEmpty() && runs.get(runs.size() - 1).font.equals(font)) {
+                runs.get(runs.size() - 1).text += cluster;
+            } else {
+                runs.add(new FontRun(font, cluster));
+            }
+            offset = end;
+        }
+        return runs;
+    }
+
+    private Font selectFont(String cluster, Font primary, Font legacy,
+                            int size, boolean bold, boolean preferLegacy) {
+        Font first = preferLegacy ? legacy : primary;
+        Font second = preferLegacy ? primary : legacy;
+        if (canDisplay(first, cluster)) return first;
+        if (canDisplay(second, cluster)) return second;
+        Font system = systemFallback(cluster);
+        if (system == null) return first;
+        int style = bold && system.getFamily().indexOf("Emoji") < 0
+                ? Font.BOLD : Font.PLAIN;
+        return slickFont(system.deriveFont(style, (float) size));
+    }
+
+    private Font systemFallback(String cluster) {
+        Font cached = systemFallbackCache.get(cluster);
+        if (cached != null) return cached;
+        if (missingFallbackCache.contains(cluster)) return null;
+        for (Font font : systemFallbackFonts) {
+            if (canDisplay(font, cluster)) {
+                systemFallbackCache.put(cluster, font);
+                return font;
             }
         }
-        return primary;
+        missingFallbackCache.add(cluster);
+        return null;
+    }
+
+    private static boolean canDisplay(Font font, String text) {
+        return font.canDisplayUpTo(text) < 0;
+    }
+
+    private static boolean containsNonAscii(String text) {
+        for (int index = 0; index < text.length(); index++) {
+            if (text.charAt(index) > 127) return true;
+        }
+        return false;
+    }
+
+    private static int nextClusterEnd(String text, int start) {
+        int first = text.codePointAt(start);
+        int offset = start + Character.charCount(first);
+        if (isRegionalIndicator(first) && offset < text.length()) {
+            int second = text.codePointAt(offset);
+            if (isRegionalIndicator(second)) offset += Character.charCount(second);
+        }
+        while (offset < text.length()) {
+            int codePoint = text.codePointAt(offset);
+            if (isClusterExtension(codePoint)) {
+                offset += Character.charCount(codePoint);
+                continue;
+            }
+            if (codePoint == 0x200d) {
+                offset += Character.charCount(codePoint);
+                if (offset < text.length()) {
+                    int joined = text.codePointAt(offset);
+                    offset += Character.charCount(joined);
+                }
+                continue;
+            }
+            break;
+        }
+        return offset;
+    }
+
+    private static boolean isClusterExtension(int codePoint) {
+        int type = Character.getType(codePoint);
+        return type == Character.NON_SPACING_MARK
+                || type == Character.COMBINING_SPACING_MARK
+                || type == Character.ENCLOSING_MARK
+                || codePoint == 0xfe0e || codePoint == 0xfe0f
+                || (codePoint >= 0x1f3fb && codePoint <= 0x1f3ff)
+                || (codePoint >= 0xe0020 && codePoint <= 0xe007f);
+    }
+
+    private static boolean isRegionalIndicator(int codePoint) {
+        return codePoint >= 0x1f1e6 && codePoint <= 0x1f1ff;
+    }
+
+    private static int spaceWidth(Font font, FontRenderContext context) {
+        GlyphVector space = font.layoutGlyphVector(context, new char[] {' '}, 0, 1,
+                Font.LAYOUT_LEFT_TO_RIGHT);
+        return space.getGlyphLogicalBounds(0).getBounds().width;
+    }
+
+    private static List<Font> discoverSystemFallbackFonts() {
+        LinkedHashMap<String, Font> fonts = new LinkedHashMap<String, Font>();
+        Set<String> families = new HashSet<String>();
+        GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        for (String family : environment.getAvailableFontFamilyNames()) {
+            families.add(family.toLowerCase(java.util.Locale.ROOT));
+        }
+        String[] preferred = {
+                "Segoe UI Emoji", "Segoe UI Symbol", "Microsoft YaHei UI",
+                "Microsoft YaHei", "Noto Color Emoji", "Noto Sans CJK SC",
+                "Noto Sans", "Apple Color Emoji", "Arial Unicode MS",
+                "Nirmala UI", "Malgun Gothic", "SimSun"
+        };
+        for (String name : preferred) {
+            if (families.contains(name.toLowerCase(java.util.Locale.ROOT))) {
+                addFallback(fonts, new Font(name, Font.PLAIN, 1));
+            }
+        }
+        for (Font font : environment.getAllFonts()) addFallback(fonts, font);
+        addFallback(fonts, new Font(Font.SANS_SERIF, Font.PLAIN, 1));
+        return new ArrayList<Font>(fonts.values());
+    }
+
+    private static void addFallback(Map<String, Font> fonts, Font font) {
+        String key = font.getFontName(java.util.Locale.ROOT).toLowerCase(java.util.Locale.ROOT);
+        if (!fonts.containsKey(key)) fonts.put(key, font);
     }
 
     private static Font slickFont(Font source) {
@@ -221,5 +380,15 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         }
 
         @Override public int hashCode() { return 31 * font.hashCode() + glyphCode; }
+    }
+
+    private static final class FontRun {
+        private final Font font;
+        private String text;
+
+        private FontRun(Font font, String text) {
+            this.font = font;
+            this.text = text;
+        }
     }
 }
