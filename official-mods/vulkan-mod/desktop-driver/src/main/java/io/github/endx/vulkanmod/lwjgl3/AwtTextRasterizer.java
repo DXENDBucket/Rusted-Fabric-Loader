@@ -29,7 +29,6 @@ import java.util.Map;
 final class AwtTextRasterizer implements VulkanTextRasterizer {
     private final Font regularFont;
     private final Font boldFont;
-    private final Font cjkFont;
     private final Font legacyFallbackFont;
     private final Map<GlyphKey, Long> glyphKeys = new HashMap<GlyphKey, Long>();
     private final Map<Long, GlyphKey> glyphs = new HashMap<Long, GlyphKey>();
@@ -38,7 +37,6 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
     AwtTextRasterizer() {
         regularFont = loadGameFont("font/Roboto-Regular.ttf", Font.PLAIN);
         boldFont = loadGameFont("font/Roboto-Bold.ttf", Font.BOLD);
-        cjkFont = loadGameFont("font/NotoSansCJKsc-Regular.otf", Font.PLAIN);
         legacyFallbackFont = loadGameFont("font/DroidSansFallback.ttf", Font.PLAIN);
     }
 
@@ -127,10 +125,15 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
     }
 
     private Font selectFont(Font primary, String text, int size) {
-        if (primary.canDisplayUpTo(text) < 0) return primary;
-        Font cjk = cjkFont.deriveFont((float) size);
-        if (cjk.canDisplayUpTo(text) < 0) return cjk;
-        return legacyFallbackFont.deriveFont((float) size);
+        // Match SlickGraphicsBackend: any non-ASCII text selects DroidSansFallback for the
+        // complete run. Using a different CJK font changes both its small-size strokes and
+        // vertical metrics, so seemingly equivalent fallback logic visibly shifts game UI.
+        for (int index = 0; index < text.length(); index++) {
+            if (text.charAt(index) > 127) {
+                return legacyFallbackFont.deriveFont((float) size);
+            }
+        }
+        return primary;
     }
 
     private static int clampSize(int requestedSize) {

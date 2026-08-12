@@ -74,6 +74,15 @@ tasks.register('verifySpriteRunSubmission', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneSpriteRunVerification')
 }
 
+tasks.register('verifyColoredQuadRunSubmission', JavaExec) {
+    group = 'verification'
+    description = 'Presents 12,000 transformed colored quads as one recycled command and batch.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneColoredQuadRunVerification')
+}
+
 tasks.register('verifyDescriptorReuse', JavaExec) {
     group = 'verification'
     description = 'Verifies lazy, recycled descriptors and redundant texture-bind removal.'

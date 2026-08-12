@@ -5,6 +5,7 @@ import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanColoredCircle;
 import io.github.endx.vulkanmod.spi.VulkanColoredLine;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanColoredQuadRun;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
@@ -618,7 +619,8 @@ public final class FrameStreamEncoder {
     }
 
     private int vertexLayout(VulkanDrawCommand command) {
-        if (command instanceof VulkanColoredQuad || command instanceof VulkanColoredTriangle
+        if (command instanceof VulkanColoredQuad || command instanceof VulkanColoredQuadRun
+                || command instanceof VulkanColoredTriangle
                 || command instanceof VulkanColoredLine || command instanceof VulkanColoredCircle) {
             return FrameStreamRecordFormat.VERTEX_COLORED;
         }
@@ -635,7 +637,8 @@ public final class FrameStreamEncoder {
 
     private static int encodedVertexCount(VulkanDrawCommand command) {
         return (command instanceof VulkanTexturedQuadBatch
-                || command instanceof VulkanTexturedQuadRun)
+                || command instanceof VulkanTexturedQuadRun
+                || command instanceof VulkanColoredQuadRun)
                 ? command.vertexCount()
                 : isIndexedQuad(command) ? QUAD_VERTEX_COUNT : command.vertexCount();
     }
@@ -645,12 +648,16 @@ public final class FrameStreamEncoder {
     }
 
     private static boolean isIndexedQuad(VulkanDrawCommand command) {
-        return command instanceof VulkanColoredQuad || command instanceof VulkanTexturedQuad
+        return command instanceof VulkanColoredQuad || command instanceof VulkanColoredQuadRun
+                || command instanceof VulkanTexturedQuad
                 || command instanceof VulkanTexturedQuadBatch
                 || command instanceof VulkanTexturedQuadRun;
     }
 
     private static int indexedQuadCount(VulkanDrawCommand command) {
+        if (command instanceof VulkanColoredQuadRun) {
+            return ((VulkanColoredQuadRun) command).quadCount();
+        }
         if (command instanceof VulkanTexturedQuadBatch) {
             return ((VulkanTexturedQuadBatch) command).quadCount();
         }
@@ -691,6 +698,20 @@ public final class FrameStreamEncoder {
                     quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), right, top,
                     quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
+            return;
+        }
+        if (command instanceof VulkanColoredQuadRun) {
+            VulkanColoredQuadRun run = (VulkanColoredQuadRun) command;
+            for (int quad = 0; quad < run.quadCount(); quad++) {
+                float left = run.x(quad);
+                float right = left + run.width(quad);
+                float top = run.y(quad);
+                float bottom = top + run.height(quad);
+                putColoredRun(output, frame, run, quad, left, top, ndcScaleX, ndcScaleY);
+                putColoredRun(output, frame, run, quad, left, bottom, ndcScaleX, ndcScaleY);
+                putColoredRun(output, frame, run, quad, right, bottom, ndcScaleX, ndcScaleY);
+                putColoredRun(output, frame, run, quad, right, top, ndcScaleX, ndcScaleY);
+            }
             return;
         }
         if (command instanceof VulkanTexturedQuadRun) {
@@ -948,6 +969,19 @@ public final class FrameStreamEncoder {
                 .putFloat(transformedY * ndcScaleY - 1.0f)
                 .putFloat(u).putFloat(v).putFloat(red).putFloat(green)
                 .putFloat(blue).putFloat(alpha);
+    }
+
+    private static void putColoredRun(ByteBuffer output, VulkanFrameCommands frame,
+                                      VulkanColoredQuadRun run, int quad,
+                                      float x, float y, float ndcScaleX, float ndcScaleY) {
+        float transformedX = run.transformM00(quad) * x
+                + run.transformM01(quad) * y + run.transformM02(quad);
+        float transformedY = run.transformM10(quad) * x
+                + run.transformM11(quad) * y + run.transformM12(quad);
+        output.putFloat(transformedX * ndcScaleX - 1.0f)
+                .putFloat(transformedY * ndcScaleY - 1.0f)
+                .putFloat(run.red(quad)).putFloat(run.green(quad))
+                .putFloat(run.blue(quad)).putFloat(run.alpha(quad));
     }
 
     private byte[] encodePasses(List<PassRecord> records) {

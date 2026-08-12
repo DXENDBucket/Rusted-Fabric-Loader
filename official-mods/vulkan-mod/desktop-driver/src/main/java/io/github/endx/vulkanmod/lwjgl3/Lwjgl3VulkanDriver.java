@@ -10,6 +10,7 @@ import io.github.endx.vulkanmod.resourcestream.ResourceStreamRecords;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanColoredQuadRun;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
@@ -4319,7 +4320,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                         int[] capacities) {
             int coloredVertexCount = Math.addExact(
                     Math.multiplyExact(frame.coloredQuadCount(), 6),
-                    Math.multiplyExact(frame.coloredTriangleCount(), 3));
+                    Math.addExact(
+                            Math.multiplyExact(frame.coloredQuadRunQuadCount(), 6),
+                            Math.multiplyExact(frame.coloredTriangleCount(), 3)));
             int texturedVertexCount = 0;
             int customTexturedVertexCount = 0;
             for (int commandIndex = 0; commandIndex < frame.commandCount(); commandIndex++) {
@@ -4391,6 +4394,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         putVertex(coloredVertices, transform, left, top, frame, quad);
                         putVertex(coloredVertices, transform, right, bottom, frame, quad);
                         putVertex(coloredVertices, transform, right, top, frame, quad);
+                    } else if (command instanceof VulkanColoredQuadRun) {
+                        VulkanColoredQuadRun run = (VulkanColoredQuadRun) command;
+                        for (int quad = 0; quad < run.quadCount(); quad++) {
+                            float left = run.x(quad);
+                            float right = left + run.width(quad);
+                            float top = run.y(quad);
+                            float bottom = top + run.height(quad);
+                            putColoredRunVertex(coloredVertices, run, quad, left, top, frame);
+                            putColoredRunVertex(coloredVertices, run, quad, left, bottom, frame);
+                            putColoredRunVertex(coloredVertices, run, quad, right, bottom, frame);
+                            putColoredRunVertex(coloredVertices, run, quad, left, top, frame);
+                            putColoredRunVertex(coloredVertices, run, quad, right, bottom, frame);
+                            putColoredRunVertex(coloredVertices, run, quad, right, top, frame);
+                        }
                     } else if (command instanceof VulkanColoredTriangle) {
                         VulkanColoredTriangle triangle = (VulkanColoredTriangle) command;
                         VulkanTransform2D transform = triangle.state().transform();
@@ -4530,6 +4547,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                     currentBatch.vertexCount += 6;
                     coloredFirstVertex += 6;
+                } else if (command instanceof VulkanColoredQuadRun) {
+                    VulkanColoredQuadRun run = (VulkanColoredQuadRun) command;
+                    if (!(currentBatch instanceof ColoredDrawBatch)
+                            || !sameClip(currentBatch.clip, run.state().clip())
+                            || currentBatch.blendMode != run.state().blendMode()) {
+                        currentBatch = acquireColoredBatch(
+                                run.state().clip(), run.state().blendMode(),
+                                coloredFirstVertex);
+                        result.batches.add(currentBatch);
+                    }
+                    int vertices = Math.multiplyExact(run.quadCount(), 6);
+                    currentBatch.vertexCount += vertices;
+                    coloredFirstVertex += vertices;
                 } else if (command instanceof VulkanColoredTriangle) {
                     VulkanColoredTriangle triangle = (VulkanColoredTriangle) command;
                     if (!(currentBatch instanceof ColoredDrawBatch)
@@ -4753,6 +4783,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     .put(pixelToNdcY(transformedY, frame.height()))
                     .put(quad.red()).put(quad.green())
                     .put(quad.blue()).put(quad.alpha());
+        }
+
+        private static void putColoredRunVertex(
+                FloatBuffer output, VulkanColoredQuadRun run, int quad,
+                float x, float y, VulkanFrameCommands frame) {
+            float transformedX = run.transformM00(quad) * x
+                    + run.transformM01(quad) * y + run.transformM02(quad);
+            float transformedY = run.transformM10(quad) * x
+                    + run.transformM11(quad) * y + run.transformM12(quad);
+            output.put(pixelToNdcX(transformedX, frame.width()))
+                    .put(pixelToNdcY(transformedY, frame.height()))
+                    .put(run.red(quad)).put(run.green(quad))
+                    .put(run.blue(quad)).put(run.alpha(quad));
         }
 
         private static void putTexturedVertex(FloatBuffer output, VulkanTransform2D transform,

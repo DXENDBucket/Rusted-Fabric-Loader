@@ -17,6 +17,7 @@ public final class VulkanFrameCommands {
     public static final int COLORED_CIRCLE = 6;
     public static final int TEXTURED_QUAD_BATCH = 7;
     public static final int TEXTURED_QUAD_RUN = 8;
+    public static final int COLORED_QUAD_RUN = 9;
 
     private final int width;
     private final int height;
@@ -28,6 +29,8 @@ public final class VulkanFrameCommands {
     private final VulkanDrawCommand[] commandArray;
     private final int commandCount;
     private final int coloredQuadCount;
+    private final int coloredQuadRunCount;
+    private final int coloredQuadRunQuadCount;
     private final int texturedQuadCount;
     private final int coloredTriangleCount;
     private final int texturedTriangleCount;
@@ -53,6 +56,8 @@ public final class VulkanFrameCommands {
         clearRequested = builder.clearRequested;
         commandCount = builder.arena.size;
         coloredQuadCount = builder.coloredQuadCount;
+        coloredQuadRunCount = builder.coloredQuadRunCount;
+        coloredQuadRunQuadCount = builder.coloredQuadRunQuadCount;
         texturedQuadCount = builder.texturedQuadCount;
         coloredTriangleCount = builder.coloredTriangleCount;
         texturedTriangleCount = builder.texturedTriangleCount;
@@ -92,6 +97,8 @@ public final class VulkanFrameCommands {
     public boolean clearRequested() { return clearRequested; }
     public int commandCount() { return commandCount; }
     public int coloredQuadCount() { return coloredQuadCount; }
+    public int coloredQuadRunCount() { return coloredQuadRunCount; }
+    public int coloredQuadRunQuadCount() { return coloredQuadRunQuadCount; }
     public int texturedQuadCount() { return texturedQuadCount; }
     public int coloredTriangleCount() { return coloredTriangleCount; }
     public int texturedTriangleCount() { return texturedTriangleCount; }
@@ -115,6 +122,7 @@ public final class VulkanFrameCommands {
         if (command instanceof VulkanColoredCircle) return COLORED_CIRCLE;
         if (command instanceof VulkanTexturedQuadBatch) return TEXTURED_QUAD_BATCH;
         if (command instanceof VulkanTexturedQuadRun) return TEXTURED_QUAD_RUN;
+        if (command instanceof VulkanColoredQuadRun) return COLORED_QUAD_RUN;
         throw new IllegalArgumentException("unsupported draw command: "
                 + command.getClass().getName());
     }
@@ -171,6 +179,8 @@ public final class VulkanFrameCommands {
             commandArray[index] = null;
             if (command instanceof VulkanColoredQuad) {
                 ((VulkanColoredQuad) command).release(pool);
+            } else if (command instanceof VulkanColoredQuadRun) {
+                ((VulkanColoredQuadRun) command).release(pool);
             } else if (command instanceof VulkanTexturedQuad) {
                 ((VulkanTexturedQuad) command).release(pool);
             } else if (command instanceof VulkanTexturedQuadBatch) {
@@ -242,6 +252,8 @@ public final class VulkanFrameCommands {
         private float clearAlpha = 1.0f;
         private boolean clearRequested;
         private int coloredQuadCount;
+        private int coloredQuadRunCount;
+        private int coloredQuadRunQuadCount;
         private int texturedQuadCount;
         private int coloredTriangleCount;
         private int texturedTriangleCount;
@@ -249,6 +261,7 @@ public final class VulkanFrameCommands {
         private int texturedQuadRunCount;
         private int texturedQuadRunQuadCount;
         private VulkanTexturedQuadRun pendingTexturedQuadRun;
+        private VulkanColoredQuadRun pendingColoredQuadRun;
         private boolean built;
 
         private Builder(int width, int height, VulkanFrameCommandPool pool) {
@@ -278,7 +291,7 @@ public final class VulkanFrameCommands {
         public Builder coloredQuad(VulkanColoredQuad quad) {
             ensureOpen();
             if (quad == null) throw new NullPointerException("quad");
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(quad);
             coloredQuadCount++;
             return this;
@@ -287,17 +300,31 @@ public final class VulkanFrameCommands {
         public Builder coloredQuad(float x, float y, float width, float height,
                                    float red, float green, float blue, float alpha,
                                    VulkanDrawState state) {
-            return coloredQuad(pool == null
-                    ? new VulkanColoredQuad(x, y, width, height,
-                            red, green, blue, alpha, state)
-                    : VulkanColoredQuad.acquire(pool, x, y, width, height,
-                            red, green, blue, alpha, state));
+            if (pool == null) {
+                return coloredQuad(new VulkanColoredQuad(x, y, width, height,
+                        red, green, blue, alpha, state));
+            }
+            ensureOpen();
+            pendingTexturedQuadRun = null;
+            VulkanColoredQuadRun run = pendingColoredQuadRun;
+            if (run == null || !run.canAppend(state)) {
+                run = VulkanColoredQuadRun.acquire(pool, x, y, width, height,
+                        red, green, blue, alpha, state);
+                arena.add(run);
+                pendingColoredQuadRun = run;
+                coloredQuadRunCount++;
+            } else {
+                run.append(x, y, width, height, red, green, blue, alpha,
+                        state.transform());
+            }
+            coloredQuadRunQuadCount++;
+            return this;
         }
 
         public Builder texturedQuad(VulkanTexturedQuad quad) {
             ensureOpen();
             if (quad == null) throw new NullPointerException("quad");
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(quad);
             texturedQuadCount++;
             return this;
@@ -314,6 +341,7 @@ public final class VulkanFrameCommands {
                         red, green, blue, alpha, state));
             }
             ensureOpen();
+            pendingColoredQuadRun = null;
             VulkanTexturedQuadRun run = pendingTexturedQuadRun;
             if (run == null || !run.canAppend(textureHandle, state)) {
                 run = VulkanTexturedQuadRun.acquire(pool, textureHandle,
@@ -345,7 +373,7 @@ public final class VulkanFrameCommands {
                                          float red, float green, float blue, float alpha,
                                          VulkanDrawState state) {
             ensureOpen();
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(pool == null
                     ? new VulkanTexturedQuadBatch(textureHandle, originX, originY, geometry,
                             red, green, blue, alpha, state)
@@ -358,7 +386,7 @@ public final class VulkanFrameCommands {
         public Builder coloredTriangle(VulkanColoredTriangle triangle) {
             ensureOpen();
             if (triangle == null) throw new NullPointerException("triangle");
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(triangle);
             coloredTriangleCount++;
             return this;
@@ -375,7 +403,7 @@ public final class VulkanFrameCommands {
                                    float red, float green, float blue, float alpha,
                                    VulkanDrawState state) {
             ensureOpen();
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(pool == null
                     ? new VulkanColoredLine(x1, y1, x2, y2, thickness,
                             red, green, blue, alpha, state)
@@ -388,7 +416,7 @@ public final class VulkanFrameCommands {
                                      float red, float green, float blue, float alpha,
                                      int segments, boolean filled, VulkanDrawState state) {
             ensureOpen();
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(pool == null
                     ? new VulkanColoredCircle(x, y, radius, thickness,
                             red, green, blue, alpha, segments, filled, state)
@@ -400,7 +428,7 @@ public final class VulkanFrameCommands {
         public Builder texturedTriangle(VulkanTexturedTriangle triangle) {
             ensureOpen();
             if (triangle == null) throw new NullPointerException("triangle");
-            endTexturedQuadRun();
+            endPendingRuns();
             arena.add(triangle);
             texturedTriangleCount++;
             return this;
@@ -416,7 +444,7 @@ public final class VulkanFrameCommands {
 
         public VulkanFrameCommands build() {
             ensureOpen();
-            endTexturedQuadRun();
+            endPendingRuns();
             return new VulkanFrameCommands(this);
         }
 
@@ -435,7 +463,10 @@ public final class VulkanFrameCommands {
             if (built) throw new IllegalStateException("frame builder is already closed");
         }
 
-        private void endTexturedQuadRun() { pendingTexturedQuadRun = null; }
+        private void endPendingRuns() {
+            pendingTexturedQuadRun = null;
+            pendingColoredQuadRun = null;
+        }
 
         private static float clamp(float value) {
             return Math.max(0.0f, Math.min(1.0f, value));

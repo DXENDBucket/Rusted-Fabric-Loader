@@ -1,6 +1,7 @@
 package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
+import io.github.endx.vulkanmod.spi.VulkanColoredQuadRun;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
@@ -15,8 +16,11 @@ public final class VulkanFrameArenaVerification {
     public static void main(String[] arguments) {
         VulkanFrameCommands first = pooledFrame(1.0f);
         VulkanDrawCommand firstCommand = first.command(0);
-        if (first.commandCount() != 1 || first.coloredQuadCount() != 1
-                || first.commands().get(0) != first.coloredQuads().get(0)) {
+        if (!(firstCommand instanceof VulkanColoredQuadRun)
+                || first.commandCount() != 1 || first.coloredQuadCount() != 0
+                || first.coloredQuadRunCount() != 1
+                || first.coloredQuadRunQuadCount() != 1
+                || first.commands().get(0) != firstCommand) {
             throw new AssertionError("pooled frame views lost command order or identity");
         }
         first.releasePooledCommands();
@@ -31,7 +35,7 @@ public final class VulkanFrameArenaVerification {
         if (second.command(0) != firstCommand) {
             throw new AssertionError("pooled command object was not reused");
         }
-        if (Math.abs(((VulkanColoredQuad) second.command(0)).red() - 0.5f) > 0.0001f) {
+        if (Math.abs(((VulkanColoredQuadRun) second.command(0)).red(0) - 0.5f) > 0.0001f) {
             throw new AssertionError("recycled command retained stale values");
         }
         second.releasePooledCommands();
@@ -67,6 +71,19 @@ public final class VulkanFrameArenaVerification {
         }
         secondRun.releasePooledCommands();
 
+        VulkanFrameCommands coloredRun = VulkanFrameCommands.pooledBuilder(16, 16)
+                .coloredQuad(0, 0, 1, 1, 1, 0, 0, 1, VulkanDrawState.DEFAULT)
+                .coloredQuad(0, 0, 1, 1, 0, 1, 0, 1,
+                        VulkanDrawState.transformed(VulkanTransform2D.translation(2, 0)))
+                .build();
+        if (!(coloredRun.command(0) instanceof VulkanColoredQuadRun)
+                || coloredRun.commandCount() != 1
+                || coloredRun.coloredQuadRunCount() != 1
+                || coloredRun.coloredQuadRunQuadCount() != 2) {
+            throw new AssertionError("adjacent colored quads did not form one pooled run");
+        }
+        coloredRun.releasePooledCommands();
+
         VulkanFrameCommands ordered = VulkanFrameCommands.pooledBuilder(16, 16)
                 .texturedQuad(1, 0, 0, 1, 1, 0, 0, 1, 1,
                         1, 1, 1, 1, VulkanDrawState.DEFAULT)
@@ -74,7 +91,8 @@ public final class VulkanFrameArenaVerification {
                 .texturedQuad(1, 1, 0, 1, 1, 0, 0, 1, 1,
                         1, 1, 1, 1, VulkanDrawState.DEFAULT)
                 .build();
-        if (ordered.commandCount() != 3 || ordered.texturedQuadRunCount() != 2) {
+        if (ordered.commandCount() != 3 || ordered.texturedQuadRunCount() != 2
+                || ordered.coloredQuadRunCount() != 1) {
             throw new AssertionError("sprite compaction crossed an intervening draw command");
         }
         ordered.releasePooledCommands();

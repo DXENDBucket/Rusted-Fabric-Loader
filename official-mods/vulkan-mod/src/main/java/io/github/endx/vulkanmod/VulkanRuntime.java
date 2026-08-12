@@ -70,6 +70,8 @@ public final class VulkanRuntime {
     private static long textBatchCommandsSubmitted;
     private static long spriteQuadsSubmitted;
     private static long spriteRunCommandsSubmitted;
+    private static long coloredQuadsSubmitted;
+    private static long coloredRunCommandsSubmitted;
 
     private enum StartupPhase {
         MOD_INITIALIZED,
@@ -452,9 +454,9 @@ public final class VulkanRuntime {
     }
 
     private static VulkanSurfaceInfo presentSubmission(VulkanFrameSubmission submission) {
-        countSpriteRuns(submission.presentationFrame());
+        countCompactedRuns(submission.presentationFrame());
         for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
-            countSpriteRuns(pass.frame());
+            countCompactedRuns(pass.frame());
         }
         if (!activeDriver.supportsFrameStream()
                 || Boolean.getBoolean("rusted.fabric.vulkan.objectSubmission")) {
@@ -504,9 +506,11 @@ public final class VulkanRuntime {
         }
     }
 
-    private static void countSpriteRuns(VulkanFrameCommands frame) {
+    private static void countCompactedRuns(VulkanFrameCommands frame) {
         spriteQuadsSubmitted += frame.texturedQuadRunQuadCount();
         spriteRunCommandsSubmitted += frame.texturedQuadRunCount();
+        coloredQuadsSubmitted += frame.coloredQuadRunQuadCount();
+        coloredRunCommandsSubmitted += frame.coloredQuadRunCount();
     }
 
     private static int configuredFrameArenaBytes() {
@@ -1055,6 +1059,8 @@ public final class VulkanRuntime {
         statistics.put("text.batchCommands", textBatchCommandsSubmitted);
         statistics.put("sprite.quads", spriteQuadsSubmitted);
         statistics.put("sprite.runCommands", spriteRunCommandsSubmitted);
+        statistics.put("colored.quads", coloredQuadsSubmitted);
+        statistics.put("colored.runCommands", coloredRunCommandsSubmitted);
         return java.util.Collections.unmodifiableMap(statistics);
     }
 
@@ -1115,6 +1121,8 @@ public final class VulkanRuntime {
         textBatchCommandsSubmitted = 0L;
         spriteQuadsSubmitted = 0L;
         spriteRunCommandsSubmitted = 0L;
+        coloredQuadsSubmitted = 0L;
+        coloredRunCommandsSubmitted = 0L;
         nativeFrameClock.clear();
     }
 

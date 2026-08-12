@@ -212,6 +212,7 @@ check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolate
         ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyResourceStreamExecution'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifySpriteRunSubmission'
+check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyColoredQuadRunSubmission'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyDescriptorReuse'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyCommandStateReuse'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyMemoryAllocator'

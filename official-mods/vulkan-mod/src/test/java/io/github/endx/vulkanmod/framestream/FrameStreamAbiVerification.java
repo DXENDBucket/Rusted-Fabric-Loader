@@ -418,6 +418,42 @@ public final class FrameStreamAbiVerification {
                 "per-sprite transform or tint was flattened by run compaction");
         spriteRuns.releasePooledCommands();
 
+        VulkanFrameCommands.Builder coloredRunBuilder = VulkanFrameCommands
+                .pooledBuilder(128, 128);
+        for (int quad = 0; quad < 3_000; quad++) {
+            VulkanDrawState quadState = VulkanDrawState.transformed(
+                    VulkanTransform2D.translation(quad, quad % 11));
+            coloredRunBuilder.coloredQuad(0, 0, 1, 1,
+                    (quad & 1) == 0 ? 1 : 0,
+                    (quad & 1) == 0 ? 0 : 1,
+                    0, 1, quadState);
+        }
+        VulkanFrameCommands coloredRuns = coloredRunBuilder.build();
+        DecodedFrameStream coloredRunDecoded = DecodedFrameStream.decode(encoder.encode(
+                27, 5, new VulkanFrameSubmission(Collections.emptyList(), coloredRuns)));
+        require(coloredRuns.commandCount() == 1
+                        && coloredRuns.coloredQuadRunCount() == 1
+                        && coloredRuns.coloredQuadRunQuadCount() == 3_000
+                        && coloredRunDecoded.batchCount() == 1
+                        && coloredRunDecoded.batch(0).vertexLayout()
+                                == FrameStreamRecordFormat.VERTEX_COLORED
+                        && coloredRunDecoded.batch(0).vertexCount() == 12_000
+                        && coloredRunDecoded.batch(0).indexCount() == 18_000,
+                "transformed colored quads did not compact into one indexed run");
+        ByteBuffer coloredRunVertices = coloredRunDecoded.vertices()
+                .order(ByteOrder.LITTLE_ENDIAN);
+        int secondColoredQuad = 4 * FrameStreamRecordFormat.vertexStride(
+                FrameStreamRecordFormat.VERTEX_COLORED);
+        require(Math.abs(coloredRunVertices.getFloat(0) + 1.0f) < 0.0001f
+                        && coloredRunVertices.getFloat(8) == 1.0f
+                        && coloredRunVertices.getFloat(12) == 0.0f
+                        && Math.abs(coloredRunVertices.getFloat(secondColoredQuad)
+                                - (2.0f / 128.0f - 1.0f)) < 0.0001f
+                        && coloredRunVertices.getFloat(secondColoredQuad + 8) == 0.0f
+                        && coloredRunVertices.getFloat(secondColoredQuad + 12) == 1.0f,
+                "colored run flattened per-quad transforms or colors");
+        coloredRuns.releasePooledCommands();
+
         byte[] corrupt = bytes(encoded);
         FrameStreamReader envelope = FrameStreamReader.read(ByteBuffer.wrap(corrupt));
         int firstBatch = envelope.section(FrameStreamFormat.SECTION_BATCHES).offset();
