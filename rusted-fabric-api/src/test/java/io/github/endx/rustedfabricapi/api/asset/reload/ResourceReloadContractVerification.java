@@ -4,11 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 
 import io.github.endx.rustedfabricapi.api.asset.ModResourcePack;
 import io.github.endx.rustedfabricapi.api.asset.ModResources;
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
+import io.github.endx.rustedfabricapi.api.development.DevelopmentWorkspaces;
 
 /** Two-phase ordering, isolation, dependency, cycle, report, and cleanup checks. */
 public final class ResourceReloadContractVerification {
@@ -113,6 +118,46 @@ public final class ResourceReloadContractVerification {
         after.close();
         require(ModResourceReloaders.registeredIds().isEmpty(),
                 "resource reloader registrations leaked after close");
+        verifyDevelopmentWorkspacePolling();
+    }
+
+    private static void verifyDevelopmentWorkspacePolling() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("rfl-dev-workspace-");
+            Path data = root.resolve("units/test.ini");
+            Files.createDirectories(data.getParent());
+            Files.write(data, "value=one".getBytes(StandardCharsets.UTF_8));
+            System.setProperty("rusted.javamodsDevDir.resolved", root.toString());
+            System.setProperty("rusted.javamodsDevWorkspaceIds", "reload_contract");
+            System.setProperty("rusted.javamodsDevWorkspace.reload_contract", root.toString());
+            System.setProperty("rusted.javamodsDevAutoReload", "true");
+            require(DevelopmentWorkspaces.loaded().get("reload_contract").equals(root)
+                            && DevelopmentWorkspaces.automaticReloadEnabled(),
+                    "development workspace API lost Loader-published context");
+
+            DevelopmentWorkspaceReloadMonitor.resetForTests();
+            DevelopmentWorkspaceReloadMonitor.track("reload_contract");
+            Files.write(data, "value=changed".getBytes(StandardCharsets.UTF_8));
+            require(!DevelopmentWorkspaceReloadMonitor.poll(1_000_000_000L)
+                            && DevelopmentWorkspaceReloadMonitor.poll(1_800_000_000L),
+                    "workspace polling skipped debounce or did not detect a stable edit");
+        } catch (Exception failure) {
+            throw new AssertionError("development workspace reload contract failed", failure);
+        } finally {
+            DevelopmentWorkspaceReloadMonitor.resetForTests();
+            System.clearProperty("rusted.javamodsDevDir.resolved");
+            System.clearProperty("rusted.javamodsDevWorkspaceIds");
+            System.clearProperty("rusted.javamodsDevWorkspace.reload_contract");
+            System.clearProperty("rusted.javamodsDevAutoReload");
+            if (root != null) {
+                try (java.util.stream.Stream<Path> paths = Files.walk(root)) {
+                    paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                        try { Files.deleteIfExists(path); } catch (Exception ignored) { }
+                    });
+                } catch (Exception ignored) { }
+            }
+        }
     }
 
     private static ModResourceReloader<String> countingReloader(AtomicInteger prepares) {

@@ -9,10 +9,11 @@ application-private storage. Its ARM64 host supplies the Android Surface, LWJGL2
 input, and libRocket compatibility layers required by the desktop game.
 
 User-editable content lives in the conventional shared `Internal storage/rustedWarfare` root:
-`units`, `maps`, and `javamods`. The launcher migrates older private content without overwriting
+`units`, `maps`, `javamods`, and editable `javamods-dev` workspaces. The launcher migrates older private content without overwriting
 same-named shared files. An Android-only game file bridge reads these directories directly, so an
 INI author can edit with MT Manager and use the game's hot reload without relying on unsupported
-private-to-shared symbolic links. Each content row on the
+private-to-shared symbolic links. Java development workspaces use the in-game API's manual unit
+and resource reload; recursive shared-storage polling is disabled on Android. Each content row on the
 launcher has an **Open folder** action. Android 11 and newer require the user to grant the launcher
 one-time **All files access**; this sideload-oriented permission is required because the embedded
 desktop JVM uses ordinary file APIs rather than Android document-provider streams.

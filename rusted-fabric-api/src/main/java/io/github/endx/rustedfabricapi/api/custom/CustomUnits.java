@@ -63,6 +63,22 @@ public final class CustomUnits {
                 Objects.requireNonNull(metadata, "metadata"));
     }
 
+    /**
+     * Uses the game's normal file timestamps to reload changed INI unit definitions in place.
+     * Existing world instances are migrated by the native loader, matching sandbox hot reload.
+     */
+    public static void reloadChangedInPlace() {
+        CustomUnitLoader.checkAndReloadChangedCustomUnits();
+    }
+
+    /**
+     * Forces definitions used by active units through the game's sandbox reload path. This is
+     * useful when an Android shared-storage provider did not preserve file timestamps.
+     */
+    public static void reloadActiveInPlace() {
+        CustomUnitLoader.reloadCustomUnitsUsedByActiveUnits();
+    }
+
     private static List<CustomUnitMetadata> snapshot(List<?> source) {
         if (source == null || source.isEmpty()) {
             return Collections.emptyList();

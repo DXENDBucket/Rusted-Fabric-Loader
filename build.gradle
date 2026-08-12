@@ -93,6 +93,8 @@ configurations {
 
 test {
     useJUnitPlatform()
+    // Contract verifications in this project are executable mains with dedicated tasks.
+    exclude '**/*Verification.class'
 }
 
 tasks.register('validateMappings') {
@@ -190,6 +192,16 @@ tasks.register('validateMappings') {
 }
 
 check.dependsOn tasks.named('validateMappings')
+
+tasks.register('verifyJavaModDevelopmentWorkspaces', JavaExec) {
+    group = 'verification'
+    description = 'Verifies exploded Java-mod discovery, links, and packaged-mod override.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.JavaModDevelopmentWorkspacesVerification')
+}
+
+check.dependsOn tasks.named('verifyJavaModDevelopmentWorkspaces')
 
 tasks.withType(JavaCompile).configureEach {
     options.release = 13 // RW:13
@@ -873,7 +885,8 @@ tasks.register('installToGameDir') {
         def fabricLibsDir = new File(gameDir, 'fabric-libs')
         def providerDir = new File(gameDir, 'rusted-fabric-loader')
         def javaModsDir = new File(gameDir, 'javamods')
-        [fabricLibsDir, providerDir, javaModsDir].each { it.mkdirs() }
+        def javaModsDevDir = new File(gameDir, 'javamods-dev')
+        [fabricLibsDir, providerDir, javaModsDir, javaModsDevDir].each { it.mkdirs() }
 
         copy {
             from layout.buildDirectory.dir('fabric-runtime')

@@ -144,6 +144,11 @@ public final class JvmLaunchPlanFactory {
             vmArguments.add("-D" + ManagedContentLibrary.CONTENT_ROOT_PROPERTY + "="
                     + contentRoot);
             vmArguments.add("-Drusted.javamodsDir=" + contentRoot.resolve("javamods"));
+            vmArguments.add("-Drusted.javamodsDevDir="
+                    + contentRoot.resolve("javamods-dev"));
+            // Android shared storage can make recursive polling expensive and inconsistent while
+            // an editor is saving. The in-game manual reload remains available.
+            vmArguments.add("-Drusted.javamodsDevAutoReload=false");
         }
         Locale selectedLocale = locale == null ? Locale.getDefault() : locale;
         if (!selectedLocale.getLanguage().isEmpty()) {

@@ -25,6 +25,7 @@ public final class ScreenRuntime {
     private static final String LIST_SPEC_KEY = "rustedfabricapi:listSpec";
     private static final String LIST_PAGE_KEY = "rustedfabricapi:listPage";
     private static final String LIST_FILTER_EVENT = "__rustedfabricapi_list_filter__";
+    private static final String LIST_ACTION_EVENT = "__rustedfabricapi_list_action__:";
     private static final String LIST_FILTER_ID = "rustedfabricapi-list-filter";
     private static final String LIST_ENTRY_ID_PREFIX = "rustedfabricapi-list-entry-";
     private static final Object LOCK = new Object();
@@ -222,6 +223,20 @@ public final class ScreenRuntime {
         }
         String value = event.trim();
         if ("mods.loadMods()".equals(value)) return true;
+        if (value.startsWith(LIST_ACTION_EVENT)) {
+            Object rawSpec = document.getMetadata(LIST_SPEC_KEY);
+            if (!(rawSpec instanceof ListScreenSpec)) return true;
+            try {
+                int index = Integer.parseInt(value.substring(LIST_ACTION_EVENT.length()));
+                ListScreenSpec spec = (ListScreenSpec) rawSpec;
+                if (index >= 0 && index < spec.actions().size()) {
+                    spec.actions().get(index).invoke();
+                }
+            } catch (NumberFormatException ignored) {
+                // An opaque malformed UI event never escapes into the game's script handler.
+            }
+            return true;
+        }
         if (!LIST_FILTER_EVENT.equals(value)) return false;
         Object rawSpec = document.getMetadata(LIST_SPEC_KEY);
         if (rawSpec instanceof ListScreenSpec) {
@@ -275,7 +290,13 @@ public final class ScreenRuntime {
                 html.append("</div>");
             }
         }
-        return html.append("</div><br/></div><div class=\"mainButtons\"><button onclick=\"backOrClose()\">")
+        html.append("</div><br/></div><div class=\"mainButtons\">");
+        for (int action = 0; action < spec.actions().size(); action++) {
+            html.append("<button onclick=\"").append(LIST_ACTION_EVENT).append(action)
+                    .append("\">").append(html(spec.actions().get(action).label()))
+                    .append("</button>");
+        }
+        return html.append("<button onclick=\"backOrClose()\">")
                 .append(html(spec.backButton())).append("</button></div></div></div>").toString();
     }
 

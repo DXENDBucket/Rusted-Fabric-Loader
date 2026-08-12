@@ -577,6 +577,9 @@ namespace RustedFabricInstaller
                 InstallManifest oldManifest = LoadManifest(Path.Combine(game,
                     ManifestRelativePath.Replace('/', Path.DirectorySeparatorChar)));
                 CommitStagedFiles(game, staging, backupsRoot, staged);
+                // User-owned editable workspaces are intentionally outside the managed manifest:
+                // installs and updates create the directory but never replace or remove its files.
+                Directory.CreateDirectory(Path.Combine(game, "javamods-dev"));
                 RemoveDeselectedManagedFiles(game, oldManifest, staged, log);
                 CleanupLoaderOwnedDuplicates(game, staged, options, log);
 

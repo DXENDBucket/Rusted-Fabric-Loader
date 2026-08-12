@@ -15,6 +15,7 @@ import io.github.endx.rustedfabricapi.api.client.event.ClientLifecycleEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents;
 import io.github.endx.rustedfabricapi.api.text.LanguageEvents;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
+import io.github.endx.rustedfabricapi.internal.development.DevelopmentReloadRuntime;
 
 /** Registration and deterministic execution of Fabric-style mod resource reload listeners. */
 public final class ModResourceReloaders {
@@ -50,6 +51,7 @@ public final class ModResourceReloaders {
                 throw new IllegalArgumentException("Duplicate resource reloader ID: " + checkedId);
             }
             BINDINGS.put(checkedId, binding);
+            DevelopmentWorkspaceReloadMonitor.track(checkedResources.modId());
             installHooksLocked();
         }
         return new Registration(binding);
@@ -222,10 +224,24 @@ public final class ModResourceReloaders {
         hooksInstalled = true;
         ClientLifecycleEvents.AFTER_ENGINE_INITIALIZATION.register(engine ->
                 reloadAll(ResourceReloadReason.INITIAL_ENGINE_READY));
-        CustomUnitRegistryEvents.AFTER_ACTION_LINKS_BUILT.register(types ->
-                reloadAll(ResourceReloadReason.NATIVE_CUSTOM_UNITS));
+        CustomUnitRegistryEvents.AFTER_ACTION_LINKS_BUILT.register(types -> {
+            if (!DevelopmentReloadRuntime.isIntegratedUnitReloadRunning()) {
+                reloadAll(ResourceReloadReason.NATIVE_CUSTOM_UNITS);
+            }
+        });
         LanguageEvents.AFTER_RELOAD.register(language ->
                 reloadAll(ResourceReloadReason.LANGUAGE));
+        io.github.endx.rustedfabricapi.api.client.event.ClientTickEvents.END_CLIENT_TICK
+                .register(engine -> {
+                    if (DevelopmentWorkspaceReloadMonitor.poll(System.nanoTime())) {
+                        try {
+                            reloadAll(ResourceReloadReason.DEVELOPMENT_WORKSPACE_CHANGED);
+                        } catch (RuntimeException failure) {
+                            System.err.println("[Rusted Fabric API] Development resource reload failed: "
+                                    + failure);
+                        }
+                    }
+                });
     }
 
     private static final class Binding<P> {
@@ -259,7 +275,11 @@ public final class ModResourceReloaders {
         public synchronized boolean unregister() {
             if (!active) return false;
             active = false;
-            synchronized (LOCK) { return BINDINGS.remove(binding.id, binding); }
+            synchronized (LOCK) {
+                boolean removed = BINDINGS.remove(binding.id, binding);
+                if (removed) DevelopmentWorkspaceReloadMonitor.untrack(binding.resources.modId());
+                return removed;
+            }
         }
 
         @Override public void close() { unregister(); }

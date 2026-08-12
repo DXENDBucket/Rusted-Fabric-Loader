@@ -7,6 +7,7 @@ import java.util.List;
 /** Immutable content for a native, touch-scrollable list page. */
 public final class ListScreenSpec {
     public static final int MAX_ENTRIES = 1024;
+    public static final int MAX_ACTIONS = 3;
 
     private final String title;
     private final String summary;
@@ -14,6 +15,7 @@ public final class ListScreenSpec {
     private final String backButton;
     private final String filterLabel;
     private final List<ListScreenEntry> entries;
+    private final List<ListScreenAction> actions;
 
     private ListScreenSpec(Builder builder) {
         title = ListScreenEntry.checked(builder.title, "title", 512, false);
@@ -22,6 +24,7 @@ public final class ListScreenSpec {
         backButton = ListScreenEntry.checked(builder.backButton, "backButton", 128, false);
         filterLabel = ListScreenEntry.checked(builder.filterLabel, "filterLabel", 128, true);
         entries = Collections.unmodifiableList(new ArrayList<ListScreenEntry>(builder.entries));
+        actions = Collections.unmodifiableList(new ArrayList<ListScreenAction>(builder.actions));
     }
 
     public static Builder builder(String title) { return new Builder(title); }
@@ -34,6 +37,7 @@ public final class ListScreenSpec {
     public String filterLabel() { return filterLabel; }
     public boolean filterEnabled() { return !filterLabel.isEmpty(); }
     public List<ListScreenEntry> entries() { return entries; }
+    public List<ListScreenAction> actions() { return actions; }
 
     public static final class Builder {
         private final String title;
@@ -42,6 +46,7 @@ public final class ListScreenSpec {
         private String backButton = "Back";
         private String filterLabel = "";
         private final List<ListScreenEntry> entries = new ArrayList<ListScreenEntry>();
+        private final List<ListScreenAction> actions = new ArrayList<ListScreenAction>();
 
         private Builder(String title) { this.title = title; }
 
@@ -76,6 +81,19 @@ public final class ListScreenSpec {
 
         public Builder add(String title, String details, String description) {
             return add(ListScreenEntry.of(title, details, description));
+        }
+
+        public Builder action(ListScreenAction action) {
+            if (actions.size() >= MAX_ACTIONS) {
+                throw new IllegalStateException("A list screen supports at most "
+                        + MAX_ACTIONS + " actions");
+            }
+            actions.add(java.util.Objects.requireNonNull(action, "action"));
+            return this;
+        }
+
+        public Builder action(String label, Runnable callback) {
+            return action(ListScreenAction.of(label, callback));
         }
 
         public ListScreenSpec build() { return new ListScreenSpec(this); }

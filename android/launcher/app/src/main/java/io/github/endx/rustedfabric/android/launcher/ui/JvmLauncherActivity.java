@@ -84,6 +84,7 @@ public final class JvmLauncherActivity extends Activity {
     private Button openIniFolderButton;
     private Button openMapsFolderButton;
     private Button openJavaFolderButton;
+    private Button openJavaDevFolderButton;
     private LinearLayout advancedPanel;
     private LinearLayout contentPanel;
     private LinearLayout contentUnavailablePanel;
@@ -163,6 +164,7 @@ public final class JvmLauncherActivity extends Activity {
         openIniFolderButton = findViewById(R.id.open_ini_folder_button);
         openMapsFolderButton = findViewById(R.id.open_maps_folder_button);
         openJavaFolderButton = findViewById(R.id.open_java_folder_button);
+        openJavaDevFolderButton = findViewById(R.id.open_java_dev_folder_button);
         advancedPanel = findViewById(R.id.advanced_panel);
         contentPanel = findViewById(R.id.content_panel);
         contentUnavailablePanel = findViewById(R.id.content_unavailable_panel);
@@ -198,6 +200,7 @@ public final class JvmLauncherActivity extends Activity {
                 openSharedFolder(ManagedContentLibrary.Kind.MAP));
         openJavaFolderButton.setOnClickListener(ignored ->
                 openSharedFolder(ManagedContentLibrary.Kind.JAVA_MOD));
+        openJavaDevFolderButton.setOnClickListener(ignored -> openDevelopmentFolder());
         navLaunchButton.setOnClickListener(ignored -> showPage(PAGE_LAUNCH));
         navContentButton.setOnClickListener(ignored -> showPage(PAGE_CONTENT));
         navSettingsButton.setOnClickListener(ignored -> showPage(PAGE_SETTINGS));
@@ -573,9 +576,21 @@ public final class JvmLauncherActivity extends Activity {
             prepareSharedWorkspace(() -> openSharedFolder(kind), false);
             return;
         }
+        openFolderDocument(SharedContentWorkspace.documentId(kind));
+    }
+
+    private void openDevelopmentFolder() {
+        if (!gameImported || busy) return;
+        if (!workspaceReady) {
+            prepareSharedWorkspace(this::openDevelopmentFolder, false);
+            return;
+        }
+        openFolderDocument(SharedContentWorkspace.developmentDocumentId());
+    }
+
+    private void openFolderDocument(String documentId) {
         Uri folder = DocumentsContract.buildDocumentUri(
-                "com.android.externalstorage.documents",
-                SharedContentWorkspace.documentId(kind));
+                "com.android.externalstorage.documents", documentId);
         Intent view = new Intent(Intent.ACTION_VIEW);
         view.setDataAndType(folder, DocumentsContract.Document.MIME_TYPE_DIR);
         view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION

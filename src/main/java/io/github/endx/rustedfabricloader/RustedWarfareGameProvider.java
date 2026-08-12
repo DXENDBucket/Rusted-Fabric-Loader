@@ -491,6 +491,7 @@ public class RustedWarfareGameProvider implements GameProvider {
     private Path gameDir;
     private Path gameLibJar;
     private Path libsDir;
+    private JavaModDevelopmentWorkspaces.Selection javaModSelection;
 
     @Override
     public String getGameId() {
@@ -1031,24 +1032,45 @@ public class RustedWarfareGameProvider implements GameProvider {
     }
 
     /**
-     * Add javamods dir to fabric.addMods so Fabric can discover mods there.
+     * Add selected packaged and exploded Java mods to Fabric discovery. Development workspaces
+     * replace a packaged mod with the same ID before Fabric sees either candidate.
      */
     private void configureFabricModDirs() {
         Path javaModsDir = resolveJavaModsDir();
-        if (javaModsDir == null || !Files.isDirectory(javaModsDir)) return;
-
-        String existing = System.getProperty(FABRIC_ADD_MODS);
-        String sep = File.pathSeparator;
-        String newEntry = javaModsDir.toString();
-
-        if (existing == null || existing.isEmpty()) {
-            System.setProperty(FABRIC_ADD_MODS, newEntry);
-        } else {
-            if (!existing.contains(newEntry)) {
-                System.setProperty(FABRIC_ADD_MODS, existing + sep + newEntry);
+        javaModSelection = JavaModDevelopmentWorkspaces.discover(
+                gameDir, javaModsDir, isAndroidRuntime(), LOG_CATEGORY);
+        if (javaModSelection.candidates.isEmpty()) {
+            Log.info(LOG_CATEGORY, "Java mod development directory: "
+                    + javaModSelection.devRoot);
+            return;
+        }
+        try {
+            Path list = JavaModDevelopmentWorkspaces.writeCandidateList(
+                    gameDir, javaModSelection.candidates);
+            appendFabricModEntry("@" + list);
+        } catch (IOException unavailable) {
+            Log.warn(LOG_CATEGORY, "Could not write Java mod candidate list; adding paths inline: %s",
+                    unavailable.toString());
+            for (Path candidate : javaModSelection.candidates) {
+                appendFabricModEntry(candidate.toString());
             }
         }
-        Log.info(LOG_CATEGORY, "Extra Fabric mods from: " + javaModsDir);
+        Log.info(LOG_CATEGORY, "Java mods: %d packaged/total candidates, %d development workspaces from %s",
+                javaModSelection.candidates.size(), javaModSelection.workspaces.size(),
+                javaModSelection.devRoot);
+    }
+
+    private static void appendFabricModEntry(String entry) {
+        String existing = System.getProperty(FABRIC_ADD_MODS, "");
+        if (existing.isEmpty()) {
+            System.setProperty(FABRIC_ADD_MODS, entry);
+            return;
+        }
+        List<String> entries = Arrays.asList(existing.split(
+                java.util.regex.Pattern.quote(File.pathSeparator), -1));
+        if (!entries.contains(entry)) {
+            System.setProperty(FABRIC_ADD_MODS, existing + File.pathSeparator + entry);
+        }
     }
 
     @SuppressWarnings({"rawtypes","unchecked"})
@@ -1117,33 +1139,24 @@ public class RustedWarfareGameProvider implements GameProvider {
 
     /** Reads only mod metadata; platform binaries are deliberately excluded from the sync hash. */
     private String buildMultiplayerManifest() {
-        Path directory = resolveJavaModsDir();
         String platform = isAndroidRuntime() ? "android" : "windows";
-        if (directory == null || !Files.isDirectory(directory)) return "RFM1\t" + platform + "\n";
         SortedMap<String, MultiplayerRow> rows = new TreeMap<>();
-        try (java.nio.file.DirectoryStream<Path> jars = Files.newDirectoryStream(directory, "*.jar")) {
-            for (Path path : jars) {
-                try (JarFile jar = new JarFile(path.toFile())) {
-                    JarEntry entry = jar.getJarEntry("fabric.mod.json");
-                    if (entry == null) continue;
-                    JsonObject metadata;
-                    try (InputStreamReader reader = new InputStreamReader(
-                            jar.getInputStream(entry), StandardCharsets.UTF_8)) {
-                        metadata = new JsonParser().parse(reader).getAsJsonObject();
-                    }
-                    String id = jsonString(metadata, "id");
-                    String version = jsonString(metadata, "version");
-                    if ("rusted_fabric_api".equals(id) || "rustedfabricapi".equals(id)
-                            || !id.matches("[a-z][a-z0-9_-]{0,63}")
-                            || !safeToken(version, 64)) continue;
-                    MultiplayerRow row = readMultiplayerRow(id, version, metadata);
-                    rows.put(id, row);
-                } catch (RuntimeException | IOException malformed) {
-                    Log.warn(LOG_CATEGORY, "Could not read multiplayer metadata from %s", path);
-                }
+        List<Path> candidates = javaModSelection != null
+                ? javaModSelection.candidates : Collections.<Path>emptyList();
+        for (Path path : candidates) {
+            try {
+                JsonObject metadata = readFabricMetadata(path);
+                if (metadata == null) continue;
+                String id = jsonString(metadata, "id");
+                String version = jsonString(metadata, "version");
+                if ("rusted_fabric_api".equals(id) || "rustedfabricapi".equals(id)
+                        || !id.matches("[a-z][a-z0-9_-]{0,63}")
+                        || !safeToken(version, 64)) continue;
+                MultiplayerRow row = readMultiplayerRow(id, version, metadata);
+                rows.put(id, row);
+            } catch (RuntimeException | IOException malformed) {
+                Log.warn(LOG_CATEGORY, "Could not read multiplayer metadata from %s", path);
             }
-        } catch (IOException unavailable) {
-            Log.warn(LOG_CATEGORY, "Could not scan Java mods for multiplayer metadata");
         }
         StringBuilder result = new StringBuilder("RFM1\t").append(platform).append('\n');
         for (MultiplayerRow row : rows.values()) {
@@ -1152,6 +1165,25 @@ public class RustedWarfareGameProvider implements GameProvider {
                     .append(row.hash).append('\n');
         }
         return result.toString();
+    }
+
+    private static JsonObject readFabricMetadata(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            Path metadata = path.resolve("fabric.mod.json").normalize();
+            if (!metadata.startsWith(path) || !Files.isRegularFile(metadata)) return null;
+            try (InputStreamReader reader = new InputStreamReader(
+                    Files.newInputStream(metadata), StandardCharsets.UTF_8)) {
+                return new JsonParser().parse(reader).getAsJsonObject();
+            }
+        }
+        try (JarFile jar = new JarFile(path.toFile())) {
+            JarEntry entry = jar.getJarEntry("fabric.mod.json");
+            if (entry == null) return null;
+            try (InputStreamReader reader = new InputStreamReader(
+                    jar.getInputStream(entry), StandardCharsets.UTF_8)) {
+                return new JsonParser().parse(reader).getAsJsonObject();
+            }
+        }
     }
 
     private static MultiplayerRow readMultiplayerRow(String id, String version,

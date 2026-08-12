@@ -75,13 +75,17 @@ public final class ScreenContractVerification {
                 .emptyMessage("None")
                 .backButton("Return")
                 .filter("Filter:")
+                .action("Reload", calls::incrementAndGet)
                 .add("Alpha", "1.0", "First")
                 .add(ListScreenEntry.of("Beta", "2.0", "Second"))
                 .build();
         require(list.entries().size() == 2 && list.title().equals("Java Mods")
                         && list.filterEnabled() && list.filterLabel().equals("Filter:")
+                        && list.actions().size() == 1
                         && list.entries().get(1).description().equals("Second"),
                 "list screen spec lost content");
+        list.actions().get(0).invoke();
+        require(calls.get() == 11_112, "list screen action was not invoked");
         try {
             list.entries().add(ListScreenEntry.of("Other", "", ""));
             throw new AssertionError("list screen entries were mutable");

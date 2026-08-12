@@ -108,6 +108,28 @@ gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampl
 
 This preserves unrelated files in `javamods`. After copying a successful build, the installer removes older versioned `rusted-fabric-api-*.jar`, `performance-profiler-*.jar`, `rusted-fabric-example-mod-*.jar`, and provider jars so Fabric does not discover duplicate versions of loader-owned components. Performance Profiler is installed by default; pass `-PinstallPerformanceProfiler=false` to omit it.
 
+## Editable Java mod workspaces
+
+Java-mod authors can load an exploded mod directly from `<gameDir>/javamods-dev`, which the Windows
+installer creates but never manages or deletes. Each immediate
+child directory containing `fabric.mod.json` is a development workspace. A workspace with the same
+Fabric ID as a packaged mod in `javamods` overrides that Jar for the current launch, so Fabric never
+sees duplicate candidates. To keep an IDE project elsewhere, create a UTF-8
+`javamods-dev/<name>.link` text file containing exactly one absolute or link-file-relative project
+directory. Symbolic links are deliberately neither required nor followed.
+
+Editable assets remain ordinary files below that workspace and can be opened through
+`ModResources.forMod(...)`. The API's `DevelopmentReloads.reloadInPlace()` first invokes the game's
+native sandbox unit reload, which migrates live custom-unit instances without leaving the match,
+then runs registered `ModResourceReloaders` through their prepare/apply transaction. Java Mod Menu
+exposes the same operation as **Reload units/resources**. On Windows, stable data-file changes are
+also detected by bounded polling; `.java`, `.class`, `.jar`, Gradle, and Git files are ignored
+because changing classes or Mixins still requires a restart.
+
+Android uses the public `Internal storage/rustedWarfare/javamods-dev` directory and never relies on
+symlinks. Shared-storage polling is disabled there by default to avoid FUSE/document-provider stalls;
+authors edit the folder with their file manager and use the same in-game manual reload button.
+
 INI Essentials is built as an official artifact but is not installed by default yet. Install it for
 custom-unit development with:
 

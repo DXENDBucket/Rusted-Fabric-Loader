@@ -1,0 +1,49 @@
+package io.github.endx.rustedfabricapi.internal.development;
+
+import io.github.endx.rustedfabricapi.api.asset.reload.ModResourceReloaders;
+import io.github.endx.rustedfabricapi.api.asset.reload.ResourceReloadReason;
+import io.github.endx.rustedfabricapi.api.asset.reload.ResourceReloadReport;
+import io.github.endx.rustedfabricapi.api.custom.CustomUnits;
+
+import java.util.Locale;
+
+/** Internal coordination for native-unit and Java-resource development reloads. */
+public final class DevelopmentReloadRuntime {
+    private static final Object LOCK = new Object();
+    private static volatile boolean integratedUnitReloadRunning;
+
+    private DevelopmentReloadRuntime() { }
+
+    public static ResourceReloadReport reloadInPlace() {
+        synchronized (LOCK) {
+            integratedUnitReloadRunning = true;
+            try {
+                if (isAndroidRuntime()) {
+                    // Shared-storage/document providers do not reliably preserve mtimes. The
+                    // game's sandbox force-reload path also migrates active unit instances.
+                    CustomUnits.reloadActiveInPlace();
+                } else {
+                    CustomUnits.reloadChangedInPlace();
+                }
+            } finally {
+                integratedUnitReloadRunning = false;
+            }
+            // The registry event above was deliberately suppressed, so Java resources apply
+            // exactly once after the native unit graph has reached its final state.
+            return ModResourceReloaders.reloadAll(ResourceReloadReason.MANUAL);
+        }
+    }
+
+    public static ResourceReloadReport reloadResources() {
+        return ModResourceReloaders.reloadAll(ResourceReloadReason.MANUAL);
+    }
+
+    public static boolean isIntegratedUnitReloadRunning() {
+        return integratedUnitReloadRunning;
+    }
+
+    private static boolean isAndroidRuntime() {
+        return System.getProperty("rustedfabric.platform", "")
+                .toLowerCase(Locale.ROOT).contains("android");
+    }
+}

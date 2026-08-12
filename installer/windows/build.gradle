@@ -216,6 +216,9 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
                 throw new GradleException("Test installation is missing ${relative}")
             }
         }
+        if (!new File(root, 'javamods-dev').isDirectory()) {
+            throw new GradleException('Test installation did not create the editable Java mod workspace')
+        }
         if (new File(root, 'javamods').listFiles().any {
             it.name.contains('example-mod') || it.name.contains('ini-essentials')
         }) {

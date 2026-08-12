@@ -5,5 +5,6 @@ public enum ResourceReloadReason {
     INITIAL_ENGINE_READY,
     NATIVE_CUSTOM_UNITS,
     LANGUAGE,
+    DEVELOPMENT_WORKSPACE_CHANGED,
     MANUAL
 }
