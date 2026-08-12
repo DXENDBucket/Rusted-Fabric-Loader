@@ -79,6 +79,15 @@ syntax beyond the parameter types exposed by the original game.
 AWT is still the Windows rasterizer implementation, but it is no longer part of the shared text
 cache contract and can be replaced by FreeType/Skia in an Android platform driver.
 
+Desktop texture binding now shares one Vulkan sampler per filter mode instead of creating two
+samplers for every image. Descriptor sets are allocated lazily on first sampling, cached for both
+single- and dual-texture materials, and returned to a fence-safe recycler when their images retire.
+Recycled sets are updated for the replacement image instead of being freed and allocated again;
+repeated paired-material cache hits do not allocate Java lookup keys. Command recording also skips
+a descriptor bind when a material or clip split keeps the same set and a compatible pipeline
+layout. `descriptor.*` profiler counters expose allocations, recycler hits, cache hits/misses, and
+executed/skipped binds.
+
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
 platform-driver submission, while the ordinary public `builder(...)` path remains an immutable

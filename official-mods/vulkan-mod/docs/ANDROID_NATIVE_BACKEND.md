@@ -131,6 +131,13 @@ Descriptor indexing, timeline semaphores, dynamic rendering, 16-bit shader arith
 newer features remain optional capability tiers. The baseline must not accidentally depend on a
 desktop-only Vulkan feature.
 
+The baseline descriptor lifecycle mirrors the desktop contract without requiring descriptor
+indexing: samplers are shared by immutable filter state, image descriptor sets are created on first
+use, and retired sets become reusable only after every submission fence that could reference them
+has completed. Recording may retain an already-bound set across compatible pipeline/material
+changes. Descriptor indexing can later replace this mechanism on accepted devices, but it is an
+optional acceleration rather than a FrameStream semantic requirement.
+
 ## Presentation and frame pacing
 
 The backend integrates Android Game Development Kit Frame Pacing (Swappy) after basic correctness.

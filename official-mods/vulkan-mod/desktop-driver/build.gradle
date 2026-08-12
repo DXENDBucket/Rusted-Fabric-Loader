@@ -74,6 +74,15 @@ tasks.register('verifySpriteRunSubmission', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneSpriteRunVerification')
 }
 
+tasks.register('verifyDescriptorReuse', JavaExec) {
+    group = 'verification'
+    description = 'Verifies lazy, recycled descriptors and redundant texture-bind removal.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneDescriptorReuseVerification')
+}
+
 tasks.register('verifyCustomVertexPipeline', JavaExec) {
     group = 'verification'
     description = 'Executes a translated custom vertex shader on the real Vulkan device.'

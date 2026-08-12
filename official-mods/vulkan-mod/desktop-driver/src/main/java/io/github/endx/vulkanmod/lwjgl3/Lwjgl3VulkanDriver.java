@@ -1932,10 +1932,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long nextCustomShaderHandle = 1L;
         private long textureDescriptorSetLayout;
         private long textureDescriptorPool;
+        private final long[] textureSamplers =
+                new long[VulkanTextureFilter.values().length];
+        private final ArrayDeque<Long> recycledTextureDescriptors =
+                new ArrayDeque<Long>();
         private final Map<Long, TextureResource> textures =
                 new LinkedHashMap<Long, TextureResource>();
         private final Map<TextureDescriptorKey, Long> pairedTextureDescriptors =
                 new LinkedHashMap<TextureDescriptorKey, Long>();
+        private final TextureDescriptorKey pairedTextureDescriptorProbe =
+                new TextureDescriptorKey();
         private final ArrayList<PendingTextureUpload> pendingTextureUploads =
                 new ArrayList<PendingTextureUpload>();
         private final Map<Long, ResourceTextureBinding> resourceTextures =
@@ -1982,6 +1988,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long textureUploadBatches;
         private long textureUploadSlotGrowths;
         private long textureMutationFenceWaits;
+        private long textureDescriptorAllocations;
+        private long textureDescriptorReuses;
+        private long textureDescriptorSingleHits;
+        private long textureDescriptorSingleMisses;
+        private long textureDescriptorPairHits;
+        private long textureDescriptorPairMisses;
+        private long textureDescriptorBindCalls;
+        private long textureDescriptorBindSkips;
         private VulkanShaderState[] decodedMaterialShaders = new VulkanShaderState[0];
         private long[] decodedMaterialSecondaryTextures = new long[0];
         private int[] decodedMaterialEpochs = new int[0];
@@ -2915,28 +2929,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkCreateImageView(device, viewInfo, null, handle),
                         "vkCreateImageView(texture)");
                 created.view = handle.get(0);
-                for (VulkanTextureFilter filter : VulkanTextureFilter.values()) {
-                    int vkFilter = filter == VulkanTextureFilter.LINEAR
-                            ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-                    VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
-                            .sType$Default()
-                            .magFilter(vkFilter).minFilter(vkFilter)
-                            .mipmapMode(filter == VulkanTextureFilter.LINEAR
-                                    ? VK_SAMPLER_MIPMAP_MODE_LINEAR
-                                    : VK_SAMPLER_MIPMAP_MODE_NEAREST)
-                            .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                            .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                            .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                            .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
-                            .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
-                            .minLod(0.0f).maxLod(0.0f)
-                            .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-                            .unnormalizedCoordinates(false);
-                    check(vkCreateSampler(device, samplerInfo, null, handle),
-                            "vkCreateSampler(texture " + filter + ")");
-                    created.samplers[filter.ordinal()] = handle.get(0);
-                    allocateTextureDescriptor(stack, created, filter);
-                }
 
                 long publicHandle = nextTextureHandle++;
                 if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
@@ -3010,27 +3002,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkCreateImageView(device, viewInfo, null, handle),
                         "vkCreateImageView(render target)");
                 created.view = handle.get(0);
-                for (VulkanTextureFilter filter : VulkanTextureFilter.values()) {
-                    int vkFilter = filter == VulkanTextureFilter.LINEAR
-                            ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-                    VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
-                            .sType$Default().magFilter(vkFilter).minFilter(vkFilter)
-                            .mipmapMode(filter == VulkanTextureFilter.LINEAR
-                                    ? VK_SAMPLER_MIPMAP_MODE_LINEAR
-                                    : VK_SAMPLER_MIPMAP_MODE_NEAREST)
-                            .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                            .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                            .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                            .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
-                            .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
-                            .minLod(0.0f).maxLod(0.0f)
-                            .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
-                            .unnormalizedCoordinates(false);
-                    check(vkCreateSampler(device, samplerInfo, null, handle),
-                            "vkCreateSampler(render target " + filter + ")");
-                    created.samplers[filter.ordinal()] = handle.get(0);
-                    allocateTextureDescriptor(stack, created, filter);
-                }
                 VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
                         .sType$Default().renderPass(offscreenClearRenderPass)
                         .pAttachments(stack.longs(created.view))
@@ -3101,6 +3072,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
             LongBuffer drawVertexOffset = stack.mallocLong(1);
             LongBuffer drawDescriptorSet = stack.mallocLong(1);
+            long boundTextureDescriptor = VK_NULL_HANDLE;
             VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
             for (DrawBatch drawBatch : upload.batches) {
                 if (drawBatch instanceof ColoredDrawBatch) {
@@ -3131,9 +3103,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     vkCmdBindVertexBuffers(command, 0, drawVertexBuffer, drawVertexOffset);
                     if (setScissor(command, batch.clip, target.width, target.height,
                             drawScissor)) {
-                        drawDescriptorSet.put(0, batch.descriptorSet);
-                        vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                texturePipelineLayout, 0, drawDescriptorSet, null);
+                        boundTextureDescriptor = bindTextureDescriptorSet(command,
+                                batch.descriptorSet, boundTextureDescriptor,
+                                drawDescriptorSet);
                         pushShaderState(command, batch.shaderState, shaderPushConstants);
                         recordDraw(command, batch, vertexBuffer);
                     }
@@ -3217,6 +3189,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
                 LongBuffer drawVertexOffset = stack.mallocLong(1);
                 LongBuffer drawDescriptorSet = stack.mallocLong(1);
+                long boundTextureDescriptor = VK_NULL_HANDLE;
                 VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
                 for (DrawBatch drawBatch : upload.batches) {
                     if (drawBatch instanceof ColoredDrawBatch) {
@@ -3249,10 +3222,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 drawVertexBuffer, drawVertexOffset);
                         if (setScissor(command, batch.clip, target.width,
                                 target.height, drawScissor)) {
-                            drawDescriptorSet.put(0, batch.descriptorSet);
-                            vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    texturePipelineLayout, 0,
-                                    drawDescriptorSet, null);
+                            boundTextureDescriptor = bindTextureDescriptorSet(command,
+                                    batch.descriptorSet, boundTextureDescriptor,
+                                    drawDescriptorSet);
                             pushShaderState(command, batch.shaderState,
                                     shaderPushConstants);
                             recordDraw(command, batch, vertexBuffer);
@@ -3559,6 +3531,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("texture.uploadBatches", textureUploadBatches);
             statistics.put("texture.uploadSlotGrowths", textureUploadSlotGrowths);
             statistics.put("texture.mutationFenceWaits", textureMutationFenceWaits);
+            statistics.put("descriptor.allocations", textureDescriptorAllocations);
+            statistics.put("descriptor.reuses", textureDescriptorReuses);
+            statistics.put("descriptor.recycled",
+                    (long) recycledTextureDescriptors.size());
+            statistics.put("descriptor.singleHits", textureDescriptorSingleHits);
+            statistics.put("descriptor.singleMisses", textureDescriptorSingleMisses);
+            statistics.put("descriptor.pairHits", textureDescriptorPairHits);
+            statistics.put("descriptor.pairMisses", textureDescriptorPairMisses);
+            statistics.put("descriptor.bindCalls", textureDescriptorBindCalls);
+            statistics.put("descriptor.bindSkips", textureDescriptorBindSkips);
             statistics.put("frame.materialCacheHits", decodedMaterialCacheHits);
             statistics.put("frame.materialCacheMisses", decodedMaterialCacheMisses);
         }
@@ -3584,39 +3566,87 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             poolSize.get(0).type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                     .descriptorCount(MAX_TEXTURE_DESCRIPTOR_SETS * 2);
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack)
-                    .sType$Default().flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
-                    .maxSets(MAX_TEXTURE_DESCRIPTOR_SETS)
+                    .sType$Default().maxSets(MAX_TEXTURE_DESCRIPTOR_SETS)
                     .pPoolSizes(poolSize);
             check(vkCreateDescriptorPool(device, poolInfo, null, handle),
                     "vkCreateDescriptorPool(texture)");
             textureDescriptorPool = handle.get(0);
+            for (VulkanTextureFilter filter : VulkanTextureFilter.values()) {
+                int vkFilter = filter == VulkanTextureFilter.LINEAR
+                        ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+                VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
+                        .sType$Default().magFilter(vkFilter).minFilter(vkFilter)
+                        .mipmapMode(filter == VulkanTextureFilter.LINEAR
+                                ? VK_SAMPLER_MIPMAP_MODE_LINEAR
+                                : VK_SAMPLER_MIPMAP_MODE_NEAREST)
+                        .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        .mipLodBias(0.0f).anisotropyEnable(false).maxAnisotropy(1.0f)
+                        .compareEnable(false).compareOp(VK_COMPARE_OP_ALWAYS)
+                        .minLod(0.0f).maxLod(0.0f)
+                        .borderColor(VK_BORDER_COLOR_INT_OPAQUE_BLACK)
+                        .unnormalizedCoordinates(false);
+                check(vkCreateSampler(device, samplerInfo, null, handle),
+                        "vkCreateSampler(shared " + filter + ")");
+                textureSamplers[filter.ordinal()] = handle.get(0);
+            }
         }
 
-        private void allocateTextureDescriptor(MemoryStack stack, TextureResource texture,
-                                               VulkanTextureFilter filter) {
+        private long acquireTextureDescriptor(MemoryStack stack) {
+            Long recycled = recycledTextureDescriptors.pollFirst();
+            if (recycled != null) {
+                textureDescriptorReuses++;
+                return recycled.longValue();
+            }
             VkDescriptorSetAllocateInfo allocateInfo = VkDescriptorSetAllocateInfo.calloc(stack)
                     .sType$Default().descriptorPool(textureDescriptorPool)
                     .pSetLayouts(stack.longs(textureDescriptorSetLayout));
             LongBuffer descriptor = stack.mallocLong(1);
             check(vkAllocateDescriptorSets(device, allocateInfo, descriptor),
                     "vkAllocateDescriptorSets(texture)");
-            texture.descriptorSets[filter.ordinal()] = descriptor.get(0);
+            textureDescriptorAllocations++;
+            return descriptor.get(0);
+        }
+
+        private void writeTextureDescriptor(MemoryStack stack, long descriptorSet,
+                                            TextureResource primary,
+                                            TextureResource secondary,
+                                            VulkanTextureFilter filter) {
             VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(2, stack);
-            for (int index = 0; index < 2; index++) {
-                imageInfo.get(index).sampler(texture.samplers[filter.ordinal()])
-                        .imageView(texture.view)
-                        .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            }
+            long sampler = textureSamplers[filter.ordinal()];
+            imageInfo.get(0).sampler(sampler).imageView(primary.view)
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            imageInfo.get(1).sampler(sampler).imageView(secondary.view)
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             VkWriteDescriptorSet.Buffer write = VkWriteDescriptorSet.calloc(2, stack);
             for (int index = 0; index < 2; index++) {
                 write.get(index).sType$Default()
-                        .dstSet(texture.descriptorSets[filter.ordinal()]).dstBinding(index)
+                        .dstSet(descriptorSet).dstBinding(index)
                         .dstArrayElement(0)
                         .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                         .descriptorCount(1).pImageInfo(VkDescriptorImageInfo.create(
                                 imageInfo.get(index).address(), 1));
             }
             vkUpdateDescriptorSets(device, write, null);
+        }
+
+        private long singleTextureDescriptor(TextureResource texture,
+                                             VulkanTextureFilter filter) {
+            int index = filter.ordinal();
+            long descriptorSet = texture.descriptorSets[index];
+            if (descriptorSet != VK_NULL_HANDLE) {
+                textureDescriptorSingleHits++;
+                return descriptorSet;
+            }
+            textureDescriptorSingleMisses++;
+            try (MemoryStack descriptorStack = MemoryStack.stackPush()) {
+                descriptorSet = acquireTextureDescriptor(descriptorStack);
+                writeTextureDescriptor(descriptorStack, descriptorSet,
+                        texture, texture, filter);
+            }
+            texture.descriptorSets[index] = descriptorSet;
+            return descriptorSet;
         }
 
         private long textureDescriptor(long primaryHandle,
@@ -3629,49 +3659,30 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             long secondaryHandle = shaderState.secondaryTextureHandle();
             if (secondaryHandle != 0L) secondaryHandle = resolveTextureHandle(secondaryHandle);
-            if (secondaryHandle == 0L) return primary.descriptorSets[filter.ordinal()];
+            if (secondaryHandle == 0L) return singleTextureDescriptor(primary, filter);
             TextureResource secondary = textures.get(secondaryHandle);
             if (secondary == null) {
                 throw new IllegalArgumentException(
                         "unknown secondary texture handle " + secondaryHandle);
             }
-            TextureDescriptorKey key = new TextureDescriptorKey(
-                    primaryHandle, secondaryHandle, filter);
-            Long existing = pairedTextureDescriptors.get(key);
-            if (existing != null) return existing.longValue();
+            pairedTextureDescriptorProbe.set(primaryHandle, secondaryHandle, filter);
+            Long existing = pairedTextureDescriptors.get(pairedTextureDescriptorProbe);
+            if (existing != null) {
+                textureDescriptorPairHits++;
+                return existing.longValue();
+            }
+            textureDescriptorPairMisses++;
 
             long descriptorSet;
             // A large first frame can create many unique texture pairs. Give each allocation a
             // bounded nested stack frame instead of retaining every temporary until present ends.
             try (MemoryStack descriptorStack = MemoryStack.stackPush()) {
-                VkDescriptorSetAllocateInfo allocateInfo =
-                        VkDescriptorSetAllocateInfo.calloc(descriptorStack)
-                                .sType$Default().descriptorPool(textureDescriptorPool)
-                                .pSetLayouts(descriptorStack.longs(textureDescriptorSetLayout));
-                LongBuffer descriptor = descriptorStack.mallocLong(1);
-                check(vkAllocateDescriptorSets(device, allocateInfo, descriptor),
-                        "vkAllocateDescriptorSets(texture pair)");
-                descriptorSet = descriptor.get(0);
-                VkDescriptorImageInfo.Buffer imageInfo =
-                        VkDescriptorImageInfo.calloc(2, descriptorStack);
-                imageInfo.get(0).sampler(primary.samplers[filter.ordinal()])
-                        .imageView(primary.view)
-                        .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imageInfo.get(1).sampler(secondary.samplers[filter.ordinal()])
-                        .imageView(secondary.view)
-                        .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                VkWriteDescriptorSet.Buffer write =
-                        VkWriteDescriptorSet.calloc(2, descriptorStack);
-                for (int index = 0; index < 2; index++) {
-                    write.get(index).sType$Default().dstSet(descriptorSet).dstBinding(index)
-                            .dstArrayElement(0)
-                            .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                            .descriptorCount(1).pImageInfo(VkDescriptorImageInfo.create(
-                                    imageInfo.get(index).address(), 1));
-                }
-                vkUpdateDescriptorSets(device, write, null);
+                descriptorSet = acquireTextureDescriptor(descriptorStack);
+                writeTextureDescriptor(descriptorStack, descriptorSet,
+                        primary, secondary, filter);
             }
-            pairedTextureDescriptors.put(key, descriptorSet);
+            pairedTextureDescriptors.put(new TextureDescriptorKey(
+                    primaryHandle, secondaryHandle, filter), descriptorSet);
             return descriptorSet;
         }
 
@@ -3819,33 +3830,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private void destroyTextureResource(TextureResource texture, boolean freeDescriptor) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                destroyTextureResource(texture, freeDescriptor, stack);
-            }
-        }
-
-        private void destroyTextureResource(TextureResource texture, boolean freeDescriptor,
-                                            MemoryStack stack) {
             if (texture.framebuffer != VK_NULL_HANDLE) {
                 vkDestroyFramebuffer(device, texture.framebuffer, null);
             }
             for (long descriptorSet : texture.descriptorSets) {
                 if (freeDescriptor && descriptorSet != VK_NULL_HANDLE
                         && textureDescriptorPool != VK_NULL_HANDLE) {
-                    check(vkFreeDescriptorSets(device, textureDescriptorPool,
-                            stack.longs(descriptorSet)), "vkFreeDescriptorSets(texture)");
+                    recycledTextureDescriptors.addFirst(descriptorSet);
                 }
             }
             for (long descriptorSet : texture.dependentDescriptorSets) {
                 if (freeDescriptor && descriptorSet != VK_NULL_HANDLE
                         && textureDescriptorPool != VK_NULL_HANDLE) {
-                    check(vkFreeDescriptorSets(device, textureDescriptorPool,
-                            stack.longs(descriptorSet)),
-                            "vkFreeDescriptorSets(texture pair)");
+                    recycledTextureDescriptors.addFirst(descriptorSet);
                 }
-            }
-            for (long sampler : texture.samplers) {
-                if (sampler != VK_NULL_HANDLE) vkDestroySampler(device, sampler, null);
             }
             if (texture.view != VK_NULL_HANDLE) vkDestroyImageView(device, texture.view, null);
             if (texture.image != VK_NULL_HANDLE) vkDestroyImage(device, texture.image, null);
@@ -4142,6 +4140,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
                 LongBuffer drawVertexOffset = stack.mallocLong(1);
                 LongBuffer drawDescriptorSet = stack.mallocLong(1);
+                long boundTextureDescriptor = VK_NULL_HANDLE;
                 VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
                 for (DrawBatch drawBatch : upload.batches) {
                     if (drawBatch instanceof ColoredDrawBatch) {
@@ -4164,10 +4163,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 drawVertexBuffer, drawVertexOffset);
                         if (setScissor(commandBuffer, batch.clip, info.width(), info.height(),
                                 drawScissor)) {
-                            drawDescriptorSet.put(0, batch.descriptorSet);
-                            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    texturePipelineLayout, 0,
-                                    drawDescriptorSet, null);
+                            boundTextureDescriptor = bindTextureDescriptorSet(commandBuffer,
+                                    batch.descriptorSet, boundTextureDescriptor,
+                                    drawDescriptorSet);
                             pushShaderState(commandBuffer, batch.shaderState,
                                     shaderPushConstants);
                             recordDraw(commandBuffer, batch, vertexBuffer);
@@ -4333,6 +4331,21 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             upload.batches.clear();
             frameUploadPool.addFirst(upload);
+        }
+
+        private long bindTextureDescriptorSet(VkCommandBuffer command,
+                                              long descriptorSet,
+                                              long currentlyBound,
+                                              LongBuffer descriptorBuffer) {
+            if (descriptorSet == currentlyBound) {
+                textureDescriptorBindSkips++;
+                return currentlyBound;
+            }
+            descriptorBuffer.put(0, descriptorSet);
+            vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    texturePipelineLayout, 0, descriptorBuffer, null);
+            textureDescriptorBindCalls++;
+            return descriptorSet;
         }
 
         private static void recordDraw(VkCommandBuffer command, DrawBatch batch,
@@ -5206,6 +5219,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vkDestroyDescriptorPool(device, textureDescriptorPool, null);
                 textureDescriptorPool = VK_NULL_HANDLE;
             }
+            recycledTextureDescriptors.clear();
+            for (int index = 0; index < textureSamplers.length; index++) {
+                if (textureSamplers[index] != VK_NULL_HANDLE) {
+                    vkDestroySampler(device, textureSamplers[index], null);
+                    textureSamplers[index] = VK_NULL_HANDLE;
+                }
+            }
             for (TextureResource texture : textures.values()) {
                 destroyTextureResource(texture, false);
             }
@@ -5251,8 +5271,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private boolean initialized;
             private boolean renderTarget;
             private long framebuffer;
-            private final long[] samplers =
-                    new long[VulkanTextureFilter.values().length];
             private final long[] descriptorSets =
                     new long[VulkanTextureFilter.values().length];
             private final List<Long> dependentDescriptorSets = new ArrayList<Long>();
@@ -5326,12 +5344,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private static final class TextureDescriptorKey {
-            private final long primary;
-            private final long secondary;
-            private final VulkanTextureFilter filter;
+            private long primary;
+            private long secondary;
+            private VulkanTextureFilter filter;
+
+            private TextureDescriptorKey() { }
 
             private TextureDescriptorKey(long primary, long secondary,
                                          VulkanTextureFilter filter) {
+                set(primary, secondary, filter);
+            }
+
+            private void set(long primary, long secondary,
+                             VulkanTextureFilter filter) {
                 this.primary = primary;
                 this.secondary = secondary;
                 this.filter = filter;
