@@ -332,6 +332,7 @@ tasks.register('verifyOfficialApiNamespace') {
                 'io/github/endx/rustedfabricapi/api/config/ModConfigFile.java',
                 'io/github/endx/rustedfabricapi/api/config/ModConfigFiles.java',
                 'io/github/endx/rustedfabricapi/api/custom/CustomUnits.java',
+                'io/github/endx/rustedfabricapi/api/custom/CustomUnitMemory.java',
                 'io/github/endx/rustedfabricapi/api/custom/CustomUnitTriggers.java',
                 'io/github/endx/rustedfabricapi/api/custom/PerActionAutoTriggerCooldowns.java',
                 'io/github/endx/rustedfabricapi/api/custom/action/CustomActionEffects.java',

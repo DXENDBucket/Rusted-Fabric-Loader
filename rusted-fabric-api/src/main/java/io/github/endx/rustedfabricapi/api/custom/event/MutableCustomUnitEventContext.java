@@ -1,5 +1,7 @@
 package io.github.endx.rustedfabricapi.api.custom.event;
 
+import io.github.endx.rustedfabricapi.api.custom.CustomUnitMemory;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import rustedwarfare.custom.CustomTagList;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.event.CustomUnitEventType;
@@ -44,6 +46,29 @@ public final class MutableCustomUnitEventContext {
     public String primaryValueName() { return primaryValueName; }
     public double originalValue() { return originalValue; }
     public double value() { return value; }
+
+    /** Portable damage-event test that does not expose the mapped native event enum. */
+    public boolean isDamageEvent() { return eventType == CustomUnitEventType.TOOK_DAMAGE; }
+
+    /** Returns whether the native event/projectile tag list contains {@code tagName}. */
+    public boolean hasTag(String tagName) {
+        return UnitTags.contains(tags, UnitTags.tag(tagName));
+    }
+
+    /** Reads a number from this custom unit's native {@code defineUnitMemory} state. */
+    public double unitMemoryNumber(String name, double fallback) {
+        return CustomUnitMemory.number(unit, name, fallback);
+    }
+
+    /** Reads a boolean from this custom unit's native {@code defineUnitMemory} state. */
+    public boolean unitMemoryBoolean(String name, boolean fallback) {
+        return CustomUnitMemory.bool(unit, name, fallback);
+    }
+
+    /** Tests the unit metadata's {@code defineUnitMemory} declarations, independent of save data. */
+    public boolean unitMemoryDefined(String name) {
+        return CustomUnitMemory.isDefined(unit, name);
+    }
 
     public void setValue(double replacement) {
         requireFinite(replacement);

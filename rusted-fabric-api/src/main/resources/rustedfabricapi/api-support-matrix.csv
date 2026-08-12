@@ -14,6 +14,7 @@ event.custom.unit.load.v1,event.CustomUnitEvents
 event.custom.unit.lifecycle.v1,custom.event.CustomUnitLifecycleEvents
 event.custom.unit.render.v1,event.CustomUnitRenderEvents
 event.custom.unit.runtime.v1,event.CustomUnitRuntimeEvents
+custom.unit_memory.v1,custom.CustomUnitMemory
 event.effect.runtime.v1,event.EffectRuntimeEvents
 event.file.system.v1,event.FileSystemEvents
 event.game.lifecycle.v1,event.GameLifecycleEvents
