@@ -173,6 +173,14 @@ tasks.register('verifyResourceStreamAbi', JavaExec) {
     dependsOn tasks.named('testClasses')
 }
 
+tasks.register('verifyResourceStreamClient', JavaExec) {
+    group = 'verification'
+    description = 'Verifies shared logical handles and ordered live ResourceStream submission.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.endx.vulkanmod.ResourceStreamClientVerification'
+    dependsOn tasks.named('testClasses')
+}
+
 tasks.register('verifyNativeShaderCoverage', JavaExec) {
     group = 'verification'
     description = 'Checks native mappings for every fragment shader shipped by the stock game.'
@@ -184,9 +192,10 @@ tasks.register('verifyNativeShaderCoverage', JavaExec) {
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
         tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
         tasks.named('verifyFrameCommandArena'), tasks.named('verifyFrameStreamAbi'),
-        tasks.named('verifyResourceStreamAbi'),
+        tasks.named('verifyResourceStreamAbi'), tasks.named('verifyResourceStreamClient'),
         tasks.named('verifyNativeShaderCoverage'),
         ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
+check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyResourceStreamExecution'
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

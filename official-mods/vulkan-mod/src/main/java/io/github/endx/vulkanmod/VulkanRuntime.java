@@ -471,7 +471,9 @@ public final class VulkanRuntime {
         }
         if (frameStreamEncoder == null) {
             frameStreamEncoder = new FrameStreamEncoder(
-                    FrameStreamResourceMapper.generationOneSlots(),
+                    activeDriver.supportsResourceStream()
+                            ? FrameStreamResourceMapper.typedHandles()
+                            : FrameStreamResourceMapper.generationOneSlots(),
                     activeDriver::customShaderUsesExpandedVertexInput);
             frameStreamArenas = new FrameStreamArenaPool(configuredFrameArenaBytes());
             log("RustedVK FrameStream desktop submission is active with "
@@ -485,7 +487,8 @@ public final class VulkanRuntime {
         long frameId = ++nextFrameStreamId;
         for (;;) {
             try (FrameStreamArenaPool.WriteLease writer = frameStreamArenas.acquireWriter()) {
-                frameStreamEncoder.encodeTo(frameId, 0L, submission, writer.buffer());
+                frameStreamEncoder.encodeTo(frameId,
+                        activeDriver.requiredResourceSequence(), submission, writer.buffer());
                 writer.publish();
             } catch (FrameStreamCapacityException capacity) {
                 growFrameArenas(capacity.requiredBytes());

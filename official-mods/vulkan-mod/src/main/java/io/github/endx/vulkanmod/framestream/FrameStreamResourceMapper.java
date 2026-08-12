@@ -10,6 +10,26 @@ public interface FrameStreamResourceMapper {
         return GenerationOneSlots.INSTANCE;
     }
 
+    /** ResourceStream already exposes fully typed generation-checked handles. */
+    static FrameStreamResourceMapper typedHandles() {
+        return TypedHandles.INSTANCE;
+    }
+
+    final class TypedHandles implements FrameStreamResourceMapper {
+        private static final TypedHandles INSTANCE = new TypedHandles();
+        private TypedHandles() { }
+
+        @Override public long texture(long handle) {
+            FrameResourceHandle.requireType(handle, FrameResourceHandle.TYPE_TEXTURE);
+            return handle;
+        }
+
+        @Override public long shaderProgram(long handle) {
+            FrameResourceHandle.requireType(handle, FrameResourceHandle.TYPE_SHADER_PROGRAM);
+            return handle;
+        }
+    }
+
     final class GenerationOneSlots implements FrameStreamResourceMapper {
         private static final GenerationOneSlots INSTANCE = new GenerationOneSlots();
 

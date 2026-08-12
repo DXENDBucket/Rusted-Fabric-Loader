@@ -31,6 +31,8 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default void destroyShaderProgram(long shaderHandle) { }
     /** True when this backend consumes validated RustedVK FrameStream submissions directly. */
     default boolean supportsFrameStream() { return false; }
+    /** True when this backend consumes ordered, validated RustedVK ResourceStream records. */
+    default boolean supportsResourceStream() { return false; }
     /** Resource metadata needed by the shared encoder's custom vertex layout selection. */
     default boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
         throw new UnsupportedOperationException("custom shader metadata is not available");
@@ -93,6 +95,10 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     /** Presents one complete FrameStream. The backend must validate it before GPU access. */
     default VulkanSurfaceInfo presentFrameStream(ByteBuffer frameStream) {
         throw new UnsupportedOperationException("FrameStream submission is not supported");
+    }
+    /** Applies one complete reliable ResourceStream and returns its final applied sequence. */
+    default long submitResourceStream(ByteBuffer resourceStream) {
+        throw new UnsupportedOperationException("ResourceStream submission is not supported");
     }
     /**
      * Presents a frame, or returns {@code null} when the surface temporarily cannot acquire an

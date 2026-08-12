@@ -128,10 +128,20 @@ final class VulkanDriverLoader {
     static final class LoadedDriver implements AutoCloseable {
         private final VulkanPlatformDriver driver;
         private final IsolatedDriverClassLoader loader;
+        private final ResourceStreamClient resources;
 
         private LoadedDriver(VulkanPlatformDriver driver, IsolatedDriverClassLoader loader) {
             this.driver = driver;
             this.loader = loader;
+            this.resources = driver.supportsResourceStream()
+                    && !Boolean.getBoolean("rusted.fabric.vulkan.objectResources")
+                    ? new ResourceStreamClient(stream -> invoke(
+                            () -> driver.submitResourceStream(stream)))
+                    : null;
+            if (resources != null) {
+                System.out.println("[Vulkan Mod] Reliable ResourceStream resource submission "
+                        + "is active (typed texture and shader handles)");
+            }
         }
 
         String name() { return driver.name(); }
@@ -149,15 +159,21 @@ final class VulkanDriverLoader {
         }
 
         long uploadTexture(VulkanTextureData texture) {
-            return invoke(() -> driver.uploadTexture(texture));
+            return resources == null ? invoke(() -> driver.uploadTexture(texture))
+                    : resources.uploadTexture(texture);
         }
 
         long compileFragmentShader(
                 io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader shader) {
-            return invoke(() -> driver.compileFragmentShader(shader));
+            return resources == null ? invoke(() -> driver.compileFragmentShader(shader))
+                    : resources.compileFragmentShader(shader);
         }
 
         void destroyFragmentShader(long shaderHandle) {
+            if (resources != null) {
+                resources.destroyShader(shaderHandle);
+                return;
+            }
             invoke(() -> {
                 driver.destroyFragmentShader(shaderHandle);
                 return null;
@@ -166,10 +182,15 @@ final class VulkanDriverLoader {
 
         long compileShaderProgram(
                 io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram program) {
-            return invoke(() -> driver.compileShaderProgram(program));
+            return resources == null ? invoke(() -> driver.compileShaderProgram(program))
+                    : resources.compileShaderProgram(program);
         }
 
         void destroyShaderProgram(long shaderHandle) {
+            if (resources != null) {
+                resources.destroyShader(shaderHandle);
+                return;
+            }
             invoke(() -> {
                 driver.destroyShaderProgram(shaderHandle);
                 return null;
@@ -180,12 +201,21 @@ final class VulkanDriverLoader {
             return invoke(driver::supportsFrameStream);
         }
 
+        boolean supportsResourceStream() { return resources != null; }
+
+        long requiredResourceSequence() {
+            return resources == null ? 0L : resources.requiredForNextFrame();
+        }
+
         boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
-            return invoke(() -> driver.customShaderUsesExpandedVertexInput(shaderHandle));
+            return resources == null
+                    ? invoke(() -> driver.customShaderUsesExpandedVertexInput(shaderHandle))
+                    : resources.shaderUsesExpandedVertexInput(shaderHandle);
         }
 
         long createRenderTarget(int width, int height) {
-            return invoke(() -> driver.createRenderTarget(width, height));
+            return resources == null ? invoke(() -> driver.createRenderTarget(width, height))
+                    : resources.createRenderTarget(width, height);
         }
 
         void renderToTexture(long textureHandle, VulkanFrameCommands frame) {
@@ -196,6 +226,10 @@ final class VulkanDriverLoader {
         }
 
         void updateTexture(long textureHandle, VulkanTextureData texture) {
+            if (resources != null) {
+                resources.updateTexture(textureHandle, texture);
+                return;
+            }
             invoke(() -> {
                 driver.updateTexture(textureHandle, texture);
                 return null;
@@ -207,6 +241,10 @@ final class VulkanDriverLoader {
         }
 
         void destroyTexture(long textureHandle) {
+            if (resources != null) {
+                resources.destroyTexture(textureHandle);
+                return;
+            }
             invoke(() -> {
                 driver.destroyTexture(textureHandle);
                 return null;

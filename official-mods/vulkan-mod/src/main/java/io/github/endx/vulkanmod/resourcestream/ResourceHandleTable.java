@@ -101,6 +101,23 @@ public final class ResourceHandleTable<T> {
     public synchronized int allocatedCount() { return allocated; }
     public int type() { return type; }
 
+    /** Rolls back a create that was reserved but never successfully submitted. */
+    public synchronized void cancelReservation(long handle) {
+        Entry<T> entry = requireEntry(handle);
+        if (entry.destroySequence != Long.MAX_VALUE) {
+            throw new IllegalStateException("retired resource reservation cannot be cancelled");
+        }
+        int slot = checkedSlot(handle);
+        entry.metadata = null;
+        entry.createSequence = 0L;
+        entry.destroySequence = 0L;
+        entry.occupied = false;
+        allocated--;
+        // The failed handle may have escaped in an exception diagnostic. Advance generation on
+        // reuse just like a successfully created resource, rather than resurrecting it.
+        if (entry.generation < FrameResourceHandle.MAX_GENERATION) reusable.addLast(slot);
+    }
+
     private Entry<T> requireEntry(long handle) {
         if (FrameResourceHandle.type(handle) != type
                 || FrameResourceHandle.generation(handle) == 0) {

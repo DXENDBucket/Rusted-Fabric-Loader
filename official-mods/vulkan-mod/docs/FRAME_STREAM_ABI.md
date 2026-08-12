@@ -536,9 +536,14 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 5. **Desktop done:** add three fixed direct arenas, live bounded submission, geometric safe-point
    growth, and blocking ownership/back-pressure tests. JNI address registration follows with the
    asynchronous native decoder.
-6. **Java ABI done:** add the reliable ResourceStream header/record writer, hostile-input verifier,
-   typed handles, CRC, completion, contiguous sequence tests, and exact texture/shader/control
-   payload codecs. Live resource-manager and driver migration remain.
+6. **Desktop texture path live:** add the reliable ResourceStream header/record writer,
+   hostile-input verifier, typed handles, CRC, completion, contiguous sequence tests, and exact
+   texture/shader/control payload codecs. The shared client now allocates generation-checked
+   logical texture and shader-program handles; desktop synchronously decodes texture
+   create/upload/full update/render-target create/destroy and shader create/destroy records, maps
+   them to native Vulkan resources, and rejects a FrameStream whose `requiredResourceSequence` is
+   not applied. Partial/external uploads, readback result transport, and asynchronous resource
+   arenas remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 

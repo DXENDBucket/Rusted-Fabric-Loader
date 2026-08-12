@@ -3,6 +3,9 @@ package io.github.endx.vulkanmod.lwjgl3;
 import io.github.endx.vulkanmod.framestream.DecodedFrameStream;
 import io.github.endx.vulkanmod.framestream.FrameResourceHandle;
 import io.github.endx.vulkanmod.framestream.FrameStreamRecordFormat;
+import io.github.endx.vulkanmod.resourcestream.ResourceStreamFormat;
+import io.github.endx.vulkanmod.resourcestream.ResourceStreamReader;
+import io.github.endx.vulkanmod.resourcestream.ResourceStreamRecords;
 import io.github.endx.vulkanmod.spi.VulkanDeviceInfo;
 import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
@@ -339,6 +342,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     }
 
     @Override public boolean supportsFrameStream() { return true; }
+    @Override public boolean supportsResourceStream() { return true; }
 
     @Override public synchronized boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
         if (surfaceSession == null) {
@@ -432,6 +436,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
         if (frameStream == null) throw new NullPointerException("frameStream");
         return surfaceSession.presentFrame(DecodedFrameStream.decode(frameStream));
+    }
+
+    @Override public synchronized long submitResourceStream(ByteBuffer resourceStream) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        if (resourceStream == null) throw new NullPointerException("resourceStream");
+        return surfaceSession.submitResourceStream(ResourceStreamReader.read(resourceStream));
     }
 
     @Override public synchronized void destroyTexture(long textureHandle) {
@@ -1361,6 +1373,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 new LinkedHashMap<TextureDescriptorKey, Long>();
         private final Map<Long, PendingTextureUpload> pendingTextureUploads =
                 new LinkedHashMap<Long, PendingTextureUpload>();
+        private final Map<Long, ResourceTextureBinding> resourceTextures =
+                new LinkedHashMap<Long, ResourceTextureBinding>();
+        private final Map<Long, ResourceStreamRecords.TextureDescriptor>
+                pendingResourceTextures =
+                new LinkedHashMap<Long, ResourceStreamRecords.TextureDescriptor>();
+        private final Map<Long, Long> resourceShaders = new LinkedHashMap<Long, Long>();
+        private long appliedResourceSequence;
+        private boolean resourceStreamActive;
+        private Throwable resourceStreamFault;
+        private long resourceStreamSubmissions;
         private final ArrayDeque<TextureResource> retiredTextures =
                 new ArrayDeque<TextureResource>();
         private long nextTextureHandle = 1L;
@@ -1549,12 +1571,196 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
+            shaderHandle = resolveShaderHandle(shaderHandle);
             CustomShaderResource shader = customShaders.get(shaderHandle);
             if (shader == null) {
                 throw new IllegalArgumentException("unknown custom shader handle "
                         + shaderHandle);
             }
             return shader.expandedVertexInput;
+        }
+
+        private long submitResourceStream(ResourceStreamReader stream) {
+            if (closed) throw new IllegalStateException("Vulkan surface is closed");
+            if (resourceStreamFault != null) {
+                throw new IllegalStateException("ResourceStream backend is faulted",
+                        resourceStreamFault);
+            }
+            long expected;
+            try {
+                expected = Math.addExact(appliedResourceSequence, 1L);
+            } catch (ArithmeticException overflow) {
+                throw new IllegalStateException("ResourceStream sequence exhausted", overflow);
+            }
+            if (stream.firstSequence() != expected) {
+                throw new IllegalArgumentException("ResourceStream starts at "
+                        + stream.firstSequence() + " but desktop applied through "
+                        + appliedResourceSequence);
+            }
+            resourceStreamActive = true;
+            try {
+                for (int index = 0; index < stream.recordCount(); index++) {
+                    applyResourceRecord(stream, index);
+                }
+                appliedResourceSequence = stream.lastSequence();
+                if (++resourceStreamSubmissions == 1L) {
+                    System.out.println("[Vulkan Mod/Driver] First ResourceStream applied: records="
+                            + stream.recordCount() + ", sequence=" + stream.firstSequence()
+                            + ".." + stream.lastSequence());
+                }
+                return appliedResourceSequence;
+            } catch (RuntimeException | Error failure) {
+                resourceStreamFault = failure;
+                throw failure;
+            }
+        }
+
+        private void applyResourceRecord(ResourceStreamReader stream, int index) {
+            ResourceStreamReader.Record record = stream.record(index);
+            long logical = record.handle();
+            switch (record.type()) {
+                case ResourceStreamFormat.TEXTURE_CREATE: {
+                    if (resourceTextures.containsKey(logical)
+                            || pendingResourceTextures.containsKey(logical)) {
+                        throw new IllegalArgumentException("duplicate logical texture handle "
+                                + Long.toUnsignedString(logical));
+                    }
+                    pendingResourceTextures.put(logical,
+                            ResourceStreamRecords.decodeTextureDescriptor(stream, index));
+                    return;
+                }
+                case ResourceStreamFormat.TEXTURE_UPLOAD: {
+                    ResourceStreamRecords.TextureDescriptor descriptor =
+                            pendingResourceTextures.get(logical);
+                    if (descriptor == null || resourceTextures.containsKey(logical)) {
+                        throw new IllegalArgumentException(
+                                "texture upload has no pending create");
+                    }
+                    ResourceStreamRecords.TextureTransfer transfer =
+                            ResourceStreamRecords.decodeTextureTransfer(stream, index);
+                    if (transfer.external()) {
+                        throw new UnsupportedOperationException(
+                                "desktop external resource arenas are not registered yet");
+                    }
+                    requireFullTextureTransfer(descriptor, transfer);
+                    long raw = uploadTexture(textureData(transfer));
+                    resourceTextures.put(logical, new ResourceTextureBinding(raw,
+                            descriptor.width, descriptor.height, false));
+                    pendingResourceTextures.remove(logical);
+                    return;
+                }
+                case ResourceStreamFormat.TEXTURE_REGION_UPDATE: {
+                    ResourceTextureBinding binding = requireResourceTexture(logical);
+                    ResourceStreamRecords.TextureTransfer transfer =
+                            ResourceStreamRecords.decodeTextureTransfer(stream, index);
+                    if (transfer.external()) {
+                        throw new UnsupportedOperationException(
+                                "desktop external resource arenas are not registered yet");
+                    }
+                    if (transfer.x != 0 || transfer.y != 0
+                            || transfer.width != binding.width
+                            || transfer.height != binding.height) {
+                        throw new UnsupportedOperationException(
+                                "desktop partial texture region updates are not implemented");
+                    }
+                    updateTexture(binding.rawHandle, textureData(transfer));
+                    return;
+                }
+                case ResourceStreamFormat.TEXTURE_DESTROY: {
+                    ResourceTextureBinding binding = resourceTextures.remove(logical);
+                    ResourceStreamRecords.TextureDescriptor pending =
+                            pendingResourceTextures.remove(logical);
+                    if (binding == null && pending == null) {
+                        throw new IllegalArgumentException("destroy of unknown logical texture");
+                    }
+                    if (binding != null) destroyTexture(binding.rawHandle);
+                    return;
+                }
+                case ResourceStreamFormat.RENDER_TARGET_CREATE: {
+                    if (resourceTextures.containsKey(logical)
+                            || pendingResourceTextures.containsKey(logical)) {
+                        throw new IllegalArgumentException("duplicate logical render target");
+                    }
+                    ResourceStreamRecords.TextureDescriptor descriptor =
+                            ResourceStreamRecords.decodeTextureDescriptor(stream, index);
+                    long raw = createRenderTarget(descriptor.width, descriptor.height);
+                    resourceTextures.put(logical, new ResourceTextureBinding(raw,
+                            descriptor.width, descriptor.height, true));
+                    return;
+                }
+                case ResourceStreamFormat.SHADER_PROGRAM_CREATE: {
+                    if (resourceShaders.containsKey(logical)) {
+                        throw new IllegalArgumentException("duplicate logical shader handle");
+                    }
+                    ResourceStreamRecords.ShaderProgram shader =
+                            ResourceStreamRecords.decodeShaderProgram(stream, index);
+                    long raw = shader.hasVertexSource()
+                            ? compileShaderProgram(new VulkanCustomShaderProgram(shader.name,
+                                    shader.vertexSource, shader.fragmentSource))
+                            : compileFragmentShader(new VulkanCustomFragmentShader(shader.name,
+                                    shader.fragmentSource));
+                    resourceShaders.put(logical, raw);
+                    return;
+                }
+                case ResourceStreamFormat.SHADER_PROGRAM_DESTROY: {
+                    Long raw = resourceShaders.remove(logical);
+                    if (raw == null) {
+                        throw new IllegalArgumentException("destroy of unknown logical shader");
+                    }
+                    destroyShaderProgram(raw.longValue());
+                    return;
+                }
+                case ResourceStreamFormat.TEXTURE_READBACK:
+                    throw new UnsupportedOperationException(
+                            "ResourceStream readback result transport is not implemented");
+                case ResourceStreamFormat.FLUSH:
+                case ResourceStreamFormat.LIFECYCLE_BARRIER:
+                    return; // Submission is synchronous; all earlier CPU-side work is applied.
+                default:
+                    return; // Unknown optional records were structurally validated and skipped.
+            }
+        }
+
+        private static void requireFullTextureTransfer(
+                ResourceStreamRecords.TextureDescriptor descriptor,
+                ResourceStreamRecords.TextureTransfer transfer) {
+            if (transfer.x != 0 || transfer.y != 0
+                    || transfer.width != descriptor.width
+                    || transfer.height != descriptor.height) {
+                throw new IllegalArgumentException(
+                        "initial texture upload does not cover its descriptor");
+            }
+        }
+
+        private static VulkanTextureData textureData(
+                ResourceStreamRecords.TextureTransfer transfer) {
+            ByteBuffer pixels = transfer.inlinePixels.duplicate();
+            byte[] rgba = new byte[transfer.dataBytes];
+            pixels.get(rgba);
+            return new VulkanTextureData(transfer.width, transfer.height, rgba);
+        }
+
+        private ResourceTextureBinding requireResourceTexture(long logical) {
+            ResourceTextureBinding binding = resourceTextures.get(logical);
+            if (binding == null) {
+                throw new IllegalArgumentException("unknown logical texture handle "
+                        + Long.toUnsignedString(logical));
+            }
+            return binding;
+        }
+
+        private long resolveTextureHandle(long handle) {
+            if (FrameResourceHandle.type(handle) != FrameResourceHandle.TYPE_TEXTURE) return handle;
+            return requireResourceTexture(handle).rawHandle;
+        }
+
+        private long resolveShaderHandle(long handle) {
+            if (FrameResourceHandle.type(handle)
+                    != FrameResourceHandle.TYPE_SHADER_PROGRAM) return handle;
+            Long raw = resourceShaders.get(handle);
+            if (raw == null) throw new IllegalArgumentException("unknown logical shader handle "
+                    + Long.toUnsignedString(handle));
+            return raw.longValue();
         }
 
         private long createOffscreenRenderPass(MemoryStack stack, boolean preserveContents) {
@@ -1835,7 +2041,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (shaderState.effect() != VulkanShaderState.CUSTOM) {
                 return texturePipeline(stack, blendMode);
             }
-            CustomShaderResource custom = customShaders.get(shaderState.customShaderHandle());
+            long shaderHandle = resolveShaderHandle(shaderState.customShaderHandle());
+            CustomShaderResource custom = customShaders.get(shaderHandle);
             if (custom == null) {
                 throw new IllegalArgumentException("unknown custom shader handle "
                         + shaderState.customShaderHandle());
@@ -2218,6 +2425,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private TextureResource requireRenderTarget(long textureHandle,
                                                     FrameSource frame) {
+            textureHandle = resolveTextureHandle(textureHandle);
             TextureResource target = textures.get(textureHandle);
             if (target == null || !target.renderTarget) {
                 throw new IllegalArgumentException("unknown render-target handle "
@@ -2235,6 +2443,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                             long textureHandle, FrameSource frame,
                                             TextureResource target, FrameUpload upload,
                                             int vertexSlot) {
+            textureHandle = resolveTextureHandle(textureHandle);
             VkClearValue.Buffer clearValue = VkClearValue.calloc(1, stack);
             clearValue.get(0).color()
                     .float32(0, frame.clearRed()).float32(1, frame.clearGreen())
@@ -2275,11 +2484,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                 } else {
                     TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
-                    if (batch.textureHandle == textureHandle) {
+                    if (resolveTextureHandle(batch.textureHandle) == textureHandle) {
                         throw new IllegalArgumentException(
                                 "a render target cannot sample itself in the same pass");
                     }
-                    if (batch.shaderState.secondaryTextureHandle() == textureHandle) {
+                    if (batch.shaderState.secondaryTextureHandle() != 0L
+                            && resolveTextureHandle(
+                            batch.shaderState.secondaryTextureHandle()) == textureHandle) {
                         throw new IllegalArgumentException(
                                 "a render target cannot be its own secondary texture");
                     }
@@ -2321,6 +2532,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private void renderToTexture(FrameSource frame) {
             long textureHandle = frame.targetHandle();
             TextureResource target = requireRenderTarget(textureHandle, frame);
+            textureHandle = resolveTextureHandle(textureHandle);
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 int slot = offscreenCursor;
                 long fence = offscreenFences[slot];
@@ -2388,11 +2600,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         }
                     } else {
                         TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
-                        if (batch.textureHandle == textureHandle) {
+                        if (resolveTextureHandle(batch.textureHandle) == textureHandle) {
                             throw new IllegalArgumentException(
                                     "a render target cannot sample itself in the same pass");
                         }
-                        if (batch.shaderState.secondaryTextureHandle() == textureHandle) {
+                        if (batch.shaderState.secondaryTextureHandle() != 0L
+                                && resolveTextureHandle(
+                                batch.shaderState.secondaryTextureHandle()) == textureHandle) {
                             throw new IllegalArgumentException(
                                     "a render target cannot be its own secondary texture");
                         }
@@ -2487,6 +2701,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private VulkanTextureData readTexture(long textureHandle) {
+            textureHandle = resolveTextureHandle(textureHandle);
             TextureResource target = textures.get(textureHandle);
             if (target == null) {
                 throw new IllegalArgumentException("unknown texture handle " + textureHandle);
@@ -2585,6 +2800,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private void updateTexture(long textureHandle, VulkanTextureData texture) {
+            textureHandle = resolveTextureHandle(textureHandle);
             TextureResource target = textures.get(textureHandle);
             if (target == null) {
                 throw new IllegalArgumentException("unknown texture handle " + textureHandle);
@@ -2674,11 +2890,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long textureDescriptor(long primaryHandle,
                                        VulkanTextureFilter filter,
                                        VulkanShaderState shaderState) {
+            primaryHandle = resolveTextureHandle(primaryHandle);
             TextureResource primary = textures.get(primaryHandle);
             if (primary == null) {
                 throw new IllegalArgumentException("unknown texture handle " + primaryHandle);
             }
             long secondaryHandle = shaderState.secondaryTextureHandle();
+            if (secondaryHandle != 0L) secondaryHandle = resolveTextureHandle(secondaryHandle);
             if (secondaryHandle == 0L) return primary.descriptorSets[filter.ordinal()];
             TextureResource secondary = textures.get(secondaryHandle);
             if (secondary == null) {
@@ -2848,6 +3066,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private void destroyTexture(long textureHandle) {
+            textureHandle = resolveTextureHandle(textureHandle);
             TextureResource texture = textures.remove(textureHandle);
             if (texture == null) return;
             pendingTextureUploads.remove(textureHandle);
@@ -2943,6 +3162,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private VulkanSurfaceInfo presentFrame(DecodedFrameStream stream) {
+            if (stream.requiredResourceSequence() > appliedResourceSequence) {
+                throw new IllegalStateException("FrameStream requires resource sequence "
+                        + stream.requiredResourceSequence() + " but desktop applied through "
+                        + appliedResourceSequence);
+            }
             int finalPassIndex = stream.passCount() - 1;
             StreamFrameSource presentation = new StreamFrameSource(stream, finalPassIndex);
             int graphCount = finalPassIndex;
@@ -3038,7 +3262,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         VulkanDrawCommand draw = objectFrame.command(commandIndex);
                         if (!(draw instanceof VulkanTexturedQuad)) continue;
                         VulkanTexturedQuad quad = (VulkanTexturedQuad) draw;
-                        TextureResource sampled = textures.get(quad.textureHandle());
+                        TextureResource sampled = textures.get(
+                                resolveTextureHandle(quad.textureHandle()));
                         if (sampled == null || !sampled.renderTarget) continue;
                         VulkanDrawState state = quad.state();
                         System.out.println("[Vulkan Mod/Driver] Main samples native target "
@@ -3460,7 +3685,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private static VulkanShaderState decodedShaderState(
+        private VulkanShaderState decodedShaderState(
                 DecodedFrameStream.Material material, long secondaryTexture) {
             if (material.shaderEffect() == VulkanShaderState.CUSTOM) {
                 float[] custom = new float[material.customValueCount()];
@@ -3479,8 +3704,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     material.shaderFloat(9), material.shaderFloat(10));
         }
 
-        private static long rawTextureHandle(long handle, boolean allowNull) {
+        private long rawTextureHandle(long handle, boolean allowNull) {
             if (handle == 0L && allowNull) return 0L;
+            if (resourceStreamActive) return resolveTextureHandle(handle);
             if (handle == 0L || FrameResourceHandle.type(handle)
                     != FrameResourceHandle.TYPE_TEXTURE
                     || FrameResourceHandle.generation(handle) != 1) {
@@ -3492,7 +3718,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return slot;
         }
 
-        private static long rawShaderHandle(long handle) {
+        private long rawShaderHandle(long handle) {
+            if (resourceShaders.containsKey(handle)) return resolveShaderHandle(handle);
             if (handle == 0L || FrameResourceHandle.type(handle)
                     != FrameResourceHandle.TYPE_SHADER_PROGRAM
                     || FrameResourceHandle.generation(handle) != 1) {
@@ -3582,7 +3809,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         }
                     } else if (command instanceof VulkanTexturedQuad) {
                         VulkanTexturedQuad quad = (VulkanTexturedQuad) command;
-                        if (!textures.containsKey(quad.textureHandle())) {
+                        if (!textures.containsKey(resolveTextureHandle(quad.textureHandle()))) {
                             throw new IllegalArgumentException(
                                     "unknown texture handle: " + quad.textureHandle());
                         }
@@ -3609,7 +3836,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 quad.u1(), quad.v0(), frame, quad, expanded);
                     } else if (command instanceof VulkanTexturedTriangle) {
                         VulkanTexturedTriangle triangle = (VulkanTexturedTriangle) command;
-                        if (!textures.containsKey(triangle.textureHandle())) {
+                        if (!textures.containsKey(
+                                resolveTextureHandle(triangle.textureHandle()))) {
                             throw new IllegalArgumentException(
                                     "unknown texture handle: " + triangle.textureHandle());
                         }
@@ -3757,7 +3985,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private boolean usesExpandedVertexInput(VulkanShaderState shaderState) {
             if (shaderState.effect() != VulkanShaderState.CUSTOM) return false;
-            CustomShaderResource shader = customShaders.get(shaderState.customShaderHandle());
+            long shaderHandle = resolveShaderHandle(shaderState.customShaderHandle());
+            CustomShaderResource shader = customShaders.get(shaderHandle);
             if (shader == null) {
                 throw new IllegalArgumentException("unknown custom shader handle "
                         + shaderState.customShaderHandle());
@@ -4055,6 +4284,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private final long[] descriptorSets =
                     new long[VulkanTextureFilter.values().length];
             private final List<Long> dependentDescriptorSets = new ArrayList<Long>();
+        }
+
+        private static final class ResourceTextureBinding {
+            private final long rawHandle;
+            private final int width, height;
+            private final boolean renderTarget;
+
+            private ResourceTextureBinding(long rawHandle, int width, int height,
+                                           boolean renderTarget) {
+                this.rawHandle = rawHandle;
+                this.width = width;
+                this.height = height;
+                this.renderTarget = renderTarget;
+            }
         }
 
         private static final class CustomShaderResource {
