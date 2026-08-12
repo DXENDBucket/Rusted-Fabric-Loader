@@ -30,6 +30,14 @@ public final class LobbyGameSetup {
                 Objects.requireNonNull(setup, "setup"));
     }
 
+    /**
+     * Returns the live income multiplier without allocating a complete lobby snapshot.
+     * This is suitable for deterministic simulation code that evaluates income frequently.
+     */
+    public static float currentIncomeMultiplier() {
+        return requireSetup(network()).incomeMultiplier;
+    }
+
     public static boolean canUpdate() {
         NetworkEngine network = network();
         return network.isServerOrProxyController() && !network.hasGameBeenStarted()

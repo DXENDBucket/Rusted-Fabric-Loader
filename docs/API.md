@@ -1169,6 +1169,11 @@ are confirmed: map source/path, starting credits, fog/reveal, AI difficulty, sta
 multiplier, nukes, shared control, team locking, and random seed. Unresolved obfuscated setup flags
 are deliberately preserved internally but are not presented as public API.
 
+Simulation code that only needs the live income rule can call
+`LobbyGameSetup.currentIncomeMultiplier()` without allocating a full snapshot. Custom resources do
+not automatically receive this multiplier through the native `generation_resources` path; mods
+that implement a credit-equivalent resource should explicitly apply the returned multiplier.
+
 Use `update(...)` as one transaction instead of mutating `NetworkEngine.gameSetup` directly:
 
 ```java

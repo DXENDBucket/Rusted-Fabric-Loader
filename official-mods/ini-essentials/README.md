@@ -324,6 +324,15 @@ Runtime numeric expressions gain `pow`, `exp`, `ln`, `log10`, `log(value,base)`,
 convention. Invalid domains retain deterministic IEEE float behavior; geometry rejects non-finite
 results before changing gameplay state.
 
+`incomeMultiplier()` returns the synchronized income multiplier selected for the current game.
+Unlike credits, native custom resources in `generation_resources` are not scaled automatically, so
+dynamic custom-resource systems can explicitly multiply their base amount by this value without
+creating a separate INI section.
+
+```ini
+setResourcesWithLogic: nutrient=self.resource.nutrient+2.8*incomeMultiplier()
+```
+
 All unit-backed INI Essentials LogicBoolean and runtime-number fields are compiled only after the
 native unit parser has registered that unit's memory and resources. This includes health policy,
 Geometry, Fog, event rules, projectile/mutator conditions, Decal bars and masks, and Overlay—not
