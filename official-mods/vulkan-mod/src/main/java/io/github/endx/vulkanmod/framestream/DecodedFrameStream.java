@@ -150,6 +150,8 @@ public final class DecodedFrameStream {
     private void validateBatches(int materialCount) {
         int expectedVertexByte = 0;
         long expectedVertexCount = 0L;
+        int expectedIndexByte = 0;
+        long expectedIndexCount = 0L;
         int indexBytes = indices == null ? 0 : indices.remaining();
         Batch batch = batchCursor();
         Material material = materialCursor();
@@ -210,6 +212,14 @@ public final class DecodedFrameStream {
                 require(batch.indexByteOffset() >= 0 && batch.indexCount() > 0
                                 && indexEnd <= indexBytes,
                         "batch indices exceed their section");
+                require(batch.indexByteOffset() % indexStride == 0,
+                        "batch index offset is misaligned");
+                require(batch.indexByteOffset() == expectedIndexByte,
+                        "batch indices are not tightly ordered");
+                validateIndices(batch, indexStride);
+                expectedIndexByte = (int) indexEnd;
+                expectedIndexCount += batch.indexCount();
+                require(expectedIndexCount <= Integer.MAX_VALUE, "index count overflows");
             }
             readMaterial(batch.materialIndex(), material);
             require(batch.vertexLayout() != FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED
@@ -228,6 +238,22 @@ public final class DecodedFrameStream {
         require(expectedVertexCount
                         == envelope.section(FrameStreamFormat.SECTION_VERTICES).elementCount(),
                 "vertex section element count does not match batches");
+        require(expectedIndexByte == indexBytes,
+                "index section contains unreferenced bytes");
+        require(expectedIndexCount == (indices == null ? 0
+                        : envelope.section(FrameStreamFormat.SECTION_INDICES).elementCount()),
+                "index section element count does not match batches");
+    }
+
+    private void validateIndices(Batch batch, int indexStride) {
+        ByteBuffer data = indices.duplicate().order(ByteOrder.LITTLE_ENDIAN);
+        int offset = batch.indexByteOffset();
+        for (int index = 0; index < batch.indexCount(); index++) {
+            long value = indexStride == Short.BYTES
+                    ? Short.toUnsignedLong(data.getShort(offset + index * Short.BYTES))
+                    : Integer.toUnsignedLong(data.getInt(offset + index * Integer.BYTES));
+            require(value < batch.vertexCount(), "batch index exceeds its vertex range");
+        }
     }
 
     private void validateMaterials(int count) {

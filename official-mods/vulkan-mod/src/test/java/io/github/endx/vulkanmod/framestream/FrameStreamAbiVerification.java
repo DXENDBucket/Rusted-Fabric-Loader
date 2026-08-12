@@ -257,16 +257,23 @@ public final class FrameStreamAbiVerification {
         require(FrameResourceHandle.slot(decoded.pass(0).targetHandle()) == 7,
                 "render-target mapping changed");
         require(decoded.batch(0).vertexByteOffset() == 0
-                        && decoded.batch(0).vertexCount() == 12,
+                        && decoded.batch(0).vertexCount() == 8
+                        && decoded.batch(0).indexByteOffset() == 0
+                        && decoded.batch(0).indexCount() == 12
+                        && decoded.batch(0).indexType()
+                        == FrameStreamRecordFormat.INDEX_UINT16,
                 "colored quad merging changed");
-        require(decoded.batch(1).vertexByteOffset() == 288
-                        && decoded.batch(1).vertexCount() == 12,
+        require(decoded.batch(1).vertexByteOffset() == 192
+                        && decoded.batch(1).vertexCount() == 8
+                        && decoded.batch(1).indexByteOffset() == 24
+                        && decoded.batch(1).indexCount() == 12,
                 "textured quad merging changed");
-        require(decoded.batch(2).vertexByteOffset() == 672
+        require(decoded.batch(2).vertexByteOffset() == 448
                         && decoded.batch(2).vertexCount() == 3,
                 "texture boundary no longer splits batches");
-        require(decoded.batch(3).vertexByteOffset() == 768
-                        && decoded.vertices().remaining() == 840,
+        require(decoded.batch(3).vertexByteOffset() == 544
+                        && decoded.vertices().remaining() == 616
+                        && decoded.indices().remaining() == 48,
                 "packed vertex layout changed");
 
         VulkanShaderState custom = VulkanShaderState.custom(5, 0,
@@ -309,6 +316,19 @@ public final class FrameStreamAbiVerification {
                     "compact primitive encoder emitted a non-finite vertex");
         }
 
+        VulkanFrameCommands.Builder manyQuads = VulkanFrameCommands.builder(64, 64);
+        for (int index = 0; index < 16_385; index++) {
+            manyQuads.coloredQuad(0, 0, 1, 1, 1, 1, 1, 1, VulkanDrawState.DEFAULT);
+        }
+        DecodedFrameStream splitDecoded = DecodedFrameStream.decode(encoder.encode(
+                23, 5, new VulkanFrameSubmission(Collections.emptyList(), manyQuads.build())));
+        require(splitDecoded.batchCount() == 2
+                        && splitDecoded.batch(0).vertexCount() == 65_536
+                        && splitDecoded.batch(0).indexCount() == 98_304
+                        && splitDecoded.batch(1).vertexCount() == 4
+                        && splitDecoded.batch(1).indexCount() == 6,
+                "uint16 indexed quad batch did not split at its vertex limit");
+
         byte[] corrupt = bytes(encoded);
         FrameStreamReader envelope = FrameStreamReader.read(ByteBuffer.wrap(corrupt));
         int firstBatch = envelope.section(FrameStreamFormat.SECTION_BATCHES).offset();
@@ -319,6 +339,18 @@ public final class FrameStreamAbiVerification {
         } catch (FrameStreamFormatException expected) {
             require(expected.getMessage().contains("material index"),
                     "wrong record rejection: " + expected.getMessage());
+        }
+
+        byte[] corruptIndex = bytes(encoded);
+        FrameStreamReader indexedEnvelope = FrameStreamReader.read(ByteBuffer.wrap(corruptIndex));
+        int firstIndex = indexedEnvelope.section(FrameStreamFormat.SECTION_INDICES).offset();
+        littleEndian(corruptIndex).putShort(firstIndex, (short) 8);
+        try {
+            DecodedFrameStream.decode(ByteBuffer.wrap(corruptIndex));
+            throw new AssertionError("out-of-range batch index was accepted");
+        } catch (FrameStreamFormatException expected) {
+            require(expected.getMessage().contains("index exceeds"),
+                    "wrong index rejection: " + expected.getMessage());
         }
     }
 

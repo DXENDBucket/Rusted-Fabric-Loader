@@ -2953,7 +2953,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     vkCmdBindVertexBuffers(command, 0, drawVertexBuffer, drawVertexOffset);
                     if (setScissor(command, batch.clip, target.width, target.height,
                             drawScissor)) {
-                        vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                        recordDraw(command, batch, vertexBuffer);
                     }
                 } else {
                     TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
@@ -2977,7 +2977,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 texturePipelineLayout, 0, drawDescriptorSet, null);
                         pushShaderState(command, batch.shaderState, shaderPushConstants);
-                        vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                        recordDraw(command, batch, vertexBuffer);
                     }
                 }
             }
@@ -3070,7 +3070,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 drawVertexBuffer, drawVertexOffset);
                         if (setScissor(command, batch.clip, target.width,
                                 target.height, drawScissor)) {
-                            vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                            recordDraw(command, batch, vertexBuffer);
                         }
                     } else {
                         TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
@@ -3097,7 +3097,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                     drawDescriptorSet, null);
                             pushShaderState(command, batch.shaderState,
                                     shaderPushConstants);
-                            vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+                            recordDraw(command, batch, vertexBuffer);
                         }
                     }
                 }
@@ -3954,8 +3954,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 drawVertexBuffer, drawVertexOffset);
                         if (setScissor(commandBuffer, batch.clip, info.width(), info.height(),
                                 drawScissor)) {
-                            vkCmdDraw(commandBuffer, batch.vertexCount, 1,
-                                    batch.firstVertex, 0);
+                            recordDraw(commandBuffer, batch, vertexBuffer);
                         }
                     } else {
                         TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
@@ -3972,7 +3971,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                     drawDescriptorSet, null);
                             pushShaderState(commandBuffer, batch.shaderState,
                                     shaderPushConstants);
-                            vkCmdDraw(commandBuffer, batch.vertexCount, 1, batch.firstVertex, 0);
+                            recordDraw(commandBuffer, batch, vertexBuffer);
                         }
                     }
                 }
@@ -4137,6 +4136,17 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             frameUploadPool.addFirst(upload);
         }
 
+        private static void recordDraw(VkCommandBuffer command, DrawBatch batch,
+                                       long vertexBuffer) {
+            if (batch.indexCount != 0) {
+                vkCmdBindIndexBuffer(command, vertexBuffer,
+                        batch.indexByteOffset, batch.indexType);
+                vkCmdDrawIndexed(command, batch.indexCount, 1, 0, 0, 0);
+            } else {
+                vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
+            }
+        }
+
         private FrameUpload uploadFrame(DecodedFrameStream stream, int passIndex,
                                         MemoryStack stack, int frameSlot,
                                         BufferAllocation[] allocations, int[] capacities) {
@@ -4152,22 +4162,43 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     Math.multiplyExact(last.vertexCount(),
                             FrameStreamRecordFormat.vertexStride(last.vertexLayout())));
             int passVertexBytes = passVertexEnd - passVertexStart;
-            ensureVertexCapacity(frameSlot, passVertexBytes, stack, allocations, capacities);
+            int passIndexStart = -1;
+            int passIndexEnd = -1;
+            DecodedFrameStream.Batch indexScan = stream.batchCursor();
+            for (int relative = 0; relative < pass.batchCount(); relative++) {
+                stream.readBatch(pass.firstBatch() + relative, indexScan);
+                if ((indexScan.flags() & FrameStreamRecordFormat.BATCH_INDEXED) == 0) continue;
+                int stride = indexScan.indexType() == FrameStreamRecordFormat.INDEX_UINT16
+                        ? Short.BYTES : Integer.BYTES;
+                if (passIndexStart < 0) passIndexStart = indexScan.indexByteOffset();
+                passIndexEnd = Math.addExact(indexScan.indexByteOffset(),
+                        Math.multiplyExact(indexScan.indexCount(), stride));
+            }
+            int passIndexBytes = passIndexStart < 0 ? 0 : passIndexEnd - passIndexStart;
+            int indexUploadOffset = passVertexBytes;
+            if (passIndexStart >= 0) {
+                indexUploadOffset = Math.addExact(indexUploadOffset,
+                        (passIndexStart - indexUploadOffset) & 3);
+            }
+            int uploadBytes = Math.addExact(indexUploadOffset, passIndexBytes);
+            ensureVertexCapacity(frameSlot, uploadBytes, stack, allocations, capacities);
             ByteBuffer source = stream.vertices();
             source.position(passVertexStart).limit(passVertexEnd);
             ByteBuffer destination = allocations[frameSlot].mapped.duplicate()
                     .order(ByteOrder.nativeOrder());
-            destination.clear().limit(passVertexBytes);
+            destination.clear().limit(uploadBytes);
             destination.put(source);
+            while (destination.position() < indexUploadOffset) destination.put((byte) 0);
+            if (passIndexBytes != 0) {
+                ByteBuffer indexSource = stream.indices();
+                indexSource.position(passIndexStart).limit(passIndexEnd);
+                destination.put(indexSource);
+            }
             try {
                 DecodedFrameStream.Batch encoded = stream.batchCursor();
                 DecodedFrameStream.Material material = stream.materialCursor();
                 for (int relative = 0; relative < pass.batchCount(); relative++) {
                     stream.readBatch(pass.firstBatch() + relative, encoded);
-                    if ((encoded.flags() & FrameStreamRecordFormat.BATCH_INDEXED) != 0) {
-                        throw new UnsupportedOperationException(
-                                "desktop FrameStream indexed batches are not implemented");
-                    }
                     VulkanClipRect clip = decodedClip(encoded);
                     stream.readMaterial(encoded.materialIndex(), material);
                     VulkanBlendMode blendMode = decodedBlendMode(material.blendMode());
@@ -4188,6 +4219,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                     batch.vertexByteOffset = encoded.vertexByteOffset() - passVertexStart;
                     batch.vertexCount = encoded.vertexCount();
+                    if ((encoded.flags() & FrameStreamRecordFormat.BATCH_INDEXED) != 0) {
+                        batch.indexByteOffset = indexUploadOffset
+                                + encoded.indexByteOffset() - passIndexStart;
+                        batch.indexCount = encoded.indexCount();
+                        batch.indexType = encoded.indexType()
+                                == FrameStreamRecordFormat.INDEX_UINT16
+                                ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+                    }
                     result.batches.add(batch);
                 }
                 return result;
@@ -4536,7 +4575,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vertexCapacity = Math.multiplyExact(vertexCapacity, 2);
             }
             BufferAllocation created = createBufferAllocation(stack, vertexCapacity,
-                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                             | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             try {
@@ -4968,6 +5007,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             long vertexByteOffset;
             int firstVertex;
             int vertexCount;
+            long indexByteOffset;
+            int indexCount;
+            int indexType;
 
             void reset(VulkanClipRect clip, VulkanBlendMode blendMode,
                        int firstVertex) {
@@ -4976,6 +5018,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 this.vertexByteOffset = 0L;
                 this.firstVertex = firstVertex;
                 this.vertexCount = 0;
+                this.indexByteOffset = 0L;
+                this.indexCount = 0;
+                this.indexType = VK_INDEX_TYPE_UINT16;
             }
         }
 

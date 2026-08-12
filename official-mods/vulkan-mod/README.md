@@ -85,6 +85,11 @@ recycled after command recording; a large-batch regression verifies that repeate
 frames do not allocate more metadata after their first frame. LibRocket geometry also reuses one
 set of triangle scratch arrays for an entire geometry submission instead of allocating them per
 triangle.
+FrameStream quad runs now use four unique vertices plus six `uint16` indices per quad. Compatible
+adjacent quads share one indexed batch, with an automatic split at the 65,536-vertex limit; mixed
+triangle, line and circle work retains the ordinary non-indexed path. The desktop decoder uploads
+the pass-local vertex and index ranges into the same persistently mapped frame slot and issues
+`vkCmdDrawIndexed`, matching the future Android decoder contract while reducing quad stream bytes.
 
 The pre-OpenGL native bootstrap reproduces the original loading screen directly through
 `GraphicsEngine`: black background, centered game logo, animated `Loading` dots and the live loader
@@ -136,9 +141,10 @@ solid-frame and safe-takeover sequence is confirmed.
    secondary-texture displacement path are complete. Native image readback/upload covers legacy
    pixel-buffer mutation and dynamic Canvas target switching; compatible linked custom
    vertex/fragment programs are translated and run in native Vulkan pipelines.
-4. Persistently mapped main/offscreen vertex rings, asynchronous standalone child submissions,
+4. Persistently mapped main/offscreen vertex/index rings, asynchronous standalone child submissions,
    combined frame-graph submission, reusable Java frame-command arenas and recyclable driver-side
-   draw-batch metadata are complete. Next, widen compatible batches without changing order and
+   draw-batch metadata are complete. Indexed quad batches now reduce repeated vertices without
+   changing order. Next, continue widening compatible batches and
    profile the remaining texture/descriptors and text-upload hot paths.
 5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
    compatibility surface after native parity is established.

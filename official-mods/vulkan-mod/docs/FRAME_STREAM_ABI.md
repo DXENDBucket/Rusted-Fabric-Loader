@@ -3,7 +3,9 @@
 Status: the Java envelope, structural/record verifier, fixed arena pool, shared batching, vertex
 encoder, and LWJGL3 desktop decoder are implemented. Native desktop mode consumes FrameStream by
 default through three reusable direct arenas; dependent-target readback, custom-vertex, and
-20,000-batch GPU tests cover the new path. Version 1 becomes frozen after wider in-game visual
+20,000-batch GPU tests cover the new path. Adjacent quads are encoded as four unique vertices and
+six `uint16` indices, with deterministic batch splitting at the 16-bit vertex limit; the desktop
+decoder consumes both vertex and index sections. Version 1 becomes frozen after wider in-game visual
 equivalence testing.
 
 ## Purpose
@@ -571,7 +573,8 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 2. **Done:** encode the current `VulkanFrameSubmission` into ordered passes and batches.
 3. **Done:** move adjacent batching and vertex packing into the shared `FrameStreamEncoder`.
 4. **Done:** make the LWJGL3 desktop driver decode FrameStream directly into persistent mapped
-   vertex buffers. The old object submission is available only with the diagnostic JVM property
+   vertex/index buffers, including validated indexed quad batches. The old object submission is
+   available only with the diagnostic JVM property
    `-Drusted.fabric.vulkan.objectSubmission=true` while in-game captures are compared.
 5. **Desktop done:** add three fixed direct arenas, live bounded submission, geometric safe-point
    growth, and blocking ownership/back-pressure tests. JNI address registration follows with the
