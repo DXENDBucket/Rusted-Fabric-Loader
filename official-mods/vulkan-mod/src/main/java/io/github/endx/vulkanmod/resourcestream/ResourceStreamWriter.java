@@ -74,13 +74,20 @@ public final class ResourceStreamWriter {
 
     private void validateCompletionRecords() {
         boolean expectsResult = false;
+        boolean externalPayload = false;
         for (PendingRecord record : records) {
             expectsResult |= (record.flags & ResourceStreamFormat.RECORD_EXPECTS_RESULT) != 0;
+            externalPayload |= (record.flags
+                    & ResourceStreamFormat.RECORD_HAS_EXTERNAL_PAYLOAD) != 0;
         }
         boolean completion = (flags & ResourceStreamFormat.FLAG_REQUIRES_COMPLETION) != 0;
-        if (expectsResult != completion) {
+        if (expectsResult && !completion) {
             throw new IllegalStateException(
-                    "result-bearing records and stream completion flag must agree");
+                    "result-bearing records require a stream completion ID");
+        }
+        if (externalPayload && !completion) {
+            throw new IllegalStateException(
+                    "external resource payload requires a consumption completion ID");
         }
     }
 

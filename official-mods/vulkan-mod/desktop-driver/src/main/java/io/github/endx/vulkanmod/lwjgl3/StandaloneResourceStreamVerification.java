@@ -96,7 +96,8 @@ public final class StandaloneResourceStreamVerification {
             if (!registration.hasNativeAddress() || registration.capacity() != arena.capacity()) {
                 throw new AssertionError("desktop arena did not expose stable native registration");
             }
-            ResourceStreamWriter mutations = new ResourceStreamWriter(5L, 0, 0L);
+            ResourceStreamWriter mutations = new ResourceStreamWriter(5L,
+                    ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, 54L);
             ResourceStreamRecords.externalTextureTransfer(mutations,
                     ResourceStreamFormat.TEXTURE_REGION_UPDATE, target,
                     0, 0, 8, 8, 32, ResourceStreamFormat.FORMAT_RGBA8_UNORM,
@@ -104,9 +105,23 @@ public final class StandaloneResourceStreamVerification {
             ResourceStreamRecords.textureRegionUpdate(mutations, target, 0, 0,
                     new VulkanTextureData(1, 1,
                             new byte[] {0, (byte) 255, 0, (byte) 255}));
-            if (driver.submitResourceStream(mutations.toDirectBuffer())
-                    .appliedSequence() != 6L) {
-                throw new AssertionError("external/partial texture updates were not applied");
+            VulkanResourceStreamResult acceptedMutations =
+                    driver.submitResourceStream(mutations.toDirectBuffer());
+            if (!acceptedMutations.completionPending()
+                    || acceptedMutations.appliedSequence() != 6L) {
+                throw new AssertionError("external/partial texture updates were not accepted");
+            }
+            try {
+                driver.unregisterResourceUploadArena(99L);
+                throw new AssertionError("queued external arena was unregistered before decode");
+            } catch (IllegalStateException expected) {
+                // The decode owns this registration until completion 54 becomes ready.
+            }
+            VulkanResourceStreamResult consumed =
+                    driver.awaitResourceStreamCompletion(54L, -1L);
+            if (!consumed.completionReady() || consumed.textureReadback() != null
+                    || consumed.appliedSequence() != 6L) {
+                throw new AssertionError("external arena was not released after decode");
             }
             driver.unregisterResourceUploadArena(99L);
             ResourceStreamWriter read = new ResourceStreamWriter(7L,

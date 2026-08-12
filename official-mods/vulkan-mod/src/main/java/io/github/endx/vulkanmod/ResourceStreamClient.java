@@ -13,11 +13,17 @@ import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** Shared ordered client for the reliable RustedVK resource channel. */
 final class ResourceStreamClient implements AutoCloseable {
     interface Submitter {
         VulkanResourceStreamResult submit(ByteBuffer stream);
+        default VulkanResourceStreamResult pollCompletion(long completionId) {
+            return null;
+        }
         default VulkanResourceStreamResult awaitCompletion(long completionId,
                                                             long timeoutNanos) {
             throw new UnsupportedOperationException(
@@ -36,6 +42,8 @@ final class ResourceStreamClient implements AutoCloseable {
     private final ResourceUploadArenaPool uploadArenas;
     private final int externalThreshold;
     private long nextCompletionId;
+    private final LinkedHashMap<Long, ResourceUploadArenaPool.Lease> pendingArenaLeases =
+            new LinkedHashMap<Long, ResourceUploadArenaPool.Lease>();
     private RuntimeException fault;
 
     ResourceStreamClient(Submitter submitter) {
@@ -61,14 +69,18 @@ final class ResourceStreamClient implements AutoCloseable {
         TextureMetadata metadata = new TextureMetadata(texture.width(), texture.height(), false);
         long handle = textures.reserve(metadata, reservation.first);
         try {
-            ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first, 0, 0L);
+            boolean external = usesExternalTransfer(texture);
+            long completionId = external ? allocateCompletionId() : 0L;
+            ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first,
+                    external ? ResourceStreamFormat.FLAG_REQUIRES_COMPLETION : 0,
+                    completionId);
             ResourceStreamRecords.textureCreate(writer, handle, texture.width(), texture.height(),
                     1, ResourceStreamFormat.FORMAT_RGBA8_UNORM,
                     ResourceStreamFormat.TEXTURE_USAGE_SAMPLED
                             | ResourceStreamFormat.TEXTURE_USAGE_TRANSFER_DESTINATION,
                     ResourceStreamFormat.SAMPLER_CLAMP_TO_EDGE);
             submitTextureTransfer(reservation, writer, ResourceStreamFormat.TEXTURE_UPLOAD,
-                    handle, 0, 0, texture);
+                    handle, 0, 0, texture, external, completionId);
             return handle;
         } catch (RuntimeException failure) {
             textures.cancelReservation(handle);
@@ -116,9 +128,14 @@ final class ResourceStreamClient implements AutoCloseable {
             throw new IllegalArgumentException("texture update region exceeds logical texture");
         }
         ResourceSequenceClock.Reservation reservation = sequences.reserve(1);
-        ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first, 0, 0L);
+        boolean external = usesExternalTransfer(texture);
+        long completionId = external ? allocateCompletionId() : 0L;
+        ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first,
+                external ? ResourceStreamFormat.FLAG_REQUIRES_COMPLETION : 0,
+                completionId);
         submitTextureTransfer(reservation, writer,
-                ResourceStreamFormat.TEXTURE_REGION_UPDATE, handle, x, y, texture);
+                ResourceStreamFormat.TEXTURE_REGION_UPDATE, handle, x, y, texture,
+                external, completionId);
     }
 
     synchronized void destroyTexture(long handle) {
@@ -197,9 +214,7 @@ final class ResourceStreamClient implements AutoCloseable {
         TextureMetadata metadata = textures.requireVisible(handle, sequences.appliedThrough());
         if (!metadata.renderTarget) throw new IllegalArgumentException(
                 "only readable render targets support ResourceStream readback");
-        if (nextCompletionId == Long.MAX_VALUE) throw new IllegalStateException(
-                "ResourceStream completion IDs exhausted");
-        long completionId = ++nextCompletionId;
+        long completionId = allocateCompletionId();
         ResourceSequenceClock.Reservation reservation = sequences.reserve(1);
         ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first,
                 ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, completionId);
@@ -216,8 +231,8 @@ final class ResourceStreamClient implements AutoCloseable {
 
     private void submitTextureTransfer(ResourceSequenceClock.Reservation reservation,
             ResourceStreamWriter writer, int recordType, long handle, int x, int y,
-            VulkanTextureData texture) {
-        if (uploadArenas == null || texture.byteSize() < externalThreshold) {
+            VulkanTextureData texture, boolean external, long completionId) {
+        if (!external) {
             if (recordType == ResourceStreamFormat.TEXTURE_UPLOAD) {
                 ResourceStreamRecords.textureUpload(writer, handle, texture);
             } else {
@@ -226,19 +241,101 @@ final class ResourceStreamClient implements AutoCloseable {
             submit(reservation, writer);
             return;
         }
-        try (ResourceUploadArenaPool.Lease lease = uploadArenas.acquire(texture.byteSize())) {
+        ResourceUploadArenaPool.Lease lease = null;
+        try {
+            prepareArenaLease(texture.byteSize());
+            lease = uploadArenas.acquire(texture.byteSize());
             ByteBuffer pixels = lease.buffer();
             texture.writeTo(pixels);
             ResourceStreamRecords.externalTextureTransfer(writer, recordType, handle,
                     x, y, texture.width(), texture.height(), texture.width() * 4,
                     ResourceStreamFormat.FORMAT_RGBA8_UNORM, texture.byteSize(),
                     lease.arenaId(), 0L);
-            submit(reservation, writer);
+            VulkanResourceStreamResult result = submit(reservation, writer);
+            if (result.completionPending()) {
+                if (pendingArenaLeases.put(completionId, lease) != null) {
+                    throw new IllegalStateException("duplicate pending arena completion ID");
+                }
+                lease = null; // Ownership remains with pendingArenaLeases until decode completion.
+            } else {
+                validateArenaCompletion(completionId, result);
+            }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             fault = new IllegalStateException(
                     "interrupted while acquiring a ResourceStream upload arena", interrupted);
             throw fault;
+        } catch (RuntimeException failure) {
+            fault = failure;
+            throw failure;
+        } finally {
+            if (lease != null) lease.close();
+        }
+    }
+
+    private boolean usesExternalTransfer(VulkanTextureData texture) {
+        return uploadArenas != null && texture.byteSize() >= externalThreshold;
+    }
+
+    private long allocateCompletionId() {
+        if (nextCompletionId == Long.MAX_VALUE) throw new IllegalStateException(
+                "ResourceStream completion IDs exhausted");
+        return ++nextCompletionId;
+    }
+
+    private void prepareArenaLease(int requiredBytes) {
+        reapReadyArenaLeases();
+        if (requiredBytes > uploadArenas.arenaCapacity()) drainArenaLeases();
+        while (pendingArenaLeases.size() >= uploadArenas.arenaCount()) {
+            awaitOldestArenaLease();
+        }
+    }
+
+    private void reapReadyArenaLeases() {
+        Iterator<Map.Entry<Long, ResourceUploadArenaPool.Lease>> iterator =
+                pendingArenaLeases.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Long, ResourceUploadArenaPool.Lease> pending = iterator.next();
+            VulkanResourceStreamResult result;
+            try {
+                result = submitter.pollCompletion(pending.getKey());
+            } catch (RuntimeException failure) {
+                fault = failure;
+                throw failure;
+            }
+            if (result == null) continue;
+            validateArenaCompletion(pending.getKey(), result);
+            pending.getValue().close();
+            iterator.remove();
+        }
+    }
+
+    private void awaitOldestArenaLease() {
+        Map.Entry<Long, ResourceUploadArenaPool.Lease> pending =
+                pendingArenaLeases.entrySet().iterator().next();
+        try {
+            VulkanResourceStreamResult result =
+                    submitter.awaitCompletion(pending.getKey(), -1L);
+            validateArenaCompletion(pending.getKey(), result);
+        } catch (RuntimeException failure) {
+            fault = failure;
+            throw failure;
+        } finally {
+            pending.getValue().close();
+            pendingArenaLeases.remove(pending.getKey());
+        }
+    }
+
+    private void drainArenaLeases() {
+        while (!pendingArenaLeases.isEmpty()) awaitOldestArenaLease();
+    }
+
+    private static void validateArenaCompletion(long completionId,
+                                                VulkanResourceStreamResult result) {
+        if (result == null || result.completionPending()
+                || result.completionId() != completionId
+                || result.textureReadback() != null) {
+            throw new IllegalStateException("invalid resource arena consumption completion");
         }
     }
 
@@ -294,6 +391,7 @@ final class ResourceStreamClient implements AutoCloseable {
     private void requireHealthy() {
         if (fault != null) throw new IllegalStateException(
                 "ResourceStream client is faulted after a failed ordered submission", fault);
+        reapReadyArenaLeases();
     }
 
     private static void validateDimensions(int width, int height) {
@@ -323,6 +421,17 @@ final class ResourceStreamClient implements AutoCloseable {
     }
 
     @Override public synchronized void close() {
-        if (uploadArenas != null) uploadArenas.close();
+        RuntimeException failure = null;
+        if (uploadArenas != null) {
+            while (!pendingArenaLeases.isEmpty()) {
+                try { awaitOldestArenaLease(); }
+                catch (RuntimeException problem) {
+                    if (failure == null) failure = problem;
+                    else failure.addSuppressed(problem);
+                }
+            }
+            uploadArenas.close();
+        }
+        if (failure != null) throw failure;
     }
 }

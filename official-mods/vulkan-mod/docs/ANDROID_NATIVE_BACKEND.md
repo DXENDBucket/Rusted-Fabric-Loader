@@ -61,7 +61,7 @@ capability/FrameStream negotiation
         |
 Java registers frame and resource arenas
         |
-game thread encodes frames ----> C++ render thread ----> Vulkan queue/present
+game thread encodes frames ----> bounded C++ decoder ----> Vulkan queue/present
 ```
 
 The device and long-lived GPU resources survive ordinary Surface loss. Surface, swapchain, image
@@ -93,8 +93,9 @@ metadata, not a pointer API for mods.
 ## Thread model
 
 The Java game thread remains responsible for game update, mods, UI semantics, and FrameStream
-encoding. A native render thread validates and decodes submitted arenas, records Vulkan command
-buffers, and presents them.
+encoding. A bounded native decoder validates reliable ResourceStreams in order and releases an
+external arena only through its consumption completion. The render thread records Vulkan command
+buffers and presents them.
 
 ```text
 Java game thread:   update N+1 | encode N+1 | bounded wait/submit

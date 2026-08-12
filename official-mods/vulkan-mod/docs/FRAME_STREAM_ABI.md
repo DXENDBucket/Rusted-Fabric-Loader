@@ -113,13 +113,20 @@ The shared reference client owns three 16 MiB resource arenas by default and use
 for transfers of at least 256 KiB. The count, initial size, and threshold are diagnostic properties
 `resourceArenaCount`, `resourceArenaMiB`, and `externalUploadKiB` under the
 `rusted.fabric.vulkan` namespace. Arenas grow geometrically at a lease-free safe point up to
-256 MiB each. A synchronous desktop acknowledgement guarantees that the driver has copied the
-referenced range into driver-owned direct memory, so the writer lease may then be reused. The
-future asynchronous decoder must delay that acknowledgement until it has stopped reading it.
+256 MiB each. Every external record requires a consumption completion ID. Its arena lease remains
+owned after submission and becomes reusable only after the ordered decoder has copied the
+referenced range into driver-owned memory and that completion has been observed. If all arenas are
+owned, the next writer waits for the oldest completion; arena growth first drains every owner.
 Registration now returns an opaque arena descriptor containing the verified ID, capacity, and an
 optional stable native base address. The LWJGL3 reference driver exposes a real address; shared
 Java code only range-checks it and never dereferences it. A JNI backend obtains and owns the same
 address through `GetDirectBufferAddress` for the full registration lifetime.
+
+Desktop ResourceStream decoding is performed by one ordered daemon worker behind a fair bounded
+64-submission gate. The submitting thread validates the complete envelope and reserves its
+contiguous sequence before enqueueing. A FrameStream waits when its `requiredResourceSequence` has
+been accepted but not decoded; a sequence beyond the accepted tail is rejected immediately.
+Decode failure faults the resource channel and wakes every dependency/completion waiter.
 
 Destruction is logically ordered but physically deferred until no queued frame references the
 handle and all relevant native GPU frame slots have completed.
@@ -562,9 +569,11 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
    them to native Vulkan resources, and rejects a FrameStream whose `requiredResourceSequence` is
    not applied. Registered bounded external upload arenas, ordered partial RGBA8 updates, and
    completion-ID texture readback results are live and covered by real-GPU tests. Arena
-   registration returns a stable native-address descriptor, and desktop readback exercises the
-   accepted/pending/ready completion protocol on a separate worker. The actual JNI registration
-   calls, asynchronous resource decoding/arena release, and partial readback remain.
+   registration returns a stable native-address descriptor. Desktop ResourceStream decoding now
+   uses a bounded ordered worker, frames wait for decoded resource dependencies, and external arena
+   leases remain owned through their consumption completion. Readback separately exercises the
+   accepted/pending/ready protocol and a dedicated Vulkan fence. The actual JNI registration calls,
+   C++ decoding, and partial readback remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 

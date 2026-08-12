@@ -100,7 +100,8 @@ public final class ResourceStreamAbiVerification {
         long texture = FrameResourceHandle.encode(FrameResourceHandle.TYPE_TEXTURE, 4, 23);
         long shader = FrameResourceHandle.encode(FrameResourceHandle.TYPE_SHADER_PROGRAM, 2, 8);
         byte[] pixels = hex("ff0000ff00ff00ff0000ffffffffffff");
-        ResourceStreamWriter writer = new ResourceStreamWriter(20L, 0, 0L);
+        ResourceStreamWriter writer = new ResourceStreamWriter(20L,
+                ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, 90L);
         ResourceStreamRecords.textureCreate(writer, texture, 2, 2, 1,
                 ResourceStreamFormat.FORMAT_RGBA8_UNORM,
                 ResourceStreamFormat.TEXTURE_USAGE_SAMPLED

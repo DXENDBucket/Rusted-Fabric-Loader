@@ -22,14 +22,24 @@ public final class ResourceStreamClientVerification {
     public static void main(String[] arguments) {
         List<ResourceStreamReader> streams = new ArrayList<ResourceStreamReader>();
         Map<Long, ByteBuffer> arenas = new LinkedHashMap<Long, ByteBuffer>();
+        int[] arenaCompletionWaits = {0};
         ResourceStreamClient client = new ResourceStreamClient(
                 new ResourceStreamClient.Submitter() {
-            private long pendingSequence;
+            private final Map<Long, Long> pendingSequences =
+                    new LinkedHashMap<Long, Long>();
+            private final Map<Long, Boolean> pendingReadbacks =
+                    new LinkedHashMap<Long, Boolean>();
             @Override public VulkanResourceStreamResult submit(ByteBuffer bytes) {
                 ResourceStreamReader stream = ResourceStreamReader.read(bytes);
                 streams.add(stream);
                 if (stream.completionId() != 0L) {
-                    pendingSequence = stream.lastSequence();
+                    boolean readback = false;
+                    for (int index = 0; index < stream.recordCount(); index++) {
+                        readback |= stream.record(index).type()
+                                == ResourceStreamFormat.TEXTURE_READBACK;
+                    }
+                    pendingSequences.put(stream.completionId(), stream.lastSequence());
+                    pendingReadbacks.put(stream.completionId(), readback);
                     return VulkanResourceStreamResult.pending(stream.lastSequence(),
                             stream.completionId());
                 }
@@ -37,9 +47,17 @@ public final class ResourceStreamClientVerification {
             }
             @Override public VulkanResourceStreamResult awaitCompletion(
                     long completionId, long timeoutNanos) {
-                require(timeoutNanos == -1L, "readback did not request an unbounded wait");
-                return VulkanResourceStreamResult.textureReadback(pendingSequence,
-                        completionId, new VulkanTextureData(2, 3, new byte[24]));
+                require(timeoutNanos == -1L, "completion did not request an unbounded wait");
+                Long sequence = pendingSequences.remove(completionId);
+                Boolean readback = pendingReadbacks.remove(completionId);
+                require(sequence != null && readback != null, "unknown fake completion");
+                if (readback.booleanValue()) {
+                    return VulkanResourceStreamResult.textureReadback(sequence.longValue(),
+                            completionId, new VulkanTextureData(2, 3, new byte[24]));
+                }
+                arenaCompletionWaits[0]++;
+                return VulkanResourceStreamResult.completed(
+                        sequence.longValue(), completionId);
             }
         }, new ResourceUploadArenaPool.Registry() {
             @Override public VulkanResourceArenaRegistration register(
@@ -81,9 +99,10 @@ public final class ResourceStreamClientVerification {
                 "render-target stream changed");
         client.updateTextureRegion(replacement, 1, 1, pixel);
         require(client.requiredForNextFrame() == 6L
+                        && arenaCompletionWaits[0] == 1
                         && streams.get(streams.size() - 1).record(0).type()
                         == ResourceStreamFormat.TEXTURE_REGION_UPDATE,
-                "partial texture update stream changed");
+                "partial texture update or arena back-pressure changed");
         VulkanTextureData readback = client.readTexture(replacement);
         require(readback.width() == 2 && readback.height() == 3
                         && client.requiredForNextFrame() == 7L,

@@ -145,6 +145,11 @@ final class VulkanDriverLoader {
                                     return invoke(() -> driver.awaitResourceStreamCompletion(
                                             completionId, timeoutNanos));
                                 }
+                                @Override public io.github.endx.vulkanmod.spi.VulkanResourceStreamResult
+                                        pollCompletion(long completionId) {
+                                    return invoke(() -> driver.pollResourceStreamCompletion(
+                                            completionId));
+                                }
                             },
                             new io.github.endx.vulkanmod.resourcestream.ResourceUploadArenaPool.Registry() {
                                 @Override public io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration

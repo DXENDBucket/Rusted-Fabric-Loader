@@ -74,6 +74,7 @@ public final class ResourceStreamReader {
 
         ArrayList<Record> records = new ArrayList<Record>(count);
         boolean expectsResult = false;
+        boolean externalPayload = false;
         int offset = ResourceStreamFormat.HEADER_BYTES;
         for (int index = 0; index < count; index++) {
             require(offset <= total - ResourceStreamFormat.RECORD_HEADER_BYTES,
@@ -108,13 +109,17 @@ public final class ResourceStreamReader {
             long handle = bytes.getLong(offset + 24);
             validateHandle(type, handle);
             expectsResult |= (recordFlags & ResourceStreamFormat.RECORD_EXPECTS_RESULT) != 0;
+            externalPayload |= (recordFlags
+                    & ResourceStreamFormat.RECORD_HAS_EXTERNAL_PAYLOAD) != 0;
             records.add(new Record(type, recordFlags, headerBytes, recordBytes,
                     sequence, handle, offset));
             offset += recordBytes;
         }
         require(offset == total, "ResourceStream contains trailing bytes");
-        require(expectsResult == completion,
-                "result-bearing records and completion flag disagree");
+        require(!expectsResult || completion,
+                "result-bearing records require a completion flag");
+        require(!externalPayload || completion,
+                "external resource payload requires a completion flag");
         ByteBuffer retained = bytes.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
         retained.position(0).limit(total);
         ResourceStreamReader result = new ResourceStreamReader(retained, firstSequence, flags,
