@@ -1,6 +1,7 @@
 package io.github.endx.iniessentials;
 
 import io.github.endx.iniessentials.action.CameraActionFields;
+import io.github.endx.iniessentials.action.EconomyActionFields;
 import io.github.endx.iniessentials.action.FogActionFields;
 import io.github.endx.iniessentials.action.MovementActionFields;
 import io.github.endx.iniessentials.action.PerActionAutoTriggerCooldownFields;
@@ -61,6 +62,7 @@ public final class IniEssentials implements ModInitializer {
         FogActionFields.register();
         CameraActionFields.register();
         MovementActionFields.register();
+        EconomyActionFields.register();
         PerActionAutoTriggerCooldownFields.register();
         DamageEventData.enable(IniEssentials::activateSynchronizedRequirement);
         NativeEventData.enable(IniEssentials::activateSynchronizedRequirement);
@@ -95,7 +97,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v29",
-                "d0fea5b2fd94e3948875e11ed75b10087dae7b38da147aaf90d4e783ae897ce9"));
+                MOD_ID, version, "ini_essentials_v30",
+                "3ba478bafb6d0e706dfd9add1055649c6545f5b1fa9a7beabb23160d74c8ca95"));
     }
 }

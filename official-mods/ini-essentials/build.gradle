@@ -59,6 +59,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def cameraFields = file('src/main/java/io/github/endx/iniessentials/action/CameraActionFields.java')
     def autoTriggerCooldownFields = file('src/main/java/io/github/endx/iniessentials/action/PerActionAutoTriggerCooldownFields.java')
     def movementActionFields = file('src/main/java/io/github/endx/iniessentials/action/MovementActionFields.java')
+    def economyActionFields = file('src/main/java/io/github/endx/iniessentials/action/EconomyActionFields.java')
     def actionPositionReference = file('src/main/java/io/github/endx/iniessentials/ActionPositionReference.java')
     def eventRuleFields = file('src/main/java/io/github/endx/iniessentials/event/EventRuleDefinitions.java')
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/projectile/ProjectileRuleDefinitions.java')
@@ -83,7 +84,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def referenceWorkbook = file('docs/INI Essentials Unit Modding Reference.xlsx')
     def releaseVersions = rootProject.file('versions.properties')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
-            autoTriggerCooldownFields, movementActionFields,
+            autoTriggerCooldownFields, movementActionFields, economyActionFields,
             actionPositionReference,
             eventRuleFields,
             projectileRuleFields,
@@ -104,6 +105,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'allowNegativeHp', 'autoTriggerCooldownTime',
                 'autoTriggerCooldownTime_allowDangerousHighCPU',
                 'setUnitMovementType',
+                'refreshTeamEconomyStats',
                 'cameraCenterAt', 'cameraCenterBy',
                 'cameraCenterOn', 'cameraTargetZoom', 'cameraStopMovement',
                 'type', 'radius', 'radiusX', 'radiusY', 'width', 'height',
@@ -173,6 +175,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def cameraSource = cameraFields.getText('UTF-8')
         def autoTriggerCooldownSource = autoTriggerCooldownFields.getText('UTF-8')
         def movementActionSource = movementActionFields.getText('UTF-8')
+        def economyActionSource = economyActionFields.getText('UTF-8')
         def actionPositionSource = actionPositionReference.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
         def decalMaskSource = decalMaskFields.getText('UTF-8')
@@ -345,6 +348,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !customProjectileTurretSource.contains('iniEssentialsPatternPlaceholder')
                 || !movementActionSource.contains('UnitMovementOverrides.set(')
                 || !movementActionSource.contains('StringExpression.compile(')
+                || !economyActionSource.contains('refreshTeamEconomyStats()')
                 || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
@@ -473,7 +477,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v29'
+                || multiplayer?.protocol != 'ini_essentials_v30'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')
