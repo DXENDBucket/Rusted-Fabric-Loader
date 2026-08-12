@@ -839,7 +839,9 @@ publishes both its editable source and Loader-managed native scanner directory t
 source path and treat the staged path as read-only. `DevelopmentReloads.reloadInPlace()` first
 synchronizes every declared native content root, then runs the game's sandbox-compatible INI unit
 reload, and finally applies registered Java resource reloaders. Java classes and Mixins are not
-redefined by this operation and still require rebuilding and restarting the game.
+redefined by this operation and still require rebuilding and restarting the game. The game's
+original sandbox **Reload units** path also synchronizes those roots immediately before its native
+timestamp scan, allowing source-workspace INI balance edits to use the familiar in-match workflow.
 
 Reads into memory are capped at 128 MiB. When a native game API requires a real filesystem path,
 `extractToCache()` writes a content-addressed copy atomically below the operating system temporary

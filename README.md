@@ -148,9 +148,11 @@ workspace's `fabric.mod.json`:
 `mods/units/rfl-dev-<mod_id>`. Only directories carrying the Loader's matching ownership marker are
 ever updated, cleaned, or removed. `DevelopmentReloads.reloadInPlace()` and Java Mod Menu's
 **Reload units/resources** synchronize this mirror before invoking the game's native in-place unit
-reload. Removing or disabling the workspace removes its managed mirror on the next launch. This
-same copy-based mechanism is used on Windows and Android, so a hybrid Java/INI project needs only
-one development workspace and no junction or root access.
+reload. The original sandbox editor's **Reload units** action uses the same pre-reload mirror sync,
+so balancing an INI under the source workspace requires neither a Gradle build nor a game restart.
+Removing or disabling the workspace removes its managed mirror on the next launch. This same
+copy-based mechanism is used on Windows and Android, so a hybrid Java/INI project needs only one
+development workspace and no junction or root access.
 
 INI Essentials is built as an official artifact but is not installed by default yet. Install it for
 custom-unit development with:

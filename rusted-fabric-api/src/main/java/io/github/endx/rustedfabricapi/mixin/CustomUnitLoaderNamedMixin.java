@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.CustomUnitEvents;
+import io.github.endx.rustedfabricapi.internal.development.DevelopmentReloadRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -9,6 +10,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnitLoader", remap = false)
 public abstract class CustomUnitLoaderNamedMixin {
+    @Inject(method = "checkAndReloadChangedCustomUnits()V", at = @At("HEAD"), require = 1)
+    private static void rustedfabricapi$syncEditableContentBeforeSandboxReload(CallbackInfo ci) {
+        DevelopmentReloadRuntime.synchronizeBeforeExternalNativeReload();
+    }
+
     @Inject(
             method = "loadAllCustomUnitConfigs()V",
             at = @At(

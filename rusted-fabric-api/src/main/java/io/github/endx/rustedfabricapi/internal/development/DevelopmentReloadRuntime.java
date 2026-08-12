@@ -40,6 +40,17 @@ public final class DevelopmentReloadRuntime {
         return ModResourceReloaders.reloadAll(ResourceReloadReason.MANUAL);
     }
 
+    /**
+     * Mirrors editable native content before the game's own sandbox reload scans timestamps.
+     * Integrated API reloads already synchronize before entering the native loader.
+     */
+    public static void synchronizeBeforeExternalNativeReload() {
+        if (integratedUnitReloadRunning) return;
+        synchronized (LOCK) {
+            if (!integratedUnitReloadRunning) syncNativeContent();
+        }
+    }
+
     private static void syncNativeContent() {
         try {
             Class<?> bridge = Class.forName(
