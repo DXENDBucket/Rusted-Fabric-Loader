@@ -816,11 +816,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     }
 
     synchronized long frameUploadAllocationCount() {
-        return surfaceSession == null ? 0L : surfaceSession.frameUploadAllocations;
+        return surfaceSession == null ? 0L
+                : surfaceSession.frameUploadAllocationCount();
     }
 
     synchronized long drawBatchAllocationCount() {
-        return surfaceSession == null ? 0L : surfaceSession.drawBatchAllocations;
+        return surfaceSession == null ? 0L
+                : surfaceSession.drawBatchAllocationCount();
     }
 
     private static VkInstanceCreateInfo instanceCreateInfo(
@@ -1826,12 +1828,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private final VulkanImageResourceFactory imageResources;
         private final Map<Long, TextureResource> textures =
                 new LinkedHashMap<Long, TextureResource>();
+        private final VulkanTextureTransferQueue textureTransfers;
         private final Map<TextureDescriptorKey, Long> pairedTextureDescriptors =
                 new LinkedHashMap<TextureDescriptorKey, Long>();
         private final TextureDescriptorKey pairedTextureDescriptorProbe =
                 new TextureDescriptorKey();
-        private final ArrayList<PendingTextureUpload> pendingTextureUploads =
-                new ArrayList<PendingTextureUpload>();
         private final Map<Long, ResourceTextureBinding> resourceTextures =
                 new LinkedHashMap<Long, ResourceTextureBinding>();
         private final Map<Long, ResourceStreamRecords.TextureDescriptor>
@@ -1845,18 +1846,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private Throwable resourceStreamFault;
         private long resourceStreamSubmissions;
         private long externalResourceTransfers;
-        private final ArrayDeque<TextureResource> retiredTextures =
-                new ArrayDeque<TextureResource>();
         private long nextTextureHandle = 1L;
-        private final ArrayDeque<FrameUpload> frameUploadPool = new ArrayDeque<FrameUpload>();
-        private final ArrayDeque<ColoredDrawBatch> coloredBatchPool =
-                new ArrayDeque<ColoredDrawBatch>();
-        private final ArrayDeque<TextureDrawBatch> textureBatchPool =
-                new ArrayDeque<TextureDrawBatch>();
-        private long textureUploadBytes;
-        private long textureUploadBatches;
-        private long textureUploadSlotGrowths;
-        private long textureMutationFenceWaits;
+        private final VulkanFrameUploadPool frameUploads = new VulkanFrameUploadPool();
         private long textureDescriptorSingleHits;
         private long textureDescriptorSingleMisses;
         private long textureDescriptorPairHits;
@@ -1877,8 +1868,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long immediateOffscreenQueueSubmissions;
         private long frameGraphQueueSubmissions;
         private long frameGraphPassesSubmitted;
-        private long frameUploadAllocations;
-        private long drawBatchAllocations;
         private List<FrameSource> frameGraphPasses = Collections.emptyList();
         private boolean frameGraphSubmitted;
         private boolean debugLargeTargetReadBack;
@@ -1963,6 +1952,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.memory = new VulkanMemoryAllocator(candidate.device, device);
             this.execution = new VulkanFrameExecutionResources(device, memory,
                     candidate.queues.graphics, OFFSCREEN_SUBMISSION_SLOTS);
+            this.textureTransfers = new VulkanTextureTransferQueue(
+                    memory, execution, textures);
             this.imageResources = new VulkanImageResourceFactory(device, memory);
             this.descriptors = new VulkanDescriptorAllocator(
                     device, MAX_TEXTURE_DESCRIPTOR_SETS);
@@ -2483,12 +2474,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 long ownerFence = execution.offscreenOwnerFence(slot);
                 check(vkWaitForFences(device, stack.longs(ownerFence), true, -1L),
                         "vkWaitForFences(render target slot)");
-                if (pendingTextureMutationRequiresGlobalWait()) {
+                if (textureTransfers.mutationRequiresGlobalWait()) {
                     // An already sampled image can still be in use by another frame slot.
                     waitForAllSubmissionFences(stack);
-                    textureMutationFenceWaits++;
+                    textureTransfers.noteMutationFenceWait();
                 }
-                if (!retiredTextures.isEmpty() && allSubmissionFencesSignaled()) {
+                if (textureTransfers.hasRetired() && allSubmissionFencesSignaled()) {
                     destroyRetiredTextures();
                 }
                 FrameUpload upload = frame.upload(stack, slot,
@@ -2812,66 +2803,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private void queueTextureUpload(long textureHandle, int x, int y,
                                         VulkanTextureData texture) {
-            TextureResource target = textures.get(textureHandle);
-            if (target == null) throw new IllegalArgumentException(
-                    "unknown texture handle " + textureHandle);
-            boolean initialized = target.initialized;
-            for (int index = pendingTextureUploads.size() - 1; index >= 0; index--) {
-                if (pendingTextureUploads.get(index).textureHandle == textureHandle) {
-                    initialized = true;
-                    break;
-                }
-            }
-            pendingTextureUploads.add(new PendingTextureUpload(textureHandle, x, y,
-                    texture, initialized));
-        }
-
-        private BufferAllocation ensureTextureUploadSlot(
-                MemoryStack stack, BufferAllocation[] allocations,
-                int[] capacities, int slot, int requiredBytes) {
-            if (slot < 0 || slot >= allocations.length) {
-                throw new IllegalArgumentException("texture upload slot is out of range");
-            }
-            BufferAllocation existing = allocations[slot];
-            if (existing != null && capacities[slot] >= requiredBytes) {
-                return existing;
-            }
-            if (existing != null) memory.destroyBuffer(existing);
-            int capacity = 1;
-            while (capacity < requiredBytes && capacity > 0) capacity <<= 1;
-            if (capacity <= 0) capacity = requiredBytes;
-            BufferAllocation created = memory.allocateBuffer(stack, capacity,
-                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            try {
-                memory.map(created, capacity, stack, "persistent texture upload slot");
-            } catch (Throwable failure) {
-                memory.destroyBuffer(created);
-                throw failure;
-            }
-            allocations[slot] = created;
-            capacities[slot] = capacity;
-            textureUploadSlotGrowths++;
-            if (textureUploadSlotGrowths == 1L) {
-                System.out.println("[Vulkan Mod/Driver] Persistent mapped texture upload slots "
-                        + "active (slots=" + execution.totalUploadSlotCount() + ")");
-            }
-            return created;
-        }
-
-        private boolean pendingTextureMutationRequiresGlobalWait() {
-            for (PendingTextureUpload pending : pendingTextureUploads) {
-                if (pending.initialized) return true;
-            }
-            return false;
+            textureTransfers.queue(textureHandle, x, y, texture);
         }
 
         private void appendPerformanceStatistics(Map<String, Long> statistics) {
-            statistics.put("texture.uploadBytes", textureUploadBytes);
-            statistics.put("texture.uploadBatches", textureUploadBatches);
-            statistics.put("texture.uploadSlotGrowths", textureUploadSlotGrowths);
-            statistics.put("texture.mutationFenceWaits", textureMutationFenceWaits);
+            textureTransfers.appendStatistics(statistics);
             memory.appendStatistics(statistics);
             imageResources.appendStatistics(statistics);
             descriptors.appendStatistics(statistics);
@@ -2883,6 +2819,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("descriptor.pairMisses", textureDescriptorPairMisses);
             commandState.appendStatistics(statistics);
             execution.appendStatistics(statistics);
+            frameUploads.appendStatistics(statistics);
             statistics.put("frame.materialCacheHits", decodedMaterialCacheHits);
             statistics.put("frame.materialCacheMisses", decodedMaterialCacheMisses);
         }
@@ -2968,82 +2905,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 VkCommandBuffer command, MemoryStack stack,
                 BufferAllocation[] uploadAllocations, int[] uploadCapacities,
                 int uploadSlot) {
-            if (pendingTextureUploads.isEmpty()) return;
-            int byteCount = 0;
-            for (PendingTextureUpload pending : pendingTextureUploads) {
-                byteCount = Math.addExact(byteCount, pending.texture.byteSize());
-            }
-            BufferAllocation staging = ensureTextureUploadSlot(stack, uploadAllocations,
-                    uploadCapacities, uploadSlot, byteCount);
-            ByteBuffer destination = staging.mapped.duplicate().order(ByteOrder.nativeOrder());
-            destination.clear().limit(byteCount);
-            for (PendingTextureUpload pending : pendingTextureUploads) {
-                TextureResource target = textures.get(pending.textureHandle);
-                if (target != null && target.renderTarget
-                        && isBlueFirstFormat(swapchainLifecycle.info().imageFormat())) {
-                    byte[] rgba = pending.texture.copyRgba();
-                    for (int offset = 0; offset < rgba.length; offset += 4) {
-                        destination.put(rgba[offset + 2]);
-                        destination.put(rgba[offset + 1]);
-                        destination.put(rgba[offset]);
-                        destination.put(rgba[offset + 3]);
-                    }
-                } else {
-                    pending.texture.writeTo(destination);
-                }
-            }
-
-            int offset = 0;
-            for (PendingTextureUpload pending : pendingTextureUploads) {
-                TextureResource target = textures.get(pending.textureHandle);
-                if (target == null) {
-                    offset += pending.texture.byteSize();
-                    continue;
-                }
-                VkImageMemoryBarrier.Buffer toTransfer = VkImageMemoryBarrier.calloc(1, stack);
-                toTransfer.get(0).sType$Default()
-                        .oldLayout(pending.initialized
-                                ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                                : VK_IMAGE_LAYOUT_UNDEFINED)
-                        .newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-                        .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                        .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                        .image(target.image).srcAccessMask(pending.initialized
-                                ? VK_ACCESS_SHADER_READ_BIT : 0)
-                        .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                toTransfer.get(0).subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
-                vkCmdPipelineBarrier(command, pending.initialized
-                                ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-                                : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, null, null, toTransfer);
-                VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
-                region.get(0).bufferOffset(offset).bufferRowLength(0).bufferImageHeight(0);
-                region.get(0).imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                        .mipLevel(0).baseArrayLayer(0).layerCount(1);
-                region.get(0).imageOffset().x(pending.x).y(pending.y).z(0);
-                region.get(0).imageExtent().width(pending.texture.width())
-                        .height(pending.texture.height()).depth(1);
-                vkCmdCopyBufferToImage(command, staging.buffer, target.image,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
-                VkImageMemoryBarrier.Buffer toShader = VkImageMemoryBarrier.calloc(1, stack);
-                toShader.get(0).sType$Default()
-                        .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-                        .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-                        .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                        .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                        .image(target.image).srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                        .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
-                toShader.get(0).subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
-                vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, null, null, toShader);
-                target.initialized = true;
-                offset += pending.texture.byteSize();
-            }
-            textureUploadBytes = Math.addExact(textureUploadBytes, byteCount);
-            textureUploadBatches++;
-            pendingTextureUploads.clear();
+            textureTransfers.record(command, stack, uploadAllocations, uploadCapacities,
+                    uploadSlot, swapchainLifecycle.info().imageFormat());
         }
 
         private void destroyTexture(long textureHandle) {
@@ -3051,8 +2914,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             final long destroyedHandle = textureHandle;
             TextureResource texture = textures.remove(textureHandle);
             if (texture == null) return;
-            pendingTextureUploads.removeIf(
-                    pending -> pending.textureHandle == destroyedHandle);
+            textureTransfers.removePending(destroyedHandle);
             java.util.Iterator<Map.Entry<TextureDescriptorKey, Long>> descriptors =
                     pairedTextureDescriptors.entrySet().iterator();
             while (descriptors.hasNext()) {
@@ -3064,13 +2926,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             // A previous submitted frame can still sample this image. Release it after that
             // frame's fence instead of forcing the whole device idle for every map-cache update.
-            retiredTextures.addLast(texture);
+            textureTransfers.retire(texture);
         }
 
         private void destroyRetiredTextures() {
-            while (!retiredTextures.isEmpty()) {
-                destroyTextureResource(retiredTextures.removeFirst(), true);
-            }
+            textureTransfers.releaseRetired(
+                    texture -> destroyTextureResource(texture, true));
         }
 
         private void destroyTextureResource(TextureResource texture, boolean freeDescriptor) {
@@ -3277,7 +3138,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(fenceWait, "vkWaitForFences");
                 // First uploads target images that cannot yet be sampled by an in-flight frame.
                 // Only mutation of an initialized image requires all image users to finish.
-                if (pendingTextureMutationRequiresGlobalWait()) {
+                if (textureTransfers.mutationRequiresGlobalWait()) {
                     int textureFenceWait = waitForAllSubmissionFences(
                             stack, fenceTimeout);
                     if (textureFenceWait == VK_TIMEOUT || textureFenceWait == VK_NOT_READY) {
@@ -3285,9 +3146,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         return null;
                     }
                     check(textureFenceWait, "vkWaitForFences(texture uploads)");
-                    textureMutationFenceWaits++;
+                    textureTransfers.noteMutationFenceWait();
                     destroyRetiredTextures();
-                } else if (!retiredTextures.isEmpty() && allSubmissionFencesSignaled()) {
+                } else if (textureTransfers.hasRetired()
+                        && allSubmissionFencesSignaled()) {
                     destroyRetiredTextures();
                 }
                 long afterFence = System.nanoTime();
@@ -3516,55 +3378,32 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private FrameUpload acquireFrameUpload(long texturedByteOffset,
                                                long customTexturedByteOffset) {
-            FrameUpload upload = frameUploadPool.pollFirst();
-            if (upload == null) {
-                upload = new FrameUpload();
-                frameUploadAllocations++;
-            }
-            upload.texturedByteOffset = texturedByteOffset;
-            upload.customTexturedByteOffset = customTexturedByteOffset;
-            return upload;
+            return frameUploads.acquire(texturedByteOffset, customTexturedByteOffset);
         }
 
         private ColoredDrawBatch acquireColoredBatch(
                 VulkanClipRect clip, VulkanBlendMode blendMode, int firstVertex) {
-            ColoredDrawBatch batch = coloredBatchPool.pollFirst();
-            if (batch == null) {
-                batch = new ColoredDrawBatch();
-                drawBatchAllocations++;
-            }
-            batch.reset(clip, blendMode, firstVertex);
-            return batch;
+            return frameUploads.acquireColored(clip, blendMode, firstVertex);
         }
 
         private TextureDrawBatch acquireTextureBatch(
                 long textureHandle, long descriptorSet, VulkanClipRect clip,
                 VulkanBlendMode blendMode, VulkanShaderState shaderState,
                 int firstVertex, boolean expandedVertexInput) {
-            TextureDrawBatch batch = textureBatchPool.pollFirst();
-            if (batch == null) {
-                batch = new TextureDrawBatch();
-                drawBatchAllocations++;
-            }
-            batch.reset(textureHandle, descriptorSet, clip, blendMode,
-                    shaderState, firstVertex, expandedVertexInput);
-            return batch;
+            return frameUploads.acquireTexture(textureHandle, descriptorSet, clip,
+                    blendMode, shaderState, firstVertex, expandedVertexInput);
         }
 
         private void releaseFrameUpload(FrameUpload upload) {
-            if (upload == null) return;
-            for (DrawBatch batch : upload.batches) {
-                batch.clip = null;
-                if (batch instanceof TextureDrawBatch) {
-                    TextureDrawBatch texture = (TextureDrawBatch) batch;
-                    texture.shaderState = null;
-                    textureBatchPool.addFirst(texture);
-                } else {
-                    coloredBatchPool.addFirst((ColoredDrawBatch) batch);
-                }
-            }
-            upload.batches.clear();
-            frameUploadPool.addFirst(upload);
+            frameUploads.release(upload);
+        }
+
+        private long frameUploadAllocationCount() {
+            return frameUploads.uploadAllocationCount();
+        }
+
+        private long drawBatchAllocationCount() {
+            return frameUploads.batchAllocationCount();
         }
 
         private void recordDraw(VkCommandBuffer command, DrawBatch batch,
@@ -4366,16 +4205,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             execution.close();
             swapchainLifecycle.close();
             pipelines.close();
-            descriptors.close();
             for (TextureResource texture : textures.values()) {
                 destroyTextureResource(texture, false);
             }
             textures.clear();
-            pendingTextureUploads.clear();
+            textureTransfers.close(
+                    texture -> destroyTextureResource(texture, false));
+            pairedTextureDescriptors.clear();
+            descriptors.close();
             pendingResourceReadbacks.clear();
-            while (!retiredTextures.isEmpty()) {
-                destroyTextureResource(retiredTextures.removeFirst(), false);
-            }
             if (offscreenLoadRenderPass != VK_NULL_HANDLE) {
                 vkDestroyRenderPass(device, offscreenLoadRenderPass, null);
                 offscreenLoadRenderPass = VK_NULL_HANDLE;
@@ -4384,6 +4222,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vkDestroyRenderPass(device, offscreenClearRenderPass, null);
                 offscreenClearRenderPass = VK_NULL_HANDLE;
             }
+            frameUploads.assertBalanced();
             imageResources.assertFullyReleased();
             memory.assertFullyReleased();
             vkDestroyDevice(device, null);
@@ -4471,77 +4310,5 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private static final class PendingTextureUpload {
-            private final long textureHandle;
-            private final int x, y;
-            private final VulkanTextureData texture;
-            private final boolean initialized;
-
-            private PendingTextureUpload(long textureHandle, int x, int y,
-                                         VulkanTextureData texture, boolean initialized) {
-                this.textureHandle = textureHandle;
-                this.x = x;
-                this.y = y;
-                this.texture = texture;
-                this.initialized = initialized;
-            }
-        }
-
-        private abstract static class DrawBatch {
-            VulkanClipRect clip;
-            VulkanBlendMode blendMode;
-            long vertexByteOffset;
-            int firstVertex;
-            int vertexCount;
-            long indexByteOffset;
-            int indexCount;
-            int indexType;
-
-            void reset(VulkanClipRect clip, VulkanBlendMode blendMode,
-                       int firstVertex) {
-                this.clip = clip;
-                this.blendMode = blendMode;
-                this.vertexByteOffset = 0L;
-                this.firstVertex = firstVertex;
-                this.vertexCount = 0;
-                this.indexByteOffset = 0L;
-                this.indexCount = 0;
-                this.indexType = VK_INDEX_TYPE_UINT16;
-            }
-        }
-
-        private static final class TextureDrawBatch extends DrawBatch {
-            private long textureHandle;
-            private long descriptorSet;
-            private VulkanShaderState shaderState;
-            private boolean expandedVertexInput;
-
-            private void reset(long textureHandle, long descriptorSet,
-                               VulkanClipRect clip, VulkanBlendMode blendMode,
-                               VulkanShaderState shaderState, int firstVertex,
-                               boolean expandedVertexInput) {
-                super.reset(clip, blendMode, firstVertex);
-                this.textureHandle = textureHandle;
-                this.descriptorSet = descriptorSet;
-                this.shaderState = shaderState;
-                this.expandedVertexInput = expandedVertexInput;
-            }
-        }
-
-        private static final class ColoredDrawBatch extends DrawBatch { }
-
-        private static final class FrameUpload {
-            private long texturedByteOffset;
-            private long customTexturedByteOffset;
-            private final List<DrawBatch> batches = new ArrayList<DrawBatch>();
-
-            private int totalVertexCount() {
-                int total = 0;
-                for (DrawBatch batch : batches) {
-                    total = Math.addExact(total, batch.vertexCount);
-                }
-                return total;
-            }
-        }
     }
 }

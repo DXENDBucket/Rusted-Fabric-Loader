@@ -93,16 +93,20 @@ offscreen work, frame-graph children, and presentation independent. `command.*Ca
 traffic. A real-device regression alternates 64 texture batches while requiring only one pipeline,
 vertex-buffer, scissor, and push-constant command.
 
-The isolated desktop backend has begun moving ownership out of its original monolithic session:
+The isolated desktop backend has completed the lifecycle-ownership split from its original
+monolithic session:
 `VulkanCommandStateCache` owns pass-local command deduplication and its counters, while
 `VulkanDescriptorAllocator` owns the shared sampler/layout/pool, lazy set allocation, and the
 fence-released recycler. `VulkanMemoryAllocator` caches physical-device memory-type flags and owns
 raw buffer/image memory allocation, persistent mapping, release accounting, and shutdown leak
 checks. `VulkanImageResourceFactory` builds sampled textures and offscreen color targets, including
-their image views and framebuffers, while `SurfaceSession` retains only public-handle registration,
-uploads, descriptors, and fence-safe retirement. `memory.*` and `image.*` profiler counters expose
-allocation/free counts, maps, byte ownership, resource kind, and live/peak totals. Both owners fail
-shutdown regressions if any tracked resource remains. `VulkanPipelineLibrary` owns graphics
+their image views and framebuffers. `VulkanTextureTransferQueue` owns deferred mutations,
+persistent staging growth, image-layout transitions, and fence-safe retirement, while
+`VulkanFrameUploadPool` owns recyclable driver-side uploads and draw-batch metadata. `memory.*`,
+`image.*`, `texture.*`, and frame-pool profiler counters expose
+allocation/free counts, maps, byte ownership, resource kind, and live/peak totals. The memory and
+image owners fail shutdown regressions if any tracked resource remains. `VulkanPipelineLibrary`
+owns graphics
 pipeline layouts, lazy blend-mode caches, custom shader registrations, temporary shader modules,
 and render-pass rebinding. Swapchain recreation retires only render-pass-compatible pipelines;
 layouts and shader registrations remain device-owned until shutdown. `pipeline.*` counters expose
@@ -119,9 +123,11 @@ command pool containing the child-pass ring plus a dedicated readback command bu
 are replaced on resize; offscreen fences, mapped vertex/upload buffers, cursor, and command buffers
 survive. `execution.*` counters expose both generations and lazy buffer occupancy. The resize
 regression primes real offscreen vertex and upload buffers before replacing WSI twice, then proves
-that their pool generation and allocations did not change. `Lwjgl3VulkanDriver` retains
-orchestration and image-to-descriptor cache keys, but no longer implements those low-level
-lifecycles inline.
+that their pool generation and allocations did not change. `SurfaceSession` is now deliberately the
+cross-owner orchestration root: it retains public-handle registration, image-to-descriptor cache
+keys, frame encoding that resolves resources and pipelines, command ordering, queue submission, and
+presentation. It no longer implements resource and execution lifecycles inline; splitting this
+remaining coordination would replace a useful boundary with callback-only wrappers.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -215,8 +221,11 @@ performance runs remain unaffected.
    generations now also have a dedicated owner separated from frame execution, with real Win32
    resize and shutdown-balance coverage. Main and offscreen execution slots now have a dedicated
    owner and separate command pools; window resize replaces only the main generation and preserves
-   offscreen/readback command buffers plus their warmed mapped rings. Next, extract pending texture
-   transfer and fence-safe retirement orchestration from `SurfaceSession`.
+   offscreen/readback command buffers plus their warmed mapped rings. Deferred texture transfers,
+   staging growth, fence-safe retirement, and recyclable frame/draw-batch metadata now also have
+   dedicated owners. The desktop lifecycle-ownership split is complete; subsequent desktop work
+   targets compatibility coverage and measured rendering performance rather than more mechanical
+   extraction from `SurfaceSession`.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
    the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover
