@@ -579,13 +579,16 @@ public final class VulkanRuntime {
         if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
         int color = paint.e();
-        builder.texturedQuad(texture.textureHandle,
-                left, y - texture.lineHeight, texture.width, texture.height,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                ((color >>> 16) & 255) / 255.0f,
-                ((color >>> 8) & 255) / 255.0f,
-                (color & 255) / 255.0f,
-                ((color >>> 24) & 255) / 255.0f, state);
+        float red = ((color >>> 16) & 255) / 255.0f;
+        float green = ((color >>> 8) & 255) / 255.0f;
+        float blue = (color & 255) / 255.0f;
+        float alpha = ((color >>> 24) & 255) / 255.0f;
+        for (VulkanTextTextureCache.Glyph glyph : texture.glyphs) {
+            builder.texturedQuad(glyph.textureHandle,
+                    left + glyph.x, y + glyph.y, glyph.width, glyph.height,
+                    glyph.u0, glyph.v0, glyph.u1, glyph.v1,
+                    red, green, blue, alpha, state);
+        }
         return true;
     }
 
@@ -1111,6 +1114,15 @@ public final class VulkanRuntime {
         }
         flushNativeRenderTargetPasses();
         return activeDriver.readTexture(textureHandle);
+    }
+
+    public static synchronized VulkanTextureData readNativeTextureRegion(
+            long textureHandle, int x, int y, int width, int height) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan texture readback is unavailable");
+        }
+        flushNativeRenderTargetPasses();
+        return activeDriver.readTextureRegion(textureHandle, x, y, width, height);
     }
 
     public static synchronized void updateNativeTexture(

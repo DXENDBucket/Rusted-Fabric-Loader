@@ -214,14 +214,27 @@ final class ResourceStreamClient implements AutoCloseable {
     synchronized VulkanTextureData readTexture(long handle) {
         requireHealthy();
         TextureMetadata metadata = textures.requireVisible(handle, sequences.appliedThrough());
+        return readTextureRegion(handle, 0, 0, metadata.width, metadata.height);
+    }
+
+    synchronized VulkanTextureData readTextureRegion(long handle, int x, int y,
+                                                      int width, int height) {
+        requireHealthy();
+        TextureMetadata metadata = textures.requireVisible(handle, sequences.appliedThrough());
         if (!metadata.renderTarget) throw new IllegalArgumentException(
                 "only readable render targets support ResourceStream readback");
+        if (x < 0 || y < 0 || width <= 0 || height <= 0
+                || (long) x + width > metadata.width
+                || (long) y + height > metadata.height) {
+            throw new IllegalArgumentException("readback region is outside texture "
+                    + metadata.width + "x" + metadata.height);
+        }
         long completionId = allocateCompletionId();
         ResourceSequenceClock.Reservation reservation = sequences.reserve(1);
         ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first,
                 ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, completionId);
-        ResourceStreamRecords.textureReadback(writer, handle, 0, 0,
-                metadata.width, metadata.height, ResourceStreamFormat.FORMAT_RGBA8_UNORM);
+        ResourceStreamRecords.textureReadback(writer, handle, x, y,
+                width, height, ResourceStreamFormat.FORMAT_RGBA8_UNORM);
         VulkanResourceStreamResult result = resolveCompletion(
                 submit(reservation, writer), completionId);
         if (result.completionId() != completionId || result.textureReadback() == null) {

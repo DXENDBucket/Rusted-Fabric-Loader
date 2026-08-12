@@ -217,11 +217,14 @@ final class SlickRenderCapture {
         if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
         float[] tint = paintColor(paint);
-        builder.texturedQuad(new VulkanTexturedQuad(texture.textureHandle,
-                left, y - texture.lineHeight, texture.width, texture.height,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                tint[0], tint[1], tint[2], tint[3], state(source, paint)));
-        commandCount++;
+        VulkanDrawState state = state(source, paint);
+        for (VulkanTextTextureCache.Glyph glyph : texture.glyphs) {
+            builder.texturedQuad(new VulkanTexturedQuad(glyph.textureHandle,
+                    left + glyph.x, y + glyph.y, glyph.width, glyph.height,
+                    glyph.u0, glyph.v0, glyph.u1, glyph.v1,
+                    tint[0], tint[1], tint[2], tint[3], state));
+            commandCount++;
+        }
         return true;
     }
 

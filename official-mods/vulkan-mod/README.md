@@ -29,8 +29,10 @@ frame. Normal, additive, copy and modulation blend equations follow the game's S
 each texture has independently selectable linear and nearest-neighbour sampling. Slick-rendered
 offscreen images remain a compatibility fallback and invalidate their Vulkan copy whenever they are
 drawn into. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the
-game thread. The text path currently rasterizes and caches complete AWT string runs rather than
-using a glyph atlas. Native mode translates linked GLSL-130 vertex/fragment programs onto the
+game thread. Native mode rasterizes individual AWT glyphs into reusable 1024x1024 atlas pages and
+emits one indexed quad per visible glyph. Repeated strings and characters reuse atlas regions; the
+older takeover compatibility path retains whole-string textures until that path is removed. Native
+mode translates linked GLSL-130 vertex/fragment programs onto the
 Vulkan texture ABI. Desktop built-ins and GDX attributes, custom float/vec uniforms shared across
 both stages, custom float/vec varyings, and one shared secondary sampler are supported. The five
 numeric-uniform limit is shared by the complete program. Custom draws retain their original local
@@ -72,7 +74,7 @@ render targets expose
 synchronized RGBA readback and same-size CPU upload, so `GameImage` pixel reads/copies and explicit
 pixel-buffer flushes retain their original semantics. Remaining shader work is broadening legacy
 syntax beyond the parameter types exposed by the original game.
-Whole-string AWT rasterization is used for glyph pixels, but text presentation itself is Vulkan.
+AWT is still used to rasterize new desktop glyphs, but cached text presentation itself is Vulkan.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -116,8 +118,11 @@ Useful takeover diagnostics are:
 - `-Drusted.fabric.vulkan.debugFrameGraph=true` logs child passes encoded into the combined native
   frame submission.
 
-Vulkan validation and Debug Utils are not wired yet; they are the next diagnostic layer after the
-solid-frame and safe-takeover sequence is confirmed.
+Vulkan validation and Debug Utils are available with
+`-Drusted.fabric.vulkan.validation=true`. Warning/error callbacks are the default; the additional
+`-Drusted.fabric.vulkan.validationVerbose=true` enables info/verbose messages. A machine without
+`VK_LAYER_KHRONOS_validation` reports that fact and continues without validation, so release and
+performance runs remain unaffected.
 
 ## Boundary
 
@@ -146,8 +151,9 @@ solid-frame and safe-takeover sequence is confirmed.
    draw-batch metadata are complete. Indexed quad batches now reduce repeated vertices without
    changing order. Next, continue widening compatible batches and
    profile the remaining texture/descriptors and text-upload hot paths.
-5. Replace whole-string AWT textures with a glyph atlas and remove the obsolete takeover-only
-   compatibility surface after native parity is established.
+5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
+   limit. Next, move glyph rasterization behind an AWT-free platform service and remove the
+   obsolete takeover-only whole-string compatibility surface after native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
 
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or

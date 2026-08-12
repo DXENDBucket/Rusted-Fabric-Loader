@@ -197,12 +197,21 @@ tasks.register('verifyNativeShaderCoverage', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.render.NativeShaderCoverageVerification')
 }
 
+tasks.register('verifyGlyphAtlas', JavaExec) {
+    group = 'verification'
+    description = 'Checks glyph reuse, atlas region uploads, layout, and page lifetime.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.vulkanmod.VulkanGlyphAtlasVerification')
+}
+
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
         tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
         tasks.named('verifyFrameCommandArena'), tasks.named('verifyFrameStreamAbi'),
         tasks.named('verifyResourceStreamAbi'), tasks.named('verifyResourceStreamClient'),
         tasks.named('verifyResourceUploadArenas'),
         tasks.named('verifyNativeShaderCoverage'),
+        tasks.named('verifyGlyphAtlas'),
         ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyResourceStreamExecution'
 

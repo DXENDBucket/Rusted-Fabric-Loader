@@ -188,8 +188,9 @@ javax.imageio.ImageIO
 java.awt.Font
 ```
 
-The current whole-string AWT texture cache is replaced before Android Vulkan is considered
-production ready. The target text path is:
+Desktop native mode already uses the shared glyph-run/atlas draw model, but its rasterizer still
+uses AWT. Android Vulkan is not considered production ready until rasterization and image decoding
+are supplied by AWT-free platform services. The target text path is:
 
 ```text
 layout request

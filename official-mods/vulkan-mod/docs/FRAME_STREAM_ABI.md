@@ -586,12 +586,13 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
    create/upload/full update/render-target create/destroy and shader create/destroy records, maps
    them to native Vulkan resources, and rejects a FrameStream whose `requiredResourceSequence` is
    not applied. Registered bounded external upload arenas, ordered partial RGBA8 updates, and
-   completion-ID texture readback results are live and covered by real-GPU tests. Arena
+   completion-ID full and partial-region texture readback results are live and covered by real-GPU
+   tests. Arena
    registration returns a stable native-address descriptor. Desktop ResourceStream decoding now
    uses a bounded ordered worker, frames wait for decoded resource dependencies, and external arena
    leases remain owned through their consumption completion. Readback separately exercises the
    accepted/pending/ready protocol and a dedicated Vulkan fence. The actual JNI registration calls,
-   C++ decoding, and partial readback remain.
+   C++ decoding remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 

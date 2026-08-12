@@ -281,6 +281,13 @@ final class VulkanDriverLoader {
                     : resources.readTexture(textureHandle);
         }
 
+        VulkanTextureData readTextureRegion(long textureHandle, int x, int y,
+                                            int width, int height) {
+            return resources == null
+                    ? invoke(() -> driver.readTextureRegion(textureHandle, x, y, width, height))
+                    : resources.readTextureRegion(textureHandle, x, y, width, height);
+        }
+
         void destroyTexture(long textureHandle) {
             if (resources != null) {
                 resources.destroyTexture(textureHandle);

@@ -55,6 +55,9 @@ import org.lwjgl.vulkan.VkDescriptorPoolSize;
 import org.lwjgl.vulkan.VkDescriptorSetAllocateInfo;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutCreateInfo;
+import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
+import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackEXT;
+import org.lwjgl.vulkan.VkDebugUtilsMessengerCreateInfoEXT;
 import org.lwjgl.vulkan.VkExtensionProperties;
 import org.lwjgl.vulkan.VkFenceCreateInfo;
 import org.lwjgl.vulkan.VkFramebufferCreateInfo;
@@ -63,6 +66,7 @@ import org.lwjgl.vulkan.VkImageCreateInfo;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkInstanceCreateInfo;
+import org.lwjgl.vulkan.VkLayerProperties;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
@@ -129,6 +133,7 @@ import java.util.concurrent.Semaphore;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.KHRWin32Surface.*;
+import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
 import static org.lwjgl.util.shaderc.Shaderc.*;
@@ -257,7 +262,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         try {
             int instanceVersion = VK.getInstanceVersionSupported();
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkInstanceCreateInfo createInfo = instanceCreateInfo(stack, instanceVersion, false);
+                VkInstanceCreateInfo createInfo = instanceCreateInfo(
+                        stack, instanceVersion, false, false);
                 VkInstance instance = createInstance(stack, createInfo);
                 try {
                     return VulkanProbeResult.available(instanceVersion,
@@ -304,8 +310,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         Win32OverlayWindow overlay = null;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int instanceVersion = VK.getInstanceVersionSupported();
-            VkInstanceCreateInfo instanceInfo = instanceCreateInfo(stack, instanceVersion, true);
+            ValidationConfig validation = validationConfig(stack);
+            VkInstanceCreateInfo instanceInfo = instanceCreateInfo(
+                    stack, instanceVersion, true, validation.enabled);
             VkInstance instance = createInstance(stack, instanceInfo);
+            ValidationDebugMessenger debugMessenger = validation.enabled
+                    ? ValidationDebugMessenger.create(stack, instance, validation.verbose) : null;
             long surface = 0L;
             VkDevice device = null;
             long swapchain = 0L;
@@ -323,7 +333,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         surface, request.width(), request.height(), VK_NULL_HANDLE, nativeWindow);
                 swapchain = swapchainResult.handle;
                 created = new SurfaceSession(instance, surface, candidate, device,
-                        swapchainResult, overlay, nativeWindow);
+                        swapchainResult, overlay, nativeWindow, debugMessenger);
                 try {
                     created.initialize();
                 } catch (Throwable failure) {
@@ -339,6 +349,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                     if (device != null) vkDestroyDevice(device, null);
                     if (surface != 0L) vkDestroySurfaceKHR(instance, surface, null);
+                    if (debugMessenger != null) debugMessenger.close(instance);
                     vkDestroyInstance(instance, null);
                     if (overlay != null) overlay.close();
                 }
@@ -473,6 +484,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
         awaitDecodedResourceSequence(acceptedResourceSequence);
         return surfaceSession.readTexture(textureHandle);
+    }
+
+    @Override public synchronized VulkanTextureData readTextureRegion(long textureHandle,
+                                                                       int x, int y,
+                                                                       int width, int height) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        awaitDecodedResourceSequence(acceptedResourceSequence);
+        return surfaceSession.readTextureRegion(textureHandle, x, y, width, height);
     }
 
     @Override public synchronized long createRenderTarget(int width, int height) {
@@ -888,7 +909,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     }
 
     private static VkInstanceCreateInfo instanceCreateInfo(
-            MemoryStack stack, int instanceVersion, boolean surfaceExtensions) {
+            MemoryStack stack, int instanceVersion, boolean surfaceExtensions,
+            boolean validation) {
         VkApplicationInfo application = VkApplicationInfo.calloc(stack)
                 .sType$Default()
                 .pApplicationName(stack.UTF8("Rusted Fabric Vulkan Mod"))
@@ -899,11 +921,64 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         VkInstanceCreateInfo result = VkInstanceCreateInfo.calloc(stack)
                 .sType$Default().pApplicationInfo(application);
         if (surfaceExtensions) {
-            result.ppEnabledExtensionNames(stack.pointers(
-                    stack.UTF8(VK_KHR_SURFACE_EXTENSION_NAME),
-                    stack.UTF8(VK_KHR_WIN32_SURFACE_EXTENSION_NAME)));
+            result.ppEnabledExtensionNames(validation
+                    ? stack.pointers(stack.UTF8(VK_KHR_SURFACE_EXTENSION_NAME),
+                            stack.UTF8(VK_KHR_WIN32_SURFACE_EXTENSION_NAME),
+                            stack.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+                    : stack.pointers(stack.UTF8(VK_KHR_SURFACE_EXTENSION_NAME),
+                            stack.UTF8(VK_KHR_WIN32_SURFACE_EXTENSION_NAME)));
+        } else if (validation) {
+            result.ppEnabledExtensionNames(
+                    stack.pointers(stack.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)));
+        }
+        if (validation) {
+            result.ppEnabledLayerNames(
+                    stack.pointers(stack.UTF8("VK_LAYER_KHRONOS_validation")));
         }
         return result;
+    }
+
+    private static ValidationConfig validationConfig(MemoryStack stack) {
+        if (!Boolean.getBoolean("rusted.fabric.vulkan.validation")) {
+            return ValidationConfig.DISABLED;
+        }
+        boolean layer = hasInstanceLayer(stack, "VK_LAYER_KHRONOS_validation");
+        boolean extension = hasInstanceExtension(stack, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        if (!layer || !extension) {
+            System.out.println("[Vulkan Mod/Validation] Requested but unavailable: layer="
+                    + layer + ", debugUtils=" + extension);
+            return ValidationConfig.DISABLED;
+        }
+        boolean verbose = Boolean.getBoolean("rusted.fabric.vulkan.validationVerbose");
+        System.out.println("[Vulkan Mod/Validation] VK_LAYER_KHRONOS_validation enabled"
+                + (verbose ? " (verbose)" : ""));
+        return new ValidationConfig(true, verbose);
+    }
+
+    private static boolean hasInstanceLayer(MemoryStack stack, String name) {
+        IntBuffer count = stack.ints(0);
+        check(vkEnumerateInstanceLayerProperties(count, null),
+                "vkEnumerateInstanceLayerProperties(count)");
+        VkLayerProperties.Buffer properties = VkLayerProperties.calloc(count.get(0), stack);
+        check(vkEnumerateInstanceLayerProperties(count, properties),
+                "vkEnumerateInstanceLayerProperties(values)");
+        for (int index = 0; index < properties.remaining(); index++) {
+            if (name.equals(properties.get(index).layerNameString())) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasInstanceExtension(MemoryStack stack, String name) {
+        IntBuffer count = stack.ints(0);
+        check(vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, null),
+                "vkEnumerateInstanceExtensionProperties(count)");
+        VkExtensionProperties.Buffer properties = VkExtensionProperties.calloc(count.get(0), stack);
+        check(vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, properties),
+                "vkEnumerateInstanceExtensionProperties(values)");
+        for (int index = 0; index < properties.remaining(); index++) {
+            if (name.equals(properties.get(index).extensionNameString())) return true;
+        }
+        return false;
     }
 
     private static VkInstance createInstance(MemoryStack stack, VkInstanceCreateInfo createInfo) {
@@ -1749,6 +1824,72 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
     }
 
+    private static final class ValidationConfig {
+        private static final ValidationConfig DISABLED = new ValidationConfig(false, false);
+        private final boolean enabled;
+        private final boolean verbose;
+
+        private ValidationConfig(boolean enabled, boolean verbose) {
+            this.enabled = enabled;
+            this.verbose = verbose;
+        }
+    }
+
+    private static final class ValidationDebugMessenger {
+        private final long handle;
+        private final VkDebugUtilsMessengerCallbackEXT callback;
+
+        private ValidationDebugMessenger(long handle,
+                                         VkDebugUtilsMessengerCallbackEXT callback) {
+            this.handle = handle;
+            this.callback = callback;
+        }
+
+        private static ValidationDebugMessenger create(MemoryStack stack, VkInstance instance,
+                                                       boolean verbose) {
+            VkDebugUtilsMessengerCallbackEXT callback =
+                    VkDebugUtilsMessengerCallbackEXT.create((severity, types, callbackData, user) -> {
+                        String level = (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0
+                                ? "ERROR"
+                                : (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0
+                                ? "WARN"
+                                : (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) != 0
+                                ? "INFO" : "VERBOSE";
+                        String message = VkDebugUtilsMessengerCallbackDataEXT
+                                .create(callbackData).pMessageString();
+                        System.err.println("[Vulkan Mod/Validation/" + level + "] " + message);
+                        return VK_FALSE;
+                    });
+            int severities = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                    | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            if (verbose) {
+                severities |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+            }
+            VkDebugUtilsMessengerCreateInfoEXT info = VkDebugUtilsMessengerCreateInfoEXT
+                    .calloc(stack).sType$Default()
+                    .messageSeverity(severities)
+                    .messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+                    .pfnUserCallback(callback);
+            LongBuffer handle = stack.mallocLong(1);
+            try {
+                check(vkCreateDebugUtilsMessengerEXT(instance, info, null, handle),
+                        "vkCreateDebugUtilsMessengerEXT");
+                return new ValidationDebugMessenger(handle.get(0), callback);
+            } catch (Throwable failure) {
+                callback.free();
+                throw failure;
+            }
+        }
+
+        private void close(VkInstance instance) {
+            vkDestroyDebugUtilsMessengerEXT(instance, handle, null);
+            callback.free();
+        }
+    }
+
     private static final class SurfaceSession {
         private final VkInstance instance;
         private final long surface;
@@ -1758,6 +1899,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private final VkQueue presentQueue;
         private final Win32OverlayWindow overlay;
         private final boolean nativeWindowMode;
+        private final ValidationDebugMessenger debugMessenger;
         private Win32NativeWindow nativeWindow;
         private long swapchain;
         private long[] images;
@@ -1918,7 +2060,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private SurfaceSession(VkInstance instance, long surface, DeviceCandidate candidate,
                                VkDevice device, SwapchainResult swapchain,
-                               Win32OverlayWindow overlay, boolean nativeWindowMode) {
+                               Win32OverlayWindow overlay, boolean nativeWindowMode,
+                               ValidationDebugMessenger debugMessenger) {
             this.instance = instance;
             this.surface = surface;
             this.candidate = candidate;
@@ -1928,6 +2071,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.info = swapchain.info;
             this.overlay = overlay;
             this.nativeWindowMode = nativeWindowMode;
+            this.debugMessenger = debugMessenger;
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 PointerBuffer queue = stack.mallocPointer(1);
                 vkGetDeviceQueue(device, candidate.queues.graphics, 0, queue);
@@ -2146,13 +2290,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     ResourceTextureBinding binding = requireResourceTexture(logical);
                     ResourceStreamRecords.TextureReadback request =
                             ResourceStreamRecords.decodeTextureReadback(stream, index);
-                    if (request.x != 0 || request.y != 0
-                            || request.width != binding.width
-                            || request.height != binding.height) {
-                        throw new UnsupportedOperationException(
-                                "partial ResourceStream readback is not implemented");
+                    if ((long) request.x + request.width > binding.width
+                            || (long) request.y + request.height > binding.height) {
+                        throw new IllegalArgumentException(
+                                "texture readback region exceeds its logical texture");
                     }
-                    return new PendingResourceReadback(binding.rawHandle, 0L);
+                    return new PendingResourceReadback(binding.rawHandle, request.x, request.y,
+                            request.width, request.height, 0L);
                 }
                 case ResourceStreamFormat.FLUSH:
                 case ResourceStreamFormat.LIFECYCLE_BARRIER:
@@ -2166,7 +2310,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             PendingResourceReadback request = pendingResourceReadbacks.remove(completionId);
             if (request == null) throw new IllegalArgumentException(
                     "unknown pending resource completion " + completionId);
-            VulkanTextureData texture = readTexture(request.rawTextureHandle);
+            VulkanTextureData texture = readTextureRegion(request.rawTextureHandle,
+                    request.x, request.y, request.width, request.height);
             return VulkanResourceStreamResult.textureReadback(
                     request.appliedSequence, completionId, texture);
         }
@@ -3184,8 +3329,33 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 throw new IllegalArgumentException(
                         "texture " + textureHandle + " is not a readable render target");
             }
+            return readTextureRegion(target, 0, 0, target.width, target.height);
+        }
+
+        private VulkanTextureData readTextureRegion(long textureHandle, int x, int y,
+                                                    int width, int height) {
+            textureHandle = resolveTextureHandle(textureHandle);
+            TextureResource target = textures.get(textureHandle);
+            if (target == null) {
+                throw new IllegalArgumentException("unknown texture handle " + textureHandle);
+            }
+            if (!target.renderTarget) {
+                throw new IllegalArgumentException(
+                        "texture " + textureHandle + " is not a readable render target");
+            }
+            if (x < 0 || y < 0 || width <= 0 || height <= 0
+                    || (long) x + width > target.width
+                    || (long) y + height > target.height) {
+                throw new IllegalArgumentException("readback region is outside texture "
+                        + target.width + "x" + target.height);
+            }
+            return readTextureRegion(target, x, y, width, height);
+        }
+
+        private VulkanTextureData readTextureRegion(TextureResource target, int x, int y,
+                                                     int width, int height) {
             int byteCount = Math.multiplyExact(Math.multiplyExact(
-                    target.width, target.height), 4);
+                    width, height), 4);
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 // The shared command buffer and texture staging allocation must no longer be in
                 // flight, but unrelated future queue work need not be held behind a device idle.
@@ -3222,9 +3392,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     region.get(0).bufferOffset(0).bufferRowLength(0).bufferImageHeight(0);
                     region.get(0).imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                             .mipLevel(0).baseArrayLayer(0).layerCount(1);
-                    region.get(0).imageOffset().x(0).y(0).z(0);
+                    region.get(0).imageOffset().x(x).y(y).z(0);
                     region.get(0).imageExtent()
-                            .width(target.width).height(target.height).depth(1);
+                            .width(width).height(height).depth(1);
                     vkCmdCopyImageToBuffer(command, target.image,
                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readback.buffer, region);
                     VkImageMemoryBarrier.Buffer toSample = VkImageMemoryBarrier.calloc(1, stack);
@@ -3263,7 +3433,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     try {
                         ByteBuffer pixels = MemoryUtil.memByteBuffer(mapped.get(0), byteCount);
                         boolean blueFirst = isBlueFirstFormat(info.imageFormat());
-                        for (int pixel = 0; pixel < target.width * target.height; pixel++) {
+                        for (int pixel = 0; pixel < width * height; pixel++) {
                             int offset = pixel * 4;
                             byte first = pixels.get(offset);
                             byte green = pixels.get(offset + 1);
@@ -3276,7 +3446,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     } finally {
                         vkUnmapMemory(device, readback.memory);
                     }
-                    return new VulkanTextureData(target.width, target.height, rgba);
+                    return new VulkanTextureData(width, height, rgba);
                 } finally {
                     destroyBufferAllocation(readback);
                 }
@@ -4869,6 +5039,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             vkDestroySwapchainKHR(device, swapchain, null);
             vkDestroyDevice(device, null);
             vkDestroySurfaceKHR(instance, surface, null);
+            if (debugMessenger != null) debugMessenger.close(instance);
             vkDestroyInstance(instance, null);
             if (overlay != null) overlay.close();
             if (nativeWindow != null) nativeWindow.close();
@@ -4912,15 +5083,25 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private static final class PendingResourceReadback {
             private final long rawTextureHandle;
+            private final int x;
+            private final int y;
+            private final int width;
+            private final int height;
             private final long appliedSequence;
 
-            private PendingResourceReadback(long rawTextureHandle, long appliedSequence) {
+            private PendingResourceReadback(long rawTextureHandle, int x, int y,
+                                            int width, int height, long appliedSequence) {
                 this.rawTextureHandle = rawTextureHandle;
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
                 this.appliedSequence = appliedSequence;
             }
 
             private PendingResourceReadback withSequence(long sequence) {
-                return new PendingResourceReadback(rawTextureHandle, sequence);
+                return new PendingResourceReadback(rawTextureHandle, x, y,
+                        width, height, sequence);
             }
         }
 

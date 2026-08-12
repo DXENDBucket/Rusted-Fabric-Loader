@@ -60,6 +60,11 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default VulkanTextureData readTexture(long textureHandle) {
         throw new UnsupportedOperationException("texture readback is not supported");
     }
+    /** Returns one tightly packed RGBA8 rectangle after all earlier GPU writes complete. */
+    default VulkanTextureData readTextureRegion(long textureHandle, int x, int y,
+                                                int width, int height) {
+        throw new UnsupportedOperationException("partial texture readback is not supported");
+    }
     void destroyTexture(long textureHandle);
     /**
      * Shows or hides the driver-owned presentation surface. Returns {@code true} when the driver

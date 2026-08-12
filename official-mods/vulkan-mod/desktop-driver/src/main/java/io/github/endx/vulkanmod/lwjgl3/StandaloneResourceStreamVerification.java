@@ -145,9 +145,27 @@ public final class StandaloneResourceStreamVerification {
                     || (mutated[4] & 255) != 255 || (mutated[5] & 255) != 0) {
                 throw new AssertionError("external upload, partial update, or readback mismatch");
             }
+            ResourceStreamWriter partialRead = new ResourceStreamWriter(8L,
+                    ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, 56L);
+            ResourceStreamRecords.textureReadback(partialRead, target, 0, 0, 2, 1,
+                    ResourceStreamFormat.FORMAT_RGBA8_UNORM);
+            VulkanResourceStreamResult acceptedPartial =
+                    driver.submitResourceStream(partialRead.toDirectBuffer());
+            if (!acceptedPartial.completionPending()
+                    || acceptedPartial.appliedSequence() != 8L) {
+                throw new AssertionError("partial readback was not accepted asynchronously");
+            }
+            VulkanTextureData partial = driver.awaitResourceStreamCompletion(56L, -1L)
+                    .textureReadback();
+            byte[] partialRgba = partial.copyRgba();
+            if (partial.width() != 2 || partial.height() != 1
+                    || (partialRgba[0] & 255) != 0 || (partialRgba[1] & 255) != 255
+                    || (partialRgba[4] & 255) != 255 || (partialRgba[5] & 255) != 0) {
+                throw new AssertionError("partial ResourceStream readback returned wrong pixels");
+            }
             Map<String, Long> statistics = driver.performanceStatistics();
-            if (statistics.get("resource.accepted") < 4L
-                    || statistics.get("resource.decoded") < 4L
+            if (statistics.get("resource.accepted") < 5L
+                    || statistics.get("resource.decoded") < 5L
                     || statistics.get("resource.pending") != 0L
                     || statistics.get("texture.uploadBatches") < 1L
                     || statistics.get("texture.uploadBytes") < 8L * 8L * 4L
@@ -156,15 +174,15 @@ public final class StandaloneResourceStreamVerification {
                         + statistics);
             }
 
-            ResourceStreamWriter destroy = new ResourceStreamWriter(8L, 0, 0L);
+            ResourceStreamWriter destroy = new ResourceStreamWriter(9L, 0, 0L);
             ResourceStreamRecords.textureDestroy(destroy, target);
             ResourceStreamRecords.textureDestroy(destroy, source);
             ResourceStreamRecords.shaderProgramDestroy(destroy, shader);
-            if (driver.submitResourceStream(destroy.toDirectBuffer()).appliedSequence() != 10L) {
+            if (driver.submitResourceStream(destroy.toDirectBuffer()).appliedSequence() != 11L) {
                 throw new AssertionError("ResourceStream destroy sequence did not advance");
             }
             try {
-                driver.presentFrameStream(encoder.encode(2L, 11L,
+                driver.presentFrameStream(encoder.encode(2L, 12L,
                         new VulkanFrameSubmission(Collections.emptyList(),
                                 VulkanFrameCommands.builder(32, 32)
                                         .clear(0.0f, 0.0f, 0.0f, 1.0f).build())));
