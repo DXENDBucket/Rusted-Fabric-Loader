@@ -18,7 +18,7 @@ public abstract class HudFrameRenderNamedMixin {
             method = "drawFrame(Lrustedwarfare/render/CanvasDrawTarget;F)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lrustedwarfare/core/GameEngine;isGamePaused()Z",
+                    target = "Lrustedwarfare/core/RustedWarfareGameEngine;isInterfaceHidden()Z",
                     ordinal = 0,
                     shift = At.Shift.BEFORE),
             require = 1)

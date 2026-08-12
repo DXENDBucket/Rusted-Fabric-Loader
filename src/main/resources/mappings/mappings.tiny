@@ -1674,6 +1674,7 @@ c	com/corrodinggames/rts/game/i	rw/core/RustedWarfareGameEngine	rustedwarfare/co
 	f	Lcom/corrodinggames/rts/gameFramework/be;	C	field_RustedWarfareGameEngine_stateEngine	stateEngine
 	m	()Z	a	method_RustedWarfareGameEngine_isMessageDisplayPersistent	isMessageDisplayPersistent
 	m	(FI)V	a	method_RustedWarfareGameEngine_gameLoop	gameLoop
+	m	()Z	A	method_RustedWarfareGameEngine_isInterfaceHidden	isInterfaceHidden
 	m	(Lcom/corrodinggames/rts/gameFramework/m/l;F)V	b	method_RustedWarfareGameEngine_drawFrame	drawFrame
 	m	(Lcom/corrodinggames/rts/gameFramework/m/l;F)V	c	method_RustedWarfareGameEngine_drawWorld	drawWorld
 	m	(Landroid/app/Activity;Lcom/corrodinggames/rts/appFramework/f;Z)V	a	method_RustedWarfareGameEngine_colorizeLogMessage	colorizeLogMessage
