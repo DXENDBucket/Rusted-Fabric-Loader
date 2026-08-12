@@ -82,6 +82,9 @@ public final class VulkanRuntime {
     private static FrameStreamEncoder frameStreamEncoder;
     private static FrameStreamArenaPool frameStreamArenas;
     private static long nextFrameStreamId;
+    private static long textRunsSubmitted;
+    private static long textGlyphQuadsSubmitted;
+    private static long textBatchCommandsSubmitted;
 
     private enum StartupPhase {
         MOD_INITIALIZED,
@@ -583,12 +586,13 @@ public final class VulkanRuntime {
         float green = ((color >>> 8) & 255) / 255.0f;
         float blue = (color & 255) / 255.0f;
         float alpha = ((color >>> 24) & 255) / 255.0f;
-        for (VulkanTextTextureCache.Glyph glyph : texture.glyphs) {
-            builder.texturedQuad(glyph.textureHandle,
-                    left + glyph.x, y + glyph.y, glyph.width, glyph.height,
-                    glyph.u0, glyph.v0, glyph.u1, glyph.v1,
+        for (VulkanTextTextureCache.GlyphBatch batch : texture.batches) {
+            builder.texturedQuadBatch(batch.textureHandle, left, y, batch.geometry,
                     red, green, blue, alpha, state);
         }
+        textRunsSubmitted++;
+        textGlyphQuadsSubmitted += texture.glyphs.length;
+        textBatchCommandsSubmitted += texture.batches.length;
         return true;
     }
 
@@ -1343,6 +1347,9 @@ public final class VulkanRuntime {
             statistics.put("frame.workspaceGrowths",
                     frameStreamEncoder.directWorkspaceGrowths());
         }
+        statistics.put("text.runs", textRunsSubmitted);
+        statistics.put("text.glyphQuads", textGlyphQuadsSubmitted);
+        statistics.put("text.batchCommands", textBatchCommandsSubmitted);
         return java.util.Collections.unmodifiableMap(statistics);
     }
 
@@ -1431,6 +1438,9 @@ public final class VulkanRuntime {
         frameStreamEncoder = null;
         frameStreamArenas = null;
         nextFrameStreamId = 0L;
+        textRunsSubmitted = 0L;
+        textGlyphQuadsSubmitted = 0L;
+        textBatchCommandsSubmitted = 0L;
         nativeFrameClock.clear();
     }
 

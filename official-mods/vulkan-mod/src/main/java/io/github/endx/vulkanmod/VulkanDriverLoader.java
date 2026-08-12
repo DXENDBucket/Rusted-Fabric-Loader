@@ -7,6 +7,9 @@ import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceInfo;
 import io.github.endx.vulkanmod.spi.VulkanSurfaceRequest;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanGlyphBitmap;
+import io.github.endx.vulkanmod.spi.VulkanTextLayout;
+import io.github.endx.vulkanmod.spi.VulkanTextRasterizer;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -129,6 +132,7 @@ final class VulkanDriverLoader {
         private final VulkanPlatformDriver driver;
         private final IsolatedDriverClassLoader loader;
         private final ResourceStreamClient resources;
+        private VulkanTextRasterizer textRasterizer;
 
         private LoadedDriver(VulkanPlatformDriver driver, IsolatedDriverClassLoader loader) {
             this.driver = driver;
@@ -239,6 +243,26 @@ final class VulkanDriverLoader {
             return resources == null
                     ? invoke(() -> driver.customShaderUsesExpandedVertexInput(shaderHandle))
                     : resources.shaderUsesExpandedVertexInput(shaderHandle);
+        }
+
+        VulkanTextLayout layoutText(String text, int pixelSize, boolean bold) {
+            return invoke(() -> textRasterizer().layout(text, pixelSize, bold));
+        }
+
+        VulkanGlyphBitmap rasterizeGlyph(long glyphKey) {
+            return invoke(() -> textRasterizer().rasterizeGlyph(glyphKey));
+        }
+
+        VulkanTextureData rasterizeText(String text, int pixelSize, boolean bold) {
+            return invoke(() -> textRasterizer().rasterizeText(text, pixelSize, bold));
+        }
+
+        private synchronized VulkanTextRasterizer textRasterizer() {
+            if (textRasterizer == null) textRasterizer = driver.createTextRasterizer();
+            if (textRasterizer == null) {
+                throw new IllegalStateException("platform driver returned no text rasterizer");
+            }
+            return textRasterizer;
         }
 
         long createRenderTarget(int width, int height) {

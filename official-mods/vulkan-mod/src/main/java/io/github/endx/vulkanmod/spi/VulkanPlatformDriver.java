@@ -38,6 +38,10 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
         throw new UnsupportedOperationException("custom shader metadata is not available");
     }
+    /** Creates the platform text shaper/rasterizer used by the shared glyph atlas. */
+    default VulkanTextRasterizer createTextRasterizer() {
+        throw new UnsupportedOperationException("platform text rasterization is not supported");
+    }
     long uploadTexture(VulkanTextureData texture);
     /** Creates a sampled color image that can also be used as an offscreen render target. */
     default long createRenderTarget(int width, int height) {

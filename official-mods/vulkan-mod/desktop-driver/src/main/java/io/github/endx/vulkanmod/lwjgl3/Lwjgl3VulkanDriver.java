@@ -19,6 +19,7 @@ import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuadBatch;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import io.github.endx.vulkanmod.spi.VulkanPlatformDriver;
@@ -32,6 +33,7 @@ import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
 import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 import io.github.endx.vulkanmod.spi.VulkanResourceArenaRegistration;
+import io.github.endx.vulkanmod.spi.VulkanTextRasterizer;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -141,6 +143,7 @@ import static org.lwjgl.util.shaderc.Shaderc.*;
 /** LWJGL 3 desktop driver, loaded in a child-first class loader beside the LWJGL 2 game. */
 public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     private static final int MAX_PENDING_RESOURCE_STREAMS = 64;
+    private AwtTextRasterizer textRasterizer;
     private static final int VERTEX_FLOATS = 6;
     private static final int VERTEX_STRIDE = VERTEX_FLOATS * Float.BYTES;
     private static final int TEXTURED_VERTEX_FLOATS = 8;
@@ -257,6 +260,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             });
 
     @Override public String name() { return "LWJGL 3 Vulkan"; }
+
+    @Override public synchronized VulkanTextRasterizer createTextRasterizer() {
+        if (textRasterizer == null) textRasterizer = new AwtTextRasterizer();
+        return textRasterizer;
+    }
 
     @Override public VulkanProbeResult probe() {
         try {
@@ -884,6 +892,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         failedResourceCompletions.clear();
         outstandingResourceCompletions.clear();
         resourceCompletionExecutor.shutdownNow();
+        if (textRasterizer != null) {
+            textRasterizer.close();
+            textRasterizer = null;
+        }
         notifyAll();
         if (decodeFailure != null) throw decodeFailure;
     }
@@ -3275,6 +3287,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         VulkanDrawCommand draw = objectFrame.command(commandIndex);
                         if (draw instanceof VulkanTexturedQuad) {
                             sampled.add(((VulkanTexturedQuad) draw).textureHandle());
+                        } else if (draw instanceof VulkanTexturedQuadBatch) {
+                            sampled.add(((VulkanTexturedQuadBatch) draw).textureHandle());
                         } else if (draw instanceof VulkanTexturedTriangle) {
                             sampled.add(((VulkanTexturedTriangle) draw).textureHandle());
                         }
@@ -4525,6 +4539,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (command instanceof VulkanTexturedQuad) {
                     vertices = 6;
                     shaderState = ((VulkanTexturedQuad) command).state().shaderState();
+                } else if (command instanceof VulkanTexturedQuadBatch) {
+                    VulkanTexturedQuadBatch batch = (VulkanTexturedQuadBatch) command;
+                    vertices = Math.multiplyExact(batch.quadCount(), 6);
+                    shaderState = batch.state().shaderState();
                 } else if (command instanceof VulkanTexturedTriangle) {
                     vertices = 3;
                     shaderState = ((VulkanTexturedTriangle) command).state().shaderState();
@@ -4613,6 +4631,47 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 quad.u1(), quad.v1(), frame, quad, expanded);
                         putTexturedVertex(output, transform, right, top,
                                 quad.u1(), quad.v0(), frame, quad, expanded);
+                    } else if (command instanceof VulkanTexturedQuadBatch) {
+                        VulkanTexturedQuadBatch batch = (VulkanTexturedQuadBatch) command;
+                        if (!textures.containsKey(resolveTextureHandle(batch.textureHandle()))) {
+                            throw new IllegalArgumentException(
+                                    "unknown texture handle: " + batch.textureHandle());
+                        }
+                        VulkanTransform2D transform = batch.state().transform();
+                        boolean expanded = usesExpandedVertexInput(
+                                batch.state().shaderState());
+                        FloatBuffer output = expanded
+                                ? customTexturedVertices : texturedVertices;
+                        for (int quad = 0; quad < batch.quadCount(); quad++) {
+                            float left = batch.originX() + batch.x(quad);
+                            float right = left + batch.width(quad);
+                            float top = batch.originY() + batch.y(quad);
+                            float bottom = top + batch.height(quad);
+                            putTexturedVertex(output, transform, left, top,
+                                    batch.u0(quad), batch.v0(quad), frame,
+                                    batch.red(), batch.green(), batch.blue(), batch.alpha(),
+                                    expanded);
+                            putTexturedVertex(output, transform, left, bottom,
+                                    batch.u0(quad), batch.v1(quad), frame,
+                                    batch.red(), batch.green(), batch.blue(), batch.alpha(),
+                                    expanded);
+                            putTexturedVertex(output, transform, right, bottom,
+                                    batch.u1(quad), batch.v1(quad), frame,
+                                    batch.red(), batch.green(), batch.blue(), batch.alpha(),
+                                    expanded);
+                            putTexturedVertex(output, transform, left, top,
+                                    batch.u0(quad), batch.v0(quad), frame,
+                                    batch.red(), batch.green(), batch.blue(), batch.alpha(),
+                                    expanded);
+                            putTexturedVertex(output, transform, right, bottom,
+                                    batch.u1(quad), batch.v1(quad), frame,
+                                    batch.red(), batch.green(), batch.blue(), batch.alpha(),
+                                    expanded);
+                            putTexturedVertex(output, transform, right, top,
+                                    batch.u1(quad), batch.v0(quad), frame,
+                                    batch.red(), batch.green(), batch.blue(), batch.alpha(),
+                                    expanded);
+                        }
                     } else if (command instanceof VulkanTexturedTriangle) {
                         VulkanTexturedTriangle triangle = (VulkanTexturedTriangle) command;
                         if (!textures.containsKey(
@@ -4689,6 +4748,32 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     currentBatch.vertexCount += 6;
                     if (expanded) customTexturedFirstVertex += 6;
                     else texturedFirstVertex += 6;
+                } else if (command instanceof VulkanTexturedQuadBatch) {
+                    VulkanTexturedQuadBatch batch = (VulkanTexturedQuadBatch) command;
+                    boolean expanded = usesExpandedVertexInput(
+                            batch.state().shaderState());
+                    long descriptorSet = textureDescriptor(batch.textureHandle(),
+                            batch.state().textureFilter(), batch.state().shaderState());
+                    TextureDrawBatch textureBatch = currentBatch instanceof TextureDrawBatch
+                            ? (TextureDrawBatch) currentBatch : null;
+                    if (textureBatch == null
+                            || textureBatch.textureHandle != batch.textureHandle()
+                            || textureBatch.descriptorSet != descriptorSet
+                            || textureBatch.expandedVertexInput != expanded
+                            || !sameClip(textureBatch.clip, batch.state().clip())
+                            || textureBatch.blendMode != batch.state().blendMode()
+                            || !textureBatch.shaderState.equals(batch.state().shaderState())) {
+                        currentBatch = acquireTextureBatch(batch.textureHandle(), descriptorSet,
+                                batch.state().clip(), batch.state().blendMode(),
+                                batch.state().shaderState(), expanded
+                                        ? customTexturedFirstVertex : texturedFirstVertex,
+                                expanded);
+                        result.batches.add(currentBatch);
+                    }
+                    int vertices = Math.multiplyExact(batch.quadCount(), 6);
+                    currentBatch.vertexCount += vertices;
+                    if (expanded) customTexturedFirstVertex += vertices;
+                    else texturedFirstVertex += vertices;
                 } else if (command instanceof VulkanTexturedTriangle) {
                     VulkanTexturedTriangle triangle = (VulkanTexturedTriangle) command;
                     boolean expanded = usesExpandedVertexInput(
@@ -4839,16 +4924,25 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                               VulkanFrameCommands frame,
                                               VulkanTexturedQuad quad,
                                               boolean expandedVertexInput) {
+            putTexturedVertex(output, transform, x, y, u, v, frame,
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), expandedVertexInput);
+        }
+
+        private static void putTexturedVertex(FloatBuffer output, VulkanTransform2D transform,
+                                              float x, float y, float u, float v,
+                                              VulkanFrameCommands frame,
+                                              float red, float green, float blue, float alpha,
+                                              boolean expandedVertexInput) {
             if (expandedVertexInput) {
                 putCustomTexturedVertex(output, transform, x, y, u, v, frame,
-                        quad.red(), quad.green(), quad.blue(), quad.alpha());
+                        red, green, blue, alpha);
                 return;
             }
             float transformedX = transform.transformX(x, y);
             float transformedY = transform.transformY(x, y);
             output.put(pixelToNdcX(transformedX, frame.width()))
                     .put(pixelToNdcY(transformedY, frame.height())).put(u).put(v)
-                    .put(quad.red()).put(quad.green()).put(quad.blue()).put(quad.alpha());
+                    .put(red).put(green).put(blue).put(alpha);
         }
 
         private static void putColoredTriangleVertex(

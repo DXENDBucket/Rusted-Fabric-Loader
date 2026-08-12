@@ -188,16 +188,18 @@ javax.imageio.ImageIO
 java.awt.Font
 ```
 
-Desktop native mode already uses the shared glyph-run/atlas draw model, but its rasterizer still
-uses AWT. Android Vulkan is not considered production ready until rasterization and image decoding
-are supplied by AWT-free platform services. The target text path is:
+Desktop native mode now exposes shaping and rasterization through `VulkanTextRasterizer`; its AWT
+implementation lives only inside the isolated Windows driver. The shared glyph cache, atlas
+allocator, region uploads, and text batch generation contain no AWT font types. Android must supply
+the same SPI semantics through FreeType, Skia, or another reviewed platform implementation. The
+text path is:
 
 ```text
 layout request
   -> platform glyph rasterizer
   -> shared glyph-atlas allocator
   -> reliable atlas-region upload
-  -> ordinary glyph batches in FrameStream
+  -> one indexed batch command per consecutive atlas page in FrameStream
 ```
 
 The rasterizer must support the game's Latin and CJK fallback fonts. Glyphs are reused across
@@ -267,7 +269,8 @@ profiler provide complementary evidence.
 4. Add colored/textured batches and reliable texture resources.
 5. Add ordered offscreen passes, terrain cache, minimap, and Canvas targets.
 6. Add built-in and custom shaders, readback, and hot mutation.
-7. Replace AWT text/image hot paths and complete the glyph atlas.
+7. Implement the existing platform text SPI without AWT, replace the remaining AWT image hot paths,
+   and complete generation-safe glyph-atlas eviction.
 8. Enable the native render thread, triple arenas, Swappy, and pre-rotation.
 9. Run long-session, background/foreground, resize, thermal, low-memory, and multiple-GPU-vendor
    tests before making Native Vulkan a user-facing default.

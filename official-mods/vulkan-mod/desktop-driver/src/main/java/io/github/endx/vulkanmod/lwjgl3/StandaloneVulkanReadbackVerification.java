@@ -3,6 +3,7 @@ package io.github.endx.vulkanmod.lwjgl3;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
+import io.github.endx.vulkanmod.spi.VulkanDrawState;
 
 /** Real-device smoke test for native render-target readback and channel normalization. */
 public final class StandaloneVulkanReadbackVerification {
@@ -13,6 +14,8 @@ public final class StandaloneVulkanReadbackVerification {
             driver.createNativeWindowSurface(new VulkanWindowRequest(
                     "RustedVK readback verification", 64, 64, false));
             long target = driver.createRenderTarget(4, 4);
+            long white = driver.uploadTexture(new VulkanTextureData(1, 1,
+                    new byte[] {(byte) 255, (byte) 255, (byte) 255, (byte) 255}));
             try {
                 driver.renderToTexture(target, VulkanFrameCommands.builder(4, 4)
                         .clear(1.0f, 0.25f, 0.5f, 1.0f)
@@ -25,6 +28,21 @@ public final class StandaloneVulkanReadbackVerification {
                     expect("green", 64, rgba[offset + 1] & 255);
                     expect("blue", 128, rgba[offset + 2] & 255);
                     expect("alpha", 255, rgba[offset + 3] & 255);
+                }
+                driver.renderToTexture(target, VulkanFrameCommands.builder(4, 4)
+                        .clear(0.0f, 0.0f, 0.0f, 1.0f)
+                        .texturedQuadBatch(white, 0.0f, 0.0f,
+                                new float[] {0.0f, 0.0f, 4.0f, 4.0f,
+                                        0.0f, 0.0f, 1.0f, 1.0f},
+                                1.0f, 0.0f, 0.0f, 1.0f, VulkanDrawState.DEFAULT)
+                        .build());
+                byte[] batched = driver.readTexture(target).copyRgba();
+                for (int pixel = 0; pixel < 16; pixel++) {
+                    int offset = pixel * 4;
+                    expect("batched red", 255, batched[offset] & 255);
+                    expect("batched green", 0, batched[offset + 1] & 255);
+                    expect("batched blue", 0, batched[offset + 2] & 255);
+                    expect("batched alpha", 255, batched[offset + 3] & 255);
                 }
                 byte[] replacement = new byte[4 * 4 * 4];
                 for (int pixel = 0; pixel < 16; pixel++) {
@@ -46,6 +64,7 @@ public final class StandaloneVulkanReadbackVerification {
                     expect("uploaded alpha", 68, uploaded[offset + 3] & 255);
                 }
             } finally {
+                driver.destroyTexture(white);
                 driver.destroyTexture(target);
             }
         }

@@ -4,6 +4,7 @@ import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanFrameCommands;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuadGeometry;
 
 /** Verifies pooled native frames recycle storage while ordinary SPI frames remain immutable. */
 public final class VulkanFrameArenaVerification {
@@ -32,6 +33,22 @@ public final class VulkanFrameArenaVerification {
             throw new AssertionError("recycled command retained stale values");
         }
         second.releasePooledCommands();
+
+        VulkanTexturedQuadGeometry glyphs = new VulkanTexturedQuadGeometry(
+                new float[] {0, 0, 4, 6, 0, 0, 1, 1});
+        VulkanFrameCommands firstBatch = VulkanFrameCommands.pooledBuilder(16, 16)
+                .texturedQuadBatch(1, 2, 3, glyphs,
+                        1, 1, 1, 1, VulkanDrawState.DEFAULT).build();
+        VulkanDrawCommand batchCommand = firstBatch.command(0);
+        firstBatch.releasePooledCommands();
+        VulkanFrameCommands secondBatch = VulkanFrameCommands.pooledBuilder(16, 16)
+                .texturedQuadBatch(1, 4, 5, glyphs,
+                        1, 1, 1, 1, VulkanDrawState.DEFAULT).build();
+        if (secondBatch.command(0) != batchCommand
+                || secondBatch.texturedQuadBatchCount() != 1) {
+            throw new AssertionError("pooled textured batch command was not reused");
+        }
+        secondBatch.releasePooledCommands();
 
         VulkanColoredQuad external = new VulkanColoredQuad(
                 1.0f, 2.0f, 3.0f, 4.0f, 0.25f, 0.5f, 0.75f, 1.0f);

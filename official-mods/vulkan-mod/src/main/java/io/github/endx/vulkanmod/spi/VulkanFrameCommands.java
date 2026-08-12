@@ -15,6 +15,7 @@ public final class VulkanFrameCommands {
     public static final int TEXTURED_TRIANGLE = 4;
     public static final int COLORED_LINE = 5;
     public static final int COLORED_CIRCLE = 6;
+    public static final int TEXTURED_QUAD_BATCH = 7;
 
     private final int width;
     private final int height;
@@ -29,6 +30,7 @@ public final class VulkanFrameCommands {
     private final int texturedQuadCount;
     private final int coloredTriangleCount;
     private final int texturedTriangleCount;
+    private final int texturedQuadBatchCount;
     private final VulkanFrameCommandPool pool;
     private final CommandArena arena;
     private List<VulkanDrawCommand> commands;
@@ -51,6 +53,7 @@ public final class VulkanFrameCommands {
         texturedQuadCount = builder.texturedQuadCount;
         coloredTriangleCount = builder.coloredTriangleCount;
         texturedTriangleCount = builder.texturedTriangleCount;
+        texturedQuadBatchCount = builder.texturedQuadBatchCount;
         pool = builder.pool;
         if (pool == null) {
             commandArray = Arrays.copyOf(builder.arena.commands, commandCount);
@@ -87,6 +90,7 @@ public final class VulkanFrameCommands {
     public int texturedQuadCount() { return texturedQuadCount; }
     public int coloredTriangleCount() { return coloredTriangleCount; }
     public int texturedTriangleCount() { return texturedTriangleCount; }
+    public int texturedQuadBatchCount() { return texturedQuadBatchCount; }
 
     public VulkanDrawCommand command(int index) {
         ensureReadable();
@@ -102,6 +106,7 @@ public final class VulkanFrameCommands {
         if (command instanceof VulkanTexturedTriangle) return TEXTURED_TRIANGLE;
         if (command instanceof VulkanColoredLine) return COLORED_LINE;
         if (command instanceof VulkanColoredCircle) return COLORED_CIRCLE;
+        if (command instanceof VulkanTexturedQuadBatch) return TEXTURED_QUAD_BATCH;
         throw new IllegalArgumentException("unsupported draw command: "
                 + command.getClass().getName());
     }
@@ -160,6 +165,8 @@ public final class VulkanFrameCommands {
                 ((VulkanColoredQuad) command).release(pool);
             } else if (command instanceof VulkanTexturedQuad) {
                 ((VulkanTexturedQuad) command).release(pool);
+            } else if (command instanceof VulkanTexturedQuadBatch) {
+                ((VulkanTexturedQuadBatch) command).release(pool);
             } else if (command instanceof VulkanColoredTriangle) {
                 ((VulkanColoredTriangle) command).release(pool);
             } else if (command instanceof VulkanTexturedTriangle) {
@@ -228,6 +235,7 @@ public final class VulkanFrameCommands {
         private int texturedQuadCount;
         private int coloredTriangleCount;
         private int texturedTriangleCount;
+        private int texturedQuadBatchCount;
         private boolean built;
 
         private Builder(int width, int height, VulkanFrameCommandPool pool) {
@@ -290,6 +298,30 @@ public final class VulkanFrameCommands {
                             u0, v0, u1, v1, red, green, blue, alpha, state)
                     : VulkanTexturedQuad.acquire(pool, textureHandle, x, y, width, height,
                             u0, v0, u1, v1, red, green, blue, alpha, state));
+        }
+
+        public Builder texturedQuadBatch(long textureHandle,
+                                         float originX, float originY, float[] quads,
+                                         float red, float green, float blue, float alpha,
+                                         VulkanDrawState state) {
+            return texturedQuadBatch(textureHandle, originX, originY,
+                    new VulkanTexturedQuadGeometry(quads),
+                    red, green, blue, alpha, state);
+        }
+
+        public Builder texturedQuadBatch(long textureHandle,
+                                         float originX, float originY,
+                                         VulkanTexturedQuadGeometry geometry,
+                                         float red, float green, float blue, float alpha,
+                                         VulkanDrawState state) {
+            ensureOpen();
+            arena.add(pool == null
+                    ? new VulkanTexturedQuadBatch(textureHandle, originX, originY, geometry,
+                            red, green, blue, alpha, state)
+                    : VulkanTexturedQuadBatch.acquire(pool, textureHandle, originX, originY,
+                            geometry, red, green, blue, alpha, state));
+            texturedQuadBatchCount++;
+            return this;
         }
 
         public Builder coloredTriangle(VulkanColoredTriangle triangle) {

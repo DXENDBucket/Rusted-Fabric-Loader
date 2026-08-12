@@ -1,6 +1,9 @@
 package io.github.endx.vulkanmod;
 
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
+import io.github.endx.vulkanmod.spi.VulkanGlyphBitmap;
+import io.github.endx.vulkanmod.spi.VulkanGlyphPlacement;
+import io.github.endx.vulkanmod.spi.VulkanTextLayout;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -12,7 +15,7 @@ public final class VulkanGlyphAtlasVerification {
     public static void main(String[] arguments) throws Exception {
         RecordingDriver backend = new RecordingDriver();
         VulkanTextTextureCache cache = new VulkanTextTextureCache(
-                backend, null, backend::destroyTexture);
+                backend, new FixedTextRasterizer(), null, backend::destroyTexture);
         try {
             VulkanTextTextureCache.Entry repeated = cache.texture("AAAA", 24, false);
             require(repeated != null && repeated.glyphs.length == 4,
@@ -50,6 +53,17 @@ public final class VulkanGlyphAtlasVerification {
                 textures.add(glyph.textureHandle);
             }
             require(textures.size() == 1, "small glyph run crossed atlas pages unexpectedly");
+            require(mixed.batches.length == 1 && mixed.batches[0].quadCount() == 4,
+                    "one-page text was not compacted into one quad batch");
+            StringBuilder longRunText = new StringBuilder(2_000);
+            for (int index = 0; index < 2_000; index++) longRunText.append('A');
+            VulkanTextTextureCache.Entry longRun = cache.texture(
+                    longRunText.toString(), 24, false);
+            require(longRun != null && longRun.glyphs.length == 2_000
+                            && longRun.batches.length == 1
+                            && longRun.batches[0].quadCount() == 2_000
+                            && backend.regionUpdates == 2,
+                    "large repeated text did not collapse to one cached batch");
         } finally {
             cache.close();
         }
@@ -90,5 +104,45 @@ public final class VulkanGlyphAtlasVerification {
             regionUpdates++;
         }
         private void destroyTexture(long textureHandle) { destroyed++; }
+    }
+
+    private static final class FixedTextRasterizer
+            implements VulkanTextTextureCache.TextAccess {
+        @Override public VulkanTextLayout layout(String text, int pixelSize, boolean bold) {
+            java.util.ArrayList<VulkanGlyphPlacement> glyphs =
+                    new java.util.ArrayList<VulkanGlyphPlacement>();
+            int x = 0;
+            int y = 0;
+            int width = 1;
+            for (int index = 0; index < text.length(); index++) {
+                char character = text.charAt(index);
+                if (character == '\n') {
+                    width = Math.max(width, x);
+                    x = 0;
+                    y += 20;
+                    continue;
+                }
+                glyphs.add(new VulkanGlyphPlacement(character, x, y));
+                x += 10;
+            }
+            width = Math.max(width, x);
+            return new VulkanTextLayout(width, y + 20, 20,
+                    glyphs.toArray(new VulkanGlyphPlacement[0]));
+        }
+
+        @Override public VulkanGlyphBitmap rasterizeGlyph(long glyphKey) {
+            byte[] rgba = new byte[4 * 6 * 4];
+            java.util.Arrays.fill(rgba, (byte) 255);
+            return new VulkanGlyphBitmap(0, -6, 4, 6, rgba);
+        }
+
+        @Override public VulkanTextureData rasterizeText(
+                String text, int pixelSize, boolean bold) {
+            VulkanTextLayout layout = layout(text, pixelSize, bold);
+            return new VulkanTextureData(Math.max(1, layout.width()),
+                    Math.max(1, layout.height()),
+                    new byte[Math.max(1, layout.width())
+                            * Math.max(1, layout.height()) * 4]);
+        }
     }
 }

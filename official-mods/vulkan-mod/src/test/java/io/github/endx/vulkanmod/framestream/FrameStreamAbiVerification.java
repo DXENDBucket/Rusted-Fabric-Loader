@@ -329,6 +329,33 @@ public final class FrameStreamAbiVerification {
                         && splitDecoded.batch(1).indexCount() == 6,
                 "uint16 indexed quad batch did not split at its vertex limit");
 
+        float[] glyphQuads = new float[1_000 * 8];
+        for (int glyph = 0; glyph < 1_000; glyph++) {
+            int offset = glyph * 8;
+            glyphQuads[offset] = glyph % 50;
+            glyphQuads[offset + 1] = glyph / 50;
+            glyphQuads[offset + 2] = 1;
+            glyphQuads[offset + 3] = 1;
+            glyphQuads[offset + 4] = 0;
+            glyphQuads[offset + 5] = 0;
+            glyphQuads[offset + 6] = 1;
+            glyphQuads[offset + 7] = 1;
+        }
+        VulkanFrameCommands compactText = VulkanFrameCommands.pooledBuilder(64, 64)
+                .texturedQuadBatch(9, 0, 0, glyphQuads,
+                        1, 1, 1, 1, VulkanDrawState.DEFAULT)
+                .build();
+        glyphQuads[0] = Float.NaN;
+        DecodedFrameStream compactTextDecoded = DecodedFrameStream.decode(encoder.encode(
+                24, 5, new VulkanFrameSubmission(Collections.emptyList(), compactText)));
+        require(compactText.commandCount() == 1
+                        && compactText.texturedQuadBatchCount() == 1
+                        && compactTextDecoded.batchCount() == 1
+                        && compactTextDecoded.batch(0).vertexCount() == 4_000
+                        && compactTextDecoded.batch(0).indexCount() == 6_000,
+                "textured quad batch did not compact Java commands or indexed geometry");
+        compactText.releasePooledCommands();
+
         byte[] corrupt = bytes(encoded);
         FrameStreamReader envelope = FrameStreamReader.read(ByteBuffer.wrap(corrupt));
         int firstBatch = envelope.section(FrameStreamFormat.SECTION_BATCHES).offset();

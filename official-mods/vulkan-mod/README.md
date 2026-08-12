@@ -29,8 +29,10 @@ frame. Normal, additive, copy and modulation blend equations follow the game's S
 each texture has independently selectable linear and nearest-neighbour sampling. Slick-rendered
 offscreen images remain a compatibility fallback and invalidate their Vulkan copy whenever they are
 drawn into. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the
-game thread. Native mode rasterizes individual AWT glyphs into reusable 1024x1024 atlas pages and
-emits one indexed quad per visible glyph. Repeated strings and characters reuse atlas regions; the
+game thread. Native mode asks a platform text service to shape and rasterize individual glyphs into
+reusable 1024x1024 atlas pages and emits indexed quads for visible glyphs. The Windows
+implementation uses AWT inside the isolated desktop driver; no AWT font object crosses the shared
+atlas boundary. Repeated strings and characters reuse atlas regions; the
 older takeover compatibility path retains whole-string textures until that path is removed. Native
 mode translates linked GLSL-130 vertex/fragment programs onto the
 Vulkan texture ABI. Desktop built-ins and GDX attributes, custom float/vec uniforms shared across
@@ -74,7 +76,8 @@ render targets expose
 synchronized RGBA readback and same-size CPU upload, so `GameImage` pixel reads/copies and explicit
 pixel-buffer flushes retain their original semantics. Remaining shader work is broadening legacy
 syntax beyond the parameter types exposed by the original game.
-AWT is still used to rasterize new desktop glyphs, but cached text presentation itself is Vulkan.
+AWT is still the Windows rasterizer implementation, but it is no longer part of the shared text
+cache contract and can be replaced by FreeType/Skia in an Android platform driver.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -92,6 +95,9 @@ adjacent quads share one indexed batch, with an automatic split at the 65,536-ve
 triangle, line and circle work retains the ordinary non-indexed path. The desktop decoder uploads
 the pass-local vertex and index ranges into the same persistently mapped frame slot and issues
 `vkCmdDrawIndexed`, matching the future Android decoder contract while reducing quad stream bytes.
+Atlas text additionally stores reusable relative glyph geometry and records one Java command per
+consecutive atlas page rather than one command object per glyph. Cumulative `text.runs`,
+`text.glyphQuads`, and `text.batchCommands` counters expose the achieved compaction to the profiler.
 
 The pre-OpenGL native bootstrap reproduces the original loading screen directly through
 `GraphicsEngine`: black background, centered game logo, animated `Loading` dots and the live loader
@@ -149,11 +155,13 @@ performance runs remain unaffected.
 4. Persistently mapped main/offscreen vertex/index rings, asynchronous standalone child submissions,
    combined frame-graph submission, reusable Java frame-command arenas and recyclable driver-side
    draw-batch metadata are complete. Indexed quad batches now reduce repeated vertices without
-   changing order. Next, continue widening compatible batches and
-   profile the remaining texture/descriptors and text-upload hot paths.
+   changing order. Homogeneous textured-quad runs can now cross the Java/FrameStream boundary as a
+   single command. Next, continue widening compatible non-text batches and profile descriptors.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
-   limit. Next, move glyph rasterization behind an AWT-free platform service and remove the
-   obsolete takeover-only whole-string compatibility surface after native parity is established.
+   limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
+   the common atlas is ready for an Android FreeType/Skia implementation. Next, add that Android
+   implementation and remove the obsolete takeover-only whole-string compatibility surface after
+   native parity is established.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
 
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or

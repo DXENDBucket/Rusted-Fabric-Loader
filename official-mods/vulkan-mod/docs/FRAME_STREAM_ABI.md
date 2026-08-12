@@ -74,6 +74,8 @@ The current desktop driver's results define compatibility. In particular:
 - transforms are applied without changing local custom-shader inputs;
 - clip, blend mode, filter, shader state, primary texture, and secondary texture participate in
   batch compatibility;
+- a Java textured-quad batch may contribute many indexed quads to one ordinary version-1 batch
+  record; this reduces producer command objects without adding a text-specific wire record;
 - only adjacent compatible draws become one batch.
 
 Batching moves into the shared encoder before the Android decoder is considered complete. This

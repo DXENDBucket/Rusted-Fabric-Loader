@@ -13,6 +13,8 @@ import io.github.endx.vulkanmod.spi.VulkanClipRect;
 import io.github.endx.vulkanmod.spi.VulkanDrawState;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
+import io.github.endx.vulkanmod.spi.VulkanTextLayout;
+import io.github.endx.vulkanmod.spi.VulkanGlyphBitmap;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -152,6 +154,14 @@ public final class VulkanDriverIsolationVerification {
             }
             if (result == null) {
                 throw new AssertionError("isolated Vulkan probe returned null");
+            }
+            VulkanTextLayout layout = loaded.layoutText("AB", 24, false);
+            if (layout.glyphCount() != 2 || layout.width() <= 0 || layout.lineHeight() <= 0) {
+                throw new AssertionError("isolated desktop text layout is invalid");
+            }
+            VulkanGlyphBitmap glyph = loaded.rasterizeGlyph(layout.glyph(0).glyphKey());
+            if (glyph.empty() || glyph.copyRgba().length != glyph.width() * glyph.height() * 4) {
+                throw new AssertionError("isolated desktop glyph raster is invalid");
             }
             System.out.println("Isolated Vulkan driver contract passed: available="
                     + result.available() + ", devices=" + result.devices().size());

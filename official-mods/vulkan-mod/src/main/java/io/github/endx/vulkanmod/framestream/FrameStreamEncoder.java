@@ -14,6 +14,7 @@ import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import io.github.endx.vulkanmod.spi.VulkanTextureFilter;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
+import io.github.endx.vulkanmod.spi.VulkanTexturedQuadBatch;
 import io.github.endx.vulkanmod.spi.VulkanTexturedTriangle;
 import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 
@@ -436,7 +437,7 @@ public final class FrameStreamEncoder {
                 }
                 int baseVertex = (vertexByteOffset - batch.vertexByteOffset)
                         / FrameStreamRecordFormat.vertexStride(layout);
-                putQuadIndices(output, baseVertex);
+                putQuadIndices(output, baseVertex, indexedQuadCount(command));
             }
             vertexByteOffset += commandVertices * FrameStreamRecordFormat.vertexStride(layout);
         }
@@ -606,7 +607,7 @@ public final class FrameStreamEncoder {
                 current.vertexCount = Math.addExact(current.vertexCount, commandVertices);
                 current.indexCount = Math.addExact(current.indexCount, commandIndices);
             }
-            if (indexed) putQuadIndices(indices, baseVertex);
+            if (indexed) putQuadIndices(indices, baseVertex, indexedQuadCount(command));
             writeVertices(vertices, frame, command, layout, ndcScaleX, ndcScaleY);
             totalVertices[0] = Math.addExact(totalVertices[0], commandVertices);
             totalIndices[0] = Math.addExact(totalIndices[0], commandIndices);
@@ -632,27 +633,39 @@ public final class FrameStreamEncoder {
     }
 
     private static int encodedVertexCount(VulkanDrawCommand command) {
-        return isIndexedQuad(command) ? QUAD_VERTEX_COUNT : command.vertexCount();
+        return command instanceof VulkanTexturedQuadBatch
+                ? command.vertexCount()
+                : isIndexedQuad(command) ? QUAD_VERTEX_COUNT : command.vertexCount();
     }
 
     private static int encodedIndexCount(VulkanDrawCommand command) {
-        return isIndexedQuad(command) ? QUAD_INDEX_COUNT : 0;
+        return isIndexedQuad(command) ? indexedQuadCount(command) * QUAD_INDEX_COUNT : 0;
     }
 
     private static boolean isIndexedQuad(VulkanDrawCommand command) {
-        return command instanceof VulkanColoredQuad || command instanceof VulkanTexturedQuad;
+        return command instanceof VulkanColoredQuad || command instanceof VulkanTexturedQuad
+                || command instanceof VulkanTexturedQuadBatch;
     }
 
-    private static void putQuadIndices(ByteBuffer output, int baseVertex) {
-        if (baseVertex < 0 || baseVertex + QUAD_VERTEX_COUNT > MAX_UINT16_VERTICES) {
+    private static int indexedQuadCount(VulkanDrawCommand command) {
+        return command instanceof VulkanTexturedQuadBatch
+                ? ((VulkanTexturedQuadBatch) command).quadCount() : 1;
+    }
+
+    private static void putQuadIndices(ByteBuffer output, int baseVertex, int quadCount) {
+        int vertexCount = Math.multiplyExact(quadCount, QUAD_VERTEX_COUNT);
+        if (baseVertex < 0 || baseVertex + vertexCount > MAX_UINT16_VERTICES) {
             throw new FrameStreamFormatException("quad batch exceeds uint16 index range");
         }
-        output.putShort((short) baseVertex)
-                .putShort((short) (baseVertex + 1))
-                .putShort((short) (baseVertex + 2))
-                .putShort((short) baseVertex)
-                .putShort((short) (baseVertex + 2))
-                .putShort((short) (baseVertex + 3));
+        for (int quad = 0; quad < quadCount; quad++) {
+            int vertex = baseVertex + quad * QUAD_VERTEX_COUNT;
+            output.putShort((short) vertex)
+                    .putShort((short) (vertex + 1))
+                    .putShort((short) (vertex + 2))
+                    .putShort((short) vertex)
+                    .putShort((short) (vertex + 2))
+                    .putShort((short) (vertex + 3));
+        }
     }
 
     private static void writeVertices(ByteBuffer output, VulkanFrameCommands frame,
@@ -711,6 +724,29 @@ public final class FrameStreamEncoder {
             putTextured(output, frame, quad.state().transform(), layout, right, top,
                     quad.u1(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
                     ndcScaleX, ndcScaleY);
+            return;
+        }
+        if (command instanceof VulkanTexturedQuadBatch) {
+            VulkanTexturedQuadBatch batch = (VulkanTexturedQuadBatch) command;
+            VulkanTransform2D transform = batch.state().transform();
+            for (int quad = 0; quad < batch.quadCount(); quad++) {
+                float left = batch.originX() + batch.x(quad);
+                float right = left + batch.width(quad);
+                float top = batch.originY() + batch.y(quad);
+                float bottom = top + batch.height(quad);
+                putTextured(output, frame, transform, layout, left, top,
+                        batch.u0(quad), batch.v0(quad), batch.red(), batch.green(),
+                        batch.blue(), batch.alpha(), ndcScaleX, ndcScaleY);
+                putTextured(output, frame, transform, layout, left, bottom,
+                        batch.u0(quad), batch.v1(quad), batch.red(), batch.green(),
+                        batch.blue(), batch.alpha(), ndcScaleX, ndcScaleY);
+                putTextured(output, frame, transform, layout, right, bottom,
+                        batch.u1(quad), batch.v1(quad), batch.red(), batch.green(),
+                        batch.blue(), batch.alpha(), ndcScaleX, ndcScaleY);
+                putTextured(output, frame, transform, layout, right, top,
+                        batch.u1(quad), batch.v0(quad), batch.red(), batch.green(),
+                        batch.blue(), batch.alpha(), ndcScaleX, ndcScaleY);
+            }
             return;
         }
         if (command instanceof VulkanTexturedTriangle) {
