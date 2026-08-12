@@ -1293,6 +1293,13 @@ public final class VulkanRuntime {
         return Optional.ofNullable(surfaceInfo);
     }
 
+    /** Cumulative renderer counters intended for low-frequency profiler sampling. */
+    public static synchronized java.util.Map<String, Long> performanceStatistics() {
+        return activeDriver == null
+                ? java.util.Collections.emptyMap()
+                : activeDriver.performanceStatistics();
+    }
+
     public static synchronized void invalidateCachedImage(Object image) {
         if (gameTextureCache != null) gameTextureCache.invalidate(image);
     }

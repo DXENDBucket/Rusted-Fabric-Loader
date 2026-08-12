@@ -9,9 +9,12 @@ import io.github.endx.rustedfabricapi.api.client.render.HudDrawContext;
 import java.io.IOException;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 final class PerformanceProfilerRuntime {
     private static final DrawStyle TITLE = DrawStyle.text(0xff7ee787, 14.0f);
@@ -46,6 +49,9 @@ final class PerformanceProfilerRuntime {
     private long panelHeapMax;
     private long panelGcCount;
     private long panelGcTime;
+    private Map<String, Long> panelVulkanStatistics = Collections.emptyMap();
+    private Method vulkanStatisticsMethod;
+    private boolean vulkanStatisticsResolved;
     private Thread gameThread;
     private SamplingSession sampling;
     private volatile String status = "F9 starts a sampling report";
@@ -101,7 +107,8 @@ final class PerformanceProfilerRuntime {
         float x = LEFT;
         float y = TOP + BUTTON_HEIGHT + 8.0f;
         float width = Math.min(470.0f, Math.max(340.0f, context.width() - LEFT * 2.0f));
-        float height = 198.0f;
+        boolean vulkanStatistics = !panelVulkanStatistics.isEmpty();
+        float height = vulkanStatistics ? 232.0f : 198.0f;
         context.fillRect(x, y, width, height, BACKGROUND);
         context.strokeRect(x, y, width, height, BORDER, 2.0f);
         float line = y + 18.0f;
@@ -126,6 +133,22 @@ final class PerformanceProfilerRuntime {
                 + " (max " + mib(panelHeapMax) + ") | GC " + panelGcCount + " / " + panelGcTime + "ms",
                 x + 10, line, TEXT);
         line += 17.0f;
+        if (vulkanStatistics) {
+            long decoded = stat("resource.decoded");
+            context.drawText("VK resources pending " + stat("resource.pending")
+                            + " (peak " + stat("resource.pendingPeak") + ") | decode avg "
+                            + nanosAverage(stat("resource.decodeNanos"), decoded) + "ms"
+                            + " | frame waits " + stat("resource.frameDependencyWaits")
+                            + "/" + nanosMillis(stat("resource.frameDependencyWaitNanos"))
+                            + "ms", x + 10, line, TEXT);
+            line += 17.0f;
+            context.drawText("VK upload " + mib(stat("texture.uploadBytes")) + " MiB / "
+                            + stat("texture.uploadBatches") + " batches | slots "
+                            + stat("texture.uploadSlotGrowths") + " | mutation waits "
+                            + stat("texture.mutationFenceWaits") + " | arena waits "
+                            + stat("resource.arenaWaits"), x + 10, line, TEXT);
+            line += 17.0f;
+        }
         context.drawText(status, x + 10, line, WARN);
 
         float actionsTop = y + height - 39.0f;
@@ -159,7 +182,43 @@ final class PerformanceProfilerRuntime {
         long[] gc = gcTotals();
         panelGcCount = gc[0];
         panelGcTime = gc[1];
+        panelVulkanStatistics = readVulkanStatistics();
         panelRefreshedAt = now;
+    }
+
+    private Map<String, Long> readVulkanStatistics() {
+        try {
+            if (!vulkanStatisticsResolved) {
+                vulkanStatisticsResolved = true;
+                Class<?> runtime = Class.forName("io.github.endx.vulkanmod.VulkanRuntime");
+                vulkanStatisticsMethod = runtime.getMethod("performanceStatistics");
+            }
+            if (vulkanStatisticsMethod == null) return Collections.emptyMap();
+            Object value = vulkanStatisticsMethod.invoke(null);
+            if (value instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Long> statistics = (Map<String, Long>) value;
+                return statistics;
+            }
+        } catch (ClassNotFoundException absent) {
+            // Vulkan Mod is optional.
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            vulkanStatisticsMethod = null;
+        }
+        return Collections.emptyMap();
+    }
+
+    private long stat(String name) {
+        Long value = panelVulkanStatistics.get(name);
+        return value == null ? 0L : value.longValue();
+    }
+
+    private static String nanosAverage(long nanos, long count) {
+        return count == 0L ? "0.00" : format((nanos / (double) count) / 1_000_000.0);
+    }
+
+    private static String nanosMillis(long nanos) {
+        return format(nanos / 1_000_000.0);
     }
 
     private boolean button(HudDrawContext context, float x, float y, float width,

@@ -45,6 +45,8 @@ final class ResourceStreamClient implements AutoCloseable {
     private final LinkedHashMap<Long, ResourceUploadArenaPool.Lease> pendingArenaLeases =
             new LinkedHashMap<Long, ResourceUploadArenaPool.Lease>();
     private RuntimeException fault;
+    private long arenaCompletionWaits;
+    private long arenaCompletionWaitNanos;
 
     ResourceStreamClient(Submitter submitter) {
         this(submitter, null, 0, 0, Integer.MAX_VALUE);
@@ -313,6 +315,7 @@ final class ResourceStreamClient implements AutoCloseable {
     private void awaitOldestArenaLease() {
         Map.Entry<Long, ResourceUploadArenaPool.Lease> pending =
                 pendingArenaLeases.entrySet().iterator().next();
+        long started = System.nanoTime();
         try {
             VulkanResourceStreamResult result =
                     submitter.awaitCompletion(pending.getKey(), -1L);
@@ -321,10 +324,16 @@ final class ResourceStreamClient implements AutoCloseable {
             fault = failure;
             throw failure;
         } finally {
+            arenaCompletionWaits++;
+            arenaCompletionWaitNanos += System.nanoTime() - started;
             pending.getValue().close();
             pendingArenaLeases.remove(pending.getKey());
         }
     }
+
+    synchronized long arenaCompletionWaits() { return arenaCompletionWaits; }
+    synchronized long arenaCompletionWaitNanos() { return arenaCompletionWaitNanos; }
+    synchronized int pendingArenaLeases() { return pendingArenaLeases.size(); }
 
     private void drainArenaLeases() {
         while (!pendingArenaLeases.isEmpty()) awaitOldestArenaLease();

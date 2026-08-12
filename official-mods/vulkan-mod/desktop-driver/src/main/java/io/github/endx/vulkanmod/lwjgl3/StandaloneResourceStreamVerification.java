@@ -19,6 +19,7 @@ import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Map;
 
 /** Executes logical texture lifetime and FrameStream dependencies on the real desktop backend. */
 public final class StandaloneResourceStreamVerification {
@@ -143,6 +144,16 @@ public final class StandaloneResourceStreamVerification {
                     || (mutated[2] & 255) != 0 || (mutated[3] & 255) != 255
                     || (mutated[4] & 255) != 255 || (mutated[5] & 255) != 0) {
                 throw new AssertionError("external upload, partial update, or readback mismatch");
+            }
+            Map<String, Long> statistics = driver.performanceStatistics();
+            if (statistics.get("resource.accepted") < 4L
+                    || statistics.get("resource.decoded") < 4L
+                    || statistics.get("resource.pending") != 0L
+                    || statistics.get("texture.uploadBatches") < 1L
+                    || statistics.get("texture.uploadBytes") < 8L * 8L * 4L
+                    || statistics.get("texture.uploadSlotGrowths") < 1L) {
+                throw new AssertionError("ResourceStream performance counters were not updated: "
+                        + statistics);
             }
 
             ResourceStreamWriter destroy = new ResourceStreamWriter(8L, 0, 0L);

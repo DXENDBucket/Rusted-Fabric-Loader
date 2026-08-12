@@ -338,6 +338,21 @@ final class VulkanDriverLoader {
             return invoke(() -> driver.presentFrameAndReveal(frame));
         }
 
+        java.util.Map<String, Long> performanceStatistics() {
+            java.util.LinkedHashMap<String, Long> statistics =
+                    new java.util.LinkedHashMap<String, Long>(
+                            invoke(driver::performanceStatistics));
+            if (resources != null) {
+                statistics.put("resource.arenaPending",
+                        (long) resources.pendingArenaLeases());
+                statistics.put("resource.arenaWaits",
+                        resources.arenaCompletionWaits());
+                statistics.put("resource.arenaWaitNanos",
+                        resources.arenaCompletionWaitNanos());
+            }
+            return java.util.Collections.unmodifiableMap(statistics);
+        }
+
         private <T> T invoke(java.util.function.Supplier<T> operation) {
             Thread thread = Thread.currentThread();
             ClassLoader previous = thread.getContextClassLoader();

@@ -128,6 +128,14 @@ contiguous sequence before enqueueing. A FrameStream waits when its `requiredRes
 been accepted but not decoded; a sequence beyond the accepted tail is rejected immediately.
 Decode failure faults the resource channel and wakes every dependency/completion waiter.
 
+The LWJGL3 reference driver stages decoded texture transfers through persistently mapped,
+geometrically growing upload buffers owned by individual frame/offscreen/readback submission
+slots. Reusing or growing a slot is allowed only after that slot's fence completes. Initial data
+for a newly created image therefore does not drain unrelated in-flight work; a mutation of an
+already initialized image still waits for all submissions that could be sampling the old contents.
+The driver exposes decode queue, dependency wait, arena wait, upload volume, slot growth, and
+mutation-fence counters through `VulkanPlatformDriver.performanceStatistics()`.
+
 Destruction is logically ordered but physically deferred until no queued frame references the
 handle and all relevant native GPU frame slots have completed.
 

@@ -3,6 +3,7 @@ package io.github.endx.vulkanmod.spi;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /** Minimal ABI shared by the mod and class-loader-isolated platform implementations. */
 public interface VulkanPlatformDriver extends AutoCloseable {
@@ -123,6 +124,8 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     }
     /** Unregisters an upload arena only after all submissions referencing it have completed. */
     default void unregisterResourceUploadArena(long arenaId) { }
+    /** Allocation-light cumulative counters for diagnostics and the optional profiler HUD. */
+    default Map<String, Long> performanceStatistics() { return Collections.emptyMap(); }
     /**
      * Presents a frame, or returns {@code null} when the surface temporarily cannot acquire an
      * image (for example while its Win32 window is occluded or minimized).
