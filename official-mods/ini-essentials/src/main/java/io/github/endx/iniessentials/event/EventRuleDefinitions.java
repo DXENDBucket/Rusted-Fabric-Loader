@@ -15,6 +15,8 @@ import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
 import io.github.endx.rustedfabricapi.api.ini.IniSectionSelector;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
+import rustedwarfare.custom.CustomTagList;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.event.CustomUnitEventType;
 import rustedwarfare.custom.logic.VariableScope;
@@ -44,7 +46,8 @@ public final class EventRuleDefinitions {
                 .<String>builder(IniEssentials.MOD_ID, "event_rule",
                         IniSectionSelector.prefix(PREFIX), "event")
                 .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
-                .claimsKeys("phase", "when", "cancelEventActions", "setEventNumber",
+                .claimsKeys("phase", "when", "withTag", "withoutTag",
+                        "cancelEventActions", "setEventNumber",
                         "addEventNumber", "multiplyEventNumber", "setEventBoolean",
                         "cancelEvent", "setEventValue", "addEventValue",
                         "multiplyEventValue")
@@ -70,6 +73,8 @@ public final class EventRuleDefinitions {
     private static void parseAndStore(Object metadata, UnitConfig config, String section) {
         CustomUnitEventType eventType = parseEventType(required(config, section, "event"));
         Phase phase = parsePhase(optional(config, section, "phase"));
+        CustomTagList withTags = parseTags(optional(config, section, "withTag"));
+        CustomTagList withoutTags = parseTags(optional(config, section, "withoutTag"));
         String cancelActions = optional(config, section, "cancelEventActions");
         String setNumbers = optional(config, section, "setEventNumber");
         String addNumbers = optional(config, section, "addEventNumber");
@@ -95,7 +100,7 @@ public final class EventRuleDefinitions {
                     "queued rules use cancelEventActions and named event-data fields; "
                             + "cancelEvent/event-value fields require phase: before");
         }
-        Rule rule = new Rule(eventType, phase,
+        Rule rule = new Rule(eventType, phase, withTags, withoutTags,
                 BooleanExpression.compile(metadata, optional(config, section, "when"), "true"),
                 expression(metadata, cancelActions, false),
                 parseNumbers(metadata, setNumbers),
@@ -129,7 +134,7 @@ public final class EventRuleDefinitions {
             if (rule.phase != Phase.QUEUED || rule.eventType != eventType) continue;
             boolean cancelled = CustomUnitEventEvaluation.withContext(
                     unit, source, tags, dataScope,
-                    () -> rule.apply(unit, data));
+                    () -> rule.apply(unit, data, tags));
             if (cancelled) return true;
         }
         return false;
@@ -144,7 +149,8 @@ public final class EventRuleDefinitions {
                     context.unit(), context.sourceUnit().orElse(null),
                     context.tags().orElse(null), context.data().nativeScope(),
                     () -> {
-                        rule.applyBefore(context.unit(), context);
+                        rule.applyBefore(context.unit(), context,
+                                context.tags().orElse(null));
                         return null;
                     });
             if (context.cancelled()) return;
@@ -258,9 +264,15 @@ public final class EventRuleDefinitions {
         return value;
     }
 
+    private static CustomTagList parseTags(String raw) {
+        return raw == null || raw.trim().isEmpty() ? null : UnitTags.parse(raw.trim());
+    }
+
     private static final class Rule {
         private final CustomUnitEventType eventType;
         private final Phase phase;
+        private final CustomTagList withTags;
+        private final CustomTagList withoutTags;
         private final BooleanExpression when;
         private final BooleanExpression cancel;
         private final List<NumberAssignment> setNumbers;
@@ -272,7 +284,9 @@ public final class EventRuleDefinitions {
         private final NumericExpression addValue;
         private final NumericExpression multiplyValue;
 
-        private Rule(CustomUnitEventType eventType, Phase phase, BooleanExpression when,
+        private Rule(CustomUnitEventType eventType, Phase phase,
+                     CustomTagList withTags, CustomTagList withoutTags,
+                     BooleanExpression when,
                      BooleanExpression cancel, List<NumberAssignment> setNumbers,
                      List<NumberAssignment> addNumbers, List<NumberAssignment> multiplyNumbers,
                      List<BooleanAssignment> setBooleans, BooleanExpression cancelEvent,
@@ -280,6 +294,8 @@ public final class EventRuleDefinitions {
                      NumericExpression multiplyValue) {
             this.eventType = eventType;
             this.phase = phase;
+            this.withTags = withTags;
+            this.withoutTags = withoutTags;
             this.when = when;
             this.cancel = cancel;
             this.setNumbers = setNumbers;
@@ -292,8 +308,9 @@ public final class EventRuleDefinitions {
             this.multiplyValue = multiplyValue;
         }
 
-        private boolean apply(CustomUnit unit, CustomUnitEventData data) {
-            if (!when.evaluate(unit)) return false;
+        private boolean apply(CustomUnit unit, CustomUnitEventData data,
+                              CustomTagList eventTags) {
+            if (!matchesTags(eventTags) || !when.evaluate(unit)) return false;
             for (NumberAssignment assignment : setNumbers) {
                 data.putNumber(assignment.name, assignment.value.evaluate(unit));
             }
@@ -311,12 +328,18 @@ public final class EventRuleDefinitions {
             return cancel.evaluate(unit);
         }
 
-        private void applyBefore(CustomUnit unit, MutableCustomUnitEventContext context) {
-            if (!when.evaluate(unit)) return;
+        private void applyBefore(CustomUnit unit, MutableCustomUnitEventContext context,
+                                 CustomTagList eventTags) {
+            if (!matchesTags(eventTags) || !when.evaluate(unit)) return;
             if (setValue != null) context.setValue(setValue.evaluate(unit));
             if (addValue != null) context.addValue(addValue.evaluate(unit));
             if (multiplyValue != null) context.multiplyValue(multiplyValue.evaluate(unit));
             if (cancelEvent.evaluate(unit)) context.cancel();
+        }
+
+        private boolean matchesTags(CustomTagList eventTags) {
+            return (withTags == null || UnitTags.anyMatches(withTags, eventTags))
+                    && (withoutTags == null || !UnitTags.anyMatches(withoutTags, eventTags));
         }
     }
 

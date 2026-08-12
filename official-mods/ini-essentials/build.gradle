@@ -112,7 +112,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'floor', 'ceil', 'round', 'sign', 'clamp', 'lerp',
                 'inverse_lerp', 'hypot', 'atan2', 'atan', 'asin', 'acos',
                 'tan', 'smoothstep', 'pi', 'tau', 'e',
-                'event', 'phase', 'when', 'cancelEventActions',
+                'event', 'phase', 'when', 'withTag', 'withoutTag', 'cancelEventActions',
                 'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
                 'setEventBoolean', 'cancelEvent', 'setEventValue',
                 'addEventValue', 'multiplyEventValue',
@@ -270,7 +270,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !decalMaskSource.contains('AlphaMasks.imageAffine')
                 || !decalMaskSource.contains('GeometryDefinitions.require(')
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
-                || !['event', 'phase', 'when', 'cancelEventActions',
+                || !['event', 'phase', 'when', 'withTag', 'withoutTag', 'cancelEventActions',
                     'setEventNumber', 'addEventNumber', 'multiplyEventNumber',
                     'setEventBoolean', 'cancelEvent', 'setEventValue',
                     'addEventValue', 'multiplyEventValue'].every {
@@ -466,7 +466,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v27'
+                || multiplayer?.protocol != 'ini_essentials_v28'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

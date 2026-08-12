@@ -532,11 +532,17 @@ The first synchronous phase is available for `tookDamage`:
 [event_reduceActualDamage]
 event: tookDamage
 phase: before
+withTag: dmg_kinetic
 when: eventData(name='damage',type='number') > 0
 setEventValue: max(0,eventData(name='damage',type='number')-self.resource.block)
 multiplyEventValue: self.resource.damageTakenMultiplier
 cancelEvent: memory.damageImmune
 ```
+
+`withTag` and `withoutTag` filter the native event tag list before `when` is evaluated. Their
+comma-separated values use the same any-match convention as native
+`autoTriggerOnEvent: tookDamage(withTag=...)`, and work in both `queued` and event-specific
+`before` phases. An event without tags cannot match `withTag`.
 
 The names deliberately differ from queued notification fields. `cancelEvent` prevents the native
 damage operation itself, so no HP/shield change, attachment forwarding, or `tookDamage` action
