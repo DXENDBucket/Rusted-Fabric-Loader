@@ -83,6 +83,15 @@ tasks.register('verifyDescriptorReuse', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneDescriptorReuseVerification')
 }
 
+tasks.register('verifyCommandStateReuse', JavaExec) {
+    group = 'verification'
+    description = 'Verifies redundant Vulkan command-buffer state changes are omitted.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneCommandStateReuseVerification')
+}
+
 tasks.register('verifyCustomVertexPipeline', JavaExec) {
     group = 'verification'
     description = 'Executes a translated custom vertex shader on the real Vulkan device.'

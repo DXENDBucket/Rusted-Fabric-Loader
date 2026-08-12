@@ -1996,6 +1996,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long textureDescriptorPairMisses;
         private long textureDescriptorBindCalls;
         private long textureDescriptorBindSkips;
+        private long pipelineBindCalls;
+        private long pipelineBindSkips;
+        private long vertexBufferBindCalls;
+        private long vertexBufferBindSkips;
+        private long indexBufferBindCalls;
+        private long indexBufferBindSkips;
+        private long scissorSetCalls;
+        private long scissorSetSkips;
+        private long shaderPushCalls;
+        private long shaderPushSkips;
+        private final CommandRecordingState commandRecordingState =
+                new CommandRecordingState();
         private VulkanShaderState[] decodedMaterialShaders = new VulkanShaderState[0];
         private long[] decodedMaterialSecondaryTextures = new long[0];
         private int[] decodedMaterialEpochs = new int[0];
@@ -3072,17 +3084,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
             LongBuffer drawVertexOffset = stack.mallocLong(1);
             LongBuffer drawDescriptorSet = stack.mallocLong(1);
-            long boundTextureDescriptor = VK_NULL_HANDLE;
             VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
+            commandRecordingState.reset();
             for (DrawBatch drawBatch : upload.batches) {
                 if (drawBatch instanceof ColoredDrawBatch) {
                     ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
-                    vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            colorPipeline(stack, batch.blendMode));
-                    drawVertexOffset.put(0, batch.vertexByteOffset);
-                    vkCmdBindVertexBuffers(command, 0, drawVertexBuffer, drawVertexOffset);
-                    if (setScissor(command, batch.clip, target.width, target.height,
-                            drawScissor)) {
+                    bindPipeline(command, colorPipeline(stack, batch.blendMode));
+                    bindVertexBuffer(command, vertexBuffer, batch.vertexByteOffset,
+                            drawVertexBuffer, drawVertexOffset);
+                    if (setScissor(command, batch.clip, target.width,
+                            target.height, drawScissor)) {
                         recordDraw(command, batch, vertexBuffer);
                     }
                 } else {
@@ -3097,16 +3108,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         throw new IllegalArgumentException(
                                 "a render target cannot be its own secondary texture");
                     }
-                    vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    bindPipeline(command,
                             texturePipeline(stack, batch.blendMode, batch.shaderState));
-                    drawVertexOffset.put(0, batch.vertexByteOffset);
-                    vkCmdBindVertexBuffers(command, 0, drawVertexBuffer, drawVertexOffset);
+                    bindVertexBuffer(command, vertexBuffer, batch.vertexByteOffset,
+                            drawVertexBuffer, drawVertexOffset);
                     if (setScissor(command, batch.clip, target.width, target.height,
                             drawScissor)) {
-                        boundTextureDescriptor = bindTextureDescriptorSet(command,
-                                batch.descriptorSet, boundTextureDescriptor,
+                        bindTextureDescriptorSet(command, batch.descriptorSet,
                                 drawDescriptorSet);
-                        pushShaderState(command, batch.shaderState, shaderPushConstants);
+                        pushShaderStateCached(command, batch.shaderState,
+                                shaderPushConstants);
                         recordDraw(command, batch, vertexBuffer);
                     }
                 }
@@ -3189,15 +3200,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
                 LongBuffer drawVertexOffset = stack.mallocLong(1);
                 LongBuffer drawDescriptorSet = stack.mallocLong(1);
-                long boundTextureDescriptor = VK_NULL_HANDLE;
                 VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
+                commandRecordingState.reset();
                 for (DrawBatch drawBatch : upload.batches) {
                     if (drawBatch instanceof ColoredDrawBatch) {
                         ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
-                        vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                colorPipeline(stack, batch.blendMode));
-                        drawVertexOffset.put(0, batch.vertexByteOffset);
-                        vkCmdBindVertexBuffers(command, 0,
+                        bindPipeline(command, colorPipeline(stack, batch.blendMode));
+                        bindVertexBuffer(command, vertexBuffer, batch.vertexByteOffset,
                                 drawVertexBuffer, drawVertexOffset);
                         if (setScissor(command, batch.clip, target.width,
                                 target.height, drawScissor)) {
@@ -3215,17 +3224,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             throw new IllegalArgumentException(
                                     "a render target cannot be its own secondary texture");
                         }
-                        vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        bindPipeline(command,
                                 texturePipeline(stack, batch.blendMode, batch.shaderState));
-                        drawVertexOffset.put(0, batch.vertexByteOffset);
-                        vkCmdBindVertexBuffers(command, 0,
+                        bindVertexBuffer(command, vertexBuffer, batch.vertexByteOffset,
                                 drawVertexBuffer, drawVertexOffset);
                         if (setScissor(command, batch.clip, target.width,
                                 target.height, drawScissor)) {
-                            boundTextureDescriptor = bindTextureDescriptorSet(command,
-                                    batch.descriptorSet, boundTextureDescriptor,
+                            bindTextureDescriptorSet(command, batch.descriptorSet,
                                     drawDescriptorSet);
-                            pushShaderState(command, batch.shaderState,
+                            pushShaderStateCached(command, batch.shaderState,
                                     shaderPushConstants);
                             recordDraw(command, batch, vertexBuffer);
                         }
@@ -3541,6 +3548,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("descriptor.pairMisses", textureDescriptorPairMisses);
             statistics.put("descriptor.bindCalls", textureDescriptorBindCalls);
             statistics.put("descriptor.bindSkips", textureDescriptorBindSkips);
+            statistics.put("command.pipelineBindCalls", pipelineBindCalls);
+            statistics.put("command.pipelineBindSkips", pipelineBindSkips);
+            statistics.put("command.vertexBindCalls", vertexBufferBindCalls);
+            statistics.put("command.vertexBindSkips", vertexBufferBindSkips);
+            statistics.put("command.indexBindCalls", indexBufferBindCalls);
+            statistics.put("command.indexBindSkips", indexBufferBindSkips);
+            statistics.put("command.scissorSetCalls", scissorSetCalls);
+            statistics.put("command.scissorSetSkips", scissorSetSkips);
+            statistics.put("command.shaderPushCalls", shaderPushCalls);
+            statistics.put("command.shaderPushSkips", shaderPushSkips);
             statistics.put("frame.materialCacheHits", decodedMaterialCacheHits);
             statistics.put("frame.materialCacheMisses", decodedMaterialCacheMisses);
         }
@@ -4140,33 +4157,30 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 LongBuffer drawVertexBuffer = stack.mallocLong(1).put(0, vertexBuffer);
                 LongBuffer drawVertexOffset = stack.mallocLong(1);
                 LongBuffer drawDescriptorSet = stack.mallocLong(1);
-                long boundTextureDescriptor = VK_NULL_HANDLE;
                 VkRect2D.Buffer drawScissor = VkRect2D.calloc(1, stack);
+                commandRecordingState.reset();
                 for (DrawBatch drawBatch : upload.batches) {
                     if (drawBatch instanceof ColoredDrawBatch) {
                         ColoredDrawBatch batch = (ColoredDrawBatch) drawBatch;
-                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        bindPipeline(commandBuffer,
                                 colorPipeline(stack, batch.blendMode));
-                        drawVertexOffset.put(0, batch.vertexByteOffset);
-                        vkCmdBindVertexBuffers(commandBuffer, 0,
-                                drawVertexBuffer, drawVertexOffset);
+                        bindVertexBuffer(commandBuffer, vertexBuffer,
+                                batch.vertexByteOffset, drawVertexBuffer, drawVertexOffset);
                         if (setScissor(commandBuffer, batch.clip, info.width(), info.height(),
                                 drawScissor)) {
                             recordDraw(commandBuffer, batch, vertexBuffer);
                         }
                     } else {
                         TextureDrawBatch batch = (TextureDrawBatch) drawBatch;
-                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        bindPipeline(commandBuffer,
                                 texturePipeline(stack, batch.blendMode, batch.shaderState));
-                        drawVertexOffset.put(0, batch.vertexByteOffset);
-                        vkCmdBindVertexBuffers(commandBuffer, 0,
-                                drawVertexBuffer, drawVertexOffset);
+                        bindVertexBuffer(commandBuffer, vertexBuffer,
+                                batch.vertexByteOffset, drawVertexBuffer, drawVertexOffset);
                         if (setScissor(commandBuffer, batch.clip, info.width(), info.height(),
                                 drawScissor)) {
-                            boundTextureDescriptor = bindTextureDescriptorSet(commandBuffer,
-                                    batch.descriptorSet, boundTextureDescriptor,
+                            bindTextureDescriptorSet(commandBuffer, batch.descriptorSet,
                                     drawDescriptorSet);
-                            pushShaderState(commandBuffer, batch.shaderState,
+                            pushShaderStateCached(commandBuffer, batch.shaderState,
                                     shaderPushConstants);
                             recordDraw(commandBuffer, batch, vertexBuffer);
                         }
@@ -4333,26 +4347,60 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             frameUploadPool.addFirst(upload);
         }
 
-        private long bindTextureDescriptorSet(VkCommandBuffer command,
+        private void bindPipeline(VkCommandBuffer command, long pipeline) {
+            if (commandRecordingState.pipeline == pipeline) {
+                pipelineBindSkips++;
+                return;
+            }
+            vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+            commandRecordingState.pipeline = pipeline;
+            pipelineBindCalls++;
+        }
+
+        private void bindVertexBuffer(VkCommandBuffer command, long buffer, long offset,
+                                      LongBuffer bufferPointer, LongBuffer offsetPointer) {
+            if (commandRecordingState.vertexBuffer == buffer
+                    && commandRecordingState.vertexOffset == offset) {
+                vertexBufferBindSkips++;
+                return;
+            }
+            bufferPointer.put(0, buffer);
+            offsetPointer.put(0, offset);
+            vkCmdBindVertexBuffers(command, 0, bufferPointer, offsetPointer);
+            commandRecordingState.vertexBuffer = buffer;
+            commandRecordingState.vertexOffset = offset;
+            vertexBufferBindCalls++;
+        }
+
+        private void bindTextureDescriptorSet(VkCommandBuffer command,
                                               long descriptorSet,
-                                              long currentlyBound,
                                               LongBuffer descriptorBuffer) {
-            if (descriptorSet == currentlyBound) {
+            if (descriptorSet == commandRecordingState.textureDescriptor) {
                 textureDescriptorBindSkips++;
-                return currentlyBound;
+                return;
             }
             descriptorBuffer.put(0, descriptorSet);
             vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     texturePipelineLayout, 0, descriptorBuffer, null);
+            commandRecordingState.textureDescriptor = descriptorSet;
             textureDescriptorBindCalls++;
-            return descriptorSet;
         }
 
-        private static void recordDraw(VkCommandBuffer command, DrawBatch batch,
-                                       long vertexBuffer) {
+        private void recordDraw(VkCommandBuffer command, DrawBatch batch,
+                                long vertexBuffer) {
             if (batch.indexCount != 0) {
-                vkCmdBindIndexBuffer(command, vertexBuffer,
-                        batch.indexByteOffset, batch.indexType);
+                if (commandRecordingState.indexBuffer == vertexBuffer
+                        && commandRecordingState.indexOffset == batch.indexByteOffset
+                        && commandRecordingState.indexType == batch.indexType) {
+                    indexBufferBindSkips++;
+                } else {
+                    vkCmdBindIndexBuffer(command, vertexBuffer,
+                            batch.indexByteOffset, batch.indexType);
+                    commandRecordingState.indexBuffer = vertexBuffer;
+                    commandRecordingState.indexOffset = batch.indexByteOffset;
+                    commandRecordingState.indexType = batch.indexType;
+                    indexBufferBindCalls++;
+                }
                 vkCmdDrawIndexed(command, batch.indexCount, 1, 0, 0, 0);
             } else {
                 vkCmdDraw(command, batch.vertexCount, 1, batch.firstVertex, 0);
@@ -4958,13 +5006,25 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             values.putFloat(36, shaderState.uiScaling());
             values.putFloat(40, shaderState.screenBaseWidth());
             values.putFloat(44, shaderState.screenBaseHeight());
-            float[] custom = shaderState.customValues();
-            for (int index = 0; index < custom.length; index++) {
-                values.putFloat(48 + index * Float.BYTES, custom[index]);
+            for (int index = 0; index < shaderState.customValueCount(); index++) {
+                values.putFloat(48 + index * Float.BYTES,
+                        shaderState.customValue(index));
             }
             vkCmdPushConstants(commandBuffer, texturePipelineLayout,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                     0, values.position(0).limit(128));
+        }
+
+        private void pushShaderStateCached(VkCommandBuffer commandBuffer,
+                                           VulkanShaderState shaderState,
+                                           ByteBuffer values) {
+            if (shaderState.equals(commandRecordingState.shaderState)) {
+                shaderPushSkips++;
+                return;
+            }
+            pushShaderState(commandBuffer, shaderState, values);
+            commandRecordingState.shaderState = shaderState;
+            shaderPushCalls++;
         }
 
         private int findMemoryType(MemoryStack stack, int typeBits, int requiredFlags) {
@@ -5107,9 +5167,25 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             int bottom = clip == null ? targetHeight
                     : Math.min(targetHeight, (int) Math.ceil(clip.y() + clip.height()));
             if (right <= left || bottom <= top) return false;
+            int width = right - left;
+            int height = bottom - top;
+            if (commandRecordingState.scissorSet
+                    && commandRecordingState.scissorX == left
+                    && commandRecordingState.scissorY == top
+                    && commandRecordingState.scissorWidth == width
+                    && commandRecordingState.scissorHeight == height) {
+                scissorSetSkips++;
+                return true;
+            }
             scissor.get(0).offset().x(left).y(top);
-            scissor.get(0).extent().width(right - left).height(bottom - top);
+            scissor.get(0).extent().width(width).height(height);
             vkCmdSetScissor(commandBuffer, 0, scissor);
+            commandRecordingState.scissorSet = true;
+            commandRecordingState.scissorX = left;
+            commandRecordingState.scissorY = top;
+            commandRecordingState.scissorWidth = width;
+            commandRecordingState.scissorHeight = height;
+            scissorSetCalls++;
             return true;
         }
 
@@ -5260,6 +5336,34 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private long buffer;
             private long memory;
             private ByteBuffer mapped;
+        }
+
+        private static final class CommandRecordingState {
+            private long pipeline;
+            private long vertexBuffer;
+            private long vertexOffset;
+            private long indexBuffer;
+            private long indexOffset;
+            private int indexType;
+            private long textureDescriptor;
+            private VulkanShaderState shaderState;
+            private boolean scissorSet;
+            private int scissorX;
+            private int scissorY;
+            private int scissorWidth;
+            private int scissorHeight;
+
+            private void reset() {
+                pipeline = VK_NULL_HANDLE;
+                vertexBuffer = VK_NULL_HANDLE;
+                vertexOffset = Long.MIN_VALUE;
+                indexBuffer = VK_NULL_HANDLE;
+                indexOffset = Long.MIN_VALUE;
+                indexType = -1;
+                textureDescriptor = VK_NULL_HANDLE;
+                shaderState = null;
+                scissorSet = false;
+            }
         }
 
         private static final class TextureResource {

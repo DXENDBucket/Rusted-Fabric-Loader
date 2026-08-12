@@ -88,6 +88,15 @@ a descriptor bind when a material or clip split keeps the same set and a compati
 layout. `descriptor.*` profiler counters expose allocations, recycler hits, cache hits/misses, and
 executed/skipped binds.
 
+Each render pass now records through one reusable command-state cache. Texture changes no longer
+rebind an unchanged graphics pipeline, object submissions retain their shared vertex-buffer range,
+and repeated clip rectangles, index-buffer ranges, and shader push constants are emitted only when
+their effective value changes. The cache resets at every render-pass boundary, keeping standalone
+offscreen work, frame-graph children, and presentation independent. `command.*Calls` and
+`command.*Skips` counters expose the resulting pipeline, vertex/index, scissor, and push-constant
+traffic. A real-device regression alternates 64 texture batches while requiring only one pipeline,
+vertex-buffer, scissor, and push-constant command.
+
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
 platform-driver submission, while the ordinary public `builder(...)` path remains an immutable

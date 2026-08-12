@@ -138,6 +138,11 @@ has completed. Recording may retain an already-bound set across compatible pipel
 changes. Descriptor indexing can later replace this mechanism on accepted devices, but it is an
 optional acceleration rather than a FrameStream semantic requirement.
 
+Command recording keeps a pass-local state cache for pipeline, vertex/index buffers, descriptor
+set, scissor, and push constants. The cache is reset for each render-pass boundary and only removes
+commands whose effective Vulkan state is unchanged; it must not reorder FrameStream batches or
+merge across a pass. This optimization belongs to every native backend and does not alter the ABI.
+
 ## Presentation and frame pacing
 
 The backend integrates Android Game Development Kit Frame Pacing (Swappy) after basic correctness.
