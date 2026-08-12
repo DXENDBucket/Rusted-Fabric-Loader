@@ -1295,9 +1295,21 @@ public final class VulkanRuntime {
 
     /** Cumulative renderer counters intended for low-frequency profiler sampling. */
     public static synchronized java.util.Map<String, Long> performanceStatistics() {
-        return activeDriver == null
-                ? java.util.Collections.emptyMap()
-                : activeDriver.performanceStatistics();
+        if (activeDriver == null && frameStreamEncoder == null) {
+            return java.util.Collections.emptyMap();
+        }
+        java.util.LinkedHashMap<String, Long> statistics =
+                new java.util.LinkedHashMap<String, Long>();
+        if (activeDriver != null) statistics.putAll(activeDriver.performanceStatistics());
+        if (frameStreamEncoder != null) {
+            statistics.put("frame.encodeCount", frameStreamEncoder.directEncodeCount());
+            statistics.put("frame.encodeBytes", frameStreamEncoder.directEncodeBytes());
+            statistics.put("frame.encodeNanos", frameStreamEncoder.directEncodeNanos());
+            statistics.put("frame.capacityMisses", frameStreamEncoder.directCapacityMisses());
+            statistics.put("frame.workspaceGrowths",
+                    frameStreamEncoder.directWorkspaceGrowths());
+        }
+        return java.util.Collections.unmodifiableMap(statistics);
     }
 
     public static synchronized void invalidateCachedImage(Object image) {

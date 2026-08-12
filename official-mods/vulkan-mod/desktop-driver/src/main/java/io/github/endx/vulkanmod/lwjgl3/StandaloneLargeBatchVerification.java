@@ -9,6 +9,8 @@ import io.github.endx.vulkanmod.spi.VulkanFrameSubmission;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collections;
 
 /** Reproduces the many-unit workload that previously exhausted LWJGL's MemoryStack. */
@@ -28,6 +30,9 @@ public final class StandaloneLargeBatchVerification {
                 FrameStreamEncoder encoder = new FrameStreamEncoder(
                         FrameStreamResourceMapper.generationOneSlots(),
                         FrameStreamShaderLayoutResolver.NO_CUSTOM_SHADERS);
+                ByteBuffer arena = ByteBuffer.allocateDirect(8 * 1024 * 1024)
+                        .order(ByteOrder.LITTLE_ENDIAN);
+                long warmedWorkspace = -1L;
                 for (int frameIndex = 0; frameIndex < FRAMES; frameIndex++) {
                     VulkanFrameCommands.Builder builder = VulkanFrameCommands
                             .pooledBuilder(64, 64).clear(0.0f, 0.0f, 0.0f, 1.0f);
@@ -48,9 +53,17 @@ public final class StandaloneLargeBatchVerification {
                     try {
                         VulkanFrameSubmission submission = new VulkanFrameSubmission(
                                 Collections.emptyList(), frame);
-                        if (driver.presentFrameStream(encoder.encode(
-                                frameIndex + 1L, 0L, submission)) == null) {
+                        arena.clear();
+                        ByteBuffer encoded = encoder.encodeTo(
+                                frameIndex + 1L, 0L, submission, arena);
+                        if (driver.presentFrameStream(encoded) == null) {
                             throw new AssertionError("large native batch frame was not presented");
+                        }
+                        if (frameIndex == 0) {
+                            warmedWorkspace = encoder.directWorkspaceGrowths();
+                        } else if (encoder.directWorkspaceGrowths() != warmedWorkspace) {
+                            throw new AssertionError(
+                                    "direct encoder workspace grew after warm-up");
                         }
                     } finally {
                         frame.releasePooledCommands();
@@ -62,6 +75,15 @@ public final class StandaloneLargeBatchVerification {
                 if (driver.drawBatchAllocationCount() != DRAW_BATCHES) {
                     throw new AssertionError("draw batch metadata grew after the first frame: "
                             + driver.drawBatchAllocationCount());
+                }
+                if (encoder.directEncodeCount() != FRAMES
+                        || encoder.directCapacityMisses() != 0L) {
+                    throw new AssertionError("direct encoder did not own every stress frame");
+                }
+                if (driver.performanceStatistics().get("frame.materialCacheHits") <= 0L
+                        || driver.performanceStatistics().get(
+                                "frame.materialCacheMisses") != FRAMES) {
+                    throw new AssertionError("decoded material cache was not reused per frame");
                 }
             } finally {
                 driver.destroyTexture(texture);

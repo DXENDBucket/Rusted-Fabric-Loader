@@ -93,6 +93,13 @@ A frame is replaceable only when it has no synchronous result and the decoder ha
 reading it. Version 1 uses blocking back pressure; latest-wins replacement is a later opt-in
 policy.
 
+The shared Java producer's arena path writes the fixed header, directory, pass records, batch
+records, packed vertices, and materials directly into the acquired direct arena. Its pass, batch,
+and material metadata are retained as a grow-on-demand workspace and reused after warm-up. The
+allocating `encode()` implementation remains as a reference/standalone convenience path; ABI tests
+require `encodeTo()` to remain byte-identical to it. Low-frequency diagnostics expose encoded
+bytes/time, arena capacity retries, and workspace growth counts.
+
 ### ResourceStream
 
 ResourceStream is reliable, ordered, and never dropped. It contains:

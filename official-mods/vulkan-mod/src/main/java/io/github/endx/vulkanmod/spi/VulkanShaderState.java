@@ -126,6 +126,11 @@ public final class VulkanShaderState {
     public float uiScaling() { return uiScaling; }
     public long customShaderHandle() { return customShaderHandle; }
     public float[] customValues() { return customValues.clone(); }
+    public int customValueCount() { return customValues.length; }
+    public float customValue(int index) {
+        if (index < 0 || index >= customValues.length) throw new IndexOutOfBoundsException(index);
+        return customValues[index];
+    }
 
     @Override public boolean equals(Object other) {
         if (this == other) return true;

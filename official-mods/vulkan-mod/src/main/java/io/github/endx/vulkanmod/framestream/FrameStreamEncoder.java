@@ -18,14 +18,33 @@ import io.github.endx.vulkanmod.spi.VulkanTransform2D;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /** Shared Windows/Android batching and vertex-packing implementation for FrameStream version 1. */
 public final class FrameStreamEncoder {
+    private static final int DIRECT_SECTION_COUNT = 4;
+
     private final FrameStreamResourceMapper resources;
     private final FrameStreamShaderLayoutResolver shaderLayouts;
+    private final ArrayList<PassRecord> directPasses = new ArrayList<PassRecord>();
+    private final ArrayList<BatchRecord> directBatches = new ArrayList<BatchRecord>();
+    private final ArrayList<MaterialKey> directMaterials = new ArrayList<MaterialKey>();
+    private final HashMap<MaterialKey, Integer> directMaterialIndexes =
+            new HashMap<MaterialKey, Integer>();
+    private final MaterialKey directMaterialProbe = new MaterialKey();
+    private int directPassCount;
+    private int directBatchCount;
+    private int directMaterialCount;
+    private int directVertexBytes;
+    private int directVertexCount;
+    private long directEncodeCount;
+    private long directEncodeBytes;
+    private long directEncodeNanos;
+    private long directCapacityMisses;
+    private long directWorkspaceGrowths;
 
     public FrameStreamEncoder(FrameStreamResourceMapper resources,
                               FrameStreamShaderLayoutResolver shaderLayouts) {
@@ -41,15 +60,326 @@ public final class FrameStreamEncoder {
     }
 
     /** Encodes into a reusable arena at its current position without allocating direct memory. */
-    public ByteBuffer encodeTo(long frameId, long requiredResourceSequence,
-                               VulkanFrameSubmission submission, ByteBuffer target) {
+    public synchronized ByteBuffer encodeTo(long frameId, long requiredResourceSequence,
+                                            VulkanFrameSubmission submission,
+                                            ByteBuffer target) {
         if (target == null) throw new NullPointerException("target");
-        FrameStreamWriter writer = buildWriter(frameId, requiredResourceSequence, submission);
-        int required = writer.encodedSize();
+        if (submission == null) throw new NullPointerException("submission");
+        validateEnvelope(frameId, requiredResourceSequence,
+                submission.presentationFrame().width(), submission.presentationFrame().height());
+        long started = System.nanoTime();
+        prepareDirectWorkspace(submission);
+
+        int headerBytes = Math.addExact(FrameStreamFormat.FIXED_HEADER_BYTES,
+                DIRECT_SECTION_COUNT * FrameStreamFormat.SECTION_ENTRY_BYTES);
+        int passBytes = Math.multiplyExact(directPassCount,
+                FrameStreamRecordFormat.PASS_BYTES);
+        int batchBytes = Math.multiplyExact(directBatchCount,
+                FrameStreamRecordFormat.BATCH_BYTES);
+        int materialBytes = Math.multiplyExact(directMaterialCount,
+                FrameStreamRecordFormat.MATERIAL_BYTES);
+        int passOffset = FrameStreamFormat.align(headerBytes);
+        int batchOffset = FrameStreamFormat.align(Math.addExact(passOffset, passBytes));
+        int vertexOffset = FrameStreamFormat.align(Math.addExact(batchOffset, batchBytes));
+        int materialOffset = FrameStreamFormat.align(
+                Math.addExact(vertexOffset, directVertexBytes));
+        int required = Math.addExact(materialOffset, materialBytes);
+        if (required > FrameStreamFormat.MAX_STREAM_BYTES) {
+            throw new FrameStreamFormatException("FrameStream exceeds maximum size");
+        }
         if (target.remaining() < required) {
+            directCapacityMisses++;
             throw new FrameStreamCapacityException(required, target.remaining());
         }
-        return writer.writeTo(target);
+
+        int targetStart = target.position();
+        ByteBuffer writable = target.duplicate().order(ByteOrder.LITTLE_ENDIAN);
+        writable.position(targetStart).limit(targetStart + required);
+        ByteBuffer frame = writable.slice().order(ByteOrder.LITTLE_ENDIAN);
+        writeDirectHeader(frame, frameId, requiredResourceSequence,
+                submission.presentationFrame(), headerBytes, required);
+        int directory = FrameStreamFormat.FIXED_HEADER_BYTES;
+        writeDirectoryEntry(frame, directory, FrameStreamFormat.SECTION_PASSES,
+                passOffset, passBytes, directPassCount);
+        directory += FrameStreamFormat.SECTION_ENTRY_BYTES;
+        writeDirectoryEntry(frame, directory, FrameStreamFormat.SECTION_BATCHES,
+                batchOffset, batchBytes, directBatchCount);
+        directory += FrameStreamFormat.SECTION_ENTRY_BYTES;
+        writeDirectoryEntry(frame, directory, FrameStreamFormat.SECTION_VERTICES,
+                vertexOffset, directVertexBytes, directVertexCount);
+        directory += FrameStreamFormat.SECTION_ENTRY_BYTES;
+        writeDirectoryEntry(frame, directory, FrameStreamFormat.SECTION_MATERIALS,
+                materialOffset, materialBytes, directMaterialCount);
+        zeroRange(frame, headerBytes, passOffset);
+        zeroRange(frame, passOffset + passBytes, batchOffset);
+        zeroRange(frame, batchOffset + batchBytes, vertexOffset);
+        zeroRange(frame, vertexOffset + directVertexBytes, materialOffset);
+        writeDirectPasses(section(frame, passOffset, passBytes));
+        writeDirectBatches(section(frame, batchOffset, batchBytes));
+        writeDirectVertices(submission, section(frame, vertexOffset, directVertexBytes));
+        writeDirectMaterials(section(frame, materialOffset, materialBytes));
+
+        target.position(targetStart + required);
+        ByteBuffer result = frame.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
+        result.position(0).limit(required);
+        directEncodeCount++;
+        directEncodeBytes += required;
+        directEncodeNanos += System.nanoTime() - started;
+        return result;
+    }
+
+    public synchronized long directEncodeCount() { return directEncodeCount; }
+    public synchronized long directEncodeBytes() { return directEncodeBytes; }
+    public synchronized long directEncodeNanos() { return directEncodeNanos; }
+    public synchronized long directCapacityMisses() { return directCapacityMisses; }
+    public synchronized long directWorkspaceGrowths() { return directWorkspaceGrowths; }
+
+    private void prepareDirectWorkspace(VulkanFrameSubmission submission) {
+        directPassCount = 0;
+        directBatchCount = 0;
+        directMaterialCount = 0;
+        directVertexBytes = 0;
+        directVertexCount = 0;
+        directMaterialIndexes.clear();
+        for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
+            scanDirectPass(resources.texture(pass.textureHandle()), false, pass.frame());
+        }
+        scanDirectPass(0L, true, submission.presentationFrame());
+        if (directPassCount > FrameStreamFormat.MAX_PASSES) {
+            throw new FrameStreamFormatException("FrameStream contains too many passes");
+        }
+        if (directBatchCount > FrameStreamFormat.MAX_BATCHES) {
+            throw new FrameStreamFormatException("FrameStream contains too many batches");
+        }
+        if (directVertexCount > FrameStreamFormat.MAX_SECTION_ELEMENTS
+                || directMaterialCount > FrameStreamFormat.MAX_SECTION_ELEMENTS) {
+            throw new FrameStreamFormatException("FrameStream section element count is too large");
+        }
+    }
+
+    private void scanDirectPass(long targetHandle, boolean swapchain,
+                                VulkanFrameCommands frame) {
+        int firstBatch = directBatchCount;
+        BatchRecord current = null;
+        for (int index = 0; index < frame.commandCount(); index++) {
+            VulkanDrawCommand command = frame.command(index);
+            VulkanDrawState state = state(command);
+            int layout = vertexLayout(command);
+            int commandVertices = vertexCount(command);
+            int byteOffset = directVertexBytes;
+            long nextVertexBytes = (long) directVertexBytes
+                    + (long) commandVertices * FrameStreamRecordFormat.vertexStride(layout);
+            long nextVertexCount = (long) directVertexCount + commandVertices;
+            if (nextVertexBytes > FrameStreamFormat.MAX_STREAM_BYTES
+                    || nextVertexCount > FrameStreamFormat.MAX_SECTION_ELEMENTS) {
+                throw new FrameStreamFormatException(
+                        "packed vertices exceed FrameStream limits");
+            }
+            directVertexBytes = (int) nextVertexBytes;
+            directVertexCount = (int) nextVertexCount;
+
+            long primaryTexture = primaryTexture(command);
+            long secondaryTexture = primaryTexture == 0L
+                    || state.shaderState().secondaryTextureHandle() == 0L
+                    ? 0L : resources.texture(state.shaderState().secondaryTextureHandle());
+            VulkanTextureFilter filter = primaryTexture == 0L
+                    ? VulkanTextureFilter.LINEAR : state.textureFilter();
+            VulkanShaderState shader = primaryTexture == 0L
+                    ? VulkanShaderState.DEFAULT : state.shaderState();
+            directMaterialProbe.set(state.blendMode(), filter, shader);
+            Integer materialIndex = directMaterialIndexes.get(directMaterialProbe);
+            if (materialIndex == null) {
+                if (directMaterialCount == FrameStreamFormat.MAX_SECTION_ELEMENTS) {
+                    throw new FrameStreamFormatException(
+                            "FrameStream contains too many materials");
+                }
+                materialIndex = directMaterialCount;
+                MaterialKey stable = directMaterial(directMaterialCount++);
+                stable.set(state.blendMode(), filter, shader);
+                directMaterialIndexes.put(stable, materialIndex);
+            }
+            if (current == null || !current.compatible(materialIndex, primaryTexture,
+                    secondaryTexture, state.clip(), layout, byteOffset)) {
+                if (directBatchCount == FrameStreamFormat.MAX_BATCHES) {
+                    throw new FrameStreamFormatException(
+                            "FrameStream contains too many batches");
+                }
+                current = directBatch(directBatchCount++);
+                current.set(materialIndex, primaryTexture, secondaryTexture,
+                        state.clip(), byteOffset, commandVertices, layout);
+            } else {
+                current.vertexCount = Math.addExact(current.vertexCount, commandVertices);
+            }
+        }
+        if (directPassCount == FrameStreamFormat.MAX_PASSES) {
+            throw new FrameStreamFormatException("FrameStream contains too many passes");
+        }
+        PassRecord pass = directPass(directPassCount++);
+        pass.set(targetHandle, firstBatch, directBatchCount - firstBatch, frame, swapchain);
+    }
+
+    private PassRecord directPass(int index) {
+        if (index == directPasses.size()) {
+            directPasses.add(new PassRecord());
+            directWorkspaceGrowths++;
+        }
+        return directPasses.get(index);
+    }
+
+    private BatchRecord directBatch(int index) {
+        if (index == directBatches.size()) {
+            directBatches.add(new BatchRecord());
+            directWorkspaceGrowths++;
+        }
+        return directBatches.get(index);
+    }
+
+    private MaterialKey directMaterial(int index) {
+        if (index == directMaterials.size()) {
+            directMaterials.add(new MaterialKey());
+            directWorkspaceGrowths++;
+        }
+        return directMaterials.get(index);
+    }
+
+    private static void validateEnvelope(long frameId, long requiredResourceSequence,
+                                         int width, int height) {
+        if (frameId < 0L) throw new IllegalArgumentException("frameId must not be negative");
+        if (requiredResourceSequence < 0L) {
+            throw new IllegalArgumentException("resource sequence must not be negative");
+        }
+        if (width <= 0 || width > FrameStreamFormat.MAX_DIMENSION) {
+            throw new IllegalArgumentException("width is outside FrameStream limits: " + width);
+        }
+        if (height <= 0 || height > FrameStreamFormat.MAX_DIMENSION) {
+            throw new IllegalArgumentException("height is outside FrameStream limits: " + height);
+        }
+    }
+
+    private void writeDirectHeader(ByteBuffer frame, long frameId,
+                                   long requiredResourceSequence,
+                                   VulkanFrameCommands presentation,
+                                   int headerBytes, int totalBytes) {
+        frame.put(FrameStreamFormat.OFFSET_MAGIC, FrameStreamFormat.MAGIC_R);
+        frame.put(FrameStreamFormat.OFFSET_MAGIC + 1, FrameStreamFormat.MAGIC_V);
+        frame.put(FrameStreamFormat.OFFSET_MAGIC + 2, FrameStreamFormat.MAGIC_K);
+        frame.put(FrameStreamFormat.OFFSET_MAGIC + 3, FrameStreamFormat.MAGIC_F);
+        frame.putShort(FrameStreamFormat.OFFSET_MAJOR_VERSION,
+                (short) FrameStreamFormat.MAJOR_VERSION);
+        frame.putShort(FrameStreamFormat.OFFSET_MINOR_VERSION,
+                (short) FrameStreamFormat.MINOR_VERSION);
+        frame.putInt(FrameStreamFormat.OFFSET_HEADER_BYTES, headerBytes);
+        frame.putInt(FrameStreamFormat.OFFSET_TOTAL_BYTES, totalBytes);
+        frame.putLong(FrameStreamFormat.OFFSET_FRAME_ID, frameId);
+        frame.putLong(FrameStreamFormat.OFFSET_REQUIRED_RESOURCE_SEQUENCE,
+                requiredResourceSequence);
+        frame.putInt(FrameStreamFormat.OFFSET_FLAGS, 0);
+        frame.putInt(FrameStreamFormat.OFFSET_WIDTH, presentation.width());
+        frame.putInt(FrameStreamFormat.OFFSET_HEIGHT, presentation.height());
+        frame.putInt(FrameStreamFormat.OFFSET_SECTION_COUNT, DIRECT_SECTION_COUNT);
+        frame.putInt(FrameStreamFormat.OFFSET_PASS_COUNT, directPassCount);
+        frame.putInt(FrameStreamFormat.OFFSET_BATCH_COUNT, directBatchCount);
+        frame.putInt(FrameStreamFormat.OFFSET_PAYLOAD_CRC32, 0);
+        frame.putInt(FrameStreamFormat.OFFSET_RESERVED, 0);
+    }
+
+    private static void writeDirectoryEntry(ByteBuffer frame, int offset, int type,
+                                            int sectionOffset, int byteLength,
+                                            int elementCount) {
+        frame.putInt(offset, type);
+        frame.putInt(offset + 4, sectionOffset);
+        frame.putInt(offset + 8, byteLength);
+        frame.putInt(offset + 12, elementCount);
+    }
+
+    private static void zeroRange(ByteBuffer frame, int start, int end) {
+        for (int offset = start; offset < end; offset++) frame.put(offset, (byte) 0);
+    }
+
+    private static ByteBuffer section(ByteBuffer frame, int offset, int byteLength) {
+        ByteBuffer view = frame.duplicate().order(ByteOrder.LITTLE_ENDIAN);
+        view.position(offset).limit(offset + byteLength);
+        return view.slice().order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    private void writeDirectPasses(ByteBuffer output) {
+        for (int index = 0; index < directPassCount; index++) {
+            PassRecord record = directPasses.get(index);
+            output.putLong(record.targetHandle).putInt(record.firstBatch)
+                    .putInt(record.batchCount).putInt(record.flags)
+                    .putInt(0).putInt(0).putInt(record.frame.width()).putInt(record.frame.height())
+                    .putFloat(record.frame.clearRed()).putFloat(record.frame.clearGreen())
+                    .putFloat(record.frame.clearBlue()).putFloat(record.frame.clearAlpha())
+                    .putInt(FrameStreamRecordFormat.NO_DEBUG_LABEL).putInt(0).putInt(0);
+        }
+        if (output.hasRemaining()) throw new IllegalStateException(
+                "FrameStream pass size prediction changed");
+    }
+
+    private void writeDirectBatches(ByteBuffer output) {
+        for (int index = 0; index < directBatchCount; index++) {
+            BatchRecord record = directBatches.get(index);
+            int flags = record.clip == null ? 0 : FrameStreamRecordFormat.BATCH_HAS_CLIP;
+            if (record.primaryTexture != 0L) flags |= FrameStreamRecordFormat.BATCH_TEXTURED;
+            output.putInt(record.materialIndex).putInt(flags)
+                    .putLong(record.primaryTexture).putLong(record.secondaryTexture)
+                    .putInt(record.vertexByteOffset).putInt(record.vertexCount)
+                    .putInt(0).putInt(0);
+            if (record.clip == null) {
+                output.putFloat(0).putFloat(0).putFloat(0).putFloat(0);
+            } else {
+                output.putFloat(record.clip.x()).putFloat(record.clip.y())
+                        .putFloat(record.clip.width()).putFloat(record.clip.height());
+            }
+            output.putShort((short) FrameStreamRecordFormat.TOPOLOGY_TRIANGLE_LIST)
+                    .putShort((short) FrameStreamRecordFormat.INDEX_NONE)
+                    .putShort((short) record.vertexLayout).putShort((short) 0);
+        }
+        if (output.hasRemaining()) throw new IllegalStateException(
+                "FrameStream batch size prediction changed");
+    }
+
+    private void writeDirectVertices(VulkanFrameSubmission submission, ByteBuffer output) {
+        for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
+            writeDirectVertices(pass.frame(), output);
+        }
+        writeDirectVertices(submission.presentationFrame(), output);
+        if (output.hasRemaining()) throw new IllegalStateException(
+                "FrameStream vertex size prediction changed");
+    }
+
+    private void writeDirectVertices(VulkanFrameCommands frame, ByteBuffer output) {
+        for (int index = 0; index < frame.commandCount(); index++) {
+            VulkanDrawCommand command = frame.command(index);
+            writeVertices(output, frame, command, vertexLayout(command));
+        }
+    }
+
+    private void writeDirectMaterials(ByteBuffer output) {
+        for (int index = 0; index < directMaterialCount; index++) {
+            writeMaterial(output, directMaterials.get(index));
+        }
+        if (output.hasRemaining()) throw new IllegalStateException(
+                "FrameStream material size prediction changed");
+    }
+
+    private void writeMaterial(ByteBuffer output, MaterialKey material) {
+        VulkanShaderState shader = material.shader;
+        long shaderHandle = shader.effect() == VulkanShaderState.CUSTOM
+                ? resources.shaderProgram(shader.customShaderHandle()) : 0L;
+        output.putInt(0).putInt(blendValue(material.blendMode))
+                .putInt(filterValue(material.textureFilter)).putInt(shader.effect())
+                .putLong(shaderHandle)
+                .putFloat(shader.red()).putFloat(shader.green()).putFloat(shader.blue())
+                .putFloat(shader.alpha()).putFloat(shader.teamColorAmount())
+                .putFloat(shader.screenBaseWidth()).putFloat(shader.screenBaseHeight())
+                .putFloat(shader.resolutionWidth()).putFloat(shader.resolutionHeight())
+                .putFloat(shader.displacementOffset()).putFloat(shader.uiScaling());
+        int customCount = shader.customValueCount();
+        output.putInt(customCount).putInt(0).putInt(0);
+        for (int index = 0; index < VulkanShaderState.MAX_CUSTOM_FLOATS; index++) {
+            output.putFloat(index < customCount ? shader.customValue(index) : 0.0f);
+        }
     }
 
     private FrameStreamWriter buildWriter(long frameId, long requiredResourceSequence,
@@ -338,10 +668,10 @@ public final class FrameStreamEncoder {
                     .putFloat(shader.screenBaseWidth()).putFloat(shader.screenBaseHeight())
                     .putFloat(shader.resolutionWidth()).putFloat(shader.resolutionHeight())
                     .putFloat(shader.displacementOffset()).putFloat(shader.uiScaling());
-            float[] custom = shader.customValues();
-            output.putInt(custom.length).putInt(0).putInt(0);
+            int customCount = shader.customValueCount();
+            output.putInt(customCount).putInt(0).putInt(0);
             for (int index = 0; index < VulkanShaderState.MAX_CUSTOM_FLOATS; index++) {
-                output.putFloat(index < custom.length ? custom[index] : 0.0f);
+                output.putFloat(index < customCount ? shader.customValue(index) : 0.0f);
             }
         }
         return output.array();
@@ -379,14 +709,21 @@ public final class FrameStreamEncoder {
     }
 
     private static final class PassRecord {
-        private final long targetHandle;
-        private final int firstBatch;
-        private final int batchCount;
-        private final int flags;
-        private final VulkanFrameCommands frame;
+        private long targetHandle;
+        private int firstBatch;
+        private int batchCount;
+        private int flags;
+        private VulkanFrameCommands frame;
+
+        private PassRecord() { }
 
         private PassRecord(long targetHandle, int firstBatch, int batchCount,
                            VulkanFrameCommands frame, boolean swapchain) {
+            set(targetHandle, firstBatch, batchCount, frame, swapchain);
+        }
+
+        private void set(long targetHandle, int firstBatch, int batchCount,
+                         VulkanFrameCommands frame, boolean swapchain) {
             this.targetHandle = targetHandle;
             this.firstBatch = firstBatch;
             this.batchCount = batchCount;
@@ -398,17 +735,26 @@ public final class FrameStreamEncoder {
     }
 
     private static final class BatchRecord {
-        private final int materialIndex;
-        private final long primaryTexture;
-        private final long secondaryTexture;
-        private final VulkanClipRect clip;
-        private final int vertexByteOffset;
+        private int materialIndex;
+        private long primaryTexture;
+        private long secondaryTexture;
+        private VulkanClipRect clip;
+        private int vertexByteOffset;
         private int vertexCount;
-        private final int vertexLayout;
+        private int vertexLayout;
+
+        private BatchRecord() { }
 
         private BatchRecord(int materialIndex, long primaryTexture, long secondaryTexture,
                             VulkanClipRect clip, int vertexByteOffset,
                             int vertexCount, int vertexLayout) {
+            set(materialIndex, primaryTexture, secondaryTexture, clip,
+                    vertexByteOffset, vertexCount, vertexLayout);
+        }
+
+        private void set(int materialIndex, long primaryTexture, long secondaryTexture,
+                         VulkanClipRect clip, int vertexByteOffset,
+                         int vertexCount, int vertexLayout) {
             this.materialIndex = materialIndex;
             this.primaryTexture = primaryTexture;
             this.secondaryTexture = secondaryTexture;
@@ -429,12 +775,19 @@ public final class FrameStreamEncoder {
     }
 
     private static final class MaterialKey {
-        private final VulkanBlendMode blendMode;
-        private final VulkanTextureFilter textureFilter;
-        private final VulkanShaderState shader;
+        private VulkanBlendMode blendMode;
+        private VulkanTextureFilter textureFilter;
+        private VulkanShaderState shader;
+
+        private MaterialKey() { }
 
         private MaterialKey(VulkanBlendMode blendMode, VulkanTextureFilter textureFilter,
                             VulkanShaderState shader) {
+            set(blendMode, textureFilter, shader);
+        }
+
+        private void set(VulkanBlendMode blendMode, VulkanTextureFilter textureFilter,
+                         VulkanShaderState shader) {
             this.blendMode = blendMode;
             this.textureFilter = textureFilter;
             this.shader = shader;

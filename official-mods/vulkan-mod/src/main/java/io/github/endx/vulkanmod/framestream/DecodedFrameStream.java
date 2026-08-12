@@ -63,14 +63,44 @@ public final class DecodedFrameStream {
         return new Pass(passes, index * FrameStreamRecordFormat.PASS_BYTES);
     }
 
+    /** Creates one mutable pass cursor that can be reused with {@link #readPass}. */
+    public Pass passCursor() { return new Pass(passes, 0); }
+
+    public Pass readPass(int index, Pass cursor) {
+        if (cursor == null) throw new NullPointerException("cursor");
+        checkedIndex(index, passCount(), "pass");
+        cursor.reset(passes, index * FrameStreamRecordFormat.PASS_BYTES);
+        return cursor;
+    }
+
     public Batch batch(int index) {
         checkedIndex(index, batchCount(), "batch");
         return new Batch(batches, index * FrameStreamRecordFormat.BATCH_BYTES);
     }
 
+    /** Creates one mutable batch cursor that can be reused with {@link #readBatch}. */
+    public Batch batchCursor() { return new Batch(batches, 0); }
+
+    public Batch readBatch(int index, Batch cursor) {
+        if (cursor == null) throw new NullPointerException("cursor");
+        checkedIndex(index, batchCount(), "batch");
+        cursor.reset(batches, index * FrameStreamRecordFormat.BATCH_BYTES);
+        return cursor;
+    }
+
     public Material material(int index) {
         checkedIndex(index, materialCount(), "material");
         return new Material(materials, index * FrameStreamRecordFormat.MATERIAL_BYTES);
+    }
+
+    /** Creates one mutable material cursor that can be reused with {@link #readMaterial}. */
+    public Material materialCursor() { return new Material(materials, 0); }
+
+    public Material readMaterial(int index, Material cursor) {
+        if (cursor == null) throw new NullPointerException("cursor");
+        checkedIndex(index, materialCount(), "material");
+        cursor.reset(materials, index * FrameStreamRecordFormat.MATERIAL_BYTES);
+        return cursor;
     }
 
     public ByteBuffer vertices() { return duplicate(vertices); }
@@ -79,8 +109,9 @@ public final class DecodedFrameStream {
     private void validatePasses() {
         int expectedBatch = 0;
         int swapchainCount = 0;
+        Pass pass = passCursor();
         for (int index = 0; index < passCount(); index++) {
-            Pass pass = pass(index);
+            readPass(index, pass);
             require(pass.firstBatch() == expectedBatch,
                     "pass batches are not one contiguous ordered range");
             require(pass.batchCount() >= 0
@@ -120,8 +151,10 @@ public final class DecodedFrameStream {
         int expectedVertexByte = 0;
         long expectedVertexCount = 0L;
         int indexBytes = indices == null ? 0 : indices.remaining();
+        Batch batch = batchCursor();
+        Material material = materialCursor();
         for (int index = 0; index < batchCount(); index++) {
-            Batch batch = batch(index);
+            readBatch(index, batch);
             require(batch.materialIndex() >= 0 && batch.materialIndex() < materialCount,
                     "batch material index is invalid");
             require((batch.flags() & ~FrameStreamRecordFormat.BATCH_KNOWN_FLAGS) == 0,
@@ -178,7 +211,7 @@ public final class DecodedFrameStream {
                                 && indexEnd <= indexBytes,
                         "batch indices exceed their section");
             }
-            Material material = material(batch.materialIndex());
+            readMaterial(batch.materialIndex(), material);
             require(batch.vertexLayout() != FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED
                             || material.shaderEffect() == VulkanShaderState.CUSTOM,
                     "expanded vertex layout does not use a custom shader");
@@ -198,8 +231,9 @@ public final class DecodedFrameStream {
     }
 
     private void validateMaterials(int count) {
+        Material material = materialCursor();
         for (int index = 0; index < count; index++) {
-            Material material = material(index);
+            readMaterial(index, material);
             require(material.flags() == 0, "unknown material flags");
             require(material.blendMode() >= FrameStreamRecordFormat.MATERIAL_BLEND_NORMAL
                             && material.blendMode()
@@ -222,10 +256,12 @@ public final class DecodedFrameStream {
             for (int floatIndex = 0; floatIndex < 11; floatIndex++) {
                 requireFinite(material.shaderFloat(floatIndex), "material shader value");
             }
-            for (int positiveIndex : new int[] { 5, 6, 7, 8, 10 }) {
-                require(material.shaderFloat(positiveIndex) > 0.0f,
-                        "material size/scaling value is not positive");
-            }
+            require(material.shaderFloat(5) > 0.0f
+                            && material.shaderFloat(6) > 0.0f
+                            && material.shaderFloat(7) > 0.0f
+                            && material.shaderFloat(8) > 0.0f
+                            && material.shaderFloat(10) > 0.0f,
+                    "material size/scaling value is not positive");
             require(material.customValueCount() >= 0
                             && material.customValueCount() <= VulkanShaderState.MAX_CUSTOM_FLOATS,
                     "invalid material custom-value count");
@@ -279,10 +315,14 @@ public final class DecodedFrameStream {
     }
 
     public static final class Pass {
-        private final ByteBuffer bytes;
-        private final int offset;
+        private ByteBuffer bytes;
+        private int offset;
 
         private Pass(ByteBuffer bytes, int offset) { this.bytes = bytes; this.offset = offset; }
+        private void reset(ByteBuffer bytes, int offset) {
+            this.bytes = bytes;
+            this.offset = offset;
+        }
         public long targetHandle() { return bytes.getLong(offset); }
         public int firstBatch() { return bytes.getInt(offset + 8); }
         public int batchCount() { return bytes.getInt(offset + 12); }
@@ -304,10 +344,14 @@ public final class DecodedFrameStream {
     }
 
     public static final class Batch {
-        private final ByteBuffer bytes;
-        private final int offset;
+        private ByteBuffer bytes;
+        private int offset;
 
         private Batch(ByteBuffer bytes, int offset) { this.bytes = bytes; this.offset = offset; }
+        private void reset(ByteBuffer bytes, int offset) {
+            this.bytes = bytes;
+            this.offset = offset;
+        }
         public int materialIndex() { return bytes.getInt(offset); }
         public int flags() { return bytes.getInt(offset + 4); }
         public long primaryTexture() { return bytes.getLong(offset + 8); }
@@ -327,10 +371,14 @@ public final class DecodedFrameStream {
     }
 
     public static final class Material {
-        private final ByteBuffer bytes;
-        private final int offset;
+        private ByteBuffer bytes;
+        private int offset;
 
         private Material(ByteBuffer bytes, int offset) { this.bytes = bytes; this.offset = offset; }
+        private void reset(ByteBuffer bytes, int offset) {
+            this.bytes = bytes;
+            this.offset = offset;
+        }
         public int flags() { return bytes.getInt(offset); }
         public int blendMode() { return bytes.getInt(offset + 4); }
         public int textureFilter() { return bytes.getInt(offset + 8); }

@@ -108,7 +108,7 @@ final class PerformanceProfilerRuntime {
         float y = TOP + BUTTON_HEIGHT + 8.0f;
         float width = Math.min(470.0f, Math.max(340.0f, context.width() - LEFT * 2.0f));
         boolean vulkanStatistics = !panelVulkanStatistics.isEmpty();
-        float height = vulkanStatistics ? 232.0f : 198.0f;
+        float height = vulkanStatistics ? 266.0f : 198.0f;
         context.fillRect(x, y, width, height, BACKGROUND);
         context.strokeRect(x, y, width, height, BORDER, 2.0f);
         float line = y + 18.0f;
@@ -134,6 +134,17 @@ final class PerformanceProfilerRuntime {
                 x + 10, line, TEXT);
         line += 17.0f;
         if (vulkanStatistics) {
+            context.drawText("VK frame encode "
+                            + nanosAverage(stat("frame.encodeNanos"),
+                                    stat("frame.encodeCount")) + "ms avg | "
+                            + mib(stat("frame.encodeBytes")) + " MiB | arena retries "
+                            + stat("frame.capacityMisses") + " | workspace grows "
+                            + stat("frame.workspaceGrowths"), x + 10, line, TEXT);
+            line += 17.0f;
+            context.drawText("VK decoded material cache hits/misses "
+                            + stat("frame.materialCacheHits") + "/"
+                            + stat("frame.materialCacheMisses"), x + 10, line, TEXT);
+            line += 17.0f;
             long decoded = stat("resource.decoded");
             context.drawText("VK resources pending " + stat("resource.pending")
                             + " (peak " + stat("resource.pendingPeak") + ") | decode avg "

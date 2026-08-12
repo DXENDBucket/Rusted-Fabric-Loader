@@ -115,6 +115,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1826,6 +1827,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long textureUploadBatches;
         private long textureUploadSlotGrowths;
         private long textureMutationFenceWaits;
+        private VulkanShaderState[] decodedMaterialShaders = new VulkanShaderState[0];
+        private long[] decodedMaterialSecondaryTextures = new long[0];
+        private int[] decodedMaterialEpochs = new int[0];
+        private int decodedMaterialEpoch;
+        private long decodedMaterialCacheHits;
+        private long decodedMaterialCacheMisses;
         private long acquireSkips;
         private long fenceWaitSkips;
         private long successfulPresents;
@@ -3365,6 +3372,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("texture.uploadBatches", textureUploadBatches);
             statistics.put("texture.uploadSlotGrowths", textureUploadSlotGrowths);
             statistics.put("texture.mutationFenceWaits", textureMutationFenceWaits);
+            statistics.put("frame.materialCacheHits", decodedMaterialCacheHits);
+            statistics.put("frame.materialCacheMisses", decodedMaterialCacheMisses);
         }
 
         private void ensureTextureDescriptors(MemoryStack stack) {
@@ -3699,6 +3708,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         + stream.requiredResourceSequence() + " but desktop applied through "
                         + appliedResourceSequence);
             }
+            beginDecodedMaterialFrame(stream.materialCount());
             int finalPassIndex = stream.passCount() - 1;
             StreamFrameSource presentation = new StreamFrameSource(stream, finalPassIndex);
             int graphCount = finalPassIndex;
@@ -4130,12 +4140,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private FrameUpload uploadFrame(DecodedFrameStream stream, int passIndex,
                                         MemoryStack stack, int frameSlot,
                                         BufferAllocation[] allocations, int[] capacities) {
-            DecodedFrameStream.Pass pass = stream.pass(passIndex);
+            DecodedFrameStream.Pass pass = stream.readPass(passIndex, stream.passCursor());
             FrameUpload result = acquireFrameUpload(0L, 0L);
             if (pass.batchCount() == 0) return result;
-            DecodedFrameStream.Batch first = stream.batch(pass.firstBatch());
-            DecodedFrameStream.Batch last = stream.batch(
-                    pass.firstBatch() + pass.batchCount() - 1);
+            DecodedFrameStream.Batch first = stream.readBatch(
+                    pass.firstBatch(), stream.batchCursor());
+            DecodedFrameStream.Batch last = stream.readBatch(
+                    pass.firstBatch() + pass.batchCount() - 1, stream.batchCursor());
             int passVertexStart = first.vertexByteOffset();
             int passVertexEnd = Math.addExact(last.vertexByteOffset(),
                     Math.multiplyExact(last.vertexCount(),
@@ -4149,16 +4160,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             destination.clear().limit(passVertexBytes);
             destination.put(source);
             try {
+                DecodedFrameStream.Batch encoded = stream.batchCursor();
+                DecodedFrameStream.Material material = stream.materialCursor();
                 for (int relative = 0; relative < pass.batchCount(); relative++) {
-                    DecodedFrameStream.Batch encoded = stream.batch(
-                            pass.firstBatch() + relative);
+                    stream.readBatch(pass.firstBatch() + relative, encoded);
                     if ((encoded.flags() & FrameStreamRecordFormat.BATCH_INDEXED) != 0) {
                         throw new UnsupportedOperationException(
                                 "desktop FrameStream indexed batches are not implemented");
                     }
                     VulkanClipRect clip = decodedClip(encoded);
-                    DecodedFrameStream.Material material = stream.material(
-                            encoded.materialIndex());
+                    stream.readMaterial(encoded.materialIndex(), material);
                     VulkanBlendMode blendMode = decodedBlendMode(material.blendMode());
                     DrawBatch batch;
                     if (encoded.vertexLayout() == FrameStreamRecordFormat.VERTEX_COLORED) {
@@ -4169,7 +4180,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         VulkanTextureFilter filter = decodedTextureFilter(
                                 material.textureFilter());
                         VulkanShaderState shaderState = decodedShaderState(
-                                material, secondary);
+                                encoded.materialIndex(), material, secondary);
                         long descriptorSet = textureDescriptor(primary, filter, shaderState);
                         batch = acquireTextureBatch(primary, descriptorSet, clip, blendMode,
                                 shaderState, 0, encoded.vertexLayout()
@@ -4217,22 +4228,50 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private VulkanShaderState decodedShaderState(
-                DecodedFrameStream.Material material, long secondaryTexture) {
+                int materialIndex, DecodedFrameStream.Material material,
+                long secondaryTexture) {
+            if (decodedMaterialEpochs[materialIndex] == decodedMaterialEpoch
+                    && decodedMaterialSecondaryTextures[materialIndex] == secondaryTexture) {
+                decodedMaterialCacheHits++;
+                return decodedMaterialShaders[materialIndex];
+            }
+            VulkanShaderState decoded;
             if (material.shaderEffect() == VulkanShaderState.CUSTOM) {
                 float[] custom = new float[material.customValueCount()];
                 for (int index = 0; index < custom.length; index++) {
                     custom[index] = material.customValue(index);
                 }
-                return VulkanShaderState.custom(rawShaderHandle(material.shaderHandle()),
+                decoded = VulkanShaderState.custom(rawShaderHandle(material.shaderHandle()),
                         secondaryTexture, custom);
+            } else {
+                decoded = new VulkanShaderState(material.shaderEffect(),
+                        material.shaderFloat(0), material.shaderFloat(1),
+                        material.shaderFloat(2), material.shaderFloat(3),
+                        material.shaderFloat(4), secondaryTexture,
+                        material.shaderFloat(5), material.shaderFloat(6),
+                        material.shaderFloat(7), material.shaderFloat(8),
+                        material.shaderFloat(9), material.shaderFloat(10));
             }
-            return new VulkanShaderState(material.shaderEffect(),
-                    material.shaderFloat(0), material.shaderFloat(1),
-                    material.shaderFloat(2), material.shaderFloat(3),
-                    material.shaderFloat(4), secondaryTexture,
-                    material.shaderFloat(5), material.shaderFloat(6),
-                    material.shaderFloat(7), material.shaderFloat(8),
-                    material.shaderFloat(9), material.shaderFloat(10));
+            decodedMaterialShaders[materialIndex] = decoded;
+            decodedMaterialSecondaryTextures[materialIndex] = secondaryTexture;
+            decodedMaterialEpochs[materialIndex] = decodedMaterialEpoch;
+            decodedMaterialCacheMisses++;
+            return decoded;
+        }
+
+        private void beginDecodedMaterialFrame(int materialCount) {
+            if (decodedMaterialShaders.length < materialCount) {
+                int capacity = Math.max(16, decodedMaterialShaders.length);
+                while (capacity < materialCount) capacity = Math.multiplyExact(capacity, 2);
+                decodedMaterialShaders = Arrays.copyOf(decodedMaterialShaders, capacity);
+                decodedMaterialSecondaryTextures = Arrays.copyOf(
+                        decodedMaterialSecondaryTextures, capacity);
+                decodedMaterialEpochs = Arrays.copyOf(decodedMaterialEpochs, capacity);
+            }
+            if (++decodedMaterialEpoch == 0) {
+                Arrays.fill(decodedMaterialEpochs, 0);
+                decodedMaterialEpoch = 1;
+            }
         }
 
         private long rawTextureHandle(long handle, boolean allowNull) {

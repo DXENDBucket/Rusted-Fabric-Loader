@@ -226,6 +226,12 @@ public final class FrameStreamAbiVerification {
                 "arena encoding did not advance its target");
         require(Arrays.equals(bytes(encoded), bytes(arenaEncoded)),
                 "arena and allocating encoders disagree");
+        long warmedWorkspace = encoder.directWorkspaceGrowths();
+        require(encoder.directEncodeCount() == 1
+                        && encoder.directEncodeBytes() == encoded.remaining()
+                        && encoder.directEncodeNanos() > 0L
+                        && warmedWorkspace > 0L,
+                "direct encoder statistics were not updated");
         try {
             encoder.encodeTo(20, 4, submission,
                     ByteBuffer.allocateDirect(encoded.remaining() - 1));
@@ -234,6 +240,9 @@ public final class FrameStreamAbiVerification {
             require(expected.requiredBytes() == encoded.remaining(),
                     "capacity error did not report the required size");
         }
+        require(encoder.directCapacityMisses() == 1L
+                        && encoder.directWorkspaceGrowths() == warmedWorkspace,
+                "warm direct encoder workspace grew or missed statistics on retry");
         DecodedFrameStream decoded = DecodedFrameStream.decode(encoded);
         require(decoded.frameId() == 20 && decoded.requiredResourceSequence() == 4,
                 "encoded frame identity changed");
