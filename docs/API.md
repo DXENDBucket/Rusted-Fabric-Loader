@@ -635,8 +635,10 @@ Use `HudRenderEvents.BEFORE_HUD` when native interface controls should cover a c
 `HudRenderEvents.AFTER_HUD` when the element should remain on top. Both supply one frame-scoped
 `HudDrawContext` with screen dimensions, UI scale, delta, text measurement, text with backgrounds,
 rectangles, lines, circles, whole/centered/rotated/scaled/region images, clipping, and transforms.
-Prefer these typed events over the lower-level `AFTER_HUD_RENDER` event. `DrawStyle` is immutable
-and hides the game's Android-compatible `Paint` class.
+Prefer these typed events over the lower-level `AFTER_HUD_RENDER` event. Unlike that native-pass
+compatibility event, both typed boundaries still fire when the sandbox editor's Hide Interface
+mode suppresses the native HUD. `DrawStyle` is immutable and hides the game's Android-compatible
+`Paint` class.
 
 ```java
 DrawStyle label = DrawStyle.text(ArgbColor.WHITE, 16.0F);
@@ -651,9 +653,9 @@ HudRenderEvents.AFTER_HUD.register((gameInterface, draw) -> {
 });
 ```
 
-`BEFORE_HUD` fires after world rendering but at the entry to native interface rendering;
-`AFTER_HUD` fires after that native interface pass. Each listener must finish drawing synchronously
-and must not retain its context beyond the callback.
+`BEFORE_HUD` fires after world rendering and before the optional native interface stage;
+`AFTER_HUD` fires after that stage, whether it drew anything or was skipped. Each listener must
+finish drawing synchronously and must not retain its context beyond the callback.
 
 Use `WorldRenderEvents.AFTER_WORLD` for range rings, targeting previews, path overlays, and labels
 anchored to the map. It fires after terrain, units, effects, and mission overlays, but before the
