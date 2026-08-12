@@ -60,6 +60,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def autoTriggerCooldownFields = file('src/main/java/io/github/endx/iniessentials/action/PerActionAutoTriggerCooldownFields.java')
     def movementActionFields = file('src/main/java/io/github/endx/iniessentials/action/MovementActionFields.java')
     def economyActionFields = file('src/main/java/io/github/endx/iniessentials/action/EconomyActionFields.java')
+    def generationDisplayFields = file('src/main/java/io/github/endx/iniessentials/economy/GenerationDisplayFields.java')
     def actionPositionReference = file('src/main/java/io/github/endx/iniessentials/ActionPositionReference.java')
     def eventRuleFields = file('src/main/java/io/github/endx/iniessentials/event/EventRuleDefinitions.java')
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/projectile/ProjectileRuleDefinitions.java')
@@ -85,6 +86,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def releaseVersions = rootProject.file('versions.properties')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
             autoTriggerCooldownFields, movementActionFields, economyActionFields,
+            generationDisplayFields,
             actionPositionReference,
             eventRuleFields,
             projectileRuleFields,
@@ -106,6 +108,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'autoTriggerCooldownTime_allowDangerousHighCPU',
                 'setUnitMovementType',
                 'refreshTeamEconomyStats',
+                'generationDisplayWhen', 'generationDisplayCredits',
+                'generationDisplayResource_NAME',
                 'cameraCenterAt', 'cameraCenterBy',
                 'cameraCenterOn', 'cameraTargetZoom', 'cameraStopMovement',
                 'type', 'radius', 'radiusX', 'radiusY', 'width', 'height',
@@ -176,6 +180,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def autoTriggerCooldownSource = autoTriggerCooldownFields.getText('UTF-8')
         def movementActionSource = movementActionFields.getText('UTF-8')
         def economyActionSource = economyActionFields.getText('UTF-8')
+        def generationDisplaySource = generationDisplayFields.getText('UTF-8')
         def actionPositionSource = actionPositionReference.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
         def decalMaskSource = decalMaskFields.getText('UTF-8')
@@ -349,6 +354,15 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !movementActionSource.contains('UnitMovementOverrides.set(')
                 || !movementActionSource.contains('StringExpression.compile(')
                 || !economyActionSource.contains('refreshTeamEconomyStats()')
+                || !initializerSource.contains('GenerationDisplayFields.register();')
+                || !['"generationDisplayWhen"', '"generationDisplayCredits"',
+                    '"generationDisplayResource_"'].every {
+                    generationDisplaySource.contains(it)
+                }
+                || !generationDisplaySource.contains(
+                    'CustomUnitEconomyEvents.MODIFY_PERIODIC_GENERATION_DISPLAY.register(')
+                || !generationDisplaySource.contains('NumericExpression.compile(')
+                || !generationDisplaySource.contains('BooleanExpression.compile(')
                 || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
@@ -378,7 +392,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 'transportUsedSlots', 'transportMaxSlots', 'transportUnit',
                 'transportUnitType', 'transportUnitTeamId', 'transportUnitX',
                 'transportUnitY', 'carrierUsedSlots', 'carrierMaxSlots',
-                'messageSender', 'messageSenderUnitType', 'messageSenderTeamId',
+                'messageSenderUnitType', 'messageSenderTeamId',
                 'messageSenderX', 'messageSenderY', 'messageHasTags', 'messageHasData'
         ] as Set
         def expectedEventTypes = [
@@ -477,7 +491,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v30'
+                || multiplayer?.protocol != 'ini_essentials_v31'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

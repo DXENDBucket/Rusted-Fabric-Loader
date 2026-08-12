@@ -372,7 +372,7 @@ public final class CoreApiContractVerification {
             require(nativeUsage[0] == 2,
                     "native eventData usage detection is not case-insensitive");
         }
-        require(NativeEventData.fieldNames().size() == 74
+        require(NativeEventData.fieldNames().size() == 73
                         && NativeEventData.fieldNames().contains("actionId")
                         && NativeEventData.fieldNames().contains("waypointTargetUnit")
                         && NativeEventData.fieldNames().contains("oldTeamId")
@@ -383,7 +383,8 @@ public final class CoreApiContractVerification {
                         && NativeEventData.fieldNames().contains("touchedUnit")
                         && NativeEventData.fieldNames().contains("transportUsedSlots")
                         && NativeEventData.fieldNames().contains("carrierUsedSlots")
-                        && NativeEventData.fieldNames().contains("messageHasData"),
+                        && NativeEventData.fieldNames().contains("messageHasData")
+                        && !NativeEventData.fieldNames().contains("messageSender"),
                 "native event-data catalog is incomplete");
 
     }

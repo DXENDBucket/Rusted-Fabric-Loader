@@ -333,6 +333,22 @@ creating a separate INI section.
 setResourcesWithLogic: nutrient=self.resource.nutrient+2.8*incomeMultiplier()
 ```
 
+Periodic-generation values shown by the HUD and team economy totals can be overridden per unit
+instance without replacing actual resource settlement:
+
+```ini
+[core]
+generationDisplayWhen: self.resource.nutrient_mode > 0
+generationDisplayCredits: 0
+generationDisplayResource_nutrient: 2.8*incomeMultiplier()
+```
+
+`generationDisplayCredits` and every `generationDisplayResource_NAME` value are live runtime-number
+expressions. When `generationDisplayWhen` is false the native queried values are retained. Actions
+that switch a production mode should also use `refreshTeamEconomyStats: true` so cached team totals
+are rebuilt immediately. These fields affect display/accounting queries only; actual periodic
+resource changes remain defined by native generation or a settlement event.
+
 All unit-backed INI Essentials LogicBoolean and runtime-number fields are compiled only after the
 native unit parser has registered that unit's memory and resources. This includes health policy,
 Geometry, Fog, event rules, projectile/mutator conditions, Decal bars and masks, and Overlay—not
@@ -597,10 +613,13 @@ previously required awkward chained logic to inspect it:
   used/maximum slots after the operation.
 - `enteredTransport` and `leftTransport`: carrier details and its used/maximum slots as seen by the
   passenger event.
-- `newMessage`: sender details and flags reporting whether native message tags/data were supplied.
+- `newMessage`: sender type/team/position snapshots and flags reporting whether native message
+  tags/data were supplied. The sender unit itself remains the native `eventSource` and is not
+  duplicated in `eventData`.
 
 The native `eventSource`, event tags and pre-existing message data remain intact; these additions
-provide stable typed aliases and snapshots rather than replacing the original event behavior.
+provide values or snapshots that native event context does not already expose under an equivalent
+name.
 
 All values are added to the event's existing `eventData(...)` scope. Omitting the enhanced names
 keeps native INI behavior and does not activate the synchronized requirement.

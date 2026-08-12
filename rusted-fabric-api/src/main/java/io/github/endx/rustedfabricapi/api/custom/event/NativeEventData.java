@@ -128,7 +128,6 @@ public final class NativeEventData {
     }
 
     public static final class Message {
-        public static final String SENDER = "messageSender";
         public static final String SENDER_UNIT_TYPE = "messageSenderUnitType";
         public static final String SENDER_TEAM_ID = "messageSenderTeamId";
         public static final String SENDER_X = "messageSenderX";

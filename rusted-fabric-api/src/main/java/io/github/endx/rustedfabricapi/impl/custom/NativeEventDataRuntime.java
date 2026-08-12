@@ -101,7 +101,6 @@ public final class NativeEventDataRuntime {
                     NativeEventData.Carrier.Y,
                     NativeEventData.Carrier.USED_SLOTS,
                     NativeEventData.Carrier.MAX_SLOTS,
-                    NativeEventData.Message.SENDER,
                     NativeEventData.Message.SENDER_UNIT_TYPE,
                     NativeEventData.Message.SENDER_TEAM_ID,
                     NativeEventData.Message.SENDER_X,
@@ -441,12 +440,10 @@ public final class NativeEventDataRuntime {
             VariableScope originalEventData) {
         CustomUnitEventData data = data(original);
         if (sender != null) {
-            putUnitSnapshot(data, sender,
-                    NativeEventData.Message.SENDER,
-                    NativeEventData.Message.SENDER_UNIT_TYPE,
-                    NativeEventData.Message.SENDER_TEAM_ID,
-                    NativeEventData.Message.SENDER_X,
-                    NativeEventData.Message.SENDER_Y);
+            data.putString(NativeEventData.Message.SENDER_UNIT_TYPE, unitTypeName(sender))
+                    .putNumber(NativeEventData.Message.SENDER_TEAM_ID, teamId(sender.team))
+                    .putNumber(NativeEventData.Message.SENDER_X, sender.x)
+                    .putNumber(NativeEventData.Message.SENDER_Y, sender.y);
         }
         data.putBoolean(NativeEventData.Message.HAS_TAGS, tags != null)
                 .putBoolean(NativeEventData.Message.HAS_DATA, originalEventData != null);
