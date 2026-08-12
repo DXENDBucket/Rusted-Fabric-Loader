@@ -60,7 +60,6 @@ import org.lwjgl.vulkan.VkExtensionProperties;
 import org.lwjgl.vulkan.VkFenceCreateInfo;
 import org.lwjgl.vulkan.VkFramebufferCreateInfo;
 import org.lwjgl.vulkan.VkImageViewCreateInfo;
-import org.lwjgl.vulkan.VkImageCreateInfo;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkInstanceCreateInfo;
@@ -1918,6 +1917,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long nextCustomShaderHandle = 1L;
         private final VulkanDescriptorAllocator descriptors;
         private final VulkanMemoryAllocator memory;
+        private final VulkanImageResourceFactory imageResources;
         private final Map<Long, TextureResource> textures =
                 new LinkedHashMap<Long, TextureResource>();
         private final Map<TextureDescriptorKey, Long> pairedTextureDescriptors =
@@ -2074,6 +2074,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.candidate = candidate;
             this.device = device;
             this.memory = new VulkanMemoryAllocator(candidate.device, device);
+            this.imageResources = new VulkanImageResourceFactory(device, memory);
             this.descriptors = new VulkanDescriptorAllocator(
                     device, MAX_TEXTURE_DESCRIPTOR_SETS);
             this.swapchain = swapchain.handle;
@@ -2869,40 +2870,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long uploadTexture(VulkanTextureData texture) {
             if (closed) throw new IllegalStateException("Vulkan surface is closed");
             long uploadStarted = System.nanoTime();
-            TextureResource created = new TextureResource();
+            TextureResource created = null;
             boolean complete = false;
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 descriptors.ensureInitialized(stack);
-                VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack).sType$Default()
-                        .imageType(VK_IMAGE_TYPE_2D)
-                        .format(VK_FORMAT_R8G8B8A8_UNORM)
-                        .mipLevels(1).arrayLayers(1)
-                        .samples(VK_SAMPLE_COUNT_1_BIT)
-                        .tiling(VK_IMAGE_TILING_OPTIMAL)
-                        .usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-                        .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
-                        .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-                imageInfo.extent().width(texture.width()).height(texture.height()).depth(1);
-                LongBuffer handle = stack.mallocLong(1);
-                check(vkCreateImage(device, imageInfo, null, handle), "vkCreateImage(texture)");
-                created.image = handle.get(0);
-                created.width = texture.width();
-                created.height = texture.height();
-                created.memory = memory.allocateAndBindImage(stack, created.image,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "texture");
-
-                VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
-                        .sType$Default().image(created.image)
-                        .viewType(VK_IMAGE_VIEW_TYPE_2D).format(VK_FORMAT_R8G8B8A8_UNORM);
-                viewInfo.components().r(VK_COMPONENT_SWIZZLE_IDENTITY)
-                        .g(VK_COMPONENT_SWIZZLE_IDENTITY)
-                        .b(VK_COMPONENT_SWIZZLE_IDENTITY)
-                        .a(VK_COMPONENT_SWIZZLE_IDENTITY);
-                viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
-                check(vkCreateImageView(device, viewInfo, null, handle),
-                        "vkCreateImageView(texture)");
-                created.view = handle.get(0);
+                created = imageResources.createSampled(
+                        stack, texture.width(), texture.height());
 
                 long publicHandle = nextTextureHandle++;
                 if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
@@ -2911,7 +2884,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 complete = true;
                 return publicHandle;
             } finally {
-                if (!complete) destroyTextureResource(created, true);
+                if (!complete && created != null) imageResources.destroy(created);
                 if (Boolean.getBoolean("rusted.fabric.vulkan.profileSlowFrames")) {
                     long uploadMicros = (System.nanoTime() - uploadStarted) / 1_000L;
                     if (uploadMicros >= 4_000L) {
@@ -2928,59 +2901,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (width <= 0 || height <= 0) {
                 throw new IllegalArgumentException("render-target size must be positive");
             }
-            TextureResource created = new TextureResource();
+            TextureResource created = null;
             boolean complete = false;
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 descriptors.ensureInitialized(stack);
-                VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack).sType$Default()
-                        .imageType(VK_IMAGE_TYPE_2D)
-                        .format(info.imageFormat())
-                        .mipLevels(1).arrayLayers(1)
-                        .samples(VK_SAMPLE_COUNT_1_BIT)
-                        .tiling(VK_IMAGE_TILING_OPTIMAL)
-                        .usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                                | VK_IMAGE_USAGE_SAMPLED_BIT
-                                | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                                | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                        .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
-                        .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-                imageInfo.extent().width(width).height(height).depth(1);
-                LongBuffer handle = stack.mallocLong(1);
-                check(vkCreateImage(device, imageInfo, null, handle),
-                        "vkCreateImage(render target)");
-                created.image = handle.get(0);
-                created.width = width;
-                created.height = height;
-                created.renderTarget = true;
-                created.memory = memory.allocateAndBindImage(stack, created.image,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "render target");
-
-                VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
-                        .sType$Default().image(created.image)
-                        .viewType(VK_IMAGE_VIEW_TYPE_2D).format(info.imageFormat());
-                viewInfo.components().r(VK_COMPONENT_SWIZZLE_IDENTITY)
-                        .g(VK_COMPONENT_SWIZZLE_IDENTITY)
-                        .b(VK_COMPONENT_SWIZZLE_IDENTITY)
-                        .a(VK_COMPONENT_SWIZZLE_IDENTITY);
-                viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                        .baseMipLevel(0).levelCount(1).baseArrayLayer(0).layerCount(1);
-                check(vkCreateImageView(device, viewInfo, null, handle),
-                        "vkCreateImageView(render target)");
-                created.view = handle.get(0);
-                VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
-                        .sType$Default().renderPass(offscreenClearRenderPass)
-                        .pAttachments(stack.longs(created.view))
-                        .width(width).height(height).layers(1);
-                check(vkCreateFramebuffer(device, framebufferInfo, null, handle),
-                        "vkCreateFramebuffer(render target)");
-                created.framebuffer = handle.get(0);
+                created = imageResources.createRenderTarget(stack, width, height,
+                        info.imageFormat(), offscreenClearRenderPass);
                 long publicHandle = nextTextureHandle++;
                 if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
                 textures.put(publicHandle, created);
                 complete = true;
                 return publicHandle;
             } finally {
-                if (!complete) destroyTextureResource(created, true);
+                if (!complete && created != null) imageResources.destroy(created);
             }
         }
 
@@ -3491,6 +3424,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("texture.uploadSlotGrowths", textureUploadSlotGrowths);
             statistics.put("texture.mutationFenceWaits", textureMutationFenceWaits);
             memory.appendStatistics(statistics);
+            imageResources.appendStatistics(statistics);
             descriptors.appendStatistics(statistics);
             statistics.put("descriptor.singleHits", textureDescriptorSingleHits);
             statistics.put("descriptor.singleMisses", textureDescriptorSingleMisses);
@@ -3685,18 +3619,13 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private void destroyTextureResource(TextureResource texture, boolean freeDescriptor) {
-            if (texture.framebuffer != VK_NULL_HANDLE) {
-                vkDestroyFramebuffer(device, texture.framebuffer, null);
-            }
             for (long descriptorSet : texture.descriptorSets) {
                 if (freeDescriptor) descriptors.recycle(descriptorSet);
             }
             for (long descriptorSet : texture.dependentDescriptorSets) {
                 if (freeDescriptor) descriptors.recycle(descriptorSet);
             }
-            if (texture.view != VK_NULL_HANDLE) vkDestroyImageView(device, texture.view, null);
-            if (texture.image != VK_NULL_HANDLE) vkDestroyImage(device, texture.image, null);
-            if (texture.memory != VK_NULL_HANDLE) memory.freeImageMemory(texture.memory);
+            imageResources.destroy(texture);
         }
 
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
@@ -5040,6 +4969,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vkDestroyRenderPass(device, offscreenClearRenderPass, null);
                 offscreenClearRenderPass = VK_NULL_HANDLE;
             }
+            imageResources.assertFullyReleased();
             memory.assertFullyReleased();
             vkDestroySwapchainKHR(device, swapchain, null);
             vkDestroyDevice(device, null);
@@ -5048,20 +4978,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             vkDestroyInstance(instance, null);
             if (overlay != null) overlay.close();
             if (nativeWindow != null) nativeWindow.close();
-        }
-
-        private static final class TextureResource {
-            private long image;
-            private long memory;
-            private long view;
-            private int width;
-            private int height;
-            private boolean initialized;
-            private boolean renderTarget;
-            private long framebuffer;
-            private final long[] descriptorSets =
-                    new long[VulkanTextureFilter.values().length];
-            private final List<Long> dependentDescriptorSets = new ArrayList<Long>();
         }
 
         private static final class ResourceTextureBinding {
