@@ -96,8 +96,11 @@ vertex-buffer, scissor, and push-constant command.
 The isolated desktop backend has begun moving ownership out of its original monolithic session:
 `VulkanCommandStateCache` owns pass-local command deduplication and its counters, while
 `VulkanDescriptorAllocator` owns the shared sampler/layout/pool, lazy set allocation, and the
-fence-released recycler. `Lwjgl3VulkanDriver` retains orchestration and image-to-descriptor cache
-keys, but no longer implements those low-level lifecycles inline.
+fence-released recycler. `VulkanMemoryAllocator` caches physical-device memory-type flags and owns
+raw buffer/image memory allocation, persistent mapping, release accounting, and shutdown leak
+checks. `memory.*` profiler counters expose allocation/free counts, map calls, live bytes, and peak
+bytes. `Lwjgl3VulkanDriver` retains orchestration and image-to-descriptor cache keys, but no longer
+implements those low-level lifecycles inline.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -176,8 +179,9 @@ performance runs remain unaffected.
    changing order. Ordinary sprites with independent transforms/tints can now cross the
    Java/FrameStream boundary as a single recycled run command; a 12,000-sprite multi-frame GPU
    regression verifies stable producer, encoder, and driver metadata after warm-up. Descriptor and
-   pass-local command-state lifecycles now have dedicated owners and real-device reuse regressions.
-   Next, continue widening compatible non-text batches and isolate memory-allocation ownership.
+   pass-local command-state and device-memory lifecycles now have dedicated owners and real-device
+   reuse/leak regressions. Next, continue widening compatible non-text batches and separate image
+   creation from resource-table orchestration.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
    the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover

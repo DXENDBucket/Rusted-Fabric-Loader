@@ -1,5 +1,6 @@
 package io.github.endx.vulkanmod.lwjgl3;
 
+import io.github.endx.vulkanmod.lwjgl3.VulkanMemoryAllocator.BufferAllocation;
 import io.github.endx.vulkanmod.framestream.DecodedFrameStream;
 import io.github.endx.vulkanmod.framestream.FrameResourceHandle;
 import io.github.endx.vulkanmod.framestream.FrameStreamRecordFormat;
@@ -42,7 +43,6 @@ import org.lwjgl.vulkan.VK;
 import org.lwjgl.vulkan.VkApplicationInfo;
 import org.lwjgl.vulkan.VkAttachmentDescription;
 import org.lwjgl.vulkan.VkAttachmentReference;
-import org.lwjgl.vulkan.VkBufferCreateInfo;
 import org.lwjgl.vulkan.VkBufferImageCopy;
 import org.lwjgl.vulkan.VkClearValue;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -67,9 +67,6 @@ import org.lwjgl.vulkan.VkInstanceCreateInfo;
 import org.lwjgl.vulkan.VkLayerProperties;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
-import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
-import org.lwjgl.vulkan.VkMemoryAllocateInfo;
-import org.lwjgl.vulkan.VkMemoryRequirements;
 import org.lwjgl.vulkan.VkGraphicsPipelineCreateInfo;
 import org.lwjgl.vulkan.VkPipelineColorBlendAttachmentState;
 import org.lwjgl.vulkan.VkPipelineColorBlendStateCreateInfo;
@@ -1920,6 +1917,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 new LinkedHashMap<Long, CustomShaderResource>();
         private long nextCustomShaderHandle = 1L;
         private final VulkanDescriptorAllocator descriptors;
+        private final VulkanMemoryAllocator memory;
         private final Map<Long, TextureResource> textures =
                 new LinkedHashMap<Long, TextureResource>();
         private final Map<TextureDescriptorKey, Long> pairedTextureDescriptors =
@@ -2075,6 +2073,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.surface = surface;
             this.candidate = candidate;
             this.device = device;
+            this.memory = new VulkanMemoryAllocator(candidate.device, device);
             this.descriptors = new VulkanDescriptorAllocator(
                     device, MAX_TEXTURE_DESCRIPTOR_SETS);
             this.swapchain = swapchain.handle;
@@ -2889,17 +2888,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 created.image = handle.get(0);
                 created.width = texture.width();
                 created.height = texture.height();
-                VkMemoryRequirements requirements = VkMemoryRequirements.malloc(stack);
-                vkGetImageMemoryRequirements(device, created.image, requirements);
-                VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
-                        .sType$Default().allocationSize(requirements.size())
-                        .memoryTypeIndex(findMemoryType(stack, requirements.memoryTypeBits(),
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-                check(vkAllocateMemory(device, allocation, null, handle),
-                        "vkAllocateMemory(texture)");
-                created.memory = handle.get(0);
-                check(vkBindImageMemory(device, created.image, created.memory, 0),
-                        "vkBindImageMemory(texture)");
+                created.memory = memory.allocateAndBindImage(stack, created.image,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "texture");
 
                 VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
                         .sType$Default().image(created.image)
@@ -2962,17 +2952,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 created.width = width;
                 created.height = height;
                 created.renderTarget = true;
-                VkMemoryRequirements requirements = VkMemoryRequirements.malloc(stack);
-                vkGetImageMemoryRequirements(device, created.image, requirements);
-                VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
-                        .sType$Default().allocationSize(requirements.size())
-                        .memoryTypeIndex(findMemoryType(stack, requirements.memoryTypeBits(),
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-                check(vkAllocateMemory(device, allocation, null, handle),
-                        "vkAllocateMemory(render target)");
-                created.memory = handle.get(0);
-                check(vkBindImageMemory(device, created.image, created.memory, 0),
-                        "vkBindImageMemory(render target)");
+                created.memory = memory.allocateAndBindImage(stack, created.image,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "render target");
 
                 VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack)
                         .sType$Default().image(created.image)
@@ -3333,7 +3314,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 // The shared command buffer and texture staging allocation must no longer be in
                 // flight, but unrelated future queue work need not be held behind a device idle.
                 waitForAllSubmissionFences(stack);
-                BufferAllocation readback = createBufferAllocation(stack, byteCount,
+                BufferAllocation readback = memory.allocateBuffer(stack, byteCount,
                         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                                 | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -3399,12 +3380,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     } finally {
                         vkDestroyFence(device, readbackFence, null);
                     }
-                    PointerBuffer mapped = stack.mallocPointer(1);
-                    check(vkMapMemory(device, readback.memory, 0, byteCount, 0, mapped),
-                            "vkMapMemory(render-target readback)");
+                    ByteBuffer pixels = memory.map(readback, byteCount, stack,
+                            "render-target readback");
                     byte[] rgba = new byte[byteCount];
                     try {
-                        ByteBuffer pixels = MemoryUtil.memByteBuffer(mapped.get(0), byteCount);
                         boolean blueFirst = isBlueFirstFormat(info.imageFormat());
                         for (int pixel = 0; pixel < width * height; pixel++) {
                             int offset = pixel * 4;
@@ -3417,11 +3396,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             rgba[offset + 3] = pixels.get(offset + 3);
                         }
                     } finally {
-                        vkUnmapMemory(device, readback.memory);
+                        memory.unmap(readback);
                     }
                     return new VulkanTextureData(width, height, rgba);
                 } finally {
-                    destroyBufferAllocation(readback);
+                    memory.destroyBuffer(readback);
                 }
             }
         }
@@ -3475,22 +3454,18 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (existing != null && textureUploadCapacities[slot] >= requiredBytes) {
                 return existing;
             }
-            if (existing != null) destroyBufferAllocation(existing);
+            if (existing != null) memory.destroyBuffer(existing);
             int capacity = 1;
             while (capacity < requiredBytes && capacity > 0) capacity <<= 1;
             if (capacity <= 0) capacity = requiredBytes;
-            BufferAllocation created = createBufferAllocation(stack, capacity,
+            BufferAllocation created = memory.allocateBuffer(stack, capacity,
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                             | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             try {
-                PointerBuffer mapped = stack.mallocPointer(1);
-                check(vkMapMemory(device, created.memory, 0, capacity, 0, mapped),
-                        "vkMapMemory(persistent texture upload slot)");
-                created.mapped = MemoryUtil.memByteBuffer(mapped.get(0), capacity)
-                        .order(ByteOrder.nativeOrder());
+                memory.map(created, capacity, stack, "persistent texture upload slot");
             } catch (Throwable failure) {
-                destroyBufferAllocation(created);
+                memory.destroyBuffer(created);
                 throw failure;
             }
             textureUploadSlots[slot] = created;
@@ -3515,6 +3490,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("texture.uploadBatches", textureUploadBatches);
             statistics.put("texture.uploadSlotGrowths", textureUploadSlotGrowths);
             statistics.put("texture.mutationFenceWaits", textureMutationFenceWaits);
+            memory.appendStatistics(statistics);
             descriptors.appendStatistics(statistics);
             statistics.put("descriptor.singleHits", textureDescriptorSingleHits);
             statistics.put("descriptor.singleMisses", textureDescriptorSingleMisses);
@@ -3681,43 +3657,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             pendingTextureUploads.clear();
         }
 
-        private BufferAllocation createBufferAllocation(MemoryStack stack, long size,
-                                                        int usage, int memoryFlags) {
-            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack).sType$Default()
-                    .size(size).usage(usage).sharingMode(VK_SHARING_MODE_EXCLUSIVE);
-            LongBuffer handle = stack.mallocLong(1);
-            check(vkCreateBuffer(device, bufferInfo, null, handle), "vkCreateBuffer");
-            BufferAllocation result = new BufferAllocation();
-            result.buffer = handle.get(0);
-            try {
-                VkMemoryRequirements requirements = VkMemoryRequirements.malloc(stack);
-                vkGetBufferMemoryRequirements(device, result.buffer, requirements);
-                VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
-                        .sType$Default().allocationSize(requirements.size())
-                        .memoryTypeIndex(findMemoryType(stack, requirements.memoryTypeBits(),
-                                memoryFlags));
-                check(vkAllocateMemory(device, allocation, null, handle), "vkAllocateMemory");
-                result.memory = handle.get(0);
-                check(vkBindBufferMemory(device, result.buffer, result.memory, 0),
-                        "vkBindBufferMemory");
-                return result;
-            } catch (Throwable failure) {
-                destroyBufferAllocation(result);
-                throw failure;
-            }
-        }
-
-        private void destroyBufferAllocation(BufferAllocation allocation) {
-            if (allocation.mapped != null) {
-                vkUnmapMemory(device, allocation.memory);
-                allocation.mapped = null;
-            }
-            if (allocation.buffer != VK_NULL_HANDLE) {
-                vkDestroyBuffer(device, allocation.buffer, null);
-            }
-            if (allocation.memory != VK_NULL_HANDLE) vkFreeMemory(device, allocation.memory, null);
-        }
-
         private void destroyTexture(long textureHandle) {
             textureHandle = resolveTextureHandle(textureHandle);
             final long destroyedHandle = textureHandle;
@@ -3757,7 +3696,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             if (texture.view != VK_NULL_HANDLE) vkDestroyImageView(device, texture.view, null);
             if (texture.image != VK_NULL_HANDLE) vkDestroyImage(device, texture.image, null);
-            if (texture.memory != VK_NULL_HANDLE) vkFreeMemory(device, texture.memory, null);
+            if (texture.memory != VK_NULL_HANDLE) memory.freeImageMemory(texture.memory);
         }
 
         private VulkanSurfaceInfo presentFrame(VulkanFrameCommands frame) {
@@ -4802,23 +4741,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                           int[] capacities) {
             BufferAllocation current = allocations[frameSlot];
             if (current != null && capacities[frameSlot] >= requiredBytes) return;
-            if (current != null) destroyBufferAllocation(current);
+            if (current != null) memory.destroyBuffer(current);
             int vertexCapacity = 64 * 1024;
             while (vertexCapacity < requiredBytes) {
                 vertexCapacity = Math.multiplyExact(vertexCapacity, 2);
             }
-            BufferAllocation created = createBufferAllocation(stack, vertexCapacity,
+            BufferAllocation created = memory.allocateBuffer(stack, vertexCapacity,
                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                             | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             try {
-                PointerBuffer mapped = stack.mallocPointer(1);
-                check(vkMapMemory(device, created.memory, 0, vertexCapacity, 0, mapped),
-                        "vkMapMemory(persistent vertex buffer)");
-                created.mapped = MemoryUtil.memByteBuffer(mapped.get(0), vertexCapacity)
-                        .order(ByteOrder.nativeOrder());
+                memory.map(created, vertexCapacity, stack, "persistent vertex buffer");
             } catch (Throwable failure) {
-                destroyBufferAllocation(created);
+                memory.destroyBuffer(created);
                 throw failure;
             }
             allocations[frameSlot] = created;
@@ -4866,19 +4801,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                            ByteBuffer values) {
             if (!commandState.shouldPushShaderState(shaderState)) return;
             pushShaderState(commandBuffer, shaderState, values);
-        }
-
-        private int findMemoryType(MemoryStack stack, int typeBits, int requiredFlags) {
-            VkPhysicalDeviceMemoryProperties properties =
-                    VkPhysicalDeviceMemoryProperties.malloc(stack);
-            vkGetPhysicalDeviceMemoryProperties(candidate.device, properties);
-            for (int index = 0; index < properties.memoryTypeCount(); index++) {
-                int flags = properties.memoryTypes(index).propertyFlags();
-                if ((typeBits & (1 << index)) != 0
-                        && (flags & requiredFlags) == requiredFlags) return index;
-            }
-            throw new IllegalStateException("No Vulkan memory type supports flags 0x"
-                    + Integer.toHexString(requiredFlags));
         }
 
         private static float pixelToNdcX(float value, int width) {
@@ -5037,17 +4959,17 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             renderFinishedSemaphores = new long[0];
             for (BufferAllocation allocation : vertexAllocations) {
-                if (allocation != null) destroyBufferAllocation(allocation);
+                if (allocation != null) memory.destroyBuffer(allocation);
             }
             vertexAllocations = new BufferAllocation[0];
             vertexCapacities = new int[0];
             for (BufferAllocation allocation : offscreenVertexAllocations) {
-                if (allocation != null) destroyBufferAllocation(allocation);
+                if (allocation != null) memory.destroyBuffer(allocation);
             }
             offscreenVertexAllocations = new BufferAllocation[0];
             offscreenVertexCapacities = new int[0];
             for (BufferAllocation allocation : textureUploadSlots) {
-                if (allocation != null) destroyBufferAllocation(allocation);
+                if (allocation != null) memory.destroyBuffer(allocation);
             }
             textureUploadSlots = new BufferAllocation[0];
             textureUploadCapacities = new int[0];
@@ -5118,6 +5040,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 vkDestroyRenderPass(device, offscreenClearRenderPass, null);
                 offscreenClearRenderPass = VK_NULL_HANDLE;
             }
+            memory.assertFullyReleased();
             vkDestroySwapchainKHR(device, swapchain, null);
             vkDestroyDevice(device, null);
             vkDestroySurfaceKHR(instance, surface, null);
@@ -5125,12 +5048,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             vkDestroyInstance(instance, null);
             if (overlay != null) overlay.close();
             if (nativeWindow != null) nativeWindow.close();
-        }
-
-        private static final class BufferAllocation {
-            private long buffer;
-            private long memory;
-            private ByteBuffer mapped;
         }
 
         private static final class TextureResource {

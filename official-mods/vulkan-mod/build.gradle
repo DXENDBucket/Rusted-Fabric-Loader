@@ -214,6 +214,7 @@ check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyResourceStreamEx
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifySpriteRunSubmission'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyDescriptorReuse'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyCommandStateReuse'
+check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyMemoryAllocator'
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

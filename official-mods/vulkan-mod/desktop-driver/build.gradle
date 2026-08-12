@@ -92,6 +92,15 @@ tasks.register('verifyCommandStateReuse', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneCommandStateReuseVerification')
 }
 
+tasks.register('verifyMemoryAllocator', JavaExec) {
+    group = 'verification'
+    description = 'Verifies Vulkan memory ownership, persistent mapping, and image retirement.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneMemoryAllocatorVerification')
+}
+
 tasks.register('verifyCustomVertexPipeline', JavaExec) {
     group = 'verification'
     description = 'Executes a translated custom vertex shader on the real Vulkan device.'
