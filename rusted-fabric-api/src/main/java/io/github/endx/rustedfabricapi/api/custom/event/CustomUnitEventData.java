@@ -11,6 +11,7 @@ import rustedwarfare.unit.Unit;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Mutable typed view of the native data attached to a queued custom-unit event. */
 public final class CustomUnitEventData {
@@ -44,6 +45,21 @@ public final class CustomUnitEventData {
         LogicBoolean value = scope.getDataObjectRaw(variableName(name));
         return value instanceof VariableScope$VariableDataBoolean
                 ? value.read(null) : fallback;
+    }
+
+    public String getString(String name, String fallback) {
+        LogicBoolean value = scope.getDataObjectRaw(variableName(name));
+        if (!(value instanceof VariableScope$VariableDataString)) return fallback;
+        String result = value.readString(null);
+        return result != null ? result : fallback;
+    }
+
+    /** Returns the native unit identity without exposing a mapped class in the method signature. */
+    public Optional<Object> getUnitIdentity(String name) {
+        LogicBoolean value = scope.getDataObjectRaw(variableName(name));
+        return value instanceof VariableScope$VariableDataUnit
+                ? Optional.ofNullable(value.readUnit(null)).map(unit -> (Object) unit)
+                : Optional.empty();
     }
 
     public CustomUnitEventData putNumber(String name, double value) {

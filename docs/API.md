@@ -246,12 +246,16 @@ The first typed desktop layer contains:
   with `PersistentData` and reapply it after loading.
 - `api.unit.type.UnitTypes` and `api.unit.type.event.UnitTypeEvents`: built-in/custom type discovery,
   replacement resolution, starting-position validation, and typed creation/validation callbacks.
-- `api.custom.CustomUnits`, `CustomUnitMemory`, `CustomUnitRegistryEvents`, and
+- `api.custom.CustomUnits`, `CustomUnitHandle`, `CustomUnitMemory`, `CustomUnitRegistryEvents`, and
   `CustomUnitLifecycleEvents`: active and pending definition snapshots, lookup/creation/reload,
   registry phases, metadata conversion, custom-unit death and removal, plus typed reads/writes for
-  native `defineUnitMemory` numbers, booleans, strings, and unit references. Mutable synchronous
+  native `defineUnitMemory` numbers, booleans, strings, unit references, persistent components,
+  and composable stat modifiers. Mutable synchronous
   event contexts expose portable number/boolean memory and event-tag helpers, so a gameplay mod can
   implement global INI mechanics without importing mapped game classes.
+- `CustomUnitMessageEvents` exposes enriched `newMessage` data before configured INI actions and
+  can consume a message. `CustomUnitUpdateEvents` supplies deterministic per-instance simulation
+  updates; both use namespace-stable contexts suitable for exploded Java workspaces.
 - `api.custom.CustomUnitTriggers`, `CustomUnitEventData`, and `CustomUnitTriggerEvents`: immediate
   configured-event dispatch, contextual queued dispatch, cancellable before/after callbacks, and
   typed enrichment of the native `eventData(...)` scope.

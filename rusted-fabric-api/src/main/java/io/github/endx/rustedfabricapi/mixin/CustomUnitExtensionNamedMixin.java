@@ -3,6 +3,8 @@ package io.github.endx.rustedfabricapi.mixin;
 import android.graphics.PointF;
 import io.github.endx.rustedfabricapi.api.custom.attachment.event.AttachmentEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitMessageContext;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitMessageEvents;
 import io.github.endx.rustedfabricapi.api.unit.tag.event.UnitTagEvents;
 import io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime;
 import io.github.endx.rustedfabricapi.impl.custom.NativeEventDataRuntime;
@@ -249,6 +251,12 @@ public abstract class CustomUnitExtensionNamedMixin {
         VariableScope enriched = DamageEventDataRuntime.enrichQueuedEvent(
                 unit, eventType, source, eventTags, nativeData);
         VariableScope prepared = enriched != null ? enriched : new VariableScope();
+        if (eventType == CustomUnitEventType.NEW_MESSAGE
+                && CustomUnitMessageEvents.BEFORE_CONFIGURED_ACTIONS.invoker()
+                .beforeConfiguredActions(new CustomUnitMessageContext(
+                        unit, source, eventTags, prepared))) {
+            QueuedEventActionRuntime.cancel(prepared);
+        }
         if (CustomUnitTriggerEvents.PREPARE_QUEUE.invoker().beforeQueue(
                 unit, eventType, source, eventTags, prepared)) {
             QueuedEventActionRuntime.cancel(prepared);

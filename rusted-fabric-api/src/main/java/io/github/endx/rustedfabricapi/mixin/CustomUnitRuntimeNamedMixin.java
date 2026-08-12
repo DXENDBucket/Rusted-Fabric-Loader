@@ -1,6 +1,8 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.CustomUnitRuntimeEvents;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitUpdateContext;
+import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitUpdateEvents;
 import io.github.endx.rustedfabricapi.impl.custom.PerActionAutoTriggerCooldownRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -14,6 +16,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(targets = "rustedwarfare.custom.CustomUnit", remap = false)
 public abstract class CustomUnitRuntimeNamedMixin {
     @Shadow private float autoTriggerCooldownTimer;
+
+    @Inject(method = "update(F)V", at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$beforeCustomUnitUpdate(float deltaFrames, CallbackInfo ci) {
+        CustomUnitUpdateEvents.BEFORE_UPDATE.invoker().update(new CustomUnitUpdateContext(
+                (rustedwarfare.custom.CustomUnit) (Object) this, deltaFrames));
+    }
+
+    @Inject(method = "update(F)V", at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$afterCustomUnitUpdate(float deltaFrames, CallbackInfo ci) {
+        CustomUnitUpdateEvents.AFTER_UPDATE.invoker().update(new CustomUnitUpdateContext(
+                (rustedwarfare.custom.CustomUnit) (Object) this, deltaFrames));
+    }
 
     @Inject(method = "b(FZ)V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$updatePerActionAutoTriggerCooldowns(
