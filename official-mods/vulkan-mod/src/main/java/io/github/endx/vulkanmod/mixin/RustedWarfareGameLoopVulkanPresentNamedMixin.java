@@ -9,8 +9,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Gives the opt-in frame test the window only after the legacy frame has been presented. */
 @Mixin(targets = "rustedwarfare.client.RustedWarfareAppGameContainer", remap = false)
 public abstract class RustedWarfareGameLoopVulkanPresentNamedMixin {
-    private boolean vulkanmod$hiddenRenderConfigured;
-
     @Inject(method = "gameLoop()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void vulkanmod$beforeOpenGlFrame(CallbackInfo callback) {
         if (VulkanRuntime.isNativeRendererSelected()) {
@@ -20,24 +18,9 @@ public abstract class RustedWarfareGameLoopVulkanPresentNamedMixin {
             callback.cancel();
             return;
         }
-        if (!vulkanmod$hiddenRenderConfigured
-                && Boolean.getBoolean("rusted.fabric.vulkan.renderWhenHidden")) {
-            vulkanmod$hiddenRenderConfigured = true;
-            try {
-                getClass().getMethod("setUpdateOnlyWhenVisible", boolean.class)
-                        .invoke(this, false);
-                getClass().getMethod("setAlwaysRender", boolean.class).invoke(this, true);
-            } catch (ReflectiveOperationException failure) {
-                throw new IllegalStateException("Could not enable hidden Vulkan test rendering",
-                        failure);
-            }
-        }
-        VulkanRuntime.beforeOpenGlFrame();
     }
 
-    // Keep the parent HWND responsive before entering acquire/submit/present. In particular this
-    // lets LWJGL dispatch focus and restore messages before the Vulkan child surface does any WSI
-    // work after an Alt-Tab.
+    /** Drives the isolated compatibility-surface frame test after an ordinary OpenGL present. */
     @Inject(method = "gameLoop()V", at = @At("TAIL"), require = 1)
     private void vulkanmod$afterOpenGlPresent(CallbackInfo callback) {
         if (VulkanRuntime.isNativeRendererSelected()) return;

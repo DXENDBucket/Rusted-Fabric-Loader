@@ -253,10 +253,6 @@ final class VulkanDriverLoader {
             return invoke(() -> textRasterizer().rasterizeGlyph(glyphKey));
         }
 
-        VulkanTextureData rasterizeText(String text, int pixelSize, boolean bold) {
-            return invoke(() -> textRasterizer().rasterizeText(text, pixelSize, bold));
-        }
-
         private synchronized VulkanTextRasterizer textRasterizer() {
             if (textRasterizer == null) textRasterizer = driver.createTextRasterizer();
             if (textRasterizer == null) {
@@ -321,10 +317,6 @@ final class VulkanDriverLoader {
                 driver.destroyTexture(textureHandle);
                 return null;
             });
-        }
-
-        boolean setSurfaceVisible(boolean visible) {
-            return invoke(() -> driver.setSurfaceVisible(visible));
         }
 
         boolean prepareSurfaceWindow(int width, int height, boolean visible) {

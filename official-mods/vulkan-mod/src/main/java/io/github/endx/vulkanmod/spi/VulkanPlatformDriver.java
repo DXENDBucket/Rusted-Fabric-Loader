@@ -71,11 +71,6 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     }
     void destroyTexture(long textureHandle);
     /**
-     * Shows or hides the driver-owned presentation surface. Returns {@code true} when the driver
-     * owns a surface whose visibility can be controlled independently from the game window.
-     */
-    default boolean setSurfaceVisible(boolean visible) { return false; }
-    /**
      * Updates the native presentation window from its owning window thread. Vulkan WSI calls may
      * run elsewhere, but Win32 visibility and child positioning must remain on this thread.
      */

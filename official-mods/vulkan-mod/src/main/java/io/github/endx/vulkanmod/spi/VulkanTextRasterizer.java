@@ -8,8 +8,5 @@ public interface VulkanTextRasterizer extends AutoCloseable {
     /** Rasterizes one stable key previously returned by {@link #layout}. */
     VulkanGlyphBitmap rasterizeGlyph(long glyphKey);
 
-    /** Compatibility path used while legacy takeover still uploads whole text runs. */
-    VulkanTextureData rasterizeText(String text, int pixelSize, boolean bold);
-
     @Override default void close() { }
 }

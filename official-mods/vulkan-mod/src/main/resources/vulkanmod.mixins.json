@@ -15,12 +15,9 @@
     "RustedWarfareNativeCanvasNamedMixin",
     "SlickBitmapVulkanTextureLifecycleNamedMixin",
     "SlickBitmapOrTextureDataAccessor",
-    "SlickGraphicsBackendStateAccessor",
-    "SlickTransformStateAccessor",
-    "SlickGraphicsBackendVulkanCaptureNamedMixin",
     "LibRocketUiEngineStateAccessor",
     "LibRocketTextureLifecycleNamedMixin",
-    "LibRocketSlickRendererVulkanCaptureNamedMixin"
+    "LibRocketSlickRendererVulkanNamedMixin"
   ],
   "injectors": {
     "defaultRequire": 1

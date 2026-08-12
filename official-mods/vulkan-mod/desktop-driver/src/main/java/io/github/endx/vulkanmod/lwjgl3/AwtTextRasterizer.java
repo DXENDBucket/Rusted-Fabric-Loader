@@ -4,7 +4,6 @@ import io.github.endx.vulkanmod.spi.VulkanGlyphBitmap;
 import io.github.endx.vulkanmod.spi.VulkanGlyphPlacement;
 import io.github.endx.vulkanmod.spi.VulkanTextLayout;
 import io.github.endx.vulkanmod.spi.VulkanTextRasterizer;
-import io.github.endx.vulkanmod.spi.VulkanTextureData;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -107,27 +106,6 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         graphics.dispose();
         return new VulkanGlyphBitmap(bounds.x, bounds.y, bounds.width, bounds.height,
                 rgba(image));
-    }
-
-    @Override public synchronized VulkanTextureData rasterizeText(
-            String text, int requestedSize, boolean bold) {
-        VulkanTextLayout layout = layout(text, requestedSize, bold);
-        int size = clampSize(requestedSize);
-        Font font = selectFont((bold ? boldFont : regularFont).deriveFont((float) size),
-                text, size);
-        BufferedImage image = new BufferedImage(Math.max(1, layout.width()),
-                Math.max(1, layout.height()), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = image.createGraphics();
-        configure(graphics);
-        graphics.setFont(font);
-        graphics.setColor(Color.WHITE);
-        int baseline = graphics.getFontMetrics().getAscent();
-        String[] lines = text.split("\\n", -1);
-        for (int index = 0; index < lines.length; index++) {
-            graphics.drawString(lines[index], 0, baseline + index * layout.lineHeight());
-        }
-        graphics.dispose();
-        return new VulkanTextureData(image.getWidth(), image.getHeight(), rgba(image));
     }
 
     private long key(Font font, int glyphCode) {

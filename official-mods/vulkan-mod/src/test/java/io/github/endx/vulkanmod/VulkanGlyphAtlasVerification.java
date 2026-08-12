@@ -15,7 +15,7 @@ public final class VulkanGlyphAtlasVerification {
     public static void main(String[] arguments) throws Exception {
         RecordingDriver backend = new RecordingDriver();
         VulkanTextTextureCache cache = new VulkanTextTextureCache(
-                backend, new FixedTextRasterizer(), null, backend::destroyTexture);
+                backend, new FixedTextRasterizer(), backend::destroyTexture);
         try {
             VulkanTextTextureCache.Entry repeated = cache.texture("AAAA", 24, false);
             require(repeated != null && repeated.glyphs.length == 4,
@@ -136,13 +136,5 @@ public final class VulkanGlyphAtlasVerification {
             return new VulkanGlyphBitmap(0, -6, 4, 6, rgba);
         }
 
-        @Override public VulkanTextureData rasterizeText(
-                String text, int pixelSize, boolean bold) {
-            VulkanTextLayout layout = layout(text, pixelSize, bold);
-            return new VulkanTextureData(Math.max(1, layout.width()),
-                    Math.max(1, layout.height()),
-                    new byte[Math.max(1, layout.width())
-                            * Math.max(1, layout.height()) * 4]);
-        }
     }
 }

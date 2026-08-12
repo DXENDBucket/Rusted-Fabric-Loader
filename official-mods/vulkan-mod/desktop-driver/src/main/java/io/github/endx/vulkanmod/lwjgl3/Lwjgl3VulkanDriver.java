@@ -422,11 +422,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         return surfaceSession.customShaderUsesExpandedVertexInput(shaderHandle);
     }
 
-    @Override public boolean setSurfaceVisible(boolean visible) {
-        if (surfaceSession == null) return false;
-        return surfaceSession.setVisible(visible);
-    }
-
     @Override public boolean prepareSurfaceWindow(int width, int height, boolean visible) {
         SurfaceSession session = surfaceSession;
         return session != null && session.prepareWindow(width, height, visible);

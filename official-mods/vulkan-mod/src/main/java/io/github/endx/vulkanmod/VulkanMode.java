@@ -7,8 +7,7 @@ public enum VulkanMode {
     OFF,
     PROBE,
     FRAME_TEST,
-    TAKEOVER_TEST,
-    /** Selected before game startup; currently uses the compatibility capture bridge. */
+    /** Selected before game startup and owns rendering before Display.create(). */
     NATIVE,
     REQUIRED;
 
@@ -21,8 +20,6 @@ public enum VulkanMode {
             case "auto": return PROBE;
             case "frame-test":
             case "frame_test": return FRAME_TEST;
-            case "takeover-test":
-            case "takeover_test": return TAKEOVER_TEST;
             case "native":
             case "vulkan":
             case "rustedvk":

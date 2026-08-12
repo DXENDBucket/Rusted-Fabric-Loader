@@ -12,10 +12,9 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.LongConsumer;
 
-/** Small LRU of antialiased white glyph runs that Vulkan can tint per draw. */
+/** Bounded glyph atlas and shaped-run cache used by the native renderer. */
 final class VulkanTextTextureCache implements AutoCloseable {
     private static final int MAX_ENTRIES = 768;
-    private static final int MAX_NEW_UPLOADS_PER_FRAME = 32;
     private static final int ATLAS_SIZE = 1024;
     private static final int ATLAS_PADDING = 1;
     private static final int MAX_ATLAS_PAGES = 16;
@@ -23,7 +22,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
 
     private final TextureAccess textures;
     private final TextAccess text;
-    private final AsyncVulkanPresenter presenter;
     private final LongConsumer textureDestroyer;
     private final LinkedHashMap<Key, Entry> entries =
             new LinkedHashMap<Key, Entry>(128, 0.75f, true);
@@ -33,105 +31,41 @@ final class VulkanTextTextureCache implements AutoCloseable {
             new LinkedHashMap<Long, AtlasGlyph>(256, 0.75f, true);
     private final ArrayList<AtlasPage> atlasPages = new ArrayList<AtlasPage>();
     private boolean closed;
-    private int uploadsStartedThisFrame;
     private int glyphUploadsStartedThisFrame;
 
     VulkanTextTextureCache(VulkanDriverLoader.LoadedDriver driver,
-                           AsyncVulkanPresenter presenter,
                            LongConsumer textureDestroyer) {
         this(new DriverTextureAccess(driver), new DriverTextAccess(driver),
-                presenter, textureDestroyer);
+                textureDestroyer);
     }
 
     VulkanTextTextureCache(TextureAccess textures, TextAccess text,
-                           AsyncVulkanPresenter presenter,
                            LongConsumer textureDestroyer) {
         if (textures == null) throw new NullPointerException("textures");
         if (text == null) throw new NullPointerException("text");
         this.textures = textures;
         this.text = text;
-        this.presenter = presenter;
         this.textureDestroyer = textureDestroyer;
     }
 
     synchronized Entry texture(String text, int requestedSize, boolean bold) {
-        return presenter == null
-                ? atlasTexture(text, requestedSize, bold)
-                : legacyTexture(text, requestedSize, bold);
-    }
-
-    private Entry legacyTexture(String text, int requestedSize, boolean bold) {
-        if (closed) throw new IllegalStateException("text texture cache is closed");
-        if (text == null) throw new NullPointerException("text");
-        int size = Math.max(4, Math.min(256, requestedSize));
-        Key key = new Key(text, size, bold);
-        Entry current = entries.get(key);
-        if (current != null) return current.glyphs[0].textureHandle == 0L ? null : current;
-        if (presenter != null && uploadsStartedThisFrame >= MAX_NEW_UPLOADS_PER_FRAME) {
-            return null;
-        }
-        uploadsStartedThisFrame++;
-        VulkanTextLayout layout = measureText(text, size, bold);
-        VulkanTextureData raster = this.text.rasterizeText(text, size, bold);
-        if (raster.width() != Math.max(1, layout.width())
-                || raster.height() != Math.max(1, layout.height())) {
-            throw new IllegalStateException("platform text layout/raster dimensions disagree");
-        }
-        Entry created = Entry.legacy(raster.width(), raster.height(), layout.lineHeight());
-        entries.put(key, created);
-        if (presenter == null) {
-            created.glyphs[0].textureHandle = textures.uploadTexture(raster);
-        } else {
-            presenter.uploadTexture(raster,
-                    new AsyncVulkanPresenter.TextureUploadListener() {
-                        @Override public void uploaded(long textureHandle) {
-                            completeUpload(key, created, textureHandle);
-                        }
-
-                        @Override public void failed(Throwable failure) {
-                            failUpload(key, created);
-                        }
-                    });
-        }
-        evictOldEntries();
-        return created.glyphs[0].textureHandle == 0L ? null : created;
+        return atlasTexture(text, requestedSize, bold);
     }
 
     private void evictOldEntries() {
         while (entries.size() > MAX_ENTRIES) {
             Map.Entry<Key, Entry> oldest = entries.entrySet().iterator().next();
             entries.remove(oldest.getKey());
-            release(oldest.getValue());
-        }
-    }
-
-    private synchronized void completeUpload(Key key, Entry entry, long textureHandle) {
-        if (!closed && entries.get(key) == entry) entry.glyphs[0].textureHandle = textureHandle;
-        else textureDestroyer.accept(textureHandle);
-    }
-
-    private synchronized void failUpload(Key key, Entry entry) {
-        if (entries.get(key) == entry) entries.remove(key);
-    }
-
-    private void release(Entry entry) {
-        if (entry != null && entry.ownsTexture && entry.glyphs.length != 0
-                && entry.glyphs[0].textureHandle != 0L) {
-            textureDestroyer.accept(entry.glyphs[0].textureHandle);
         }
     }
 
     synchronized void beginFrame() {
-        uploadsStartedThisFrame = 0;
         glyphUploadsStartedThisFrame = 0;
     }
 
     @Override public synchronized void close() {
         if (closed) return;
         closed = true;
-        for (Entry entry : entries.values()) {
-            release(entry);
-        }
         entries.clear();
         measurements.clear();
         glyphs.clear();
@@ -160,7 +94,7 @@ final class VulkanTextTextureCache implements AutoCloseable {
                     atlas.u0, atlas.v0, atlas.u1, atlas.v1));
         }
         Entry created = new Entry(draws.toArray(new Glyph[0]), measured.width(),
-                measured.height(), measured.lineHeight(), false);
+                measured.height(), measured.lineHeight());
         entries.put(key, created);
         evictOldEntries();
         return created;
@@ -252,16 +186,13 @@ final class VulkanTextTextureCache implements AutoCloseable {
         final int width;
         final int height;
         final int lineHeight;
-        final boolean ownsTexture;
 
-        private Entry(Glyph[] glyphs, int width, int height,
-                      int lineHeight, boolean ownsTexture) {
+        private Entry(Glyph[] glyphs, int width, int height, int lineHeight) {
             this.glyphs = glyphs;
             this.batches = batches(glyphs);
             this.width = width;
             this.height = height;
             this.lineHeight = lineHeight;
-            this.ownsTexture = ownsTexture;
         }
 
         private static GlyphBatch[] batches(Glyph[] glyphs) {
@@ -293,11 +224,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
             return result.toArray(new GlyphBatch[0]);
         }
 
-        private static Entry legacy(int width, int height, int lineHeight) {
-            return new Entry(new Glyph[] { new Glyph(0L, 0, -lineHeight,
-                    width, height, 0.0f, 0.0f, 1.0f, 1.0f) },
-                    width, height, lineHeight, true);
-        }
     }
 
     interface TextureAccess {
@@ -308,7 +234,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
     interface TextAccess {
         VulkanTextLayout layout(String text, int pixelSize, boolean bold);
         VulkanGlyphBitmap rasterizeGlyph(long glyphKey);
-        VulkanTextureData rasterizeText(String text, int pixelSize, boolean bold);
     }
 
     private static final class DriverTextureAccess implements TextureAccess {
@@ -345,14 +270,10 @@ final class VulkanTextTextureCache implements AutoCloseable {
             return driver.rasterizeGlyph(glyphKey);
         }
 
-        @Override public VulkanTextureData rasterizeText(
-                String text, int pixelSize, boolean bold) {
-            return driver.rasterizeText(text, pixelSize, bold);
-        }
     }
 
     static final class Glyph {
-        volatile long textureHandle;
+        final long textureHandle;
         final float x;
         final float y;
         final float width;

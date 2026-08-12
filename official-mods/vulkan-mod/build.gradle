@@ -92,12 +92,9 @@ tasks.register('verifyVulkanModBundle') {
                     || !mixins.mixins.contains('RustedWarfareGameLoopVulkanPresentNamedMixin')
                     || !mixins.mixins.contains('SlickBitmapVulkanTextureLifecycleNamedMixin')
                     || !mixins.mixins.contains('SlickBitmapOrTextureDataAccessor')
-                    || !mixins.mixins.contains('SlickGraphicsBackendStateAccessor')
-                    || !mixins.mixins.contains('SlickTransformStateAccessor')
-                    || !mixins.mixins.contains('SlickGraphicsBackendVulkanCaptureNamedMixin')
                     || !mixins.mixins.contains('LibRocketUiEngineStateAccessor')
                     || !mixins.mixins.contains('LibRocketTextureLifecycleNamedMixin')
-                    || !mixins.mixins.contains('LibRocketSlickRendererVulkanCaptureNamedMixin')) {
+                    || !mixins.mixins.contains('LibRocketSlickRendererVulkanNamedMixin')) {
                 throw new GradleException('Vulkan window lifecycle mixin is missing')
             }
             def propertiesEntry = zip.getEntry(

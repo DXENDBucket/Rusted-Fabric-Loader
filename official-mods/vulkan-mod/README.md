@@ -4,9 +4,10 @@
 Slick/OpenGL renderer with a Vulkan renderer. It is not a gameplay dependency and must never affect
 multiplayer compatibility.
 
-The foundation build probes Vulkan and, after Slick creates its Win32 window, creates a live
-surface, presentation-capable device/queues, swapchain, render pass, framebuffers, command buffers,
-and synchronization objects. It also has a binding-neutral frame command list and batched
+The foundation build can probe Vulkan without changing rendering, while native mode creates and
+owns its Win32 window before Slick reaches `Display.create()`. It builds the surface,
+presentation-capable device/queues, swapchain, render pass, framebuffers, command buffers, and
+synchronization objects. It also has a binding-neutral frame command list and batched
 colored/textured quad and triangle paths backed by a growable host-visible vertex buffer. RGBA8
 uploads use a staging buffer, device-local images, samplers, and per-texture descriptor sets;
 compatible adjacent commands share a draw call without changing the original colored/textured
@@ -15,25 +16,20 @@ Game-owned `GameImage` objects can now be read back into an identity/version-awa
 cache. Image reload and release hooks invalidate stale GPU copies. Draw commands also carry an
 affine screen-space transform and optional scissor rectangle; transforms are baked while batching,
 and scissor changes split otherwise compatible batches.
-Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|takeover_test|native|required`; `probe` is the
+Use `-Drusted.fabric.vulkan.mode=off|probe|frame_test|native|required`; `probe` is the
 development default, `frame_test` presents 300 solid diagnostic frames (red, green, then blue)
-after OpenGL frames, and `required` makes an unavailable driver fail startup. `takeover_test` is
-the first real presentation takeover. Its Win32 child surface starts hidden while draw calls are
-mirrored without suppressing OpenGL. The first complete Vulkan frame is acquired, recorded and submitted
-before the overlay is atomically revealed immediately ahead of presentation; suppression starts
-only after that present succeeds, on the following game-loop frame. Every game-loop frame captures
-Slick clears, image draws, transformed/tiled images,
-rectangles, lines, circles and text into an ordered Vulkan frame. It also translates LibRocket's
-indexed colored/textured geometry, including its scissor state, before presenting the completed
-frame. Normal, additive, copy and modulation blend equations follow the game's Slick state, while
-each texture has independently selectable linear and nearest-neighbour sampling. Slick-rendered
-offscreen images remain a compatibility fallback and invalidate their Vulkan copy whenever they are
-drawn into. A minimized or occluded window uses a bounded image-acquire wait so it cannot freeze the
-game thread. Native mode asks a platform text service to shape and rasterize individual glyphs into
+after OpenGL frames, and `required` makes an unavailable driver fail startup. The obsolete
+Slick-capture/child-overlay takeover mode has been removed; production Vulkan work now has one
+ownership path and never mixes captured OpenGL draws with native presentation. Native mode
+translates LibRocket's indexed colored/textured geometry, including its scissor state. Normal,
+additive, copy and modulation blend equations follow the game's original state, while each texture
+has independently selectable linear and nearest-neighbour sampling. A minimized window keeps
+pumping native messages without rendering against a stale swapchain. Native mode asks a platform
+text service to shape and rasterize individual glyphs into
 reusable 1024x1024 atlas pages and emits indexed quads for visible glyphs. The Windows
 implementation uses AWT inside the isolated desktop driver; no AWT font object crosses the shared
-atlas boundary. Repeated strings and characters reuse atlas regions; the
-older takeover compatibility path retains whole-string textures until that path is removed. Native
+atlas boundary. Repeated strings and characters reuse atlas regions; whole-string texture uploads
+are no longer part of the text SPI. Native
 mode translates linked GLSL-130 vertex/fragment programs onto the
 Vulkan texture ABI. Desktop built-ins and GDX attributes, custom float/vec uniforms shared across
 both stages, custom float/vec varyings, and one shared secondary sampler are supported. The five
@@ -136,15 +132,8 @@ responsive and visible without moving game initialization onto a different threa
 drawn from Slick's original AngelCode `defaultfont.fnt`/`defaultfont.png` atlas with its fixed-width
 padding and integer placement, rather than approximated with the ordinary game UI font.
 
-Useful takeover diagnostics are:
+Useful renderer diagnostics are:
 
-- `-Drusted.fabric.vulkan.debugMagentaClear=true` overrides captured clears with magenta.
-- `-Drusted.fabric.vulkan.debugMarkerQuad=true` appends an opaque green quad to prove that the
-  vertex upload and graphics pipeline reach the swapchain.
-- `-Drusted.fabric.vulkan.debugDetachedOverlay=true` presents in a separate popup rather than an
-  in-window child surface.
-- `-Drusted.fabric.vulkan.renderWhenHidden=true` keeps the Slick loop rendering while its window is
-  hidden or occluded.
 - `-Drusted.fabric.vulkan.debugInfiniteAcquire=true` removes the normal 16 ms swapchain-acquire
   timeout. This can deliberately block the game thread and is only for isolating WSI diagnostics.
 - `-Drusted.fabric.vulkan.debugRenderTargetPasses=true` logs the first native child passes, their
@@ -168,7 +157,7 @@ performance runs remain unaffected.
 - The current object SPI is a desktop implementation boundary, not the future JNI ABI. Shared
   batching will encode a validated whole-frame `FrameStream`; the Android adapter will submit
   registered arena indices to an NDK Vulkan decoder. No LWJGL or Win32 type crosses that boundary.
-- Game-specific mixins, Slick compatibility and low-level takeover code stay in this mod. A hook is
+- Game-specific mixins and the narrow Slick startup/UI compatibility hooks stay in this mod. A hook is
   promoted to Rusted Fabric API only when another renderer or ordinary mod can reuse it safely.
 
 ## Stages
@@ -186,13 +175,14 @@ performance runs remain unaffected.
    draw-batch metadata are complete. Indexed quad batches now reduce repeated vertices without
    changing order. Ordinary sprites with independent transforms/tints can now cross the
    Java/FrameStream boundary as a single recycled run command; a 12,000-sprite multi-frame GPU
-   regression verifies stable producer, encoder, and driver metadata after warm-up. Next, continue
-   widening compatible non-text batches and profile descriptors.
+   regression verifies stable producer, encoder, and driver metadata after warm-up. Descriptor and
+   pass-local command-state lifecycles now have dedicated owners and real-device reuse regressions.
+   Next, continue widening compatible non-text batches and isolate memory-allocation ownership.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
-   the common atlas is ready for an Android FreeType/Skia implementation. Next, add that Android
-   implementation and remove the obsolete takeover-only whole-string compatibility surface after
-   native parity is established.
+   the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover
+   presenter, Slick draw capture, and whole-string text compatibility surface have been removed.
+   Next, add the Android text implementation.
 6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
 
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or
