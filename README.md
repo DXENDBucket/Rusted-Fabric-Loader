@@ -5,7 +5,7 @@ This repository provides the Rusted Fabric Loader GameProvider along with suppor
 Current compatibility baseline:
 
 - Rusted Warfare `1.15`
-- Rusted Fabric Loader/API `0.1.0`
+- Rusted Fabric Loader `0.4.0` / API `0.3.0`
 - mappings `1.1 FINAL` (mapping-only completion + executable gate)
 - Java bytecode level `13`
 

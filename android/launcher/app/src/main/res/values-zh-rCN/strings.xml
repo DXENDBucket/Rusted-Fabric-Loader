@@ -4,6 +4,7 @@
     <string name="module_description">在安卓设备上通过 Fabric 运行用户自行导入的铁锈战争桌面版文件。</string>
     <string name="jvm_title">Rusted Fabric</string>
     <string name="jvm_edition">安卓桌面 JVM 版</string>
+    <string name="community_qq_group">官方 QQ 群：517180171</string>
     <string name="jvm_ready_badge">可以开始游戏</string>
     <string name="jvm_setup_badge">需要完成设置</string>
     <string name="jvm_ready_message">游戏环境已经就绪，可通过与桌面版相同的 Fabric 运行环境继续游戏。</string>

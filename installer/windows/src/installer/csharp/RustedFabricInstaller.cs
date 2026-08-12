@@ -76,6 +76,7 @@ namespace RustedFabricInstaller
         private readonly CheckBox shortcut = new CheckBox();
         private readonly CheckBox riskAcceptance = new CheckBox();
         private readonly LinkLabel disclaimerLink = new LinkLabel();
+        private readonly LinkLabel communityLink = new LinkLabel();
         private readonly Button install = new Button();
         private readonly ProgressBar progress = new ProgressBar();
         private readonly TextBox log = new TextBox();
@@ -105,6 +106,13 @@ namespace RustedFabricInstaller
             subtitle.ForeColor = Color.DimGray;
             subtitle.Location = new Point(27, 58);
             Controls.Add(subtitle);
+
+            communityLink.Text = "官方群 / Official QQ Group: 517180171";
+            communityLink.AutoSize = true;
+            communityLink.Location = new Point(438, 29);
+            communityLink.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            communityLink.LinkClicked += CommunityClicked;
+            Controls.Add(communityLink);
 
             Label pathLabel = new Label();
             pathLabel.Text = "游戏目录 / Game directory";
@@ -364,6 +372,21 @@ namespace RustedFabricInstaller
             }
         }
 
+        private void CommunityClicked(object sender, LinkLabelLinkClickedEventArgs args)
+        {
+            try
+            {
+                Clipboard.SetText("517180171");
+                AppendLog("官方群号已复制 / Official QQ group copied: 517180171");
+            }
+            catch (ExternalException)
+            {
+                MessageBox.Show(this, "官方群 / Official QQ Group: 517180171",
+                    "Rusted Fabric Community", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+        }
+
         private void AppendLog(string message)
         {
             log.AppendText(message + Environment.NewLine);
@@ -379,6 +402,7 @@ namespace RustedFabricInstaller
             shortcut.Enabled = !busy;
             riskAcceptance.Enabled = !busy;
             disclaimerLink.Enabled = !busy;
+            communityLink.Enabled = !busy;
             api.Enabled = !busy && !modMenu.Checked;
             progress.Style = busy ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
         }

@@ -14,7 +14,7 @@ Mods can declare the game dependency exposed by the GameProvider:
 "depends": {
   "fabricloader": ">=0.18.1",
   "rusted_warfare": "1.15",
-  "rusted_fabric_api": ">=0.1.0"
+  "rusted_fabric_api": ">=0.3.0"
 }
 ```
 
