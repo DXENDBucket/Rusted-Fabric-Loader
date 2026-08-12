@@ -119,6 +119,15 @@ tasks.register('verifyPipelineLibrary', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandalonePipelineLibraryVerification')
 }
 
+tasks.register('verifySwapchainLifecycle', JavaExec) {
+    group = 'verification'
+    description = 'Verifies balanced WSI resource generations across real Win32 resizes.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneSwapchainLifecycleVerification')
+}
+
 tasks.register('verifyMemoryAllocator', JavaExec) {
     group = 'verification'
     description = 'Verifies Vulkan memory ownership, persistent mapping, and image retirement.'

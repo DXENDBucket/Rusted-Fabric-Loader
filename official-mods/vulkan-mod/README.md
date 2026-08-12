@@ -107,8 +107,14 @@ pipeline layouts, lazy blend-mode caches, custom shader registrations, temporary
 and render-pass rebinding. Swapchain recreation retires only render-pass-compatible pipelines;
 layouts and shader registrations remain device-owned until shutdown. `pipeline.*` counters expose
 cache hits, live pipelines, shader-module balance, and render-pass changes, with a real-device
-lifecycle regression enforcing balanced destruction. `Lwjgl3VulkanDriver` retains orchestration
-and image-to-descriptor cache keys, but no longer implements those low-level lifecycles inline.
+lifecycle regression enforcing balanced destruction. `VulkanSwapchainLifecycle` owns each WSI
+generation: the swapchain handle, image views, presentation render pass, framebuffers, and
+image-indexed render-finished semaphores. Its replacement path retires an entire generation in
+dependency order while leaving frame-slot command buffers, fences, and mapped uploads in the
+execution layer. `swapchain.*` counters expose generations and native-resource balance; a real
+Win32 regression presents across two physical resizes and enforces zero leaked generations at
+shutdown. `Lwjgl3VulkanDriver` retains orchestration and image-to-descriptor cache keys, but no
+longer implements those low-level lifecycles inline.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -198,8 +204,10 @@ performance runs remain unaffected.
    producer, encoder, and driver metadata after warm-up. Descriptor, pass-local command-state,
    device-memory, image-resource, and graphics-pipeline lifecycles now have dedicated owners and
    real-device reuse/leak regressions. Pipeline layouts and custom shader registrations survive
-   swapchain recreation while render-pass-bound caches are retired deterministically. Next,
-   separate swapchain/window lifecycle ownership from frame execution.
+   swapchain recreation while render-pass-bound caches are retired deterministically. WSI
+   generations now also have a dedicated owner separated from frame execution, with real Win32
+   resize and shutdown-balance coverage. Next, extract the per-frame command/fence/upload-slot
+   owner and stop rebuilding swapchain-independent offscreen execution slots on window resize.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
    the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover
