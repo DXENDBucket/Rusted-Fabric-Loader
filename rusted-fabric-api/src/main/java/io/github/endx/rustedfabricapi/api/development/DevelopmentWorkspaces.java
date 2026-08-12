@@ -13,6 +13,10 @@ public final class DevelopmentWorkspaces {
     private static final String ROOT_PROPERTY = "rusted.javamodsDevDir.resolved";
     private static final String IDS_PROPERTY = "rusted.javamodsDevWorkspaceIds";
     private static final String WORKSPACE_PREFIX = "rusted.javamodsDevWorkspace.";
+    private static final String NATIVE_CONTENT_PREFIX =
+            "rusted.javamodsDevNativeContent.";
+    private static final String NATIVE_CONTENT_TARGET_PREFIX =
+            "rusted.javamodsDevNativeContentTarget.";
     private static final String AUTO_RELOAD_PROPERTY = "rusted.javamodsDevAutoReload";
 
     private DevelopmentWorkspaces() { }
@@ -22,6 +26,16 @@ public final class DevelopmentWorkspaces {
     public static Optional<Path> forMod(String modId) {
         String checked = checkModId(modId);
         return pathProperty(WORKSPACE_PREFIX + checked);
+    }
+
+    /** Source directory containing editable native INI content declared by this workspace. */
+    public static Optional<Path> nativeContentForMod(String modId) {
+        return pathProperty(NATIVE_CONTENT_PREFIX + checkModId(modId));
+    }
+
+    /** Loader-managed directory currently exposed to the game's native mod scanner. */
+    public static Optional<Path> stagedNativeContentForMod(String modId) {
+        return pathProperty(NATIVE_CONTENT_TARGET_PREFIX + checkModId(modId));
     }
 
     /** Deterministic ID-to-directory snapshot of workspaces loaded for this process. */

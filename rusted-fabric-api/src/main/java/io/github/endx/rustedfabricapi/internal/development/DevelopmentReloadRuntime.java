@@ -5,6 +5,7 @@ import io.github.endx.rustedfabricapi.api.asset.reload.ResourceReloadReason;
 import io.github.endx.rustedfabricapi.api.asset.reload.ResourceReloadReport;
 import io.github.endx.rustedfabricapi.api.custom.CustomUnits;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Locale;
 
 /** Internal coordination for native-unit and Java-resource development reloads. */
@@ -16,6 +17,7 @@ public final class DevelopmentReloadRuntime {
 
     public static ResourceReloadReport reloadInPlace() {
         synchronized (LOCK) {
+            syncNativeContent();
             integratedUnitReloadRunning = true;
             try {
                 if (isAndroidRuntime()) {
@@ -36,6 +38,21 @@ public final class DevelopmentReloadRuntime {
 
     public static ResourceReloadReport reloadResources() {
         return ModResourceReloaders.reloadAll(ResourceReloadReason.MANUAL);
+    }
+
+    private static void syncNativeContent() {
+        try {
+            Class<?> bridge = Class.forName(
+                    "io.github.endx.rustedfabricloader.NativeContentDevelopmentBridge");
+            bridge.getMethod("syncAll").invoke(null);
+        } catch (ClassNotFoundException unavailable) {
+            // A standalone API contract test has no Loader on its runtime classpath.
+        } catch (NoSuchMethodException | IllegalAccessException failure) {
+            throw new IllegalStateException("Loader native-content bridge is incompatible", failure);
+        } catch (InvocationTargetException failure) {
+            Throwable cause = failure.getCause() != null ? failure.getCause() : failure;
+            throw new IllegalStateException("Could not synchronize editable native content", cause);
+        }
     }
 
     public static boolean isIntegratedUnitReloadRunning() {

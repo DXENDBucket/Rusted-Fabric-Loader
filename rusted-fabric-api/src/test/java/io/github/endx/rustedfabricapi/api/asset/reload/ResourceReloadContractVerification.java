@@ -131,8 +131,16 @@ public final class ResourceReloadContractVerification {
             System.setProperty("rusted.javamodsDevDir.resolved", root.toString());
             System.setProperty("rusted.javamodsDevWorkspaceIds", "reload_contract");
             System.setProperty("rusted.javamodsDevWorkspace.reload_contract", root.toString());
+            System.setProperty("rusted.javamodsDevNativeContent.reload_contract",
+                    data.getParent().toString());
+            System.setProperty("rusted.javamodsDevNativeContentTarget.reload_contract",
+                    data.getParent().toString());
             System.setProperty("rusted.javamodsDevAutoReload", "true");
             require(DevelopmentWorkspaces.loaded().get("reload_contract").equals(root)
+                            && DevelopmentWorkspaces.nativeContentForMod("reload_contract")
+                            .get().equals(data.getParent())
+                            && DevelopmentWorkspaces.stagedNativeContentForMod("reload_contract")
+                            .get().equals(data.getParent())
                             && DevelopmentWorkspaces.automaticReloadEnabled(),
                     "development workspace API lost Loader-published context");
 
@@ -149,6 +157,8 @@ public final class ResourceReloadContractVerification {
             System.clearProperty("rusted.javamodsDevDir.resolved");
             System.clearProperty("rusted.javamodsDevWorkspaceIds");
             System.clearProperty("rusted.javamodsDevWorkspace.reload_contract");
+            System.clearProperty("rusted.javamodsDevNativeContent.reload_contract");
+            System.clearProperty("rusted.javamodsDevNativeContentTarget.reload_contract");
             System.clearProperty("rusted.javamodsDevAutoReload");
             if (root != null) {
                 try (java.util.stream.Stream<Path> paths = Files.walk(root)) {

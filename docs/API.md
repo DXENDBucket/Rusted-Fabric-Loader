@@ -810,6 +810,15 @@ dependents become `BLOCKED`. Missing dependencies and dependency cycles are also
 executing affected listeners. `ModResourceReloadEvents.AFTER_RELOAD` is the central place for a mod
 or development tool to log failures.
 
+Exploded Java-mod workspaces are available through `DevelopmentWorkspaces`. A workspace may
+declare `custom.rusted_fabric:development.nativeContentRoot` in `fabric.mod.json`; the Loader then
+publishes both its editable source and Loader-managed native scanner directory through
+`nativeContentForMod(modId)` and `stagedNativeContentForMod(modId)`. Mods should edit or inspect the
+source path and treat the staged path as read-only. `DevelopmentReloads.reloadInPlace()` first
+synchronizes every declared native content root, then runs the game's sandbox-compatible INI unit
+reload, and finally applies registered Java resource reloaders. Java classes and Mixins are not
+redefined by this operation and still require rebuilding and restarting the game.
+
 Reads into memory are capped at 128 MiB. When a native game API requires a real filesystem path,
 `extractToCache()` writes a content-addressed copy atomically below the operating system temporary
 directory. It does not unpack into the game, project, or Git repository. Equal content reuses the

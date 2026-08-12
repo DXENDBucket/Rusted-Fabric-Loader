@@ -130,6 +130,28 @@ Android uses the public `Internal storage/rustedWarfare/javamods-dev` directory 
 symlinks. Shared-storage polling is disabled there by default to avoid FUSE/document-provider stalls;
 authors edit the folder with their file manager and use the same in-game manual reload button.
 
+A workspace can also own an editable native INI content pack. Declare a dedicated directory in the
+workspace's `fabric.mod.json`:
+
+```json
+{
+  "custom": {
+    "rusted_fabric:development": {
+      "nativeContentRoot": "native-content"
+    }
+  }
+}
+```
+
+`native-content` must stay inside the workspace, must not be a symbolic link, and must contain
+`mod-info.txt`. At launch the Loader safely mirrors it to the immediate native mod directory
+`mods/units/rfl-dev-<mod_id>`. Only directories carrying the Loader's matching ownership marker are
+ever updated, cleaned, or removed. `DevelopmentReloads.reloadInPlace()` and Java Mod Menu's
+**Reload units/resources** synchronize this mirror before invoking the game's native in-place unit
+reload. Removing or disabling the workspace removes its managed mirror on the next launch. This
+same copy-based mechanism is used on Windows and Android, so a hybrid Java/INI project needs only
+one development workspace and no junction or root access.
+
 INI Essentials is built as an official artifact but is not installed by default yet. Install it for
 custom-unit development with:
 

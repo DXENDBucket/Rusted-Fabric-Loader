@@ -37,7 +37,14 @@ final class JavaModDevelopmentWorkspaces {
     static final String AUTO_RELOAD_PROPERTY = "rusted.javamodsDevAutoReload";
     static final String WORKSPACE_IDS_PROPERTY = "rusted.javamodsDevWorkspaceIds";
     static final String WORKSPACE_PROPERTY_PREFIX = "rusted.javamodsDevWorkspace.";
+    static final String NATIVE_CONTENT_PROPERTY_PREFIX =
+            "rusted.javamodsDevNativeContent.";
+    static final String NATIVE_CONTENT_TARGET_PROPERTY_PREFIX =
+            "rusted.javamodsDevNativeContentTarget.";
     private static final String METADATA = "fabric.mod.json";
+    private static final String DEVELOPMENT_METADATA = "rusted_fabric:development";
+    private static final String NATIVE_CONTENT_ROOT = "nativeContentRoot";
+    private static final String ANDROID_CONTENT_ROOT_PROPERTY = "rusted.android.contentRoot";
     private static final String LINK_SUFFIX = ".link";
     private static final int MAX_LINK_BYTES = 16 * 1024;
 
@@ -65,6 +72,7 @@ final class JavaModDevelopmentWorkspaces {
         LinkedHashMap<String, Workspace> workspaces = enabled
                 ? discoverWorkspaces(devRoot, logCategory)
                 : new LinkedHashMap<String, Workspace>();
+        prepareNativeContent(gameDir, workspaces, logCategory);
         publish(workspaces);
         List<Path> jars = discoverJars(javaModsDir, workspaces.keySet(), logCategory);
         ArrayList<Path> candidates = new ArrayList<Path>(jars.size() + workspaces.size());
@@ -124,16 +132,17 @@ final class JavaModDevelopmentWorkspaces {
                     linked = true;
                 }
                 if (root == null || !roots.add(root)) continue;
-                String id = readDirectoryModId(root);
-                if (id == null) {
+                WorkspaceMetadata metadata = readDirectoryMetadata(root);
+                if (metadata == null) {
                     Log.warn(category, "Ignoring Java mod workspace without valid %s: %s",
                             METADATA, root);
                     continue;
                 }
-                Workspace previous = result.putIfAbsent(id, new Workspace(id, root, linked));
+                Workspace previous = result.putIfAbsent(metadata.id,
+                        new Workspace(metadata.id, root, linked, metadata.nativeContentRoot));
                 if (previous != null) {
                     Log.warn(category, "Ignoring duplicate Java mod workspace ID %s at %s; using %s",
-                            id, root, previous.root);
+                            metadata.id, root, previous.root);
                 }
             } catch (IOException | RuntimeException failure) {
                 Log.warn(category, "Ignoring invalid Java mod workspace entry %s: %s",
@@ -195,13 +204,110 @@ final class JavaModDevelopmentWorkspaces {
         return result;
     }
 
-    private static String readDirectoryModId(Path root) throws IOException {
+    private static WorkspaceMetadata readDirectoryMetadata(Path root) throws IOException {
         Path metadata = root.resolve(METADATA).normalize();
         if (!metadata.startsWith(root) || !Files.isRegularFile(metadata, LinkOption.NOFOLLOW_LINKS)
                 || Files.isSymbolicLink(metadata)) return null;
         try (BufferedReader reader = Files.newBufferedReader(metadata, StandardCharsets.UTF_8)) {
-            return metadataId(new JsonParser().parse(reader));
+            JsonElement parsed = new JsonParser().parse(reader);
+            String id = metadataId(parsed);
+            if (id == null) return null;
+            return new WorkspaceMetadata(id, nativeContentRoot(root, parsed));
         }
+    }
+
+    private static Path nativeContentRoot(Path workspaceRoot, JsonElement parsed)
+            throws IOException {
+        if (parsed == null || !parsed.isJsonObject()) return null;
+        JsonObject custom = object(parsed.getAsJsonObject().get("custom"));
+        JsonObject development = custom != null ? object(custom.get(DEVELOPMENT_METADATA)) : null;
+        if (development == null || !development.has(NATIVE_CONTENT_ROOT)) return null;
+        JsonElement raw = development.get(NATIVE_CONTENT_ROOT);
+        if (!raw.isJsonPrimitive() || !raw.getAsJsonPrimitive().isString()) {
+            throw new IOException(NATIVE_CONTENT_ROOT + " must be a relative directory string");
+        }
+        String value = raw.getAsString().trim();
+        if (value.isEmpty()) throw new IOException(NATIVE_CONTENT_ROOT + " must not be empty");
+        final Path relative;
+        try {
+            relative = Paths.get(value);
+        } catch (RuntimeException invalid) {
+            throw new IOException("invalid " + NATIVE_CONTENT_ROOT + ": " + value, invalid);
+        }
+        if (relative.isAbsolute()) {
+            throw new IOException(NATIVE_CONTENT_ROOT + " must be relative to the workspace");
+        }
+        Path selected = workspaceRoot.resolve(relative).normalize();
+        if (!selected.startsWith(workspaceRoot) || selected.equals(workspaceRoot)) {
+            throw new IOException(NATIVE_CONTENT_ROOT
+                    + " must select a dedicated directory inside the workspace");
+        }
+        selected = selected.toRealPath();
+        if (!selected.startsWith(workspaceRoot)
+                || !Files.isDirectory(selected, LinkOption.NOFOLLOW_LINKS)
+                || Files.isSymbolicLink(selected)) {
+            throw new IOException(NATIVE_CONTENT_ROOT
+                    + " must resolve to a non-symbolic workspace directory");
+        }
+        Path modInfo = selected.resolve("mod-info.txt");
+        if (!Files.isRegularFile(modInfo, LinkOption.NOFOLLOW_LINKS)
+                || Files.isSymbolicLink(modInfo)) {
+            throw new IOException(NATIVE_CONTENT_ROOT + " is missing mod-info.txt");
+        }
+        return selected;
+    }
+
+    private static JsonObject object(JsonElement value) {
+        return value != null && value.isJsonObject() ? value.getAsJsonObject() : null;
+    }
+
+    private static void prepareNativeContent(Path gameDir,
+                                             LinkedHashMap<String, Workspace> workspaces,
+                                             LogCategory category) {
+        Path nativeUnitsRoot = resolveNativeUnitsRoot(gameDir);
+        java.util.Iterator<Map.Entry<String, Workspace>> entries =
+                workspaces.entrySet().iterator();
+        while (entries.hasNext()) {
+            Workspace workspace = entries.next().getValue();
+            if (workspace.nativeContentRoot == null) continue;
+            Path target = nativeUnitsRoot
+                    .resolve("rfl-dev-" + workspace.id).toAbsolutePath().normalize();
+            try {
+                NativeContentDevelopmentBridge.sync(
+                        workspace.id, workspace.nativeContentRoot, target);
+                workspace.nativeContentTarget = target;
+                Log.info(category, "Development workspace %s exposes native content from %s at %s",
+                        workspace.id, workspace.nativeContentRoot, target);
+            } catch (IOException failure) {
+                Log.error(category, "Ignoring Java mod workspace %s because native content "
+                                + "could not be staged: %s",
+                        workspace.id, failure.toString());
+                entries.remove();
+            }
+        }
+        try {
+            LinkedHashSet<String> activeNativeContent = new LinkedHashSet<String>();
+            for (Workspace workspace : workspaces.values()) {
+                if (workspace.nativeContentTarget != null) {
+                    activeNativeContent.add(workspace.id);
+                }
+            }
+            NativeContentDevelopmentBridge.removeOrphans(
+                    nativeUnitsRoot, activeNativeContent);
+        } catch (IOException failure) {
+            Log.warn(category, "Could not clean stale managed native development content: %s",
+                    failure.toString());
+        }
+    }
+
+    static Path resolveNativeUnitsRoot(Path gameDir) {
+        String sharedRoot = System.getProperty(ANDROID_CONTENT_ROOT_PROPERTY, "").trim();
+        if (!sharedRoot.isEmpty()) {
+            Path root = Paths.get(sharedRoot);
+            if (!root.isAbsolute()) root = gameDir.resolve(root);
+            return root.toAbsolutePath().normalize().resolve("units");
+        }
+        return gameDir.resolve("mods").resolve("units").toAbsolutePath().normalize();
     }
 
     private static String readJarModId(Path jarPath, LogCategory category) {
@@ -231,7 +337,11 @@ final class JavaModDevelopmentWorkspaces {
     private static void publish(Map<String, Workspace> workspaces) {
         String oldIds = System.getProperty(WORKSPACE_IDS_PROPERTY, "");
         for (String id : oldIds.split(",")) {
-            if (!id.isEmpty()) System.clearProperty(WORKSPACE_PROPERTY_PREFIX + id);
+            if (!id.isEmpty()) {
+                System.clearProperty(WORKSPACE_PROPERTY_PREFIX + id);
+                System.clearProperty(NATIVE_CONTENT_PROPERTY_PREFIX + id);
+                System.clearProperty(NATIVE_CONTENT_TARGET_PROPERTY_PREFIX + id);
+            }
         }
         StringBuilder ids = new StringBuilder();
         for (Workspace workspace : workspaces.values()) {
@@ -239,6 +349,12 @@ final class JavaModDevelopmentWorkspaces {
             ids.append(workspace.id);
             System.setProperty(WORKSPACE_PROPERTY_PREFIX + workspace.id,
                     workspace.root.toString());
+            if (workspace.nativeContentRoot != null && workspace.nativeContentTarget != null) {
+                System.setProperty(NATIVE_CONTENT_PROPERTY_PREFIX + workspace.id,
+                        workspace.nativeContentRoot.toString());
+                System.setProperty(NATIVE_CONTENT_TARGET_PROPERTY_PREFIX + workspace.id,
+                        workspace.nativeContentTarget.toString());
+            }
         }
         System.setProperty(WORKSPACE_IDS_PROPERTY, ids.toString());
     }
@@ -247,11 +363,24 @@ final class JavaModDevelopmentWorkspaces {
         final String id;
         final Path root;
         final boolean linked;
+        final Path nativeContentRoot;
+        Path nativeContentTarget;
 
-        Workspace(String id, Path root, boolean linked) {
+        Workspace(String id, Path root, boolean linked, Path nativeContentRoot) {
             this.id = id;
             this.root = root;
             this.linked = linked;
+            this.nativeContentRoot = nativeContentRoot;
+        }
+    }
+
+    private static final class WorkspaceMetadata {
+        final String id;
+        final Path nativeContentRoot;
+
+        WorkspaceMetadata(String id, Path nativeContentRoot) {
+            this.id = id;
+            this.nativeContentRoot = nativeContentRoot;
         }
     }
 
