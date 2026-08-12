@@ -69,6 +69,13 @@ public final class Effects {
                 x, y, height, direction, variant));
     }
 
+    /** Creates the game's soft resource-pool smoke with a namespace-stable mutable handle. */
+    public static Optional<EffectHandle> resourceSmoke(float x, float y, float height, int argb) {
+        requirePosition(x, y, height);
+        return Optional.ofNullable(manager().createResourcePoolSmokeEffect(x, y, height, argb))
+                .map(EffectHandle::new);
+    }
+
     public static Optional<EffectInstance> shockwave(float x, float y, float height, int argb) {
         requirePosition(x, y, height);
         return Optional.ofNullable(manager().createShockwaveBuiltInEffect(x, y, height, argb));

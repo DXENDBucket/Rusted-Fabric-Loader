@@ -5,6 +5,8 @@ import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.CustomUnitMetadata;
 import rustedwarfare.custom.MutableStatAccessor;
 
+import java.util.function.Consumer;
+
 /** Strongly typed metadata, death, and removal events for custom-unit instances. */
 public final class CustomUnitLifecycleEvents {
     public static final RustedFabricEvent<MetadataApply> BEFORE_METADATA_APPLY = metadataEvent();
@@ -15,6 +17,26 @@ public final class CustomUnitLifecycleEvents {
     public static final RustedFabricEvent<AfterUnit> AFTER_REMOVED = afterUnitEvent();
 
     private CustomUnitLifecycleEvents() {
+    }
+
+    /** Registers a permanent namespace-neutral listener after metadata is applied. */
+    public static void registerAfterMetadataApply(
+            Consumer<? super CustomUnitMetadataApplyContext> listener) {
+        if (listener == null) throw new IllegalArgumentException("listener must not be null");
+        AFTER_METADATA_APPLY.register((unit, oldMetadata, newMetadata, conversion, initial,
+                                       statOverrides) -> listener.accept(
+                new CustomUnitMetadataApplyContext(unit, oldMetadata, newMetadata,
+                        conversion, initial)));
+    }
+
+    /** Registers a removable namespace-neutral listener after metadata is applied. */
+    public static RustedFabricEvent.Registration subscribeAfterMetadataApply(
+            Consumer<? super CustomUnitMetadataApplyContext> listener) {
+        if (listener == null) throw new IllegalArgumentException("listener must not be null");
+        return AFTER_METADATA_APPLY.subscribe((unit, oldMetadata, newMetadata, conversion,
+                                               initial, statOverrides) -> listener.accept(
+                new CustomUnitMetadataApplyContext(unit, oldMetadata, newMetadata,
+                        conversion, initial)));
     }
 
     private static RustedFabricEvent<MetadataApply> metadataEvent() {

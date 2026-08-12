@@ -61,8 +61,12 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 60,
+        require(ApiSupportMatrix.entries().size() == 61,
                 "public API support matrix does not cover every advertised API group");
+        require(ApiSupportMatrix.expectedSupport(
+                        RustedFabricCapabilities.CUSTOM_UNIT_ECONOMY,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "custom-unit periodic economy support is not advertised");
         require(ApiSupportMatrix.expectedSupport(
                         RustedFabricCapabilities.UNIT_MOVEMENT_OVERRIDE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,

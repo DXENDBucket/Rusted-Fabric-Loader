@@ -29,6 +29,26 @@ public abstract class CustomUnitRuntimeNamedMixin {
                 (rustedwarfare.custom.CustomUnit) (Object) this, deltaFrames));
     }
 
+    @Redirect(
+            method = "update(F)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lrustedwarfare/custom/resource/ResourceAmount;addToUnitAndRecordIncome(Lrustedwarfare/unit/Unit;)V"),
+            require = 1)
+    private void rustedfabricapi$settlePeriodicGeneration(
+            rustedwarfare.custom.resource.ResourceAmount amount,
+            rustedwarfare.unit.Unit generatedFor) {
+        rustedwarfare.custom.CustomUnit unit =
+                (rustedwarfare.custom.CustomUnit) (Object) this;
+        io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationContext context =
+                new io.github.endx.rustedfabricapi.api.custom.event.PeriodicGenerationContext(
+                        unit, amount);
+        if (!io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEconomyEvents
+                .BEFORE_PERIODIC_GENERATION.invoker().beforeGeneration(context)) {
+            amount.addToUnitAndRecordIncome(generatedFor);
+        }
+    }
+
     @Inject(method = "b(FZ)V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$updatePerActionAutoTriggerCooldowns(
             float deltaFrames, boolean forceCheck, CallbackInfo ci) {

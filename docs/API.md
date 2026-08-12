@@ -249,10 +249,15 @@ The first typed desktop layer contains:
 - `api.custom.CustomUnits`, `CustomUnitHandle`, `CustomUnitMemory`, `CustomUnitRegistryEvents`, and
   `CustomUnitLifecycleEvents`: active and pending definition snapshots, lookup/creation/reload,
   registry phases, metadata conversion, custom-unit death and removal, plus typed reads/writes for
-  native `defineUnitMemory` numbers, booleans, strings, unit references, persistent components,
-  and composable stat modifiers. Mutable synchronous
+  native `defineUnitMemory` numbers, booleans, strings, unit references, local resources,
+  persistent components, and composable stat modifiers. `CustomUnitHandle` also exposes current
+  type, position, team identity, and stable unit ID without mapped classes. Mutable synchronous
   event contexts expose portable number/boolean memory and event-tag helpers, so a gameplay mod can
   implement global INI mechanics without importing mapped game classes.
+- `CustomUnitEconomyEvents.BEFORE_PERIODIC_GENERATION` runs only when the native
+  `generation_delay` timer settles. A listener may replace the complete native amount and return
+  `true`; returning `false` preserves normal generation and recorded-income behavior. This is the
+  preferred hook for routed or transformed income because it does not add a per-frame timer.
 - `CustomUnitMessageEvents` exposes enriched `newMessage` data before configured INI actions and
   can consume a message. `CustomUnitUpdateEvents` supplies deterministic per-instance simulation
   updates; both use namespace-stable contexts suitable for exploded Java workspaces.
@@ -719,7 +724,9 @@ pixel fill amount and close evicted images rather than allocating an unbounded i
 
 Camera mutation and effect creation should run on the update/render thread. Native effect creation
 can return no object when visibility rules or the effect pool reject it, so creation helpers return
-`Optional<EffectInstance>` where appropriate.
+`Optional<EffectInstance>` where appropriate. `Effects.resourceSmoke(...)` instead returns the
+namespace-stable `EffectHandle`, which can set color, alpha, scale, velocity, lifetime and fog
+visibility without exposing mapped game classes.
 
 ```java
 RustedWarfareClient.execute(() -> {

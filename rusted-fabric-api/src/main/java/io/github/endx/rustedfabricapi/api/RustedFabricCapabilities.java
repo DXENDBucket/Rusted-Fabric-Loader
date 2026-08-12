@@ -14,6 +14,7 @@ public final class RustedFabricCapabilities {
     public static final String CUSTOM_UNIT_MEMORY = "custom.unit_memory.v1";
     public static final String CUSTOM_UNIT_MESSAGE = "event.custom.unit.message.v1";
     public static final String CUSTOM_UNIT_UPDATE = "event.custom.unit.update.v1";
+    public static final String CUSTOM_UNIT_ECONOMY = "event.custom.unit.economy.v1";
     public static final String CUSTOM_AUTO_TRIGGER_COOLDOWN = "custom.auto_trigger_cooldown.v1";
     public static final String CLIENT_SCREEN = "client.screen.v1";
     public static final String CLIENT_RENDER_ALPHA_MASK = "client.render.alpha_mask.v1";

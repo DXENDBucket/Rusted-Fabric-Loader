@@ -9,6 +9,8 @@ import io.github.endx.rustedfabricapi.api.unit.attribute.UnitVitals;
 import io.github.endx.rustedfabricapi.api.unit.attribute.UnitVitalsSnapshot;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
 import rustedwarfare.custom.CustomUnit;
+import rustedwarfare.custom.resource.ResourceType;
+import rustedwarfare.unit.Unit;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,10 +36,44 @@ public final class CustomUnitHandle {
         return new CustomUnitHandle((CustomUnit) unit);
     }
 
+    /** Returns an empty result for native units that are not INI-backed custom units. */
+    public static Optional<CustomUnitHandle> tryOf(Object unit) {
+        return unit instanceof CustomUnit
+                ? Optional.of(new CustomUnitHandle((CustomUnit) unit))
+                : Optional.empty();
+    }
+
     /** Stable identity object suitable for identity comparison and weak-map keys. */
     public Object identity() { return unit; }
 
     public boolean alive() { return !unit.dead && !unit.removed; }
+    public long id() { return unit.id; }
+    public float x() { return ((Unit) unit).x; }
+    public float y() { return ((Unit) unit).y; }
+    public float height() { return ((Unit) unit).height; }
+
+    /** Returns the current INI unit type name, including after an in-place conversion. */
+    public String internalTypeName() { return unit.unitMetadata.getInternalName(); }
+
+    /** Stable identity of the owning native team, or an empty result before ownership is assigned. */
+    public Optional<Object> teamIdentity() { return Optional.ofNullable(unit.team); }
+
+    /** Reads a built-in or unit-local resource by the name used in INI expressions. */
+    public double resourceAmount(String name) {
+        return resourceType(name).getAmount(unit);
+    }
+
+    /** Writes a built-in or unit-local resource through its normal storage path. */
+    public void setResourceAmount(String name, double amount) {
+        requireFinite(amount, "amount");
+        resourceType(name).setAmount(unit, amount);
+    }
+
+    /** Adds a finite delta to a built-in or unit-local resource. */
+    public void addResourceAmount(String name, double delta) {
+        requireFinite(delta, "delta");
+        resourceType(name).addAmount(unit, delta);
+    }
 
     public boolean memoryDefined(String name) { return CustomUnitMemory.isDefined(unit, name); }
     public boolean memoryContains(String name) { return CustomUnitMemory.contains(unit, name); }
@@ -94,5 +130,20 @@ public final class CustomUnitHandle {
 
     private static float finiteFloat(double value) {
         return (float) Math.max(-Float.MAX_VALUE, Math.min(Float.MAX_VALUE, value));
+    }
+
+    private ResourceType resourceType(String name) {
+        String checked = Objects.requireNonNull(name, "name").trim();
+        if (checked.isEmpty()) throw new IllegalArgumentException("name must not be blank");
+        ResourceType type = unit.unitMetadata.getResourceTypeByNameOrBuiltin(checked);
+        if (type == null) {
+            throw new IllegalArgumentException("Unknown resource '" + checked
+                    + "' for custom unit " + internalTypeName());
+        }
+        return type;
+    }
+
+    private static void requireFinite(double value, String name) {
+        if (!Double.isFinite(value)) throw new IllegalArgumentException(name + " must be finite");
     }
 }
