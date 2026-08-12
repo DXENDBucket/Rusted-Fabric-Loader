@@ -13,14 +13,13 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
-import java.awt.geom.Point2D;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Bidi;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,8 +43,8 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
             String text, int requestedSize, boolean bold) {
         if (text == null) throw new NullPointerException("text");
         int size = clampSize(requestedSize);
-        Font font = selectFont((bold ? boldFont : regularFont).deriveFont((float) size),
-                text, size);
+        Font font = slickFont(selectFont(
+                (bold ? boldFont : regularFont).deriveFont((float) size), text, size));
         BufferedImage contextImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = contextImage.createGraphics();
         configure(graphics);
@@ -54,23 +53,35 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
             FontMetrics metrics = graphics.getFontMetrics();
             String[] lines = text.split("\\n", -1);
             int width = 1;
-            for (String line : lines) width = Math.max(width, metrics.stringWidth(line));
             int lineHeight = Math.max(1, metrics.getHeight());
+            int baselineTail = metrics.getDescent() + metrics.getLeading();
             int height = Math.max(1, Math.multiplyExact(lineHeight, lines.length));
             FontRenderContext context = graphics.getFontRenderContext();
+            GlyphVector space = font.layoutGlyphVector(context, new char[] {' '}, 0, 1,
+                    Font.LAYOUT_LEFT_TO_RIGHT);
+            int spaceWidth = space.getGlyphLogicalBounds(0).getBounds().width;
             ArrayList<VulkanGlyphPlacement> placements =
                     new ArrayList<VulkanGlyphPlacement>(text.length());
             for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
                 char[] characters = lines[lineIndex].toCharArray();
-                int flags = Bidi.requiresBidi(characters, 0, characters.length)
-                        ? Font.LAYOUT_RIGHT_TO_LEFT : Font.LAYOUT_LEFT_TO_RIGHT;
                 GlyphVector run = font.layoutGlyphVector(context, characters,
-                        0, characters.length, flags);
+                        0, characters.length, Font.LAYOUT_LEFT_TO_RIGHT);
                 for (int glyphIndex = 0; glyphIndex < run.getNumGlyphs(); glyphIndex++) {
                     int glyphCode = run.getGlyphCode(glyphIndex);
-                    Point2D position = run.getGlyphPosition(glyphIndex);
+                    int characterIndex = run.getGlyphCharIndex(glyphIndex);
+                    int codePoint = lines[lineIndex].codePointAt(characterIndex);
+                    Rectangle bounds = run.getGlyphPixelBounds(
+                            glyphIndex, context, 0.0f, 0.0f);
+                    if (codePoint == ' ') bounds.width = spaceWidth;
+                    width = Math.max(width, bounds.x + bounds.width);
+                    GlyphVector isolated = font.createGlyphVector(context,
+                            new int[] { glyphCode });
+                    Rectangle isolatedBounds = isolated.getGlyphPixelBounds(
+                            0, context, 0.0f, 0.0f);
                     placements.add(new VulkanGlyphPlacement(key(font, glyphCode),
-                            Math.round((float) position.getX()), lineIndex * lineHeight));
+                            bounds.x - isolatedBounds.x,
+                            lineIndex * lineHeight - baselineTail
+                                    + bounds.y - isolatedBounds.y));
                 }
             }
             return new VulkanTextLayout(Math.min(4096, width), Math.min(4096, height),
@@ -136,6 +147,13 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         return primary;
     }
 
+    private static Font slickFont(Font source) {
+        Map<TextAttribute, Object> attributes =
+                new HashMap<TextAttribute, Object>(source.getAttributes());
+        attributes.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+        return source.deriveFont(attributes);
+    }
+
     private static int clampSize(int requestedSize) {
         return Math.max(4, Math.min(256, requestedSize));
     }
@@ -178,10 +196,12 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
     }
 
     private static void configure(Graphics2D graphics) {
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
-                RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+                RenderingHints.VALUE_FRACTIONALMETRICS_ON);
     }
 
     private static final class GlyphKey {

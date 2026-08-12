@@ -552,18 +552,22 @@ public final class VulkanRuntime {
         if (builder == null || text == null || text.isEmpty() || paint == null) return false;
         boolean bold = paint.i() != null && paint.i().a();
         VulkanTextTextureCache.Entry texture = textureForText(
-                text, Math.round(paint.k()), bold);
+                text, Math.max(1, (int) paint.k()), bold);
         if (texture == null) return false;
         float left = x;
-        if (paint.j() == Paint$Align.b) left -= texture.width * 0.5f;
+        if (paint.j() == Paint$Align.b) left -= texture.width / 2;
         else if (paint.j() == Paint$Align.c) left -= texture.width;
+        // SlickGraphicsBackend converts the aligned origin to int before drawString. Keeping a
+        // half-pixel here makes atlas glyphs visibly break up in the scaled unit-action panel.
+        left = (int) left;
+        float baseline = (int) y;
         int color = paint.e();
         float red = ((color >>> 16) & 255) / 255.0f;
         float green = ((color >>> 8) & 255) / 255.0f;
         float blue = (color & 255) / 255.0f;
         float alpha = ((color >>> 24) & 255) / 255.0f;
         for (VulkanTextTextureCache.GlyphBatch batch : texture.batches) {
-            builder.texturedQuadBatch(batch.textureHandle, left, y, batch.geometry,
+            builder.texturedQuadBatch(batch.textureHandle, left, baseline, batch.geometry,
                     red, green, blue, alpha, state);
         }
         textRunsSubmitted++;

@@ -966,7 +966,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private static VulkanTextMetrics nativeTextMetrics(String text, Paint paint) {
-        int size = Math.max(1, Math.round(paint == null ? 16.0f : paint.k()));
+        int size = Math.max(1, (int) (paint == null ? 16.0f : paint.k()));
         boolean bold = paint != null && paint.i() != null && paint.i().a();
         return VulkanRuntime.measureNativeText(text == null ? "" : text, size, bold);
     }

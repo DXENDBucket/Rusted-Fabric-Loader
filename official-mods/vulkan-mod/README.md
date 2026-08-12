@@ -134,7 +134,9 @@ Ordinary sprite compaction is reported separately as `sprite.quads` and `sprite.
 Filled-rectangle compaction uses `colored.quads` and `colored.runCommands`.
 Desktop font selection also matches the original Slick backend: ASCII uses Roboto while any
 non-ASCII run uses the bundled DroidSans fallback as a whole, preserving the game's small-size
-strokes and vertical metrics.
+strokes and vertical metrics. The isolated rasterizer also mirrors Slick's fractional metrics,
+kerning, integer-truncated font sizes, glyph pixel bounds, baseline tail, and integer-aligned text
+origins; centered odd-width labels therefore no longer land on half pixels.
 
 The pre-OpenGL native bootstrap reproduces the original loading screen directly through
 `GraphicsEngine`: black background, centered game logo, animated `Loading` dots and the live loader

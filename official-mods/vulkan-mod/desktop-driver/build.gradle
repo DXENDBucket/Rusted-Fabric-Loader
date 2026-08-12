@@ -83,6 +83,15 @@ tasks.register('verifyColoredQuadRunSubmission', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.lwjgl3.StandaloneColoredQuadRunVerification')
 }
 
+tasks.register('verifySlickTextMetrics', JavaExec) {
+    group = 'verification'
+    description = 'Verifies desktop glyph metrics, kerning, and baseline match Slick UnicodeFont.'
+    classpath = files(
+            project(':official-mods:vulkan-mod').sourceSets.main.output.classesDirs,
+            sourceSets.main.runtimeClasspath)
+    mainClass.set('io.github.endx.vulkanmod.lwjgl3.AwtTextRasterizerVerification')
+}
+
 tasks.register('verifyDescriptorReuse', JavaExec) {
     group = 'verification'
     description = 'Verifies lazy, recycled descriptors and redundant texture-bind removal.'
