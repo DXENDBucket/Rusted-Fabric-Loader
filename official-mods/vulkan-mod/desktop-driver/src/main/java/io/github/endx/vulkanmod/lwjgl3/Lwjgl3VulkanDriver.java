@@ -47,9 +47,7 @@ import org.lwjgl.vulkan.VkAttachmentReference;
 import org.lwjgl.vulkan.VkBufferImageCopy;
 import org.lwjgl.vulkan.VkClearValue;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkCommandBufferAllocateInfo;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
-import org.lwjgl.vulkan.VkCommandPoolCreateInfo;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkDeviceCreateInfo;
 import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
@@ -72,7 +70,6 @@ import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 import org.lwjgl.vulkan.VkRenderPassBeginInfo;
 import org.lwjgl.vulkan.VkRenderPassCreateInfo;
-import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.lwjgl.vulkan.VkSubpassDependency;
 import org.lwjgl.vulkan.VkSubpassDescription;
@@ -1825,6 +1822,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private final VulkanPipelineLibrary pipelines;
         private final VulkanSwapchainLifecycle swapchainLifecycle;
         private final VulkanMemoryAllocator memory;
+        private final VulkanFrameExecutionResources execution;
         private final VulkanImageResourceFactory imageResources;
         private final Map<Long, TextureResource> textures =
                 new LinkedHashMap<Long, TextureResource>();
@@ -1850,28 +1848,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private final ArrayDeque<TextureResource> retiredTextures =
                 new ArrayDeque<TextureResource>();
         private long nextTextureHandle = 1L;
-        private long commandPool;
-        private VkCommandBuffer[] commandBuffers = new VkCommandBuffer[0];
-        private long[] imageAvailableSemaphores = new long[0];
-        private long[] inFlightFences = new long[0];
-        private BufferAllocation[] vertexAllocations = new BufferAllocation[0];
-        private int[] vertexCapacities = new int[0];
-        private VkCommandBuffer[] offscreenCommandBuffers = new VkCommandBuffer[0];
-        private long[] offscreenFences = new long[0];
-        /** Fence of the submission that most recently used each offscreen upload slot. */
-        private long[] offscreenSlotOwnerFences = new long[0];
-        private BufferAllocation[] offscreenVertexAllocations = new BufferAllocation[0];
-        private int[] offscreenVertexCapacities = new int[0];
-        private int offscreenCursor;
-        private int frameCursor;
         private final ArrayDeque<FrameUpload> frameUploadPool = new ArrayDeque<FrameUpload>();
         private final ArrayDeque<ColoredDrawBatch> coloredBatchPool =
                 new ArrayDeque<ColoredDrawBatch>();
         private final ArrayDeque<TextureDrawBatch> textureBatchPool =
                 new ArrayDeque<TextureDrawBatch>();
-        /** Persistently mapped staging allocation owned by each frame/offscreen/readback slot. */
-        private BufferAllocation[] textureUploadSlots = new BufferAllocation[0];
-        private int[] textureUploadCapacities = new int[0];
         private long textureUploadBytes;
         private long textureUploadBatches;
         private long textureUploadSlotGrowths;
@@ -1980,6 +1961,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.candidate = candidate;
             this.device = device;
             this.memory = new VulkanMemoryAllocator(candidate.device, device);
+            this.execution = new VulkanFrameExecutionResources(device, memory,
+                    candidate.queues.graphics, OFFSCREEN_SUBMISSION_SLOTS);
             this.imageResources = new VulkanImageResourceFactory(device, memory);
             this.descriptors = new VulkanDescriptorAllocator(
                     device, MAX_TEXTURE_DESCRIPTOR_SETS);
@@ -2001,7 +1984,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private void initialize() {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 swapchainLifecycle.initialize(stack);
-                createFrameExecutionResources(stack);
+                execution.initialize(stack, swapchainLifecycle.imageCount());
                 offscreenClearRenderPass = createOffscreenRenderPass(stack, false);
                 offscreenLoadRenderPass = createOffscreenRenderPass(stack, true);
             }
@@ -2307,68 +2290,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return handle.get(0);
         }
 
-        private void createFrameExecutionResources(MemoryStack stack) {
-            int imageCount = swapchainLifecycle.imageCount();
-            LongBuffer handle = stack.mallocLong(1);
-            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack)
-                    .sType$Default();
-            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack)
-                    .sType$Default()
-                    .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
-                    .queueFamilyIndex(candidate.queues.graphics);
-            check(vkCreateCommandPool(device, poolInfo, null, handle), "vkCreateCommandPool");
-            commandPool = handle.get(0);
-            VkCommandBufferAllocateInfo allocateInfo = VkCommandBufferAllocateInfo.calloc(stack)
-                    .sType$Default().commandPool(commandPool)
-                    .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
-                    .commandBufferCount(imageCount);
-            PointerBuffer pointers = stack.mallocPointer(imageCount);
-            check(vkAllocateCommandBuffers(device, allocateInfo, pointers),
-                    "vkAllocateCommandBuffers");
-            commandBuffers = new VkCommandBuffer[imageCount];
-            for (int index = 0; index < imageCount; index++) {
-                commandBuffers[index] = new VkCommandBuffer(pointers.get(index), device);
-            }
-            allocateInfo.commandBufferCount(OFFSCREEN_SUBMISSION_SLOTS);
-            PointerBuffer offscreenPointers = stack.mallocPointer(OFFSCREEN_SUBMISSION_SLOTS);
-            check(vkAllocateCommandBuffers(device, allocateInfo, offscreenPointers),
-                    "vkAllocateCommandBuffers(offscreen)");
-            offscreenCommandBuffers = new VkCommandBuffer[OFFSCREEN_SUBMISSION_SLOTS];
-            for (int index = 0; index < OFFSCREEN_SUBMISSION_SLOTS; index++) {
-                offscreenCommandBuffers[index] = new VkCommandBuffer(
-                        offscreenPointers.get(index), device);
-            }
-            imageAvailableSemaphores = new long[imageCount];
-            inFlightFences = new long[imageCount];
-            vertexAllocations = new BufferAllocation[imageCount];
-            vertexCapacities = new int[imageCount];
-            offscreenFences = new long[OFFSCREEN_SUBMISSION_SLOTS];
-            offscreenSlotOwnerFences = new long[OFFSCREEN_SUBMISSION_SLOTS];
-            offscreenVertexAllocations = new BufferAllocation[OFFSCREEN_SUBMISSION_SLOTS];
-            offscreenVertexCapacities = new int[OFFSCREEN_SUBMISSION_SLOTS];
-            textureUploadSlots = new BufferAllocation[
-                    imageCount + OFFSCREEN_SUBMISSION_SLOTS + 1];
-            textureUploadCapacities = new int[textureUploadSlots.length];
-            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack)
-                    .sType$Default().flags(VK_FENCE_CREATE_SIGNALED_BIT);
-            for (int index = 0; index < imageCount; index++) {
-                check(vkCreateSemaphore(device, semaphoreInfo, null, handle),
-                        "vkCreateSemaphore(imageAvailable[" + index + "])");
-                imageAvailableSemaphores[index] = handle.get(0);
-                check(vkCreateFence(device, fenceInfo, null, handle),
-                        "vkCreateFence(inFlight[" + index + "])");
-                inFlightFences[index] = handle.get(0);
-            }
-            for (int index = 0; index < OFFSCREEN_SUBMISSION_SLOTS; index++) {
-                check(vkCreateFence(device, fenceInfo, null, handle),
-                        "vkCreateFence(offscreen[" + index + "])");
-                offscreenFences[index] = handle.get(0);
-                offscreenSlotOwnerFences[index] = offscreenFences[index];
-            }
-            frameCursor = 0;
-            offscreenCursor = 0;
-        }
-
         private long colorPipeline(MemoryStack stack, VulkanBlendMode blendMode) {
             return pipelines.colorPipeline(stack, blendMode);
         }
@@ -2476,8 +2397,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             renderPassBegin.renderArea().offset().x(0).y(0);
             renderPassBegin.renderArea().extent().width(target.width).height(target.height);
             vkCmdBeginRenderPass(command, renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-            long vertexBuffer = offscreenVertexAllocations[vertexSlot] == null
-                    ? VK_NULL_HANDLE : offscreenVertexAllocations[vertexSlot].buffer;
+            BufferAllocation vertexAllocation =
+                    execution.offscreenVertexAllocations()[vertexSlot];
+            long vertexBuffer = vertexAllocation == null
+                    ? VK_NULL_HANDLE : vertexAllocation.buffer;
             if (upload.totalVertexCount() > 0) {
                 VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
                 viewport.get(0).x(0.0f).y(0.0f)
@@ -2555,9 +2478,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             TextureResource target = requireRenderTarget(textureHandle, frame);
             textureHandle = resolveTextureHandle(textureHandle);
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                int slot = offscreenCursor;
-                long fence = offscreenFences[slot];
-                long ownerFence = offscreenSlotOwnerFences[slot];
+                int slot = execution.offscreenCursor();
+                long fence = execution.offscreenFence(slot);
+                long ownerFence = execution.offscreenOwnerFence(slot);
                 check(vkWaitForFences(device, stack.longs(ownerFence), true, -1L),
                         "vkWaitForFences(render target slot)");
                 if (pendingTextureMutationRequiresGlobalWait()) {
@@ -2569,8 +2492,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     destroyRetiredTextures();
                 }
                 FrameUpload upload = frame.upload(stack, slot,
-                        offscreenVertexAllocations, offscreenVertexCapacities);
-                VkCommandBuffer command = offscreenCommandBuffers[slot];
+                        execution.offscreenVertexAllocations(),
+                        execution.offscreenVertexCapacities());
+                VkCommandBuffer command = execution.offscreenCommand(slot);
                 check(vkResetCommandBuffer(command, 0),
                         "vkResetCommandBuffer(render target)");
                 VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
@@ -2578,7 +2502,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkBeginCommandBuffer(command, beginInfo),
                         "vkBeginCommandBuffer(render target)");
                 recordPendingTextureUploads(command, stack,
-                        inFlightFences.length + slot);
+                        execution.offscreenUploadAllocations(),
+                        execution.offscreenUploadCapacities(), slot);
                 VkClearValue.Buffer clearValue = VkClearValue.calloc(1, stack);
                 clearValue.get(0).color()
                         .float32(0, frame.clearRed()).float32(1, frame.clearGreen())
@@ -2593,8 +2518,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 renderPassBegin.renderArea().extent()
                         .width(target.width).height(target.height);
                 vkCmdBeginRenderPass(command, renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-                long vertexBuffer = offscreenVertexAllocations[slot] == null
-                        ? VK_NULL_HANDLE : offscreenVertexAllocations[slot].buffer;
+                BufferAllocation vertexAllocation =
+                        execution.offscreenVertexAllocations()[slot];
+                long vertexBuffer = vertexAllocation == null
+                        ? VK_NULL_HANDLE : vertexAllocation.buffer;
                 if (upload.totalVertexCount() > 0) {
                     VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
                     viewport.get(0).x(0.0f).y(0.0f)
@@ -2658,8 +2585,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 check(vkQueueSubmit(graphicsQueue, submit, fence),
                         "vkQueueSubmit(render target)");
                 immediateOffscreenQueueSubmissions++;
-                offscreenSlotOwnerFences[slot] = fence;
-                offscreenCursor = (slot + 1) % offscreenFences.length;
+                execution.setOffscreenOwnerFence(slot, fence);
+                execution.advanceOffscreenCursor();
                 target.initialized = true;
                 renderTargetSubmissions++;
                 if (renderTargetSubmissions == 1) {
@@ -2771,7 +2698,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                                 | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
                 try {
-                    VkCommandBuffer command = commandBuffers[0];
+                    VkCommandBuffer command = execution.readbackCommand();
                     check(vkResetCommandBuffer(command, 0),
                             "vkResetCommandBuffer(render-target readback)");
                     VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
@@ -2781,7 +2708,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     // A reliable readback is ordered after every earlier ResourceStream update,
                     // including uploads that have not yet been folded into a presentation frame.
                     recordPendingTextureUploads(command, stack,
-                            textureUploadSlots.length - 1);
+                            execution.readbackUploadAllocations(),
+                            execution.readbackUploadCapacities(), 0);
                     VkImageMemoryBarrier.Buffer toCopy = VkImageMemoryBarrier.calloc(1, stack);
                     toCopy.get(0).sType$Default()
                             .oldLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -2898,13 +2826,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     texture, initialized));
         }
 
-        private BufferAllocation ensureTextureUploadSlot(MemoryStack stack, int slot,
-                                                         int requiredBytes) {
-            if (slot < 0 || slot >= textureUploadSlots.length) {
+        private BufferAllocation ensureTextureUploadSlot(
+                MemoryStack stack, BufferAllocation[] allocations,
+                int[] capacities, int slot, int requiredBytes) {
+            if (slot < 0 || slot >= allocations.length) {
                 throw new IllegalArgumentException("texture upload slot is out of range");
             }
-            BufferAllocation existing = textureUploadSlots[slot];
-            if (existing != null && textureUploadCapacities[slot] >= requiredBytes) {
+            BufferAllocation existing = allocations[slot];
+            if (existing != null && capacities[slot] >= requiredBytes) {
                 return existing;
             }
             if (existing != null) memory.destroyBuffer(existing);
@@ -2921,12 +2850,12 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 memory.destroyBuffer(created);
                 throw failure;
             }
-            textureUploadSlots[slot] = created;
-            textureUploadCapacities[slot] = capacity;
+            allocations[slot] = created;
+            capacities[slot] = capacity;
             textureUploadSlotGrowths++;
             if (textureUploadSlotGrowths == 1L) {
                 System.out.println("[Vulkan Mod/Driver] Persistent mapped texture upload slots "
-                        + "active (slots=" + textureUploadSlots.length + ")");
+                        + "active (slots=" + execution.totalUploadSlotCount() + ")");
             }
             return created;
         }
@@ -2953,6 +2882,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             statistics.put("descriptor.pairHits", textureDescriptorPairHits);
             statistics.put("descriptor.pairMisses", textureDescriptorPairMisses);
             commandState.appendStatistics(statistics);
+            execution.appendStatistics(statistics);
             statistics.put("frame.materialCacheHits", decodedMaterialCacheHits);
             statistics.put("frame.materialCacheMisses", decodedMaterialCacheMisses);
         }
@@ -3034,14 +2964,17 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return descriptorSet;
         }
 
-        private void recordPendingTextureUploads(VkCommandBuffer command, MemoryStack stack,
-                                                 int uploadSlot) {
+        private void recordPendingTextureUploads(
+                VkCommandBuffer command, MemoryStack stack,
+                BufferAllocation[] uploadAllocations, int[] uploadCapacities,
+                int uploadSlot) {
             if (pendingTextureUploads.isEmpty()) return;
             int byteCount = 0;
             for (PendingTextureUpload pending : pendingTextureUploads) {
                 byteCount = Math.addExact(byteCount, pending.texture.byteSize());
             }
-            BufferAllocation staging = ensureTextureUploadSlot(stack, uploadSlot, byteCount);
+            BufferAllocation staging = ensureTextureUploadSlot(stack, uploadAllocations,
+                    uploadCapacities, uploadSlot, byteCount);
             ByteBuffer destination = staging.mapped.duplicate().order(ByteOrder.nativeOrder());
             destination.clear().limit(byteCount);
             for (PendingTextureUpload pending : pendingTextureUploads) {
@@ -3157,7 +3090,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private VulkanSurfaceInfo presentFrame(VulkanFrameSubmission submission) {
             List<VulkanRenderTargetPass> passes = submission.renderTargetPasses();
             if (passes.isEmpty()) return presentFrame(submission.presentationFrame());
-            if (passes.size() > offscreenVertexAllocations.length) {
+            if (passes.size() > execution.offscreenSlotCount()) {
                 // Preserve correctness for unusually deep graphs. The common terrain/minimap/UI
                 // path fits the bounded ring and is encoded into one queue submission below.
                 for (VulkanRenderTargetPass pass : passes) {
@@ -3202,7 +3135,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             for (int index = 0; index < graphCount; index++) {
                 passes.add(new StreamFrameSource(stream, index));
             }
-            if (passes.size() > offscreenVertexAllocations.length) {
+            if (passes.size() > execution.offscreenSlotCount()) {
                 for (FrameSource pass : passes) renderToTexture(pass);
                 return prepareAndPresentFrame(presentation, false);
             }
@@ -3327,9 +3260,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 // discard a submitted frame merely because a zoom cache refresh exceeded 16 ms.
                 long fenceTimeout = infiniteWait ? -1L : 100_000_000L;
                 long acquireTimeout = infiniteWait ? -1L : 16_000_000L;
-                int frameSlot = frameCursor;
-                long inFlightFence = inFlightFences[frameSlot];
-                long imageAvailableSemaphore = imageAvailableSemaphores[frameSlot];
+                int frameSlot = execution.mainCursor();
+                long inFlightFence = execution.mainFence(frameSlot);
+                long imageAvailableSemaphore =
+                        execution.imageAvailableSemaphore(frameSlot);
                 int fenceWait = vkWaitForFences(device, stack.longs(inFlightFence), true,
                         fenceTimeout);
                 if (fenceWait == VK_TIMEOUT || fenceWait == VK_NOT_READY) {
@@ -3367,15 +3301,17 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     FrameSource pass = frameGraphPasses.get(graphIndex);
                     TextureResource target = requireRenderTarget(
                             pass.targetHandle(), pass);
-                    int graphSlot = (offscreenCursor + graphIndex)
-                            % offscreenVertexAllocations.length;
+                    int graphSlot = (execution.offscreenCursor() + graphIndex)
+                            % execution.offscreenSlotCount();
                     check(vkWaitForFences(device,
-                                    stack.longs(offscreenSlotOwnerFences[graphSlot]), true, -1L),
+                                    stack.longs(execution.offscreenOwnerFence(graphSlot)),
+                                    true, -1L),
                             "vkWaitForFences(frame graph slot)");
                     graphTargets[graphIndex] = target;
                     graphSlots[graphIndex] = graphSlot;
                     graphUploads[graphIndex] = pass.upload(stack, graphSlot,
-                            offscreenVertexAllocations, offscreenVertexCapacities);
+                            execution.offscreenVertexAllocations(),
+                            execution.offscreenVertexCapacities());
                 }
                 IntBuffer imageIndex = stack.mallocInt(1);
                 // A minimized/occluded Win32 surface is allowed to stop returning images.
@@ -3404,16 +3340,19 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 long renderFinishedSemaphore =
                         swapchainLifecycle.renderFinishedSemaphore(index);
                 FrameUpload upload = frame.upload(stack, frameSlot,
-                        vertexAllocations, vertexCapacities);
+                        execution.mainVertexAllocations(),
+                        execution.mainVertexCapacities());
                 long afterVertexUpload = System.nanoTime();
-                VkCommandBuffer commandBuffer = commandBuffers[frameSlot];
+                VkCommandBuffer commandBuffer = execution.mainCommand(frameSlot);
                 check(vkResetCommandBuffer(commandBuffer, 0), "vkResetCommandBuffer");
                 VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
                         .sType$Default().flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
                 check(vkBeginCommandBuffer(commandBuffer, beginInfo), "vkBeginCommandBuffer");
                 // This frame slot owns its persistently mapped staging allocation until the same
                 // in-flight fence becomes reusable.
-                recordPendingTextureUploads(commandBuffer, stack, frameSlot);
+                recordPendingTextureUploads(commandBuffer, stack,
+                        execution.mainUploadAllocations(),
+                        execution.mainUploadCapacities(), frameSlot);
                 for (int graphIndex = 0; graphIndex < graphCount; graphIndex++) {
                     FrameSource pass = frameGraphPasses.get(graphIndex);
                     recordFrameGraphTarget(commandBuffer, stack, pass.targetHandle(),
@@ -3432,8 +3371,10 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 renderPassBegin.renderArea().extent()
                         .width(surfaceInfo.width()).height(surfaceInfo.height());
                 vkCmdBeginRenderPass(commandBuffer, renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-                long vertexBuffer = vertexAllocations[frameSlot] == null
-                        ? VK_NULL_HANDLE : vertexAllocations[frameSlot].buffer;
+                BufferAllocation vertexAllocation =
+                        execution.mainVertexAllocations()[frameSlot];
+                long vertexBuffer = vertexAllocation == null
+                        ? VK_NULL_HANDLE : vertexAllocation.buffer;
                 if (upload.totalVertexCount() > 0) {
                     VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
                     viewport.get(0).x(0.0f).y(0.0f)
@@ -3491,11 +3432,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
                 check(vkQueueSubmit(graphicsQueue, submit, inFlightFence), "vkQueueSubmit");
                 for (int graphIndex = 0; graphIndex < graphCount; graphIndex++) {
-                    offscreenSlotOwnerFences[graphSlots[graphIndex]] = inFlightFence;
+                    execution.setOffscreenOwnerFence(
+                            graphSlots[graphIndex], inFlightFence);
                 }
                 if (graphCount > 0) {
-                    offscreenCursor = (offscreenCursor + graphCount)
-                            % offscreenVertexAllocations.length;
+                    execution.advanceOffscreenCursor(graphCount);
                     frameGraphSubmitted = true;
                     frameGraphQueueSubmissions++;
                     frameGraphPassesSubmitted += graphCount;
@@ -3527,7 +3468,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 + ", commands=" + frame.drawCount());
                     }
                 }
-                frameCursor = (frameSlot + 1) % inFlightFences.length;
+                execution.advanceMainCursor();
                 long afterPresent = System.nanoTime();
                 if (Boolean.getBoolean("rusted.fabric.vulkan.profileFrameStages")
                         && afterPresent - profileStarted >= 8_000_000L) {
@@ -3553,17 +3494,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private boolean allSubmissionFencesSignaled() {
-            for (long fence : inFlightFences) {
-                int status = vkGetFenceStatus(device, fence);
-                if (status == VK_NOT_READY) return false;
-                check(status, "vkGetFenceStatus");
-            }
-            for (long fence : offscreenFences) {
-                int status = vkGetFenceStatus(device, fence);
-                if (status == VK_NOT_READY) return false;
-                check(status, "vkGetFenceStatus(offscreen)");
-            }
-            return true;
+            return execution.allFencesSignaled();
         }
 
         private void waitForAllSubmissionFences(MemoryStack stack) {
@@ -3572,10 +3503,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private int waitForAllSubmissionFences(MemoryStack stack, long timeout) {
-            LongBuffer fences = stack.mallocLong(
-                    inFlightFences.length + offscreenFences.length);
-            fences.put(inFlightFences).put(offscreenFences).flip();
-            return vkWaitForFences(device, fences, true, timeout);
+            return execution.waitForAllFences(stack, timeout);
         }
 
         private int targetWidth(FrameSource frame) {
@@ -4425,47 +4353,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 SwapchainResult replacement = createSwapchain(stack, candidate, device,
                         surface, Math.max(1, width), Math.max(1, height),
                         swapchainLifecycle.handle(), nativeWindowMode);
-                destroyFrameExecutionResources();
+                execution.replaceMainGeneration(stack, replacement.images.length);
                 swapchainLifecycle.replace(stack, replacement.handle,
                         replacement.images, replacement.info);
-                createFrameExecutionResources(stack);
-            }
-        }
-
-        private void destroyFrameExecutionResources() {
-            for (long fence : offscreenFences) {
-                if (fence != VK_NULL_HANDLE) vkDestroyFence(device, fence, null);
-            }
-            offscreenFences = new long[0];
-            offscreenSlotOwnerFences = new long[0];
-            for (long fence : inFlightFences) {
-                if (fence != VK_NULL_HANDLE) vkDestroyFence(device, fence, null);
-            }
-            inFlightFences = new long[0];
-            for (long semaphore : imageAvailableSemaphores) {
-                if (semaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, semaphore, null);
-            }
-            imageAvailableSemaphores = new long[0];
-            for (BufferAllocation allocation : vertexAllocations) {
-                if (allocation != null) memory.destroyBuffer(allocation);
-            }
-            vertexAllocations = new BufferAllocation[0];
-            vertexCapacities = new int[0];
-            for (BufferAllocation allocation : offscreenVertexAllocations) {
-                if (allocation != null) memory.destroyBuffer(allocation);
-            }
-            offscreenVertexAllocations = new BufferAllocation[0];
-            offscreenVertexCapacities = new int[0];
-            for (BufferAllocation allocation : textureUploadSlots) {
-                if (allocation != null) memory.destroyBuffer(allocation);
-            }
-            textureUploadSlots = new BufferAllocation[0];
-            textureUploadCapacities = new int[0];
-            if (commandPool != 0L) {
-                vkDestroyCommandPool(device, commandPool, null);
-                commandPool = 0L;
-                commandBuffers = new VkCommandBuffer[0];
-                offscreenCommandBuffers = new VkCommandBuffer[0];
             }
         }
 
@@ -4473,7 +4363,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (closed) return;
             closed = true;
             vkDeviceWaitIdle(device);
-            destroyFrameExecutionResources();
+            execution.close();
             swapchainLifecycle.close();
             pipelines.close();
             descriptors.close();

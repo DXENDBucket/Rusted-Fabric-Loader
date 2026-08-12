@@ -113,8 +113,15 @@ image-indexed render-finished semaphores. Its replacement path retires an entire
 dependency order while leaving frame-slot command buffers, fences, and mapped uploads in the
 execution layer. `swapchain.*` counters expose generations and native-resource balance; a real
 Win32 regression presents across two physical resizes and enforces zero leaked generations at
-shutdown. `Lwjgl3VulkanDriver` retains orchestration and image-to-descriptor cache keys, but no
-longer implements those low-level lifecycles inline.
+shutdown. `VulkanFrameExecutionResources` owns two deliberately separate execution lifetimes: a
+swapchain-sized main command/fence/semaphore/upload generation, and one device-lifetime offscreen
+command pool containing the child-pass ring plus a dedicated readback command buffer. Main slots
+are replaced on resize; offscreen fences, mapped vertex/upload buffers, cursor, and command buffers
+survive. `execution.*` counters expose both generations and lazy buffer occupancy. The resize
+regression primes real offscreen vertex and upload buffers before replacing WSI twice, then proves
+that their pool generation and allocations did not change. `Lwjgl3VulkanDriver` retains
+orchestration and image-to-descriptor cache keys, but no longer implements those low-level
+lifecycles inline.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -206,8 +213,10 @@ performance runs remain unaffected.
    real-device reuse/leak regressions. Pipeline layouts and custom shader registrations survive
    swapchain recreation while render-pass-bound caches are retired deterministically. WSI
    generations now also have a dedicated owner separated from frame execution, with real Win32
-   resize and shutdown-balance coverage. Next, extract the per-frame command/fence/upload-slot
-   owner and stop rebuilding swapchain-independent offscreen execution slots on window resize.
+   resize and shutdown-balance coverage. Main and offscreen execution slots now have a dedicated
+   owner and separate command pools; window resize replaces only the main generation and preserves
+   offscreen/readback command buffers plus their warmed mapped rings. Next, extract pending texture
+   transfer and fence-safe retirement orchestration from `SurfaceSession`.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
    the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover
