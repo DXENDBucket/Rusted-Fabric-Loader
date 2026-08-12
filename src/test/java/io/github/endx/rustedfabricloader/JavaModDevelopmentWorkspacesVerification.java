@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
@@ -32,7 +34,12 @@ public final class JavaModDevelopmentWorkspacesVerification {
             Path packagedOverride = jars.resolve("test-mod.jar");
             Path packagedOther = jars.resolve("other-mod.jar");
             createJar(packagedOverride, metadata("test_mod", "1.0.0"));
-            createJar(packagedOther, metadata("other_mod", "1.0.0"));
+            LinkedHashMap<String, String> packagedNative = new LinkedHashMap<String, String>();
+            packagedNative.put("native-content/mod-info.txt",
+                    "[mod]\ntitle: Packaged native content\n");
+            packagedNative.put("native-content/unit.ini", "[core]\nname: packagedUnit\n");
+            createJar(packagedOther,
+                    metadata("other_mod", "1.0.0", null, "native-content"), packagedNative);
 
             Path workspace = Files.createDirectories(dev.resolve("test_mod"));
             Path nativeContent = Files.createDirectories(workspace.resolve("native-content"));
@@ -75,6 +82,20 @@ public final class JavaModDevelopmentWorkspacesVerification {
                             System.getProperty(JavaModDevelopmentWorkspaces
                                     .NATIVE_CONTENT_TARGET_PROPERTY_PREFIX + "test_mod")),
                     "declared native content was not staged or published");
+            Path packagedStaged = game.resolve("mods/units/rfl-java-other_mod");
+            require(Files.isRegularFile(packagedStaged.resolve("mod-info.txt"))
+                            && Files.isRegularFile(packagedStaged.resolve("unit.ini")),
+                    "packaged native content was not staged");
+            packagedNative.remove("native-content/unit.ini");
+            packagedNative.put("native-content/replacement.ini",
+                    "[core]\nname: packagedReplacement\n");
+            createJar(packagedOther,
+                    metadata("other_mod", "1.0.1", null, "native-content"), packagedNative);
+            JavaModDevelopmentWorkspaces.discover(game, jars, false,
+                    LogCategory.create("Test", "JavaModDevelopment"));
+            require(!Files.exists(packagedStaged.resolve("unit.ini"))
+                            && Files.isRegularFile(packagedStaged.resolve("replacement.ini")),
+                    "packaged native content update left stale files active");
             Files.delete(nativeContent.resolve("unit.ini"));
             Files.write(nativeContent.resolve("replacement.ini"),
                     "[core]\nname: replacement\n".getBytes(StandardCharsets.UTF_8));
@@ -98,6 +119,25 @@ public final class JavaModDevelopmentWorkspacesVerification {
             }
             require(refusedUnmanaged && Files.isRegularFile(unmanaged.resolve("user-file.txt")),
                     "native content staging overwrote an unmanaged user directory");
+            Path unmanagedPackage = Files.createDirectories(
+                    game.resolve("mods/units/rfl-java-unmanaged"));
+            Files.write(unmanagedPackage.resolve("user-file.txt"),
+                    "keep".getBytes(StandardCharsets.UTF_8));
+            boolean refusedUnmanagedPackage = false;
+            try {
+                PackagedNativeContentBridge.sync(
+                        "unmanaged", packagedOther, "native-content", game.resolve("mods/units"));
+            } catch (IOException expected) {
+                refusedUnmanagedPackage = true;
+            }
+            require(refusedUnmanagedPackage
+                            && Files.isRegularFile(unmanagedPackage.resolve("user-file.txt")),
+                    "packaged native content staging overwrote an unmanaged user directory");
+            Files.delete(packagedOther);
+            JavaModDevelopmentWorkspaces.discover(game, jars, false,
+                    LogCategory.create("Test", "JavaModDevelopment"));
+            require(!Files.exists(packagedStaged),
+                    "removed packaged Java mod left its native content active");
             Path list = JavaModDevelopmentWorkspaces.writeCandidateList(game,
                     selected.candidates);
             require(Files.readAllLines(list, StandardCharsets.UTF_8).size()
@@ -123,14 +163,75 @@ public final class JavaModDevelopmentWorkspacesVerification {
                 });
             }
         }
+        if (arguments.length > 0) {
+            verifyExternalPackage(java.nio.file.Paths.get(arguments[0]));
+        }
         System.out.println("Java mod development workspace discovery passed");
     }
 
+    private static void verifyExternalPackage(Path source) throws Exception {
+        Path archive = source.toRealPath();
+        Path temporary = Files.createTempDirectory("rfl-hybrid-package-");
+        try {
+            Path game = Files.createDirectories(temporary.resolve("game"));
+            Path jars = Files.createDirectories(game.resolve("javamods"));
+            Path dev = Files.createDirectories(game.resolve("javamods-dev"));
+            Path installed = jars.resolve(archive.getFileName());
+            Files.copy(archive, installed);
+            System.setProperty(JavaModDevelopmentWorkspaces.DEV_DIR_PROPERTY, dev.toString());
+            JavaModDevelopmentWorkspaces.Selection selected =
+                    JavaModDevelopmentWorkspaces.discover(game, jars, false,
+                            LogCategory.create("Test", "ExternalHybridMod"));
+            require(selected.candidates.contains(installed.toAbsolutePath().normalize()),
+                    "external hybrid Java mod was not selected");
+            Path units = game.resolve("mods/units");
+            java.util.List<Path> staged = new java.util.ArrayList<Path>();
+            try (java.nio.file.DirectoryStream<Path> entries = Files.newDirectoryStream(
+                    units, "rfl-java-*")) {
+                for (Path entry : entries) staged.add(entry);
+            }
+            require(staged.size() == 1 && Files.isRegularFile(staged.get(0).resolve("mod-info.txt")),
+                    "external hybrid Java mod did not stage one native content pack");
+            long stagedFiles;
+            try (java.util.stream.Stream<Path> paths = Files.walk(staged.get(0))) {
+                stagedFiles = paths.filter(Files::isRegularFile).count();
+            }
+            require(stagedFiles > 1L, "external hybrid Java mod staged no native resources");
+            Files.delete(installed);
+            JavaModDevelopmentWorkspaces.discover(game, jars, false,
+                    LogCategory.create("Test", "ExternalHybridMod"));
+            require(!Files.exists(staged.get(0)),
+                    "external hybrid Java mod native content survived package removal");
+            System.out.println("External hybrid package staging passed: " + archive
+                    + " (" + stagedFiles + " staged files)");
+        } finally {
+            System.clearProperty(JavaModDevelopmentWorkspaces.DEV_DIR_PROPERTY);
+            System.clearProperty(JavaModDevelopmentWorkspaces.RESOLVED_DEV_DIR_PROPERTY);
+            System.clearProperty(JavaModDevelopmentWorkspaces.AUTO_RELOAD_PROPERTY);
+            System.clearProperty(JavaModDevelopmentWorkspaces.WORKSPACE_IDS_PROPERTY);
+            try (java.util.stream.Stream<Path> paths = Files.walk(temporary)) {
+                paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                    try { Files.deleteIfExists(path); } catch (IOException ignored) { }
+                });
+            }
+        }
+    }
+
     private static void createJar(Path path, String metadata) throws IOException {
+        createJar(path, metadata, java.util.Collections.<String, String>emptyMap());
+    }
+
+    private static void createJar(Path path, String metadata, Map<String, String> resources)
+            throws IOException {
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(path))) {
             output.putNextEntry(new JarEntry("fabric.mod.json"));
             output.write(metadata.getBytes(StandardCharsets.UTF_8));
             output.closeEntry();
+            for (Map.Entry<String, String> resource : resources.entrySet()) {
+                output.putNextEntry(new JarEntry(resource.getKey()));
+                output.write(resource.getValue().getBytes(StandardCharsets.UTF_8));
+                output.closeEntry();
+            }
         }
     }
 
@@ -139,11 +240,25 @@ public final class JavaModDevelopmentWorkspacesVerification {
     }
 
     private static String metadata(String id, String version, String nativeContentRoot) {
+        return metadata(id, version, nativeContentRoot, null);
+    }
+
+    private static String metadata(String id, String version, String developmentRoot,
+                                   String packagedRoot) {
+        StringBuilder custom = new StringBuilder();
+        if (developmentRoot != null) {
+            custom.append("\"rusted_fabric:development\":{")
+                    .append("\"nativeContentRoot\":\"").append(developmentRoot)
+                    .append("\"}");
+        }
+        if (packagedRoot != null) {
+            if (custom.length() > 0) custom.append(',');
+            custom.append("\"rusted_fabric:native_content\":{")
+                    .append("\"root\":\"").append(packagedRoot).append("\"}");
+        }
         return "{\"schemaVersion\":1,\"id\":\"" + id
                 + "\",\"version\":\"" + version + "\""
-                + (nativeContentRoot == null ? "" : ",\"custom\":{"
-                + "\"rusted_fabric:development\":{"
-                + "\"nativeContentRoot\":\"" + nativeContentRoot + "\"}}")
+                + (custom.length() == 0 ? "" : ",\"custom\":{" + custom + "}")
                 + "}";
     }
 

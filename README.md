@@ -5,7 +5,7 @@ This repository provides the Rusted Fabric Loader GameProvider along with suppor
 Current compatibility baseline:
 
 - Rusted Warfare `1.15`
-- Rusted Fabric Loader `0.4.0` / API `0.3.0`
+- Rusted Fabric Loader `0.4.1` / API `0.3.0`
 - mappings `1.1 FINAL` (mapping-only completion + executable gate)
 - Java bytecode level `13`
 
@@ -153,6 +153,31 @@ so balancing an INI under the source workspace requires neither a Gradle build n
 Removing or disabling the workspace removes its managed mirror on the next launch. This same
 copy-based mechanism is used on Windows and Android, so a hybrid Java/INI project needs only one
 development workspace and no junction or root access.
+
+## Self-contained hybrid Java mods
+
+A release Java-mod Jar can embed the same native INI content instead of requiring a separate
+`.rwmod`. Keep the content below a dedicated archive directory containing `mod-info.txt` and add a
+packaged declaration alongside the optional development declaration:
+
+```json
+{
+  "custom": {
+    "rusted_fabric:development": {
+      "nativeContentRoot": "native-content"
+    },
+    "rusted_fabric:native_content": {
+      "root": "native-content"
+    }
+  }
+}
+```
+
+The build must include that directory in the Java-mod archive. On first launch, the Loader safely
+stages it as the managed native mod `rfl-java-<mod_id>`; unchanged archive hashes reuse the existing
+copy. Updating, disabling, deleting, or overriding the Java mod updates or removes its managed
+native content on the next launch. The Loader refuses path traversal, oversized archives, and
+replacement of an unmanaged directory.
 
 INI Essentials is built as an official artifact but is not installed by default yet. Install it for
 custom-unit development with:

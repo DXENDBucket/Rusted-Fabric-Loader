@@ -843,6 +843,12 @@ redefined by this operation and still require rebuilding and restarting the game
 original sandbox **Reload units** path also synchronizes those roots immediately before its native
 timestamp scan, allowing source-workspace INI balance edits to use the familiar in-match workflow.
 
+For a distributable hybrid mod, include the native directory in the Java-mod Jar and
+declare `custom.rusted_fabric:native_content.root`. The root must be a relative archive directory
+containing `mod-info.txt`. The Loader stages packaged native content into a separately owned native
+mod directory at process startup; this packaged copy is intentionally not exposed as an editable
+development workspace and is replaced or removed together with the Java mod.
+
 Reads into memory are capped at 128 MiB. When a native game API requires a real filesystem path,
 `extractToCache()` writes a content-addressed copy atomically below the operating system temporary
 directory. It does not unpack into the game, project, or Git repository. Equal content reuses the

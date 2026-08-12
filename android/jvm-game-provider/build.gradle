@@ -27,6 +27,7 @@ sourceSets {
             include 'io/github/endx/rustedfabricloader/RendererBackendSelection.java'
             include 'io/github/endx/rustedfabricloader/JavaModDevelopmentWorkspaces.java'
             include 'io/github/endx/rustedfabricloader/NativeContentDevelopmentBridge.java'
+            include 'io/github/endx/rustedfabricloader/PackagedNativeContentBridge.java'
         }
     }
 }
@@ -72,6 +73,7 @@ tasks.register('verifyAndroidJvmLauncher') {
                 'io/github/endx/rustedfabricloader/RendererBackendSelection.class',
                 'io/github/endx/rustedfabricloader/JavaModDevelopmentWorkspaces.class',
                 'io/github/endx/rustedfabricloader/NativeContentDevelopmentBridge.class',
+                'io/github/endx/rustedfabricloader/PackagedNativeContentBridge.class',
                 'META-INF/services/net.fabricmc.loader.impl.game.GameProvider'
         ] as Set
         def found = [] as Set

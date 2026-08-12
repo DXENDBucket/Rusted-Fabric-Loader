@@ -199,6 +199,9 @@ tasks.register('verifyJavaModDevelopmentWorkspaces', JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass.set('io.github.endx.rustedfabricloader.JavaModDevelopmentWorkspacesVerification')
+    if (project.hasProperty('hybridMod')) {
+        args file(project.property('hybridMod')).absolutePath
+    }
 }
 
 check.dependsOn tasks.named('verifyJavaModDevelopmentWorkspaces')

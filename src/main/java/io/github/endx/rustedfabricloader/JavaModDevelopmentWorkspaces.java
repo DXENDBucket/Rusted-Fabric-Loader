@@ -44,6 +44,9 @@ final class JavaModDevelopmentWorkspaces {
     private static final String METADATA = "fabric.mod.json";
     private static final String DEVELOPMENT_METADATA = "rusted_fabric:development";
     private static final String NATIVE_CONTENT_ROOT = "nativeContentRoot";
+    private static final String PACKAGED_NATIVE_CONTENT_METADATA =
+            "rusted_fabric:native_content";
+    private static final String PACKAGED_NATIVE_CONTENT_ROOT = "root";
     private static final String ANDROID_CONTENT_ROOT_PROPERTY = "rusted.android.contentRoot";
     private static final String LINK_SUFFIX = ".link";
     private static final int MAX_LINK_BYTES = 16 * 1024;
@@ -74,9 +77,11 @@ final class JavaModDevelopmentWorkspaces {
                 : new LinkedHashMap<String, Workspace>();
         prepareNativeContent(gameDir, workspaces, logCategory);
         publish(workspaces);
-        List<Path> jars = discoverJars(javaModsDir, workspaces.keySet(), logCategory);
-        ArrayList<Path> candidates = new ArrayList<Path>(jars.size() + workspaces.size());
-        candidates.addAll(jars);
+        List<PackagedMod> packaged = discoverPackagedMods(
+                javaModsDir, workspaces.keySet(), logCategory);
+        preparePackagedNativeContent(gameDir, packaged, logCategory);
+        ArrayList<Path> candidates = new ArrayList<Path>(packaged.size() + workspaces.size());
+        for (PackagedMod mod : packaged) candidates.add(mod.path);
         for (Workspace workspace : workspaces.values()) candidates.add(workspace.root);
         return new Selection(devRoot, candidates, workspaces);
     }
@@ -176,32 +181,37 @@ final class JavaModDevelopmentWorkspaces {
         return target.toRealPath();
     }
 
-    private static List<Path> discoverJars(Path javaModsDir, Set<String> overriddenIds,
-                                            LogCategory category) {
+    private static List<PackagedMod> discoverPackagedMods(
+            Path javaModsDir, Set<String> overriddenIds, LogCategory category) {
         if (javaModsDir == null || !Files.isDirectory(javaModsDir)) {
             return Collections.emptyList();
         }
-        ArrayList<Path> result = new ArrayList<Path>();
+        ArrayList<PackagedMod> result = new ArrayList<PackagedMod>();
         try (Stream<Path> paths = Files.walk(javaModsDir)) {
             paths.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
                             && !Files.isSymbolicLink(path)
-                            && path.getFileName().toString().toLowerCase(Locale.ROOT)
-                            .endsWith(".jar"))
+                            && isPackagedMod(path))
                     .forEach(path -> {
-                        String id = readJarModId(path, category);
-                        if (id == null || !overriddenIds.contains(id)) {
-                            result.add(path.toAbsolutePath().normalize());
+                        PackagedMod mod = readPackagedMod(path, category);
+                        if (mod.id == null || !overriddenIds.contains(mod.id)) {
+                            result.add(mod);
                         } else {
-                            Log.info(category, "Development workspace %s overrides %s", id, path);
+                            Log.info(category, "Development workspace %s overrides %s",
+                                    mod.id, path);
                         }
                     });
         } catch (IOException failure) {
             Log.warn(category, "Could not scan Java mods from %s: %s",
                     javaModsDir, failure.toString());
         }
-        Collections.sort(result, Comparator.comparing(Path::toString,
+        Collections.sort(result, Comparator.comparing(mod -> mod.path.toString(),
                 String.CASE_INSENSITIVE_ORDER));
         return result;
+    }
+
+    private static boolean isPackagedMod(Path path) {
+        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        return name.endsWith(".jar");
     }
 
     private static WorkspaceMetadata readDirectoryMetadata(Path root) throws IOException {
@@ -300,6 +310,35 @@ final class JavaModDevelopmentWorkspaces {
         }
     }
 
+    private static void preparePackagedNativeContent(
+            Path gameDir, List<PackagedMod> packaged, LogCategory category) {
+        Path nativeUnitsRoot = resolveNativeUnitsRoot(gameDir);
+        LinkedHashSet<String> activeIds = new LinkedHashSet<String>();
+        java.util.Iterator<PackagedMod> entries = packaged.iterator();
+        while (entries.hasNext()) {
+            PackagedMod mod = entries.next();
+            if (mod.id == null || mod.nativeContentRoot == null) continue;
+            try {
+                PackagedNativeContentBridge.sync(
+                        mod.id, mod.path, mod.nativeContentRoot, nativeUnitsRoot);
+                activeIds.add(mod.id);
+                Log.info(category, "Packaged Java mod %s exposes native content from %s",
+                        mod.id, mod.path);
+            } catch (IOException failure) {
+                Log.error(category, "Ignoring packaged Java mod %s because native content "
+                                + "could not be staged: %s",
+                        mod.id, failure.toString());
+                entries.remove();
+            }
+        }
+        try {
+            PackagedNativeContentBridge.removeOrphans(nativeUnitsRoot, activeIds);
+        } catch (IOException failure) {
+            Log.warn(category, "Could not clean stale packaged native content: %s",
+                    failure.toString());
+        }
+    }
+
     static Path resolveNativeUnitsRoot(Path gameDir) {
         String sharedRoot = System.getProperty(ANDROID_CONTENT_ROOT_PROPERTY, "").trim();
         if (!sharedRoot.isEmpty()) {
@@ -310,19 +349,46 @@ final class JavaModDevelopmentWorkspaces {
         return gameDir.resolve("mods").resolve("units").toAbsolutePath().normalize();
     }
 
-    private static String readJarModId(Path jarPath, LogCategory category) {
+    private static PackagedMod readPackagedMod(Path jarPath, LogCategory category) {
+        Path checked = jarPath.toAbsolutePath().normalize();
         try (JarFile jar = new JarFile(jarPath.toFile())) {
             JarEntry entry = jar.getJarEntry(METADATA);
-            if (entry == null) return null;
+            if (entry == null) return new PackagedMod(checked, null, null);
             try (InputStreamReader reader = new InputStreamReader(
                     jar.getInputStream(entry), StandardCharsets.UTF_8)) {
-                return metadataId(new JsonParser().parse(reader));
+                JsonElement parsed = new JsonParser().parse(reader);
+                String id = metadataId(parsed);
+                try {
+                    return new PackagedMod(checked, id, packagedNativeContentRoot(parsed));
+                } catch (IOException invalidNativeContent) {
+                    Log.error(category, "Java mod %s has invalid packaged native content: %s",
+                            jarPath, invalidNativeContent.getMessage());
+                    return new PackagedMod(checked, id, "");
+                }
             }
         } catch (IOException | RuntimeException failure) {
             Log.warn(category, "Could not read Java mod metadata from %s: %s",
                     jarPath, failure.toString());
-            return null;
+            return new PackagedMod(checked, null, null);
         }
+    }
+
+    private static String packagedNativeContentRoot(JsonElement parsed) throws IOException {
+        if (parsed == null || !parsed.isJsonObject()) return null;
+        JsonObject custom = object(parsed.getAsJsonObject().get("custom"));
+        JsonObject nativeContent = custom != null
+                ? object(custom.get(PACKAGED_NATIVE_CONTENT_METADATA)) : null;
+        if (nativeContent == null || !nativeContent.has(PACKAGED_NATIVE_CONTENT_ROOT)) return null;
+        JsonElement raw = nativeContent.get(PACKAGED_NATIVE_CONTENT_ROOT);
+        if (!raw.isJsonPrimitive() || !raw.getAsJsonPrimitive().isString()) {
+            throw new IOException(PACKAGED_NATIVE_CONTENT_ROOT
+                    + " must be a relative archive directory string");
+        }
+        String value = raw.getAsString().trim();
+        if (value.isEmpty()) {
+            throw new IOException(PACKAGED_NATIVE_CONTENT_ROOT + " must not be empty");
+        }
+        return value;
     }
 
     private static String metadataId(JsonElement parsed) {
@@ -379,6 +445,18 @@ final class JavaModDevelopmentWorkspaces {
         final Path nativeContentRoot;
 
         WorkspaceMetadata(String id, Path nativeContentRoot) {
+            this.id = id;
+            this.nativeContentRoot = nativeContentRoot;
+        }
+    }
+
+    private static final class PackagedMod {
+        final Path path;
+        final String id;
+        final String nativeContentRoot;
+
+        PackagedMod(Path path, String id, String nativeContentRoot) {
+            this.path = path;
             this.id = id;
             this.nativeContentRoot = nativeContentRoot;
         }
