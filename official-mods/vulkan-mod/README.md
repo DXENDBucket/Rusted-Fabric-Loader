@@ -102,8 +102,13 @@ checks. `VulkanImageResourceFactory` builds sampled textures and offscreen color
 their image views and framebuffers, while `SurfaceSession` retains only public-handle registration,
 uploads, descriptors, and fence-safe retirement. `memory.*` and `image.*` profiler counters expose
 allocation/free counts, maps, byte ownership, resource kind, and live/peak totals. Both owners fail
-shutdown regressions if any tracked resource remains. `Lwjgl3VulkanDriver` retains orchestration and
-image-to-descriptor cache keys, but no longer implements those low-level lifecycles inline.
+shutdown regressions if any tracked resource remains. `VulkanPipelineLibrary` owns graphics
+pipeline layouts, lazy blend-mode caches, custom shader registrations, temporary shader modules,
+and render-pass rebinding. Swapchain recreation retires only render-pass-compatible pipelines;
+layouts and shader registrations remain device-owned until shutdown. `pipeline.*` counters expose
+cache hits, live pipelines, shader-module balance, and render-pass changes, with a real-device
+lifecycle regression enforcing balanced destruction. `Lwjgl3VulkanDriver` retains orchestration
+and image-to-descriptor cache keys, but no longer implements those low-level lifecycles inline.
 
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
@@ -190,10 +195,11 @@ performance runs remain unaffected.
    changing order. Ordinary sprites with independent transforms/tints can now cross the
    Java/FrameStream boundary as a single recycled run command; filled colored rectangles use an
    equivalent indexed run. Separate 12,000-primitive multi-frame GPU regressions verify stable
-   producer, encoder, and driver metadata after warm-up. Descriptor and
-   pass-local command-state and device-memory lifecycles now have dedicated owners and real-device
-   reuse/leak regressions. Sampled/offscreen image creation is also separated from public resource
-   registration and retirement. Next, extract swapchain-independent pipeline ownership.
+   producer, encoder, and driver metadata after warm-up. Descriptor, pass-local command-state,
+   device-memory, image-resource, and graphics-pipeline lifecycles now have dedicated owners and
+   real-device reuse/leak regressions. Pipeline layouts and custom shader registrations survive
+   swapchain recreation while render-pass-bound caches are retired deterministically. Next,
+   separate swapchain/window lifecycle ownership from frame execution.
 5. Native mode now uses a reusable glyph atlas with a bounded page count and per-frame glyph upload
    limit. Layout/rasterization is now a platform SPI; desktop AWT lives in the isolated driver and
    the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover

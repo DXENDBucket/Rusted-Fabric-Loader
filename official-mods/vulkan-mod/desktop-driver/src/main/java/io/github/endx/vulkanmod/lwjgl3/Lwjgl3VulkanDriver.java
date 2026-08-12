@@ -67,33 +67,18 @@ import org.lwjgl.vulkan.VkInstanceCreateInfo;
 import org.lwjgl.vulkan.VkLayerProperties;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
-import org.lwjgl.vulkan.VkGraphicsPipelineCreateInfo;
-import org.lwjgl.vulkan.VkPipelineColorBlendAttachmentState;
-import org.lwjgl.vulkan.VkPipelineColorBlendStateCreateInfo;
-import org.lwjgl.vulkan.VkPipelineDynamicStateCreateInfo;
-import org.lwjgl.vulkan.VkPipelineInputAssemblyStateCreateInfo;
-import org.lwjgl.vulkan.VkPipelineLayoutCreateInfo;
-import org.lwjgl.vulkan.VkPipelineMultisampleStateCreateInfo;
-import org.lwjgl.vulkan.VkPipelineRasterizationStateCreateInfo;
-import org.lwjgl.vulkan.VkPipelineShaderStageCreateInfo;
-import org.lwjgl.vulkan.VkPipelineVertexInputStateCreateInfo;
-import org.lwjgl.vulkan.VkPipelineViewportStateCreateInfo;
 import org.lwjgl.vulkan.VkPresentInfoKHR;
-import org.lwjgl.vulkan.VkPushConstantRange;
 import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 import org.lwjgl.vulkan.VkRenderPassBeginInfo;
 import org.lwjgl.vulkan.VkRenderPassCreateInfo;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
-import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.lwjgl.vulkan.VkSubpassDependency;
 import org.lwjgl.vulkan.VkSubpassDescription;
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
 import org.lwjgl.vulkan.VkSwapchainCreateInfoKHR;
-import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
-import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import org.lwjgl.vulkan.VkViewport;
 import org.lwjgl.vulkan.VkRect2D;
 import org.lwjgl.vulkan.VkWriteDescriptorSet;
@@ -130,7 +115,6 @@ import static org.lwjgl.vulkan.KHRWin32Surface.*;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
-import static org.lwjgl.util.shaderc.Shaderc.*;
 
 /** LWJGL 3 desktop driver, loaded in a child-first class loader beside the LWJGL 2 game. */
 public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
@@ -147,71 +131,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
     private static final int MAX_TEXTURES = 8192;
     private static final int MAX_TEXTURE_DESCRIPTOR_SETS =
             MAX_TEXTURES * VulkanTextureFilter.values().length * 2;
-    private static final String COLOR_VERTEX_SHADER = "#version 450\n"
-            + "layout(location=0) in vec2 inPosition;\n"
-            + "layout(location=1) in vec4 inColor;\n"
-            + "layout(location=0) out vec4 color;\n"
-            + "void main(){ gl_Position=vec4(inPosition,0.0,1.0); color=inColor; }\n";
-    private static final String COLOR_FRAGMENT_SHADER = "#version 450\n"
-            + "layout(location=0) in vec4 color;\n"
-            + "layout(location=0) out vec4 outColor;\n"
-            + "void main(){ outColor=color; }\n";
-    private static final String TEXTURE_VERTEX_SHADER = "#version 450\n"
-            + "layout(location=0) in vec2 inPosition;\n"
-            + "layout(location=1) in vec2 inUv;\n"
-            + "layout(location=2) in vec4 inColor;\n"
-            + "layout(location=0) out vec2 uv;\n"
-            + "layout(location=1) out vec4 color;\n"
-            + "void main(){ gl_Position=vec4(inPosition,0.0,1.0); uv=inUv; color=inColor; }\n";
-    private static final String TEXTURE_FRAGMENT_SHADER = "#version 450\n"
-            + "layout(set=0,binding=0) uniform sampler2D image;\n"
-            + "layout(set=0,binding=1) uniform sampler2D secondaryImage;\n"
-            + "layout(push_constant) uniform ShaderState {\n"
-            + "  vec4 teamColor;\n"
-            + "  float teamColorAmount;\n"
-            + "  int effect;\n"
-            + "  vec2 resolution;\n"
-            + "  float displacementOffset;\n"
-            + "  float uiScaling;\n"
-            + "  vec2 screenBaseSize;\n"
-            + "} shaderState;\n"
-            + "layout(location=0) in vec2 uv;\n"
-            + "layout(location=1) in vec4 color;\n"
-            + "layout(location=0) out vec4 outColor;\n"
-            + "void main(){\n"
-            + "  vec4 sampled=texture(image,uv);\n"
-            + "  if(shaderState.effect==1){\n"
-            + "    float threshold=0.04;\n"
-            + "    if(sampled.g>0.0 && abs(sampled.r-sampled.b)<=threshold){\n"
-            + "      float lightness=sampled.r;\n"
-            + "      float greenness=sampled.g-lightness;\n"
-            + "      sampled.rgb=vec3(lightness)+shaderState.teamColor.rgb*greenness;\n"
-            + "    }\n"
-            + "  }else if(shaderState.effect==2){\n"
-            + "    sampled.rgb+=shaderState.teamColor.rgb*shaderState.teamColorAmount;\n"
-            + "  }else if(shaderState.effect==3){\n"
-            + "    float hueness=max(abs(sampled.r-sampled.g),\n"
-            + "      max(abs(sampled.g-sampled.b),abs(sampled.b-sampled.r)));\n"
-            + "    if(hueness>(15.0/256.0)){\n"
-            + "      float lightness=min(sampled.r,min(sampled.g,sampled.b));\n"
-            + "      sampled.rgb=vec3(lightness)+shaderState.teamColor.rgb*hueness;\n"
-            + "    }\n"
-            + "  }else if(shaderState.effect==4){\n"
-            + "    sampled.a=1.0;\n"
-            + "  }else if(shaderState.effect==5){\n"
-            + "    vec2 usedScreenSize=shaderState.resolution/shaderState.screenBaseSize;\n"
-            + "    vec2 screenUv=gl_FragCoord.xy/(shaderState.resolution*shaderState.uiScaling);\n"
-            + "    screenUv*=usedScreenSize;\n"
-            + "    vec2 screenOffset=shaderState.displacementOffset\n"
-            + "      *(sampled.xy-vec2(128.0/255.0))*sampled.a*color.a;\n"
-            + "    vec2 displacedUv=clamp(screenUv+screenOffset,vec2(0.0),usedScreenSize);\n"
-            + "    outColor=texture(secondaryImage,displacedUv);\n"
-            + "    return;\n"
-            + "  }else if(shaderState.effect==6){\n"
-            + "    sampled.rgb=vec3(1.0,1.0,0.0);\n"
-            + "  }\n"
-            + "  outColor=sampled*color;\n"
-            + "}\n";
     private SurfaceSession surfaceSession;
     private final Map<Long, ByteBuffer> resourceUploadArenas =
             new LinkedHashMap<Long, ByteBuffer>();
@@ -1907,16 +1826,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private long renderPass;
         private long offscreenClearRenderPass;
         private long offscreenLoadRenderPass;
-        private long pipelineLayout;
-        private final long[] colorPipelines =
-                new long[VulkanBlendMode.values().length];
-        private long texturePipelineLayout;
-        private final long[] texturePipelines =
-                new long[VulkanBlendMode.values().length];
-        private final Map<Long, CustomShaderResource> customShaders =
-                new LinkedHashMap<Long, CustomShaderResource>();
-        private long nextCustomShaderHandle = 1L;
         private final VulkanDescriptorAllocator descriptors;
+        private final VulkanPipelineLibrary pipelines;
         private final VulkanMemoryAllocator memory;
         private final VulkanImageResourceFactory imageResources;
         private final Map<Long, TextureResource> textures =
@@ -2078,6 +1989,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             this.imageResources = new VulkanImageResourceFactory(device, memory);
             this.descriptors = new VulkanDescriptorAllocator(
                     device, MAX_TEXTURE_DESCRIPTOR_SETS);
+            this.pipelines = new VulkanPipelineLibrary(device, descriptors);
             this.swapchain = swapchain.handle;
             this.images = swapchain.images;
             this.info = swapchain.info;
@@ -2102,48 +2014,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private long compileFragmentShader(VulkanCustomFragmentShader shader) {
-            if (shader == null) throw new NullPointerException("shader");
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                long module = createShaderModule(stack, shader.source(),
-                        shaderc_glsl_fragment_shader, shader.name() + ".frag");
-                vkDestroyShaderModule(device, module, null);
-            }
-            long handle = nextCustomShaderHandle++;
-            if (handle <= 0L) throw new IllegalStateException("custom shader handles exhausted");
-            customShaders.put(handle, new CustomShaderResource(shader.name(),
-                    TEXTURE_VERTEX_SHADER, shader.source(), false));
-            return handle;
+            return pipelines.compileFragmentShader(shader);
         }
 
         private void destroyFragmentShader(long shaderHandle) {
-            CustomShaderResource shader = customShaders.remove(shaderHandle);
-            if (shader != null) {
-                check(vkDeviceWaitIdle(device), "vkDeviceWaitIdle(destroy custom shader)");
-                shader.destroy(device);
-            }
+            check(vkDeviceWaitIdle(device), "vkDeviceWaitIdle(destroy custom shader)");
+            pipelines.destroyShader(shaderHandle);
         }
 
         private long compileShaderProgram(VulkanCustomShaderProgram program) {
-            if (program == null) throw new NullPointerException("program");
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                long vertexModule = createShaderModule(stack, program.vertexSource(),
-                        shaderc_glsl_vertex_shader, program.name() + ".vert");
-                long fragmentModule = VK_NULL_HANDLE;
-                try {
-                    fragmentModule = createShaderModule(stack, program.fragmentSource(),
-                            shaderc_glsl_fragment_shader, program.name() + ".frag");
-                } finally {
-                    if (fragmentModule != VK_NULL_HANDLE) {
-                        vkDestroyShaderModule(device, fragmentModule, null);
-                    }
-                    vkDestroyShaderModule(device, vertexModule, null);
-                }
-            }
-            long handle = nextCustomShaderHandle++;
-            if (handle <= 0L) throw new IllegalStateException("custom shader handles exhausted");
-            customShaders.put(handle, new CustomShaderResource(program.name(),
-                    program.vertexSource(), program.fragmentSource(), true));
-            return handle;
+            return pipelines.compileShaderProgram(program);
         }
 
         private void destroyShaderProgram(long shaderHandle) {
@@ -2152,12 +2032,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private boolean customShaderUsesExpandedVertexInput(long shaderHandle) {
             shaderHandle = resolveShaderHandle(shaderHandle);
-            CustomShaderResource shader = customShaders.get(shaderHandle);
-            if (shader == null) {
-                throw new IllegalArgumentException("unknown custom shader handle "
-                        + shaderHandle);
-            }
-            return shader.expandedVertexInput;
+            return pipelines.usesExpandedVertexInput(shaderHandle);
         }
 
         private VulkanResourceStreamResult submitResourceStream(ResourceStreamReader stream,
@@ -2491,6 +2366,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             check(vkCreateRenderPass(device, renderPassInfo, null, handle),
                     "vkCreateRenderPass");
             renderPass = handle.get(0);
+            pipelines.setRenderPass(renderPass);
 
             framebuffers = new long[imageViews.length];
             for (int index = 0; index < imageViews.length; index++) {
@@ -2561,110 +2437,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private long colorPipeline(MemoryStack stack, VulkanBlendMode blendMode) {
-            int index = blendMode.ordinal();
-            if (colorPipelines[index] == VK_NULL_HANDLE) {
-                createColorPipeline(stack, blendMode);
-            }
-            return colorPipelines[index];
-        }
-
-        private void createColorPipeline(MemoryStack stack, VulkanBlendMode blendMode) {
-            long vertexModule = VK_NULL_HANDLE;
-            long fragmentModule = VK_NULL_HANDLE;
-            try {
-                vertexModule = createShaderModule(stack, COLOR_VERTEX_SHADER,
-                        shaderc_glsl_vertex_shader, "colored-quad.vert");
-                fragmentModule = createShaderModule(stack, COLOR_FRAGMENT_SHADER,
-                        shaderc_glsl_fragment_shader, "colored-quad.frag");
-                VkPipelineShaderStageCreateInfo.Buffer stages =
-                        VkPipelineShaderStageCreateInfo.calloc(2, stack);
-                stages.get(0).sType$Default().stage(VK_SHADER_STAGE_VERTEX_BIT)
-                        .module(vertexModule).pName(stack.UTF8("main"));
-                stages.get(1).sType$Default().stage(VK_SHADER_STAGE_FRAGMENT_BIT)
-                        .module(fragmentModule).pName(stack.UTF8("main"));
-
-                VkVertexInputBindingDescription.Buffer binding =
-                        VkVertexInputBindingDescription.calloc(1, stack);
-                binding.get(0).binding(0).stride(VERTEX_STRIDE)
-                        .inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
-                VkVertexInputAttributeDescription.Buffer attributes =
-                        VkVertexInputAttributeDescription.calloc(2, stack);
-                attributes.get(0).location(0).binding(0)
-                        .format(VK_FORMAT_R32G32_SFLOAT).offset(0);
-                attributes.get(1).location(1).binding(0)
-                        .format(VK_FORMAT_R32G32B32A32_SFLOAT).offset(2 * Float.BYTES);
-                VkPipelineVertexInputStateCreateInfo vertexInput =
-                        VkPipelineVertexInputStateCreateInfo.calloc(stack).sType$Default()
-                                .pVertexBindingDescriptions(binding)
-                                .pVertexAttributeDescriptions(attributes);
-                VkPipelineInputAssemblyStateCreateInfo inputAssembly =
-                        VkPipelineInputAssemblyStateCreateInfo.calloc(stack).sType$Default()
-                                .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                                .primitiveRestartEnable(false);
-                VkPipelineViewportStateCreateInfo viewportState =
-                        VkPipelineViewportStateCreateInfo.calloc(stack).sType$Default()
-                                .viewportCount(1).scissorCount(1);
-                VkPipelineRasterizationStateCreateInfo rasterizer =
-                        VkPipelineRasterizationStateCreateInfo.calloc(stack).sType$Default()
-                                .depthClampEnable(false).rasterizerDiscardEnable(false)
-                                .polygonMode(VK_POLYGON_MODE_FILL).cullMode(VK_CULL_MODE_NONE)
-                                .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                                .depthBiasEnable(false).lineWidth(1.0f);
-                VkPipelineMultisampleStateCreateInfo multisampling =
-                        VkPipelineMultisampleStateCreateInfo.calloc(stack).sType$Default()
-                                .rasterizationSamples(VK_SAMPLE_COUNT_1_BIT)
-                                .sampleShadingEnable(false);
-                VkPipelineColorBlendAttachmentState.Buffer blendAttachment =
-                        VkPipelineColorBlendAttachmentState.calloc(1, stack);
-                configureBlend(blendAttachment.get(0), blendMode)
-                        .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-                VkPipelineColorBlendStateCreateInfo colorBlending =
-                        VkPipelineColorBlendStateCreateInfo.calloc(stack).sType$Default()
-                                .logicOpEnable(false).pAttachments(blendAttachment);
-                VkPipelineDynamicStateCreateInfo dynamicState =
-                        VkPipelineDynamicStateCreateInfo.calloc(stack).sType$Default()
-                                .pDynamicStates(stack.ints(
-                                        VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
-                LongBuffer handle = stack.mallocLong(1);
-                if (pipelineLayout == VK_NULL_HANDLE) {
-                    VkPipelineLayoutCreateInfo layoutInfo =
-                            VkPipelineLayoutCreateInfo.calloc(stack).sType$Default();
-                    check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
-                            "vkCreatePipelineLayout");
-                    pipelineLayout = handle.get(0);
-                }
-                VkGraphicsPipelineCreateInfo.Buffer pipelineInfo =
-                        VkGraphicsPipelineCreateInfo.calloc(1, stack);
-                pipelineInfo.get(0).sType$Default().pStages(stages)
-                        .pVertexInputState(vertexInput)
-                        .pInputAssemblyState(inputAssembly)
-                        .pViewportState(viewportState)
-                        .pRasterizationState(rasterizer)
-                        .pMultisampleState(multisampling)
-                        .pColorBlendState(colorBlending)
-                        .pDynamicState(dynamicState)
-                        .layout(pipelineLayout).renderPass(renderPass).subpass(0);
-                check(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE,
-                        pipelineInfo, null, handle), "vkCreateGraphicsPipelines(coloredQuad)");
-                colorPipelines[blendMode.ordinal()] = handle.get(0);
-            } finally {
-                if (fragmentModule != VK_NULL_HANDLE) {
-                    vkDestroyShaderModule(device, fragmentModule, null);
-                }
-                if (vertexModule != VK_NULL_HANDLE) {
-                    vkDestroyShaderModule(device, vertexModule, null);
-                }
-            }
+            return pipelines.colorPipeline(stack, blendMode);
         }
 
         private long texturePipeline(MemoryStack stack, VulkanBlendMode blendMode) {
-            int index = blendMode.ordinal();
-            if (texturePipelines[index] == VK_NULL_HANDLE) {
-                texturePipelines[index] = createTexturePipeline(stack, blendMode,
-                        TEXTURE_FRAGMENT_SHADER, "textured-quad");
-            }
-            return texturePipelines[index];
+            return pipelines.texturePipeline(stack, blendMode);
         }
 
         private long texturePipeline(MemoryStack stack, VulkanBlendMode blendMode,
@@ -2673,199 +2450,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 return texturePipeline(stack, blendMode);
             }
             long shaderHandle = resolveShaderHandle(shaderState.customShaderHandle());
-            CustomShaderResource custom = customShaders.get(shaderHandle);
-            if (custom == null) {
-                throw new IllegalArgumentException("unknown custom shader handle "
-                        + shaderState.customShaderHandle());
-            }
-            int index = blendMode.ordinal();
-            if (custom.pipelines[index] == VK_NULL_HANDLE) {
-                custom.pipelines[index] = createTexturePipeline(stack, blendMode,
-                        custom.vertexSource, custom.fragmentSource,
-                        "custom-" + custom.name, custom.expandedVertexInput);
-            }
-            return custom.pipelines[index];
-        }
-
-        private long createTexturePipeline(MemoryStack stack, VulkanBlendMode blendMode,
-                                           String fragmentSource, String label) {
-            return createTexturePipeline(stack, blendMode, TEXTURE_VERTEX_SHADER,
-                    fragmentSource, label, false);
-        }
-
-        private long createTexturePipeline(MemoryStack stack, VulkanBlendMode blendMode,
-                                           String vertexSource, String fragmentSource,
-                                           String label, boolean expandedVertexInput) {
-            if (!descriptors.initialized()) {
-                throw new IllegalStateException("texture descriptor layout is unavailable");
-            }
-            long vertexModule = VK_NULL_HANDLE;
-            long fragmentModule = VK_NULL_HANDLE;
-            try {
-                vertexModule = createShaderModule(stack, vertexSource,
-                        shaderc_glsl_vertex_shader, label + ".vert");
-                fragmentModule = createShaderModule(stack, fragmentSource,
-                        shaderc_glsl_fragment_shader, label + ".frag");
-                VkPipelineShaderStageCreateInfo.Buffer stages =
-                        VkPipelineShaderStageCreateInfo.calloc(2, stack);
-                stages.get(0).sType$Default().stage(VK_SHADER_STAGE_VERTEX_BIT)
-                        .module(vertexModule).pName(stack.UTF8("main"));
-                stages.get(1).sType$Default().stage(VK_SHADER_STAGE_FRAGMENT_BIT)
-                        .module(fragmentModule).pName(stack.UTF8("main"));
-                VkVertexInputBindingDescription.Buffer binding =
-                        VkVertexInputBindingDescription.calloc(1, stack);
-                binding.get(0).binding(0).stride(expandedVertexInput
-                                ? CUSTOM_TEXTURED_VERTEX_STRIDE : TEXTURED_VERTEX_STRIDE)
-                        .inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
-                VkVertexInputAttributeDescription.Buffer attributes =
-                        VkVertexInputAttributeDescription.calloc(
-                                expandedVertexInput ? 6 : 3, stack);
-                attributes.get(0).location(0).binding(0)
-                        .format(VK_FORMAT_R32G32_SFLOAT).offset(0);
-                attributes.get(1).location(1).binding(0)
-                        .format(VK_FORMAT_R32G32_SFLOAT).offset(2 * Float.BYTES);
-                attributes.get(2).location(2).binding(0)
-                        .format(VK_FORMAT_R32G32B32A32_SFLOAT).offset(4 * Float.BYTES);
-                if (expandedVertexInput) {
-                    attributes.get(3).location(3).binding(0)
-                            .format(VK_FORMAT_R32G32B32_SFLOAT).offset(8 * Float.BYTES);
-                    attributes.get(4).location(4).binding(0)
-                            .format(VK_FORMAT_R32G32B32_SFLOAT).offset(11 * Float.BYTES);
-                    attributes.get(5).location(5).binding(0)
-                            .format(VK_FORMAT_R32G32_SFLOAT).offset(14 * Float.BYTES);
-                }
-                VkPipelineVertexInputStateCreateInfo vertexInput =
-                        VkPipelineVertexInputStateCreateInfo.calloc(stack).sType$Default()
-                                .pVertexBindingDescriptions(binding)
-                                .pVertexAttributeDescriptions(attributes);
-                VkPipelineInputAssemblyStateCreateInfo inputAssembly =
-                        VkPipelineInputAssemblyStateCreateInfo.calloc(stack).sType$Default()
-                                .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                                .primitiveRestartEnable(false);
-                VkPipelineViewportStateCreateInfo viewportState =
-                        VkPipelineViewportStateCreateInfo.calloc(stack).sType$Default()
-                                .viewportCount(1).scissorCount(1);
-                VkPipelineRasterizationStateCreateInfo rasterizer =
-                        VkPipelineRasterizationStateCreateInfo.calloc(stack).sType$Default()
-                                .depthClampEnable(false).rasterizerDiscardEnable(false)
-                                .polygonMode(VK_POLYGON_MODE_FILL).cullMode(VK_CULL_MODE_NONE)
-                                .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                                .depthBiasEnable(false).lineWidth(1.0f);
-                VkPipelineMultisampleStateCreateInfo multisampling =
-                        VkPipelineMultisampleStateCreateInfo.calloc(stack).sType$Default()
-                                .rasterizationSamples(VK_SAMPLE_COUNT_1_BIT)
-                                .sampleShadingEnable(false);
-                VkPipelineColorBlendAttachmentState.Buffer blendAttachment =
-                        VkPipelineColorBlendAttachmentState.calloc(1, stack);
-                configureBlend(blendAttachment.get(0), blendMode)
-                        .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-                                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-                VkPipelineColorBlendStateCreateInfo colorBlending =
-                        VkPipelineColorBlendStateCreateInfo.calloc(stack).sType$Default()
-                                .logicOpEnable(false).pAttachments(blendAttachment);
-                VkPipelineDynamicStateCreateInfo dynamicState =
-                        VkPipelineDynamicStateCreateInfo.calloc(stack).sType$Default()
-                                .pDynamicStates(stack.ints(
-                                        VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
-                LongBuffer handle = stack.mallocLong(1);
-                if (texturePipelineLayout == VK_NULL_HANDLE) {
-                    VkPushConstantRange.Buffer pushConstants =
-                            VkPushConstantRange.calloc(1, stack);
-                    pushConstants.get(0).stageFlags(VK_SHADER_STAGE_VERTEX_BIT
-                                    | VK_SHADER_STAGE_FRAGMENT_BIT)
-                            .offset(0).size(128);
-                    VkPipelineLayoutCreateInfo layoutInfo = VkPipelineLayoutCreateInfo.calloc(stack)
-                            .sType$Default().pSetLayouts(stack.longs(descriptors.layout()))
-                            .pPushConstantRanges(pushConstants);
-                    check(vkCreatePipelineLayout(device, layoutInfo, null, handle),
-                            "vkCreatePipelineLayout(texture)");
-                    texturePipelineLayout = handle.get(0);
-                }
-                VkGraphicsPipelineCreateInfo.Buffer pipelineInfo =
-                        VkGraphicsPipelineCreateInfo.calloc(1, stack);
-                pipelineInfo.get(0).sType$Default().pStages(stages)
-                        .pVertexInputState(vertexInput).pInputAssemblyState(inputAssembly)
-                        .pViewportState(viewportState).pRasterizationState(rasterizer)
-                        .pMultisampleState(multisampling).pColorBlendState(colorBlending)
-                        .pDynamicState(dynamicState).layout(texturePipelineLayout)
-                        .renderPass(renderPass).subpass(0);
-                check(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE,
-                        pipelineInfo, null, handle), "vkCreateGraphicsPipelines(" + label + ")");
-                return handle.get(0);
-            } finally {
-                if (fragmentModule != VK_NULL_HANDLE) {
-                    vkDestroyShaderModule(device, fragmentModule, null);
-                }
-                if (vertexModule != VK_NULL_HANDLE) {
-                    vkDestroyShaderModule(device, vertexModule, null);
-                }
-            }
-        }
-
-        private static VkPipelineColorBlendAttachmentState configureBlend(
-                VkPipelineColorBlendAttachmentState attachment,
-                VulkanBlendMode blendMode) {
-            attachment.blendEnable(true)
-                    .colorBlendOp(VK_BLEND_OP_ADD)
-                    .alphaBlendOp(VK_BLEND_OP_ADD);
-            switch (blendMode) {
-                case ADDITIVE:
-                    return attachment
-                            .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
-                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE)
-                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
-                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
-                case COPY:
-                    return attachment
-                            .srcColorBlendFactor(VK_BLEND_FACTOR_ONE)
-                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE)
-                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
-                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
-                case MODULATE:
-                    return attachment
-                            .srcColorBlendFactor(VK_BLEND_FACTOR_DST_COLOR)
-                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_DST_COLOR)
-                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
-                case NORMAL:
-                default:
-                    return attachment
-                            .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
-                            .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                            .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
-                            .dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
-            }
-        }
-
-        private long createShaderModule(MemoryStack stack, String source,
-                                        int shaderKind, String name) {
-            long compiler = shaderc_compiler_initialize();
-            if (compiler == MemoryUtil.NULL) {
-                throw new IllegalStateException("shaderc_compiler_initialize failed");
-            }
-            long result = MemoryUtil.NULL;
-            try {
-                result = shaderc_compile_into_spv(
-                        compiler, source, shaderKind, name, "main", MemoryUtil.NULL);
-                if (result == MemoryUtil.NULL) {
-                    throw new IllegalStateException("shaderc_compile_into_spv returned null");
-                }
-                int status = shaderc_result_get_compilation_status(result);
-                if (status != shaderc_compilation_status_success) {
-                    throw new IllegalStateException("Could not compile " + name + ": "
-                            + shaderc_result_get_error_message(result));
-                }
-                ByteBuffer code = shaderc_result_get_bytes(result);
-                VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.calloc(stack)
-                        .sType$Default().pCode(code);
-                LongBuffer handle = stack.mallocLong(1);
-                check(vkCreateShaderModule(device, createInfo, null, handle),
-                        "vkCreateShaderModule(" + name + ")");
-                return handle.get(0);
-            } finally {
-                if (result != MemoryUtil.NULL) shaderc_result_release(result);
-                shaderc_compiler_release(compiler);
-            }
+            return pipelines.customPipeline(stack, blendMode, shaderHandle);
         }
 
         private long uploadTexture(VulkanTextureData texture) {
@@ -3003,7 +2588,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     if (commandState.setScissor(command, batch.clip,
                             target.width, target.height,
                             drawScissor)) {
-                        commandState.bindDescriptor(command, texturePipelineLayout,
+                        commandState.bindDescriptor(command, pipelines.texturePipelineLayout(),
                                 batch.descriptorSet, drawDescriptorSet);
                         pushShaderStateCached(command, batch.shaderState,
                                 shaderPushConstants);
@@ -3122,7 +2707,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                                 drawVertexBuffer, drawVertexOffset);
                         if (commandState.setScissor(command, batch.clip, target.width,
                                 target.height, drawScissor)) {
-                            commandState.bindDescriptor(command, texturePipelineLayout,
+                            commandState.bindDescriptor(command, pipelines.texturePipelineLayout(),
                                     batch.descriptorSet, drawDescriptorSet);
                             pushShaderStateCached(command, batch.shaderState,
                                     shaderPushConstants);
@@ -3427,6 +3012,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             memory.appendStatistics(statistics);
             imageResources.appendStatistics(statistics);
             descriptors.appendStatistics(statistics);
+            pipelines.appendStatistics(statistics);
             statistics.put("descriptor.singleHits", textureDescriptorSingleHits);
             statistics.put("descriptor.singleMisses", textureDescriptorSingleMisses);
             statistics.put("descriptor.pairHits", textureDescriptorPairHits);
@@ -3942,7 +3528,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         if (commandState.setScissor(commandBuffer, batch.clip,
                                 info.width(), info.height(),
                                 drawScissor)) {
-                            commandState.bindDescriptor(commandBuffer, texturePipelineLayout,
+                            commandState.bindDescriptor(commandBuffer, pipelines.texturePipelineLayout(),
                                     batch.descriptorSet, drawDescriptorSet);
                             pushShaderStateCached(commandBuffer, batch.shaderState,
                                     shaderPushConstants);
@@ -4722,12 +4308,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private boolean usesExpandedVertexInput(VulkanShaderState shaderState) {
             if (shaderState.effect() != VulkanShaderState.CUSTOM) return false;
             long shaderHandle = resolveShaderHandle(shaderState.customShaderHandle());
-            CustomShaderResource shader = customShaders.get(shaderHandle);
-            if (shader == null) {
-                throw new IllegalArgumentException("unknown custom shader handle "
-                        + shaderState.customShaderHandle());
-            }
-            return shader.expandedVertexInput;
+            return pipelines.usesExpandedVertexInput(shaderHandle);
         }
 
         private void pushShaderState(VkCommandBuffer commandBuffer,
@@ -4750,7 +4331,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 values.putFloat(48 + index * Float.BYTES,
                         shaderState.customValue(index));
             }
-            vkCmdPushConstants(commandBuffer, texturePipelineLayout,
+            vkCmdPushConstants(commandBuffer, pipelines.texturePipelineLayout(),
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                     0, values.position(0).limit(128));
         }
@@ -4955,29 +4536,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (framebuffer != 0L) vkDestroyFramebuffer(device, framebuffer, null);
             }
             framebuffers = new long[0];
-            for (int index = 0; index < colorPipelines.length; index++) {
-                if (colorPipelines[index] != 0L) {
-                    vkDestroyPipeline(device, colorPipelines[index], null);
-                    colorPipelines[index] = 0L;
-                }
-            }
-            if (pipelineLayout != 0L) {
-                vkDestroyPipelineLayout(device, pipelineLayout, null);
-                pipelineLayout = 0L;
-            }
-            for (int index = 0; index < texturePipelines.length; index++) {
-                if (texturePipelines[index] != 0L) {
-                    vkDestroyPipeline(device, texturePipelines[index], null);
-                    texturePipelines[index] = 0L;
-                }
-            }
-            for (CustomShaderResource shader : customShaders.values()) {
-                shader.destroyPipelines(device);
-            }
-            if (texturePipelineLayout != 0L) {
-                vkDestroyPipelineLayout(device, texturePipelineLayout, null);
-                texturePipelineLayout = 0L;
-            }
+            pipelines.releaseRenderPass();
             if (renderPass != 0L) {
                 vkDestroyRenderPass(device, renderPass, null);
                 renderPass = 0L;
@@ -4993,7 +4552,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             closed = true;
             vkDeviceWaitIdle(device);
             destroySwapchainResources();
-            customShaders.clear();
+            pipelines.close();
             descriptors.close();
             for (TextureResource texture : textures.values()) {
                 destroyTextureResource(texture, false);
@@ -5058,35 +4617,6 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             private PendingResourceReadback withSequence(long sequence) {
                 return new PendingResourceReadback(rawTextureHandle, x, y,
                         width, height, sequence);
-            }
-        }
-
-        private static final class CustomShaderResource {
-            private final String name;
-            private final String vertexSource;
-            private final String fragmentSource;
-            private final boolean expandedVertexInput;
-            private final long[] pipelines = new long[VulkanBlendMode.values().length];
-
-            private CustomShaderResource(String name, String vertexSource,
-                                         String fragmentSource, boolean expandedVertexInput) {
-                this.name = name;
-                this.vertexSource = vertexSource;
-                this.fragmentSource = fragmentSource;
-                this.expandedVertexInput = expandedVertexInput;
-            }
-
-            private void destroyPipelines(VkDevice device) {
-                for (int index = 0; index < pipelines.length; index++) {
-                    if (pipelines[index] != VK_NULL_HANDLE) {
-                        vkDestroyPipeline(device, pipelines[index], null);
-                        pipelines[index] = VK_NULL_HANDLE;
-                    }
-                }
-            }
-
-            private void destroy(VkDevice device) {
-                destroyPipelines(device);
             }
         }
 
