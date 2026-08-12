@@ -14,6 +14,7 @@ import java.util.function.LongConsumer;
 /** Converts game-owned ARGB images to cached driver-owned RGBA8 textures. */
 final class GameImageVulkanTextureCache implements AutoCloseable {
     private static final int MAX_NEW_UPLOADS_PER_FRAME = 16;
+    private static final int FAST_LOOKUP_SIZE = 256;
     private static Method slickTextureUnbind;
     private static boolean slickTextureUnbindUnavailable;
 
@@ -23,6 +24,8 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
     private final Map<GameImage, Entry> entries = new IdentityHashMap<GameImage, Entry>();
     private final Map<GameImage, Boolean> renderTargets =
             new IdentityHashMap<GameImage, Boolean>();
+    private final GameImage[] fastImages = new GameImage[FAST_LOOKUP_SIZE];
+    private final Entry[] fastEntries = new Entry[FAST_LOOKUP_SIZE];
     private boolean closed;
     private int uploadsStartedThisFrame;
 
@@ -44,16 +47,19 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
             long renderTarget = ((VulkanGameImage) image).nativeRenderTargetHandle();
             if (renderTarget != 0L) return renderTarget;
         }
+        int fastSlot = System.identityHashCode(image) & (FAST_LOOKUP_SIZE - 1);
+        Entry current = fastImages[fastSlot] == image
+                ? fastEntries[fastSlot] : entries.get(image);
+        if (current != null && current.version == image.version) {
+            fastImages[fastSlot] = image;
+            fastEntries[fastSlot] = current;
+            return current.textureHandle;
+        }
         int width = image.getWidth();
         int height = image.getHeight();
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("game image has invalid dimensions: "
                     + width + "x" + height);
-        }
-        Entry current = entries.get(image);
-        if (current != null && current.version == image.version
-                && current.width == width && current.height == height) {
-            return current.textureHandle;
         }
         if (presenter != null && uploadsStartedThisFrame >= MAX_NEW_UPLOADS_PER_FRAME) {
             return 0L;
@@ -72,6 +78,8 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         }
         Entry replacement = new Entry(0L, image.version, width, height);
         entries.put(image, replacement);
+        fastImages[fastSlot] = image;
+        fastEntries[fastSlot] = replacement;
         release(current);
         if (presenter == null) {
             replacement.textureHandle = driver.uploadTexture(pixels);
@@ -95,6 +103,11 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         GameImage image = ((GameImage) candidate).getRealImage();
         if (image == null) image = (GameImage) candidate;
         Entry removed = entries.remove(image);
+        int fastSlot = System.identityHashCode(image) & (FAST_LOOKUP_SIZE - 1);
+        if (fastImages[fastSlot] == image) {
+            fastImages[fastSlot] = null;
+            fastEntries[fastSlot] = null;
+        }
         release(removed);
     }
 
@@ -144,6 +157,8 @@ final class GameImageVulkanTextureCache implements AutoCloseable {
         }
         entries.clear();
         renderTargets.clear();
+        java.util.Arrays.fill(fastImages, null);
+        java.util.Arrays.fill(fastEntries, null);
     }
 
     private static VulkanTextureData readRgba(GameImage image, int width, int height) {

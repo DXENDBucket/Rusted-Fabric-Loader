@@ -2,6 +2,8 @@ package io.github.endx.vulkanmod.framestream;
 
 import io.github.endx.vulkanmod.spi.VulkanBlendMode;
 import io.github.endx.vulkanmod.spi.VulkanClipRect;
+import io.github.endx.vulkanmod.spi.VulkanColoredCircle;
+import io.github.endx.vulkanmod.spi.VulkanColoredLine;
 import io.github.endx.vulkanmod.spi.VulkanColoredQuad;
 import io.github.endx.vulkanmod.spi.VulkanColoredTriangle;
 import io.github.endx.vulkanmod.spi.VulkanDrawCommand;
@@ -26,6 +28,7 @@ import java.util.Map;
 /** Shared Windows/Android batching and vertex-packing implementation for FrameStream version 1. */
 public final class FrameStreamEncoder {
     private static final int DIRECT_SECTION_COUNT = 4;
+    private static final float[][] CIRCLE_POINTS = createCirclePoints();
 
     private final FrameStreamResourceMapper resources;
     private final FrameStreamShaderLayoutResolver shaderLayouts;
@@ -161,6 +164,8 @@ public final class FrameStreamEncoder {
                                 VulkanFrameCommands frame) {
         int firstBatch = directBatchCount;
         BatchRecord current = null;
+        MaterialKey lastMaterial = null;
+        int lastMaterialIndex = -1;
         for (int index = 0; index < frame.commandCount(); index++) {
             VulkanDrawCommand command = frame.command(index);
             VulkanDrawState state = state(command);
@@ -186,17 +191,27 @@ public final class FrameStreamEncoder {
                     ? VulkanTextureFilter.LINEAR : state.textureFilter();
             VulkanShaderState shader = primaryTexture == 0L
                     ? VulkanShaderState.DEFAULT : state.shaderState();
-            directMaterialProbe.set(state.blendMode(), filter, shader);
-            Integer materialIndex = directMaterialIndexes.get(directMaterialProbe);
-            if (materialIndex == null) {
-                if (directMaterialCount == FrameStreamFormat.MAX_SECTION_ELEMENTS) {
-                    throw new FrameStreamFormatException(
-                            "FrameStream contains too many materials");
+            int materialIndex;
+            if (lastMaterial != null && lastMaterial.matches(state.blendMode(), filter, shader)) {
+                materialIndex = lastMaterialIndex;
+            } else {
+                directMaterialProbe.set(state.blendMode(), filter, shader);
+                Integer knownMaterial = directMaterialIndexes.get(directMaterialProbe);
+                if (knownMaterial == null) {
+                    if (directMaterialCount == FrameStreamFormat.MAX_SECTION_ELEMENTS) {
+                        throw new FrameStreamFormatException(
+                                "FrameStream contains too many materials");
+                    }
+                    materialIndex = directMaterialCount;
+                    MaterialKey stable = directMaterial(directMaterialCount++);
+                    stable.set(state.blendMode(), filter, shader);
+                    directMaterialIndexes.put(stable, Integer.valueOf(materialIndex));
+                    lastMaterial = stable;
+                } else {
+                    materialIndex = knownMaterial.intValue();
+                    lastMaterial = directMaterials.get(materialIndex);
                 }
-                materialIndex = directMaterialCount;
-                MaterialKey stable = directMaterial(directMaterialCount++);
-                stable.set(state.blendMode(), filter, shader);
-                directMaterialIndexes.put(stable, materialIndex);
+                lastMaterialIndex = materialIndex;
             }
             if (current == null || !current.compatible(materialIndex, primaryTexture,
                     secondaryTexture, state.clip(), layout, byteOffset)) {
@@ -349,9 +364,11 @@ public final class FrameStreamEncoder {
     }
 
     private void writeDirectVertices(VulkanFrameCommands frame, ByteBuffer output) {
+        float ndcScaleX = 2.0f / frame.width();
+        float ndcScaleY = 2.0f / frame.height();
         for (int index = 0; index < frame.commandCount(); index++) {
             VulkanDrawCommand command = frame.command(index);
-            writeVertices(output, frame, command, vertexLayout(command));
+            writeVertices(output, frame, command, vertexLayout(command), ndcScaleX, ndcScaleY);
         }
     }
 
@@ -449,13 +466,15 @@ public final class FrameStreamEncoder {
                             List<PassRecord> passes) {
         int firstBatch = batches.size();
         BatchRecord current = null;
+        float ndcScaleX = 2.0f / frame.width();
+        float ndcScaleY = 2.0f / frame.height();
         for (int index = 0; index < frame.commandCount(); index++) {
             VulkanDrawCommand command = frame.command(index);
             VulkanDrawState state = state(command);
             int layout = vertexLayout(command);
             int commandVertices = vertexCount(command);
             int byteOffset = vertices.position();
-            writeVertices(vertices, frame, command, layout);
+            writeVertices(vertices, frame, command, layout, ndcScaleX, ndcScaleY);
             totalVertices[0] = Math.addExact(totalVertices[0], commandVertices);
 
             long primaryTexture = primaryTexture(command);
@@ -486,7 +505,8 @@ public final class FrameStreamEncoder {
     }
 
     private int vertexLayout(VulkanDrawCommand command) {
-        if (command instanceof VulkanColoredQuad || command instanceof VulkanColoredTriangle) {
+        if (command instanceof VulkanColoredQuad || command instanceof VulkanColoredTriangle
+                || command instanceof VulkanColoredLine || command instanceof VulkanColoredCircle) {
             return FrameStreamRecordFormat.VERTEX_COLORED;
         }
         VulkanShaderState shader = state(command).shaderState();
@@ -508,6 +528,8 @@ public final class FrameStreamEncoder {
 
     private static VulkanDrawState state(VulkanDrawCommand command) {
         if (command instanceof VulkanColoredQuad) return ((VulkanColoredQuad) command).state();
+        if (command instanceof VulkanColoredLine) return ((VulkanColoredLine) command).state();
+        if (command instanceof VulkanColoredCircle) return ((VulkanColoredCircle) command).state();
         if (command instanceof VulkanColoredTriangle) {
             return ((VulkanColoredTriangle) command).state();
         }
@@ -521,6 +543,11 @@ public final class FrameStreamEncoder {
 
     private static int vertexCount(VulkanDrawCommand command) {
         if (command instanceof VulkanColoredQuad || command instanceof VulkanTexturedQuad) return 6;
+        if (command instanceof VulkanColoredLine) return 6;
+        if (command instanceof VulkanColoredCircle) {
+            VulkanColoredCircle circle = (VulkanColoredCircle) command;
+            return circle.segments() * (circle.filled() ? 3 : 6);
+        }
         if (command instanceof VulkanColoredTriangle
                 || command instanceof VulkanTexturedTriangle) return 3;
         throw new IllegalArgumentException("unsupported draw command: "
@@ -528,7 +555,8 @@ public final class FrameStreamEncoder {
     }
 
     private static void writeVertices(ByteBuffer output, VulkanFrameCommands frame,
-                                      VulkanDrawCommand command, int layout) {
+                                      VulkanDrawCommand command, int layout,
+                                      float ndcScaleX, float ndcScaleY) {
         if (command instanceof VulkanColoredQuad) {
             VulkanColoredQuad quad = (VulkanColoredQuad) command;
             float left = quad.x();
@@ -536,17 +564,26 @@ public final class FrameStreamEncoder {
             float top = quad.y();
             float bottom = quad.y() + quad.height();
             putColored(output, frame, quad.state().transform(), left, top,
-                    quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), left, bottom,
-                    quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), right, bottom,
-                    quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), left, top,
-                    quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), right, bottom,
-                    quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
             putColored(output, frame, quad.state().transform(), right, top,
-                    quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.red(), quad.green(), quad.blue(), quad.alpha(), ndcScaleX, ndcScaleY);
+            return;
+        }
+        if (command instanceof VulkanColoredLine) {
+            writeColoredLine(output, frame, (VulkanColoredLine) command, ndcScaleX, ndcScaleY);
+            return;
+        }
+        if (command instanceof VulkanColoredCircle) {
+            writeColoredCircle(output, frame, (VulkanColoredCircle) command,
+                    ndcScaleX, ndcScaleY);
             return;
         }
         if (command instanceof VulkanColoredTriangle) {
@@ -554,7 +591,8 @@ public final class FrameStreamEncoder {
             for (int vertex = 0; vertex < 3; vertex++) {
                 putColored(output, frame, triangle.state().transform(),
                         triangle.x(vertex), triangle.y(vertex), triangle.red(vertex),
-                        triangle.green(vertex), triangle.blue(vertex), triangle.alpha(vertex));
+                        triangle.green(vertex), triangle.blue(vertex), triangle.alpha(vertex),
+                        ndcScaleX, ndcScaleY);
             }
             return;
         }
@@ -565,17 +603,23 @@ public final class FrameStreamEncoder {
             float top = quad.y();
             float bottom = quad.y() + quad.height();
             putTextured(output, frame, quad.state().transform(), layout, left, top,
-                    quad.u0(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.u0(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
+                    ndcScaleX, ndcScaleY);
             putTextured(output, frame, quad.state().transform(), layout, left, bottom,
-                    quad.u0(), quad.v1(), quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.u0(), quad.v1(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
+                    ndcScaleX, ndcScaleY);
             putTextured(output, frame, quad.state().transform(), layout, right, bottom,
-                    quad.u1(), quad.v1(), quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.u1(), quad.v1(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
+                    ndcScaleX, ndcScaleY);
             putTextured(output, frame, quad.state().transform(), layout, left, top,
-                    quad.u0(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.u0(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
+                    ndcScaleX, ndcScaleY);
             putTextured(output, frame, quad.state().transform(), layout, right, bottom,
-                    quad.u1(), quad.v1(), quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.u1(), quad.v1(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
+                    ndcScaleX, ndcScaleY);
             putTextured(output, frame, quad.state().transform(), layout, right, top,
-                    quad.u1(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha());
+                    quad.u1(), quad.v0(), quad.red(), quad.green(), quad.blue(), quad.alpha(),
+                    ndcScaleX, ndcScaleY);
             return;
         }
         if (command instanceof VulkanTexturedTriangle) {
@@ -584,7 +628,7 @@ public final class FrameStreamEncoder {
                 putTextured(output, frame, triangle.state().transform(), layout,
                         triangle.x(vertex), triangle.y(vertex), triangle.u(vertex),
                         triangle.v(vertex), triangle.red(vertex), triangle.green(vertex),
-                        triangle.blue(vertex), triangle.alpha(vertex));
+                        triangle.blue(vertex), triangle.alpha(vertex), ndcScaleX, ndcScaleY);
             }
             return;
         }
@@ -592,18 +636,128 @@ public final class FrameStreamEncoder {
                 + command.getClass().getName());
     }
 
+    private static void writeColoredLine(ByteBuffer output, VulkanFrameCommands frame,
+                                         VulkanColoredLine line,
+                                         float ndcScaleX, float ndcScaleY) {
+        float dx = line.x2() - line.x1();
+        float dy = line.y2() - line.y1();
+        float lengthSquared = dx * dx + dy * dy;
+        float half = line.thickness() * 0.5f;
+        if (lengthSquared < 0.00000001f) {
+            float left = line.x1() - half;
+            float right = line.x1() + half;
+            float top = line.y1() - half;
+            float bottom = line.y1() + half;
+            putLineVertex(output, frame, line, left, top, ndcScaleX, ndcScaleY);
+            putLineVertex(output, frame, line, left, bottom, ndcScaleX, ndcScaleY);
+            putLineVertex(output, frame, line, right, bottom, ndcScaleX, ndcScaleY);
+            putLineVertex(output, frame, line, left, top, ndcScaleX, ndcScaleY);
+            putLineVertex(output, frame, line, right, bottom, ndcScaleX, ndcScaleY);
+            putLineVertex(output, frame, line, right, top, ndcScaleX, ndcScaleY);
+            return;
+        }
+        float scale = half / (float) Math.sqrt(lengthSquared);
+        float normalX = -dy * scale;
+        float normalY = dx * scale;
+        putLineVertex(output, frame, line, line.x1() + normalX, line.y1() + normalY,
+                ndcScaleX, ndcScaleY);
+        putLineVertex(output, frame, line, line.x1() - normalX, line.y1() - normalY,
+                ndcScaleX, ndcScaleY);
+        putLineVertex(output, frame, line, line.x2() - normalX, line.y2() - normalY,
+                ndcScaleX, ndcScaleY);
+        putLineVertex(output, frame, line, line.x1() + normalX, line.y1() + normalY,
+                ndcScaleX, ndcScaleY);
+        putLineVertex(output, frame, line, line.x2() - normalX, line.y2() - normalY,
+                ndcScaleX, ndcScaleY);
+        putLineVertex(output, frame, line, line.x2() + normalX, line.y2() + normalY,
+                ndcScaleX, ndcScaleY);
+    }
+
+    private static void putLineVertex(ByteBuffer output, VulkanFrameCommands frame,
+                                      VulkanColoredLine line, float x, float y,
+                                      float ndcScaleX, float ndcScaleY) {
+        putColored(output, frame, line.state().transform(), x, y,
+                line.red(), line.green(), line.blue(), line.alpha(), ndcScaleX, ndcScaleY);
+    }
+
+    private static void writeColoredCircle(ByteBuffer output, VulkanFrameCommands frame,
+                                           VulkanColoredCircle circle,
+                                           float ndcScaleX, float ndcScaleY) {
+        float[] points = CIRCLE_POINTS[circle.segments()];
+        VulkanTransform2D transform = circle.state().transform();
+        float outerRadius = circle.filled()
+                ? circle.radius() : circle.radius() + circle.thickness() * 0.5f;
+        float innerRadius = circle.filled()
+                ? 0.0f : Math.max(0.0f, circle.radius() - circle.thickness() * 0.5f);
+        for (int segment = 0; segment < circle.segments(); segment++) {
+            int current = segment * 2;
+            int next = (segment + 1) * 2;
+            float x0 = points[current];
+            float y0 = points[current + 1];
+            float x1 = points[next];
+            float y1 = points[next + 1];
+            if (circle.filled()) {
+                putCircleVertex(output, frame, transform, circle, 0.0f, 0.0f,
+                        ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x0 * outerRadius, y0 * outerRadius, ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x1 * outerRadius, y1 * outerRadius, ndcScaleX, ndcScaleY);
+            } else {
+                putCircleVertex(output, frame, transform, circle,
+                        x0 * outerRadius, y0 * outerRadius, ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x0 * innerRadius, y0 * innerRadius, ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x1 * innerRadius, y1 * innerRadius, ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x0 * outerRadius, y0 * outerRadius, ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x1 * innerRadius, y1 * innerRadius, ndcScaleX, ndcScaleY);
+                putCircleVertex(output, frame, transform, circle,
+                        x1 * outerRadius, y1 * outerRadius, ndcScaleX, ndcScaleY);
+            }
+        }
+    }
+
+    private static void putCircleVertex(ByteBuffer output, VulkanFrameCommands frame,
+                                        VulkanTransform2D transform, VulkanColoredCircle circle,
+                                        float relativeX, float relativeY,
+                                        float ndcScaleX, float ndcScaleY) {
+        putColored(output, frame, transform,
+                circle.x() + relativeX, circle.y() + relativeY,
+                circle.red(), circle.green(), circle.blue(), circle.alpha(),
+                ndcScaleX, ndcScaleY);
+    }
+
+    private static float[][] createCirclePoints() {
+        float[][] result = new float[257][];
+        for (int segments = 3; segments < result.length; segments++) {
+            float[] points = new float[(segments + 1) * 2];
+            for (int index = 0; index <= segments; index++) {
+                double angle = index * Math.PI * 2.0 / segments;
+                points[index * 2] = (float) Math.cos(angle);
+                points[index * 2 + 1] = (float) Math.sin(angle);
+            }
+            result[segments] = points;
+        }
+        return result;
+    }
+
     private static void putColored(ByteBuffer output, VulkanFrameCommands frame,
                                    VulkanTransform2D transform, float x, float y,
-                                   float red, float green, float blue, float alpha) {
-        output.putFloat(pixelToNdcX(transform.transformX(x, y), frame.width()));
-        output.putFloat(pixelToNdcY(transform.transformY(x, y), frame.height()));
+                                   float red, float green, float blue, float alpha,
+                                   float ndcScaleX, float ndcScaleY) {
+        output.putFloat(transform.transformX(x, y) * ndcScaleX - 1.0f);
+        output.putFloat(transform.transformY(x, y) * ndcScaleY - 1.0f);
         output.putFloat(red).putFloat(green).putFloat(blue).putFloat(alpha);
     }
 
     private static void putTextured(ByteBuffer output, VulkanFrameCommands frame,
                                     VulkanTransform2D transform, int layout,
                                     float x, float y, float u, float v,
-                                    float red, float green, float blue, float alpha) {
+                                    float red, float green, float blue, float alpha,
+                                    float ndcScaleX, float ndcScaleY) {
         if (layout == FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED) {
             output.putFloat(x).putFloat(y).putFloat(u).putFloat(v)
                     .putFloat(red).putFloat(green).putFloat(blue).putFloat(alpha)
@@ -612,8 +766,8 @@ public final class FrameStreamEncoder {
                     .putFloat(frame.width()).putFloat(frame.height());
             return;
         }
-        output.putFloat(pixelToNdcX(transform.transformX(x, y), frame.width()));
-        output.putFloat(pixelToNdcY(transform.transformY(x, y), frame.height()));
+        output.putFloat(transform.transformX(x, y) * ndcScaleX - 1.0f);
+        output.putFloat(transform.transformY(x, y) * ndcScaleY - 1.0f);
         output.putFloat(u).putFloat(v).putFloat(red).putFloat(green)
                 .putFloat(blue).putFloat(alpha);
     }
@@ -700,14 +854,6 @@ public final class FrameStreamEncoder {
         }
     }
 
-    private static float pixelToNdcX(float value, int width) {
-        return value * 2.0f / width - 1.0f;
-    }
-
-    private static float pixelToNdcY(float value, int height) {
-        return value * 2.0f / height - 1.0f;
-    }
-
     private static final class PassRecord {
         private long targetHandle;
         private int firstBatch;
@@ -791,6 +937,13 @@ public final class FrameStreamEncoder {
             this.blendMode = blendMode;
             this.textureFilter = textureFilter;
             this.shader = shader;
+        }
+
+        private boolean matches(VulkanBlendMode candidateBlend,
+                                VulkanTextureFilter candidateFilter,
+                                VulkanShaderState candidateShader) {
+            return blendMode == candidateBlend && textureFilter == candidateFilter
+                    && (shader == candidateShader || shader.equals(candidateShader));
         }
 
         @Override public boolean equals(Object other) {

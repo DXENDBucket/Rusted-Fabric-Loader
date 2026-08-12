@@ -49,6 +49,7 @@ public final class VulkanRuntime {
     private static VulkanDriverLoader.LoadedDriver activeDriver;
     private static volatile VulkanSurfaceInfo surfaceInfo;
     private static VulkanMode configuredMode = VulkanMode.OFF;
+    private static volatile boolean nativeRendererSelected;
     private static boolean frameTestAttempted;
     private static int frameTestWaitFrames;
     private static int frameTestFramesPresented;
@@ -107,6 +108,7 @@ public final class VulkanRuntime {
 
     public static synchronized void initialize(VulkanMode mode) {
         configuredMode = mode;
+        nativeRendererSelected = false;
         if (mode == VulkanMode.OFF || probeResult != null) return;
         VulkanDriverLoader.LoadedDriver loaded = null;
         try {
@@ -206,11 +208,8 @@ public final class VulkanRuntime {
         return probeResult != null && probeResult.available() && activeDriver != null;
     }
 
-    public static synchronized boolean isNativeRendererSelected() {
-        return configuredMode == VulkanMode.NATIVE
-                && "vulkan".equals(System.getProperty(
-                        "rusted.fabric.renderer.resolved", "opengl"));
-    }
+    /** Hot draw-path query resolved once before window creation. */
+    public static boolean isNativeRendererSelected() { return nativeRendererSelected; }
 
     public static synchronized void onGraphicsEngineInstalled(GraphicsEngine engine) {
         if (!isNativeRendererSelected()) return;
@@ -256,7 +255,9 @@ public final class VulkanRuntime {
         }
         startupPhase = StartupPhase.RENDERER_SELECTED;
         if (configuredMode == VulkanMode.NATIVE) {
+            nativeRendererSelected = true;
             if (activeDriver == null) {
+                nativeRendererSelected = false;
                 throw new IllegalStateException(
                         "RFL selected RustedVK but no Vulkan platform driver is active");
             }
@@ -276,6 +277,7 @@ public final class VulkanRuntime {
                         + created.deviceName() + ", images=" + created.imageCount());
                 return true;
             } catch (Throwable failure) {
+                nativeRendererSelected = false;
                 throw new IllegalStateException(
                         "Could not create the pre-Display Vulkan window/swapchain", failure);
             }
@@ -402,6 +404,25 @@ public final class VulkanRuntime {
         if (nativeFrameBuilder == null) return false;
         nativeFrameBuilder.coloredQuad(
                 x, y, width, height, red, green, blue, alpha, state);
+        return true;
+    }
+
+    public static synchronized boolean recordNativeColoredLine(
+            float x1, float y1, float x2, float y2, float thickness,
+            float red, float green, float blue, float alpha, VulkanDrawState state) {
+        if (nativeFrameBuilder == null) return false;
+        nativeFrameBuilder.coloredLine(x1, y1, x2, y2, thickness,
+                red, green, blue, alpha, state);
+        return true;
+    }
+
+    public static synchronized boolean recordNativeColoredCircle(
+            float x, float y, float radius, float thickness,
+            float red, float green, float blue, float alpha,
+            int segments, boolean filled, VulkanDrawState state) {
+        if (nativeFrameBuilder == null) return false;
+        nativeFrameBuilder.coloredCircle(x, y, radius, thickness,
+                red, green, blue, alpha, segments, filled, state);
         return true;
     }
 
@@ -1005,11 +1026,12 @@ public final class VulkanRuntime {
         }
     }
 
-    public static synchronized long textureForGameImage(GameImage image) {
-        if (gameTextureCache == null) {
+    public static long textureForGameImage(GameImage image) {
+        GameImageVulkanTextureCache cache = gameTextureCache;
+        if (cache == null) {
             throw new IllegalStateException("Vulkan game-image cache is unavailable");
         }
-        return gameTextureCache.texture(image);
+        return cache.texture(image);
     }
 
     public static synchronized long createNativeRenderTarget(int width, int height) {
@@ -1382,6 +1404,7 @@ public final class VulkanRuntime {
     }
 
     private static void resetRuntimeState() {
+        nativeRendererSelected = false;
         surfaceInfo = null;
         pendingTakeoverFrame = null;
         pendingTakeoverCommands = 0;

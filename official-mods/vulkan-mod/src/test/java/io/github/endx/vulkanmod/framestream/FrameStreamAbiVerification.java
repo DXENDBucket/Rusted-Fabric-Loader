@@ -289,6 +289,26 @@ public final class FrameStreamAbiVerification {
                         && customDecoded.material(0).customValue(1) == 4.0f,
                 "custom shader values changed");
 
+        VulkanFrameCommands compactPrimitives = VulkanFrameCommands.builder(64, 64)
+                .coloredLine(1, 2, 9, 6, 2, 1, 0, 0, 1, VulkanDrawState.DEFAULT)
+                .coloredCircle(16, 16, 8, 2, 0, 1, 0, 1,
+                        8, false, VulkanDrawState.DEFAULT)
+                .coloredCircle(32, 32, 6, 1, 0, 0, 1, 1,
+                        8, true, VulkanDrawState.DEFAULT)
+                .build();
+        DecodedFrameStream compactDecoded = DecodedFrameStream.decode(encoder.encode(
+                22, 5, new VulkanFrameSubmission(Collections.emptyList(), compactPrimitives)));
+        require(compactPrimitives.commandCount() == 3
+                        && compactDecoded.batchCount() == 1
+                        && compactDecoded.batch(0).vertexCount() == 78
+                        && compactDecoded.vertices().remaining() == 78 * 24,
+                "compact line/circle commands did not merge into ordinary colored vertices");
+        ByteBuffer primitiveVertices = compactDecoded.vertices().order(ByteOrder.LITTLE_ENDIAN);
+        while (primitiveVertices.hasRemaining()) {
+            require(Float.isFinite(primitiveVertices.getFloat()),
+                    "compact primitive encoder emitted a non-finite vertex");
+        }
+
         byte[] corrupt = bytes(encoded);
         FrameStreamReader envelope = FrameStreamReader.read(ByteBuffer.wrap(corrupt));
         int firstBatch = envelope.section(FrameStreamFormat.SECTION_BATCHES).offset();

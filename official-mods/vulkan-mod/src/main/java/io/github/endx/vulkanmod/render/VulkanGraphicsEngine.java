@@ -192,6 +192,33 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         }
     }
 
+    private void recordColoredLine(float x1, float y1, float x2, float y2, float thickness,
+                                   float red, float green, float blue, float alpha,
+                                   VulkanDrawState drawState) {
+        if (nativeTarget()) {
+            beforeNativeTargetMutation();
+            offscreenBuilder.coloredLine(x1, y1, x2, y2, thickness,
+                    red, green, blue, alpha, drawState);
+        } else {
+            VulkanRuntime.recordNativeColoredLine(x1, y1, x2, y2, thickness,
+                    red, green, blue, alpha, drawState);
+        }
+    }
+
+    private void recordColoredCircle(float x, float y, float radius, float thickness,
+                                     float red, float green, float blue, float alpha,
+                                     int segments, boolean filled,
+                                     VulkanDrawState drawState) {
+        if (nativeTarget()) {
+            beforeNativeTargetMutation();
+            offscreenBuilder.coloredCircle(x, y, radius, thickness,
+                    red, green, blue, alpha, segments, filled, drawState);
+        } else {
+            VulkanRuntime.recordNativeColoredCircle(x, y, radius, thickness,
+                    red, green, blue, alpha, segments, filled, drawState);
+        }
+    }
+
     private void recordTexturedQuad(long textureHandle,
                                     float x, float y, float width, float height,
                                     float u0, float v0, float u1, float v1,
@@ -961,49 +988,27 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
 
     private void nativeLine(float x1, float y1, float x2, float y2, Paint paint) {
-        float dx = x2 - x1;
-        float dy = y2 - y1;
-        float length = (float) Math.hypot(dx, dy);
         float thickness = Math.max(1.0f, paint == null ? 1.0f : paint.g());
-        if (length < 0.0001f) {
-            nativeQuad(x1 - thickness * 0.5f, y1 - thickness * 0.5f,
-                    thickness, thickness, paint);
-            return;
-        }
-        VulkanTransform2D previous = transform;
-        try {
-            transform = safeRotation(
-                    (float) Math.toDegrees(Math.atan2(dy, dx)), x1, y1).then(transform);
-            nativeQuad(x1, y1 - thickness * 0.5f, length, thickness, paint);
-        } finally {
-            transform = previous;
-        }
+        int color = paint == null ? 0xffffffff : paint.e();
+        recordColoredLine(x1, y1, x2, y2, thickness,
+                ((color >>> 16) & 255) / 255.0f,
+                ((color >>> 8) & 255) / 255.0f,
+                (color & 255) / 255.0f,
+                ((color >>> 24) & 255) / 255.0f, state(paint));
     }
 
     private void nativeCircle(float x, float y, float radius, Paint paint) {
         if (radius < 0.0f || !Float.isFinite(radius)) return;
         int segments = Math.max(16, Math.min(64, (int) Math.ceil(radius)));
-        if (paint != null && paint.d() == Paint$Style.b) {
-            float previousX = x + radius;
-            float previousY = y;
-            for (int i = 1; i <= segments; i++) {
-                double angle = i * Math.PI * 2.0 / segments;
-                float nextX = x + (float) Math.cos(angle) * radius;
-                float nextY = y + (float) Math.sin(angle) * radius;
-                nativeLine(previousX, previousY, nextX, nextY, paint);
-                previousX = nextX;
-                previousY = nextY;
-            }
-            return;
-        }
-        float stripHeight = radius * 2.0f / segments;
-        for (int i = 0; i < segments; i++) {
-            float relativeY = -radius + (i + 0.5f) * stripHeight;
-            float halfWidth = (float) Math.sqrt(Math.max(0.0f,
-                    radius * radius - relativeY * relativeY));
-            nativeQuad(x - halfWidth, y + relativeY - stripHeight * 0.5f,
-                    halfWidth * 2.0f, stripHeight, paint);
-        }
+        boolean filled = paint == null || paint.d() != Paint$Style.b;
+        float thickness = Math.max(1.0f, paint == null ? 1.0f : paint.g());
+        int color = paint == null ? 0xffffffff : paint.e();
+        recordColoredCircle(x, y, radius, thickness,
+                ((color >>> 16) & 255) / 255.0f,
+                ((color >>> 8) & 255) / 255.0f,
+                (color & 255) / 255.0f,
+                ((color >>> 24) & 255) / 255.0f,
+                segments, filled, state(paint));
     }
 
     private void restoreNativeState() {

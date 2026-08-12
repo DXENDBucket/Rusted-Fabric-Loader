@@ -13,6 +13,8 @@ public final class VulkanFrameCommands {
     public static final int TEXTURED_QUAD = 2;
     public static final int COLORED_TRIANGLE = 3;
     public static final int TEXTURED_TRIANGLE = 4;
+    public static final int COLORED_LINE = 5;
+    public static final int COLORED_CIRCLE = 6;
 
     private final int width;
     private final int height;
@@ -98,6 +100,8 @@ public final class VulkanFrameCommands {
         if (command instanceof VulkanTexturedQuad) return TEXTURED_QUAD;
         if (command instanceof VulkanColoredTriangle) return COLORED_TRIANGLE;
         if (command instanceof VulkanTexturedTriangle) return TEXTURED_TRIANGLE;
+        if (command instanceof VulkanColoredLine) return COLORED_LINE;
+        if (command instanceof VulkanColoredCircle) return COLORED_CIRCLE;
         throw new IllegalArgumentException("unsupported draw command: "
                 + command.getClass().getName());
     }
@@ -160,6 +164,10 @@ public final class VulkanFrameCommands {
                 ((VulkanColoredTriangle) command).release(pool);
             } else if (command instanceof VulkanTexturedTriangle) {
                 ((VulkanTexturedTriangle) command).release(pool);
+            } else if (command instanceof VulkanColoredLine) {
+                ((VulkanColoredLine) command).release(pool);
+            } else if (command instanceof VulkanColoredCircle) {
+                ((VulkanColoredCircle) command).release(pool);
             }
         }
         released = true;
@@ -297,6 +305,30 @@ public final class VulkanFrameCommands {
             return coloredTriangle(pool == null
                     ? new VulkanColoredTriangle(positions, colors, state)
                     : VulkanColoredTriangle.acquire(pool, positions, colors, state));
+        }
+
+        public Builder coloredLine(float x1, float y1, float x2, float y2, float thickness,
+                                   float red, float green, float blue, float alpha,
+                                   VulkanDrawState state) {
+            ensureOpen();
+            arena.add(pool == null
+                    ? new VulkanColoredLine(x1, y1, x2, y2, thickness,
+                            red, green, blue, alpha, state)
+                    : VulkanColoredLine.acquire(pool, x1, y1, x2, y2, thickness,
+                            red, green, blue, alpha, state));
+            return this;
+        }
+
+        public Builder coloredCircle(float x, float y, float radius, float thickness,
+                                     float red, float green, float blue, float alpha,
+                                     int segments, boolean filled, VulkanDrawState state) {
+            ensureOpen();
+            arena.add(pool == null
+                    ? new VulkanColoredCircle(x, y, radius, thickness,
+                            red, green, blue, alpha, segments, filled, state)
+                    : VulkanColoredCircle.acquire(pool, x, y, radius, thickness,
+                            red, green, blue, alpha, segments, filled, state));
+            return this;
         }
 
         public Builder texturedTriangle(VulkanTexturedTriangle triangle) {
