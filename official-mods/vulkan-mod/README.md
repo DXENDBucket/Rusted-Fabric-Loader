@@ -97,6 +97,12 @@ offscreen work, frame-graph children, and presentation independent. `command.*Ca
 traffic. A real-device regression alternates 64 texture batches while requiring only one pipeline,
 vertex-buffer, scissor, and push-constant command.
 
+The isolated desktop backend has begun moving ownership out of its original monolithic session:
+`VulkanCommandStateCache` owns pass-local command deduplication and its counters, while
+`VulkanDescriptorAllocator` owns the shared sampler/layout/pool, lazy set allocation, and the
+fence-released recycler. `Lwjgl3VulkanDriver` retains orchestration and image-to-descriptor cache
+keys, but no longer implements those low-level lifecycles inline.
+
 Native frame construction uses a thread-confined command arena. Its growable command array and
 quad/triangle command objects are retained at peak capacity and recycled after the synchronous
 platform-driver submission, while the ordinary public `builder(...)` path remains an immutable
