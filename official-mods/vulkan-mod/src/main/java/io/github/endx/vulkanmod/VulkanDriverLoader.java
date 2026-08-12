@@ -136,7 +136,23 @@ final class VulkanDriverLoader {
             this.resources = driver.supportsResourceStream()
                     && !Boolean.getBoolean("rusted.fabric.vulkan.objectResources")
                     ? new ResourceStreamClient(stream -> invoke(
-                            () -> driver.submitResourceStream(stream)))
+                            () -> driver.submitResourceStream(stream)),
+                            new io.github.endx.vulkanmod.resourcestream.ResourceUploadArenaPool.Registry() {
+                                @Override public void register(long arenaId,
+                                                               java.nio.ByteBuffer memory) {
+                                    invoke(() -> {
+                                        driver.registerResourceUploadArena(arenaId, memory);
+                                        return null;
+                                    });
+                                }
+                                @Override public void unregister(long arenaId) {
+                                    invoke(() -> {
+                                        driver.unregisterResourceUploadArena(arenaId);
+                                        return null;
+                                    });
+                                }
+                            }, configuredResourceArenaCount(), configuredResourceArenaBytes(),
+                            configuredExternalUploadThreshold())
                     : null;
             if (resources != null) {
                 System.out.println("[Vulkan Mod] Reliable ResourceStream resource submission "
@@ -236,8 +252,21 @@ final class VulkanDriverLoader {
             });
         }
 
+        void updateTextureRegion(long textureHandle, int x, int y,
+                                 VulkanTextureData texture) {
+            if (resources != null) {
+                resources.updateTextureRegion(textureHandle, x, y, texture);
+                return;
+            }
+            invoke(() -> {
+                driver.updateTextureRegion(textureHandle, x, y, texture);
+                return null;
+            });
+        }
+
         VulkanTextureData readTexture(long textureHandle) {
-            return invoke(() -> driver.readTexture(textureHandle));
+            return resources == null ? invoke(() -> driver.readTexture(textureHandle))
+                    : resources.readTexture(textureHandle);
         }
 
         void destroyTexture(long textureHandle) {
@@ -312,13 +341,21 @@ final class VulkanDriverLoader {
 
         @Override public void close() {
             RuntimeException driverFailure = null;
+            if (resources != null) {
+                try {
+                    resources.close();
+                } catch (RuntimeException failure) {
+                    driverFailure = failure;
+                }
+            }
             try {
                 invoke(() -> {
                     driver.close();
                     return null;
                 });
             } catch (RuntimeException failure) {
-                driverFailure = failure;
+                if (driverFailure != null) driverFailure.addSuppressed(failure);
+                else driverFailure = failure;
             }
             try {
                 loader.close();
@@ -329,6 +366,27 @@ final class VulkanDriverLoader {
             if (driverFailure != null) {
                 throw driverFailure;
             }
+        }
+
+        private static int configuredResourceArenaCount() {
+            int count = Integer.getInteger("rusted.fabric.vulkan.resourceArenaCount", 3);
+            if (count < 1 || count > 16) throw new IllegalArgumentException(
+                    "rusted.fabric.vulkan.resourceArenaCount must be in [1,16]");
+            return count;
+        }
+
+        private static int configuredResourceArenaBytes() {
+            int mib = Integer.getInteger("rusted.fabric.vulkan.resourceArenaMiB", 16);
+            if (mib < 1 || mib > 256) throw new IllegalArgumentException(
+                    "rusted.fabric.vulkan.resourceArenaMiB must be in [1,256]");
+            return Math.multiplyExact(mib, 1024 * 1024);
+        }
+
+        private static int configuredExternalUploadThreshold() {
+            int kib = Integer.getInteger("rusted.fabric.vulkan.externalUploadKiB", 256);
+            if (kib < 0 || kib > 1024 * 1024) throw new IllegalArgumentException(
+                    "rusted.fabric.vulkan.externalUploadKiB must be in [0,1048576]");
+            return Math.multiplyExact(kib, 1024);
         }
     }
 

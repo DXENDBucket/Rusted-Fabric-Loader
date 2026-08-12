@@ -181,6 +181,14 @@ tasks.register('verifyResourceStreamClient', JavaExec) {
     dependsOn tasks.named('testClasses')
 }
 
+tasks.register('verifyResourceUploadArenas', JavaExec) {
+    group = 'verification'
+    description = 'Verifies bounded ResourceStream upload arena ownership and growth.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.endx.vulkanmod.resourcestream.ResourceUploadArenaVerification'
+    dependsOn tasks.named('testClasses')
+}
+
 tasks.register('verifyNativeShaderCoverage', JavaExec) {
     group = 'verification'
     description = 'Checks native mappings for every fragment shader shipped by the stock game.'
@@ -193,6 +201,7 @@ check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolate
         tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
         tasks.named('verifyFrameCommandArena'), tasks.named('verifyFrameStreamAbi'),
         tasks.named('verifyResourceStreamAbi'), tasks.named('verifyResourceStreamClient'),
+        tasks.named('verifyResourceUploadArenas'),
         tasks.named('verifyNativeShaderCoverage'),
         ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyResourceStreamExecution'

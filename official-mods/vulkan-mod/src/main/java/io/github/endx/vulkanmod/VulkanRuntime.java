@@ -1100,6 +1100,15 @@ public final class VulkanRuntime {
         activeDriver.updateTexture(textureHandle, texture);
     }
 
+    public static synchronized void updateNativeTextureRegion(
+            long textureHandle, int x, int y, VulkanTextureData texture) {
+        if (!isNativeRendererSelected() || activeDriver == null) {
+            throw new IllegalStateException("native Vulkan texture updates are unavailable");
+        }
+        flushNativeRenderTargetPasses();
+        activeDriver.updateTextureRegion(textureHandle, x, y, texture);
+    }
+
     public static synchronized void destroyNativeRenderTarget(long textureHandle) {
         if (textureHandle != 0L && activeDriver != null) {
             flushNativeRenderTargetPasses();

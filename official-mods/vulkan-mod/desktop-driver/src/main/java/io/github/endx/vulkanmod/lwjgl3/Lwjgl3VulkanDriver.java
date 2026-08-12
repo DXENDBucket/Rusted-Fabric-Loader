@@ -30,6 +30,7 @@ import io.github.endx.vulkanmod.spi.VulkanInputEvent;
 import io.github.endx.vulkanmod.spi.VulkanShaderState;
 import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
+import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -204,6 +205,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             + "  outColor=sampled*color;\n"
             + "}\n";
     private SurfaceSession surfaceSession;
+    private final Map<Long, ByteBuffer> resourceUploadArenas =
+            new LinkedHashMap<Long, ByteBuffer>();
 
     @Override public String name() { return "LWJGL 3 Vulkan"; }
 
@@ -398,6 +401,15 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         surfaceSession.updateTexture(textureHandle, texture);
     }
 
+    @Override public synchronized void updateTextureRegion(long textureHandle, int x, int y,
+                                                            VulkanTextureData texture) {
+        if (surfaceSession == null) {
+            throw new IllegalStateException("Vulkan surface has not been created");
+        }
+        if (texture == null) throw new NullPointerException("texture");
+        surfaceSession.updateTextureRegion(textureHandle, x, y, texture);
+    }
+
     @Override public synchronized VulkanTextureData readTexture(long textureHandle) {
         if (surfaceSession == null) {
             throw new IllegalStateException("Vulkan surface has not been created");
@@ -438,12 +450,35 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         return surfaceSession.presentFrame(DecodedFrameStream.decode(frameStream));
     }
 
-    @Override public synchronized long submitResourceStream(ByteBuffer resourceStream) {
+    @Override public synchronized VulkanResourceStreamResult submitResourceStream(
+            ByteBuffer resourceStream) {
         if (surfaceSession == null) {
             throw new IllegalStateException("Vulkan surface has not been created");
         }
         if (resourceStream == null) throw new NullPointerException("resourceStream");
-        return surfaceSession.submitResourceStream(ResourceStreamReader.read(resourceStream));
+        return surfaceSession.submitResourceStream(ResourceStreamReader.read(resourceStream),
+                resourceUploadArenas);
+    }
+
+    @Override public synchronized void registerResourceUploadArena(long arenaId,
+                                                                    ByteBuffer memory) {
+        if (arenaId <= 0L) throw new IllegalArgumentException("resource arena ID must be positive");
+        if (memory == null || !memory.isDirect()) {
+            throw new IllegalArgumentException("resource arena must be a direct buffer");
+        }
+        if (resourceUploadArenas.containsKey(arenaId)) {
+            throw new IllegalArgumentException("duplicate resource arena ID " + arenaId);
+        }
+        ByteBuffer registered = memory.duplicate().order(ByteOrder.LITTLE_ENDIAN);
+        registered.clear();
+        resourceUploadArenas.put(arenaId, registered.asReadOnlyBuffer()
+                .order(ByteOrder.LITTLE_ENDIAN));
+    }
+
+    @Override public synchronized void unregisterResourceUploadArena(long arenaId) {
+        if (resourceUploadArenas.remove(arenaId) == null) {
+            throw new IllegalArgumentException("unknown resource arena ID " + arenaId);
+        }
     }
 
     @Override public synchronized void destroyTexture(long textureHandle) {
@@ -455,6 +490,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             surfaceSession.close();
             surfaceSession = null;
         }
+        resourceUploadArenas.clear();
     }
 
     synchronized long frameGraphQueueSubmissionCount() {
@@ -1371,8 +1407,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 new LinkedHashMap<Long, TextureResource>();
         private final Map<TextureDescriptorKey, Long> pairedTextureDescriptors =
                 new LinkedHashMap<TextureDescriptorKey, Long>();
-        private final Map<Long, PendingTextureUpload> pendingTextureUploads =
-                new LinkedHashMap<Long, PendingTextureUpload>();
+        private final ArrayList<PendingTextureUpload> pendingTextureUploads =
+                new ArrayList<PendingTextureUpload>();
         private final Map<Long, ResourceTextureBinding> resourceTextures =
                 new LinkedHashMap<Long, ResourceTextureBinding>();
         private final Map<Long, ResourceStreamRecords.TextureDescriptor>
@@ -1383,6 +1419,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private boolean resourceStreamActive;
         private Throwable resourceStreamFault;
         private long resourceStreamSubmissions;
+        private long externalResourceTransfers;
         private final ArrayDeque<TextureResource> retiredTextures =
                 new ArrayDeque<TextureResource>();
         private long nextTextureHandle = 1L;
@@ -1580,7 +1617,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             return shader.expandedVertexInput;
         }
 
-        private long submitResourceStream(ResourceStreamReader stream) {
+        private VulkanResourceStreamResult submitResourceStream(ResourceStreamReader stream,
+                                                                 Map<Long, ByteBuffer> arenas) {
             if (closed) throw new IllegalStateException("Vulkan surface is closed");
             if (resourceStreamFault != null) {
                 throw new IllegalStateException("ResourceStream backend is faulted",
@@ -1599,8 +1637,14 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
             resourceStreamActive = true;
             try {
+                VulkanTextureData readback = null;
                 for (int index = 0; index < stream.recordCount(); index++) {
-                    applyResourceRecord(stream, index);
+                    VulkanTextureData recordResult = applyResourceRecord(stream, index, arenas);
+                    if (recordResult != null) {
+                        if (readback != null) throw new IllegalArgumentException(
+                                "ResourceStream contains multiple completion payloads");
+                        readback = recordResult;
+                    }
                 }
                 appliedResourceSequence = stream.lastSequence();
                 if (++resourceStreamSubmissions == 1L) {
@@ -1608,14 +1652,23 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             + stream.recordCount() + ", sequence=" + stream.firstSequence()
                             + ".." + stream.lastSequence());
                 }
-                return appliedResourceSequence;
+                if (readback != null) {
+                    return VulkanResourceStreamResult.textureReadback(appliedResourceSequence,
+                            stream.completionId(), readback);
+                }
+                if (stream.completionId() != 0L) {
+                    return VulkanResourceStreamResult.completed(appliedResourceSequence,
+                            stream.completionId());
+                }
+                return VulkanResourceStreamResult.applied(appliedResourceSequence);
             } catch (RuntimeException | Error failure) {
                 resourceStreamFault = failure;
                 throw failure;
             }
         }
 
-        private void applyResourceRecord(ResourceStreamReader stream, int index) {
+        private VulkanTextureData applyResourceRecord(ResourceStreamReader stream, int index,
+                                                       Map<Long, ByteBuffer> arenas) {
             ResourceStreamReader.Record record = stream.record(index);
             long logical = record.handle();
             switch (record.type()) {
@@ -1627,7 +1680,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                     pendingResourceTextures.put(logical,
                             ResourceStreamRecords.decodeTextureDescriptor(stream, index));
-                    return;
+                    return null;
                 }
                 case ResourceStreamFormat.TEXTURE_UPLOAD: {
                     ResourceStreamRecords.TextureDescriptor descriptor =
@@ -1638,33 +1691,20 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     }
                     ResourceStreamRecords.TextureTransfer transfer =
                             ResourceStreamRecords.decodeTextureTransfer(stream, index);
-                    if (transfer.external()) {
-                        throw new UnsupportedOperationException(
-                                "desktop external resource arenas are not registered yet");
-                    }
                     requireFullTextureTransfer(descriptor, transfer);
-                    long raw = uploadTexture(textureData(transfer));
+                    long raw = uploadTexture(textureData(transfer, arenas));
                     resourceTextures.put(logical, new ResourceTextureBinding(raw,
                             descriptor.width, descriptor.height, false));
                     pendingResourceTextures.remove(logical);
-                    return;
+                    return null;
                 }
                 case ResourceStreamFormat.TEXTURE_REGION_UPDATE: {
                     ResourceTextureBinding binding = requireResourceTexture(logical);
                     ResourceStreamRecords.TextureTransfer transfer =
                             ResourceStreamRecords.decodeTextureTransfer(stream, index);
-                    if (transfer.external()) {
-                        throw new UnsupportedOperationException(
-                                "desktop external resource arenas are not registered yet");
-                    }
-                    if (transfer.x != 0 || transfer.y != 0
-                            || transfer.width != binding.width
-                            || transfer.height != binding.height) {
-                        throw new UnsupportedOperationException(
-                                "desktop partial texture region updates are not implemented");
-                    }
-                    updateTexture(binding.rawHandle, textureData(transfer));
-                    return;
+                    updateTextureRegion(binding.rawHandle, transfer.x, transfer.y,
+                            textureData(transfer, arenas));
+                    return null;
                 }
                 case ResourceStreamFormat.TEXTURE_DESTROY: {
                     ResourceTextureBinding binding = resourceTextures.remove(logical);
@@ -1674,7 +1714,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         throw new IllegalArgumentException("destroy of unknown logical texture");
                     }
                     if (binding != null) destroyTexture(binding.rawHandle);
-                    return;
+                    return null;
                 }
                 case ResourceStreamFormat.RENDER_TARGET_CREATE: {
                     if (resourceTextures.containsKey(logical)
@@ -1686,7 +1726,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     long raw = createRenderTarget(descriptor.width, descriptor.height);
                     resourceTextures.put(logical, new ResourceTextureBinding(raw,
                             descriptor.width, descriptor.height, true));
-                    return;
+                    return null;
                 }
                 case ResourceStreamFormat.SHADER_PROGRAM_CREATE: {
                     if (resourceShaders.containsKey(logical)) {
@@ -1700,7 +1740,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             : compileFragmentShader(new VulkanCustomFragmentShader(shader.name,
                                     shader.fragmentSource));
                     resourceShaders.put(logical, raw);
-                    return;
+                    return null;
                 }
                 case ResourceStreamFormat.SHADER_PROGRAM_DESTROY: {
                     Long raw = resourceShaders.remove(logical);
@@ -1708,16 +1748,25 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         throw new IllegalArgumentException("destroy of unknown logical shader");
                     }
                     destroyShaderProgram(raw.longValue());
-                    return;
+                    return null;
                 }
-                case ResourceStreamFormat.TEXTURE_READBACK:
-                    throw new UnsupportedOperationException(
-                            "ResourceStream readback result transport is not implemented");
+                case ResourceStreamFormat.TEXTURE_READBACK: {
+                    ResourceTextureBinding binding = requireResourceTexture(logical);
+                    ResourceStreamRecords.TextureReadback request =
+                            ResourceStreamRecords.decodeTextureReadback(stream, index);
+                    if (request.x != 0 || request.y != 0
+                            || request.width != binding.width
+                            || request.height != binding.height) {
+                        throw new UnsupportedOperationException(
+                                "partial ResourceStream readback is not implemented");
+                    }
+                    return readTexture(binding.rawHandle);
+                }
                 case ResourceStreamFormat.FLUSH:
                 case ResourceStreamFormat.LIFECYCLE_BARRIER:
-                    return; // Submission is synchronous; all earlier CPU-side work is applied.
+                    return null; // Submission is synchronous; earlier CPU work is applied.
                 default:
-                    return; // Unknown optional records were structurally validated and skipped.
+                    return null; // Unknown optional records were validated and skipped.
             }
         }
 
@@ -1732,12 +1781,33 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
         }
 
-        private static VulkanTextureData textureData(
-                ResourceStreamRecords.TextureTransfer transfer) {
-            ByteBuffer pixels = transfer.inlinePixels.duplicate();
-            byte[] rgba = new byte[transfer.dataBytes];
-            pixels.get(rgba);
-            return new VulkanTextureData(transfer.width, transfer.height, rgba);
+        private VulkanTextureData textureData(
+                ResourceStreamRecords.TextureTransfer transfer, Map<Long, ByteBuffer> arenas) {
+            ByteBuffer pixels;
+            if (transfer.external()) {
+                ByteBuffer arena = arenas.get(transfer.arenaId);
+                if (arena == null) throw new IllegalArgumentException(
+                        "unknown external resource arena " + transfer.arenaId);
+                long end;
+                try { end = Math.addExact(transfer.arenaOffset, (long) transfer.dataBytes); }
+                catch (ArithmeticException overflow) {
+                    throw new IllegalArgumentException("external resource arena range overflows");
+                }
+                if (transfer.arenaOffset > Integer.MAX_VALUE || end > arena.capacity()) {
+                    throw new IllegalArgumentException("external resource arena range is invalid");
+                }
+                pixels = arena.duplicate();
+                pixels.position((int) transfer.arenaOffset).limit((int) end);
+                pixels = pixels.slice();
+                if (++externalResourceTransfers == 1L) {
+                    System.out.println("[Vulkan Mod/Driver] First external ResourceStream upload: "
+                            + "arena=" + transfer.arenaId + ", bytes=" + transfer.dataBytes);
+                }
+            } else {
+                pixels = transfer.inlinePixels.duplicate();
+            }
+            return VulkanTextureData.copyOfRgbaBuffer(
+                    transfer.width, transfer.height, pixels);
         }
 
         private ResourceTextureBinding requireResourceTexture(long logical) {
@@ -2309,8 +2379,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 long publicHandle = nextTextureHandle++;
                 if (publicHandle <= 0L) throw new IllegalStateException("texture handles exhausted");
                 textures.put(publicHandle, created);
-                pendingTextureUploads.put(publicHandle,
-                        new PendingTextureUpload(texture, false));
+                queueTextureUpload(publicHandle, 0, 0, texture);
                 complete = true;
                 return publicHandle;
             } finally {
@@ -2726,6 +2795,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             .sType$Default().flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
                     check(vkBeginCommandBuffer(command, beginInfo),
                             "vkBeginCommandBuffer(render-target readback)");
+                    // A reliable readback is ordered after every earlier ResourceStream update,
+                    // including uploads that have not yet been folded into a presentation frame.
+                    recordPendingTextureUploads(command, stack);
                     VkImageMemoryBarrier.Buffer toCopy = VkImageMemoryBarrier.calloc(1, stack);
                     toCopy.get(0).sType$Default()
                             .oldLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -2800,19 +2872,38 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private void updateTexture(long textureHandle, VulkanTextureData texture) {
+            updateTextureRegion(textureHandle, 0, 0, texture);
+        }
+
+        private void updateTextureRegion(long textureHandle, int x, int y,
+                                         VulkanTextureData texture) {
             textureHandle = resolveTextureHandle(textureHandle);
             TextureResource target = textures.get(textureHandle);
             if (target == null) {
                 throw new IllegalArgumentException("unknown texture handle " + textureHandle);
             }
-            if (target.width != texture.width() || target.height != texture.height()) {
-                throw new IllegalArgumentException("texture update size changed from "
-                        + target.width + "x" + target.height + " to "
-                        + texture.width() + "x" + texture.height());
+            if (x < 0 || y < 0 || (long) x + texture.width() > target.width
+                    || (long) y + texture.height() > target.height) {
+                throw new IllegalArgumentException("texture update region exceeds "
+                        + target.width + "x" + target.height);
             }
-            PendingTextureUpload previous = pendingTextureUploads.get(textureHandle);
-            pendingTextureUploads.put(textureHandle, new PendingTextureUpload(texture,
-                    previous == null ? target.initialized : previous.initialized));
+            queueTextureUpload(textureHandle, x, y, texture);
+        }
+
+        private void queueTextureUpload(long textureHandle, int x, int y,
+                                        VulkanTextureData texture) {
+            TextureResource target = textures.get(textureHandle);
+            if (target == null) throw new IllegalArgumentException(
+                    "unknown texture handle " + textureHandle);
+            boolean initialized = target.initialized;
+            for (int index = pendingTextureUploads.size() - 1; index >= 0; index--) {
+                if (pendingTextureUploads.get(index).textureHandle == textureHandle) {
+                    initialized = true;
+                    break;
+                }
+            }
+            pendingTextureUploads.add(new PendingTextureUpload(textureHandle, x, y,
+                    texture, initialized));
         }
 
         private BufferAllocation ensureTextureStaging(MemoryStack stack, int requiredBytes) {
@@ -2946,7 +3037,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         private void recordPendingTextureUploads(VkCommandBuffer command, MemoryStack stack) {
             if (pendingTextureUploads.isEmpty()) return;
             int byteCount = 0;
-            for (PendingTextureUpload pending : pendingTextureUploads.values()) {
+            for (PendingTextureUpload pending : pendingTextureUploads) {
                 byteCount = Math.addExact(byteCount, pending.texture.byteSize());
             }
             BufferAllocation staging = ensureTextureStaging(stack, byteCount);
@@ -2955,10 +3046,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     "vkMapMemory(pending texture uploads)");
             try {
                 ByteBuffer destination = MemoryUtil.memByteBuffer(mapped.get(0), byteCount);
-                for (Map.Entry<Long, PendingTextureUpload> entry
-                        : pendingTextureUploads.entrySet()) {
-                    TextureResource target = textures.get(entry.getKey());
-                    PendingTextureUpload pending = entry.getValue();
+                for (PendingTextureUpload pending : pendingTextureUploads) {
+                    TextureResource target = textures.get(pending.textureHandle);
                     if (target != null && target.renderTarget
                             && isBlueFirstFormat(info.imageFormat())) {
                         byte[] rgba = pending.texture.copyRgba();
@@ -2977,10 +3066,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             }
 
             int offset = 0;
-            for (Map.Entry<Long, PendingTextureUpload> entry
-                    : pendingTextureUploads.entrySet()) {
-                TextureResource target = textures.get(entry.getKey());
-                PendingTextureUpload pending = entry.getValue();
+            for (PendingTextureUpload pending : pendingTextureUploads) {
+                TextureResource target = textures.get(pending.textureHandle);
                 if (target == null) {
                     offset += pending.texture.byteSize();
                     continue;
@@ -3006,8 +3093,9 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 region.get(0).bufferOffset(offset).bufferRowLength(0).bufferImageHeight(0);
                 region.get(0).imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
                         .mipLevel(0).baseArrayLayer(0).layerCount(1);
-                region.get(0).imageOffset().x(0).y(0).z(0);
-                region.get(0).imageExtent().width(target.width).height(target.height).depth(1);
+                region.get(0).imageOffset().x(pending.x).y(pending.y).z(0);
+                region.get(0).imageExtent().width(pending.texture.width())
+                        .height(pending.texture.height()).depth(1);
                 vkCmdCopyBufferToImage(command, staging.buffer, target.image,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
                 VkImageMemoryBarrier.Buffer toShader = VkImageMemoryBarrier.calloc(1, stack);
@@ -3067,9 +3155,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
 
         private void destroyTexture(long textureHandle) {
             textureHandle = resolveTextureHandle(textureHandle);
+            final long destroyedHandle = textureHandle;
             TextureResource texture = textures.remove(textureHandle);
             if (texture == null) return;
-            pendingTextureUploads.remove(textureHandle);
+            pendingTextureUploads.removeIf(
+                    pending -> pending.textureHandle == destroyedHandle);
             java.util.Iterator<Map.Entry<TextureDescriptorKey, Long>> descriptors =
                     pairedTextureDescriptors.entrySet().iterator();
             while (descriptors.hasNext()) {
@@ -4362,10 +4452,16 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
         }
 
         private static final class PendingTextureUpload {
+            private final long textureHandle;
+            private final int x, y;
             private final VulkanTextureData texture;
             private final boolean initialized;
 
-            private PendingTextureUpload(VulkanTextureData texture, boolean initialized) {
+            private PendingTextureUpload(long textureHandle, int x, int y,
+                                         VulkanTextureData texture, boolean initialized) {
+                this.textureHandle = textureHandle;
+                this.x = x;
+                this.y = y;
                 this.texture = texture;
                 this.initialized = initialized;
             }

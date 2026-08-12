@@ -9,6 +9,7 @@ public final class VulkanTextureData {
     private final int height;
     private final byte[] rgba;
     private final int[] argb;
+    private final ByteBuffer rgbaBuffer;
 
     public VulkanTextureData(int width, int height, byte[] rgba) {
         if (width <= 0 || height <= 0) {
@@ -24,6 +25,7 @@ public final class VulkanTextureData {
         this.height = height;
         this.rgba = Arrays.copyOf(rgba, rgba.length);
         this.argb = null;
+        this.rgbaBuffer = null;
     }
 
     private VulkanTextureData(int width, int height, int[] argb) {
@@ -43,10 +45,36 @@ public final class VulkanTextureData {
         // cheap native array-copy snapshot and perform the channel conversion only once, directly
         // into mapped Vulkan staging memory.
         this.argb = Arrays.copyOf(argb, argb.length);
+        this.rgbaBuffer = null;
+    }
+
+    private VulkanTextureData(int width, int height, ByteBuffer rgbaBuffer) {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("texture dimensions must be positive");
+        }
+        if (rgbaBuffer == null) throw new NullPointerException("rgbaBuffer");
+        int expected = Math.multiplyExact(Math.multiplyExact(width, height), 4);
+        ByteBuffer source = rgbaBuffer.slice();
+        if (source.remaining() != expected) {
+            throw new IllegalArgumentException("expected " + expected
+                    + " RGBA bytes, got " + source.remaining());
+        }
+        ByteBuffer copy = ByteBuffer.allocateDirect(expected);
+        copy.put(source).flip();
+        this.width = width;
+        this.height = height;
+        this.rgba = null;
+        this.argb = null;
+        this.rgbaBuffer = copy.asReadOnlyBuffer();
     }
 
     public static VulkanTextureData fromArgb(int width, int height, int[] argb) {
         return new VulkanTextureData(width, height, argb);
+    }
+
+    /** Takes one driver-owned direct snapshot without creating an intermediate heap array. */
+    public static VulkanTextureData copyOfRgbaBuffer(int width, int height, ByteBuffer rgba) {
+        return new VulkanTextureData(width, height, rgba);
     }
 
     public int width() { return width; }
@@ -63,6 +91,10 @@ public final class VulkanTextureData {
         }
         if (rgba != null) {
             destination.put(rgba);
+            return;
+        }
+        if (rgbaBuffer != null) {
+            destination.put(rgbaBuffer.duplicate());
             return;
         }
         for (int pixel : argb) {

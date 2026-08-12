@@ -6,15 +6,19 @@ import io.github.endx.vulkanmod.resourcestream.ResourceSequenceClock;
 import io.github.endx.vulkanmod.resourcestream.ResourceStreamFormat;
 import io.github.endx.vulkanmod.resourcestream.ResourceStreamRecords;
 import io.github.endx.vulkanmod.resourcestream.ResourceStreamWriter;
+import io.github.endx.vulkanmod.resourcestream.ResourceUploadArenaPool;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanCustomFragmentShader;
 import io.github.endx.vulkanmod.spi.VulkanCustomShaderProgram;
+import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 
 import java.nio.ByteBuffer;
 
 /** Shared synchronous reference client for the reliable RustedVK resource channel. */
-final class ResourceStreamClient {
-    interface Submitter { long submit(ByteBuffer stream); }
+final class ResourceStreamClient implements AutoCloseable {
+    interface Submitter { VulkanResourceStreamResult submit(ByteBuffer stream); }
+
+    private static final int DEFAULT_EXTERNAL_THRESHOLD = 256 * 1024;
 
     private final Submitter submitter;
     private final ResourceSequenceClock sequences = new ResourceSequenceClock();
@@ -22,11 +26,24 @@ final class ResourceStreamClient {
             new ResourceHandleTable<TextureMetadata>(FrameResourceHandle.TYPE_TEXTURE);
     private final ResourceHandleTable<ShaderMetadata> shaders =
             new ResourceHandleTable<ShaderMetadata>(FrameResourceHandle.TYPE_SHADER_PROGRAM);
+    private final ResourceUploadArenaPool uploadArenas;
+    private final int externalThreshold;
+    private long nextCompletionId;
     private RuntimeException fault;
 
     ResourceStreamClient(Submitter submitter) {
+        this(submitter, null, 0, 0, Integer.MAX_VALUE);
+    }
+
+    ResourceStreamClient(Submitter submitter, ResourceUploadArenaPool.Registry registry,
+                         int arenaCount, int arenaBytes, int externalThreshold) {
         if (submitter == null) throw new NullPointerException("submitter");
+        if (externalThreshold < 0) throw new IllegalArgumentException(
+                "negative external upload threshold");
         this.submitter = submitter;
+        this.externalThreshold = externalThreshold;
+        this.uploadArenas = registry == null ? null
+                : new ResourceUploadArenaPool(registry, arenaCount, arenaBytes);
     }
 
     synchronized long uploadTexture(VulkanTextureData texture) {
@@ -43,8 +60,8 @@ final class ResourceStreamClient {
                     ResourceStreamFormat.TEXTURE_USAGE_SAMPLED
                             | ResourceStreamFormat.TEXTURE_USAGE_TRANSFER_DESTINATION,
                     ResourceStreamFormat.SAMPLER_CLAMP_TO_EDGE);
-            ResourceStreamRecords.textureUpload(writer, handle, texture);
-            submit(reservation, writer);
+            submitTextureTransfer(reservation, writer, ResourceStreamFormat.TEXTURE_UPLOAD,
+                    handle, 0, 0, texture);
             return handle;
         } catch (RuntimeException failure) {
             textures.cancelReservation(handle);
@@ -79,10 +96,22 @@ final class ResourceStreamClient {
         if (metadata.width != texture.width() || metadata.height != texture.height()) {
             throw new IllegalArgumentException("texture update dimensions changed");
         }
+        updateTextureRegion(handle, 0, 0, texture);
+    }
+
+    synchronized void updateTextureRegion(long handle, int x, int y, VulkanTextureData texture) {
+        requireHealthy();
+        if (texture == null) throw new NullPointerException("texture");
+        validateDimensions(texture.width(), texture.height());
+        TextureMetadata metadata = textures.requireVisible(handle, sequences.appliedThrough());
+        if (x < 0 || y < 0 || (long) x + texture.width() > metadata.width
+                || (long) y + texture.height() > metadata.height) {
+            throw new IllegalArgumentException("texture update region exceeds logical texture");
+        }
         ResourceSequenceClock.Reservation reservation = sequences.reserve(1);
         ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first, 0, 0L);
-        ResourceStreamRecords.textureRegionUpdate(writer, handle, 0, 0, texture);
-        submit(reservation, writer);
+        submitTextureTransfer(reservation, writer,
+                ResourceStreamFormat.TEXTURE_REGION_UPDATE, handle, x, y, texture);
     }
 
     synchronized void destroyTexture(long handle) {
@@ -156,21 +185,76 @@ final class ResourceStreamClient {
         return textures.requireVisible(handle, sequences.appliedThrough()).renderTarget;
     }
 
-    private void submit(ResourceSequenceClock.Reservation reservation,
-                        ResourceStreamWriter writer) {
-        long applied;
+    synchronized VulkanTextureData readTexture(long handle) {
+        requireHealthy();
+        TextureMetadata metadata = textures.requireVisible(handle, sequences.appliedThrough());
+        if (!metadata.renderTarget) throw new IllegalArgumentException(
+                "only readable render targets support ResourceStream readback");
+        if (nextCompletionId == Long.MAX_VALUE) throw new IllegalStateException(
+                "ResourceStream completion IDs exhausted");
+        long completionId = ++nextCompletionId;
+        ResourceSequenceClock.Reservation reservation = sequences.reserve(1);
+        ResourceStreamWriter writer = new ResourceStreamWriter(reservation.first,
+                ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, completionId);
+        ResourceStreamRecords.textureReadback(writer, handle, 0, 0,
+                metadata.width, metadata.height, ResourceStreamFormat.FORMAT_RGBA8_UNORM);
+        VulkanResourceStreamResult result = submit(reservation, writer);
+        if (result.completionId() != completionId || result.textureReadback() == null) {
+            fault = new IllegalStateException("ResourceStream readback completion mismatch");
+            throw fault;
+        }
+        return result.textureReadback();
+    }
+
+    private void submitTextureTransfer(ResourceSequenceClock.Reservation reservation,
+            ResourceStreamWriter writer, int recordType, long handle, int x, int y,
+            VulkanTextureData texture) {
+        if (uploadArenas == null || texture.byteSize() < externalThreshold) {
+            if (recordType == ResourceStreamFormat.TEXTURE_UPLOAD) {
+                ResourceStreamRecords.textureUpload(writer, handle, texture);
+            } else {
+                ResourceStreamRecords.textureRegionUpdate(writer, handle, x, y, texture);
+            }
+            submit(reservation, writer);
+            return;
+        }
+        try (ResourceUploadArenaPool.Lease lease = uploadArenas.acquire(texture.byteSize())) {
+            ByteBuffer pixels = lease.buffer();
+            texture.writeTo(pixels);
+            ResourceStreamRecords.externalTextureTransfer(writer, recordType, handle,
+                    x, y, texture.width(), texture.height(), texture.width() * 4,
+                    ResourceStreamFormat.FORMAT_RGBA8_UNORM, texture.byteSize(),
+                    lease.arenaId(), 0L);
+            submit(reservation, writer);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            fault = new IllegalStateException(
+                    "interrupted while acquiring a ResourceStream upload arena", interrupted);
+            throw fault;
+        }
+    }
+
+    private VulkanResourceStreamResult submit(ResourceSequenceClock.Reservation reservation,
+                                              ResourceStreamWriter writer) {
+        VulkanResourceStreamResult result;
         try {
-            applied = submitter.submit(writer.toDirectBuffer());
+            result = submitter.submit(writer.toDirectBuffer());
         } catch (RuntimeException failure) {
             fault = failure;
             throw failure;
         }
-        if (applied != reservation.last) {
-            fault = new IllegalStateException("ResourceStream backend applied through " + applied
+        if (result == null) {
+            fault = new IllegalStateException("ResourceStream backend returned no result");
+            throw fault;
+        }
+        if (result.appliedSequence() != reservation.last) {
+            fault = new IllegalStateException("ResourceStream backend applied through "
+                    + result.appliedSequence()
                     + " but submission ended at " + reservation.last);
             throw fault;
         }
         sequences.markApplied(reservation);
+        return result;
     }
 
     private void requireHealthy() {
@@ -202,5 +286,9 @@ final class ResourceStreamClient {
         private ShaderMetadata(boolean expandedVertexInput) {
             this.expandedVertexInput = expandedVertexInput;
         }
+    }
+
+    @Override public synchronized void close() {
+        if (uploadArenas != null) uploadArenas.close();
     }
 }

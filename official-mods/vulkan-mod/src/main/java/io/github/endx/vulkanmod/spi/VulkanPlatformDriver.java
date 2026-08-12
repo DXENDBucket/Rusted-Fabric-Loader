@@ -50,6 +50,11 @@ public interface VulkanPlatformDriver extends AutoCloseable {
     default void updateTexture(long textureHandle, VulkanTextureData texture) {
         throw new UnsupportedOperationException("in-place texture updates are not supported");
     }
+    /** Replaces one tightly packed RGBA8 rectangle inside an existing texture. */
+    default void updateTextureRegion(long textureHandle, int x, int y,
+                                     VulkanTextureData texture) {
+        throw new UnsupportedOperationException("partial texture updates are not supported");
+    }
     /** Returns an RGBA8 snapshot of a readable texture after all earlier GPU writes complete. */
     default VulkanTextureData readTexture(long textureHandle) {
         throw new UnsupportedOperationException("texture readback is not supported");
@@ -97,9 +102,15 @@ public interface VulkanPlatformDriver extends AutoCloseable {
         throw new UnsupportedOperationException("FrameStream submission is not supported");
     }
     /** Applies one complete reliable ResourceStream and returns its final applied sequence. */
-    default long submitResourceStream(ByteBuffer resourceStream) {
+    default VulkanResourceStreamResult submitResourceStream(ByteBuffer resourceStream) {
         throw new UnsupportedOperationException("ResourceStream submission is not supported");
     }
+    /** Registers stable direct memory referenced by external ResourceStream upload records. */
+    default void registerResourceUploadArena(long arenaId, ByteBuffer memory) {
+        throw new UnsupportedOperationException("external resource arenas are not supported");
+    }
+    /** Unregisters an upload arena only after all submissions referencing it have completed. */
+    default void unregisterResourceUploadArena(long arenaId) { }
     /**
      * Presents a frame, or returns {@code null} when the surface temporarily cannot acquire an
      * image (for example while its Win32 window is occluded or minimized).

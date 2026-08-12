@@ -15,7 +15,9 @@ import io.github.endx.vulkanmod.spi.VulkanRenderTargetPass;
 import io.github.endx.vulkanmod.spi.VulkanTextureData;
 import io.github.endx.vulkanmod.spi.VulkanTexturedQuad;
 import io.github.endx.vulkanmod.spi.VulkanWindowRequest;
+import io.github.endx.vulkanmod.spi.VulkanResourceStreamResult;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 
 /** Executes logical texture lifetime and FrameStream dependencies on the real desktop backend. */
@@ -44,7 +46,7 @@ public final class StandaloneResourceStreamVerification {
             ResourceStreamRecords.renderTargetCreate(create, target, 8, 8,
                     ResourceStreamFormat.FORMAT_RGBA8_UNORM,
                     ResourceStreamFormat.SAMPLER_CLAMP_TO_EDGE);
-            if (driver.submitResourceStream(create.toDirectBuffer()) != 3L) {
+            if (driver.submitResourceStream(create.toDirectBuffer()).appliedSequence() != 3L) {
                 throw new AssertionError("desktop ResourceStream sequence did not advance");
             }
             String translated = LegacyFragmentShaderTranslator.translate(
@@ -56,7 +58,7 @@ public final class StandaloneResourceStreamVerification {
             ResourceStreamWriter createShader = new ResourceStreamWriter(4L, 0, 0L);
             ResourceStreamRecords.fragmentShaderCreate(createShader, shader,
                     new VulkanCustomFragmentShader("resource-verification", translated));
-            if (driver.submitResourceStream(createShader.toDirectBuffer()) != 4L
+            if (driver.submitResourceStream(createShader.toDirectBuffer()).appliedSequence() != 4L
                     || driver.customShaderUsesExpandedVertexInput(shader)) {
                 throw new AssertionError("logical ResourceStream shader was not compiled");
             }
@@ -84,15 +86,48 @@ public final class StandaloneResourceStreamVerification {
                 }
             }
 
-            ResourceStreamWriter destroy = new ResourceStreamWriter(5L, 0, 0L);
+            ByteBuffer arena = ByteBuffer.allocateDirect(8 * 8 * 4);
+            for (int pixel = 0; pixel < 8 * 8; pixel++) {
+                arena.put((byte) 255).put((byte) 0).put((byte) 0).put((byte) 255);
+            }
+            arena.flip();
+            driver.registerResourceUploadArena(99L, arena);
+            ResourceStreamWriter mutations = new ResourceStreamWriter(5L, 0, 0L);
+            ResourceStreamRecords.externalTextureTransfer(mutations,
+                    ResourceStreamFormat.TEXTURE_REGION_UPDATE, target,
+                    0, 0, 8, 8, 32, ResourceStreamFormat.FORMAT_RGBA8_UNORM,
+                    8 * 8 * 4, 99L, 0L);
+            ResourceStreamRecords.textureRegionUpdate(mutations, target, 0, 0,
+                    new VulkanTextureData(1, 1,
+                            new byte[] {0, (byte) 255, 0, (byte) 255}));
+            if (driver.submitResourceStream(mutations.toDirectBuffer())
+                    .appliedSequence() != 6L) {
+                throw new AssertionError("external/partial texture updates were not applied");
+            }
+            driver.unregisterResourceUploadArena(99L);
+            ResourceStreamWriter read = new ResourceStreamWriter(7L,
+                    ResourceStreamFormat.FLAG_REQUIRES_COMPLETION, 55L);
+            ResourceStreamRecords.textureReadback(read, target, 0, 0, 8, 8,
+                    ResourceStreamFormat.FORMAT_RGBA8_UNORM);
+            VulkanResourceStreamResult readResult =
+                    driver.submitResourceStream(read.toDirectBuffer());
+            byte[] mutated = readResult.textureReadback().copyRgba();
+            if (readResult.appliedSequence() != 7L || readResult.completionId() != 55L
+                    || (mutated[0] & 255) != 0 || (mutated[1] & 255) != 255
+                    || (mutated[2] & 255) != 0 || (mutated[3] & 255) != 255
+                    || (mutated[4] & 255) != 255 || (mutated[5] & 255) != 0) {
+                throw new AssertionError("external upload, partial update, or readback mismatch");
+            }
+
+            ResourceStreamWriter destroy = new ResourceStreamWriter(8L, 0, 0L);
             ResourceStreamRecords.textureDestroy(destroy, target);
             ResourceStreamRecords.textureDestroy(destroy, source);
             ResourceStreamRecords.shaderProgramDestroy(destroy, shader);
-            if (driver.submitResourceStream(destroy.toDirectBuffer()) != 7L) {
+            if (driver.submitResourceStream(destroy.toDirectBuffer()).appliedSequence() != 10L) {
                 throw new AssertionError("ResourceStream destroy sequence did not advance");
             }
             try {
-                driver.presentFrameStream(encoder.encode(2L, 8L,
+                driver.presentFrameStream(encoder.encode(2L, 11L,
                         new VulkanFrameSubmission(Collections.emptyList(),
                                 VulkanFrameCommands.builder(32, 32)
                                         .clear(0.0f, 0.0f, 0.0f, 1.0f).build())));

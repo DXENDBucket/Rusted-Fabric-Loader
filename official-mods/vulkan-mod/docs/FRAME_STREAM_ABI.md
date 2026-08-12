@@ -109,6 +109,14 @@ frame arenas. Each resource record receives a monotonically increasing 64-bit se
 with `requiredResourceSequence = N` cannot be decoded until every resource record through `N` has
 been applied.
 
+The shared reference client owns three 16 MiB resource arenas by default and uses external records
+for transfers of at least 256 KiB. The count, initial size, and threshold are diagnostic properties
+`resourceArenaCount`, `resourceArenaMiB`, and `externalUploadKiB` under the
+`rusted.fabric.vulkan` namespace. Arenas grow geometrically at a lease-free safe point up to
+256 MiB each. A synchronous desktop acknowledgement guarantees that the driver has copied the
+referenced range into driver-owned direct memory, so the writer lease may then be reused. The
+future asynchronous decoder must delay that acknowledgement until it has stopped reading it.
+
 Destruction is logically ordered but physically deferred until no queued frame references the
 handle and all relevant native GPU frame slots have completed.
 
@@ -536,14 +544,15 @@ corresponding feature bit is accepted. Silent reinterpretation is forbidden.
 5. **Desktop done:** add three fixed direct arenas, live bounded submission, geometric safe-point
    growth, and blocking ownership/back-pressure tests. JNI address registration follows with the
    asynchronous native decoder.
-6. **Desktop texture path live:** add the reliable ResourceStream header/record writer,
+6. **Desktop resource path live:** add the reliable ResourceStream header/record writer,
    hostile-input verifier, typed handles, CRC, completion, contiguous sequence tests, and exact
    texture/shader/control payload codecs. The shared client now allocates generation-checked
    logical texture and shader-program handles; desktop synchronously decodes texture
    create/upload/full update/render-target create/destroy and shader create/destroy records, maps
    them to native Vulkan resources, and rejects a FrameStream whose `requiredResourceSequence` is
-   not applied. Partial/external uploads, readback result transport, and asynchronous resource
-   arenas remain.
+   not applied. Registered bounded external upload arenas, ordered partial RGBA8 updates, and
+   completion-ID texture readback results are live and covered by real-GPU tests. Native/JNI arena
+   address registration, asynchronous acknowledgements, and partial readback remain.
 7. Implement the Android C++ verifier/decoder against the same golden files.
 8. Add asynchronous native recording only after synchronous decoding is visually equivalent.
 
