@@ -33,6 +33,7 @@ public final class RustedFabricEvent<T> {
             new LinkedHashMap<Identifier, PhaseNode>();
     private long nextSequence;
     private volatile T invoker;
+    private volatile int listenerCount;
 
     private RustedFabricEvent(Function<List<T>, T> invokerFactory) {
         this.invokerFactory = Objects.requireNonNull(invokerFactory, "invokerFactory");
@@ -117,8 +118,11 @@ public final class RustedFabricEvent<T> {
     }
 
     public int listenerCount() {
-        synchronized (lock) { return listeners.size(); }
+        return listenerCount;
     }
+
+    /** Returns whether invoking this event can call at least one listener. */
+    public boolean hasListeners() { return listenerCount != 0; }
 
     public int listenerCount(Identifier phase) {
         Identifier checked = Objects.requireNonNull(phase, "phase");
@@ -234,6 +238,7 @@ public final class RustedFabricEvent<T> {
         ArrayList<T> snapshot = new ArrayList<T>(orderedListeners.size());
         for (ListenerEntry<T> entry : orderedListeners) snapshot.add(entry.listener);
         invoker = invokerFactory.apply(Collections.unmodifiableList(snapshot));
+        listenerCount = snapshot.size();
     }
 
     private List<Identifier> orderedPhasesLocked() {

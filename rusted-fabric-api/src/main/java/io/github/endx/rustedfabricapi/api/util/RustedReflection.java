@@ -8,8 +8,18 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public final class RustedReflection {
+    private static final ClassValue<ConcurrentMap<String, DeclaredFieldLookup>> DECLARED_FIELDS =
+            new ClassValue<ConcurrentMap<String, DeclaredFieldLookup>>() {
+                @Override
+                protected ConcurrentMap<String, DeclaredFieldLookup> computeValue(Class<?> type) {
+                    return new ConcurrentHashMap<String, DeclaredFieldLookup>();
+                }
+            };
+
     private RustedReflection() {
     }
 
@@ -216,16 +226,29 @@ public final class RustedReflection {
         Class<?> current = type;
         while (current != null) {
             for (String name : names) {
-                try {
-                    Field field = current.getDeclaredField(name);
-                    field.setAccessible(true);
-                    return field;
-                } catch (NoSuchFieldException ignored) {
-                }
+                DeclaredFieldLookup lookup = declaredField(current, name);
+                if (lookup.field != null) return lookup.field;
             }
             current = current.getSuperclass();
         }
         throw new IllegalStateException("Could not find field " + join(names) + " on " + type.getName());
+    }
+
+    private static DeclaredFieldLookup declaredField(Class<?> owner, String name) {
+        ConcurrentMap<String, DeclaredFieldLookup> fields = DECLARED_FIELDS.get(owner);
+        DeclaredFieldLookup cached = fields.get(name);
+        if (cached != null) return cached;
+
+        DeclaredFieldLookup resolved;
+        try {
+            Field field = owner.getDeclaredField(name);
+            field.setAccessible(true);
+            resolved = new DeclaredFieldLookup(field);
+        } catch (NoSuchFieldException ignored) {
+            resolved = DeclaredFieldLookup.MISSING;
+        }
+        DeclaredFieldLookup raced = fields.putIfAbsent(name, resolved);
+        return raced == null ? resolved : raced;
     }
 
     private static boolean parametersMatch(Class<?>[] parameterTypes, Object[] args) {
@@ -303,5 +326,15 @@ public final class RustedReflection {
             result.append(values[i]);
         }
         return result.toString();
+    }
+
+    private static final class DeclaredFieldLookup {
+        static final DeclaredFieldLookup MISSING = new DeclaredFieldLookup(null);
+
+        final Field field;
+
+        DeclaredFieldLookup(Field field) {
+            this.field = field;
+        }
     }
 }

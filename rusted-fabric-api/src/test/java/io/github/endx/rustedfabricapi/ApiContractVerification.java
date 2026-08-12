@@ -50,14 +50,17 @@ public final class ApiContractVerification {
         RustedFabricEvent<Probe> event = RustedFabricEvent.create(listeners -> value -> {
             for (Probe listener : listeners) listener.accept(value);
         });
+        require(!event.hasListeners(), "new event reported listeners");
         Probe direct = value -> calls.add("direct:" + value);
         event.register(direct);
         RustedFabricEvent.Registration registration =
                 event.subscribe(value -> calls.add("scoped:" + value));
         require(event.listenerCount() == 2, "listener count did not update");
+        require(event.hasListeners(), "registered event reported no listeners");
         require(registration.unregister(), "subscription handle did not unregister");
         require(!registration.unregister(), "subscription handle was not idempotent");
         require(event.unregister(direct), "direct listener could not be removed");
+        require(!event.hasListeners(), "empty event retained its listener fast-path flag");
         event.invoker().accept("ignored");
         require(calls.isEmpty(), "removed listener was still invoked");
     }
