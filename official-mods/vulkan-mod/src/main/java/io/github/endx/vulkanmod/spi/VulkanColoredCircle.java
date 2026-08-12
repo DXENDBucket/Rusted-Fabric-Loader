@@ -83,6 +83,7 @@ public final class VulkanColoredCircle implements VulkanDrawCommand {
     public int segments() { return segments; }
     public boolean filled() { return filled; }
     public VulkanDrawState state() { return state; }
+    @Override public int vertexCount() { return segments * (filled ? 3 : 6); }
 
     private static float clamp(float value) {
         requireFinite(value);

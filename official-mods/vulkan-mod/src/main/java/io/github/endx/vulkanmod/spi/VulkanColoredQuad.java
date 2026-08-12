@@ -85,6 +85,7 @@ public final class VulkanColoredQuad implements VulkanDrawCommand {
     public float blue() { return blue; }
     public float alpha() { return alpha; }
     public VulkanDrawState state() { return state; }
+    @Override public int vertexCount() { return 6; }
 
     private static float clamp(float value) {
         return Math.max(0.0f, Math.min(1.0f, value));

@@ -168,9 +168,9 @@ public final class FrameStreamEncoder {
         int lastMaterialIndex = -1;
         for (int index = 0; index < frame.commandCount(); index++) {
             VulkanDrawCommand command = frame.command(index);
-            VulkanDrawState state = state(command);
+            VulkanDrawState state = command.state();
             int layout = vertexLayout(command);
-            int commandVertices = vertexCount(command);
+            int commandVertices = command.vertexCount();
             int byteOffset = directVertexBytes;
             long nextVertexBytes = (long) directVertexBytes
                     + (long) commandVertices * FrameStreamRecordFormat.vertexStride(layout);
@@ -453,7 +453,7 @@ public final class FrameStreamEncoder {
         long total = 0L;
         for (int index = 0; index < frame.commandCount(); index++) {
             VulkanDrawCommand command = frame.command(index);
-            total += (long) vertexCount(command) * FrameStreamRecordFormat.vertexStride(
+            total += (long) command.vertexCount() * FrameStreamRecordFormat.vertexStride(
                     vertexLayout(command));
         }
         return total;
@@ -470,9 +470,9 @@ public final class FrameStreamEncoder {
         float ndcScaleY = 2.0f / frame.height();
         for (int index = 0; index < frame.commandCount(); index++) {
             VulkanDrawCommand command = frame.command(index);
-            VulkanDrawState state = state(command);
+            VulkanDrawState state = command.state();
             int layout = vertexLayout(command);
-            int commandVertices = vertexCount(command);
+            int commandVertices = command.vertexCount();
             int byteOffset = vertices.position();
             writeVertices(vertices, frame, command, layout, ndcScaleX, ndcScaleY);
             totalVertices[0] = Math.addExact(totalVertices[0], commandVertices);
@@ -509,7 +509,7 @@ public final class FrameStreamEncoder {
                 || command instanceof VulkanColoredLine || command instanceof VulkanColoredCircle) {
             return FrameStreamRecordFormat.VERTEX_COLORED;
         }
-        VulkanShaderState shader = state(command).shaderState();
+        VulkanShaderState shader = command.state().shaderState();
         return shader.effect() == VulkanShaderState.CUSTOM
                 && shaderLayouts.usesExpandedVertexInput(shader.customShaderHandle())
                 ? FrameStreamRecordFormat.VERTEX_CUSTOM_TEXTURED
@@ -517,41 +517,7 @@ public final class FrameStreamEncoder {
     }
 
     private long primaryTexture(VulkanDrawCommand command) {
-        if (command instanceof VulkanTexturedQuad) {
-            return resources.texture(((VulkanTexturedQuad) command).textureHandle());
-        }
-        if (command instanceof VulkanTexturedTriangle) {
-            return resources.texture(((VulkanTexturedTriangle) command).textureHandle());
-        }
-        return 0L;
-    }
-
-    private static VulkanDrawState state(VulkanDrawCommand command) {
-        if (command instanceof VulkanColoredQuad) return ((VulkanColoredQuad) command).state();
-        if (command instanceof VulkanColoredLine) return ((VulkanColoredLine) command).state();
-        if (command instanceof VulkanColoredCircle) return ((VulkanColoredCircle) command).state();
-        if (command instanceof VulkanColoredTriangle) {
-            return ((VulkanColoredTriangle) command).state();
-        }
-        if (command instanceof VulkanTexturedQuad) return ((VulkanTexturedQuad) command).state();
-        if (command instanceof VulkanTexturedTriangle) {
-            return ((VulkanTexturedTriangle) command).state();
-        }
-        throw new IllegalArgumentException("unsupported draw command: "
-                + command.getClass().getName());
-    }
-
-    private static int vertexCount(VulkanDrawCommand command) {
-        if (command instanceof VulkanColoredQuad || command instanceof VulkanTexturedQuad) return 6;
-        if (command instanceof VulkanColoredLine) return 6;
-        if (command instanceof VulkanColoredCircle) {
-            VulkanColoredCircle circle = (VulkanColoredCircle) command;
-            return circle.segments() * (circle.filled() ? 3 : 6);
-        }
-        if (command instanceof VulkanColoredTriangle
-                || command instanceof VulkanTexturedTriangle) return 3;
-        throw new IllegalArgumentException("unsupported draw command: "
-                + command.getClass().getName());
+        return command.textured() ? resources.texture(command.textureHandle()) : 0L;
     }
 
     private static void writeVertices(ByteBuffer output, VulkanFrameCommands frame,

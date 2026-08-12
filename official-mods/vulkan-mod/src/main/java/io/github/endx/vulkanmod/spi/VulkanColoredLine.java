@@ -76,6 +76,7 @@ public final class VulkanColoredLine implements VulkanDrawCommand {
     public float blue() { return blue; }
     public float alpha() { return alpha; }
     public VulkanDrawState state() { return state; }
+    @Override public int vertexCount() { return 6; }
 
     private static float clamp(float value) {
         requireFinite(value);

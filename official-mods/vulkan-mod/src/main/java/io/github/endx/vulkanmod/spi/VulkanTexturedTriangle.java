@@ -72,6 +72,8 @@ public final class VulkanTexturedTriangle implements VulkanDrawCommand {
     public float blue(int vertex) { return colors[checkedVertex(vertex) * 4 + 2]; }
     public float alpha(int vertex) { return colors[checkedVertex(vertex) * 4 + 3]; }
     public VulkanDrawState state() { return state; }
+    @Override public int vertexCount() { return 3; }
+    @Override public boolean textured() { return true; }
 
     private static int checkedVertex(int vertex) {
         if (vertex < 0 || vertex > 2) throw new IndexOutOfBoundsException("vertex " + vertex);

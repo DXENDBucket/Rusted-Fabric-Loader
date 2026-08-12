@@ -115,6 +115,8 @@ public final class VulkanTexturedQuad implements VulkanDrawCommand {
     public float blue() { return blue; }
     public float alpha() { return alpha; }
     public VulkanDrawState state() { return state; }
+    @Override public int vertexCount() { return 6; }
+    @Override public boolean textured() { return true; }
 
     private static float clamp(float value) {
         return Math.max(0.0f, Math.min(1.0f, value));
