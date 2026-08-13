@@ -42,16 +42,8 @@ public final class SharedContentWorkspace {
         }
     }
 
-    public static Path developmentDirectory() {
-        return root().resolve("javamods-dev");
-    }
-
     public static String documentId(ManagedContentLibrary.Kind kind) {
         return "primary:" + ROOT_NAME + "/" + directory(kind).getFileName();
-    }
-
-    public static String developmentDocumentId() {
-        return "primary:" + ROOT_NAME + "/" + developmentDirectory().getFileName();
     }
 
     /**
@@ -69,7 +61,6 @@ public final class SharedContentWorkspace {
         if (!Files.isDirectory(gameRoot)) throw new IOException("Desktop game is not imported");
         configureManagedContent();
         Files.createDirectories(root());
-        Files.createDirectories(developmentDirectory());
         for (Link link : links(gameRoot)) {
             Files.createDirectories(link.shared);
             migrateAndDetach(link.privatePath, link.shared);
@@ -82,9 +73,6 @@ public final class SharedContentWorkspace {
         Path gameRoot = DesktopGameImportService.importedRoot(context).toPath();
         if (!Files.isDirectory(gameRoot)) return false;
         try {
-            if (!Files.isDirectory(developmentDirectory())
-                    || !Files.isReadable(developmentDirectory())
-                    || !Files.isWritable(developmentDirectory())) return false;
             for (Link link : links(gameRoot)) {
                 if (!Files.isDirectory(link.shared) || !Files.isReadable(link.shared)
                         || !Files.isWritable(link.shared)

@@ -131,9 +131,9 @@ exposes the same operation as **Reload units/resources**. On Windows, stable dat
 also detected by bounded polling; `.java`, `.class`, `.jar`, Gradle, and Git files are ignored
 because changing classes or Mixins still requires a restart.
 
-Android uses the public `Internal storage/rustedWarfare/javamods-dev` directory and never relies on
-symlinks. Shared-storage polling is disabled there by default to avoid FUSE/document-provider stalls;
-authors edit the folder with their file manager and use the same in-game manual reload button.
+The editable Java mod source workspace is desktop-only. Android loads packaged Java mods from the
+public `Internal storage/rustedWarfare/javamods` directory, but does not prepare or scan
+`javamods-dev`; this keeps shared-storage setup independent of development-only files.
 
 A workspace can also own an editable native INI content pack. Declare a dedicated directory in the
 workspace's `fabric.mod.json`:

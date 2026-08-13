@@ -81,7 +81,6 @@
     <string name="content_java_description">Java 模组是以游戏/Loader 权限运行的可执行代码。只导入可信的 Fabric Jar 或 .javamod 包；启停结果在下一次启动游戏时生效。</string>
     <string name="content_import">导入</string>
     <string name="content_open_folder">打开文件夹</string>
-    <string name="content_open_java_dev_folder">打开 Java 模组开发工作区</string>
     <string name="content_open_folder_unavailable">设备上没有能打开这个文件夹的文件管理器。</string>
     <string name="content_storage_permission_title">允许直接编辑模组目录</string>
     <string name="content_storage_permission_message">Rusted Fabric 会把 INI 模组、地图和 Java 模组放在“内部存储/rustedWarfare”中，MT 管理器等文件管理器可以直接编辑，游戏也能热重载 INI 改动。Android 要求授予一次“所有文件访问权限”，桌面 JVM 才能直接读取这些普通文件。</string>

@@ -81,7 +81,6 @@
     <string name="content_java_description">Java mods are executable code with the game/Loader’s permissions. Import only trusted Fabric Jar or .javamod packages. Changes take effect on the next game launch.</string>
     <string name="content_import">Import</string>
     <string name="content_open_folder">Open folder</string>
-    <string name="content_open_java_dev_folder">Open Java mod development workspace</string>
     <string name="content_open_folder_unavailable">No installed file manager can open this folder.</string>
     <string name="content_storage_permission_title">Allow editable mod folders</string>
     <string name="content_storage_permission_message">Rusted Fabric stores INI mods, maps, and Java mods in Internal storage/rustedWarfare so file managers such as MT Manager can edit them and the game can hot-reload INI changes. Android requires one-time “All files access” permission for the desktop JVM to read these ordinary files.</string>
