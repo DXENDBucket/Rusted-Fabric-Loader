@@ -5,11 +5,19 @@ import io.github.endx.rustedfabricapi.internal.development.DevelopmentReloadRunt
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import rustedwarfare.unit.BuiltinUnitType;
+import rustedwarfare.unit.Unit;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Mixin(targets = "rustedwarfare.custom.CustomUnitLoader", remap = false)
 public abstract class CustomUnitLoaderNamedMixin {
+    private static List<Object> rustedfabricapi$prototypeRegistryTypes;
+
     @Inject(method = "checkAndReloadChangedCustomUnits()V", at = @At("HEAD"), require = 1)
     private static void rustedfabricapi$syncEditableContentBeforeSandboxReload(CallbackInfo ci) {
         DevelopmentReloadRuntime.synchronizeBeforeExternalNativeReload();
@@ -57,6 +65,41 @@ public abstract class CustomUnitLoaderNamedMixin {
         io.github.endx.rustedfabricapi.api.custom.event.CustomUnitRegistryEvents.BEFORE_REGISTRY_REBUILD
                 .invoker().beforeRebuild(includeDisabledMods,
                         io.github.endx.rustedfabricapi.api.custom.CustomUnits.pendingTypes());
+    }
+
+    /**
+     * The native loader rebuilds three prototype-unit maps every time the network state is reset.
+     * Advanced setup performs two resets with the exact same unit registry, which used to construct
+     * every custom unit six times. Keep the prototypes when the ordered registry still contains the
+     * same metadata objects; real reloads and mod enable/disable changes replace or reorder entries.
+     */
+    @Redirect(
+            method = "rebuildActiveUnitTypeRegistryInternal()V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lrustedwarfare/unit/Unit;bL()V"
+            ),
+            require = 1
+    )
+    private static void rustedfabricapi$refreshUnitPrototypesOnlyWhenRegistryChanged() {
+        List<?> activeTypes = BuiltinUnitType.allBuiltinTypes;
+        if (rustedfabricapi$sameTypeIdentities(rustedfabricapi$prototypeRegistryTypes, activeTypes)) {
+            return;
+        }
+        Unit.bL();
+        rustedfabricapi$prototypeRegistryTypes = new ArrayList<Object>(activeTypes);
+    }
+
+    private static boolean rustedfabricapi$sameTypeIdentities(List<?> previous, List<?> current) {
+        if (previous == null || current == null || previous.size() != current.size()) {
+            return false;
+        }
+        for (int index = 0; index < current.size(); index++) {
+            if (previous.get(index) != current.get(index)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Inject(

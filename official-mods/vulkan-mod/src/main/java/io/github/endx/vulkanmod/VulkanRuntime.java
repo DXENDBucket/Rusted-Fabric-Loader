@@ -1004,7 +1004,13 @@ public final class VulkanRuntime {
     }
 
     public static synchronized void attachToCurrentWindow() {
-        if (activeDriver == null || surfaceInfo != null) return;
+        // PROBE is deliberately capability-only. Attaching a swapchain to the OpenGL window
+        // also initializes Vulkan-side LibRocket caches, which makes ordinary menu transitions
+        // synchronously duplicate UI textures even though OpenGL remains authoritative.
+        // Only the explicit compatibility-surface modes are allowed to touch the live window.
+        if ((configuredMode != VulkanMode.FRAME_TEST
+                && configuredMode != VulkanMode.REQUIRED)
+                || activeDriver == null || surfaceInfo != null) return;
         try {
             io.github.endx.vulkanmod.spi.VulkanSurfaceRequest request =
                     Lwjgl2Win32Window.current();

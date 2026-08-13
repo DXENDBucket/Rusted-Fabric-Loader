@@ -3,7 +3,9 @@ package io.github.endx.rustedfabricapi.api.multiplayer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -168,7 +170,20 @@ public final class MultiplayerNetworkBridge {
 
     /** Synchronous host-side gate used immediately before the game's start packet is sent. */
     public boolean allowGameStart(Object connection) {
-        if (connection == null) return false;
+        if (connection == null) {
+            // The native host uses null for its ordinary broadcast-to-all start packet. Check
+            // every connection already registered by the handshake bridge; an empty set is the
+            // normal single-player Advanced/Sandbox lobby and must never be rejected.
+            List<Object> broadcastPeers;
+            synchronized (peers) {
+                if (peers.isEmpty()) return true;
+                broadcastPeers = new ArrayList<Object>(peers.keySet());
+            }
+            for (Object peer : broadcastPeers) {
+                if (peer != null && !allowGameStart(peer)) return false;
+            }
+            return true;
+        }
         PeerState state;
         MultiplayerPeerCompatibility result;
         synchronized (peers) {

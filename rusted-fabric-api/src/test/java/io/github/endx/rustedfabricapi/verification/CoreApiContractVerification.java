@@ -256,6 +256,8 @@ public final class CoreApiContractVerification {
                 new MultiplayerNetworkBridge.Mapping(FakePacket.class.getName(),
                         "type", "bytes", "connection", "send", "disconnect", "id"),
                 (message, failure) -> logs.add(message), 100L);
+        require(bridge.allowGameStart(null),
+                "empty single-player broadcast was rejected by the handshake gate");
         FakeEngine engine = new FakeEngine();
         FakeConnection connection = new FakeConnection();
         bridge.connectionReady(engine, connection, MultiplayerNetworkBridge.Side.CLIENT);
@@ -294,6 +296,8 @@ public final class CoreApiContractVerification {
         Thread.sleep(200L);
         require(vanilla.disconnectReason == null && vanillaFriendly.allowGameStart(vanilla),
                 "server-only/optional host rejected a vanilla client");
+        require(vanillaFriendly.allowGameStart(null),
+                "compatible broadcast did not evaluate all registered peers");
         require(!vanillaFriendly.isLoaderPeer(vanilla),
                 "vanilla timeout was incorrectly marked as a Loader peer");
 
@@ -310,6 +314,8 @@ public final class CoreApiContractVerification {
         Thread.sleep(200L);
         require(legacy.disconnectReason != null,
                 "legacy peer was not rejected when a required mod was active");
+        require(!strict.allowGameStart(null),
+                "incompatible broadcast ignored a rejected registered peer");
     }
 
     private static void verifyLethalHealthModifier() {
