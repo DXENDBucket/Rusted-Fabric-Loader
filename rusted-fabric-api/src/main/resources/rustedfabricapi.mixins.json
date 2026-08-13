@@ -36,6 +36,7 @@
     "CustomUnitRuntimeNamedMixin",
     "CustomUnitTurretProjectilePatternNamedMixin",
     "EffectEngineRuntimeNamedMixin",
+    "EffectInstanceLinePaintNamedMixin",
     "EventDataUsageNamedMixin",
     "CustomUnitTransportUnloadNamedMixin",
     "GameObjectSerializationNamedMixin",
