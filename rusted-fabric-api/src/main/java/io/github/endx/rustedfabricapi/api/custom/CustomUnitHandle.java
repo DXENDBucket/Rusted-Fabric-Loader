@@ -53,6 +53,15 @@ public final class CustomUnitHandle {
     public float y() { return ((Unit) unit).y; }
     public float height() { return ((Unit) unit).height; }
 
+    /** Current normalized native energy, where {@code 0} is empty and {@code 1} is full. */
+    public float energy() { return UnitVitals.snapshot(unit).energy(); }
+
+    /** Writes normalized native energy, clamped to the range shown by the game's energy bar. */
+    public void setEnergy(float energy) {
+        if (!Float.isFinite(energy)) throw new IllegalArgumentException("energy must be finite");
+        UnitVitals.setEnergy(unit, Math.max(0.0F, Math.min(1.0F, energy)));
+    }
+
     /** Returns the current INI unit type name, including after an in-place conversion. */
     public String internalTypeName() { return unit.unitMetadata.getInternalName(); }
 

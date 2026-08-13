@@ -44,6 +44,8 @@ public final class MutableCustomUnitEventContext {
     public CustomUnitHandle unitHandle() { return CustomUnitHandle.of(unit); }
     public CustomUnitEventType eventType() { return eventType; }
     public Optional<Unit> sourceUnit() { return Optional.ofNullable(sourceUnit); }
+    /** Portable source classification for armor and mutator rules. */
+    public boolean sourceIsBuilding() { return sourceUnit != null && sourceUnit.isBuilding(); }
     /** Returns a portable handle when the event source is an INI-backed custom unit. */
     public Optional<CustomUnitHandle> sourceCustomUnit() {
         return CustomUnitHandle.tryOf(sourceUnit);
