@@ -2,6 +2,7 @@ package io.github.endx.iniessentials.action;
 
 import io.github.endx.iniessentials.IniEssentials;
 import io.github.endx.rustedfabricapi.api.custom.PerActionAutoTriggerCooldowns;
+import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDocumentation;
 import io.github.endx.rustedfabricapi.api.ini.IniMultiplayerImpact;
@@ -24,6 +25,7 @@ public final class PerActionAutoTriggerCooldownFields {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "per_action_auto_trigger_cooldown",
                         IniSectionSelector.any(), COOLDOWN)
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .activatesWhen(context -> isActionSection(context.section()))
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> {
@@ -41,6 +43,7 @@ public final class PerActionAutoTriggerCooldownFields {
         IniExtensions.register(IniFieldDefinition
                 .<String>builder(IniEssentials.MOD_ID, "per_action_auto_trigger_dangerous_cpu",
                         IniSectionSelector.any(), DANGEROUS)
+                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
                 .activatesWhen(context -> isActionSection(context.section()))
                 .decoder(context -> context.rawValue().trim())
                 .validator((context, value) -> UnitConfig.parseBoolean(

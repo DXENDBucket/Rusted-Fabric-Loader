@@ -216,6 +216,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                     autoTriggerCooldownSource.contains(it)
                 }
                 || !autoTriggerCooldownSource.contains('PerActionAutoTriggerCooldowns.configureSeconds(')
+                || autoTriggerCooldownSource.count(
+                    '.applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)') != 2
                 || !expectedCodes.findAll { it.startsWith('camera') }.every {
                     cameraSource.contains('"' + it + '"')
                 }
