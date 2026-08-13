@@ -65,6 +65,7 @@ fabricloader.log
 /documents/
 /local-references/
 /local-signing/
+/release-output/
 
 ### Local Android import packages (contains proprietary game files) ###
 /local-import-packages/

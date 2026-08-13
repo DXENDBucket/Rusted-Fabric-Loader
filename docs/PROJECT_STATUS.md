@@ -14,7 +14,7 @@ and are not part of active builds.
 
 Current baseline:
 
-- Loader version: `0.4.1`; API version: `0.3.0` (experimental)
+- Loader version: `0.4.2`; API version: `0.3.3` (experimental)
 - mappings: `1.1 FINAL`
 - development JDK: 17
 - emitted game/mod bytecode: Java 13

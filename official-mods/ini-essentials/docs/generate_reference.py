@@ -538,6 +538,7 @@ def add_reference_sheet(workbook: Workbook, title: str,
     custom_shortcut_target = f"rf_{language}_custom_projectile_shortcuts"
     unit_class_target = f"rf_{language}_class_custom_unit"
     custom_class_target = f"rf_{language}_class_custom_projectile"
+    event_class_target = f"rf_{language}_class_event_context"
     define_target(workbook, shortcut_target, sheet.title, f"A{main_shortcut_header}")
     define_target(workbook, unit_class_target, sheet.title, f"A{main_shortcut_header}")
     define_target(workbook, custom_shortcut_target, sheet.title,
@@ -550,17 +551,15 @@ def add_reference_sheet(workbook: Workbook, title: str,
         ("CustomUnitMetadata", unit_class_target, SECTION_PALETTES["core"][0]),
         ("CustomProjectile", custom_class_target,
          SECTION_PALETTES["custom_projectile"][0]),
+        ("事件上下文" if chinese else "EventContext", event_class_target,
+         SECTION_PALETTES["event"][0]),
     )
+    style_range(sheet, 3, 1, 8, background=INDEX_COLOR,
+                font_color=WHITE, bold=True, horizontal="center", size=10.0)
     for slot, (label, target, color) in enumerate(class_buttons):
-        first, last = ((1, 4), (5, 8))[slot]
-        sheet.merge_cells(start_row=3, start_column=first,
-                          end_row=3, end_column=last)
-        sheet.cell(3, first, label)
-        style_range(sheet, 3, first, last, background=color, font_color=WHITE,
-                    bold=True, horizontal="center", size=10.0)
         add_navigation_button(
             buttons, sheet, f"class_{language}_{slot}", target,
-            3, 1, 3, 8, equal_slot=slot, equal_slot_count=2,
+            3, 1, 3, 8, equal_slot=slot, equal_slot_count=len(class_buttons),
             text=label, background=color)
     sheet.row_dimensions[3].height = 22
 
@@ -600,13 +599,15 @@ def add_reference_sheet(workbook: Workbook, title: str,
     cursor = custom_cursor
 
     event_banner_row = cursor
+    define_target(workbook, event_class_target, sheet.title,
+                  f"A{event_banner_row}")
     define_target(workbook, f"rf_{language}_event_data", sheet.title,
                   f"A{event_banner_row}")
     sheet.merge_cells(start_row=event_banner_row, start_column=1,
                       end_row=event_banner_row, end_column=8)
     sheet.cell(event_banner_row, 1, (
-        "Native autoTriggerOnEvent data extensions"
-        if not chinese else "原版 autoTriggerOnEvent 事件数据扩展"))
+        "EventContext — native autoTriggerOnEvent data extensions"
+        if not chinese else "事件上下文——原版 autoTriggerOnEvent 事件数据扩展"))
     style_range(sheet, event_banner_row, 1, 8,
                 background=SECTION_PALETTES["event"][1], font_color=WHITE,
                 bold=True, horizontal="center", size=14.0)

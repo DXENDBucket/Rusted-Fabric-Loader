@@ -5,7 +5,7 @@ This repository provides the Rusted Fabric Loader GameProvider along with suppor
 Current compatibility baseline:
 
 - Rusted Warfare `1.15`
-- Rusted Fabric Loader `0.4.1` / API `0.3.0`
+- Rusted Fabric Loader `0.4.2` / API `0.3.3`
 - mappings `1.1 FINAL` (mapping-only completion + executable gate)
 - Java bytecode level `13`
 
@@ -86,6 +86,18 @@ gradlew.bat windowsInstallerEndXiomDevSigned
 
 This self-signed flavor proves that artifacts came from the same local signing key, but it does not
 establish public Windows or SmartScreen trust. See [`docs/CODE_SIGNING.md`](docs/CODE_SIGNING.md).
+
+To build both player installers, the independently installable official mods, the current INI
+Essentials code table, and `SHA256SUMS.txt` into one QQ/GitHub-ready directory, run from a clean
+revision:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/prepare-release-output.ps1
+```
+
+The versioned output is written to `release-output/v<loader-version>/`. The Android artifact uses
+an uppercase `.APK` extension for direct community-file distribution. Vulkan Mod and Example Mod
+remain development artifacts and are intentionally excluded from this player bundle.
 
 For development-only direct installation, use `installToGameDir` to build and install the loader
 artifacts into an existing Rusted Warfare directory:

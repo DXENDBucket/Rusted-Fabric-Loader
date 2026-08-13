@@ -637,10 +637,10 @@ The title and About page read the current packaged INI Essentials version from t
 `versions.properties`. The first field column is explicitly named **Catalog Revision**: it records
 the chronological feature-development batch retained by the catalog and must not be interpreted as
 the minimum installable mod version.
-The compact top-level menu switches between `CustomUnitMetadata` and `CustomProjectile`; each class
-has its own section shortcuts, so projectile asset fields are not mixed into the ordinary unit
-section index. The separate event catalog at the bottom has its own per-event index, and every
-section links back to the index for its class.
+The compact top-level menu switches between `CustomUnitMetadata`, `CustomProjectile`, and
+`EventContext`. Each catalog has its own shortcuts, so projectile asset fields and native event
+context values are not mixed into the ordinary unit section index. The event catalog retains its
+per-event index, and every section links back to the index for its catalog.
 Like the community 1.15 enhanced reference, these controls use transparent DrawingML hyperlink
 overlays: hovering shows a link pointer and clicking jumps immediately without selecting a cell.
 
