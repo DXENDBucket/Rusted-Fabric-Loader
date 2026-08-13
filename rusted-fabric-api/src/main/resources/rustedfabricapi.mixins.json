@@ -20,6 +20,7 @@
     "CurrentMapLifecycleNamedMixin",
     "DecalBehaviorNamedMixin",
     "CustomActionEffectRuntimeNamedMixin",
+    "CustomActionIconNamedMixin",
     "CustomAssetLoaderNamedMixin",
     "CustomUnitAssetNamedMixin",
     "CustomUnitActionIniNamedMixin",
