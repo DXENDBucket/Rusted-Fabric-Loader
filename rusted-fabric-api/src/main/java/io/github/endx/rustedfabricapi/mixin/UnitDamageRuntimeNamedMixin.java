@@ -63,6 +63,18 @@ public abstract class UnitDamageRuntimeNamedMixin {
                             unit, rustedfabricapi$damageAttacker, rustedfabricapi$requestedDamage,
                             rustedfabricapi$damageProjectile, nativeValue,
                             unclamped.floatValue(), nativeValue).floatValue();
+            java.util.Optional<io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle> customUnit =
+                    io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle.tryOf(unit);
+            if (customUnit.isPresent()) {
+                io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle customAttacker =
+                        io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle
+                                .tryOf(rustedfabricapi$damageAttacker).orElse(null);
+                replacement = io.github.endx.rustedfabricapi.api.custom.event
+                        .CustomUnitDamageEvents.MODIFY_LETHAL_HEALTH.invoker().modify(
+                                customUnit.get(), customAttacker,
+                                rustedfabricapi$requestedDamage, nativeValue,
+                                unclamped.floatValue(), replacement).floatValue();
+            }
         }
         rustedfabricapi$clearLethalCapture();
         unit.setHp(replacement);
@@ -73,6 +85,8 @@ public abstract class UnitDamageRuntimeNamedMixin {
                                                            float amount,
                                                            rustedwarfare.game.Projectile projectile) {
         if (io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents
+                .MODIFY_LETHAL_HEALTH.listenerCount() == 0
+                && io.github.endx.rustedfabricapi.api.custom.event.CustomUnitDamageEvents
                 .MODIFY_LETHAL_HEALTH.listenerCount() == 0) {
             rustedfabricapi$clearLethalCapture();
             return;

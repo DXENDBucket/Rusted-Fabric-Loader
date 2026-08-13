@@ -15,6 +15,7 @@ import rustedwarfare.unit.Unit;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Namespace-stable handle for a native custom-unit instance.
@@ -58,6 +59,11 @@ public final class CustomUnitHandle {
     /** Stable identity of the owning native team, or an empty result before ownership is assigned. */
     public Optional<Object> teamIdentity() { return Optional.ofNullable(unit.team); }
 
+    /** Returns the stable native team slot, or empty before ownership is assigned. */
+    public OptionalInt teamId() {
+        return unit.team != null ? OptionalInt.of(unit.team.teamId) : OptionalInt.empty();
+    }
+
     /** Rebuilds the owning team's cached unit economy after a runtime production mode changes. */
     public void refreshTeamEconomyStats() {
         if (unit.team != null) unit.team.refreshCachedTeamStats(true);
@@ -90,6 +96,19 @@ public final class CustomUnitHandle {
     }
     public String memoryString(String name, String fallback) {
         return CustomUnitMemory.string(unit, name, fallback);
+    }
+
+    /** Writes a finite number to native unit memory for INI expressions and Decals. */
+    public void setMemoryNumber(String name, double value) {
+        CustomUnitMemory.setNumber(unit, name, value);
+    }
+
+    public void setMemoryBoolean(String name, boolean value) {
+        CustomUnitMemory.setBoolean(unit, name, value);
+    }
+
+    public void setMemoryString(String name, String value) {
+        CustomUnitMemory.setString(unit, name, value);
     }
 
     public double stat(UnitStat stat) { return CustomUnitStats.get(unit, stat); }

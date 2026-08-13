@@ -1,6 +1,7 @@
 package io.github.endx.rustedfabricapi.api.custom.event;
 
 import io.github.endx.rustedfabricapi.api.custom.CustomUnitMemory;
+import io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle;
 import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import rustedwarfare.custom.CustomTagList;
 import rustedwarfare.custom.CustomUnit;
@@ -39,8 +40,14 @@ public final class MutableCustomUnitEventContext {
     }
 
     public CustomUnit unit() { return unit; }
+    /** Namespace-neutral handle for the custom unit receiving this operation. */
+    public CustomUnitHandle unitHandle() { return CustomUnitHandle.of(unit); }
     public CustomUnitEventType eventType() { return eventType; }
     public Optional<Unit> sourceUnit() { return Optional.ofNullable(sourceUnit); }
+    /** Returns a portable handle when the event source is an INI-backed custom unit. */
+    public Optional<CustomUnitHandle> sourceCustomUnit() {
+        return CustomUnitHandle.tryOf(sourceUnit);
+    }
     public Optional<CustomTagList> tags() { return Optional.ofNullable(tags); }
     public CustomUnitEventData data() { return data; }
     public String primaryValueName() { return primaryValueName; }

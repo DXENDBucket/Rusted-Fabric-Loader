@@ -1,7 +1,10 @@
 package io.github.endx.rustedfabricapi.api.fog;
 
 import io.github.endx.rustedfabricapi.api.event.GameSessionEvents;
+import io.github.endx.rustedfabricapi.api.custom.CustomUnitHandle;
+import io.github.endx.rustedfabricapi.api.geometry.GeometryBounds;
 import io.github.endx.rustedfabricapi.api.geometry.GeometryMask;
+import io.github.endx.rustedfabricapi.api.unit.Teams;
 import rustedwarfare.game.Team;
 import rustedwarfare.map.MapEngine;
 
@@ -29,6 +32,24 @@ public final class FogSources {
     public static FogSourceHandle add(Team team, FogOperation operation,
                                       float durationTicks, FogMaskProvider provider) {
         return add(team, operation, durationTicks, true, provider);
+    }
+
+    /**
+     * Reveals a small moving world-space circle to one exact team while following a custom unit.
+     * Reuse and {@link FogSourceHandle#refresh(float) refresh} the returned handle for repeated
+     * hits instead of creating one source per hit.
+     */
+    public static FogSourceHandle revealFollowing(int teamId, float durationTicks,
+                                                   CustomUnitHandle followed, float radius) {
+        CustomUnitHandle checkedUnit = Objects.requireNonNull(followed, "followed");
+        if (!Float.isFinite(radius) || radius <= 0.0F) {
+            throw new IllegalArgumentException("radius must be finite and positive");
+        }
+        Team team = Teams.findById(teamId).orElseThrow(() ->
+                new IllegalArgumentException("fog team does not exist: " + teamId));
+        FollowingCircleMask mask = new FollowingCircleMask(checkedUnit, radius);
+        return add(team, FogOperation.REVEAL, durationTicks, true,
+                () -> checkedUnit.alive() ? mask : null);
     }
 
     /**
@@ -122,10 +143,43 @@ public final class FogSources {
         @Override public Team team() { return team; }
         @Override public FogOperation operation() { return operation; }
         @Override public boolean active() { return active; }
+        @Override public float remainingTicks() { return remaining; }
+        @Override public boolean refresh(float durationTicks) {
+            if (!active) return false;
+            if (!Float.isFinite(durationTicks) || durationTicks <= 0.0F) {
+                throw new IllegalArgumentException("durationTicks must be finite and positive");
+            }
+            remaining = durationTicks;
+            return true;
+        }
         @Override public boolean cancel() {
             if (!active) return false;
             active = false;
             return true;
+        }
+    }
+
+    private static final class FollowingCircleMask implements GeometryMask {
+        private final CustomUnitHandle unit;
+        private final float radius;
+        private final float radiusSquared;
+
+        private FollowingCircleMask(CustomUnitHandle unit, float radius) {
+            this.unit = unit;
+            this.radius = radius;
+            this.radiusSquared = radius * radius;
+        }
+
+        @Override public GeometryBounds bounds() {
+            float x = unit.x();
+            float y = unit.y();
+            return new GeometryBounds(x - radius, y - radius, x + radius, y + radius);
+        }
+
+        @Override public boolean contains(float x, float y) {
+            float dx = x - unit.x();
+            float dy = y - unit.y();
+            return dx * dx + dy * dy <= radiusSquared;
         }
     }
 }
