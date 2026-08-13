@@ -5,6 +5,7 @@ import io.github.endx.rustedfabricapi.api.networking.PacketBuffer;
 import io.github.endx.rustedfabricapi.api.networking.PacketPayload;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
 import rustedwarfare.framework.GameObject;
+import rustedwarfare.game.Team;
 import rustedwarfare.io.GameInputStream;
 import rustedwarfare.io.GameOutputStream;
 import rustedwarfare.unit.Unit;
@@ -30,14 +31,14 @@ import java.util.TreeSet;
 import java.util.WeakHashMap;
 
 /**
- * Fabric-style namespaced persistent components for the current world and individual units.
+ * Fabric-style namespaced persistent components for the current world, teams, and individual units.
  *
  * <p>The data is stored in a length-delimited Loader extension after the native save terminator.
  * Vanilla ignores the trailing block, while Loader saves, replay snapshots and multiplayer resync
  * streams restore it. Unknown keys are retained as raw bytes when their mod is absent.</p>
  */
 public final class PersistentData {
-    public static final int FORMAT_VERSION = 1;
+    public static final int FORMAT_VERSION = 2;
     public static final int MAX_EXTENSION_BYTES = 16 * 1024 * 1024;
     public static final int MAX_ENTRIES = 65_536;
 
@@ -47,6 +48,8 @@ public final class PersistentData {
             new LinkedHashMap<Identifier, PersistentDataKey<?>>();
     private static final Map<Identifier, StoredValue> GLOBAL =
             new LinkedHashMap<Identifier, StoredValue>();
+    private static final Map<Team, Map<Identifier, StoredValue>> TEAMS =
+            new WeakHashMap<Team, Map<Identifier, StoredValue>>();
     private static final Map<Unit, Map<Identifier, StoredValue>> UNITS =
             new WeakHashMap<Unit, Map<Identifier, StoredValue>>();
 
@@ -101,6 +104,79 @@ public final class PersistentData {
         synchronized (LOCK) {
             return Collections.unmodifiableSet(new TreeSet<Identifier>(GLOBAL.keySet()));
         }
+    }
+
+    public static <T> void set(Team team, PersistentDataKey<T> key, T value) {
+        Objects.requireNonNull(team, "team");
+        synchronized (LOCK) {
+            requireRegistered(key);
+            Map<Identifier, StoredValue> values = TEAMS.get(team);
+            if (values == null) {
+                values = new LinkedHashMap<Identifier, StoredValue>();
+                TEAMS.put(team, values);
+            }
+            values.put(key.id(), StoredValue.decoded(key, Objects.requireNonNull(value, "value")));
+        }
+    }
+
+    /** Namespace-neutral team variant for Java mods compiled without mapped game classes. */
+    public static <T> void setTeam(Object team, PersistentDataKey<T> key, T value) {
+        set(requireTeam(team), key, value);
+    }
+
+    public static <T> Optional<T> get(Team team, PersistentDataKey<T> key) {
+        Objects.requireNonNull(team, "team");
+        synchronized (LOCK) {
+            requireRegistered(key);
+            Map<Identifier, StoredValue> values = TEAMS.get(team);
+            return decode(key, values != null ? values.get(key.id()) : null, null);
+        }
+    }
+
+    /** Namespace-neutral team variant for Java mods compiled without mapped game classes. */
+    public static <T> Optional<T> getTeam(Object team, PersistentDataKey<T> key) {
+        return get(requireTeam(team), key);
+    }
+
+    public static boolean has(Team team, PersistentDataKey<?> key) {
+        Objects.requireNonNull(team, "team");
+        synchronized (LOCK) {
+            requireRegistered(key);
+            Map<Identifier, StoredValue> values = TEAMS.get(team);
+            return values != null && values.containsKey(key.id());
+        }
+    }
+
+    public static boolean hasTeam(Object team, PersistentDataKey<?> key) {
+        return has(requireTeam(team), key);
+    }
+
+    public static boolean remove(Team team, PersistentDataKey<?> key) {
+        Objects.requireNonNull(team, "team");
+        synchronized (LOCK) {
+            requireRegistered(key);
+            Map<Identifier, StoredValue> values = TEAMS.get(team);
+            if (values == null || values.remove(key.id()) == null) return false;
+            if (values.isEmpty()) TEAMS.remove(team);
+            return true;
+        }
+    }
+
+    public static boolean removeTeam(Object team, PersistentDataKey<?> key) {
+        return remove(requireTeam(team), key);
+    }
+
+    public static Set<Identifier> ids(Team team) {
+        Objects.requireNonNull(team, "team");
+        synchronized (LOCK) {
+            Map<Identifier, StoredValue> values = TEAMS.get(team);
+            return values == null ? Collections.emptySet()
+                    : Collections.unmodifiableSet(new TreeSet<Identifier>(values.keySet()));
+        }
+    }
+
+    public static Set<Identifier> teamIds(Object team) {
+        return ids(requireTeam(team));
     }
 
     public static <T> void set(Unit unit, PersistentDataKey<T> key, T value) {
@@ -182,6 +258,7 @@ public final class PersistentData {
     public static void clearRuntime() {
         synchronized (LOCK) {
             GLOBAL.clear();
+            TEAMS.clear();
             UNITS.clear();
         }
     }
@@ -240,9 +317,20 @@ public final class PersistentData {
 
     private static byte[] encodeBody() {
         List<EncodedEntry> globals;
+        List<EncodedTeam> teams;
         List<EncodedUnit> units;
         synchronized (LOCK) {
             globals = encodeEntries(GLOBAL, null);
+            teams = new ArrayList<EncodedTeam>();
+            List<Map.Entry<Team, Map<Identifier, StoredValue>>> teamOwners =
+                    new ArrayList<Map.Entry<Team, Map<Identifier, StoredValue>>>(TEAMS.entrySet());
+            teamOwners.sort(Comparator.comparingInt(entry -> entry.getKey().teamId));
+            for (Map.Entry<Team, Map<Identifier, StoredValue>> owner : teamOwners) {
+                Team team = owner.getKey();
+                if (team == null) continue;
+                List<EncodedEntry> entries = encodeEntries(owner.getValue(), null);
+                if (!entries.isEmpty()) teams.add(new EncodedTeam(team.teamId, entries));
+            }
             units = new ArrayList<EncodedUnit>();
             List<Map.Entry<Unit, Map<Identifier, StoredValue>>> owners =
                     new ArrayList<Map.Entry<Unit, Map<Identifier, StoredValue>>>(UNITS.entrySet());
@@ -259,6 +347,12 @@ public final class PersistentData {
             DataOutputStream output = new DataOutputStream(bytes);
             output.writeInt(globals.size());
             for (EncodedEntry entry : globals) writeEntry(output, entry);
+            output.writeInt(teams.size());
+            for (EncodedTeam team : teams) {
+                output.writeInt(team.teamId);
+                output.writeInt(team.entries.size());
+                for (EncodedEntry entry : team.entries) writeEntry(output, entry);
+            }
             output.writeInt(units.size());
             for (EncodedUnit unit : units) {
                 output.writeLong(unit.id);
@@ -278,7 +372,7 @@ public final class PersistentData {
     }
 
     private static int decodeBody(int formatVersion, byte[] body) {
-        if (formatVersion != FORMAT_VERSION) {
+        if (formatVersion < 1 || formatVersion > FORMAT_VERSION) {
             throw new IllegalArgumentException("Unsupported persistent format version: " + formatVersion);
         }
         try {
@@ -291,6 +385,23 @@ public final class PersistentData {
             for (int i = 0; i < globalCount; i++) {
                 DecodedEntry entry = readEntry(input);
                 globals.put(entry.id, StoredValue.raw(entry.version, entry.bytes));
+            }
+            Map<Team, Map<Identifier, StoredValue>> teams =
+                    new WeakHashMap<Team, Map<Identifier, StoredValue>>();
+            if (formatVersion >= 2) {
+                int teamCount = readCount(input, "team");
+                for (int i = 0; i < teamCount; i++) {
+                    int teamId = input.readInt();
+                    int entryCount = readCount(input, "team entry");
+                    Team team = Team.getTeamById(teamId);
+                    Map<Identifier, StoredValue> values =
+                            new LinkedHashMap<Identifier, StoredValue>();
+                    for (int j = 0; j < entryCount; j++) {
+                        DecodedEntry entry = readEntry(input);
+                        values.put(entry.id, StoredValue.raw(entry.version, entry.bytes));
+                    }
+                    if (team != null && !values.isEmpty()) teams.put(team, values);
+                }
             }
             int unitCount = readCount(input, "unit");
             for (int i = 0; i < unitCount; i++) {
@@ -312,10 +423,13 @@ public final class PersistentData {
             synchronized (LOCK) {
                 GLOBAL.clear();
                 GLOBAL.putAll(globals);
+                TEAMS.clear();
+                TEAMS.putAll(teams);
                 UNITS.clear();
                 UNITS.putAll(units);
             }
             int restored = globals.size();
+            for (Map<Identifier, StoredValue> values : teams.values()) restored += values.size();
             for (Map<Identifier, StoredValue> values : units.values()) restored += values.size();
             return restored;
         } catch (EOFException failure) {
@@ -407,6 +521,13 @@ public final class PersistentData {
         }
     }
 
+    private static Team requireTeam(Object value) {
+        if (!(value instanceof Team)) {
+            throw new IllegalArgumentException("object is not a native team");
+        }
+        return (Team) value;
+    }
+
     private static final class StoredValue {
         private int version;
         private byte[] bytes;
@@ -458,6 +579,16 @@ public final class PersistentData {
 
         private EncodedUnit(long id, List<EncodedEntry> entries) {
             this.id = id;
+            this.entries = entries;
+        }
+    }
+
+    private static final class EncodedTeam {
+        private final int teamId;
+        private final List<EncodedEntry> entries;
+
+        private EncodedTeam(int teamId, List<EncodedEntry> entries) {
+            this.teamId = teamId;
             this.entries = entries;
         }
     }
