@@ -13,6 +13,7 @@ public final class RustedFabricCapabilities {
     public static final String CUSTOM_UNIT_RENDER = "event.custom.unit.render.v1";
     public static final String CUSTOM_UNIT_RUNTIME = "event.custom.unit.runtime.v1";
     public static final String CUSTOM_UNIT_MEMORY = "custom.unit_memory.v1";
+    public static final String CUSTOM_UNIT_EXTENDED_TECH_LEVEL = "custom.extended_tech_level.v1";
     public static final String CUSTOM_UNIT_MESSAGE = "event.custom.unit.message.v1";
     public static final String CUSTOM_UNIT_UPDATE = "event.custom.unit.update.v1";
     public static final String CUSTOM_UNIT_ECONOMY = "event.custom.unit.economy.v1";
@@ -22,6 +23,7 @@ public final class RustedFabricCapabilities {
     public static final String CLIENT_RENDER_BAR = "client.render.bar.v1";
     public static final String CLIENT_DECAL_LAYER = "event.client.decal_layer.v1";
     public static final String CLIENT_PROJECTILE_RENDER = "event.client.projectile_render.v1";
+    public static final String CLIENT_PRODUCTION_NAME_COLOR = "event.client.production_name_color.v1";
     public static final String EFFECT_RUNTIME = "event.effect.runtime.v1";
     public static final String FILE_SYSTEM = "event.file.system.v1";
     public static final String GAME_LIFECYCLE = "event.game.lifecycle.v1";

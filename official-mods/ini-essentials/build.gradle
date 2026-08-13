@@ -61,6 +61,8 @@ tasks.register('verifyIniEssentialsMetadata') {
     def movementActionFields = file('src/main/java/io/github/endx/iniessentials/action/MovementActionFields.java')
     def economyActionFields = file('src/main/java/io/github/endx/iniessentials/action/EconomyActionFields.java')
     def generationDisplayFields = file('src/main/java/io/github/endx/iniessentials/economy/GenerationDisplayFields.java')
+    def productionNameColorFields = file('src/main/java/io/github/endx/iniessentials/client/ProductionNameColorFields.java')
+    def extendedTechLevelFields = file('src/main/java/io/github/endx/iniessentials/unit/ExtendedTechLevelFields.java')
     def actionPositionReference = file('src/main/java/io/github/endx/iniessentials/ActionPositionReference.java')
     def eventRuleFields = file('src/main/java/io/github/endx/iniessentials/event/EventRuleDefinitions.java')
     def projectileRuleFields = file('src/main/java/io/github/endx/iniessentials/projectile/ProjectileRuleDefinitions.java')
@@ -86,7 +88,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def releaseVersions = rootProject.file('versions.properties')
     inputs.files catalog, eventDataCatalog, syncSchema, metadata, initializer, cameraFields,
             autoTriggerCooldownFields, movementActionFields, economyActionFields,
-            generationDisplayFields,
+            generationDisplayFields, productionNameColorFields, extendedTechLevelFields,
             actionPositionReference,
             eventRuleFields,
             projectileRuleFields,
@@ -104,7 +106,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             throw new GradleException('INI Essentials field catalog is empty or malformed')
         }
         def expectedCodes = [
-                'allowNegativeHp', 'autoTriggerCooldownTime',
+                'allowNegativeHp', 'techLevel', 'productionNameColor', 'autoTriggerCooldownTime',
                 'autoTriggerCooldownTime_allowDangerousHighCPU',
                 'setUnitMovementType',
                 'refreshTeamEconomyStats',
@@ -181,6 +183,8 @@ tasks.register('verifyIniEssentialsMetadata') {
         def movementActionSource = movementActionFields.getText('UTF-8')
         def economyActionSource = economyActionFields.getText('UTF-8')
         def generationDisplaySource = generationDisplayFields.getText('UTF-8')
+        def productionNameColorSource = productionNameColorFields.getText('UTF-8')
+        def extendedTechLevelSource = extendedTechLevelFields.getText('UTF-8')
         def actionPositionSource = actionPositionReference.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
         def decalMaskSource = decalMaskFields.getText('UTF-8')
@@ -365,6 +369,14 @@ tasks.register('verifyIniEssentialsMetadata') {
                     'CustomUnitEconomyEvents.MODIFY_PERIODIC_GENERATION_DISPLAY.register(')
                 || !generationDisplaySource.contains('NumericExpression.compile(')
                 || !generationDisplaySource.contains('BooleanExpression.compile(')
+                || !initializerSource.contains('ProductionNameColorFields.register();')
+                || !initializerSource.contains('ExtendedTechLevelFields.register();')
+                || !extendedTechLevelSource.contains('IniExtensionKind.EXTENDED_VALUE')
+                || !extendedTechLevelSource.contains('.nativeFallback(')
+                || !extendedTechLevelSource.contains('MAX_TECH_LEVEL = 255')
+                || !productionNameColorSource.contains('"productionNameColor"')
+                || !productionNameColorSource.contains('ProductionActionNameColorEvents.RESOLVE.register(')
+                || !productionNameColorSource.contains('IniMultiplayerImpact.CLIENT_ONLY')
                 || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
             throw new GradleException('INI Essentials field catalog/source drifted')
@@ -493,7 +505,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def digest = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(canonicalSyncSchema).encodeHex().toString()
         if (mod.id != 'ini_essentials' || multiplayer?.mode != 'optional'
-                || multiplayer?.protocol != 'ini_essentials_v31'
+                || multiplayer?.protocol != 'ini_essentials_v33'
                 || multiplayer?.syncHash != digest
                 || !initializerSource.contains('"' + digest + '"')) {
             throw new GradleException('INI Essentials multiplayer metadata does not match sync-schema.txt')

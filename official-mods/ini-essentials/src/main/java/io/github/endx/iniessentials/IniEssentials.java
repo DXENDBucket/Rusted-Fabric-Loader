@@ -5,6 +5,7 @@ import io.github.endx.iniessentials.action.EconomyActionFields;
 import io.github.endx.iniessentials.action.FogActionFields;
 import io.github.endx.iniessentials.action.MovementActionFields;
 import io.github.endx.iniessentials.action.PerActionAutoTriggerCooldownFields;
+import io.github.endx.iniessentials.client.ProductionNameColorFields;
 import io.github.endx.iniessentials.decal.DecalMaskDefinitions;
 import io.github.endx.iniessentials.event.EventRuleDefinitions;
 import io.github.endx.iniessentials.economy.GenerationDisplayFields;
@@ -16,6 +17,7 @@ import io.github.endx.iniessentials.projectile.CustomProjectileDecalRenderer;
 import io.github.endx.iniessentials.projectile.CustomProjectileDefinitions;
 import io.github.endx.iniessentials.projectile.CustomProjectileTurretFields;
 import io.github.endx.iniessentials.projectile.ProjectileRuleDefinitions;
+import io.github.endx.iniessentials.unit.ExtendedTechLevelFields;
 import io.github.endx.rustedfabricapi.api.ini.IniApplicationPhase;
 import io.github.endx.rustedfabricapi.api.ini.IniExtensions;
 import io.github.endx.rustedfabricapi.api.ini.IniFieldDefinition;
@@ -66,6 +68,8 @@ public final class IniEssentials implements ModInitializer {
         EconomyActionFields.register();
         GenerationDisplayFields.register();
         PerActionAutoTriggerCooldownFields.register();
+        ExtendedTechLevelFields.register();
+        ProductionNameColorFields.register();
         DamageEventData.enable(IniEssentials::activateSynchronizedRequirement);
         NativeEventData.enable(IniEssentials::activateSynchronizedRequirement);
         IniExtensions.register(IniFieldDefinition
@@ -99,7 +103,7 @@ public final class IniEssentials implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("0.1.0");
         MultiplayerRequirements.activate(MultiplayerMod.required(
-                MOD_ID, version, "ini_essentials_v31",
-                "c0f3d60859c034d6ba2003264e8408f912cfdeb95b80784adf92fae6627236de"));
+                MOD_ID, version, "ini_essentials_v33",
+                "08c05e470deb115c4edce7351583772c66b21f1eb71ce4f77ba9bf2a0d41ed72"));
     }
 }

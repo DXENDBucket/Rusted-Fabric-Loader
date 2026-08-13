@@ -24,6 +24,32 @@ the damaged unit, so memory, resources and ordinary boolean logic can control wh
 HP below zero. Installing INI Essentials alone remains multiplayer-optional; parsing a potentially
 enabled synchronized field promotes it to a required matching peer dependency.
 
+The name of a unit in native queue-unit production buttons can use an arbitrary color without
+changing its `techLevel`:
+
+```ini
+[core]
+productionNameColor: if(${core.techLevel}==3,#E65A5A,if(${core.techLevel}==4,#D86FE5,native))
+```
+
+`productionNameColor` is optional and client-only. It accepts `#RRGGBB`, `#AARRGGBB`, and nested
+`if(number comparison,true color,false color)` expressions; a `native` branch restores the native
+green/yellow `techLevel` behavior. `${core.techLevel}` resolves from the final inherited unit
+metadata, so one common template can color an entire tier system. When omitted, native behavior is
+untouched. Disabled buttons automatically use a dimmed form of the configured color.
+
+Custom units may also use technology levels above the native maximum of three:
+
+```ini
+[core]
+techLevel: 4
+```
+
+INI Essentials accepts integral levels through 255. The actual level remains available to UI and
+mod logic, while native action-list lookup safely inherits T3 behavior for T4 and above. Because
+the value affects gameplay metadata, using it requires matching INI Essentials peers in
+multiplayer.
+
 Automatic actions can override the native unit-wide trigger cooldown inside their own section:
 
 ```ini
