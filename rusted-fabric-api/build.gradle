@@ -224,6 +224,28 @@ tasks.register('verifyOfficialApiNamespace') {
                     }
                 }
             }
+
+            // The queue action inherits getPrice() from its superclass. Keep a regression
+            // check here because Mixin @At targets retain the concrete invocation owner,
+            // while their member name must still be resolved through the game hierarchy.
+            def queueMixinEntry = zip.getEntry(
+                    'io/github/endx/rustedfabricapi/mixin/BuildQueueNamedMixin.class')
+            if (queueMixinEntry == null) {
+                throw new GradleException('Official API is missing BuildQueueNamedMixin.class')
+            }
+            def queueMixinConstants = new String(zip.getInputStream(queueMixinEntry).bytes,
+                    java.nio.charset.StandardCharsets.ISO_8859_1)
+            def inheritedPriceTarget =
+                    'Lcom/corrodinggames/rts/game/units/a/w;B()Lcom/corrodinggames/rts/game/units/custom/d/b;'
+            if (!queueMixinConstants.contains(inheritedPriceTarget)) {
+                throw new GradleException(
+                        'Inherited Mixin @At target was not remapped to the official getPrice member')
+            }
+            if (queueMixinConstants.contains(
+                    'Lcom/corrodinggames/rts/game/units/a/w;getPrice()')) {
+                throw new GradleException(
+                        'Named inherited getPrice member remains in official Mixin metadata')
+            }
         }
         if (!stale.isEmpty()) {
             throw new GradleException("Named game references remain in official desktop API: ${stale}")

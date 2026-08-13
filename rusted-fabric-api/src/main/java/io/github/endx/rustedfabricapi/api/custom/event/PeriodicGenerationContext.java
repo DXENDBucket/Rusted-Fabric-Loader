@@ -9,6 +9,7 @@ import java.util.Objects;
 /** One sparse native {@code generation_delay} settlement for a custom unit. */
 public final class PeriodicGenerationContext {
     private final CustomUnitHandle unit;
+    private final CustomUnit nativeUnit;
     private final int delayFrames;
     private final int baseCredits;
     private final Object nativeAmount;
@@ -16,6 +17,7 @@ public final class PeriodicGenerationContext {
     public PeriodicGenerationContext(CustomUnit unit, ResourceAmount amount) {
         CustomUnit checkedUnit = Objects.requireNonNull(unit, "unit");
         ResourceAmount checkedAmount = Objects.requireNonNull(amount, "amount");
+        this.nativeUnit = checkedUnit;
         this.unit = CustomUnitHandle.of(checkedUnit);
         this.delayFrames = checkedUnit.unitMetadata.generationDelay;
         this.baseCredits = checkedAmount.credits;
@@ -28,4 +30,17 @@ public final class PeriodicGenerationContext {
 
     /** Opaque native amount for advanced integrations not yet covered by the stable view. */
     public Object nativeAmount() { return nativeAmount; }
+
+    /**
+     * Adds extra credits through the game's normal income settlement path, retaining the
+     * current match income multiplier and team income accounting.
+     */
+    public void addBonusCreditsAndRecordIncome(double credits) {
+        if (!Double.isFinite(credits)) {
+            throw new IllegalArgumentException("credits must be finite");
+        }
+        if (nativeUnit.team != null && credits != 0.0D) {
+            nativeUnit.team.addCreditsAndRecordIncome((float) credits);
+        }
+    }
 }

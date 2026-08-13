@@ -61,8 +61,12 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 61,
+        require(ApiSupportMatrix.entries().size() == 62,
                 "public API support matrix does not cover every advertised API group");
+        require(ApiSupportMatrix.expectedSupport(
+                        RustedFabricCapabilities.BUILD_PRODUCTION_MODIFIER,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "dynamic build-production modifiers are not advertised");
         require(ApiSupportMatrix.expectedSupport(
                         RustedFabricCapabilities.CUSTOM_UNIT_ECONOMY,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,

@@ -121,6 +121,7 @@
     "UnitTypeJavaActionsNamedMixin",
     "UnitTransportContainmentNamedMixin",
     "UnitConfigIniNamedMixin",
+    "UnitActionProductionModifierNamedMixin",
     "WarLogInterfaceNamedMixin",
     "WorldRenderNamedMixin",
     "accessor.MapEngineAccessor",

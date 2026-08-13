@@ -129,6 +129,7 @@ public final class RemapJar {
         readClassHierarchy(input, hierarchy, true);
         DefinitionRemapper definitions = new DefinitionRemapper(mappings);
         ReferenceRemapper references = new ReferenceRemapper(mappings, hierarchy);
+        mappings.setHierarchy(hierarchy);
         Set<String> outputNames = new HashSet<String>();
 
         try (JarFile jarFile = new JarFile(input.toFile(), false);
@@ -604,6 +605,7 @@ public final class RemapJar {
         private final Map<MemberKey, MemberMapping> methods;
         private final Map<MemberKey, MemberMapping> fields;
         private final Map<NameKey, String> methodNames;
+        private Map<String, ClassInfo> hierarchy = java.util.Collections.emptyMap();
 
         private MixinMetadataRemapper(Map<String, String> anyClassToFrom,
                                       Map<String, String> anyClassToTo,
@@ -615,6 +617,10 @@ public final class RemapJar {
             this.methods = methods;
             this.fields = fields;
             this.methodNames = methodNames;
+        }
+
+        private void setHierarchy(Map<String, ClassInfo> hierarchy) {
+            this.hierarchy = hierarchy;
         }
 
         static MixinMetadataRemapper read(Path mappings, String fromNamespace, String toNamespace) throws IOException {
@@ -1133,9 +1139,10 @@ public final class RemapJar {
                 String methodName = member.substring(0, methodDescriptorStart);
                 String descriptor = member.substring(methodDescriptorStart);
                 String descriptorFrom = remapDescriptor(descriptor, anyClassToFrom);
-                MemberMapping mapping = methods.get(new MemberKey(ownerFrom, methodName, descriptorFrom));
+                MemberMapping mapping = findReferenceMapping(
+                        methods, true, ownerFrom, methodName, descriptorFrom);
                 if (mapping != null) {
-                    return "L" + mapping.owner + ";" + mapping.name + mapping.descriptor;
+                    return "L" + ownerTo + ";" + mapping.name + mapping.descriptor;
                 }
 
                 return "L" + ownerTo + ";" + methodName + remapDescriptor(descriptor, anyClassToTo);
@@ -1146,15 +1153,63 @@ public final class RemapJar {
                 String fieldName = member.substring(0, fieldDescriptorStart);
                 String descriptor = member.substring(fieldDescriptorStart + 1);
                 String descriptorFrom = remapDescriptor(descriptor, anyClassToFrom);
-                MemberMapping mapping = fields.get(new MemberKey(ownerFrom, fieldName, descriptorFrom));
+                MemberMapping mapping = findReferenceMapping(
+                        fields, false, ownerFrom, fieldName, descriptorFrom);
                 if (mapping != null) {
-                    return "L" + mapping.owner + ";" + mapping.name + ":" + mapping.descriptor;
+                    return "L" + ownerTo + ";" + mapping.name + ":" + mapping.descriptor;
                 }
 
                 return "L" + ownerTo + ";" + fieldName + ":" + remapDescriptor(descriptor, anyClassToTo);
             }
 
             return "L" + ownerTo + ";" + member;
+        }
+
+        private MemberMapping findReferenceMapping(Map<MemberKey, MemberMapping> mappings,
+                                                   boolean method, String owner,
+                                                   String name, String descriptor) {
+            MemberMapping direct = mappings.get(new MemberKey(owner, name, descriptor));
+            if (direct != null) return direct;
+            ClassInfo start = hierarchy.get(owner);
+            if (start == null) return null;
+            ArrayDeque<HierarchyNode> queue = new ArrayDeque<HierarchyNode>();
+            if (start.superName != null) queue.add(new HierarchyNode(start.superName, 1));
+            for (String interfaceName : start.interfaces) {
+                queue.add(new HierarchyNode(interfaceName, 1));
+            }
+            Set<String> seen = new HashSet<String>();
+            MemberMapping found = null;
+            int bestDepth = Integer.MAX_VALUE;
+            while (!queue.isEmpty()) {
+                HierarchyNode node = queue.removeFirst();
+                if (node.depth > bestDepth || !seen.add(node.name)) continue;
+                MemberMapping candidate = mappings.get(
+                        new MemberKey(node.name, name, descriptor));
+                if (candidate != null) {
+                    if (found != null && (!found.name.equals(candidate.name)
+                            || !found.descriptor.equals(candidate.descriptor))) {
+                        return null;
+                    }
+                    found = candidate;
+                    bestDepth = node.depth;
+                    continue;
+                }
+                ClassInfo info = hierarchy.get(node.name);
+                if (info == null) continue;
+                Integer access = (method ? info.methods : info.fields)
+                        .get(ClassInfo.signature(name, descriptor));
+                if (access != null && (!method
+                        || (access.intValue() & (Opcodes.ACC_STATIC | Opcodes.ACC_PRIVATE)) != 0)) {
+                    continue;
+                }
+                if (info.superName != null) {
+                    queue.add(new HierarchyNode(info.superName, node.depth + 1));
+                }
+                for (String interfaceName : info.interfaces) {
+                    queue.add(new HierarchyNode(interfaceName, node.depth + 1));
+                }
+            }
+            return found;
         }
 
         private String toFromClass(String internalName) {

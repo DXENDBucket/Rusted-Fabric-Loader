@@ -260,6 +260,9 @@ The first typed desktop layer contains:
   `generation_delay` timer settles. A listener may replace the complete native amount and return
   `true`; returning `false` preserves normal generation and recorded-income behavior. This is the
   preferred hook for routed or transformed income because it does not add a per-frame timer.
+  `PeriodicGenerationContext.addBonusCreditsAndRecordIncome(...)` adds only an extra credit delta
+  while retaining the game's match-income multiplier and income accounting; leave the event
+  unconsumed when the original generation should still settle as well.
   `MODIFY_PERIODIC_GENERATION_DISPLAY` separately changes the query-only per-second rates used by
   team income totals and selected-unit details. It can replace the credit rate and add or replace
   built-in/local resource rates without changing settlement. Listeners must be side-effect free
@@ -285,6 +288,11 @@ The first typed desktop layer contains:
 - `api.unit.build.BuildQueues` and `api.unit.build.event.BuildQueueEvents`: immutable queue
   snapshots, current item/progress, queue mutation helpers, action application, activation,
   refund, completion, and produced-unit positioning callbacks.
+- `api.unit.build.event.BuildProductionEvents.MODIFY`: dynamic unit-production credit cost and
+  duration modifiers keyed by the producer and produced unit type. The reduced price is used for
+  availability, tooltips, payment, stored queue cost, and cancellation refunds; the adjusted
+  duration is used by both the tooltip and the created queue item. `multiplyBuildTime(0.65)` means
+  a 35% shorter production time.
 - `api.unit.transport.TransportUnits` and `api.unit.transport.event.TransportEvents`: transport
   detection, immutable cargo snapshots, capacity/slot queries, validated loading and unloading,
   containment/attachment lookup, and cancellable or modifiable cargo lifecycle callbacks.

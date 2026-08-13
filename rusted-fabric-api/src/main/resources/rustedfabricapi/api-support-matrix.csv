@@ -7,6 +7,7 @@ event.client.decal_layer.v1,client.render.event.DecalRenderEvents
 event.client.projectile_render.v1,client.render.event.ProjectileRenderEvents
 event.audio.runtime.v1,event.AudioRuntimeEvents
 event.build.queue.v1,unit.build.event.BuildQueueEvents
+event.build.production_modifier.v1,unit.build.event.BuildProductionEvents
 event.command.issue.v1,command.event.CommandEvents
 event.core.stats.v1,event.CoreDebugStatsEvents
 event.custom.asset.v1,event.CustomAssetEvents

@@ -4,6 +4,7 @@ package io.github.endx.rustedfabricapi.api;
 public final class RustedFabricCapabilities {
     public static final String AUDIO_RUNTIME = "event.audio.runtime.v1";
     public static final String BUILD_QUEUE = "event.build.queue.v1";
+    public static final String BUILD_PRODUCTION_MODIFIER = "event.build.production_modifier.v1";
     public static final String COMMAND_ISSUE = "event.command.issue.v1";
     public static final String CORE_STATS = "event.core.stats.v1";
     public static final String CUSTOM_ASSET = "event.custom.asset.v1";

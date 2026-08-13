@@ -1,14 +1,44 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.unit.build.FactoryQueueManager", remap = false)
 public abstract class BuildQueueNamedMixin {
+    @Shadow private rustedwarfare.unit.OrderableUnit hostUnit;
+
+    @Redirect(
+            method = "enqueueQueueableActionWithTarget(Lrustedwarfare/unit/action/QueueableUnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)Lrustedwarfare/unit/build/BuildQueueItem;",
+            at = @At(value = "INVOKE",
+                    target = "Lrustedwarfare/unit/action/QueueableUnitAction;getBuildSpeed()F"),
+            require = 1)
+    private float rustedfabricapi$modifiedQueuedBuildSpeed(
+            rustedwarfare.unit.action.QueueableUnitAction action) {
+        return io.github.endx.rustedfabricapi.impl.unit.build.BuildProductionRuntime
+                .buildSpeed(hostUnit, action);
+    }
+
+    @Redirect(
+            method = {
+                    "enqueueQueueableActionWithTarget(Lrustedwarfare/unit/action/QueueableUnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)Lrustedwarfare/unit/build/BuildQueueItem;",
+                    "applyQueueActionWithTarget(Lrustedwarfare/unit/action/UnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)Lrustedwarfare/unit/build/BuildQueueItem;",
+                    "applyQueueActionNoTarget(Lrustedwarfare/unit/action/UnitAction;Z)V"
+            },
+            at = @At(value = "INVOKE",
+                    target = "Lrustedwarfare/unit/action/QueueableUnitAction;getPrice()Lrustedwarfare/custom/resource/ResourceAmount;"),
+            require = 4)
+    private rustedwarfare.custom.resource.ResourceAmount rustedfabricapi$modifiedQueuedPrice(
+            rustedwarfare.unit.action.QueueableUnitAction action) {
+        return io.github.endx.rustedfabricapi.impl.unit.build.BuildProductionRuntime
+                .price(hostUnit, action);
+    }
+
     @Inject(
             method = "applyQueueActionWithTarget(Lrustedwarfare/unit/action/UnitAction;ZLandroid/graphics/PointF;Lrustedwarfare/unit/Unit;)Lrustedwarfare/unit/build/BuildQueueItem;",
             at = @At("HEAD"),
