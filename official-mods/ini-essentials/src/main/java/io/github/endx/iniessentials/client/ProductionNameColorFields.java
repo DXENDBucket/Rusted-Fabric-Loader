@@ -32,10 +32,11 @@ public final class ProductionNameColorFields {
         IniExtensions.register(IniFieldDefinition
                 .<ColorChoice>builder(IniEssentials.MOD_ID, "production_name_color",
                         IniSectionSelector.exact("core"), "productionNameColor")
-                .applicationPhase(IniApplicationPhase.AFTER_METADATA_PARSED)
-                // Do not read this key through UnitConfig again here: field discovery itself is
-                // reached from UnitConfig's tracked-read hook. The final metadata is available to
-                // the applier, where inherited techLevel is authoritative.
+                // Capture the expression before the native static-variable pass. Extended
+                // techLevel values temporarily use the native T3 fallback while that pass runs;
+                // retaining the original ${core.techLevel} token lets the UI evaluate it against
+                // the metadata's final restored level instead of permanently baking in 3.
+                .applicationPhase(IniApplicationPhase.BEFORE_STATIC_VARIABLES)
                 .decoder(context -> new ColorChoice(context.rawValue()))
                 .validator((context, value) -> value.resolve(3))
                 .applier(field -> CHOICES.put(field.metadata(), field.value()))

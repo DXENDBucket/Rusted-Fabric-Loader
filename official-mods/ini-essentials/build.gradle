@@ -376,6 +376,7 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !extendedTechLevelSource.contains('MAX_TECH_LEVEL = 255')
                 || !productionNameColorSource.contains('"productionNameColor"')
                 || !productionNameColorSource.contains('ProductionActionNameColorEvents.RESOLVE.register(')
+                || !productionNameColorSource.contains('IniApplicationPhase.BEFORE_STATIC_VARIABLES')
                 || !productionNameColorSource.contains('IniMultiplayerImpact.CLIENT_ONLY')
                 || !customProjectileDecalSource.contains('ProjectileRenderEvents.DRAW')
                 || !mathCodes.every { mathSource.contains('"' + it + '"') }) {
