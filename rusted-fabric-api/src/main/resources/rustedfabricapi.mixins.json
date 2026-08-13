@@ -4,6 +4,7 @@
   "package": "io.github.endx.rustedfabricapi.mixin",
   "compatibilityLevel": "JAVA_13",
   "mixins": [
+    "AndroidShaderTextureBindingNamedMixin",
     "AndroidMapStartNamedMixin",
     "ActiveResourceDeltaNamedMixin",
     "AssetCacheStoreNamedMixin",

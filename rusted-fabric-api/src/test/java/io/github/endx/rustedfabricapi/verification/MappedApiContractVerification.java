@@ -94,6 +94,7 @@ public final class MappedApiContractVerification {
     }
 
     public static void main(String[] args) {
+        AndroidShaderCompatibilityContractVerification.verify();
         GameTickSchedulerContractVerification.verify();
         DataGenerationContractVerification.verify();
         ResourceConditionContractVerification.verify();
