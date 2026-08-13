@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricapi.impl.unit.build;
 import io.github.endx.rustedfabricapi.api.game.Units;
 import io.github.endx.rustedfabricapi.api.unit.build.event.BuildProductionEvents;
 import io.github.endx.rustedfabricapi.api.unit.build.event.ProductionModifierContext;
+import io.github.endx.rustedfabricapi.api.unit.build.event.ProductionCompletedContext;
 import rustedwarfare.custom.resource.ResourceAmount;
 import rustedwarfare.ui.CommandInterface;
 import rustedwarfare.unit.Unit;
@@ -14,6 +15,12 @@ import rustedwarfare.util.CommonUtils;
 /** Native bridge used by queue and tooltip mixins. */
 public final class BuildProductionRuntime {
     private BuildProductionRuntime() { }
+
+    public static void completed(Unit producer, Unit producedUnit) {
+        if (producer == null || producedUnit == null) return;
+        BuildProductionEvents.AFTER_COMPLETED.invoker().completed(
+                new ProductionCompletedContext(Units.view(producer), Units.view(producedUnit)));
+    }
 
     public static ResourceAmount price(Unit producer, QueueableUnitAction action) {
         ResourceAmount original = action.getPrice();

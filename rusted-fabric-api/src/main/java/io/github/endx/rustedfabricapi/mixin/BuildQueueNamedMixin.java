@@ -153,6 +153,8 @@ public abstract class BuildQueueNamedMixin {
                         (rustedwarfare.unit.build.FactoryQueueManager) (Object) this,
                         (rustedwarfare.unit.build.BuildQueueItem) queueItem, spacing,
                         useRallyPoint, spawnYOffset, (rustedwarfare.unit.Unit) cir.getReturnValue());
+        io.github.endx.rustedfabricapi.impl.unit.build.BuildProductionRuntime.completed(
+                hostUnit, (rustedwarfare.unit.Unit) cir.getReturnValue());
     }
 
     @Inject(method = "positionNewlyProducedUnit(Lrustedwarfare/unit/Unit;FZ)V", at = @At("RETURN"), require = 1)
