@@ -98,6 +98,16 @@ public final class ProductionModifierContext {
         creditCost = value;
     }
 
+    /** Multiplies the native credit cost and rounds to the nearest whole credit. */
+    public void multiplyCreditCost(double factor) {
+        requireNonNegativeFinite(factor, "credit cost factor");
+        long changed = Math.round(creditCost * factor);
+        if (changed > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("resulting credit cost is out of range");
+        }
+        creditCost = (int) changed;
+    }
+
     public void addCreditCost(int delta) {
         setCreditCost(Math.max(0, Math.addExact(creditCost, delta)));
     }

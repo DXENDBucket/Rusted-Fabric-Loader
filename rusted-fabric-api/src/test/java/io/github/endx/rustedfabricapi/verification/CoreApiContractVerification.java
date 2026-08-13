@@ -529,6 +529,11 @@ public final class CoreApiContractVerification {
                 "custom production resource multiplier was not applied");
         require(context.originalResourceCost("扩张警戒") == 10.0D,
                 "custom production original resource snapshot was mutated");
+        context.multiplyCreditCost(0.92D);
+        require(context.creditCost() == 184,
+                "native production credit multiplier was not applied");
+        require(context.originalCreditCost() == 200,
+                "native production original credit snapshot was mutated");
         context.multiplyResourceCost("missing", 2.0D);
         require(!context.resourceCosts().containsKey("missing"),
                 "multiplying an absent resource unexpectedly added it");
