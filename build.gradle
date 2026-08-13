@@ -61,6 +61,20 @@ def namedGameJarFile = {
             ? file(project.property('namedGameJar'))
             : layout.buildDirectory.file("rusted-dev/game-lib-named.jar").get().asFile
 }
+def externalBridgeMappingsFile = {
+    project.hasProperty('externalBridgeMappings')
+            ? file(project.property('externalBridgeMappings'))
+            : layout.buildDirectory.file("rusted-dev/external-compat/mappings.tiny").get().asFile
+}
+def externalMixinModFile = {
+    if (project.hasProperty('externalMixinModOutput')) {
+        return file(project.property('externalMixinModOutput'))
+    }
+    if (project.hasProperty('gameDir')) {
+        return new File(file(project.property('gameDir')), 'javamods/external-compat-local.jar')
+    }
+    return layout.buildDirectory.file("rusted-dev/external-compat/external-compat-local.jar").get().asFile
+}
 
 dependencies {
     // Fabric
@@ -309,6 +323,74 @@ tasks.register('remapNamedJarToOfficial', JavaExec) {
                 'official',
                 namedGameJarFile().absolutePath
         ] + remapClasspath().collect { it.absolutePath })
+    }
+}
+
+tasks.register('composeExternalNamedMappings', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Composes user-supplied two-layer Enigma mappings with the RFL Tiny mappings.'
+    dependsOn classes
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.ComposeExternalNamedMappings')
+
+    doFirst {
+        ['externalOfficialMappingsDir', 'externalNamedMappingsDir'].each { propertyName ->
+            if (!project.hasProperty(propertyName)) {
+                throw new GradleException("Missing -P${propertyName}=/path/to/enigma/mappings")
+            }
+        }
+        def firstLayer = file(project.property('externalOfficialMappingsDir'))
+        def secondLayer = file(project.property('externalNamedMappingsDir'))
+        if (!firstLayer.isDirectory()) throw new GradleException("Missing mappings directory: ${firstLayer}")
+        if (!secondLayer.isDirectory()) throw new GradleException("Missing mappings directory: ${secondLayer}")
+        def output = externalBridgeMappingsFile()
+        output.parentFile.mkdirs()
+        setArgs([
+                firstLayer.absolutePath,
+                secondLayer.absolutePath,
+                mappingsTinyFile().absolutePath,
+                output.absolutePath,
+                project.findProperty('externalNamespace') ?: 'external_named'
+        ])
+    }
+}
+
+tasks.register('prepareExternalMixinMod', JavaExec) {
+    group = 'rusted fabric'
+    description = 'Converts a locally supplied external Mixin Jar into a local RFL Java mod.'
+    dependsOn classes, composeExternalNamedMappings
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricloader.tools.PrepareExternalMixinMod')
+
+    doFirst {
+        if (!project.hasProperty('externalMixinJar')) {
+            throw new GradleException('Missing -PexternalMixinJar=/path/to/external-mixins.jar')
+        }
+        def input = file(project.property('externalMixinJar'))
+        if (!input.isFile()) throw new GradleException("Missing external Mixin Jar: ${input}")
+        def output = externalMixinModFile()
+        if (input.canonicalFile == output.canonicalFile) {
+            throw new GradleException('External input and compatibility output Jar must be different')
+        }
+        output.parentFile.mkdirs()
+        setArgs([
+                input.absolutePath,
+                output.absolutePath,
+                externalBridgeMappingsFile().absolutePath,
+                project.findProperty('externalNamespace') ?: 'external_named',
+                project.findProperty('externalModId') ?: 'external_compat_local',
+                project.findProperty('externalModName') ?: 'External compatibility (local)',
+                project.findProperty('externalModVersion') ?: 'local'
+        ] + remapClasspath().collect { it.absolutePath })
+    }
+
+    doLast {
+        logger.lifecycle("Prepared local external compatibility mod: ${externalMixinModFile().absolutePath}")
+        if (project.hasProperty('gameDir')) {
+            logger.lifecycle('Normal Rusted Fabric Loader startup will now load this compatibility mod.')
+        }
     }
 }
 

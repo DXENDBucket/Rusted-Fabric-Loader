@@ -82,7 +82,7 @@ public final class RemapJar {
         remap(input, output, mappings, fromNamespace, toNamespace, classpath);
     }
 
-    private static void remap(Path input, Path output, Path mappings, String fromNamespace, String toNamespace, List<Path> classpath)
+    public static void remap(Path input, Path output, Path mappings, String fromNamespace, String toNamespace, List<Path> classpath)
             throws IOException {
         if (!Files.isRegularFile(input)) {
             throw new IOException("Input jar does not exist: " + input);

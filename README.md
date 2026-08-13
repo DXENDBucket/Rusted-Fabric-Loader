@@ -57,6 +57,11 @@ pause
 
 Adjust `JAVA_EXE` and memory options as needed for your environment.
 
+For authorized local compatibility with an external project whose Mixins use another mapping
+namespace, see [Local external Mixin compatibility](docs/EXTERNAL_MIXIN_COMPATIBILITY.md). The
+bridge consumes user-supplied inputs and never adds the external code, mappings, or game files to
+this repository or an RFL distribution.
+
 ## Installing into a game directory
 For player distribution, build the graphical, game-free Windows installer:
 
