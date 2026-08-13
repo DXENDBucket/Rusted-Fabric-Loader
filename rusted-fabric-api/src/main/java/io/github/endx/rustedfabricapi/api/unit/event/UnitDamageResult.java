@@ -39,9 +39,15 @@ public final class UnitDamageResult {
     /** Namespace-stable live view of the damaged unit. */
     public UnitView unitView() { return Units.view(unit); }
     public Optional<Unit> attacker() { return Optional.ofNullable(attacker); }
-    /** Namespace-stable live view of the source, when the damage has one. */
+    /**
+     * Namespace-stable live view of the source, when the damage has one.
+     * Projectile damage may pass a null direct attacker, so this falls back to the projectile's
+     * source unit.
+     */
     public Optional<UnitView> attackerView() {
-        return attacker == null ? Optional.empty() : Optional.of(Units.view(attacker));
+        Unit source = attacker != null ? attacker
+                : projectile != null ? projectile.sourceUnit : null;
+        return source == null ? Optional.empty() : Optional.of(Units.view(source));
     }
     public Optional<Projectile> projectile() { return Optional.ofNullable(projectile); }
     public float requestedDamage() { return requestedDamage; }
