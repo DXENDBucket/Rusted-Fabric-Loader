@@ -47,13 +47,7 @@ RFL mappings, or target game version changes.
 combined mappings and default non-installed output remain under `build/rusted-dev/external-compat`
 and are not distribution artifacts.
 
-## Reunion V3 local bridge
-
-For the currently inspected Reunion V3 tree, the required input is the output of `:core:jar`, not
-`:desktop:applyMixins`. Its two mapping directories are `libs/mappings/desktop` and
-`libs/mappings/desktop_named`. RFL does not depend on Reunion's static-Mixin build plugin; the
-adapted core Mixins are applied dynamically by Fabric during normal RFL startup.
-
-Compatibility still depends on both projects targeting the same Rusted Warfare build. If either
-project changes its targets or injection points, rebuild the bridge and repeat a startup/Mixin
-audit before relying on it.
+Compatibility depends on both projects targeting the same Rusted Warfare build. If either project
+changes its targets or injection points, rebuild the bridge and repeat a startup/Mixin audit before
+relying on it. This is only a low-level compatibility possibility: RFL does not claim built-in
+support for any particular third-party overhaul.
