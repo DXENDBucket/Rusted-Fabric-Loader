@@ -292,8 +292,10 @@ The first typed desktop layer contains:
 - `api.unit.build.BuildQueues` and `api.unit.build.event.BuildQueueEvents`: immutable queue
   snapshots, current item/progress, queue mutation helpers, action application, activation,
   refund, completion, and produced-unit positioning callbacks.
-- `api.unit.build.event.BuildProductionEvents.MODIFY`: dynamic unit-production credit cost and
-  duration modifiers keyed by the producer and produced unit type. The reduced price is used for
+- `api.unit.build.event.BuildProductionEvents.MODIFY`: dynamic unit-production credit/custom-
+  resource cost and duration modifiers keyed by the producer and produced unit type. Custom
+  resources can be read, added, set, or scaled by configuration name (for example,
+  `multiplyResourceCost("扩张警戒", 1.05)`) without exposing native resource objects. The modified price is used for
   availability, tooltips, payment, stored queue cost, and cancellation refunds; the adjusted
   duration is used by both the tooltip and the created queue item. `multiplyBuildTime(0.65)` means
   a 35% shorter production time.

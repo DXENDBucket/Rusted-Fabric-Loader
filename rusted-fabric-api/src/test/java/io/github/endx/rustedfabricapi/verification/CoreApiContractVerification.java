@@ -21,6 +21,8 @@ import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult;
+import io.github.endx.rustedfabricapi.api.game.UnitView;
+import io.github.endx.rustedfabricapi.api.unit.build.event.ProductionModifierContext;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.NativeEventData;
 import io.github.endx.rustedfabricapi.api.custom.PerActionAutoTriggerCooldowns;
@@ -34,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Constructor;
 
 public final class CoreApiContractVerification {
     private CoreApiContractVerification() {
@@ -52,6 +55,7 @@ public final class CoreApiContractVerification {
         verifyLethalHealthModifier();
         verifyDamageEventContextContracts();
         verifyPerActionAutoTriggerCooldownContract();
+        verifyProductionResourceCostContract();
         ProjectileCombatEventContractVerification.verify();
         ProjectilePatternContractVerification.verify();
         IniExtensionContractVerification.verify();
@@ -505,6 +509,26 @@ public final class CoreApiContractVerification {
         } catch (IllegalArgumentException expected) {
             // Expected public validation contract.
         }
+    }
+
+    private static void verifyProductionResourceCostContract() throws Exception {
+        Constructor<UnitView> constructor = UnitView.class.getDeclaredConstructor(Object.class);
+        constructor.setAccessible(true);
+        UnitView producer = constructor.newInstance(new Object());
+        Map<String, Double> resources = new java.util.LinkedHashMap<String, Double>();
+        resources.put("l_扩张警戒", Double.valueOf(10.0D));
+        ProductionModifierContext context = new ProductionModifierContext(
+                producer, "test_unit", 200, 0.01F, resources);
+        require(context.resourceCost("扩张警戒") == 10.0D,
+                "custom production resource alias was not resolved");
+        context.multiplyResourceCost("扩张警戒", 1.05D);
+        require(Math.abs(context.resourceCost("扩张警戒") - 10.5D) < 0.000001D,
+                "custom production resource multiplier was not applied");
+        require(context.originalResourceCost("扩张警戒") == 10.0D,
+                "custom production original resource snapshot was mutated");
+        context.multiplyResourceCost("missing", 2.0D);
+        require(!context.resourceCosts().containsKey("missing"),
+                "multiplying an absent resource unexpectedly added it");
     }
 
     private static void require(boolean condition, String message) {
