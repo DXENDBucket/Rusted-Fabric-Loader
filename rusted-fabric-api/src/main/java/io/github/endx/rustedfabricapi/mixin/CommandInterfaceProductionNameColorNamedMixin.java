@@ -22,13 +22,14 @@ public abstract class CommandInterfaceProductionNameColorNamedMixin {
     @Redirect(
             method = "drawActionButtonsAndHandleInput(F)I",
             at = @At(value = "INVOKE",
-                    target = "Lrustedwarfare/unit/action/UnitAction;getBuildUnitType()Lrustedwarfare/unit/UnitType;",
-                    ordinal = 1),
+                    target = "Lrustedwarfare/unit/action/UnitAction;getDisplayTextWithCount()Ljava/lang/String;"),
             require = 1)
-    private UnitType rustedfabricapi$captureProductionNameAction(UnitAction action) {
+    private String rustedfabricapi$captureProductionNameAction(UnitAction action) {
         rustedfabricapi$productionNameAction = action;
-        rustedfabricapi$productionNameType = action.getBuildUnitType();
-        return rustedfabricapi$productionNameType;
+        rustedfabricapi$productionNameType = action.getDisplayType()
+                == rustedwarfare.unit.action.ActionDisplayType.queueUnit
+                ? action.getBuildUnitType() : null;
+        return action.getDisplayTextWithCount();
     }
 
     @ModifyArg(
