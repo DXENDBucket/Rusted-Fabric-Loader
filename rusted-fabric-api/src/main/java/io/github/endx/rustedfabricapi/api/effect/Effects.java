@@ -40,9 +40,21 @@ public final class Effects {
                 targetX, targetY, targetHeight));
     }
 
+    /** Creates a line effect through a namespace-stable mutable handle. */
+    public static Optional<EffectHandle> lineHandle(float startX, float startY, float startHeight,
+            float targetX, float targetY, float targetHeight) {
+        return line(startX, startY, startHeight, targetX, targetY, targetHeight)
+                .map(EffectHandle::new);
+    }
+
     public static Optional<EffectInstance> light(float x, float y, float height, int argb) {
         requirePosition(x, y, height);
         return Optional.ofNullable(manager().createLightEffect(x, y, height, argb));
+    }
+
+    /** Creates a light effect through a namespace-stable mutable handle. */
+    public static Optional<EffectHandle> lightHandle(float x, float y, float height, int argb) {
+        return light(x, y, height, argb).map(EffectHandle::new);
     }
 
     public static Optional<EffectInstance> attachedLight(GameObject object, int argb, float size) {

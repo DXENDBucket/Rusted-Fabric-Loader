@@ -1,5 +1,7 @@
 package io.github.endx.rustedfabricapi.api.unit.event;
 
+import io.github.endx.rustedfabricapi.api.game.UnitView;
+import io.github.endx.rustedfabricapi.api.game.Units;
 import rustedwarfare.game.Projectile;
 import rustedwarfare.unit.Unit;
 
@@ -34,7 +36,13 @@ public final class UnitDamageResult {
     }
 
     public Unit unit() { return unit; }
+    /** Namespace-stable live view of the damaged unit. */
+    public UnitView unitView() { return Units.view(unit); }
     public Optional<Unit> attacker() { return Optional.ofNullable(attacker); }
+    /** Namespace-stable live view of the source, when the damage has one. */
+    public Optional<UnitView> attackerView() {
+        return attacker == null ? Optional.empty() : Optional.of(Units.view(attacker));
+    }
     public Optional<Projectile> projectile() { return Optional.ofNullable(projectile); }
     public float requestedDamage() { return requestedDamage; }
     public float nativeRemainingDamage() { return nativeRemainingDamage; }

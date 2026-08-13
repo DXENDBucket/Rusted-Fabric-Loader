@@ -65,7 +65,7 @@ public final class CoreApiContractVerification {
     }
 
     private static void verifySupportMatrix(RustedFabricAPIContext context) {
-        require(ApiSupportMatrix.entries().size() == 64,
+        require(ApiSupportMatrix.entries().size() == 65,
                 "public API support matrix does not cover every advertised API group");
         require(ApiSupportMatrix.expectedSupport(
                         RustedFabricCapabilities.BUILD_PRODUCTION_MODIFIER,
@@ -126,6 +126,9 @@ public final class CoreApiContractVerification {
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_DAMAGE,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "unit damage support is not advertised");
+        require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.UNIT_TAGGED_DAMAGE,
+                        ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
+                "tagged damage application support is not advertised");
         require(ApiSupportMatrix.expectedSupport(RustedFabricCapabilities.CUSTOM_EVENT_CONTEXT,
                         ApiSupportMatrix.Backend.RUNTIME) == ApiSupportMatrix.Level.FULL,
                 "custom event context support is not advertised");
