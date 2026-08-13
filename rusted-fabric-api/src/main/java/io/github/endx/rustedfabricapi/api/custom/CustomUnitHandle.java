@@ -77,6 +77,21 @@ public final class CustomUnitHandle {
         return unit.team != null ? OptionalInt.of(unit.team.teamId) : OptionalInt.empty();
     }
 
+    /** Returns whether this instance currently carries a runtime unit tag. */
+    public boolean hasRuntimeTag(String name) {
+        return UnitTags.contains(unit, Objects.requireNonNull(name, "name"));
+    }
+
+    /** Adds runtime tags while preserving metadata-defined and previously added tags. */
+    public void addRuntimeTags(String... names) {
+        UnitTags.add(unit, UnitTags.of(names));
+    }
+
+    /** Removes only the requested runtime tags. */
+    public void removeRuntimeTags(String... names) {
+        UnitTags.remove(unit, UnitTags.of(names));
+    }
+
     /** Rebuilds the owning team's cached unit economy after a runtime production mode changes. */
     public void refreshTeamEconomyStats() {
         if (unit.team != null) unit.team.refreshCachedTeamStats(true);
