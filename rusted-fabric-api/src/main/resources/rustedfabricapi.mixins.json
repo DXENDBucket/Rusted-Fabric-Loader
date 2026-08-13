@@ -125,6 +125,7 @@
     "WarLogInterfaceNamedMixin",
     "WorldRenderNamedMixin",
     "accessor.MapEngineAccessor",
+    "accessor.CustomUnitBuildQueueAccessor",
     "accessor.CustomUnitEventActionAccessor",
     "accessor.DecalBehaviorAccessor",
     "accessor.CustomUnitMetadataAccessor",

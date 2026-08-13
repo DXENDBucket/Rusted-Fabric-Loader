@@ -7,10 +7,14 @@ import io.github.endx.rustedfabricapi.api.unit.attribute.UnitStat;
 import io.github.endx.rustedfabricapi.api.unit.attribute.UnitStatModifier;
 import io.github.endx.rustedfabricapi.api.unit.attribute.UnitVitals;
 import io.github.endx.rustedfabricapi.api.unit.attribute.UnitVitalsSnapshot;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
+import io.github.endx.rustedfabricapi.mixin.accessor.CustomUnitBuildQueueAccessor;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.resource.ResourceType;
 import rustedwarfare.unit.Unit;
+import rustedwarfare.unit.action.UnitAction;
+import rustedwarfare.unit.build.FactoryQueueManager;
 
 import java.util.List;
 import java.util.Objects;
@@ -76,6 +80,43 @@ public final class CustomUnitHandle {
     /** Rebuilds the owning team's cached unit economy after a runtime production mode changes. */
     public void refreshTeamEconomyStats() {
         if (unit.team != null) unit.team.refreshCachedTeamStats(true);
+    }
+
+    /** Returns the current native build/action queue progress, or zero for an empty queue. */
+    public float currentBuildQueueProgress() {
+        FactoryQueueManager queue = buildQueue();
+        return queue.getCurrentQueueItem() != null ? queue.buildProgress : 0.0F;
+    }
+
+    /** Returns whether the current native queue action carries the requested INI action tag. */
+    public boolean currentBuildQueueActionHasTag(String actionTag) {
+        UnitAction action = buildQueue().getCurrentAction();
+        return action != null && UnitTags.contains(action.getTags(), UnitTags.tag(actionTag));
+    }
+
+    /** Synchronizes a tagged current queue item's visible progress. */
+    public boolean setCurrentBuildQueueProgress(String actionTag, double progress) {
+        requireFinite(progress, "progress");
+        if (!currentBuildQueueActionHasTag(actionTag)) return false;
+        buildQueue().buildProgress = (float) clamp(progress, 0.0D, 1.0D);
+        return true;
+    }
+
+    /** Marks a tagged current queue item complete on its next native queue update. */
+    public boolean completeCurrentBuildQueueAction(String actionTag) {
+        if (!currentBuildQueueActionHasTag(actionTag)) return false;
+        unit.forceBuildQueueProgressComplete();
+        return true;
+    }
+
+    /** Cancels and normally refunds a tagged current queue item through the native action path. */
+    public boolean cancelCurrentBuildQueueAction(String actionTag) {
+        UnitAction action = buildQueue().getCurrentAction();
+        if (action == null || !UnitTags.contains(action.getTags(), UnitTags.tag(actionTag))) {
+            return false;
+        }
+        unit.queueActionNoTarget(action, true);
+        return true;
     }
 
     /** Reads a built-in or unit-local resource by the name used in INI expressions. */
@@ -174,6 +215,10 @@ public final class CustomUnitHandle {
                     + "' for custom unit " + internalTypeName());
         }
         return type;
+    }
+
+    private FactoryQueueManager buildQueue() {
+        return ((CustomUnitBuildQueueAccessor) unit).rustedfabricapi$getBuildQueue();
     }
 
     private static void requireFinite(double value, String name) {

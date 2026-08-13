@@ -255,7 +255,11 @@ The first typed desktop layer contains:
   event contexts expose portable number/boolean memory and event-tag helpers, so a gameplay mod can
   implement global INI mechanics without importing mapped game classes. Runtime production modes
   can call `CustomUnitHandle.refreshTeamEconomyStats()` after a mode transition so the native
-  cached team-income total is rebuilt using current display-rate modifiers.
+  cached team-income total is rebuilt using current display-rate modifiers. Tagged current queue
+  actions can also expose, synchronize, complete, or cancel their native progress through
+  `currentBuildQueueProgress()`, `setCurrentBuildQueueProgress(...)`,
+  `completeCurrentBuildQueueAction(...)`, and `cancelCurrentBuildQueueAction(...)`; cancellation
+  retains the game's ordinary refund and queue-event path.
 - `CustomUnitEconomyEvents.BEFORE_PERIODIC_GENERATION` runs only when the native
   `generation_delay` timer settles. A listener may replace the complete native amount and return
   `true`; returning `false` preserves normal generation and recorded-income behavior. This is the
