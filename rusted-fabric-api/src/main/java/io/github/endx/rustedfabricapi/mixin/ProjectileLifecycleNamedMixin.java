@@ -170,6 +170,9 @@ public abstract class ProjectileLifecycleNamedMixin {
         io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(this);
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_IMPACT.invoker()
                 .onImpact((rustedwarfare.game.Projectile) (Object) this, impact);
+        io.github.endx.rustedfabricapi.api.projectile.event.ProjectileSnapshotEvents
+                .AFTER_IMPACT.invoker().afterImpact(
+                        Projectiles.snapshot(this), impact);
     }
 
     @Inject(method = "requestRemoval()V", at = @At("HEAD"), require = 1)

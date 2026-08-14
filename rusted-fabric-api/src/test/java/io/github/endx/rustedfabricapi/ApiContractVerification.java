@@ -170,6 +170,8 @@ public final class ApiContractVerification {
                 "projectile damage snapshot failed");
         require(snapshot.ballistic() && !snapshot.removalRequested(),
                 "projectile flags snapshot failed");
+        require(snapshot.tags().isEmpty() && !snapshot.hasTag("missing"),
+                "projectile tag snapshot should be empty when native tags are absent");
         value.directDamage = 99.0F;
         require(snapshot.directDamage() == 12.0F,
                 "projectile snapshot was not immutable");
@@ -231,6 +233,7 @@ public final class ApiContractVerification {
         boolean ballistic = true;
         boolean impactTriggered;
         boolean removalRequested;
+        Object tags;
         boolean removed;
         boolean targetGround;
         boolean collideWithUnits = true;

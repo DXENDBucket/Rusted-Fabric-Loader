@@ -1,6 +1,11 @@
 package io.github.endx.rustedfabricapi.api.game;
 
 import io.github.endx.rustedfabricapi.api.util.RustedReflection;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
+import rustedwarfare.custom.CustomTagList;
+
+import java.util.Collections;
+import java.util.List;
 
 /** Immutable, namespace-neutral snapshot of commonly used mapped Projectile state. */
 public final class ProjectileSnapshot {
@@ -25,6 +30,7 @@ public final class ProjectileSnapshot {
     private final boolean ballistic;
     private final boolean impactTriggered;
     private final boolean removalRequested;
+    private final List<String> tags;
 
     private ProjectileSnapshot(Object projectile) {
         if (projectile == null) throw new IllegalArgumentException("projectile must not be null");
@@ -49,6 +55,9 @@ public final class ProjectileSnapshot {
         this.ballistic = bool(projectile, "ballistic", "aH");
         this.impactTriggered = bool(projectile, "impactTriggered", "bn");
         this.removalRequested = bool(projectile, "removalRequested", "aS");
+        Object rawTags = field(projectile, "tags", "aE");
+        this.tags = rawTags instanceof CustomTagList
+                ? UnitTags.names((CustomTagList) rawTags) : Collections.emptyList();
     }
 
     public static ProjectileSnapshot capture(Object projectile) {
@@ -76,6 +85,8 @@ public final class ProjectileSnapshot {
     public boolean ballistic() { return ballistic; }
     public boolean impactTriggered() { return impactTriggered; }
     public boolean removalRequested() { return removalRequested; }
+    public List<String> tags() { return tags; }
+    public boolean hasTag(String tag) { return tags.contains(tag); }
 
     private static Object field(Object owner, String named, String official) {
         return RustedReflection.getFieldValue(owner, new String[]{named, official});

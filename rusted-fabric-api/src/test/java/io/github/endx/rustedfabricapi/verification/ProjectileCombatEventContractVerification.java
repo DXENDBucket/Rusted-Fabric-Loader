@@ -2,6 +2,12 @@ package io.github.endx.rustedfabricapi.verification;
 
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
 import io.github.endx.rustedfabricapi.api.projectile.event.ProjectileCombatEvents;
+import io.github.endx.rustedfabricapi.api.projectile.event.ProjectileSnapshotEvents;
+import io.github.endx.rustedfabricapi.api.unit.combat.DamageZones;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 final class ProjectileCombatEventContractVerification {
     private ProjectileCombatEventContractVerification() { }
@@ -9,6 +15,8 @@ final class ProjectileCombatEventContractVerification {
     static void verify() {
         verifyProjectileSelectionReduction();
         verifyDamageReduction();
+        verifySnapshotImpactOrdering();
+        verifyDamageZoneFalloff();
     }
 
     private static void verifyProjectileSelectionReduction() {
@@ -49,6 +57,35 @@ final class ProjectileCombatEventContractVerification {
             first.close();
             second.close();
         }
+    }
+
+    private static void verifySnapshotImpactOrdering() {
+        List<String> calls = new ArrayList<String>();
+        RustedFabricEvent.Registration first = ProjectileSnapshotEvents.AFTER_IMPACT
+                .subscribe((projectile, impact) -> calls.add("first"));
+        RustedFabricEvent.Registration second = ProjectileSnapshotEvents.AFTER_IMPACT
+                .subscribe((projectile, impact) -> calls.add("second"));
+        try {
+            ProjectileSnapshotEvents.AFTER_IMPACT.invoker().afterImpact(null, null);
+            require(calls.equals(Arrays.asList("first", "second")),
+                    "snapshot projectile impacts must retain registration order");
+        } finally {
+            first.close();
+            second.close();
+        }
+    }
+
+    private static void verifyDamageZoneFalloff() {
+        require(close(DamageZones.multiplier(DamageZones.Falloff.LINEAR, 0.0F, 80.0F), 1.0F),
+                "linear damage zone center must retain full damage");
+        require(close(DamageZones.multiplier(DamageZones.Falloff.LINEAR, 40.0F, 80.0F), 0.5F),
+                "linear damage zone midpoint must retain half damage");
+        require(close(DamageZones.multiplier(DamageZones.Falloff.LINEAR, 80.0F, 80.0F), 0.0F),
+                "linear damage zone edge must deal no damage");
+    }
+
+    private static boolean close(float actual, float expected) {
+        return Math.abs(actual - expected) < 0.00001F;
     }
 
     private static void require(boolean condition, String message) {
