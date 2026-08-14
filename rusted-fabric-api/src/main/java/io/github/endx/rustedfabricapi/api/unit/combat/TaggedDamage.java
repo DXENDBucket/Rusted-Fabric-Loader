@@ -28,7 +28,9 @@ public final class TaggedDamage {
         if (!Float.isFinite(amount) || amount < 0.0F) {
             throw new IllegalArgumentException("damage amount must be finite and non-negative");
         }
-        Projectile marker = new Projectile(false);
+        // true means "do not register" in the game's constructor. A false marker would leak
+        // into activeProjectiles and the global render/update object lists after every pulse.
+        Projectile marker = new Projectile(true);
         marker.sourceUnit = attacker;
         marker.targetUnit = target;
         marker.tags = tags != null ? tags : UnitTags.empty();
