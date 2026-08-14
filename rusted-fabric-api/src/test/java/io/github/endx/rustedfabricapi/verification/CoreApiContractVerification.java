@@ -360,6 +360,8 @@ public final class CoreApiContractVerification {
                 "damage result did not preserve actual HP/shield reductions");
         require(result.nativeRemainingDamage() == 2.0F && result.wasLethal(),
                 "damage result remaining/lethal semantics are wrong");
+        require(!result.hasDamageTag("debuff_corrosion") && result.damageTags().isEmpty(),
+                "projectile-free damage result exposed phantom damage tags");
 
         final int[] resultEvents = {0};
         io.github.endx.rustedfabricapi.api.event.RustedFabricEvent.Registration resultRegistration =

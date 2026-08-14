@@ -2,9 +2,11 @@ package io.github.endx.rustedfabricapi.api.unit.event;
 
 import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.game.Units;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import rustedwarfare.game.Projectile;
 import rustedwarfare.unit.Unit;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -50,6 +52,16 @@ public final class UnitDamageResult {
         return source == null ? Optional.empty() : Optional.of(Units.view(source));
     }
     public Optional<Projectile> projectile() { return Optional.ofNullable(projectile); }
+    /** Namespace-stable projectile damage tags; empty for direct damage without a projectile. */
+    public List<String> damageTags() {
+        return projectile == null ? java.util.Collections.emptyList()
+                : UnitTags.names(projectile.tags);
+    }
+    /** Tests one projectile damage tag without exposing mapped game tag classes to callers. */
+    public boolean hasDamageTag(String tagName) {
+        Objects.requireNonNull(tagName, "tagName");
+        return projectile != null && UnitTags.contains(projectile.tags, UnitTags.tag(tagName));
+    }
     public float requestedDamage() { return requestedDamage; }
     public float nativeRemainingDamage() { return nativeRemainingDamage; }
     public float hpBefore() { return hpBefore; }
