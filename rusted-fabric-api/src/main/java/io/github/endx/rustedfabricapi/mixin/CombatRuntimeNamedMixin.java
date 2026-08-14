@@ -1,6 +1,8 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.unit.combat.event.CombatEvents;
+import io.github.endx.rustedfabricapi.api.unit.combat.event.UnitTargetEvents;
+import io.github.endx.rustedfabricapi.api.game.Units;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,6 +19,13 @@ public abstract class CombatRuntimeNamedMixin {
                                                              CallbackInfoReturnable<Boolean> cir) {
         if (CombatEvents.BEFORE_TRY_FIRE.invoker().beforeTryFire(
                 (OrderableUnit) (Object) this, delta, target, turretIndex)) {
+            cir.setReturnValue(Boolean.FALSE);
+            return;
+        }
+        Boolean portable = UnitTargetEvents.MODIFY_VALIDITY.invoker().modify(
+                Units.view(this), Units.view(target), UnitTargetEvents.Check.FIRE,
+                turretIndex, true);
+        if (Boolean.FALSE.equals(portable)) {
             cir.setReturnValue(Boolean.FALSE);
         }
     }
@@ -38,7 +47,12 @@ public abstract class CombatRuntimeNamedMixin {
         Boolean result = CombatEvents.MODIFY_TARGET_IN_RANGE.invoker().modify(
                 (OrderableUnit) (Object) this, target,
                 Boolean.TRUE.equals(cir.getReturnValue()));
-        if (result != null) cir.setReturnValue(result);
+        boolean current = result != null ? result.booleanValue()
+                : Boolean.TRUE.equals(cir.getReturnValue());
+        Boolean portable = UnitTargetEvents.MODIFY_VALIDITY.invoker().modify(
+                Units.view(this), Units.view(target), UnitTargetEvents.Check.ATTACK_RANGE,
+                -1, current);
+        if (portable != null) cir.setReturnValue(portable);
     }
 
     @Inject(method = "canAutoAttackTarget(Lrustedwarfare/unit/Unit;Z)Z",
@@ -48,7 +62,12 @@ public abstract class CombatRuntimeNamedMixin {
         Boolean result = CombatEvents.MODIFY_CAN_AUTO_ATTACK.invoker().modify(
                 (OrderableUnit) (Object) this, target, checkSearchRange,
                 Boolean.TRUE.equals(cir.getReturnValue()));
-        if (result != null) cir.setReturnValue(result);
+        boolean current = result != null ? result.booleanValue()
+                : Boolean.TRUE.equals(cir.getReturnValue());
+        Boolean portable = UnitTargetEvents.MODIFY_VALIDITY.invoker().modify(
+                Units.view(this), Units.view(target), UnitTargetEvents.Check.AUTO_ATTACK,
+                -1, current);
+        if (portable != null) cir.setReturnValue(portable);
     }
 
     @Inject(method = "canAutoAttackVisibleTarget(Lrustedwarfare/unit/Unit;Z)Z",
@@ -58,7 +77,12 @@ public abstract class CombatRuntimeNamedMixin {
         Boolean result = CombatEvents.MODIFY_CAN_AUTO_ATTACK_VISIBLE.invoker().modify(
                 (OrderableUnit) (Object) this, target, checkSearchRange,
                 Boolean.TRUE.equals(cir.getReturnValue()));
-        if (result != null) cir.setReturnValue(result);
+        boolean current = result != null ? result.booleanValue()
+                : Boolean.TRUE.equals(cir.getReturnValue());
+        Boolean portable = UnitTargetEvents.MODIFY_VALIDITY.invoker().modify(
+                Units.view(this), Units.view(target),
+                UnitTargetEvents.Check.AUTO_ATTACK_VISIBLE, -1, current);
+        if (portable != null) cir.setReturnValue(portable);
     }
 
     @Inject(method = "canTurretAttackTarget(ILrustedwarfare/unit/Unit;ZZ)Z",
@@ -69,6 +93,11 @@ public abstract class CombatRuntimeNamedMixin {
         Boolean result = CombatEvents.MODIFY_CAN_TURRET_ATTACK.invoker().modify(
                 (OrderableUnit) (Object) this, turretIndex, target, ignoreRange, requireRange,
                 Boolean.TRUE.equals(cir.getReturnValue()));
-        if (result != null) cir.setReturnValue(result);
+        boolean current = result != null ? result.booleanValue()
+                : Boolean.TRUE.equals(cir.getReturnValue());
+        Boolean portable = UnitTargetEvents.MODIFY_VALIDITY.invoker().modify(
+                Units.view(this), Units.view(target), UnitTargetEvents.Check.TURRET_ATTACK,
+                turretIndex, current);
+        if (portable != null) cir.setReturnValue(portable);
     }
 }

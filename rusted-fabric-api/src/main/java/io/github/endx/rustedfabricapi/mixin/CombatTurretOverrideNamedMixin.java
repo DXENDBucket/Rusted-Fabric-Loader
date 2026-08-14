@@ -1,6 +1,8 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.unit.combat.event.CombatEvents;
+import io.github.endx.rustedfabricapi.api.unit.combat.event.UnitTargetEvents;
+import io.github.endx.rustedfabricapi.api.game.Units;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,6 +24,11 @@ public abstract class CombatTurretOverrideNamedMixin {
         Boolean result = CombatEvents.MODIFY_CAN_TURRET_ATTACK.invoker().modify(
                 (OrderableUnit) (Object) this, turretIndex, target, ignoreRange, requireRange,
                 Boolean.TRUE.equals(cir.getReturnValue()));
-        if (result != null) cir.setReturnValue(result);
+        boolean current = result != null ? result.booleanValue()
+                : Boolean.TRUE.equals(cir.getReturnValue());
+        Boolean portable = UnitTargetEvents.MODIFY_VALIDITY.invoker().modify(
+                Units.view(this), Units.view(target), UnitTargetEvents.Check.TURRET_ATTACK,
+                turretIndex, current);
+        if (portable != null) cir.setReturnValue(portable);
     }
 }

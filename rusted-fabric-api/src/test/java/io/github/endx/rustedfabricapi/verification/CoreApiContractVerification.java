@@ -57,6 +57,7 @@ public final class CoreApiContractVerification {
         verifyDamageEventContextContracts();
         verifyPerActionAutoTriggerCooldownContract();
         verifyProductionResourceCostContract();
+        UnitTargetEventContractVerification.verify();
         ProjectileCombatEventContractVerification.verify();
         ProjectilePatternContractVerification.verify();
         IniExtensionContractVerification.verify();
