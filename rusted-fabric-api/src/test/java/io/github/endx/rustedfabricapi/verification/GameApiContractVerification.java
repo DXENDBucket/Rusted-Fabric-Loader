@@ -7,6 +7,7 @@ import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.game.Units;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitEvents;
 import rustedwarfare.game.Team;
+import rustedwarfare.framework.GameObject;
 import rustedwarfare.unit.Unit;
 
 import java.util.List;
@@ -31,9 +32,19 @@ public final class GameApiContractVerification {
         Unit builder = unit(12L, blue, 16.0F, 22.0F, 40.0F, 40.0F);
         builder.building = true;
         Unit enemy = unit(13L, red, 100.0F, 100.0F, 60.0F, 60.0F);
+        ShadowedCoordinateUnit shadowed = new ShadowedCoordinateUnit();
+        ((GameObject) shadowed).id = 14L;
+        ((GameObject) shadowed).x = 300.0F;
+        ((GameObject) shadowed).y = 400.0F;
+        shadowed.x = 10.0F;
+        shadowed.y = 20.0F;
+        shadowed.team = red;
+        shadowed.hp = 50.0F;
+        shadowed.maxHp = 50.0F;
         Unit.allUnits.add(tank);
         Unit.allUnits.add(builder);
         Unit.allUnits.add(enemy);
+        Unit.allUnits.add(shadowed);
 
         UnitView view = Units.view(tank);
         require(view.id() == 11L && view.x() == 10.0F && view.y() == 20.0F,
@@ -56,6 +67,9 @@ public final class GameApiContractVerification {
         List<UnitView> nearby = Units.within(10.0F, 20.0F, 10.0F);
         require(nearby.size() == 2 && Units.byId(13L).orElseThrow().raw() == enemy,
                 "unit snapshot queries are incorrect");
+        UnitView shadowedView = Units.view(shadowed);
+        require(shadowedView.x() == 300.0F && shadowedView.y() == 400.0F,
+                "subclass fields must not shadow canonical world coordinates");
 
         view.setHealth(35.0F).setDirection(90.0F).setConstructionProgress(0.5F)
                 .changeTeam(Teams.view(red));
@@ -90,5 +104,10 @@ public final class GameApiContractVerification {
 
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
+    }
+
+    private static final class ShadowedCoordinateUnit extends Unit {
+        public float x;
+        public float y;
     }
 }

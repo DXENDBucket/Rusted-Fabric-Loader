@@ -11,6 +11,14 @@ import java.util.Optional;
  * therefore cheap to create, but it must only be used from a game callback or the game thread.</p>
  */
 public final class UnitView {
+    private static final String[] UNIT_TYPES = {
+            "rustedwarfare.unit.Unit",
+            "com.corrodinggames.rts.game.units.am"
+    };
+    private static final String[] GAME_OBJECT_TYPES = {
+            "rustedwarfare.framework.GameObject",
+            "com.corrodinggames.rts.gameFramework.w"
+    };
     private final Object unit;
 
     UnitView(Object unit) {
@@ -23,19 +31,19 @@ public final class UnitView {
     }
 
     public long id() {
-        return number(new String[]{"id", "eh"}).longValue();
+        return gameObjectNumber(new String[]{"id", "eh"}).longValue();
     }
 
     public float x() {
-        return number(new String[]{"x", "eo"}).floatValue();
+        return gameObjectNumber(new String[]{"x", "eo"}).floatValue();
     }
 
     public float y() {
-        return number(new String[]{"y", "ep"}).floatValue();
+        return gameObjectNumber(new String[]{"y", "ep"}).floatValue();
     }
 
     public float height() {
-        return number(new String[]{"height", "eq"}).floatValue();
+        return gameObjectNumber(new String[]{"height", "eq"}).floatValue();
     }
 
     public float direction() {
@@ -72,11 +80,13 @@ public final class UnitView {
     }
 
     public boolean dead() {
-        return RustedReflection.getBooleanField(unit, new String[]{"dead", "bV"});
+        return Boolean.TRUE.equals(RustedReflection.getDeclaredFieldValue(
+                unit, UNIT_TYPES, new String[]{"dead", "bV"}));
     }
 
     public boolean removed() {
-        return RustedReflection.getBooleanField(unit, new String[]{"removed", "ej"});
+        return Boolean.TRUE.equals(RustedReflection.getDeclaredFieldValue(
+                unit, GAME_OBJECT_TYPES, new String[]{"removed", "ej"}));
     }
 
     public boolean alive() {
@@ -84,11 +94,13 @@ public final class UnitView {
     }
 
     public boolean registeredWithTeam() {
-        return RustedReflection.getBooleanField(unit, new String[]{"registeredWithTeam", "bY"});
+        return Boolean.TRUE.equals(RustedReflection.getDeclaredFieldValue(
+                unit, UNIT_TYPES, new String[]{"registeredWithTeam", "bY"}));
     }
 
     public Optional<TeamView> team() {
-        Object value = RustedReflection.getFieldValue(unit, new String[]{"team", "bX"});
+        Object value = RustedReflection.getDeclaredFieldValue(
+                unit, UNIT_TYPES, new String[]{"team", "bX"});
         return value == null ? Optional.empty() : Optional.of(Teams.view(value));
     }
 
@@ -169,7 +181,12 @@ public final class UnitView {
     }
 
     private Number number(String[] names) {
-        Object value = RustedReflection.getFieldValue(unit, names);
+        Object value = RustedReflection.getDeclaredFieldValue(unit, UNIT_TYPES, names);
+        return value instanceof Number ? (Number) value : Integer.valueOf(0);
+    }
+
+    private Number gameObjectNumber(String[] names) {
+        Object value = RustedReflection.getDeclaredFieldValue(unit, GAME_OBJECT_TYPES, names);
         return value instanceof Number ? (Number) value : Integer.valueOf(0);
     }
 

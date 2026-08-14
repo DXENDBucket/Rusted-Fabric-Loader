@@ -70,6 +70,26 @@ public final class RustedReflection {
         }
     }
 
+    /**
+     * Reads a field declared by one exact mapped base class. This avoids short obfuscated names
+     * on a concrete subclass shadowing unrelated inherited game-state fields.
+     */
+    public static Object getDeclaredFieldValue(Object owner, String[] declaringClassNames,
+            String[] fieldNames) {
+        requireNonNull(owner, "owner");
+        Class<?> declaringClass = findClass(declaringClassNames);
+        if (!declaringClass.isInstance(owner)) {
+            throw new IllegalArgumentException(owner.getClass().getName()
+                    + " is not an instance of " + declaringClass.getName());
+        }
+        Field field = findDeclaredField(declaringClass, fieldNames);
+        try {
+            return field.get(owner);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Could not read field " + field.getName(), e);
+        }
+    }
+
     public static void setFieldValue(Object owner, String[] fieldNames, Object value) {
         requireNonNull(owner, "owner");
         Field field = findField(owner.getClass(), fieldNames);
@@ -232,6 +252,15 @@ public final class RustedReflection {
             current = current.getSuperclass();
         }
         throw new IllegalStateException("Could not find field " + join(names) + " on " + type.getName());
+    }
+
+    private static Field findDeclaredField(Class<?> type, String[] names) {
+        for (String name : names) {
+            DeclaredFieldLookup lookup = declaredField(type, name);
+            if (lookup.field != null) return lookup.field;
+        }
+        throw new IllegalStateException(
+                "Could not find declared field " + join(names) + " on " + type.getName());
     }
 
     private static DeclaredFieldLookup declaredField(Class<?> owner, String name) {
