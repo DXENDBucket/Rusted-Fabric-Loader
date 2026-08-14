@@ -8242,6 +8242,8 @@ c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/O
 	m	(F)V	h	method_OrderableUnit_setDirection	setDirection
 	m	(FLcom/corrodinggames/rts/game/units/au;Lcom/corrodinggames/rts/game/units/ad;)V	h	method_y_updateLoadIntoOrder	updateLoadIntoOrder
 	m	(Lcom/corrodinggames/rts/game/units/am;)Z	h	method_y_isTargetWithinAttackRange	isTargetWithinAttackRange
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	j	method_OrderableUnit_canAnyTurretTargetIgnoringRange	canAnyTurretTargetIgnoringRange
+	m	(Lcom/corrodinggames/rts/game/units/am;)Z	k	method_OrderableUnit_canAttackTargetType	canAttackTargetType
 	m	(FLcom/corrodinggames/rts/game/units/au;Lcom/corrodinggames/rts/game/units/ad;)V	i	method_y_updateRepairReclaimOrder	updateRepairReclaimOrder
 	m	(F)V	k	method_y_updateActiveOrder	updateActiveOrder
 	m	(I)Lcom/corrodinggames/rts/game/units/au;	k	method_y_k_getWaypointAt	getWaypointAt
@@ -8251,6 +8253,7 @@ c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/O
 	m	(I)V	n	method_y_n_completeWaypointAt	completeWaypointAt
 	m	(Lcom/corrodinggames/rts/game/units/am;)Lcom/corrodinggames/rts/game/units/au;	n	method_y_n_queueAttackWaypoint	queueAttackWaypoint
 	m	(I)Lcom/corrodinggames/rts/game/units/af;	o	method_y_o_getActivePathPoint	getActivePathPoint
+	m	(Lcom/corrodinggames/rts/game/units/am;)F	o	method_OrderableUnit_getAttackRangeAgainst	getAttackRangeAgainst
 	m	(I)F	q	method_OrderableUnit_getTurretProjectileDirectDamage	getTurretProjectileDirectDamage
 	m	(I)Z	r	method_OrderableUnit_canTurretFire	canTurretFire
 	m	(I)Z	s	method_OrderableUnit_isTurretWarmupNoReset	isTurretWarmupNoReset

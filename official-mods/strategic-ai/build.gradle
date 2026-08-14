@@ -78,7 +78,15 @@ tasks.register('verifyStrategicAi') {
     }
 }
 
+tasks.register('verifyStandoffGeometry', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.StandoffGeometryVerification')
+}
+
 check.dependsOn tasks.named('verifyStrategicAi')
+check.dependsOn tasks.named('verifyStandoffGeometry')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

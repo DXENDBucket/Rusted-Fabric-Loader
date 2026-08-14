@@ -8,7 +8,7 @@ import io.github.endx.rustedfabricapi.api.ai.AiTickDecision;
 /** Deterministic first-pass economy and force controller for one team. */
 public final class StrategicAiController implements AiController {
     private static final float ECONOMY_INTERVAL = 45.0F;
-    private static final float FORCE_INTERVAL = 120.0F;
+    private static final float FORCE_INTERVAL = 30.0F;
 
     private final int teamId;
     private final StrategicBuildPlanner buildPlanner = new StrategicBuildPlanner();

@@ -1,9 +1,11 @@
 strategic-ai-policy-v1
 omniscient=true
 economy_interval=45
-force_interval=120
+force_interval=30
 minimum_attack_group=3
 builder_target=2
 resource_priority=unclaimed
 force_priority=lock_down,deny,primary_front,enemy_building,enemy_unit
 movement_domains=land,hover,water,over_cliff,over_cliff_water,air
+standoff_min_advantage=8
+standoff_safety_padding=3

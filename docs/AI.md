@@ -76,6 +76,13 @@ resource pool, construct an available low-cost combat factory when the team has 
 factory queues supplied, group idle non-builder combat units by movement domain, and attack-move
 toward lock-down resources, the primary front, or a reachable enemy position.
 
+Against an armed building, the controller evaluates every unit against that exact target. A unit
+with a real one-way-fire range window receives an ordinary move order into the middle of that
+window and then relies on native automatic fire; it is deliberately not given a direct attack
+waypoint, which would make some long-range units advance inside the defender's range. Short-range
+units continue attacking directly and can serve as the screen. The calculation uses native
+target/type/turret filters and target-aware effective ranges rather than unit names or UI values.
+
 This is an integration baseline, not the finished tactical AI. It does not yet understand damage
 types, target-domain restrictions, tower/artillery counters, retreat thresholds, production
 budgets, or allied player specialization. Because it changes synchronized simulation decisions,

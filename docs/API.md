@@ -1434,6 +1434,12 @@ in the world. Its cache is cleared on map lifecycle changes. The optional offici
 mod is a deterministic first consumer of these APIs; it is experimental and is not installed by
 default.
 
+`AiEngagementAssessment.capture(attacker, target)` performs a live, target-specific combat check.
+It asks the native unit and turret filters whether either side can attack the other, uses the same
+target-aware range calculation as native attack movement, and reports the current range state and
+one-way-fire range advantage. This retains native collision-radius rules and custom unit target
+filters instead of treating the displayed maximum range as the complete firing rule.
+
 ## Unit and team development API
 
 For ordinary desktop Fabric Jar mods, `Units`, `UnitView`, `Teams`, and `TeamView` are the preferred

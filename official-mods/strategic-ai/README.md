@@ -5,6 +5,10 @@ claim every otherwise-unassigned native AI team. It currently provides a determi
 loop for resource expansion, initial production infrastructure, unit production, terrain-aware
 rallying, and attack movement.
 
+Against an outranged armed building, eligible units use ordinary movement to enter a native
+target-specific one-way-fire band and then rely on automatic fire. Shorter-ranged units keep a
+direct attack order and act as the screen instead of forcing every unit through the same command.
+
 The controller is intentionally omniscient, matching the original game AI. It treats land, hover,
 water, over-cliff, over-cliff-water, and air reachability separately, so mountains split land plans
 without incorrectly blocking units that can cross them.
