@@ -67,6 +67,21 @@ These objective kinds and scores are advisory inputs. They do not issue orders o
 and later economy/task-force planners may override them based on available builders, matchup, and
 team strategy. The assessment deliberately uses the complete map and does not simulate fog.
 
+## Experimental Strategic AI mod
+
+The optional official `strategic_ai` mod is the first real consumer of this API. On the first update
+of each otherwise-unclaimed native AI team, it assigns a per-team controller and returns
+`REPLACE_NATIVE`. Its current deterministic loop can order an idle builder onto an unclaimed
+resource pool, construct an available low-cost combat factory when the team has none, keep short
+factory queues supplied, group idle non-builder combat units by movement domain, and attack-move
+toward lock-down resources, the primary front, or a reachable enemy position.
+
+This is an integration baseline, not the finished tactical AI. It does not yet understand damage
+types, target-domain restrictions, tower/artillery counters, retreat thresholds, production
+budgets, or allied player specialization. Because it changes synchronized simulation decisions,
+its multiplayer mode is `required`. During development it can be left installed but disabled with
+`-Drusted.fabric.strategicAi.enabled=false`.
+
 ## Tactical model to build next
 
 The first controller should organize units into task forces rather than permanent map lanes. The
@@ -96,10 +111,10 @@ boundary on which a dedicated AI mod can implement them.
 
 ## Planned follow-up layers
 
-- Unit capability/role resolvers for built-in and Java/INI units.
+- Role and weapon-profile resolvers layered over the available unit/type capability snapshots.
 - Capability-aware threat ranges and damage pressure layered over the current presence grid.
 - Task-force ownership, staging, retreat, reinforcement, and target reservations.
-- Economy/build planning with extractor, factory, defense, and tech budgets.
+- Economy/build budgets for defense, technology, unit composition, and reserve credits.
 - Air-control assessment and counter-composition planning.
 - Deterministic strategic, operational, and tactical cadence helpers.
 - Debug snapshots suitable for a profiler-style in-game AI page.

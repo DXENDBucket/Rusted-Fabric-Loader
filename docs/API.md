@@ -1427,6 +1427,13 @@ large blockers, build restrictions, passability, connected regions, and a land c
 particular, land reachability and land fronts do not cross disconnected mountain regions; hover,
 over-cliff, water, and air reachability remain separately queryable.
 
+`AiUnitCapabilities.capture(unit)` describes the current unit's orderability, idle state, builder,
+harvester, movement, and combat capabilities. `AiUnitTypeCapabilities.capture(type)` provides the
+same production-planning information for a unit type without registering its temporary prototype
+in the world. Its cache is cleared on map lifecycle changes. The optional official `strategic_ai`
+mod is a deterministic first consumer of these APIs; it is experimental and is not installed by
+default.
+
 ## Unit and team development API
 
 For ordinary desktop Fabric Jar mods, `Units`, `UnitView`, `Teams`, and `TeamView` are the preferred

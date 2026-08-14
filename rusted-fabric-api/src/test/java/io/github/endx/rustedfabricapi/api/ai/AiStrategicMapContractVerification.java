@@ -16,6 +16,9 @@ public final class AiStrategicMapContractVerification {
     }
 
     public static void verify() {
+        require(AiMovementDomain.fromName("overCliff") == AiMovementDomain.OVER_CLIFF
+                        && AiMovementDomain.fromName("naval") == AiMovementDomain.LAND,
+                "AI movement-domain parsing changed");
         Unit.allUnits.clear();
         AiTeam blue = new AiTeam(41);
         blue.playerName = "Blue AI";

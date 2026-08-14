@@ -10,7 +10,6 @@ import java.util.EnumSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -81,7 +80,7 @@ public final class AiStrategicMaps {
             else if (relation == AiTeamRelation.ALLY) allyCount[originIndex]++;
             else enemyCount[originIndex]++;
             float weight = influenceWeight(unit);
-            AiMovementDomain domain = movementDomain(unit);
+            AiMovementDomain domain = AiMovementDomain.of(unit);
             for (int dy = -INFLUENCE_RADIUS_CELLS; dy <= INFLUENCE_RADIUS_CELLS; dy++) {
                 for (int dx = -INFLUENCE_RADIUS_CELLS; dx <= INFLUENCE_RADIUS_CELLS; dx++) {
                     int column = origin.column() + dx;
@@ -337,19 +336,6 @@ public final class AiStrategicMaps {
         float weight = (float) Math.sqrt(durability) * (0.25F + health * 0.75F);
         if (unit.building()) weight *= 0.65F;
         return weight;
-    }
-
-    private static AiMovementDomain movementDomain(UnitView unit) {
-        if (unit.flying()) return AiMovementDomain.AIR;
-        String movement = unit.movementType().toLowerCase(Locale.ROOT);
-        switch (movement) {
-            case "water": return AiMovementDomain.WATER;
-            case "hover": return AiMovementDomain.HOVER;
-            case "overcliff": return AiMovementDomain.OVER_CLIFF;
-            case "overcliffwater": return AiMovementDomain.OVER_CLIFF_WATER;
-            case "air": return AiMovementDomain.AIR;
-            default: return AiMovementDomain.LAND;
-        }
     }
 
     private static float distance(WorldPoint first, WorldPoint second) {

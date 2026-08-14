@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "strategic_ai",
+  "version": "${version}",
+  "name": "Strategic AI",
+  "description": "Experimental terrain-aware whole-team AI replacement for Rusted Fabric.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.endx.strategicai.StrategicAiMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "rusted_fabric_api": ">=0.3.16"
+  },
+  "custom": {
+    "rusted_fabric:multiplayer": {
+      "mode": "required",
+      "protocol": "strategic_ai_v1",
+      "syncHash": "aa2d96ade6876b7577f7c6b9e35f1f0b4be935bba7c700eb7271583a0428c644"
+    }
+  }
+}

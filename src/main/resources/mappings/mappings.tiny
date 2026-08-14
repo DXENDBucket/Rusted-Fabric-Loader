@@ -2445,6 +2445,7 @@ c	com/corrodinggames/rts/game/units/am	rw/unit/Unit	rustedwarfare/unit/Unit
 	m	()V	bC	method_am_refreshActiveResourceDelta	refreshActiveResourceDelta
 	m	()Lcom/corrodinggames/rts/gameFramework/utility/o;	bF	method_Unit_getAllUnitsScratchList	getAllUnitsScratchList
 	m	()Z	bI	method_am_isBuilding	isBuilding
+	m	()Z	l	method_Unit_canAttack	canAttack
 	m	()I	bY	method_Unit_getTransportBarUsedSlots	getTransportBarUsedSlots
 	m	()I	bZ	method_Unit_getTransportBarMaxSlots	getTransportBarMaxSlots
 	m	()V	bt	method_am_postDeathCleanup	postDeathCleanup
@@ -2787,7 +2788,12 @@ c	com/corrodinggames/rts/game/units/as	rw/unit/UnitType	rustedwarfare/unit/UnitT
 	m	()I	g	method_getTechLevel	getTechLevel
 	m	()V	h	method_resetActionListsByTechLevel	resetActionListsByTechLevel
 	m	()Ljava/lang/String;	i	method_UnitType_getInternalName	getInternalName
+	m	()Z	j	method_UnitType_isBuilding	isBuilding
+	m	()Z	l	method_UnitType_isBuilder	isBuilder
+	m	()Z	m	method_UnitType_useAsBuilder	useAsBuilder
+	m	()Z	n	method_UnitType_useAsHarvester	useAsHarvester
 	m	()Lcom/corrodinggames/rts/game/units/ao;	o	method_as_o_getMovementType	getMovementType
+	m	()Z	p	method_UnitType_isPlaceOnlyOnResourcePool	isPlaceOnlyOnResourcePool
 	m	()Lcom/corrodinggames/rts/game/units/custom/d/b;	u	method_getBuildPrice	getBuildPrice
 c	com/corrodinggames/rts/game/units/at	rw/unit/action/UnitActionList	rustedwarfare/unit/action/UnitActionList
 	f	Ljava/util/ArrayList;	a	field_actions	actions
@@ -8120,6 +8126,9 @@ c	com/corrodinggames/rts/game/units/y	rw/unit/OrderableUnit	rustedwarfare/unit/O
 	f	F	s	field_y_repathDelayTimer	repathDelayTimer
 	f	Z	u	field_y_u_activePathTruncated	activePathTruncated
 	f	I	v	field_y_v_activePathPointCountSnapshot	activePathPointCountSnapshot
+	m	()Z	I	method_OrderableUnit_canMove	canMove
+	m	()F	m	method_OrderableUnit_getMaxAttackRange	getMaxAttackRange
+	m	()F	z	method_OrderableUnit_getMoveSpeed	getMoveSpeed
 	m	(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;	D	method_OrderableUnit_getTurretMuzzlePoint3D	getTurretMuzzlePoint3D
 	m	(I)Landroid/graphics/PointF;	E	method_OrderableUnit_getTurretMuzzlePoint	getTurretMuzzlePoint
 	m	(I)Lcom/corrodinggames/rts/gameFramework/utility/ai;	F	method_OrderableUnit_getTurretBasePoint3D	getTurretBasePoint3D
