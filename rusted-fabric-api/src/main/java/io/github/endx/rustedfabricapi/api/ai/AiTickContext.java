@@ -11,6 +11,7 @@ public final class AiTickContext {
     private final float delta;
     private AiWorldSnapshot world;
     private AiOrders orders;
+    private AiStrategicMapSnapshot strategicMap;
 
     private AiTickContext(AiTeam aiTeam, float delta) {
         if (aiTeam == null) throw new IllegalArgumentException("aiTeam must not be null");
@@ -41,5 +42,15 @@ public final class AiTickContext {
     public AiOrders orders() {
         if (orders == null) orders = new AiOrders(aiTeam);
         return orders;
+    }
+
+    /**
+     * Lazily analyzes terrain, player distribution, influence, front lines, and resource sites.
+     * Controllers should retain this snapshot for their own strategic decision interval rather
+     * than rebuilding it for every tactical tick.
+     */
+    public AiStrategicMapSnapshot strategicMap() {
+        if (strategicMap == null) strategicMap = AiStrategicMaps.capture(this);
+        return strategicMap;
     }
 }

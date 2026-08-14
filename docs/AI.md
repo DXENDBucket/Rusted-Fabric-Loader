@@ -16,12 +16,18 @@ Assignments are exclusive so two mods cannot silently issue competing plans for 
 `allies`, `enemies`, and `neutral` groups. Its `UnitView` objects remain live. `context.orders()`
 uses the normal synchronized command path and rejects units not owned by that AI team.
 
+`AiTickContext.strategicMap()` adds the first situation-assessment layer. The static terrain half is
+cached for the current map; the dynamic team, influence, front, and resource summaries are captured
+once per tick context. Controllers normally consume this at their slower strategic cadence rather
+than on every native AI update.
+
 ```java
 AiControllers.Handle handle = AiControllers.assign(
         aiTeam,
         Identifier.of("example_ai", "main"),
         context -> {
             AiWorldSnapshot world = context.world();
+            AiStrategicMapSnapshot situation = context.strategicMap();
             // Strategic/operational/tactical planners run at their own deterministic cadences.
             // Issue grouped orders through context.orders().
             return AiTickDecision.REPLACE_NATIVE;
@@ -31,6 +37,35 @@ AiControllers.Handle handle = AiControllers.assign(
 Controllers execute on the simulation thread. Multiplayer peers must run the same controller code
 and make identical decisions. Do not use wall-clock time, unordered collection iteration, local UI
 state, or random sources that are not synchronized by the game.
+
+## Strategic map and player distribution
+
+`AiTerrainMapSnapshot` divides the map into deterministic 12-by-12-tile strategic cells while
+retaining the exact coordinates of resource pools. Each `AiTerrainCell` reports water, lava,
+explicit cliff/mountain, large cliff-or-tree blocker, and building-blocked fractions. It also uses
+the game's native path-cost maps to expose passable fractions and connected regions for land,
+hover, water, over-cliff, over-cliff-water, and air movement. `landChokeScore()` marks constrained
+land corridors as a planning hint.
+
+Mountains therefore affect decisions structurally rather than cosmetically. Land influence cannot
+cross disconnected mountain regions, a mine across such a region is not reported as land-reachable,
+and a land front is only formed where the opposing land regions can actually meet. Hover,
+over-cliff, naval, and air conclusions remain independent. Resource objectives expose all reachable
+movement domains through `reachableDomains()` and `reachable(domain)`.
+
+The dynamic half provides:
+
+- `AiTeamPresence`: each player's unit/building counts, health, movement mix, centroid, building
+  centroid, densest-cluster anchor, and spread radius.
+- `AiInfluenceCell`: exact local unit counts, coarse friendly/enemy influence, control state,
+  frontline score, and the movement domain that formed that front.
+- `AiStrategicResource`: current occupant and ownership, nearby pressure, per-domain reachability,
+  and a normalized capture, lock-down, deny, defend, or support suggestion.
+- `primaryFront()`: the current strongest meeting point, suitable as a first staging hint.
+
+These objective kinds and scores are advisory inputs. They do not issue orders or reserve a mine,
+and later economy/task-force planners may override them based on available builders, matchup, and
+team strategy. The assessment deliberately uses the complete map and does not simulate fog.
 
 ## Tactical model to build next
 
@@ -62,7 +97,7 @@ boundary on which a dedicated AI mod can implement them.
 ## Planned follow-up layers
 
 - Unit capability/role resolvers for built-in and Java/INI units.
-- Threat and influence grids computed from complete world state.
+- Capability-aware threat ranges and damage pressure layered over the current presence grid.
 - Task-force ownership, staging, retreat, reinforcement, and target reservations.
 - Economy/build planning with extractor, factory, defense, and tech budgets.
 - Air-control assessment and counter-composition planning.

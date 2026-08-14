@@ -8,6 +8,8 @@ public class Team {
 
     public final int id;
     public final int teamId;
+    public int allianceGroup;
+    public String playerName;
     public double credits;
     public boolean spectator;
     public int totalUnits;

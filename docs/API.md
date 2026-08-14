@@ -1420,6 +1420,13 @@ synchronized command path, while rejecting units not owned by the controlled tea
 [`AI.md`](AI.md) for the controller contract and tactical roadmap. Mods supporting older API
 builds can check `RustedFabricCapabilities.AI_CONTROL`.
 
+`context.strategicMap()` builds a cached-terrain/dynamic-world assessment with player distribution,
+resource ownership, influence cells, movement-domain frontlines, a primary front, and advisory
+capture/lock-down/deny/defend objectives. Terrain cells retain cliffs/mountains, water, lava,
+large blockers, build restrictions, passability, connected regions, and a land choke score. In
+particular, land reachability and land fronts do not cross disconnected mountain regions; hover,
+over-cliff, water, and air reachability remain separately queryable.
+
 ## Unit and team development API
 
 For ordinary desktop Fabric Jar mods, `Units`, `UnitView`, `Teams`, and `TeamView` are the preferred

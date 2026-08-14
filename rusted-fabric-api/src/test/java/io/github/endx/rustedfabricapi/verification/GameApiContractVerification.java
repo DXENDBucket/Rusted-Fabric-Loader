@@ -19,6 +19,8 @@ public final class GameApiContractVerification {
     public static void main(String[] args) {
         Unit.allUnits.clear();
         Team blue = new Team(1);
+        blue.playerName = "Blue";
+        blue.allianceGroup = 7;
         Team red = new Team(2);
         blue.credits = 1200.5D;
         blue.totalUnits = 2;
@@ -59,6 +61,8 @@ public final class GameApiContractVerification {
 
         TeamView blueView = Teams.byId(1);
         require(blueView != null && blueView.credits() == 1200.5D
+                        && blueView.id() == 1 && blueView.allianceGroup() == 7
+                        && blueView.playerName().orElseThrow().equals("Blue")
                         && blueView.totalUnitCountIncludingQueued() == 2
                         && blueView.enemyOf(Teams.view(red)),
                 "team view is incorrect");

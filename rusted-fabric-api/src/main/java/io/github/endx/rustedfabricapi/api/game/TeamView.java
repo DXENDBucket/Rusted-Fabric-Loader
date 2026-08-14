@@ -2,6 +2,8 @@ package io.github.endx.rustedfabricapi.api.game;
 
 import io.github.endx.rustedfabricapi.api.util.RustedReflection;
 
+import java.util.Optional;
+
 /** A live, namespace-neutral view of a Rusted Warfare team. */
 public final class TeamView {
     private final Object team;
@@ -13,6 +15,34 @@ public final class TeamView {
     /** Returns the underlying mapped team for an API not covered by this view yet. */
     public Object raw() {
         return team;
+    }
+
+    public int id() {
+        Object value = RustedReflection.getFieldValue(team, new String[]{"teamId", "k"});
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
+    public int allianceGroup() {
+        Object value = RustedReflection.getFieldValue(team,
+                new String[]{"allianceGroup", "r"});
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
+    public Optional<String> playerName() {
+        Object value = RustedReflection.getFieldValue(team, new String[]{"playerName", "v"});
+        return value instanceof String && !((String) value).isEmpty()
+                ? Optional.of((String) value) : Optional.empty();
+    }
+
+    public boolean aiControlled() {
+        Class<?> type = team.getClass();
+        while (type != null) {
+            String name = type.getName();
+            if ("rustedwarfare.ai.AiTeam".equals(name)
+                    || "com.corrodinggames.rts.game.a.a".equals(name)) return true;
+            type = type.getSuperclass();
+        }
+        return false;
     }
 
     public double credits() {
