@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.game.Units;
 import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import rustedwarfare.game.Projectile;
+import rustedwarfare.custom.CustomTagList;
 import rustedwarfare.unit.Unit;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public final class UnitDamageResult {
     private final Unit unit;
     private final Unit attacker;
     private final Projectile projectile;
+    private final CustomTagList damageTags;
     private final float requestedDamage;
     private final float nativeRemainingDamage;
     private final float hpBefore;
@@ -26,9 +28,20 @@ public final class UnitDamageResult {
                             float requestedDamage, float nativeRemainingDamage,
                             float hpBefore, float hpAfter,
                             float shieldBefore, float shieldAfter) {
+        this(unit, attacker, projectile, projectile != null ? projectile.tags : null,
+                requestedDamage, nativeRemainingDamage, hpBefore, hpAfter,
+                shieldBefore, shieldAfter);
+    }
+
+    public UnitDamageResult(Unit unit, Unit attacker, Projectile projectile,
+                            CustomTagList damageTags,
+                            float requestedDamage, float nativeRemainingDamage,
+                            float hpBefore, float hpAfter,
+                            float shieldBefore, float shieldAfter) {
         this.unit = Objects.requireNonNull(unit, "unit");
         this.attacker = attacker;
         this.projectile = projectile;
+        this.damageTags = damageTags;
         this.requestedDamage = requestedDamage;
         this.nativeRemainingDamage = nativeRemainingDamage;
         this.hpBefore = hpBefore;
@@ -54,13 +67,12 @@ public final class UnitDamageResult {
     public Optional<Projectile> projectile() { return Optional.ofNullable(projectile); }
     /** Namespace-stable projectile damage tags; empty for direct damage without a projectile. */
     public List<String> damageTags() {
-        return projectile == null ? java.util.Collections.emptyList()
-                : UnitTags.names(projectile.tags);
+        return UnitTags.names(damageTags);
     }
     /** Tests one projectile damage tag without exposing mapped game tag classes to callers. */
     public boolean hasDamageTag(String tagName) {
         Objects.requireNonNull(tagName, "tagName");
-        return projectile != null && UnitTags.contains(projectile.tags, UnitTags.tag(tagName));
+        return UnitTags.contains(damageTags, UnitTags.tag(tagName));
     }
     public float requestedDamage() { return requestedDamage; }
     public float nativeRemainingDamage() { return nativeRemainingDamage; }

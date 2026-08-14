@@ -132,6 +132,7 @@ public final class GameTickScheduler {
     /** Desktop backend bridge called immediately before successful-map-loaded listeners. */
     public static int beginMap() {
         int cancelled = cancelScope(GameTaskScope.MAP);
+        io.github.endx.rustedfabricapi.impl.combat.DeferredDamageRuntime.clear();
         synchronized (LOCK) { lastNativeTick = null; }
         return cancelled;
     }
@@ -282,6 +283,7 @@ public final class GameTickScheduler {
     private static void endSession() {
         cancelScope(GameTaskScope.MAP);
         cancelScope(GameTaskScope.SESSION);
+        io.github.endx.rustedfabricapi.impl.combat.DeferredDamageRuntime.clear();
         synchronized (LOCK) { lastNativeTick = null; }
     }
 

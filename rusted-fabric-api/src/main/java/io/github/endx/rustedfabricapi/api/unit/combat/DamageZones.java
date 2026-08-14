@@ -7,6 +7,8 @@ import io.github.endx.rustedfabricapi.api.scheduler.GameTaskScope;
 import io.github.endx.rustedfabricapi.api.scheduler.GameTickScheduler;
 import io.github.endx.rustedfabricapi.api.scheduler.ScheduledGameTask;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
+import io.github.endx.rustedfabricapi.impl.combat.DeferredDamageRuntime;
+import rustedwarfare.unit.Unit;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -118,7 +120,10 @@ public final class DamageZones {
                 float dy = target.y() - y;
                 float amount = centerDamage * multiplier(
                         falloff, (float) Math.sqrt(dx * dx + dy * dy), radius);
-                if (amount > 0.0F) TaggedDamage.apply(target, source, amount, tags);
+                if (amount > 0.0F) {
+                    DeferredDamageRuntime.enqueue((Unit) target.raw(), (Unit) source.raw(),
+                            amount, tags);
+                }
             }
         }
     }

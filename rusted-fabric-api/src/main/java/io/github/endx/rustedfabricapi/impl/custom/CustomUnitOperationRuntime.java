@@ -4,6 +4,8 @@ import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitOperationEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.MutableCustomUnitEventContext;
+import io.github.endx.rustedfabricapi.impl.combat.TaggedDamageRuntime;
+import rustedwarfare.custom.CustomTagList;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.event.CustomUnitEventType;
 import rustedwarfare.game.Projectile;
@@ -36,9 +38,11 @@ public final class CustomUnitOperationRuntime {
                 .putNumber(DamageEventData.RAW_DAMAGE, amount)
                 .putNumber(DamageEventData.HP_BEFORE, unit.hp)
                 .putNumber(DamageEventData.SHIELD_BEFORE, unit.shield);
+        CustomTagList tags = projectile != null ? projectile.tags
+                : TaggedDamageRuntime.tags(unit);
         MutableCustomUnitEventContext context = new MutableCustomUnitEventContext(
                 unit, CustomUnitEventType.TOOK_DAMAGE, attacker,
-                projectile != null ? projectile.tags : null,
+                tags,
                 data, DamageEventData.DAMAGE, amount);
         CustomUnitOperationEvents.BEFORE_EVENT.invoker().beforeEvent(context);
         return context;

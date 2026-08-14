@@ -16,6 +16,12 @@ public abstract class UnitDamageRuntimeNamedMixin {
     @Unique private rustedwarfare.game.Projectile rustedfabricapi$damageProjectile;
     @Unique private float rustedfabricapi$requestedDamage;
 
+    @Inject(method = "update(F)V", at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$applyDeferredDamage(float deltaFrames, CallbackInfo ci) {
+        io.github.endx.rustedfabricapi.impl.combat.DeferredDamageRuntime.drain(
+                (rustedwarfare.unit.Unit) (Object) this);
+    }
+
     @Inject(method = "applyDamage(Lrustedwarfare/unit/Unit;FLrustedwarfare/game/Projectile;)F", at = @At("HEAD"), cancellable = true, require = 1)
     private void rustedfabricapi$beforeUnitApplyDamage(@Coerce Object attacker, float amount, @Coerce Object projectile, CallbackInfoReturnable<Float> cir) {
         io.github.endx.rustedfabricapi.impl.custom.DamageEventDataRuntime.beginNativeDamage(

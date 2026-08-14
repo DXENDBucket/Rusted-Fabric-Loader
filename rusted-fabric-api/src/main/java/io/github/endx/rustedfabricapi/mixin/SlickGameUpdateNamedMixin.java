@@ -19,11 +19,6 @@ public abstract class SlickGameUpdateNamedMixin {
         KeyBindings.pollRegisteredBindings();
         GameEngine engine = GameEngine.getInstance();
         if (engine != null) {
-            // Timed simulation mutations must run before the game's native update. Running them
-            // from this method's RETURN creates effects (notably unit death explosions) after the
-            // effect engine has already updated, so their first operation becomes a render with
-            // partially initialized state.
-            GameTickScheduler.executeUpdateTick(engine.currentTick);
             io.github.endx.rustedfabricapi.api.client.event.ClientTickEvents.START_CLIENT_TICK.invoker()
                     .onStartTick(engine);
         }
@@ -35,6 +30,7 @@ public abstract class SlickGameUpdateNamedMixin {
         GameLifecycleEvents.AFTER_FRAME_UPDATE.invoker().afterFrameUpdate(this, gameContainer, delta);
         GameEngine engine = GameEngine.getInstance();
         if (engine != null) {
+            GameTickScheduler.executeUpdateTick(engine.currentTick);
             io.github.endx.rustedfabricapi.api.client.event.ClientTickEvents.END_CLIENT_TICK.invoker()
                     .onEndTick(engine);
         }

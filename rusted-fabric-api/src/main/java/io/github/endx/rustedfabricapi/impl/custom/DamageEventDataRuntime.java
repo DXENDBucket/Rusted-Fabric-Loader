@@ -4,6 +4,7 @@ import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitEventData;
 import io.github.endx.rustedfabricapi.api.custom.event.CustomUnitTriggerEvents;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult;
+import io.github.endx.rustedfabricapi.impl.combat.TaggedDamageRuntime;
 import rustedwarfare.custom.CustomTagList;
 import rustedwarfare.custom.CustomUnit;
 import rustedwarfare.custom.event.CustomUnitEventType;
@@ -104,8 +105,10 @@ public final class DamageEventDataRuntime {
 
     public static void beginNativeDamage(Unit unit, Unit attacker,
                                          float requestedDamage, Projectile projectile) {
+        CustomTagList tags = projectile != null ? projectile.tags
+                : TaggedDamageRuntime.tags(unit);
         NativeDamageFrame nativeFrame = new NativeDamageFrame(unit, attacker, projectile,
-                requestedDamage, unit.hp, unit.shield);
+                tags, requestedDamage, unit.hp, unit.shield);
         NATIVE_DAMAGE.get().push(nativeFrame);
         CustomDamageFrame customFrame = findCustomFrame(unit);
         if (customFrame != null && customFrame.eventData != null) {
@@ -120,6 +123,7 @@ public final class DamageEventDataRuntime {
     public static UnitDamageResult endNativeDamage(Unit unit, float nativeRemainingDamage) {
         NativeDamageFrame frame = popNativeFrame(unit);
         UnitDamageResult result = new UnitDamageResult(unit, frame.attacker, frame.projectile,
+                frame.tags,
                 frame.requestedDamage, nativeRemainingDamage,
                 frame.hpBefore, unit.hp, frame.shieldBefore, unit.shield);
         CustomDamageFrame customFrame = findCustomFrame(unit);
@@ -194,15 +198,18 @@ public final class DamageEventDataRuntime {
         private final Unit unit;
         private final Unit attacker;
         private final Projectile projectile;
+        private final CustomTagList tags;
         private final float requestedDamage;
         private final float hpBefore;
         private final float shieldBefore;
 
         private NativeDamageFrame(Unit unit, Unit attacker, Projectile projectile,
+                                  CustomTagList tags,
                                   float requestedDamage, float hpBefore, float shieldBefore) {
             this.unit = unit;
             this.attacker = attacker;
             this.projectile = projectile;
+            this.tags = tags;
             this.requestedDamage = requestedDamage;
             this.hpBefore = hpBefore;
             this.shieldBefore = shieldBefore;

@@ -21,6 +21,7 @@ import io.github.endx.rustedfabricapi.api.session.GameSession;
 import io.github.endx.rustedfabricapi.api.session.GameSessionRuntime;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageEvents;
 import io.github.endx.rustedfabricapi.api.unit.event.UnitDamageResult;
+import io.github.endx.rustedfabricapi.api.unit.tag.UnitTags;
 import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.unit.build.event.ProductionModifierContext;
 import io.github.endx.rustedfabricapi.api.custom.event.DamageEventData;
@@ -362,6 +363,13 @@ public final class CoreApiContractVerification {
                 "damage result remaining/lethal semantics are wrong");
         require(!result.hasDamageTag("debuff_corrosion") && result.damageTags().isEmpty(),
                 "projectile-free damage result exposed phantom damage tags");
+        UnitDamageResult taggedDirectResult = new UnitDamageResult(
+                unit, attacker, null, UnitTags.of("dmg_thermal", "debuff_corrosion"),
+                4.0F, 0.0F, 10.0F, 6.0F, 0.0F, 0.0F);
+        require(taggedDirectResult.projectile().isEmpty()
+                        && taggedDirectResult.hasDamageTag("dmg_thermal")
+                        && taggedDirectResult.hasDamageTag("debuff_corrosion"),
+                "direct damage tags incorrectly require a projectile instance");
 
         final int[] resultEvents = {0};
         io.github.endx.rustedfabricapi.api.event.RustedFabricEvent.Registration resultRegistration =
