@@ -1084,7 +1084,7 @@ public class RustedWarfareGameProvider implements GameProvider {
         ctx.put("rusted_fabric_api.mappingProfileId", "rw-pc-1.15-v1.1");
         ctx.put("rusted_fabric_api.platform", isAndroidRuntime() ? "android" : "windows");
         ctx.put("rusted_fabric_api.capabilities", Arrays.asList(
-                "event.engine.init", "event.runtime.ready", "mapping.named",
+                "event.engine.init", "event.runtime.ready", "mapping.named", "ai.control.v1",
                 "event.audio.runtime.v1", "event.build.queue.v1",
                 "event.command.issue.v1", "event.core.stats.v1",
                 "event.custom.asset.v1", "event.custom.unit.load.v1",

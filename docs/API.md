@@ -1405,6 +1405,21 @@ Essentials; Java mods can use it without depending on that mod's INI syntax.
 synchronously; use it from an explosion callback when the projectile must not survive until its next
 update. Normal backend removal events still apply.
 
+## AI control API
+
+`api.ai.AiControllers` provides explicit per-team ownership of the native AI update. Assigning a
+controller affects only that exact `AiTeam`; every unassigned team continues to use Rusted
+Warfare's original AI. A controller returns `PASS` to permit the native update or
+`REPLACE_NATIVE` to cancel it for that tick. Assignment collisions fail loudly instead of letting
+two Java mods silently fight over one team.
+
+`AiTickContext.world()` returns a stable-ID-sorted, all-map snapshot grouped into own, allied,
+enemy, and neutral units. It intentionally ignores fog of war. `context.orders()` issues grouped
+move, attack-move, attack, repair, guard, patrol, reclaim, and build orders through the normal
+synchronized command path, while rejecting units not owned by the controlled team. See
+[`AI.md`](AI.md) for the controller contract and tactical roadmap. Mods supporting older API
+builds can check `RustedFabricCapabilities.AI_CONTROL`.
+
 ## Unit and team development API
 
 For ordinary desktop Fabric Jar mods, `Units`, `UnitView`, `Teams`, and `TeamView` are the preferred

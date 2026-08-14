@@ -2,6 +2,7 @@ package io.github.endx.rustedfabricapi.api;
 
 /** Stable capability keys shared by metadata, runtime contexts, and the API support matrix. */
 public final class RustedFabricCapabilities {
+    public static final String AI_CONTROL = "ai.control.v1";
     public static final String AUDIO_RUNTIME = "event.audio.runtime.v1";
     public static final String BUILD_QUEUE = "event.build.queue.v1";
     public static final String BUILD_PRODUCTION_MODIFIER = "event.build.production_modifier.v1";

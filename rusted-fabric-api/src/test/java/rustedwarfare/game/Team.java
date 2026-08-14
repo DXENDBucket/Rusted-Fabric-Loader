@@ -7,6 +7,7 @@ public class Team {
     private static final Map<Integer, Team> BY_ID = new HashMap<Integer, Team>();
 
     public final int id;
+    public final int teamId;
     public double credits;
     public boolean spectator;
     public int totalUnits;
@@ -17,6 +18,7 @@ public class Team {
 
     public Team(int id) {
         this.id = id;
+        this.teamId = id;
         BY_ID.put(Integer.valueOf(id), this);
     }
 

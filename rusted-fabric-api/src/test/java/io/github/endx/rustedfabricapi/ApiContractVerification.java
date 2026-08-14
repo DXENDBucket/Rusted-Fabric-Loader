@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.RustedFabricAPIKeys;
 import io.github.endx.rustedfabricapi.api.RustedFabricCapabilities;
 import io.github.endx.rustedfabricapi.api.RustedFabricRuntime;
 import io.github.endx.rustedfabricapi.api.event.RustedFabricEvent;
+import io.github.endx.rustedfabricapi.api.ai.AiControlContractVerification;
 import io.github.endx.rustedfabricapi.api.event.EventPhaseContractVerification;
 import io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot;
 import io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot;
@@ -30,6 +31,7 @@ public final class ApiContractVerification {
     }
 
     public static void main(String[] args) {
+        AiControlContractVerification.verify();
         ServiceRegistryContractVerification.verify();
         LifecycleScopeContractVerification.verify();
         EventPhaseContractVerification.verify();

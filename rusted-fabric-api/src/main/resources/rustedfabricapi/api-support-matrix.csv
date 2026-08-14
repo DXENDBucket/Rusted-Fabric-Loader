@@ -1,4 +1,5 @@
 capability,apiClass
+ai.control.v1,ai.AiControllers
 custom.auto_trigger_cooldown.v1,custom.PerActionAutoTriggerCooldowns
 custom.extended_tech_level.v1,unit.Units
 client.screen.v1,client.screen.ClientScreens

@@ -183,6 +183,7 @@ tasks.register('verifyOfficialApiNamespace') {
 
     doLast {
         def inspectedPrefixes = [
+                'io/github/endx/rustedfabricapi/api/ai/',
                 'io/github/endx/rustedfabricapi/api/asset/',
                 'io/github/endx/rustedfabricapi/api/audio/',
                 'io/github/endx/rustedfabricapi/api/chat/',

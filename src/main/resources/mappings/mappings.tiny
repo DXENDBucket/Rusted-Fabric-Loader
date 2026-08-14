@@ -787,6 +787,7 @@ c	com/corrodinggames/rts/game/a/a	rw/ai/AiTeam	rustedwarfare/ai/AiTeam
 	f	Landroid/graphics/PointF;	bo	field_AiTeam_scratchPoint	scratchPoint
 	f	Landroid/graphics/Paint;	bp	field_AiTeam_debugPaint	debugPaint
 	f	Ljava/util/ArrayList;	bq	field_AiTeam_unitMixes	unitMixes
+	m	(F)V	a	method_AiTeam_updateAiTeam	updateAiTeam
 	m	(FF)Landroid/graphics/PointF;	a	method_AiTeam_findNearbyClearPoint	findNearbyClearPoint
 	m	(Lcom/corrodinggames/rts/game/a/a/a;)V	a	method_AiTeam_addAiObjective	addAiObjective
 	m	(Lcom/corrodinggames/rts/game/a/d;Lcom/corrodinggames/rts/game/a/b;)I	a	method_AiTeam_countUnitsForMix	countUnitsForMix
