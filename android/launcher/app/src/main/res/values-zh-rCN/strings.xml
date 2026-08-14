@@ -14,6 +14,13 @@
     <string name="jvm_show_advanced">高级选项与诊断</string>
     <string name="jvm_hide_advanced">收起高级选项</string>
     <string name="jvm_no_diagnostics">尚未进行诊断测试。</string>
+    <string name="diagnostic_report_title">问题报告</string>
+    <string name="diagnostic_report_description">导出日志、设备与内存信息、已启用内容清单及进程/线程快照。ZIP 不包含游戏或模组文件，但日志可能含文件路径、服务器地址或模组输出的文本，分享前请自行检查。</string>
+    <string name="diagnostic_report_export">导出诊断报告</string>
+    <string name="diagnostic_report_exporting">正在收集诊断报告…</string>
+    <string name="diagnostic_report_complete_live">诊断报告已保存（%1$d 个文件，已捕获仍在运行的游戏进程）。</string>
+    <string name="diagnostic_report_complete_no_process">诊断报告已保存（%1$d 个文件）。游戏进程已不在运行。</string>
+    <string name="diagnostic_report_failed">无法导出诊断报告：%1$s</string>
     <string name="jvm_open_source_licenses">许可证与安全声明</string>
     <string name="jvm_license_title">Rusted Fabric 许可与安全</string>
     <string name="jvm_license_notice">版权所有 © 2026 Rusted Fabric Loader 贡献者。\n\n本 Android 启动器依照 GNU GPL 第 3 版发布，且不提供任何担保。APK 中不包含《铁锈战争》游戏文件。\n\n第三方 Java 模组是以本应用权限运行的可执行代码。Rusted Fabric 不会审核或认可未知第三方模组。只安装你信任的代码，并保留备份。</string>

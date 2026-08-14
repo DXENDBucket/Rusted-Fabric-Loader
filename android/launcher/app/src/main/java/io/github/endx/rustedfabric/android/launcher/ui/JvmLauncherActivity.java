@@ -39,6 +39,7 @@ import io.github.endx.rustedfabric.android.jvm.JvmRuntimeProbe;
 import io.github.endx.rustedfabric.android.jvm.ManagedContentLibrary;
 import io.github.endx.rustedfabric.android.launcher.R;
 import io.github.endx.rustedfabric.android.launcher.jvm.DesktopGameImportService;
+import io.github.endx.rustedfabric.android.launcher.jvm.DiagnosticReportExporter;
 import io.github.endx.rustedfabric.android.launcher.jvm.JvmHostService;
 import io.github.endx.rustedfabric.android.launcher.jvm.JvmRuntimeImportService;
 import io.github.endx.rustedfabric.android.launcher.jvm.ManagedContentImportService;
@@ -57,6 +58,7 @@ public final class JvmLauncherActivity extends Activity {
     private static final int REQUEST_MAP = 2005;
     private static final int REQUEST_JAVA_MOD = 2006;
     private static final int REQUEST_SHARED_STORAGE = 2007;
+    private static final int REQUEST_DIAGNOSTIC_REPORT = 2008;
     private static final String STATE_PAGE = "selected_page";
     private static final int PAGE_LAUNCH = 0;
     private static final int PAGE_CONTENT = 1;
@@ -78,6 +80,7 @@ public final class JvmLauncherActivity extends Activity {
     private Button launchButton;
     private Button advancedButton;
     private Button licenseButton;
+    private Button diagnosticReportButton;
     private Button iniModsButton;
     private Button mapsButton;
     private Button javaModsButton;
@@ -157,6 +160,7 @@ public final class JvmLauncherActivity extends Activity {
         launchButton = findViewById(R.id.launch_button);
         advancedButton = findViewById(R.id.advanced_button);
         licenseButton = findViewById(R.id.license_button);
+        diagnosticReportButton = findViewById(R.id.export_diagnostic_report_button);
         iniModsButton = findViewById(R.id.manage_ini_mods_button);
         mapsButton = findViewById(R.id.manage_maps_button);
         javaModsButton = findViewById(R.id.manage_java_mods_button);
@@ -185,6 +189,7 @@ public final class JvmLauncherActivity extends Activity {
                 startActivity(new Intent(this, JvmRenderActivity.class)));
         advancedButton.setOnClickListener(ignored -> showAdvanced(!advancedVisible));
         licenseButton.setOnClickListener(ignored -> showOpenSourceNotice());
+        diagnosticReportButton.setOnClickListener(ignored -> chooseDiagnosticReportDestination());
         launchButton.setOnClickListener(ignored -> launchGame());
         iniModsButton.setOnClickListener(ignored ->
                 showContentManager(ManagedContentLibrary.Kind.INI_MOD));
@@ -295,6 +300,10 @@ public final class JvmLauncherActivity extends Activity {
             return;
         }
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (requestCode == REQUEST_DIAGNOSTIC_REPORT) {
+            exportDiagnosticReport(data.getData());
+            return;
+        }
         if (requestCode != REQUEST_GAME_ARCHIVE && requestCode != REQUEST_GAME_TREE
                 && requestCode != REQUEST_JAVA_RUNTIME && requestCode != REQUEST_INI_MOD
                 && requestCode != REQUEST_MAP && requestCode != REQUEST_JAVA_MOD) return;
@@ -403,6 +412,40 @@ public final class JvmLauncherActivity extends Activity {
         picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
                 | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         startActivityForResult(picker, REQUEST_GAME_ARCHIVE);
+    }
+
+    private void chooseDiagnosticReportDestination() {
+        Intent picker = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        picker.addCategory(Intent.CATEGORY_OPENABLE);
+        picker.setType("application/zip");
+        picker.putExtra(Intent.EXTRA_TITLE, DiagnosticReportExporter.suggestedFileName());
+        picker.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        startActivityForResult(picker, REQUEST_DIAGNOSTIC_REPORT);
+    }
+
+    private void exportDiagnosticReport(Uri destination) {
+        setBusy(true, getString(R.string.diagnostic_report_exporting));
+        worker.execute(() -> {
+            try {
+                DiagnosticReportExporter.Result result =
+                        DiagnosticReportExporter.export(getApplicationContext(), destination);
+                runOnUiThread(() -> {
+                    String message = getString(result.gameProcessCaptured()
+                                    ? R.string.diagnostic_report_complete_live
+                                    : R.string.diagnostic_report_complete_no_process,
+                            result.entries());
+                    setBusy(false, message);
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                });
+            } catch (Throwable failure) {
+                runOnUiThread(() -> {
+                    String message = getString(R.string.diagnostic_report_failed,
+                            safeMessage(failure));
+                    setBusy(false, message);
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
     }
 
     private void chooseDesktopDirectory() {
@@ -815,6 +858,7 @@ public final class JvmLauncherActivity extends Activity {
         runtimeButton.setEnabled(!busy);
         rendererButton.setEnabled(!busy);
         advancedButton.setEnabled(!busy);
+        diagnosticReportButton.setEnabled(!busy);
         smokeButton.setEnabled(!busy && smokeReady);
         launchButton.setEnabled(!busy && gameProbeReady);
         setContentButtonsEnabled(!busy && gameImported);
