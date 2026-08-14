@@ -5,6 +5,7 @@ import io.github.endx.rustedfabricapi.api.client.render.event.ProjectileRenderEv
 import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisions;
 import io.github.endx.rustedfabricapi.impl.projectile.ProjectileMotionRuntime;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,6 +15,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.game.Projectile", remap = false)
 public abstract class ProjectileLifecycleNamedMixin {
+    @Unique
+    private io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot
+            rustedfabricapi$preExplosionSnapshot;
+
     @Redirect(
             method = "update(F)V",
             at = @At(value = "FIELD",
@@ -156,6 +161,7 @@ public abstract class ProjectileLifecycleNamedMixin {
 
     @Inject(method = "explodeAndRemove()V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeProjectileExplosion(CallbackInfo ci) {
+        rustedfabricapi$preExplosionSnapshot = Projectiles.snapshot(this);
         io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(this);
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_IMPACT.invoker()
                 .onImpact((rustedwarfare.game.Projectile) (Object) this, impact);
@@ -165,6 +171,10 @@ public abstract class ProjectileLifecycleNamedMixin {
 
     @Inject(method = "explodeAndRemove()V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileExplosion(CallbackInfo ci) {
+        io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot projectileSnapshot =
+                rustedfabricapi$preExplosionSnapshot;
+        rustedfabricapi$preExplosionSnapshot = null;
+        if (projectileSnapshot == null) projectileSnapshot = Projectiles.snapshot(this);
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_EXPLOSION.invoker()
                 .onExplosion((rustedwarfare.game.Projectile) (Object) this);
         io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot impact = Projectiles.impactSnapshot(this);
@@ -172,7 +182,7 @@ public abstract class ProjectileLifecycleNamedMixin {
                 .onImpact((rustedwarfare.game.Projectile) (Object) this, impact);
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileSnapshotEvents
                 .AFTER_IMPACT.invoker().afterImpact(
-                        Projectiles.snapshot(this), impact);
+                        projectileSnapshot, impact);
     }
 
     @Inject(method = "requestRemoval()V", at = @At("HEAD"), require = 1)
