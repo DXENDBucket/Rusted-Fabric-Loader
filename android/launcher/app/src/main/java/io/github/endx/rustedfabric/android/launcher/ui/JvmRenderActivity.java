@@ -56,7 +56,10 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private static final long TWO_FINGER_TAP_MILLIS = 500L;
     private static final long SURFACE_SETTLE_DELAY_MILLIS = 400L;
     private static final float TOUCH_SCROLL_PIXELS_PER_STEP = 32.0f;
-    private final AtomicBoolean running = new AtomicBoolean();
+    // HotSpot permits only one embedded VM in this dedicated Android process. Keep the guard
+    // process-wide so Activity recreation (rotation, task restoration, or Surface recovery) does
+    // not attempt a second JNI_CreateJavaVM while the game's renderer/audio threads still live.
+    private static final AtomicBoolean RUNNING = new AtomicBoolean();
     private final Handler surfaceHandler = new Handler(Looper.getMainLooper());
     private final Runnable startAfterSurfaceSettles = this::startRenderer;
     private TextView status;
@@ -404,7 +407,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
             status.setText(getString(R.string.jvm_renderer_failed, safeMessage(failure)));
             return;
         }
-        if (running.get()) return;
+        if (RUNNING.get()) return;
         // Full-screen and display-cutout insets can resize the Surface shortly after its first
         // callback. Launching the JVM from that transient size leaves libRocket laid out against
         // stale dimensions until the settings screen forces a reflow. Debounce callbacks and
@@ -416,7 +419,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     }
 
     private void startRenderer() {
-        if (!running.compareAndSet(false, true)) return;
+        if (!RUNNING.compareAndSet(false, true)) return;
         int width = settledSurfaceWidth;
         int height = settledSurfaceHeight;
         Thread renderer = new Thread(() -> {
@@ -472,7 +475,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         runOnUiThread(() -> {
             status.setText(R.string.jvm_game_probe_starting);
             status.postDelayed(() -> {
-                if (running.get()) status.setVisibility(android.view.View.GONE);
+                if (RUNNING.get()) status.setVisibility(android.view.View.GONE);
             }, 5000);
         });
         NativeJvmHost.Result launch = NativeJvmHost.launch(plan);

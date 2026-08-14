@@ -1,7 +1,9 @@
 package io.github.endx.rustedfabricapi.mixin;
 
 import io.github.endx.rustedfabricapi.api.event.RenderImageLifecycleEvents;
+import io.github.endx.rustedfabricapi.internal.client.AndroidShaderCompatibility;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -9,6 +11,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "rustedwarfare.client.render.SlickBitmapOrTexture", remap = false)
 public abstract class SlickBitmapOrTextureLifecycleNamedMixin {
+    @Shadow boolean pixelBufferDiscarded;
+
+    @Shadow public abstract void recreateImageDataFromTexture();
+
+    @Inject(method = "readPixelsFromBitmap()V", at = @At("HEAD"), require = 1)
+    private void rustedfabricapi$rehydrateDiscardedAndroidPixels(CallbackInfo ci) {
+        if (!pixelBufferDiscarded
+                || !AndroidShaderCompatibility.shouldRehydrateDiscardedPixels()) return;
+
+        // readPixelsFromBitmap normally treats discardPixelBuffer as irreversible. Generated
+        // shadows can nevertheless be requested later by lazy CPU team colouring on Android.
+        // Restore only this requested texture, then let the original lifecycle discard it again.
+        pixelBufferDiscarded = false;
+        try {
+            recreateImageDataFromTexture();
+            AndroidShaderCompatibility.reportDiscardedPixelRehydration();
+        } catch (RuntimeException | Error failure) {
+            pixelBufferDiscarded = true;
+            throw failure;
+        }
+    }
+
     @Inject(method = "releaseImageData()V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeReleaseImageData(CallbackInfo ci) {
         RenderImageLifecycleEvents.BEFORE_RELEASE_IMAGE_DATA.invoker().onEvent(this);

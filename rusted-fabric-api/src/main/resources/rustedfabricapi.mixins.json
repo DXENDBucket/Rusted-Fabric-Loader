@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_13",
   "mixins": [
     "AndroidShaderTextureBindingNamedMixin",
+    "AndroidShaderSourceNamedMixin",
     "AndroidMapStartNamedMixin",
     "ActiveResourceDeltaNamedMixin",
     "AssetCacheStoreNamedMixin",

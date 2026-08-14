@@ -35,6 +35,7 @@
             android:name=".ui.JvmRenderActivity"
             android:exported="false"
             android:hardwareAccelerated="false"
+            android:launchMode="singleTop"
             android:process=":desktop_jvm"
             android:screenOrientation="landscape" />
 
