@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.projectile.spawn.ProjectileCollisions;
 import io.github.endx.rustedfabricapi.impl.projectile.ProjectileMotionRuntime;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,6 +19,10 @@ public abstract class ProjectileLifecycleNamedMixin {
     @Unique
     private io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot
             rustedfabricapi$preExplosionSnapshot;
+
+    @Unique
+    private io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot
+            rustedfabricapi$pendingUpdateImpactSnapshot;
 
     @Redirect(
             method = "update(F)V",
@@ -113,16 +118,49 @@ public abstract class ProjectileLifecycleNamedMixin {
 
     @Inject(method = "update(F)V", at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeProjectileUpdate(float delta, CallbackInfo ci) {
+        rustedfabricapi$pendingUpdateImpactSnapshot = null;
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.BEFORE_UPDATE.invoker()
                 .onUpdate((rustedwarfare.game.Projectile) (Object) this, delta);
         ProjectileCollisions.applyExtendedCollision(
                 (rustedwarfare.game.Projectile) (Object) this);
     }
 
+    /**
+     * The game's regular projectile impact path is inlined in {@code update}; it does not
+     * call {@code explodeAndRemove}. Capture immediately after the one false-to-true impact
+     * marker write, before the vanilla impact code can clear or otherwise mutate state.
+     */
+    @Inject(
+            method = "update(F)V",
+            at = @At(
+                    value = "FIELD",
+                    target = "Lrustedwarfare/game/Projectile;impactTriggered:Z",
+                    opcode = Opcodes.PUTFIELD,
+                    ordinal = 0,
+                    shift = At.Shift.AFTER
+            ),
+            require = 1
+    )
+    private void rustedfabricapi$captureRegularProjectileImpact(float delta, CallbackInfo ci) {
+        rustedfabricapi$pendingUpdateImpactSnapshot = Projectiles.snapshot(this);
+    }
+
     @Inject(method = "update(F)V", at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterProjectileUpdate(float delta, CallbackInfo ci) {
         io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents.AFTER_UPDATE.invoker()
                 .onUpdate((rustedwarfare.game.Projectile) (Object) this, delta);
+        io.github.endx.rustedfabricapi.api.game.ProjectileSnapshot projectileSnapshot =
+                rustedfabricapi$pendingUpdateImpactSnapshot;
+        rustedfabricapi$pendingUpdateImpactSnapshot = null;
+        if (projectileSnapshot != null) {
+            io.github.endx.rustedfabricapi.api.game.ProjectileImpactSnapshot impact =
+                    Projectiles.impactSnapshot(this);
+            io.github.endx.rustedfabricapi.api.projectile.event.ProjectileEvents
+                    .AFTER_IMPACT.invoker().onImpact(
+                            (rustedwarfare.game.Projectile) (Object) this, impact);
+            io.github.endx.rustedfabricapi.api.projectile.event.ProjectileSnapshotEvents
+                    .AFTER_IMPACT.invoker().afterImpact(projectileSnapshot, impact);
+        }
     }
 
     @Inject(method = "drawPreMainLayer(F)V", at = @At("HEAD"), require = 1)
