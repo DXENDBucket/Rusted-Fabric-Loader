@@ -93,9 +93,17 @@ tasks.register('verifyForceCoordinationGeometry', JavaExec) {
     mainClass.set('io.github.endx.strategicai.ForceCoordinationGeometryVerification')
 }
 
+tasks.register('verifyStrategicDoctrine', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.StrategicDoctrineVerification')
+}
+
 check.dependsOn tasks.named('verifyStrategicAi')
 check.dependsOn tasks.named('verifyStandoffGeometry')
 check.dependsOn tasks.named('verifyForceCoordinationGeometry')
+check.dependsOn tasks.named('verifyStrategicDoctrine')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

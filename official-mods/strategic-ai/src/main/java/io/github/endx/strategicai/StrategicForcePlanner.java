@@ -2,6 +2,8 @@ package io.github.endx.strategicai;
 
 import io.github.endx.rustedfabricapi.api.ai.AiMovementDomain;
 import io.github.endx.rustedfabricapi.api.ai.AiEngagementAssessment;
+import io.github.endx.rustedfabricapi.api.ai.AiForceRole;
+import io.github.endx.rustedfabricapi.api.ai.AiResourceControl;
 import io.github.endx.rustedfabricapi.api.ai.AiResourceObjectiveKind;
 import io.github.endx.rustedfabricapi.api.ai.AiStrategicMapSnapshot;
 import io.github.endx.rustedfabricapi.api.ai.AiStrategicResource;
@@ -33,6 +35,8 @@ final class StrategicForcePlanner {
     private static final float STANDOFF_SAFETY_PADDING = 3.0F;
     private static final float STANDOFF_INNER_PADDING = 2.0F;
     private final Map<Long, Long> orderLeases = new HashMap<Long, Long>();
+    private final Map<Long, AiForceRole> forceRoles = new HashMap<Long, AiForceRole>();
+    private StrategicPosture posture;
 
     void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle) {
         orderLeases.entrySet().removeIf(entry -> entry.getValue() <= cycle);
@@ -43,6 +47,9 @@ final class StrategicForcePlanner {
         EnumMap<AiMovementDomain, List<UnitView>> activeGroups =
                 new EnumMap<AiMovementDomain, List<UnitView>>(AiMovementDomain.class);
         ArrayList<UnitView> homeAnchors = new ArrayList<UnitView>();
+        ArrayList<UnitView> combatUnits = new ArrayList<UnitView>();
+        ArrayList<ForceRoleAllocator.Candidate> roleCandidates =
+                new ArrayList<ForceRoleAllocator.Candidate>();
         List<UnitView> currentOwn = context.world().own();
         List<UnitView> currentEnemies = context.world().enemies();
         for (UnitView unit : currentOwn) {
@@ -50,8 +57,28 @@ final class StrategicForcePlanner {
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             if (unit.building() || capabilities.builder()) homeAnchors.add(unit);
             if (!capabilities.mobileCombatUnit()) continue;
+            combatUnits.add(unit);
+            roleCandidates.add(new ForceRoleAllocator.Candidate(unit.id(),
+                    capabilities.movementSpeed(), unit.maxHealth()));
+        }
+        int homeThreats = countHomeThreats(homeAnchors, currentEnemies);
+        StrategicPosture nextPosture = StrategicPosture.select(combatUnits.size(), homeThreats,
+                hasUnclaimedResources(situation));
+        Map<Long, AiForceRole> nextRoles = ForceRoleAllocator.allocate(
+                roleCandidates, nextPosture, homeThreats);
+        applyRolePlan(nextRoles);
+        if (posture != nextPosture) {
+            posture = nextPosture;
+            System.out.println("[Strategic AI] Team " + context.team().id()
+                    + " posture=" + posture + ", combat=" + combatUnits.size()
+                    + ", homeThreats=" + homeThreats);
+        }
+        for (UnitView unit : combatUnits) {
+            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
+            AiForceRole role = forceRoles.get(unit.id());
             EnumMap<AiMovementDomain, List<UnitView>> destination =
                     orderLeases.containsKey(unit.id()) ? activeGroups : idleGroups;
+            if (destination == activeGroups && role != AiForceRole.FRONTLINE) continue;
             destination.computeIfAbsent(capabilities.movementDomain(), ignored ->
                     new ArrayList<UnitView>()).add(unit);
         }
@@ -59,6 +86,19 @@ final class StrategicForcePlanner {
             AiMovementDomain domain = entry.getKey();
             List<UnitView> units = entry.getValue();
             units.sort(Comparator.comparingLong(UnitView::id));
+
+            List<UnitView> defenders = roleUnits(units, AiForceRole.STATIC_DEFENSE);
+            List<UnitView> raiders = roleUnits(units, AiForceRole.RAIDER);
+            units = roleUnits(units, AiForceRole.FRONTLINE);
+
+            if (!defenders.isEmpty()) {
+                commandDefense(context, situation, domain, defenders,
+                        homeAnchors, currentEnemies, cycle);
+            }
+            if (!raiders.isEmpty()) {
+                commandRaid(context, situation, domain, raiders, currentEnemies, cycle);
+            }
+            if (units.isEmpty()) continue;
 
             UnitView defensiveTarget = selectDefensiveTarget(situation, domain, units,
                     homeAnchors, currentEnemies);
@@ -85,6 +125,116 @@ final class StrategicForcePlanner {
                 attackMove(context, units, objective.point, cycle);
             }
         }
+    }
+
+    private void applyRolePlan(Map<Long, AiForceRole> nextRoles) {
+        for (Map.Entry<Long, AiForceRole> entry : nextRoles.entrySet()) {
+            if (forceRoles.get(entry.getKey()) != entry.getValue()) {
+                orderLeases.remove(entry.getKey());
+            }
+        }
+        forceRoles.clear();
+        forceRoles.putAll(nextRoles);
+    }
+
+    private List<UnitView> roleUnits(List<UnitView> units, AiForceRole role) {
+        ArrayList<UnitView> result = new ArrayList<UnitView>();
+        for (UnitView unit : units) {
+            if (forceRoles.get(unit.id()) == role) result.add(unit);
+        }
+        return result;
+    }
+
+    private static int countHomeThreats(List<UnitView> homeAnchors, List<UnitView> enemies) {
+        if (homeAnchors.isEmpty()) return 0;
+        int count = 0;
+        float maximumDistanceSquared = HOME_DEFENSE_DISTANCE * HOME_DEFENSE_DISTANCE;
+        for (UnitView enemy : enemies) {
+            if (!enemy.alive()) continue;
+            for (UnitView anchor : homeAnchors) {
+                float dx = anchor.x() - enemy.x();
+                float dy = anchor.y() - enemy.y();
+                if (dx * dx + dy * dy <= maximumDistanceSquared) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static boolean hasUnclaimedResources(AiStrategicMapSnapshot situation) {
+        for (AiStrategicResource resource : situation.resources()) {
+            if (resource.control() == AiResourceControl.UNCLAIMED) return true;
+        }
+        return false;
+    }
+
+    private void commandDefense(AiTickContext context, AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> defenders, List<UnitView> homeAnchors,
+            List<UnitView> enemies, long cycle) {
+        UnitView target = selectDefensiveTarget(
+                situation, domain, defenders, homeAnchors, enemies);
+        if (target != null) {
+            engageTarget(context, situation, domain, defenders, target, cycle);
+            return;
+        }
+        UnitView anchor = primaryHomeAnchor(homeAnchors);
+        if (anchor != null) {
+            context.orders().guard(defenders, anchor);
+            markAssigned(defenders, cycle);
+        }
+    }
+
+    private void commandRaid(AiTickContext context, AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> raiders, List<UnitView> enemies, long cycle) {
+        UnitView target = closestRaidTarget(situation, domain, centroid(raiders), enemies);
+        if (target != null) {
+            engageTarget(context, situation, domain, raiders, target, cycle);
+            return;
+        }
+        Objective objective = selectObjective(situation, domain, raiders, enemies);
+        if (objective == null) return;
+        if (objective.target != null) {
+            engageTarget(context, situation, domain, raiders, objective.target, cycle);
+        } else {
+            attackMove(context, raiders, objective.point, cycle);
+        }
+    }
+
+    private static UnitView primaryHomeAnchor(List<UnitView> anchors) {
+        UnitView best = null;
+        for (UnitView anchor : anchors) {
+            if (!anchor.alive() || !anchor.building()) continue;
+            if (best == null || anchor.maxHealth() > best.maxHealth()
+                    || anchor.maxHealth() == best.maxHealth() && anchor.id() < best.id()) {
+                best = anchor;
+            }
+        }
+        return best;
+    }
+
+    private static UnitView closestRaidTarget(AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, WorldPoint center, List<UnitView> enemies) {
+        UnitView fallback = null;
+        float fallbackDistance = Float.POSITIVE_INFINITY;
+        UnitView economy = null;
+        float economyDistance = Float.POSITIVE_INFINITY;
+        for (UnitView enemy : enemies) {
+            if (!enemy.alive() || !enemy.building()) continue;
+            WorldPoint point = new WorldPoint(enemy.x(), enemy.y());
+            if (!reachable(situation, domain, center, point)) continue;
+            float distance = center.distanceSquared(point);
+            if (distance < fallbackDistance) {
+                fallback = enemy;
+                fallbackDistance = distance;
+            }
+            if (AiUnitCapabilities.capture(enemy).harvester() && distance < economyDistance) {
+                economy = enemy;
+                economyDistance = distance;
+            }
+        }
+        return economy != null ? economy : fallback;
     }
 
     private static Objective selectObjective(AiStrategicMapSnapshot situation,

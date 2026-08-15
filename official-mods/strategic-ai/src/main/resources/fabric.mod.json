@@ -18,7 +18,7 @@
     "rusted_fabric:multiplayer": {
       "mode": "required",
       "protocol": "strategic_ai_v1",
-      "syncHash": "49c211086ea3f73db74f4a073440a0e9a35984f7141fac7c832234f2e71dc3b3"
+      "syncHash": "bbf03e22714084845a4cb92b803a063939fb79de98cbbcd413880c7abb688030"
     }
   }
 }
