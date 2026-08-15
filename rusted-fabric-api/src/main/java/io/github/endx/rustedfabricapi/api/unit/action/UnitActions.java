@@ -7,6 +7,8 @@ import rustedwarfare.game.Team;
 import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
+import rustedwarfare.unit.action.ActionCommandType;
+import rustedwarfare.unit.action.PlaceBuildingAction;
 import rustedwarfare.unit.action.UnitAction;
 import rustedwarfare.unit.action.UnitActionId;
 
@@ -70,6 +72,44 @@ public final class UnitActions {
         Objects.requireNonNull(action, "action");
         return action.isVisible(unit) && action.isAvailable(unit)
                 && action.isActiveAndQueueAllowed(unit, false);
+    }
+
+    /**
+     * Returns whether the action enters the game's building-placement command path.
+     *
+     * <p>This is intentionally separate from {@link UnitAction#isBuildAction()}: the latter means
+     * a queued production action in Rusted Warfare, and returns {@code false} for the stock
+     * {@link PlaceBuildingAction}.</p>
+     */
+    public static boolean isBuildingPlacement(UnitAction action) {
+        Objects.requireNonNull(action, "action");
+        return action.getActionCommandType() == ActionCommandType.placeBuilding
+                && action.getBuildUnitType() != null
+                && action.getBuildUnitType().isBuilding();
+    }
+
+    /** Returns the native build variant encoded by a building-placement action. */
+    public static int buildingVariant(UnitAction action) {
+        if (!isBuildingPlacement(action)) {
+            throw new IllegalArgumentException("action is not a building-placement action");
+        }
+        return action instanceof PlaceBuildingAction
+                ? Math.max(1, ((PlaceBuildingAction) action).getTechLevel()) : 1;
+    }
+
+    /** Issues a building placement through the native synchronized build-order path. */
+    public static Command issueBuilding(Team team, Iterable<? extends OrderableUnit> builders,
+            UnitAction action, float x, float y) {
+        Objects.requireNonNull(action, "action");
+        if (!isBuildingPlacement(action)) {
+            throw new IllegalArgumentException("action is not a building-placement action");
+        }
+        if (!Float.isFinite(x) || !Float.isFinite(y)) {
+            throw new IllegalArgumentException("target coordinates must be finite");
+        }
+        Command command = Commands.create(team, builders);
+        command.setBuildOrder(x, y, action.getBuildUnitType(), buildingVariant(action));
+        return Commands.issue(command);
     }
 
     /** Issues a non-targeted action through the synchronized command controller. */

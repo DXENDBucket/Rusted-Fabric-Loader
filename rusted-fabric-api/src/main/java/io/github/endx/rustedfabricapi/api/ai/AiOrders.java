@@ -2,11 +2,13 @@ package io.github.endx.rustedfabricapi.api.ai;
 
 import io.github.endx.rustedfabricapi.api.command.Commands;
 import io.github.endx.rustedfabricapi.api.game.UnitView;
+import io.github.endx.rustedfabricapi.api.unit.action.UnitActions;
 import rustedwarfare.ai.AiTeam;
 import rustedwarfare.command.Command;
 import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
+import rustedwarfare.unit.action.UnitAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +55,11 @@ public final class AiOrders {
         Command command = Commands.create(team, ownedOrderable(builders));
         command.setBuildOrder(x, y, type, variant);
         return Commands.issue(command);
+    }
+
+    /** Builds the unit encoded by a native or custom building-placement action. */
+    public Command build(Iterable<UnitView> builders, float x, float y, UnitAction action) {
+        return UnitActions.issueBuilding(team, ownedOrderable(builders), action, x, y);
     }
 
     private List<OrderableUnit> ownedOrderable(Iterable<UnitView> units) {

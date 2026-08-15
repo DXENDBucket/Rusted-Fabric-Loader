@@ -58,6 +58,7 @@ import io.github.endx.rustedfabricapi.api.unit.TeamCreditChangeSource;
 import io.github.endx.rustedfabricapi.api.unit.TeamOutcome;
 import io.github.endx.rustedfabricapi.api.unit.movement.UnitMovementMode;
 import io.github.endx.rustedfabricapi.api.unit.action.JavaUnitActionContractVerification;
+import io.github.endx.rustedfabricapi.api.unit.action.BuildingPlacementContractVerification;
 import io.github.endx.rustedfabricapi.api.unit.event.TeamStateEvents;
 import io.github.endx.rustedfabricapi.api.unit.type.event.UnitTypeEvents;
 import io.github.endx.rustedfabricapi.api.unit.build.event.BuildQueueEvents;
@@ -107,6 +108,7 @@ public final class MappedApiContractVerification {
         MapObjectContractVerification.verify();
         MapTileContractVerification.verify();
         JavaUnitActionContractVerification.verify();
+        BuildingPlacementContractVerification.verify();
         verifyCancellationAggregation();
         verifyModifierChaining();
         verifyMapCancellationAggregation();

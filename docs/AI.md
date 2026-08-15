@@ -76,6 +76,13 @@ resource pool, construct an available low-cost combat factory when the team has 
 factory queues supplied, group idle non-builder combat units by movement domain, and attack-move
 toward lock-down resources, the primary front, or a reachable enemy position.
 
+Building placement must be classified with `UnitActions.isBuildingPlacement(action)`, not
+`UnitAction.isBuildAction()`. Rusted Warfare uses the latter for queued production and returns
+false from its stock place-building action. `AiOrders.build(..., action)` preserves the placement
+action's native variant and issues the synchronized `setBuildOrder` command used by the engine.
+The reference controller also reserves pending mine/factory sites across its cached snapshots and
+chooses the nearest reachable unclaimed resource rather than relying on map scan order.
+
 Against an armed building, the controller evaluates every unit against that exact target. A unit
 with a real one-way-fire range window receives an ordinary move order into the middle of that
 window and then relies on native automatic fire; it is deliberately not given a direct attack

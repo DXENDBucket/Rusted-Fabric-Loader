@@ -19,39 +19,64 @@ import rustedwarfare.unit.action.UnitAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Handles resource expansion, first production infrastructure, and factory queues. */
 final class StrategicBuildPlanner {
+    private static final long PLACEMENT_RESERVATION_CYCLES = 6L;
+    private final Map<Long, Long> resourceReservations = new HashMap<Long, Long>();
+    private long combatProducerReservationUntil;
+
     void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle) {
+        resourceReservations.entrySet().removeIf(entry -> entry.getValue() <= cycle);
         List<Builder> builders = builders(situation);
         if (!builders.isEmpty()) {
-            if (!claimResource(context, situation, builders)) {
-                ensureCombatProduction(context, situation, builders);
+            if (!claimResource(context, situation, builders, cycle)) {
+                ensureCombatProduction(context, situation, builders, cycle);
             }
         }
         queueUnits(context, situation, cycle);
     }
 
     private boolean claimResource(AiTickContext context,
-            AiStrategicMapSnapshot situation, List<Builder> builders) {
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle) {
+        ResourceClaim best = null;
         for (AiStrategicResource resource : situation.resources()) {
             if (resource.control() != AiResourceControl.UNCLAIMED) continue;
+            long siteKey = resourceKey(resource);
+            if (resourceReservations.containsKey(siteKey)) continue;
             for (Builder builder : builders) {
                 if (!resource.reachable(builder.capabilities.movementDomain())) continue;
                 UnitAction action = resourceExtractorAction(builder.unit);
                 if (action == null) continue;
-                contextUnitAction(context, builder.unit, action,
-                        resource.site().center().x(), resource.site().center().y());
-                return true;
+                float dx = builder.capabilities.unit().x() - resource.site().center().x();
+                float dy = builder.capabilities.unit().y() - resource.site().center().y();
+                float distanceSquared = dx * dx + dy * dy;
+                if (best == null || distanceSquared < best.distanceSquared
+                        || distanceSquared == best.distanceSquared
+                        && siteKey < best.siteKey) {
+                    best = new ResourceClaim(resource, builder, action,
+                            siteKey, distanceSquared);
+                }
             }
         }
-        return false;
+        if (best == null) return false;
+        context.orders().build(Collections.singletonList(
+                        best.builder.capabilities.unit()),
+                best.resource.site().center().x(), best.resource.site().center().y(), best.action);
+        resourceReservations.put(best.siteKey, cycle + PLACEMENT_RESERVATION_CYCLES);
+        return true;
     }
 
     private void ensureCombatProduction(AiTickContext context,
-            AiStrategicMapSnapshot situation, List<Builder> builders) {
-        if (hasCombatProducer(situation.world().own())) return;
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle) {
+        if (hasCombatProducer(situation.world().own())) {
+            combatProducerReservationUntil = 0L;
+            return;
+        }
+        if (combatProducerReservationUntil > cycle) return;
         for (Builder builder : builders) {
             List<UnitAction> actions = availableBuildActions(builder.unit, true, false);
             actions.removeIf(action -> !declaresCombatProduction(action.getBuildUnitType()));
@@ -60,7 +85,9 @@ final class StrategicBuildPlanner {
                 UnitType type = action.getBuildUnitType();
                 BuildPoint point = findBuildPoint(context, situation, builder, type);
                 if (point == null) continue;
-                contextUnitAction(context, builder.unit, action, point.x, point.y);
+                context.orders().build(Collections.singletonList(
+                        builder.capabilities.unit()), point.x, point.y, action);
+                combatProducerReservationUntil = cycle + PLACEMENT_RESERVATION_CYCLES;
                 return;
             }
         }
@@ -68,12 +95,26 @@ final class StrategicBuildPlanner {
 
     private void queueUnits(AiTickContext context,
             AiStrategicMapSnapshot situation, long cycle) {
+        if (context.team().maxUnitCount() > 0
+                && context.team().totalUnitCountIncludingQueued()
+                >= context.team().maxUnitCount()) return;
         int builderCount = 0;
+        boolean builderAlreadyQueued = false;
         for (UnitView unit : situation.world().own()) {
             if (!unit.alive()) continue;
             if (AiUnitCapabilities.capture(unit).builder()) builderCount++;
+            if (!unit.building() || !(unit.raw() instanceof Unit)) continue;
+            Unit raw = (Unit) unit.raw();
+            for (UnitAction action : UnitActions.forUnit(raw)) {
+                UnitType type = action.getBuildUnitType();
+                if (action.isBuildAction() && type != null
+                        && AiUnitTypeCapabilities.capture(type).builder()
+                        && action.getDisplayQueueCount(raw, true) > 0) {
+                    builderAlreadyQueued = true;
+                }
+            }
         }
-        boolean needBuilder = builderCount < 2;
+        boolean builderRequestSatisfied = builderCount >= 2 || builderAlreadyQueued;
         for (UnitView view : situation.world().own()) {
             if (!view.alive()) continue;
             if (!view.building() || !(view.raw() instanceof OrderableUnit)) continue;
@@ -81,12 +122,23 @@ final class StrategicBuildPlanner {
             List<UnitAction> candidates = availableBuildActions(raw, false, false);
             candidates.removeIf(action -> action.getDisplayQueueCount(raw, true) > 0);
             List<UnitAction> preferred = new ArrayList<UnitAction>();
-            for (UnitAction action : candidates) {
-                AiUnitTypeCapabilities type = AiUnitTypeCapabilities.capture(
-                        action.getBuildUnitType());
-                if (needBuilder ? type.builder() : type.mobileCombatUnit()) preferred.add(action);
+            if (!builderRequestSatisfied) {
+                for (UnitAction action : candidates) {
+                    if (AiUnitTypeCapabilities.capture(action.getBuildUnitType()).builder()) {
+                        preferred.add(action);
+                    }
+                }
             }
-            if (preferred.isEmpty() && !needBuilder) {
+            boolean queuingBuilder = !preferred.isEmpty();
+            if (preferred.isEmpty()) {
+                for (UnitAction action : candidates) {
+                    if (AiUnitTypeCapabilities.capture(
+                            action.getBuildUnitType()).mobileCombatUnit()) {
+                        preferred.add(action);
+                    }
+                }
+            }
+            if (preferred.isEmpty()) {
                 for (UnitAction action : candidates) {
                     if (!AiUnitTypeCapabilities.capture(action.getBuildUnitType()).builder()) {
                         preferred.add(action);
@@ -98,7 +150,13 @@ final class StrategicBuildPlanner {
             int selected = Math.floorMod((int) (cycle + view.id()), preferred.size());
             UnitActions.issue(context.rawTeam(),
                     Collections.singletonList((OrderableUnit) raw), preferred.get(selected));
+            if (queuingBuilder) builderRequestSatisfied = true;
         }
+    }
+
+    private static long resourceKey(AiStrategicResource resource) {
+        return ((long) resource.site().tileX() << 32)
+                ^ (resource.site().tileY() & 0xffffffffL);
     }
 
     private static List<Builder> builders(AiStrategicMapSnapshot situation) {
@@ -124,9 +182,10 @@ final class StrategicBuildPlanner {
             boolean buildings, boolean resourceOnly) {
         ArrayList<UnitAction> result = new ArrayList<UnitAction>();
         for (UnitAction action : UnitActions.available(unit)) {
-            if (!action.isBuildAction()) continue;
             UnitType type = action.getBuildUnitType();
             if (type == null || type.isBuilding() != buildings) continue;
+            if (buildings ? !UnitActions.isBuildingPlacement(action)
+                    : !action.isBuildAction()) continue;
             if (buildings && type.isPlaceOnlyOnResourcePool() != resourceOnly) continue;
             result.add(action);
         }
@@ -186,12 +245,6 @@ final class StrategicBuildPlanner {
         return null;
     }
 
-    private static void contextUnitAction(AiTickContext context, Unit unit,
-            UnitAction action, float x, float y) {
-        UnitActions.issueAt(context.rawTeam(),
-                Collections.singletonList((OrderableUnit) unit), action, x, y, null);
-    }
-
     private static final Comparator<UnitAction> BUILD_ACTION_ORDER = Comparator
             .comparingInt(UnitAction::getCreditCost)
             .thenComparing(action -> {
@@ -221,6 +274,23 @@ final class StrategicBuildPlanner {
         BuildPoint(float x, float y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    private static final class ResourceClaim {
+        final AiStrategicResource resource;
+        final Builder builder;
+        final UnitAction action;
+        final long siteKey;
+        final float distanceSquared;
+
+        ResourceClaim(AiStrategicResource resource, Builder builder, UnitAction action,
+                long siteKey, float distanceSquared) {
+            this.resource = resource;
+            this.builder = builder;
+            this.action = action;
+            this.siteKey = siteKey;
+            this.distanceSquared = distanceSquared;
         }
     }
 }

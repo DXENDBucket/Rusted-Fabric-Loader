@@ -5,6 +5,13 @@ claim every otherwise-unassigned native AI team. It currently provides a determi
 loop for resource expansion, initial production infrastructure, unit production, terrain-aware
 rallying, and attack movement.
 
+Building placement uses the game's synchronized native build-order command. Stock placement
+actions are deliberately not identified through `UnitAction.isBuildAction()`, because that flag
+means queued unit production and is false for mines, factories, and other placed buildings. The
+economy loop reserves pending sites briefly, takes the nearest reachable free resource, avoids
+duplicating a factory while its cached world snapshot catches up, and keeps combat factories
+running while one suitable producer fills a builder shortage.
+
 Against an outranged armed building, eligible units use ordinary movement to enter a native
 target-specific one-way-fire band and then rely on automatic fire. Shorter-ranged units keep a
 direct attack order and act as the screen instead of forcing every unit through the same command.
