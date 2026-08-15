@@ -8,6 +8,7 @@ import io.github.endx.rustedfabricapi.api.ai.AiStrategicResource;
 import io.github.endx.rustedfabricapi.api.ai.AiTerrainCell;
 import io.github.endx.rustedfabricapi.api.ai.AiTickContext;
 import io.github.endx.rustedfabricapi.api.ai.AiUnitCapabilities;
+import io.github.endx.rustedfabricapi.api.client.RustedWarfareClient;
 import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 
@@ -28,6 +29,8 @@ final class StrategicForcePlanner {
     private static final float STANDOFF_INNER_PADDING = 2.0F;
 
     void update(AiTickContext context, AiStrategicMapSnapshot situation) {
+        int minimumAttackGroup = RustedWarfareClient.isSandboxMode()
+                ? 1 : MINIMUM_ATTACK_GROUP;
         EnumMap<AiMovementDomain, List<UnitView>> groups =
                 new EnumMap<AiMovementDomain, List<UnitView>>(AiMovementDomain.class);
         for (UnitView unit : situation.world().own()) {
@@ -40,7 +43,7 @@ final class StrategicForcePlanner {
         for (Map.Entry<AiMovementDomain, List<UnitView>> entry : groups.entrySet()) {
             List<UnitView> units = entry.getValue();
             units.sort(Comparator.comparingLong(UnitView::id));
-            if (units.size() < MINIMUM_ATTACK_GROUP) continue;
+            if (units.size() < minimumAttackGroup) continue;
             Objective objective = selectObjective(situation, entry.getKey(), units);
             if (objective == null) continue;
             if (objective.target != null) {

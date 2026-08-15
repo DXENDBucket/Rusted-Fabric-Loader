@@ -52,6 +52,11 @@ public final class RustedWarfareClient {
         return engine != null && engine.isGameStarted;
     }
 
+    /** True while the current session was launched through the sandbox editor flow. */
+    public static boolean isSandboxMode() {
+        return GameEngine.isLaunchSandbox;
+    }
+
     /** True while the engine is simulating the animated main-menu background battle. */
     public static boolean isMenuBackgroundMap() {
         GameEngine engine = getEngine();

@@ -22,6 +22,7 @@ public final class StrategicAiMod implements ModInitializer {
             if (!RustedWarfareClient.isLevelLoaded()
                     || !RustedWarfareClient.isGameStarted()
                     || RustedWarfareClient.isMenuBackgroundMap()) return;
+            if (context.rawTeam() == RustedWarfareClient.getPlayerTeam()) return;
             if (AiControllers.isAssigned(context.rawTeam())) return;
             AiControllers.assign(context.rawTeam(), OWNER,
                     new StrategicAiController(context.team().id()));
