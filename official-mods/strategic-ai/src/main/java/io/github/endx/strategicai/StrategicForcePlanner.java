@@ -19,11 +19,14 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-/** Forms idle combat units into movement-compatible groups and advances them toward objectives. */
+/** Forms combat units into movement-compatible groups, defenses, and reinforcement streams. */
 final class StrategicForcePlanner {
     private static final int MINIMUM_ATTACK_GROUP = 3;
     private static final float LOCAL_BUILDING_DISTANCE = 650.0F;
     private static final float RESOURCE_DEFENDER_DISTANCE = 220.0F;
+    private static final float HOME_DEFENSE_DISTANCE = 620.0F;
+    private static final float RALLY_FORWARD_DISTANCE = 260.0F;
+    private static final float RALLY_ARRIVAL_DISTANCE = 65.0F;
     private static final float MINIMUM_STANDOFF_ADVANTAGE = 8.0F;
     private static final float STANDOFF_SAFETY_PADDING = 3.0F;
     private static final float STANDOFF_INNER_PADDING = 2.0F;
@@ -31,23 +34,49 @@ final class StrategicForcePlanner {
     void update(AiTickContext context, AiStrategicMapSnapshot situation) {
         int minimumAttackGroup = RustedWarfareClient.isSandboxMode()
                 ? 1 : MINIMUM_ATTACK_GROUP;
-        EnumMap<AiMovementDomain, List<UnitView>> groups =
+        EnumMap<AiMovementDomain, List<UnitView>> idleGroups =
                 new EnumMap<AiMovementDomain, List<UnitView>>(AiMovementDomain.class);
-        for (UnitView unit : situation.world().own()) {
+        EnumMap<AiMovementDomain, List<UnitView>> activeGroups =
+                new EnumMap<AiMovementDomain, List<UnitView>>(AiMovementDomain.class);
+        ArrayList<UnitView> homeAnchors = new ArrayList<UnitView>();
+        List<UnitView> currentOwn = context.world().own();
+        List<UnitView> currentEnemies = context.world().enemies();
+        for (UnitView unit : currentOwn) {
             if (!unit.alive()) continue;
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
-            if (!capabilities.mobileCombatUnit() || !capabilities.idle()) continue;
-            groups.computeIfAbsent(capabilities.movementDomain(), ignored ->
+            if (unit.building() || capabilities.builder()) homeAnchors.add(unit);
+            if (!capabilities.mobileCombatUnit()) continue;
+            EnumMap<AiMovementDomain, List<UnitView>> destination = capabilities.idle()
+                    ? idleGroups : activeGroups;
+            destination.computeIfAbsent(capabilities.movementDomain(), ignored ->
                     new ArrayList<UnitView>()).add(unit);
         }
-        for (Map.Entry<AiMovementDomain, List<UnitView>> entry : groups.entrySet()) {
+        for (Map.Entry<AiMovementDomain, List<UnitView>> entry : idleGroups.entrySet()) {
+            AiMovementDomain domain = entry.getKey();
             List<UnitView> units = entry.getValue();
             units.sort(Comparator.comparingLong(UnitView::id));
-            if (units.size() < minimumAttackGroup) continue;
-            Objective objective = selectObjective(situation, entry.getKey(), units);
+
+            UnitView defensiveTarget = selectDefensiveTarget(situation, domain, units,
+                    homeAnchors, currentEnemies);
+            if (defensiveTarget != null) {
+                engageTarget(context, situation, domain, units, defensiveTarget);
+                continue;
+            }
+
+            Objective objective = selectObjective(situation, domain, units, currentEnemies);
             if (objective == null) continue;
+            if (units.size() < minimumAttackGroup) {
+                List<UnitView> active = activeGroups.get(domain);
+                WorldPoint destination = active == null || active.isEmpty()
+                        ? rallyPoint(situation, domain, units, homeAnchors, objective.point)
+                        : reachableCentroid(situation, domain, units, active);
+                if (destination != null && !arrived(units, destination)) {
+                    context.orders().attackMove(units, destination.x(), destination.y());
+                }
+                continue;
+            }
             if (objective.target != null) {
-                engageTarget(context, situation, entry.getKey(), units, objective.target);
+                engageTarget(context, situation, domain, units, objective.target);
             } else {
                 context.orders().attackMove(units, objective.point.x(), objective.point.y());
             }
@@ -55,31 +84,85 @@ final class StrategicForcePlanner {
     }
 
     private static Objective selectObjective(AiStrategicMapSnapshot situation,
-            AiMovementDomain domain, List<UnitView> units) {
+            AiMovementDomain domain, List<UnitView> units, List<UnitView> enemies) {
         WorldPoint center = centroid(units);
         for (AiStrategicResource resource : situation.resources()) {
             if (!resource.reachable(domain)) continue;
             if (resource.objective() == AiResourceObjectiveKind.LOCK_DOWN
                     || resource.objective() == AiResourceObjectiveKind.DENY) {
                 UnitView defender = closestReachableEnemyToPoint(situation, domain,
-                        resource.site().center(), true, RESOURCE_DEFENDER_DISTANCE);
+                        resource.site().center(), true, RESOURCE_DEFENDER_DISTANCE, enemies);
                 if (defender != null) return Objective.target(defender);
                 return Objective.point(resource.site().center());
             }
         }
         UnitView localBuilding = closestReachableEnemyToPoint(situation, domain,
-                center, true, LOCAL_BUILDING_DISTANCE);
+                center, true, LOCAL_BUILDING_DISTANCE, enemies);
         if (localBuilding != null) return Objective.target(localBuilding);
         if (situation.primaryFront().isPresent()
                 && reachable(situation, domain, center, situation.primaryFront().get())) {
             return Objective.point(situation.primaryFront().get());
         }
         UnitView closestBuilding = closestReachableEnemy(
-                situation, domain, center, true);
+                situation, domain, center, true, enemies);
         if (closestBuilding != null) return Objective.target(closestBuilding);
         UnitView closestUnit = closestReachableEnemy(
-                situation, domain, center, false);
+                situation, domain, center, false, enemies);
         return closestUnit != null ? Objective.target(closestUnit) : null;
+    }
+
+    private static UnitView selectDefensiveTarget(AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> units, List<UnitView> homeAnchors,
+            List<UnitView> enemies) {
+        if (homeAnchors.isEmpty()) return null;
+        WorldPoint unitCenter = centroid(units);
+        UnitView best = null;
+        float bestDistance = Float.POSITIVE_INFINITY;
+        float maximumDistanceSquared = HOME_DEFENSE_DISTANCE * HOME_DEFENSE_DISTANCE;
+        for (UnitView enemy : enemies) {
+            if (!enemy.alive()) continue;
+            WorldPoint enemyPoint = new WorldPoint(enemy.x(), enemy.y());
+            if (!reachable(situation, domain, unitCenter, enemyPoint)) continue;
+            boolean threatensHome = false;
+            for (UnitView anchor : homeAnchors) {
+                float dx = anchor.x() - enemy.x();
+                float dy = anchor.y() - enemy.y();
+                if (dx * dx + dy * dy <= maximumDistanceSquared) {
+                    threatensHome = true;
+                    break;
+                }
+            }
+            if (!threatensHome) continue;
+            float distance = unitCenter.distanceSquared(enemyPoint);
+            if (distance < bestDistance || distance == bestDistance
+                    && (best == null || enemy.id() < best.id())) {
+                best = enemy;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static WorldPoint reachableCentroid(AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> units, List<UnitView> active) {
+        WorldPoint from = centroid(units);
+        WorldPoint destination = centroid(active);
+        return reachable(situation, domain, from, destination) ? destination : null;
+    }
+
+    private static WorldPoint rallyPoint(AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> units, List<UnitView> homeAnchors,
+            WorldPoint objective) {
+        WorldPoint from = centroid(units);
+        WorldPoint home = homeAnchors.isEmpty() ? from : centroid(homeAnchors);
+        WorldPoint rally = ForceCoordinationGeometry.advance(
+                home, objective, RALLY_FORWARD_DISTANCE);
+        return reachable(situation, domain, from, rally) ? rally : null;
+    }
+
+    private static boolean arrived(List<UnitView> units, WorldPoint destination) {
+        return ForceCoordinationGeometry.arrived(
+                centroid(units), destination, RALLY_ARRIVAL_DISTANCE);
     }
 
     private static void engageTarget(AiTickContext context, AiStrategicMapSnapshot situation,
@@ -129,10 +212,11 @@ final class StrategicForcePlanner {
     }
 
     private static UnitView closestReachableEnemy(AiStrategicMapSnapshot situation,
-            AiMovementDomain domain, WorldPoint center, boolean buildingsOnly) {
+            AiMovementDomain domain, WorldPoint center, boolean buildingsOnly,
+            List<UnitView> enemies) {
         UnitView best = null;
         float bestDistance = Float.POSITIVE_INFINITY;
-        for (UnitView enemy : situation.world().enemies()) {
+        for (UnitView enemy : enemies) {
             if (!enemy.alive()) continue;
             if (buildingsOnly && !enemy.building()) continue;
             WorldPoint point = new WorldPoint(enemy.x(), enemy.y());
@@ -148,8 +232,10 @@ final class StrategicForcePlanner {
     }
 
     private static UnitView closestReachableEnemyToPoint(AiStrategicMapSnapshot situation,
-            AiMovementDomain domain, WorldPoint center, boolean buildingsOnly, float maximumDistance) {
-        UnitView candidate = closestReachableEnemy(situation, domain, center, buildingsOnly);
+            AiMovementDomain domain, WorldPoint center, boolean buildingsOnly,
+            float maximumDistance, List<UnitView> enemies) {
+        UnitView candidate = closestReachableEnemy(
+                situation, domain, center, buildingsOnly, enemies);
         if (candidate == null) return null;
         WorldPoint point = new WorldPoint(candidate.x(), candidate.y());
         return center.distanceSquared(point) <= maximumDistance * maximumDistance ? candidate : null;

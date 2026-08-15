@@ -30,6 +30,7 @@ dependencies {
     compileOnly "net.fabricmc:fabric-loader:0.18.1"
     compileOnly project(":rusted-fabric-api")
     compileOnly files({ namedGameJarFile() })
+    testImplementation project(":rusted-fabric-api")
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -85,8 +86,16 @@ tasks.register('verifyStandoffGeometry', JavaExec) {
     mainClass.set('io.github.endx.strategicai.StandoffGeometryVerification')
 }
 
+tasks.register('verifyForceCoordinationGeometry', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.ForceCoordinationGeometryVerification')
+}
+
 check.dependsOn tasks.named('verifyStrategicAi')
 check.dependsOn tasks.named('verifyStandoffGeometry')
+check.dependsOn tasks.named('verifyForceCoordinationGeometry')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'
