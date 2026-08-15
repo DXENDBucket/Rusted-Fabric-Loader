@@ -953,7 +953,8 @@ def installGameDirFile = {
 }
 
 def installExampleModEnabled = {
-    !project.hasProperty('installExampleMod') || project.property('installExampleMod').toString().toBoolean()
+    project.hasProperty('installExampleMod')
+            && project.property('installExampleMod').toString().toBoolean()
 }
 
 def installIniEssentialsEnabled = {
@@ -1100,6 +1101,10 @@ tasks.register('installToGameDir') {
                 if (candidate.canonicalFile != installedExampleJar) {
                     candidate.delete()
                 }
+            }
+        } else {
+            javaModsDir.eachFileMatch(~/rusted-fabric-example-mod-.*\.jar/) { candidate ->
+                candidate.delete()
             }
         }
 

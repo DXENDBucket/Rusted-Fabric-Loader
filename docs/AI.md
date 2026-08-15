@@ -83,6 +83,11 @@ action's native variant and issues the synchronized `setBuildOrder` command used
 The reference controller also reserves pending mine/factory sites across its cached snapshots and
 chooses the nearest reachable unclaimed resource rather than relying on map scan order.
 
+Capability inspection creates units through `UnitTypes.createUnregisteredPrototype(type)`. The
+native no-argument `UnitType.createUnit()` uses the inverse registration flag and therefore creates
+a live, teamless world unit; using it as a prototype eventually crashes stock selection rendering
+at `Team.isEnemy(null)` and must be treated as a simulation mutation.
+
 Against an armed building, the controller evaluates every unit against that exact target. A unit
 with a real one-way-fire range window receives an ordinary move order into the middle of that
 window and then relies on native automatic fire; it is deliberately not given a direct attack

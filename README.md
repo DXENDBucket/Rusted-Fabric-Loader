@@ -116,13 +116,17 @@ javamods/
 run-rusted-fabric.bat
 ```
 
-By default it also builds and installs the official-runtime example mod. To avoid building or updating the example mod during install, run:
+The development Example Mod is not installed in a normal test environment. Enable it only for an
+explicit API-probe session:
 
 ```bat
-gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampleMod=false
+gradlew.bat installToGameDir -PgameDir="C:\Games\Rusted Warfare" -PinstallExampleMod=true
 ```
 
-This preserves unrelated files in `javamods`. After copying a successful build, the installer removes older versioned `rusted-fabric-api-*.jar`, `performance-profiler-*.jar`, `rusted-fabric-example-mod-*.jar`, and provider jars so Fabric does not discover duplicate versions of loader-owned components. Performance Profiler is installed by default; pass `-PinstallPerformanceProfiler=false` to omit it.
+This preserves unrelated files in `javamods`. A normal install removes an old Example Mod and older
+versioned API/provider jars so Fabric does not discover stale loader-owned components. Performance
+Profiler, INI Essentials, and Strategic AI are likewise opt-in for this development task through
+their corresponding `-Pinstall...=true` properties.
 
 ## Editable Java mod workspaces
 

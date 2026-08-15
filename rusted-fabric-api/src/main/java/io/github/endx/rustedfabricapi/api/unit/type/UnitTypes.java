@@ -3,6 +3,7 @@ package io.github.endx.rustedfabricapi.api.unit.type;
 import rustedwarfare.custom.CustomUnitMetadata;
 import rustedwarfare.game.Team;
 import rustedwarfare.unit.BuiltinUnitType;
+import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
 
 import java.util.ArrayList;
@@ -57,6 +58,36 @@ public final class UnitTypes {
         Objects.requireNonNull(type, "type");
         UnitType replacement = CustomUnitMetadata.getReplacement(type);
         return replacement != null ? replacement : type;
+    }
+
+    /**
+     * Creates a capability/tooltip prototype that is not inserted into the active game world.
+     *
+     * <p>The native {@link UnitType#createUnit()} method passes the inverse registration flag and
+     * creates a live world object. It must not be used for inspection-only prototypes.</p>
+     */
+    public static Unit createUnregisteredPrototype(UnitType type) {
+        Objects.requireNonNull(type, "type");
+        int activeBefore = Unit.allUnits.size();
+        Unit prototype;
+        if (type instanceof BuiltinUnitType) {
+            prototype = ((BuiltinUnitType) type).a(true);
+        } else if (type instanceof CustomUnitMetadata) {
+            prototype = ((CustomUnitMetadata) type).createUnitWithFlag(true);
+        } else {
+            throw new IllegalArgumentException("Unsupported UnitType implementation: "
+                    + type.getClass().getName());
+        }
+        if (prototype == null) {
+            throw new IllegalStateException("Unit type returned a null prototype: "
+                    + type.getInternalName());
+        }
+        if (Unit.allUnits.size() != activeBefore) {
+            prototype.removeFromGame();
+            throw new IllegalStateException("Unit type registered an inspection prototype: "
+                    + type.getInternalName());
+        }
+        return prototype;
     }
 
     /** Checks whether a starting unit can be placed at this location; it does not create a unit. */

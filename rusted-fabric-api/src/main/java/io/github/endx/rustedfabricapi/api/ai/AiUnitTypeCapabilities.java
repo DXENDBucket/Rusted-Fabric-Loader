@@ -1,5 +1,6 @@
 package io.github.endx.rustedfabricapi.api.ai;
 
+import io.github.endx.rustedfabricapi.api.unit.type.UnitTypes;
 import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
@@ -54,7 +55,7 @@ public final class AiUnitTypeCapabilities {
         boolean attacker = false;
         float range = 0.0F;
         float speed = 0.0F;
-        Unit prototype = type.createUnit();
+        Unit prototype = UnitTypes.createUnregisteredPrototype(type);
         if (prototype instanceof OrderableUnit) {
             OrderableUnit orderable = (OrderableUnit) prototype;
             movable = orderable.canMove();
