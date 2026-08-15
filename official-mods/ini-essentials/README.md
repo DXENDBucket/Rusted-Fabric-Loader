@@ -107,6 +107,19 @@ not replace or fight the game's existing height controls. Changing to or from `b
 native building path costs. The override is saved in Loader saves/resync snapshots, and `native`
 removes it.
 
+For a ground, hover, water, or other non-air custom unit that changes `targetHeight` at runtime,
+the native update path adds falling acceleration while the unit is above the new target. This is
+controlled by the game's existing `[movement]` field, so INI Essentials does not add a duplicate:
+
+```ini
+[movement]
+fallingAcceleration: 0
+```
+
+`0` disables the extra gravity acceleration while `heightChangeRate` continues moving the unit
+toward `targetHeight`. Positive values change the strength of the native fall; the native default
+is `0.03`. `fallingAccelerationDead` is a separate original field used only after destruction.
+
 ## Live unit context
 
 Native `self.hasActiveWaypoint` remains the preferred existence check, including its optional

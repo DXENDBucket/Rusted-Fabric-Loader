@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import os
 import re
+import unicodedata
 import warnings
 import zipfile
 from collections import OrderedDict
@@ -121,7 +123,27 @@ class NavigationButton:
 
 def load_rows(source: Path) -> list[dict[str, str]]:
     with source.open("r", encoding="utf-8", newline="") as handle:
-        return list(csv.DictReader(handle))
+        reader = csv.DictReader(handle)
+        rows: list[dict[str, str]] = []
+        for line_number, row in enumerate(reader, 2):
+            if None in row or any(value is None for value in row.values()):
+                raise RuntimeError(
+                    f"Malformed CSV row in {source.name}:{line_number}; "
+                    "quote examples or descriptions that contain commas")
+            rows.append(row)
+        for row in rows:
+            value_type = row.get("value_type", "")
+            if "|" not in value_type or not re.fullmatch(r"[A-Za-z0-9_:|]+", value_type):
+                continue
+            choices = value_type.split("|")
+            for description_key in ("description_en", "description_zh"):
+                missing = [choice for choice in choices
+                           if choice not in row.get(description_key, "")]
+                if missing:
+                    raise RuntimeError(
+                        f"Incomplete choice documentation for {row.get('code')} in "
+                        f"{description_key}: missing {', '.join(missing)}")
+        return rows
 
 
 def section_key(section: str) -> str:
@@ -325,6 +347,101 @@ def argb(color: str) -> str:
     return color if len(color) == 8 else "FF" + color
 
 
+def beginner_value_type_zh(value: str) -> str:
+    """Keep exact INI tokens visible while explaining their shape in ordinary Chinese."""
+    exact = {
+        "boolean": "true 或 false（开 / 关）",
+        "runtime LogicBoolean": "条件表达式（也可以直接填 true 或 false）",
+        "runtime number": "数字或动态算式",
+        "runtime number expression": "数字或动态算式",
+        "positive runtime number": "大于 0 的数字或动态算式",
+        "non-negative runtime number": "大于等于 0 的数字或动态算式",
+        "runtime number 0..1": "0 到 1 的数字或动态算式",
+        "runtime degrees": "角度或动态算式（单位：度）",
+        "positive integer": "大于 0 的整数",
+        "integer": "整数",
+        "float": "数字（可以有小数）",
+        "string": "文字",
+        "color": "颜色（例如 #FFFFFF）",
+        "action name": "Action 名称（填写 action_ 后面的名字）",
+        "geometry name": "geometry 名称（填写 geometry_ 后面的名字）",
+        "overlay name": "Overlay 名称（填写 overlay_ 后面的名字）",
+        "decal name": "Decal 名称（填写 decal_ 后面的名字）",
+        "projectile name": "抛射体名称（填写 projectile_ 后面的名字）",
+        "time (0s to 2s)": "0 秒到 2 秒的时间（例如 0.5s）",
+        "native custom-unit image path": "图片路径（写法与原版单位图片相同）",
+        "native localized dynamic text": "文字（可用原版本地化和动态取值写法）",
+        "runtimeNumberX,runtimeNumberY": "两个数字或动态算式：世界 X 坐标, 世界 Y 坐标",
+        "runtimeDeltaX,runtimeDeltaY": "两个数字或动态算式：横向移动量, 纵向移动量",
+        "native UnitReference|actionTarget":
+            "从原版 UnitReference 或 actionTarget 中选一个",
+        "x,y; x,y; ... runtime expressions":
+            "一串坐标点；每个点写成 x,y，点与点之间用英文分号隔开，数字可用动态算式",
+    }
+    if value in exact:
+        return exact[value]
+    if value.startswith("runtime number ("):
+        unit = value[len("runtime number ("):-1] if value.endswith(")") else value
+        return f"数字或动态算式（{unit}）"
+    if "|" in value and " or runtime " not in value:
+        return "从下列内容中选一个：" + value
+    if value.startswith("runtime "):
+        return "可在游戏中动态计算的 " + value[len("runtime "):]
+    return value
+
+
+def beginner_default_zh(value: str) -> str:
+    exact = {
+        "omitted": "不写此字段",
+        "unlimited": "不限制数量",
+        "available during event": "发生该事件时才有值",
+        "required for image": "type 为 image 时必须填写",
+        "required for text": "type 为 text 时必须填写",
+        "required unless image is present": "没有填写 image 时必须填写",
+        "type-dependent": "根据 type 自动决定",
+        "native queried value": "沿用原版显示值",
+        "native techLevel color": "沿用原版 techLevel 颜色",
+        "compact index": "使用 compact 自动编号",
+        "required": "必须填写",
+        "unbounded": "不限制范围",
+        "auto": "自动决定",
+        "false when referenced": "未被其他内容引用时为 true；被引用后为 false",
+        "0 when absent": "没有对应对象时返回 0",
+        "0 outside overlay": "不在 Overlay 求值时返回 0",
+        "0 outside projectile evaluation": "不在 CustomProjectile 求值时返回 0",
+    }
+    if value in exact:
+        return exact[value]
+    if value.startswith("native "):
+        return "沿用原版：" + value[len("native "):]
+    return value
+
+
+def beginner_extension_type_zh(value: str) -> str:
+    return {
+        "new_key": "INI Essentials 新增字段",
+        "new_section_key": "INI Essentials 新增字段",
+        "new_action_effect": "INI Essentials 新增 Action 效果",
+        "extended_native_key": "扩充原版字段",
+        "extended_value": "扩充原版可填范围",
+        "decal_compatible_key": "沿用原版 Decal 字段名",
+        "native_event_data": "补充原版事件数据",
+        "logic_function": "动态算式函数",
+        "logic_property": "单位上下文属性",
+        "new_logic_number": "动态数值入口",
+        "new_class_key": "新 Class 字段",
+        "extended_format": "扩充原版填写格式",
+        "native_section": "沿用原版节",
+    }.get(value, value)
+
+
+def beginner_impact_zh(value: str) -> str:
+    return {
+        "gameplay_synced": "影响玩法；联机时需保持一致",
+        "client_only": "只影响本地画面",
+    }.get(value, value)
+
+
 def define_target(workbook: Workbook, name: str,
                   sheet_title: str, coordinate: str) -> None:
     escaped_title = sheet_title.replace("'", "''")
@@ -367,6 +484,40 @@ def style_range(sheet, row: int, start: int, end: int, *,
         cell.alignment = Alignment(
             horizontal=horizontal, vertical="center", wrap_text=True)
         cell.border = Border(left=edge, right=edge, top=edge, bottom=edge)
+
+
+def text_display_width(value: object) -> int:
+    """Estimate Excel character cells, counting full-width CJK glyphs as two."""
+    return sum(
+        2 if unicodedata.east_asian_width(character) in ("W", "F") else 1
+        for character in str(value)
+    )
+
+
+def wrapped_line_count(value: object, column_width: float) -> int:
+    # Excel column widths are not pixels. A small safety margin accounts for cell padding,
+    # bold fallback fonts, and word-boundary wrapping in Excel/WPS.
+    capacity = max(1, int(column_width * 0.84))
+    physical_lines = str(value).splitlines() or [""]
+    return sum(max(1, math.ceil(text_display_width(line) / capacity))
+               for line in physical_lines)
+
+
+def autofit_data_row_height(values: list[object]) -> float:
+    lines = max(
+        wrapped_line_count(value, COLUMN_WIDTHS[index])
+        for index, value in enumerate(values)
+    )
+    # Ten-point Arial needs roughly 14.5 points per wrapped line. Do not cap the height:
+    # long descriptions must expand vertically instead of disappearing below the cell border.
+    return max(28.0, 8.0 + lines * 14.5)
+
+
+def autofit_text_height(values_and_widths: Iterable[tuple[object, float]],
+                        minimum: float) -> float:
+    lines = max(wrapped_line_count(value, width)
+                for value, width in values_and_widths)
+    return max(minimum, 8.0 + lines * 14.5)
 
 
 def shortcut_rows(group_count: int) -> int:
@@ -432,12 +583,16 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
         color=argb(WHITE))
     sheet.cell(start_row, 4).font = Font(
         name=FONT_NAME, size=10.0, bold=True, color=argb(WHITE))
-    sheet.row_dimensions[start_row].height = 34
+    sheet.row_dimensions[start_row].height = autofit_text_height((
+        (section_name, COLUMN_WIDTHS[3]),
+        (summary, sum(COLUMN_WIDTHS[4:7])),
+        (back.value, COLUMN_WIDTHS[7]),
+    ), 34.0)
 
     header_row = start_row + 1
     headers = (
-        ["目录修订", "代码", "值类型", "说明与用法", "实际用法与示例",
-         "扩展类型", "默认值", "联机影响"]
+        ["加入批次", "字段名（照抄）", "可以填写什么", "作用与注意事项",
+         "可以照着改的例子", "这个字段来自哪里", "不填写时", "联机影响"]
         if chinese else
         ["Catalog Revision", "Code", "Value Type", "Description and usage",
          "Actual usage with examples", "Extension Type", "Default",
@@ -455,15 +610,21 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
         target_row = start_row + offset
         if group.event_data:
             values = [
-                row["version_added"], row["event_data_name"], row["value_type"],
+                row["version_added"], row["event_data_name"],
+                beginner_value_type_zh(row["value_type"]) if chinese else row["value_type"],
                 row[description_key], row["example"],
-                "native_event_data", "available during event", row["multiplayer_impact"],
+                beginner_extension_type_zh("native_event_data") if chinese else "native_event_data",
+                beginner_default_zh("available during event") if chinese else "available during event",
+                beginner_impact_zh(row["multiplayer_impact"]) if chinese else row["multiplayer_impact"],
             ]
         else:
             values = [
-                row["version_added"], row["code"], row["value_type"],
-                row[description_key], row["example"], row["extension_type"],
-                row["default"], row["multiplayer_impact"],
+                row["version_added"], row["code"],
+                beginner_value_type_zh(row["value_type"]) if chinese else row["value_type"],
+                row[description_key], row["example"],
+                beginner_extension_type_zh(row["extension_type"]) if chinese else row["extension_type"],
+                beginner_default_zh(row["default"]) if chinese else row["default"],
+                beginner_impact_zh(row["multiplayer_impact"]) if chinese else row["multiplayer_impact"],
             ]
         background = WHITE if offset % 2 == 0 else ROW_ALT_COLOR
         style_range(sheet, target_row, 1, 8, background=background)
@@ -475,8 +636,7 @@ def add_group(sheet, group: ReferenceGroup, start_row: int,
             if column == 2:
                 cell.font = Font(
                     name=FONT_NAME, size=10.0, bold=True, color=argb(BLACK))
-        length = max(len(str(values[3])), len(str(values[4])))
-        sheet.row_dimensions[target_row].height = max(28, min(88, 19 + length // 55 * 13))
+        sheet.row_dimensions[target_row].height = autofit_data_row_height(values)
 
     return start_row + len(group.rows) + 3
 
@@ -674,13 +834,21 @@ def add_about_sheet(workbook: Workbook,
         "原版字段使用原版合法值时，始终保留原版解析路径。",
         "Extensions activate only for a documented new key, value range, format, or event-data name.",
         "只有代码表明确记录的新字段、新取值范围、新格式或事件数据名才会激活扩展。",
+        "新手阅读方法：先找节，再找字段名；“字段名”必须照抄，“可以填写什么”会列出范围或可选项。",
+        "写成 A|B|C 表示只能从 A、B、C 中选一个；竖线不是要写进 INI 的内容。",
+        "true 表示开启，false 表示关闭；“不填写时”说明省略该字段会发生什么。",
+        "“数字或动态算式”既能直接填 10，也能填 memory、resource、self 属性组成的算式。",
+        "${core.xxx} 是载入 INI 时替换的常量；memory.xxx、self.xxx 通常是在游戏运行中读取的值。",
+        "targetHeight 的原版提醒：非空军单位降低 targetHeight 时会叠加重力。可在 [movement] 写 fallingAcceleration: 0 关闭额外下坠；原版默认值是 0.03。",
+        "fallingAccelerationDead 只控制单位死亡后的坠毁加速度，不会替代 fallingAcceleration。",
     ]
     for row, value in enumerate(lines, 3):
         sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
         sheet.cell(row, 1, value)
         style_range(sheet, row, 1, 8,
                     background=WHITE if row % 2 else ROW_ALT_COLOR, size=11.0)
-        sheet.row_dimensions[row].height = 27
+        sheet.row_dimensions[row].height = autofit_text_height(
+            ((value, sum(COLUMN_WIDTHS)),), 27.0)
 
     link_start_row = 3 + len(lines) + 1
     for row, (label, target, color) in enumerate((
@@ -967,7 +1135,12 @@ def workbook_signature(workbook: Workbook) -> tuple:
                               cell.font.bold, cell.font.color.rgb
                               if cell.font.color and cell.font.color.type == "rgb" else None,
                               location))
-        result.append((sheet.title, sheet.freeze_panes,
+        row_heights = tuple(sorted(
+            (row, dimension.height)
+            for row, dimension in sheet.row_dimensions.items()
+            if dimension.height is not None
+        ))
+        result.append((sheet.title, sheet.freeze_panes, row_heights,
                        tuple(sorted(str(value) for value in sheet.merged_cells.ranges)),
                        tuple(cells)))
     return tuple(result)
@@ -982,19 +1155,19 @@ def defined_name_signature(workbook: Workbook) -> tuple:
 
 
 def check_output(expected: Workbook,
-                 buttons: list[NavigationButton]) -> None:
-    if not OUTPUT.exists():
-        raise SystemExit(f"Missing generated workbook: {OUTPUT}")
+                 buttons: list[NavigationButton], output: Path = OUTPUT) -> None:
+    if not output.exists():
+        raise SystemExit(f"Missing generated workbook: {output}")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        actual = load_workbook(OUTPUT, read_only=False, data_only=False)
+        actual = load_workbook(output, read_only=False, data_only=False)
     if (workbook_signature(expected) != workbook_signature(actual)
             or defined_name_signature(expected) != defined_name_signature(actual)
-            or navigation_signature(OUTPUT)
+            or navigation_signature(output)
             != expected_navigation_signature(buttons)):
         raise SystemExit(
             "Generated workbook is stale; run docs/generate_reference.py and commit the result")
-    print(f"Reference workbook is current: {OUTPUT}")
+    print(f"Reference workbook is current: {output}")
 
 
 def main(argv: Iterable[str] | None = None) -> None:
@@ -1003,14 +1176,19 @@ def main(argv: Iterable[str] | None = None) -> None:
         "--check", action="store_true",
         help="verify that the committed workbook matches the CSV catalogs and generator",
     )
+    parser.add_argument(
+        "--output", type=Path, default=OUTPUT,
+        help="write or check a different workbook path (useful while the release copy is open)",
+    )
     args = parser.parse_args(argv)
     workbook, buttons = build_workbook()
     if args.check:
-        check_output(workbook, buttons)
+        check_output(workbook, buttons, args.output)
         return
-    workbook.save(OUTPUT)
-    inject_navigation_shapes(OUTPUT, workbook, buttons)
-    print(f"Wrote {OUTPUT}")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(args.output)
+    inject_navigation_shapes(args.output, workbook, buttons)
+    print(f"Wrote {args.output}")
 
 
 if __name__ == "__main__":

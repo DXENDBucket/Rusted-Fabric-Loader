@@ -443,7 +443,8 @@ tasks.register('verifyIniEssentialsMetadata') {
                   || !generatorSource.contains('EVENT_INDEX_COLOR = "B2EBF2"')
                   || !generatorSource.contains('SHORTCUT_COLUMNS = 4')
                   || !generatorSource.contains('def inject_navigation_shapes(')
-                || !generatorSource.contains('hlinkClick')
+                  || !generatorSource.contains('def autofit_data_row_height(')
+                  || !generatorSource.contains('hlinkClick')
                 || !generatorSource.contains('"--check"')) {
             throw new GradleException('INI Essentials reference generator lost section styling/navigation')
         }
@@ -491,6 +492,9 @@ tasks.register('verifyIniEssentialsMetadata') {
                     || !sheetText.contains("INI Essentials v${project.version}")
                     || !sheetText.contains('Catalog Revision')
                     || !sheetText.contains('Catalog Revision records feature-development batches')
+                    || !sheetText.contains('字段名（照抄）')
+                    || !sheetText.contains('topLeft|topCenter|topRight|centerLeft|center|centerRight|bottomLeft|bottomCenter|bottomRight')
+                    || !sheetText.contains('fallingAcceleration: 0')
                     || !sheetText.contains('CustomUnitMetadata 节导航')
                     || !sheetText.contains('CustomProjectile 节导航')
                     || !(expectedCodes + expectedEventData).every { sheetText.contains(it) }) {

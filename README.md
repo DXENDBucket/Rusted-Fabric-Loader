@@ -95,8 +95,8 @@ powershell -ExecutionPolicy Bypass -File scripts/prepare-release-output.ps1
 ```
 
 The versioned output is written to `release-output/v<loader-version>/`. The Android artifact uses
-an uppercase `.APK` extension for direct community-file distribution. Vulkan Mod and Example Mod
-remain development artifacts and are intentionally excluded from this player bundle.
+an uppercase `.APK` extension for direct community-file distribution. Vulkan Mod, Strategic AI,
+and Example Mod remain development artifacts and are intentionally excluded from this player bundle.
 
 For development-only direct installation, use `installToGameDir` to build and install the loader
 artifacts into an existing Rusted Warfare directory:
