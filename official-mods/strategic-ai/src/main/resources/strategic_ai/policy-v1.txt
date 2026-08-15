@@ -10,6 +10,7 @@ home_defense_distance=620
 idle_force_staging_distance=260
 idle_force_staging_arrival=65
 active_force_reinforcement=true
+strategic_order_lease_cycles=8
 builder_target=2
 resource_priority=unclaimed
 resource_selection=nearest_reachable

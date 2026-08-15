@@ -18,7 +18,9 @@ public final class StrategicAiController implements AiController {
     private float forceClock = FORCE_INTERVAL;
     private float strategicClock;
     private long economyCycle;
+    private long forceCycle;
     private AiStrategicMapSnapshot cachedSituation;
+    private boolean announcedSituation;
 
     StrategicAiController(int teamId) {
         strategicClock = -Math.floorMod(teamId, 10) * TEAM_PHASE_INTERVAL;
@@ -34,6 +36,16 @@ public final class StrategicAiController implements AiController {
             strategicClock = cachedSituation == null
                     ? 0.0F : strategicClock % STRATEGIC_INTERVAL;
             cachedSituation = context.strategicMap();
+            if (!announcedSituation) {
+                announcedSituation = true;
+                System.out.println("[Strategic AI] Team " + context.team().id()
+                        + " ready: sandbox="
+                        + io.github.endx.rustedfabricapi.api.client.RustedWarfareClient
+                        .isSandboxMode()
+                        + ", own=" + cachedSituation.world().own().size()
+                        + ", enemies=" + cachedSituation.world().enemies().size()
+                        + ", resources=" + cachedSituation.resources().size());
+            }
         }
         if (cachedSituation != null && economyClock >= ECONOMY_INTERVAL) {
             economyClock %= ECONOMY_INTERVAL;
@@ -41,7 +53,7 @@ public final class StrategicAiController implements AiController {
         }
         if (cachedSituation != null && forceClock >= FORCE_INTERVAL) {
             forceClock %= FORCE_INTERVAL;
-            forcePlanner.update(context, cachedSituation);
+            forcePlanner.update(context, cachedSituation, forceCycle++);
         }
         return AiTickDecision.REPLACE_NATIVE;
     }

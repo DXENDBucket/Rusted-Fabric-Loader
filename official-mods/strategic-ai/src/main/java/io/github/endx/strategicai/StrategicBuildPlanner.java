@@ -28,8 +28,14 @@ final class StrategicBuildPlanner {
     private static final long PLACEMENT_RESERVATION_CYCLES = 6L;
     private final Map<Long, Long> resourceReservations = new HashMap<Long, Long>();
     private long combatProducerReservationUntil;
+    private boolean announcedEconomy;
+    private int announcedOrders;
 
     void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle) {
+        if (!announcedEconomy) {
+            announcedEconomy = true;
+            announceEconomy(context, situation);
+        }
         resourceReservations.entrySet().removeIf(entry -> entry.getValue() <= cycle);
         List<Builder> builders = builders(situation);
         if (!builders.isEmpty()) {
@@ -148,9 +154,41 @@ final class StrategicBuildPlanner {
             if (preferred.isEmpty()) continue;
             preferred.sort(BUILD_ACTION_ORDER);
             int selected = Math.floorMod((int) (cycle + view.id()), preferred.size());
+            UnitAction action = preferred.get(selected);
             UnitActions.issue(context.rawTeam(),
-                    Collections.singletonList((OrderableUnit) raw), preferred.get(selected));
+                    Collections.singletonList((OrderableUnit) raw), action);
+            if (announcedOrders++ < 4) {
+                System.out.println("[Strategic AI] Team " + context.team().id()
+                        + " queued " + safe(action.getActionIdString())
+                        + " -> " + safe(action.getBuildUnitType().getInternalName())
+                        + " at " + safe(raw.r().getInternalName()));
+            }
             if (queuingBuilder) builderRequestSatisfied = true;
+        }
+    }
+
+    private static void announceEconomy(AiTickContext context,
+            AiStrategicMapSnapshot situation) {
+        System.out.println("[Strategic AI] Team " + context.team().id()
+                + " economy: credits=" + (long) context.team().credits()
+                + ", units=" + situation.world().own().size());
+        for (UnitView view : situation.world().own()) {
+            if (!(view.raw() instanceof Unit)) continue;
+            Unit raw = (Unit) view.raw();
+            List<UnitAction> all = UnitActions.forUnit(raw);
+            int production = 0;
+            int runnable = 0;
+            for (UnitAction action : all) {
+                if (!action.isBuildAction() || action.getBuildUnitType() == null
+                        || action.getBuildUnitType().isBuilding()) continue;
+                production++;
+                if (UnitActions.canRun(raw, action)) runnable++;
+            }
+            System.out.println("[Strategic AI] Team " + context.team().id()
+                    + " unit " + safe(raw.r() != null ? raw.r().getInternalName() : null)
+                    + ": actions=" + all.size() + ", production=" + production
+                    + ", runnableProduction=" + runnable
+                    + ", orderable=" + (raw instanceof OrderableUnit));
         }
     }
 

@@ -3,6 +3,8 @@ package io.github.endx.rustedfabricapi.api.client;
 import io.github.endx.rustedfabricapi.api.thread.GameThreadScheduler;
 import rustedwarfare.core.GameEngine;
 import rustedwarfare.game.Team;
+import rustedwarfare.unit.Unit;
+import rustedwarfare.unit.special.EditorOrBuilderUnit;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +56,11 @@ public final class RustedWarfareClient {
 
     /** True while the current session was launched through the sandbox editor flow. */
     public static boolean isSandboxMode() {
-        return GameEngine.isLaunchSandbox;
+        if (GameEngine.isLaunchSandbox) return true;
+        for (Object value : Unit.allUnits) {
+            if (value instanceof EditorOrBuilderUnit && !((Unit) value).dead) return true;
+        }
+        return false;
     }
 
     /** True while the engine is simulating the animated main-menu background battle. */

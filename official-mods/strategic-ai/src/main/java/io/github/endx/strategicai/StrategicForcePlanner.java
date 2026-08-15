@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,11 +28,14 @@ final class StrategicForcePlanner {
     private static final float HOME_DEFENSE_DISTANCE = 620.0F;
     private static final float RALLY_FORWARD_DISTANCE = 260.0F;
     private static final float RALLY_ARRIVAL_DISTANCE = 65.0F;
+    private static final long ORDER_LEASE_CYCLES = 8L;
     private static final float MINIMUM_STANDOFF_ADVANTAGE = 8.0F;
     private static final float STANDOFF_SAFETY_PADDING = 3.0F;
     private static final float STANDOFF_INNER_PADDING = 2.0F;
+    private final Map<Long, Long> orderLeases = new HashMap<Long, Long>();
 
-    void update(AiTickContext context, AiStrategicMapSnapshot situation) {
+    void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle) {
+        orderLeases.entrySet().removeIf(entry -> entry.getValue() <= cycle);
         int minimumAttackGroup = RustedWarfareClient.isSandboxMode()
                 ? 1 : MINIMUM_ATTACK_GROUP;
         EnumMap<AiMovementDomain, List<UnitView>> idleGroups =
@@ -46,8 +50,8 @@ final class StrategicForcePlanner {
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             if (unit.building() || capabilities.builder()) homeAnchors.add(unit);
             if (!capabilities.mobileCombatUnit()) continue;
-            EnumMap<AiMovementDomain, List<UnitView>> destination = capabilities.idle()
-                    ? idleGroups : activeGroups;
+            EnumMap<AiMovementDomain, List<UnitView>> destination =
+                    orderLeases.containsKey(unit.id()) ? activeGroups : idleGroups;
             destination.computeIfAbsent(capabilities.movementDomain(), ignored ->
                     new ArrayList<UnitView>()).add(unit);
         }
@@ -59,7 +63,7 @@ final class StrategicForcePlanner {
             UnitView defensiveTarget = selectDefensiveTarget(situation, domain, units,
                     homeAnchors, currentEnemies);
             if (defensiveTarget != null) {
-                engageTarget(context, situation, domain, units, defensiveTarget);
+                engageTarget(context, situation, domain, units, defensiveTarget, cycle);
                 continue;
             }
 
@@ -71,14 +75,14 @@ final class StrategicForcePlanner {
                         ? rallyPoint(situation, domain, units, homeAnchors, objective.point)
                         : reachableCentroid(situation, domain, units, active);
                 if (destination != null && !arrived(units, destination)) {
-                    context.orders().attackMove(units, destination.x(), destination.y());
+                    attackMove(context, units, destination, cycle);
                 }
                 continue;
             }
             if (objective.target != null) {
-                engageTarget(context, situation, domain, units, objective.target);
+                engageTarget(context, situation, domain, units, objective.target, cycle);
             } else {
-                context.orders().attackMove(units, objective.point.x(), objective.point.y());
+                attackMove(context, units, objective.point, cycle);
             }
         }
     }
@@ -165,8 +169,8 @@ final class StrategicForcePlanner {
                 centroid(units), destination, RALLY_ARRIVAL_DISTANCE);
     }
 
-    private static void engageTarget(AiTickContext context, AiStrategicMapSnapshot situation,
-            AiMovementDomain domain, List<UnitView> units, UnitView target) {
+    private void engageTarget(AiTickContext context, AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> units, UnitView target, long cycle) {
         ArrayList<UnitView> directAttackers = new ArrayList<UnitView>();
         ArrayList<UnitView> supportingUnits = new ArrayList<UnitView>();
         for (UnitView unit : units) {
@@ -175,6 +179,7 @@ final class StrategicForcePlanner {
                     && engagement.hasSafeStandoffWindow(MINIMUM_STANDOFF_ADVANTAGE)) {
                 if (engagement.attackerWithinRange() && !engagement.defenderWithinRange()) {
                     // No attack waypoint: staying idle preserves the native automatic fire range.
+                    markAssigned(Collections.singletonList(unit), cycle);
                     continue;
                 }
                 WorldPoint position = standoffPoint(situation, unit, target, engagement);
@@ -182,16 +187,32 @@ final class StrategicForcePlanner {
                 if (position != null && reachable(situation, domain, current, position)) {
                     context.orders().move(Collections.singletonList(unit),
                             position.x(), position.y());
+                    markAssigned(Collections.singletonList(unit), cycle);
                     continue;
                 }
             }
             if (engagement.canEngage()) directAttackers.add(unit);
             else supportingUnits.add(unit);
         }
-        if (!directAttackers.isEmpty()) context.orders().attack(directAttackers, target);
+        if (!directAttackers.isEmpty()) {
+            context.orders().attack(directAttackers, target);
+            markAssigned(directAttackers, cycle);
+        }
         if (!supportingUnits.isEmpty()) {
             context.orders().attackMove(supportingUnits, target.x(), target.y());
+            markAssigned(supportingUnits, cycle);
         }
+    }
+
+    private void attackMove(AiTickContext context, List<UnitView> units,
+            WorldPoint destination, long cycle) {
+        context.orders().attackMove(units, destination.x(), destination.y());
+        markAssigned(units, cycle);
+    }
+
+    private void markAssigned(List<UnitView> units, long cycle) {
+        long until = cycle + ORDER_LEASE_CYCLES;
+        for (UnitView unit : units) orderLeases.put(unit.id(), until);
     }
 
     private static WorldPoint standoffPoint(AiStrategicMapSnapshot situation, UnitView attacker,

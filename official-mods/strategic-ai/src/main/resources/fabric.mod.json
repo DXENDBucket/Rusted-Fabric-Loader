@@ -12,13 +12,13 @@
   },
   "depends": {
     "fabricloader": ">=0.18.1",
-    "rusted_fabric_api": ">=0.3.22"
+    "rusted_fabric_api": ">=0.3.24"
   },
   "custom": {
     "rusted_fabric:multiplayer": {
       "mode": "required",
       "protocol": "strategic_ai_v1",
-      "syncHash": "0cfe6d695ec49be0b7307064e849bacedb95d7b5ae26596560ae2c71054d16b1"
+      "syncHash": "49c211086ea3f73db74f4a073440a0e9a35984f7141fac7c832234f2e71dc3b3"
     }
   }
 }

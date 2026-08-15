@@ -70,8 +70,10 @@ public final class UnitActions {
     public static boolean canRun(Unit unit, UnitAction action) {
         Objects.requireNonNull(unit, "unit");
         Objects.requireNonNull(action, "action");
-        return action.isVisible(unit) && action.isAvailable(unit)
-                && action.isActiveAndQueueAllowed(unit, false);
+        // Native UI and AI command paths both gate execution with visibility and the
+        // resource/lock-aware active check. The mapped isAvailable method reports the
+        // action filter's locked-state branch and is false for ordinary stock queue actions.
+        return action.isVisible(unit) && action.isActiveAndQueueAllowed(unit, false);
     }
 
     /**
