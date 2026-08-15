@@ -6,6 +6,7 @@ import io.github.endx.rustedfabricapi.api.unit.attribute.CustomUnitStats;
 import io.github.endx.rustedfabricapi.api.path.Pathfinding;
 import io.github.endx.rustedfabricapi.api.scheduler.GameTickScheduler;
 import io.github.endx.rustedfabricapi.api.ai.AiTerrainMaps;
+import io.github.endx.rustedfabricapi.api.ai.AiControllers;
 import io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,6 +31,7 @@ public abstract class CurrentMapLifecycleNamedMixin {
             PersistentData.clearRuntime();
             CustomUnitStats.clearRuntime();
             Pathfinding.clearRuntime();
+            AiControllers.clearAssignments();
             AiTerrainMaps.invalidate();
             AiUnitTypeCapabilities.invalidate();
         }

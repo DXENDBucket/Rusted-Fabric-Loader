@@ -9,6 +9,10 @@ Against an outranged armed building, eligible units use ordinary movement to ent
 target-specific one-way-fire band and then rely on automatic fire. Shorter-ranged units keep a
 direct attack order and act as the screen instead of forcing every unit through the same command.
 
+Menu-background AI teams are ignored. Real-match strategic snapshots are cached for three
+simulation seconds and their refresh phases are staggered by team, while lightweight force
+positioning remains responsive at a half-second cadence.
+
 The controller is intentionally omniscient, matching the original game AI. It treats land, hover,
 water, over-cliff, over-cliff-water, and air reachability separately, so mountains split land plans
 without incorrectly blocking units that can cross them.

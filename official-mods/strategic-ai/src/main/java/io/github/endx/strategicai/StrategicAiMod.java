@@ -2,6 +2,7 @@ package io.github.endx.strategicai;
 
 import io.github.endx.rustedfabricapi.api.ai.AiControllers;
 import io.github.endx.rustedfabricapi.api.ai.event.AiControlEvents;
+import io.github.endx.rustedfabricapi.api.client.RustedWarfareClient;
 import io.github.endx.rustedfabricapi.api.util.Identifier;
 import net.fabricmc.api.ModInitializer;
 
@@ -18,6 +19,9 @@ public final class StrategicAiMod implements ModInitializer {
             return;
         }
         AiControlEvents.BEFORE_TICK.register(context -> {
+            if (!RustedWarfareClient.isLevelLoaded()
+                    || !RustedWarfareClient.isGameStarted()
+                    || RustedWarfareClient.isMenuBackgroundMap()) return;
             if (AiControllers.isAssigned(context.rawTeam())) return;
             AiControllers.assign(context.rawTeam(), OWNER,
                     new StrategicAiController(context.team().id()));

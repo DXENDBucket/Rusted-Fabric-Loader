@@ -70,10 +70,12 @@ final class StrategicBuildPlanner {
             AiStrategicMapSnapshot situation, long cycle) {
         int builderCount = 0;
         for (UnitView unit : situation.world().own()) {
+            if (!unit.alive()) continue;
             if (AiUnitCapabilities.capture(unit).builder()) builderCount++;
         }
         boolean needBuilder = builderCount < 2;
         for (UnitView view : situation.world().own()) {
+            if (!view.alive()) continue;
             if (!view.building() || !(view.raw() instanceof OrderableUnit)) continue;
             Unit raw = (Unit) view.raw();
             List<UnitAction> candidates = availableBuildActions(raw, false, false);
@@ -102,6 +104,7 @@ final class StrategicBuildPlanner {
     private static List<Builder> builders(AiStrategicMapSnapshot situation) {
         ArrayList<Builder> result = new ArrayList<Builder>();
         for (UnitView unit : situation.world().own()) {
+            if (!unit.alive()) continue;
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             if (capabilities.builder() && capabilities.movable()
                     && capabilities.orderable() && capabilities.idle()) {
@@ -133,6 +136,7 @@ final class StrategicBuildPlanner {
 
     private static boolean hasCombatProducer(List<UnitView> units) {
         for (UnitView unit : units) {
+            if (!unit.alive()) continue;
             if (unit.building() && unit.raw() instanceof Unit
                     && offersMobileCombat((Unit) unit.raw())) return true;
         }

@@ -9,35 +9,40 @@ import io.github.endx.rustedfabricapi.api.ai.AiTickDecision;
 public final class StrategicAiController implements AiController {
     private static final float ECONOMY_INTERVAL = 45.0F;
     private static final float FORCE_INTERVAL = 30.0F;
+    private static final float STRATEGIC_INTERVAL = 180.0F;
+    private static final float TEAM_PHASE_INTERVAL = 18.0F;
 
-    private final int teamId;
     private final StrategicBuildPlanner buildPlanner = new StrategicBuildPlanner();
     private final StrategicForcePlanner forcePlanner = new StrategicForcePlanner();
     private float economyClock = ECONOMY_INTERVAL;
     private float forceClock = FORCE_INTERVAL;
+    private float strategicClock;
     private long economyCycle;
+    private AiStrategicMapSnapshot cachedSituation;
 
     StrategicAiController(int teamId) {
-        this.teamId = teamId;
+        strategicClock = -Math.floorMod(teamId, 10) * TEAM_PHASE_INTERVAL;
     }
 
     @Override
     public AiTickDecision tick(AiTickContext context) {
         economyClock += context.delta();
         forceClock += context.delta();
-        AiStrategicMapSnapshot situation = null;
-        if (economyClock >= ECONOMY_INTERVAL) {
-            economyClock %= ECONOMY_INTERVAL;
-            situation = context.strategicMap();
-            buildPlanner.update(context, situation, economyCycle++);
+        strategicClock += context.delta();
+        if (cachedSituation == null ? strategicClock >= 0.0F
+                : strategicClock >= STRATEGIC_INTERVAL) {
+            strategicClock = cachedSituation == null
+                    ? 0.0F : strategicClock % STRATEGIC_INTERVAL;
+            cachedSituation = context.strategicMap();
         }
-        if (forceClock >= FORCE_INTERVAL) {
+        if (cachedSituation != null && economyClock >= ECONOMY_INTERVAL) {
+            economyClock %= ECONOMY_INTERVAL;
+            buildPlanner.update(context, cachedSituation, economyCycle++);
+        }
+        if (cachedSituation != null && forceClock >= FORCE_INTERVAL) {
             forceClock %= FORCE_INTERVAL;
-            if (situation == null) situation = context.strategicMap();
-            forcePlanner.update(context, situation);
+            forcePlanner.update(context, cachedSituation);
         }
         return AiTickDecision.REPLACE_NATIVE;
     }
-
-    int teamId() { return teamId; }
 }

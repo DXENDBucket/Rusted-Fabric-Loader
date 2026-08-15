@@ -2,6 +2,8 @@ strategic-ai-policy-v1
 omniscient=true
 economy_interval=45
 force_interval=30
+strategic_interval=180
+team_phase_interval=18
 minimum_attack_group=3
 builder_target=2
 resource_priority=unclaimed

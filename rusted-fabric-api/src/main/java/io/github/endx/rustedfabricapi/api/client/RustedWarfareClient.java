@@ -52,6 +52,12 @@ public final class RustedWarfareClient {
         return engine != null && engine.isGameStarted;
     }
 
+    /** True while the engine is simulating the animated main-menu background battle. */
+    public static boolean isMenuBackgroundMap() {
+        GameEngine engine = getEngine();
+        return engine != null && engine.isMenuBackgroundMap;
+    }
+
     /** Schedules state-changing work for the beginning of the next desktop update. */
     public static CompletableFuture<Void> execute(Runnable action) {
         return GameThreadScheduler.onNextUpdate(action);

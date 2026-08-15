@@ -42,11 +42,10 @@ set "GP_CP=rusted-fabric-loader/*"
 set "CLASSPATH=%FABRIC_CP%;%GP_CP%"
 
 %JAVA_EXE% %HEAP_OPTS% ^
-  -verbose:class ^
   -Dfile.encoding=UTF-8 ^
   -cp "%CLASSPATH%" ^
   net.fabricmc.loader.impl.launch.knot.KnotClient ^
-  %* > classlog.txt 2>&1
+  %*
 
 endlocal
 pause

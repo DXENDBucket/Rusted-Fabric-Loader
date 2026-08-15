@@ -31,6 +31,7 @@ final class StrategicForcePlanner {
         EnumMap<AiMovementDomain, List<UnitView>> groups =
                 new EnumMap<AiMovementDomain, List<UnitView>>(AiMovementDomain.class);
         for (UnitView unit : situation.world().own()) {
+            if (!unit.alive()) continue;
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             if (!capabilities.mobileCombatUnit() || !capabilities.idle()) continue;
             groups.computeIfAbsent(capabilities.movementDomain(), ignored ->
@@ -129,6 +130,7 @@ final class StrategicForcePlanner {
         UnitView best = null;
         float bestDistance = Float.POSITIVE_INFINITY;
         for (UnitView enemy : situation.world().enemies()) {
+            if (!enemy.alive()) continue;
             if (buildingsOnly && !enemy.building()) continue;
             WorldPoint point = new WorldPoint(enemy.x(), enemy.y());
             if (!reachable(situation, domain, center, point)) continue;

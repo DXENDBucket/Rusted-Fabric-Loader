@@ -83,6 +83,12 @@ waypoint, which would make some long-range units advance inside the defender's r
 units continue attacking directly and can serve as the screen. The calculation uses native
 target/type/turret filters and target-aware effective ranges rather than unit names or UI values.
 
+The mod does not claim AI teams used by the animated main-menu background. In a real match, each
+team keeps one strategic snapshot for three simulation seconds while the lighter force-positioning
+loop still runs every half second. Initial full-map analysis is deterministically phase-staggered
+between teams, preventing every AI player from rebuilding influence and resource maps on the same
+frame. Map changes clear controller assignments and cached analysis before the next match.
+
 This is an integration baseline, not the finished tactical AI. It does not yet understand damage
 types, target-domain restrictions, tower/artillery counters, retreat thresholds, production
 budgets, or allied player specialization. Because it changes synchronized simulation decisions,
