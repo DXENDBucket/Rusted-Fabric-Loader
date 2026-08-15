@@ -14,12 +14,16 @@ public final class StrategicAiController implements AiController {
 
     private final StrategicBuildPlanner buildPlanner = new StrategicBuildPlanner();
     private final StrategicForcePlanner forcePlanner = new StrategicForcePlanner();
+    private final StrategicResourceCampaign resourceCampaign = new StrategicResourceCampaign();
     private float economyClock = ECONOMY_INTERVAL;
     private float forceClock = FORCE_INTERVAL;
     private float strategicClock;
     private long economyCycle;
     private long forceCycle;
     private AiStrategicMapSnapshot cachedSituation;
+    private StrategicTeamPlan teamPlan;
+    private StrategicFrontState frontState;
+    private StrategicFrontState.Mode announcedFrontMode;
     private boolean announcedSituation;
 
     StrategicAiController(int teamId) {
@@ -36,6 +40,18 @@ public final class StrategicAiController implements AiController {
             strategicClock = cachedSituation == null
                     ? 0.0F : strategicClock % STRATEGIC_INTERVAL;
             cachedSituation = context.strategicMap();
+            if (teamPlan == null) {
+                teamPlan = StrategicTeamPlan.create(cachedSituation);
+                io.github.endx.rustedfabricapi.api.world.WorldPoint objective =
+                        teamPlan.preferredFrontierPoint();
+                System.out.println("[Strategic AI] Team " + context.team().id()
+                        + " position=" + teamPlan.ownRole()
+                        + ", forwardOpening=" + teamPlan.usesForwardOpening()
+                        + ", landFront=" + (objective != null
+                        ? (int) objective.x() + "," + (int) objective.y() : "none"));
+                System.out.println("[Strategic AI] Allied assignments "
+                        + teamPlan.assignmentSummary());
+            }
             if (!announcedSituation) {
                 announcedSituation = true;
                 System.out.println("[Strategic AI] Team " + context.team().id()
@@ -47,13 +63,33 @@ public final class StrategicAiController implements AiController {
                         + ", resources=" + cachedSituation.resources().size());
             }
         }
-        if (cachedSituation != null && economyClock >= ECONOMY_INTERVAL) {
-            economyClock %= ECONOMY_INTERVAL;
-            buildPlanner.update(context, cachedSituation, economyCycle++);
+        boolean economyDue = cachedSituation != null && economyClock >= ECONOMY_INTERVAL;
+        boolean forceDue = cachedSituation != null && forceClock >= FORCE_INTERVAL;
+        if ((economyDue || forceDue) && teamPlan != null) {
+            frontState = StrategicFrontState.assess(cachedSituation, teamPlan);
+            if (frontState.mode() != announcedFrontMode) {
+                announcedFrontMode = frontState.mode();
+                System.out.println("[Strategic AI] Team " + context.team().id()
+                        + " front=" + frontState.mode()
+                        + ", ratio=" + String.format(java.util.Locale.ROOT,
+                        "%.2f", frontState.exchangeRatio())
+                        + ", own=" + frontState.friendlyUnits()
+                        + ", allies=" + frontState.alliedUnits()
+                        + ", defenses=" + frontState.enemyDefenses());
+            }
+            resourceCampaign.update(cachedSituation, context.world().own(),
+                    context.world().enemies(), forceCycle,
+                    context.team().id(), teamPlan);
         }
-        if (cachedSituation != null && forceClock >= FORCE_INTERVAL) {
+        if (economyDue) {
+            economyClock %= ECONOMY_INTERVAL;
+            buildPlanner.update(context, cachedSituation, economyCycle++,
+                    resourceCampaign, teamPlan, frontState);
+        }
+        if (forceDue) {
             forceClock %= FORCE_INTERVAL;
-            forcePlanner.update(context, cachedSituation, forceCycle++);
+            forcePlanner.update(context, cachedSituation, forceCycle++,
+                    resourceCampaign, teamPlan, frontState);
         }
         return AiTickDecision.REPLACE_NATIVE;
     }

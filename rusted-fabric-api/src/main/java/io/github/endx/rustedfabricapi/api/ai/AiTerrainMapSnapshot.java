@@ -18,7 +18,9 @@ import java.util.Map;
 
 /** Static map topology shared by multiple dynamic AI situation snapshots. */
 public final class AiTerrainMapSnapshot {
-    public static final int DEFAULT_CELL_SIZE_TILES = 12;
+    // Six tiles retain narrow ramps and lava/cliff detours that decide spawn-role assignments;
+    // twelve-tile cells merged distinct Two Shores approaches into the same coarse route.
+    public static final int DEFAULT_CELL_SIZE_TILES = 6;
 
     private final int mapWidthTiles;
     private final int mapHeightTiles;
@@ -160,11 +162,46 @@ public final class AiTerrainMapSnapshot {
             }
             if (bestRegion > 0) dominant.put(domain, Integer.valueOf(bestRegion));
         }
+        EnumMap<AiMovementDomain, WorldPoint> representatives =
+                new EnumMap<AiMovementDomain, WorldPoint>(AiMovementDomain.class);
+        representatives.put(AiMovementDomain.AIR, new WorldPoint(
+                (minX + maxX) * map.tileWidth * 0.5F,
+                (minY + maxY) * map.tileHeight * 0.5F));
+        float centerTileX = (minX + maxX - 1) * 0.5F;
+        float centerTileY = (minY + maxY - 1) * 0.5F;
+        for (AiMovementDomain domain : AiMovementDomain.values()) {
+            if (domain == AiMovementDomain.AIR || !dominant.containsKey(domain)) continue;
+            MovementCostMap cost = costs.get(domain);
+            int wantedRegion = dominant.get(domain).intValue();
+            int bestX = -1;
+            int bestY = -1;
+            float bestDistance = Float.POSITIVE_INFINITY;
+            for (int x = minX; x < maxX; x++) {
+                for (int y = minY; y < maxY; y++) {
+                    if (cost == null || pathEngine.isCostMapTileBlockedWithOptions(
+                            cost, x, y, true) || connectedRegion(cost, x, y) != wantedRegion) {
+                        continue;
+                    }
+                    float dx = x - centerTileX;
+                    float dy = y - centerTileY;
+                    float distance = dx * dx + dy * dy;
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestX = x;
+                        bestY = y;
+                    }
+                }
+            }
+            if (bestX >= 0) representatives.put(domain, new WorldPoint(
+                    bestX * map.tileWidth + map.halfTileWidth,
+                    bestY * map.tileHeight + map.halfTileHeight));
+        }
         return new AiTerrainCell(column, row, minX, minY, maxX, maxY,
                 map.tileWidth, map.tileHeight, water / (float) tileCount,
                 mountain / (float) tileCount, lava / (float) tileCount,
                 largeBlocker / (float) tileCount,
-                buildingBlocked / (float) tileCount, fractions, dominant);
+                buildingBlocked / (float) tileCount, fractions, dominant,
+                representatives);
     }
 
     private static void calculateChokes(List<AiTerrainCell> cells, int columns, int rows) {
@@ -224,6 +261,11 @@ public final class AiTerrainMapSnapshot {
     public int rows() { return rows; }
     public List<AiTerrainCell> cells() { return cells; }
     public List<AiResourceSite> resourceSites() { return resourceSites; }
+
+    /** Builds one reusable coarse route-cost field from the supplied world position. */
+    public AiTerrainRouteMap routesFrom(WorldPoint origin, AiMovementDomain domain) {
+        return new AiTerrainRouteMap(this, origin, domain);
+    }
 
     public AiTerrainCell cell(int column, int row) {
         if (column < 0 || row < 0 || column >= columns || row >= rows) return null;

@@ -8,6 +8,7 @@ import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
 import rustedwarfare.unit.action.ActionCommandType;
+import rustedwarfare.unit.action.ActionDisplayType;
 import rustedwarfare.unit.action.PlaceBuildingAction;
 import rustedwarfare.unit.action.UnitAction;
 import rustedwarfare.unit.action.UnitActionId;
@@ -97,6 +98,13 @@ public final class UnitActions {
         }
         return action instanceof PlaceBuildingAction
                 ? Math.max(1, ((PlaceBuildingAction) action).getTechLevel()) : 1;
+    }
+
+    /** Returns whether this is a native or custom factory/unit upgrade action. */
+    public static boolean isUpgradeAction(UnitAction action) {
+        Objects.requireNonNull(action, "action");
+        return action.getDisplayType() == ActionDisplayType.upgrade
+                && action.getActionCommandType() != ActionCommandType.infoOnly;
     }
 
     /** Issues a building placement through the native synchronized build-order path. */

@@ -11,6 +11,7 @@ public enum AiForceRole {
     AIR_SUPERIORITY,
     MOBILE_ANTI_AIR,
     RAIDER,
+    RESOURCE_ESCORT,
     ENGINEER,
     REPAIR_SUPPORT,
     TRANSPORT,

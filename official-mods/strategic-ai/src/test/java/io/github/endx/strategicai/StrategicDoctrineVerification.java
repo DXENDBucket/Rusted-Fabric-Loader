@@ -26,11 +26,12 @@ public final class StrategicDoctrineVerification {
                 new ForceRoleAllocator.Candidate(5L, 1.1F, 400.0F));
         Map<Long, AiForceRole> expand = ForceRoleAllocator.allocate(
                 force, StrategicPosture.EXPAND, 0);
-        require(expand.get(1L) == AiForceRole.STATIC_DEFENSE,
-                "the durable slow unit was not reserved for defense");
+        require(count(expand, AiForceRole.STATIC_DEFENSE) == 0,
+                "an unthreatened force still left a permanent unit at home");
         require(expand.get(2L) == AiForceRole.RAIDER,
                 "the fastest unit was not assigned to raiding");
-        require(expand.get(3L) == AiForceRole.FRONTLINE,
+        require(expand.get(1L) == AiForceRole.FRONTLINE
+                        && expand.get(3L) == AiForceRole.FRONTLINE,
                 "the remaining force was not assigned to the main group");
 
         Map<Long, AiForceRole> fortify = ForceRoleAllocator.allocate(

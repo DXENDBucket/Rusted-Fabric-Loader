@@ -425,8 +425,8 @@ public final class AiStrategicMaps {
                     anchorScore = score;
                 }
             }
-            WorldPoint anchor = anchorIndex >= 0
-                    ? terrain.cells().get(anchorIndex).center() : centroid;
+            WorldPoint anchor = preciseAnchor(anchorIndex, terrain, units,
+                    buildings > 0 ? buildingCentroid : centroid);
             float spread = 0.0F;
             for (UnitView unit : units) {
                 float dx = unit.x() - centroid.x();
@@ -437,6 +437,36 @@ public final class AiStrategicMaps {
                     units.size() - buildings, flying, health, maximumHealth,
                     centroid, buildingCentroid, anchor, spread,
                     new LinkedHashMap<String, Integer>(movements));
+        }
+
+        private static WorldPoint preciseAnchor(int anchorIndex,
+                AiTerrainMapSnapshot terrain, List<UnitView> units,
+                WorldPoint fallback) {
+            if (anchorIndex < 0) return fallback;
+            float buildingX = 0.0F;
+            float buildingY = 0.0F;
+            int buildings = 0;
+            float unitX = 0.0F;
+            float unitY = 0.0F;
+            int localUnits = 0;
+            for (UnitView unit : units) {
+                AiTerrainCell cell = terrain.cellAtWorld(unit.x(), unit.y());
+                if (cell == null || cell.row() * terrain.columns() + cell.column()
+                        != anchorIndex) continue;
+                unitX += unit.x();
+                unitY += unit.y();
+                localUnits++;
+                if (unit.building()) {
+                    buildingX += unit.x();
+                    buildingY += unit.y();
+                    buildings++;
+                }
+            }
+            if (buildings > 0) {
+                return new WorldPoint(buildingX / buildings, buildingY / buildings);
+            }
+            return localUnits > 0
+                    ? new WorldPoint(unitX / localUnits, unitY / localUnits) : fallback;
         }
     }
 }

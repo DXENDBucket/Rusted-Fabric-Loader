@@ -63,6 +63,11 @@ public final class UnitView {
         return maximum > 0.0F ? health() / maximum : 0.0F;
     }
 
+    /** Native 0..1 construction completion, where ordinary completed units report 1. */
+    public float constructionProgress() {
+        return number(new String[]{"constructionProgress", "cm"}).floatValue();
+    }
+
     public float shield() {
         return number(new String[]{"shield", "cx"}).floatValue();
     }

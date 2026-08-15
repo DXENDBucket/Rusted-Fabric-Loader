@@ -83,6 +83,14 @@ tasks.register('verifyGameApiContracts', JavaExec) {
     mainClass.set('io.github.endx.rustedfabricapi.verification.GameApiContractVerification')
 }
 
+tasks.register('verifyAiTerrainRoutes', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.rustedfabricapi.api.ai.AiTerrainRouteMapVerification')
+}
+
+
 tasks.register('verifyApiSupportMatrix') {
     group = 'verification'
     description = 'Validates capability keys and their package-relative public API classes.'
@@ -516,4 +524,5 @@ check.dependsOn tasks.named('verifyOfficialApiNamespace')
 check.dependsOn tasks.named('verifyCoreApiContracts')
 check.dependsOn tasks.named('verifyApiContracts')
 check.dependsOn tasks.named('verifyGameApiContracts')
+check.dependsOn tasks.named('verifyAiTerrainRoutes')
 check.dependsOn tasks.named('verifyApiSupportMatrix')

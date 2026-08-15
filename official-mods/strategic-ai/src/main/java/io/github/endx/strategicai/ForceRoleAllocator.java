@@ -36,10 +36,13 @@ final class ForceRoleAllocator {
 
     private static int defenderQuota(int size, StrategicPosture posture, int homeThreats) {
         if (size == 0) return 0;
+        // A high-health newly produced T2 unit is not a permanent base guard. Keep troops at
+        // home only for an observed threat; otherwise every useful reinforcement joins the war.
+        if (homeThreats <= 0) return 0;
         if (posture == StrategicPosture.FORTIFY) {
             return Math.min(size, Math.max(homeThreats + 1, (size + 1) / 2));
         }
-        return size >= (posture == StrategicPosture.EXPAND ? 4 : 5) ? 1 : 0;
+        return Math.min(size, Math.max(1, homeThreats));
     }
 
     private static int raiderQuota(int size, StrategicPosture posture) {

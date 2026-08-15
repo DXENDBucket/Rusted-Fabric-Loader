@@ -78,7 +78,8 @@ public final class GameApiContractVerification {
         view.setHealth(35.0F).setDirection(90.0F).setConstructionProgress(0.5F)
                 .changeTeam(Teams.view(red));
         require(tank.hp == 35.0F && tank.direction == 90.0F
-                        && tank.constructionProgress == 0.5F && tank.team == red,
+                        && tank.constructionProgress == 0.5F
+                        && view.constructionProgress() == 0.5F && tank.team == red,
                 "unit operations did not call mapped game methods");
 
         final UnitView[] delivered = new UnitView[1];

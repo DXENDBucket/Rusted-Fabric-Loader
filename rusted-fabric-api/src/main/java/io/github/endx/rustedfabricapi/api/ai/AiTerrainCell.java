@@ -5,6 +5,7 @@ import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /** Static terrain summary for one strategic grid cell. */
@@ -26,6 +27,7 @@ public final class AiTerrainCell {
     private final float buildingBlockedFraction;
     private final Map<AiMovementDomain, Float> passability;
     private final Map<AiMovementDomain, Integer> dominantRegions;
+    private final Map<AiMovementDomain, WorldPoint> representativePoints;
     private float landChokeScore;
 
     AiTerrainCell(int column, int row, int minTileX, int minTileY,
@@ -33,7 +35,8 @@ public final class AiTerrainCell {
             float waterFraction, float mountainFraction, float lavaFraction,
             float largeBlockerFraction, float buildingBlockedFraction,
             Map<AiMovementDomain, Float> passability,
-            Map<AiMovementDomain, Integer> dominantRegions) {
+            Map<AiMovementDomain, Integer> dominantRegions,
+            Map<AiMovementDomain, WorldPoint> representativePoints) {
         this.column = column;
         this.row = row;
         this.minTileX = minTileX;
@@ -53,6 +56,8 @@ public final class AiTerrainCell {
                 new EnumMap<AiMovementDomain, Float>(passability));
         this.dominantRegions = Collections.unmodifiableMap(
                 new EnumMap<AiMovementDomain, Integer>(dominantRegions));
+        this.representativePoints = Collections.unmodifiableMap(
+                new EnumMap<AiMovementDomain, WorldPoint>(representativePoints));
     }
 
     public int column() { return column; }
@@ -81,6 +86,10 @@ public final class AiTerrainCell {
         Integer value = dominantRegions.get(domain);
         return value != null && value.intValue() > 0
                 ? OptionalInt.of(value.intValue()) : OptionalInt.empty();
+    }
+    /** A real passable tile near this cell's center for the requested movement domain. */
+    public Optional<WorldPoint> representativePoint(AiMovementDomain domain) {
+        return Optional.ofNullable(representativePoints.get(domain));
     }
     /** Approximate 0..1 score for land corridors constrained by terrain and neighbors. */
     public float landChokeScore() { return landChokeScore; }

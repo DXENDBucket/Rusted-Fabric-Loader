@@ -95,14 +95,19 @@ public final class AiStrategicMapContractVerification {
                 new EnumMap<AiMovementDomain, Float>(AiMovementDomain.class);
         EnumMap<AiMovementDomain, Integer> regions =
                 new EnumMap<AiMovementDomain, Integer>(AiMovementDomain.class);
+        EnumMap<AiMovementDomain, WorldPoint> representatives =
+                new EnumMap<AiMovementDomain, WorldPoint>(AiMovementDomain.class);
         for (AiMovementDomain domain : AiMovementDomain.values()) {
             passability.put(domain, Float.valueOf(domain == AiMovementDomain.AIR
                     ? 1.0F : landPassability));
             if (landRegion > 0) regions.put(domain, Integer.valueOf(landRegion));
+            if (domain == AiMovementDomain.AIR || landPassability > 0.0F) {
+                representatives.put(domain, new WorldPoint(column * 10 + 5, 5));
+            }
         }
         return new AiTerrainCell(column, 0, column * 10, 0, column * 10 + 10, 10,
                 10, 10, 0.0F, mountainFraction, 0.0F, 0.0F, mountainFraction,
-                passability, regions);
+                passability, regions, representatives);
     }
 
     private static Unit unit(long id, Team team, float x, float y,

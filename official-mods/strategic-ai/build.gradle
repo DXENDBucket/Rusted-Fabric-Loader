@@ -100,10 +100,58 @@ tasks.register('verifyStrategicDoctrine', JavaExec) {
     mainClass.set('io.github.endx.strategicai.StrategicDoctrineVerification')
 }
 
+tasks.register('verifyBaseLayoutGeometry', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.BaseLayoutGeometryVerification')
+}
+
+tasks.register('verifyFrontierResourcePolicy', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.FrontierResourcePolicyVerification')
+}
+
+tasks.register('verifyTeamPositionDoctrine', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.TeamPositionDoctrineVerification')
+}
+
+tasks.register('verifyFrontEngagementPolicy', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.FrontEngagementPolicyVerification')
+}
+
+tasks.register('verifyForwardTowerGeometry', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.ForwardTowerGeometryVerification')
+}
+
+tasks.register('verifyAirCampaignPolicy', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.AirCampaignPolicyVerification')
+}
+
 check.dependsOn tasks.named('verifyStrategicAi')
 check.dependsOn tasks.named('verifyStandoffGeometry')
 check.dependsOn tasks.named('verifyForceCoordinationGeometry')
 check.dependsOn tasks.named('verifyStrategicDoctrine')
+check.dependsOn tasks.named('verifyBaseLayoutGeometry')
+check.dependsOn tasks.named('verifyFrontierResourcePolicy')
+check.dependsOn tasks.named('verifyTeamPositionDoctrine')
+check.dependsOn tasks.named('verifyFrontEngagementPolicy')
+check.dependsOn tasks.named('verifyForwardTowerGeometry')
+check.dependsOn tasks.named('verifyAirCampaignPolicy')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'
