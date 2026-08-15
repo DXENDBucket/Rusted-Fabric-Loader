@@ -134,7 +134,7 @@ public final class UnitActions {
     }
 
     private static UnitActionId requireActionId(UnitAction action) {
-        UnitActionId id = action.getActionId();
+        UnitActionId id = action.getActionIdForSerialization();
         if (id == null) throw new IllegalArgumentException("action has no command id");
         return id;
     }

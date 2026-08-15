@@ -106,8 +106,16 @@ public final class Commands {
         return issue(command);
     }
 
+    /**
+     * Finishes configuring a command created through this API.
+     *
+     * <p>The native {@link CommandController#createCommandForTeam(Team)} method queues the new
+     * command immediately. Native callers then populate that queued command and let the command
+     * controller execute it at the synchronized command boundary. Calling
+     * {@link Command#issueCommand()} here would execute it once immediately and a second time when
+     * the controller drains its queue.</p>
+     */
     public static Command issue(Command command) {
-        Objects.requireNonNull(command, "command").issueCommand();
-        return command;
+        return Objects.requireNonNull(command, "command");
     }
 }
