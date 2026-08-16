@@ -30,14 +30,15 @@ final class TeamPositionDoctrine {
         }
 
         Candidate frontline = Collections.min(candidates, Comparator
-                .comparingDouble((Candidate value) -> value.frontAccessCost)
+                .comparingInt((Candidate value) -> value.operational ? 0 : 1)
+                .thenComparingDouble(value -> value.frontAccessCost)
                 .thenComparingInt(value -> value.teamId));
         result.put(frontline.teamId, Role.FRONTLINE);
 
         Candidate economy = null;
         float bestEconomyScore = Float.NEGATIVE_INFINITY;
         for (Candidate candidate : candidates) {
-            if (candidate == frontline) continue;
+            if (candidate == frontline || !candidate.operational) continue;
             float safety = candidate.frontAccessCost
                     / Math.max(1.0F, frontline.frontAccessCost);
             float score = candidate.safeResourcePotential * 0.7F
@@ -59,11 +60,18 @@ final class TeamPositionDoctrine {
         final int teamId;
         final float frontAccessCost;
         final float safeResourcePotential;
+        final boolean operational;
 
         Candidate(int teamId, float frontAccessCost, float safeResourcePotential) {
+            this(teamId, frontAccessCost, safeResourcePotential, true);
+        }
+
+        Candidate(int teamId, float frontAccessCost, float safeResourcePotential,
+                boolean operational) {
             this.teamId = teamId;
             this.frontAccessCost = frontAccessCost;
             this.safeResourcePotential = safeResourcePotential;
+            this.operational = operational;
         }
     }
 }

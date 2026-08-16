@@ -1,6 +1,7 @@
 package io.github.endx.strategicai;
 
 import io.github.endx.rustedfabricapi.api.ai.AiMovementDomain;
+import io.github.endx.rustedfabricapi.api.ai.AiInfluenceCell;
 import io.github.endx.rustedfabricapi.api.ai.AiResourceControl;
 import io.github.endx.rustedfabricapi.api.ai.AiStrategicMapSnapshot;
 import io.github.endx.rustedfabricapi.api.ai.AiStrategicResource;
@@ -12,10 +13,12 @@ import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
+import java.util.Set;
 
 /** Stable allied position assignment and resource ownership plan for one match. */
 final class StrategicTeamPlan {
@@ -25,6 +28,7 @@ final class StrategicTeamPlan {
     private final Map<Integer, WorldPoint> anchors;
     private final Map<Integer, AiTerrainRouteMap> landRoutes;
     private final Map<Integer, Float> frontAccessCosts;
+    private final Set<Integer> operationalTeamIds;
     private final int frontlineTeamId;
     private final long preferredFrontierKey;
     private final WorldPoint preferredFrontierPoint;
@@ -34,7 +38,8 @@ final class StrategicTeamPlan {
             Map<Integer, TeamPositionDoctrine.Role> roles,
             Map<Integer, WorldPoint> anchors,
             Map<Integer, AiTerrainRouteMap> landRoutes,
-            Map<Integer, Float> frontAccessCosts, int frontlineTeamId,
+            Map<Integer, Float> frontAccessCosts, Set<Integer> operationalTeamIds,
+            int frontlineTeamId,
             long preferredFrontierKey, WorldPoint preferredFrontierPoint,
             boolean forwardOpening) {
         this.ownTeamId = ownTeamId;
@@ -46,6 +51,8 @@ final class StrategicTeamPlan {
                 new LinkedHashMap<Integer, AiTerrainRouteMap>(landRoutes));
         this.frontAccessCosts = Collections.unmodifiableMap(
                 new LinkedHashMap<Integer, Float>(frontAccessCosts));
+        this.operationalTeamIds = Collections.unmodifiableSet(
+                new HashSet<Integer>(operationalTeamIds));
         this.frontlineTeamId = frontlineTeamId;
         this.preferredFrontierKey = preferredFrontierKey;
         this.preferredFrontierPoint = preferredFrontierPoint;
@@ -53,11 +60,67 @@ final class StrategicTeamPlan {
     }
 
     static StrategicTeamPlan create(AiStrategicMapSnapshot situation) {
+        return replan(situation, null);
+    }
+
+    static StrategicTeamPlan replan(AiStrategicMapSnapshot situation,
+            StrategicTeamPlan previous) {
+        StrategicTeamPlan candidate = compute(situation);
+        if (previous == null) return candidate;
+        boolean teamSetChanged = !previous.roles.keySet().equals(candidate.roles.keySet());
+        Float currentCost = candidate.frontAccessCosts.get(previous.frontlineTeamId);
+        Float proposedCost = candidate.frontAccessCosts.get(candidate.frontlineTeamId);
+        boolean accept = StrategicReplanPolicy.acceptFrontlineSwitch(
+                currentCost != null ? currentCost.floatValue() : Float.POSITIVE_INFINITY,
+                proposedCost != null ? proposedCost.floatValue() : Float.POSITIVE_INFINITY,
+                candidate.operationalTeamIds.contains(previous.frontlineTeamId),
+                teamSetChanged);
+        StrategicTeamPlan selected = candidate;
+        if (candidate.frontlineTeamId != previous.frontlineTeamId && !accept) {
+            selected = new StrategicTeamPlan(candidate.ownTeamId, previous.roles,
+                    candidate.anchors, candidate.landRoutes, candidate.frontAccessCosts,
+                    candidate.operationalTeamIds, previous.frontlineTeamId,
+                    candidate.preferredFrontierKey, candidate.preferredFrontierPoint,
+                    candidate.forwardOpening);
+        }
+        return stabilizeObjective(situation, previous, selected);
+    }
+
+    private static StrategicTeamPlan stabilizeObjective(AiStrategicMapSnapshot situation,
+            StrategicTeamPlan previous, StrategicTeamPlan selected) {
+        if (selected.frontlineTeamId != previous.frontlineTeamId
+                || !selected.roles.equals(previous.roles)
+                || previous.preferredFrontierPoint == null
+                || selected.preferredFrontierPoint == null
+                || previous.preferredFrontierPoint.distanceSquared(
+                selected.preferredFrontierPoint) > 360.0F * 360.0F
+                || !objectiveStillRelevant(situation, previous.preferredFrontierKey)) {
+            return selected;
+        }
+        return new StrategicTeamPlan(selected.ownTeamId, selected.roles,
+                selected.anchors, selected.landRoutes, selected.frontAccessCosts,
+                selected.operationalTeamIds, selected.frontlineTeamId,
+                previous.preferredFrontierKey, previous.preferredFrontierPoint,
+                previous.forwardOpening);
+    }
+
+    private static boolean objectiveStillRelevant(AiStrategicMapSnapshot situation, long key) {
+        if (key == Long.MIN_VALUE) return true;
+        for (AiStrategicResource resource : situation.resources()) {
+            if (resourceKey(resource) != key) continue;
+            return resource.control() != AiResourceControl.OWN
+                    && resource.control() != AiResourceControl.ALLY;
+        }
+        return false;
+    }
+
+    private static StrategicTeamPlan compute(AiStrategicMapSnapshot situation) {
         ArrayList<AiTeamPresence> friendlyAi = new ArrayList<AiTeamPresence>();
         ArrayList<AiTeamPresence> enemies = new ArrayList<AiTeamPresence>();
         LinkedHashMap<Integer, WorldPoint> anchors = new LinkedHashMap<Integer, WorldPoint>();
         LinkedHashMap<Integer, AiTerrainRouteMap> routes =
                 new LinkedHashMap<Integer, AiTerrainRouteMap>();
+        HashSet<Integer> operationalTeamIds = new HashSet<Integer>();
         for (AiTeamPresence presence : situation.teams()) {
             if (presence.relation() == AiTeamRelation.ENEMY) {
                 enemies.add(presence);
@@ -66,6 +129,9 @@ final class StrategicTeamPlan {
                     && presence.team().aiControlled()) {
                 friendlyAi.add(presence);
                 anchors.put(presence.team().id(), presence.anchor());
+                if (presence.buildingCount() > 0) {
+                    operationalTeamIds.add(presence.team().id());
+                }
                 routes.put(presence.team().id(), situation.terrain().routesFrom(
                         presence.anchor(), AiMovementDomain.LAND));
             }
@@ -84,7 +150,8 @@ final class StrategicTeamPlan {
                     : nearestEnemyRouteCost(route, enemies);
             frontAccessCosts.put(friendly.team().id(), frontCost);
             candidates.add(new TeamPositionDoctrine.Candidate(friendly.team().id(),
-                    frontCost, safeResourcePotential(route, situation.resources())));
+                    frontCost, safeResourcePotential(route, situation.resources()),
+                    friendly.buildingCount() > 0));
         }
         Map<Integer, TeamPositionDoctrine.Role> roles =
                 TeamPositionDoctrine.allocate(candidates);
@@ -97,10 +164,32 @@ final class StrategicTeamPlan {
             }
         }
         return new StrategicTeamPlan(ownId, roles, anchors, routes,
-                frontAccessCosts, frontlineId,
+                frontAccessCosts, operationalTeamIds, frontlineId,
                 contested != null ? contested.key : Long.MIN_VALUE,
                 contested != null ? contested.frontPoint : null,
                 contested != null && contested.openingSuitable);
+    }
+
+    boolean frontlineOperational(AiStrategicMapSnapshot situation) {
+        for (AiTeamPresence presence : situation.teams()) {
+            if (presence.team().id() == frontlineTeamId
+                    && (presence.relation() == AiTeamRelation.OWN
+                    || presence.relation() == AiTeamRelation.ALLY)) {
+                return presence.buildingCount() > 0;
+            }
+        }
+        return false;
+    }
+
+    boolean doctrineChangedFrom(StrategicTeamPlan previous) {
+        if (previous == null || frontlineTeamId != previous.frontlineTeamId
+                || !roles.equals(previous.roles)
+                || preferredFrontierKey != previous.preferredFrontierKey) return true;
+        if (preferredFrontierPoint == null || previous.preferredFrontierPoint == null) {
+            return preferredFrontierPoint != previous.preferredFrontierPoint;
+        }
+        return preferredFrontierPoint.distanceSquared(previous.preferredFrontierPoint)
+                > 240.0F * 240.0F;
     }
 
     TeamPositionDoctrine.Role ownRole() {
@@ -214,14 +303,17 @@ final class StrategicTeamPlan {
             WorldPoint point = cell.representativePoint(AiMovementDomain.LAND).get();
             float friendlyCost = minimumRouteCost(friendlyRoutes.values(), point);
             float enemyCost = minimumRouteCost(enemyRoutes, point);
+            float activeFront = dynamicLandFrontScore(situation, cell);
             if (!validFrontApproach(friendlyCost, enemyCost)
-                    || friendlyCost + enemyCost > shortestCorridor * 1.22F + 80.0F) continue;
+                    || activeFront <= 0.0F
+                    && friendlyCost + enemyCost > shortestCorridor * 1.22F + 80.0F) continue;
             float balance = Math.min(friendlyCost, enemyCost)
                     / Math.max(friendlyCost, enemyCost);
             float choke = nearbyChoke(situation, point);
             float corridorPenalty = (friendlyCost + enemyCost - shortestCorridor)
                     / Math.max(1.0F, shortestCorridor);
-            float score = balance * 0.72F + choke * 0.38F - corridorPenalty * 0.85F;
+            float score = balance * 0.58F + choke * 0.30F + activeFront * 0.82F
+                    - corridorPenalty * (activeFront > 0.0F ? 0.34F : 0.78F);
             int cellIndex = cell.row() * situation.terrain().columns() + cell.column();
             if (score > bestScore || score == bestScore && cellIndex < bestCellIndex) {
                 frontPoint = point;
@@ -318,6 +410,22 @@ final class StrategicTeamPlan {
             }
         }
         return best;
+    }
+
+    private static float dynamicLandFrontScore(AiStrategicMapSnapshot situation,
+            AiTerrainCell terrain) {
+        AiInfluenceCell influence = situation.cell(terrain.column(), terrain.row());
+        if (influence == null || !influence.frontline()) return 0.0F;
+        AiMovementDomain domain = influence.frontlineDomain().orElse(AiMovementDomain.LAND);
+        if (domain == AiMovementDomain.AIR || domain == AiMovementDomain.WATER) return 0.0F;
+        int units = influence.ownUnitCount() + influence.alliedUnitCount()
+                + influence.enemyUnitCount();
+        float presence = Math.min(1.0F, units / 8.0F);
+        float strength = Math.min(1.0F,
+                (influence.friendlyInfluence() + influence.enemyInfluence()) / 160.0F);
+        if (presence < 0.25F && strength < 0.30F) return 0.0F;
+        return influence.frontlineScore() * 0.55F
+                + presence * 0.25F + strength * 0.20F;
     }
 
     private static long resourceKey(AiStrategicResource resource) {

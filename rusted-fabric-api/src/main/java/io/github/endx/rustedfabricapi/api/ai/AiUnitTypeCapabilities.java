@@ -187,7 +187,7 @@ public final class AiUnitTypeCapabilities {
     public boolean airToAirSpecialist() {
         return movementDomain == AiMovementDomain.AIR && estimatedAirDps > 0.0F
                 && (estimatedGroundDps <= 0.0F
-                || estimatedAirDps >= estimatedGroundDps * 0.65F);
+                || estimatedAirDps >= estimatedGroundDps * 1.35F);
     }
     public int techLevel() { return techLevel; }
     public int creditCost() { return creditCost; }

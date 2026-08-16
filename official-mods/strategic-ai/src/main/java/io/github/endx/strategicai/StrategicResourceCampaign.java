@@ -44,6 +44,17 @@ final class StrategicResourceCampaign {
     private boolean forwardOpening;
     private final Map<Long, Integer> rejectedTargets = new HashMap<Long, Integer>();
 
+    void onStrategicReplan() {
+        target = null;
+        targetKey = Long.MIN_VALUE;
+        phase = null;
+        buildOrderLeaseUpdates = 0;
+        fortificationOrderLeaseUpdates = 0;
+        fortificationObserved = false;
+        fortificationOrdered = false;
+        fortificationLost = false;
+    }
+
     void update(AiStrategicMapSnapshot situation, List<UnitView> own,
             List<UnitView> enemies, long cycle, int teamId,
             StrategicTeamPlan teamPlan) {

@@ -24,6 +24,13 @@ public final class TeamPositionDoctrineVerification {
                 new TeamPositionDoctrine.Candidate(7, 900.0F, 1.0F)))
                 .get(7) == TeamPositionDoctrine.Role.SOLO,
                 "a solo AI was assigned a team-only position");
+        Map<Integer, TeamPositionDoctrine.Role> afterLoss =
+                TeamPositionDoctrine.allocate(Arrays.asList(
+                        new TeamPositionDoctrine.Candidate(1, 500.0F, 1.0F, false),
+                        new TeamPositionDoctrine.Candidate(2, 900.0F, 1.0F, true),
+                        new TeamPositionDoctrine.Candidate(3, 1100.0F, 2.0F, true)));
+        require(afterLoss.get(2) == TeamPositionDoctrine.Role.FRONTLINE,
+                "a base-less position remained the frontline after dynamic reassignment");
         System.out.println("Strategic AI team position doctrine contracts passed");
     }
 

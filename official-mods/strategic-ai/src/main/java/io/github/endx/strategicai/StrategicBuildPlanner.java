@@ -31,7 +31,9 @@ import java.util.function.Predicate;
 final class StrategicBuildPlanner {
     private static final long RESOURCE_RESERVATION_CYCLES = 30L;
     private static final long BUILDING_RESERVATION_CYCLES = 40L;
+    private static final long RECOVERY_BUILD_RESERVATION_CYCLES = 8L;
     private static final float PRIMARY_BASE_RESOURCE_RADIUS = 700.0F;
+    private static final int FRONTLINE_BUILDER_TARGET = 4;
     private final Map<Long, Long> resourceReservations = new HashMap<Long, Long>();
     private final Map<Long, Long> buildingReservations = new HashMap<Long, Long>();
     private final EnumMap<BaseLayoutGeometry.District, Long> primaryDistrictReservations =
@@ -41,12 +43,39 @@ final class StrategicBuildPlanner {
     private long frontierDefenseTargetKey = Long.MIN_VALUE;
     private boolean forceLockFortification;
     private long abandonedForwardTowerId = Long.MIN_VALUE;
+    private boolean contestRecoveryActive;
+    private long contestRecoveryTargetKey = Long.MIN_VALUE;
+    private long contestRecoveryEnemyTowerId = Long.MIN_VALUE;
+    private WorldPoint contestRecoveryPoint;
+    private UnitType contestRecoveryTowerType;
+    private long contestRecoveryBuildUntil;
     private String focusFactoryId;
     private UnitType focusUnitType;
     private long productionPlanUntil;
     private StrategicFrontState.Mode productionPlanFrontMode;
+    private StrategicProductionDoctrine.AirBalance productionPlanAirBalance;
     private boolean announcedEconomy;
     private int announcedOrders;
+
+    void onStrategicReplan() {
+        primaryBase = null;
+        focusFactoryId = null;
+        focusUnitType = null;
+        productionPlanUntil = 0L;
+        productionPlanAirBalance = null;
+        productionPlanFrontMode = null;
+        primaryDistrictReservations.clear();
+        frontierDefenseReservationUntil = 0L;
+        frontierDefenseTargetKey = Long.MIN_VALUE;
+        forceLockFortification = false;
+        abandonedForwardTowerId = Long.MIN_VALUE;
+        contestRecoveryActive = false;
+        contestRecoveryTargetKey = Long.MIN_VALUE;
+        contestRecoveryEnemyTowerId = Long.MIN_VALUE;
+        contestRecoveryPoint = null;
+        contestRecoveryTowerType = null;
+        contestRecoveryBuildUntil = 0L;
+    }
 
     void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle,
             StrategicResourceCampaign resourceCampaign, StrategicTeamPlan teamPlan,
@@ -62,13 +91,17 @@ final class StrategicBuildPlanner {
         ensurePrimaryBase(situation, currentOwn, context.world().enemies(), teamPlan);
         evaluateForwardTowerContest(context, situation, resourceCampaign, currentOwn);
         List<Builder> builders = builders(currentOwn);
+        beginLostTowerRecovery(situation, resourceCampaign, builders);
         refreshProductionPlan(context, situation, currentOwn, cycle,
                 teamPlan, frontState);
         if (!builders.isEmpty()) {
             List<Builder> baseBuilders = buildersForBase(
                     builders, resourceCampaign, teamPlan);
-            int producers = countDedicatedCombatProducers(currentOwn);
-            if (ensureFrontierMaintenance(context, builders, resourceCampaign,
+            int producers = countFocusedCombatProducers(currentOwn, teamPlan.ownRole());
+            if (handleContestRecovery(context, situation, builders, cycle,
+                    resourceCampaign, currentOwn)) {
+                // A failed tower race has its own retreat, rebuild, and repair state machine.
+            } else if (ensureFrontierMaintenance(context, builders, resourceCampaign,
                     currentOwn)) {
                 // A forward builder repairs the contested tower instead of idling beside it.
             } else if (ensureFrontierFortification(context, situation, builders, cycle,
@@ -259,8 +292,16 @@ final class StrategicBuildPlanner {
             } else {
                 UnitAction focused = focusFactory
                         ? actionProducing(preferred, focusUnitType) : null;
-                if (focused != null) {
+                boolean focusUnavailable = focusFactory && focusUnitType != null
+                        && !offersUnit(raw, focusUnitType);
+                boolean focusAffordable = focused != null
+                        && context.team().credits() >= Math.max(
+                        focused.getCreditCost(), focusUnitType.getBuildCostCredits());
+                if (focused != null && focusAffordable) {
                     action = focused;
+                } else if (focusUnavailable || focused != null) {
+                    // Preserve credits for the required upgrade or the chosen high-tier unit.
+                    action = null;
                 } else if (focusFactory) {
                     action = StrategicProductionDoctrine.chooseFocusedFallback(
                             preferred, focusUnitType, context.team().credits());
@@ -349,8 +390,11 @@ final class StrategicBuildPlanner {
             AiStrategicMapSnapshot situation, List<UnitView> own, long cycle,
             StrategicTeamPlan teamPlan, StrategicFrontState frontState) {
         StrategicFrontState.Mode mode = frontState != null ? frontState.mode() : null;
+        StrategicProductionDoctrine.AirBalance currentAirBalance =
+                StrategicProductionDoctrine.assessAirBalance(situation);
         if (focusFactoryId != null && focusUnitType != null
-                && cycle < productionPlanUntil && mode == productionPlanFrontMode) return;
+                && cycle < productionPlanUntil && mode == productionPlanFrontMode
+                && currentAirBalance == productionPlanAirBalance) return;
         java.util.LinkedHashMap<String, FactoryPlanCandidate> factories =
                 new java.util.LinkedHashMap<String, FactoryPlanCandidate>();
         for (UnitView view : own) {
@@ -387,6 +431,7 @@ final class StrategicBuildPlanner {
         focusUnitType = best.unit;
         productionPlanUntil = cycle + 48L;
         productionPlanFrontMode = mode;
+        productionPlanAirBalance = currentAirBalance;
         System.out.println("[Strategic AI] Team " + context.team().id()
                 + " production plan factory=" + focusFactoryId
                 + " main=" + safe(focusUnitType.getInternalName())
@@ -428,8 +473,34 @@ final class StrategicBuildPlanner {
         }
         StrategicProductionDoctrine.AirBalance airBalance =
                 StrategicProductionDoctrine.assessAirBalance(situation);
+        if (role == TeamPositionDoctrine.Role.MOBILE_SUPPORT
+                && airBalance != StrategicProductionDoctrine.AirBalance.SUPERIORITY) {
+            UnitType strongest = null;
+            double strongestValue = 0.0D;
+            for (UnitType product : products.values()) {
+                AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
+                double value = StrategicProductionDoctrine.airSuperiorityValue(capabilities);
+                if (value > strongestValue || value == strongestValue && value > 0.0D
+                        && (strongest == null || safe(product.getInternalName())
+                        .compareToIgnoreCase(safe(strongest.getInternalName())) < 0)) {
+                    strongest = product;
+                    strongestValue = value;
+                }
+            }
+            if (strongest != null) {
+                factory.unit = strongest;
+                factory.unitScore = plannedUnitValue(
+                        AiUnitTypeCapabilities.capture(strongest), role,
+                        frontState, airBalance, credits) + 16.0D;
+                factory.score = factory.unitScore
+                        - Math.max(0, factory.cost) * 0.00016D
+                        + (factory.existing ? 0.22D : 0.0D);
+                return;
+            }
+        }
         for (UnitType product : products.values()) {
             AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
+            if (!roleAcceptsProduct(role, capabilities)) continue;
             double score = plannedUnitValue(capabilities, role, frontState,
                     airBalance, credits);
             if (factory.unit == null || score > factory.unitScore
@@ -478,6 +549,15 @@ final class StrategicBuildPlanner {
                         && frontState.mode() == StrategicFrontState.Mode.ATTRITION) {
                     score += capabilities.maximumAttackRange() / 70.0D;
                     score += Math.log1p(durability) * 0.28D;
+                    UnitView defense = frontState.primaryDefense();
+                    if (defense != null && defense.raw() instanceof Unit) {
+                        float towerRange = AiUnitTypeCapabilities.capture(
+                                ((Unit) defense.raw()).r()).maximumAttackRange();
+                        float margin = capabilities.maximumAttackRange() - towerRange;
+                        score += capabilities.maximumAttackRange() / 40.0D
+                                + (margin >= 5.0F ? 12.0D
+                                : -Math.min(10.0D, -margin / 20.0D));
+                    }
                     if (capabilities.maximumWarmupTime() > 0.0F) {
                         score += Math.log1p(capabilities.estimatedSustainedDps()
                                 / Math.max(0.01F, capabilities.estimatedInitialDps())) * 1.4D;
@@ -490,6 +570,15 @@ final class StrategicBuildPlanner {
             }
         }
         return score;
+    }
+
+    private static boolean roleAcceptsProduct(TeamPositionDoctrine.Role role,
+            AiUnitTypeCapabilities capabilities) {
+        boolean air = capabilities.movementDomain() == AiMovementDomain.AIR;
+        if (role == TeamPositionDoctrine.Role.MOBILE_SUPPORT) return air;
+        if (role == TeamPositionDoctrine.Role.FRONTLINE
+                || role == TeamPositionDoctrine.Role.ECONOMY_TECH) return !air;
+        return true;
     }
 
     private boolean isFocusFactory(UnitType type) {
@@ -625,7 +714,7 @@ final class StrategicBuildPlanner {
             float dy = unit.y() - campaign.point().y();
             if (dx * dx + dy * dy <= frontRadiusSquared) nearby++;
         }
-        int wanted = 3;
+        int wanted = FRONTLINE_BUILDER_TARGET;
         ArrayList<UnitView> moving = new ArrayList<UnitView>();
         for (Builder builder : builders) {
             if (fortified && nearby + moving.size() >= wanted) break;
@@ -746,7 +835,8 @@ final class StrategicBuildPlanner {
             return dx * dx + dy * dy;
         }).thenComparingLong(builder -> builder.capabilities.unit().id()));
         ArrayList<UnitView> units = new ArrayList<UnitView>();
-        for (int index = 0; index < Math.min(3, repairers.size()); index++) {
+        for (int index = 0; index < Math.min(
+                FRONTLINE_BUILDER_TARGET, repairers.size()); index++) {
             units.add(repairers.get(index).capabilities.unit());
         }
         if (units.isEmpty()) return false;
@@ -760,6 +850,7 @@ final class StrategicBuildPlanner {
     private void evaluateForwardTowerContest(AiTickContext context,
             AiStrategicMapSnapshot situation, StrategicResourceCampaign campaign,
             List<UnitView> own) {
+        if (contestRecoveryActive) return;
         if (!campaign.active() || campaign.point() == null) return;
         UnitView tower = closestIncompleteStaticDefense(
                 own, campaign.point(), 340.0F);
@@ -788,25 +879,17 @@ final class StrategicBuildPlanner {
 
         WorldPoint home = primaryBase != null ? primaryBase.anchor() : null;
         if (home == null) return;
-        float ownRange = tower.raw() instanceof Unit
-                ? Math.max(90.0F, AiUnitTypeCapabilities.capture(
-                ((Unit) tower.raw()).r()).maximumAttackRange()) : 150.0F;
-        WorldPoint fallback = pathAwareTowerPlacement(situation, home, campaign.point(),
-                ownRange, true, 0.0F, 0.0F);
-        ArrayList<UnitView> withdrawing = new ArrayList<UnitView>();
-        for (UnitView unit : own) {
-            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
-            if (!unit.alive() || !capabilities.builder() || !capabilities.movable()) continue;
-            float bx = unit.x() - tower.x();
-            float by = unit.y() - tower.y();
-            if (bx * bx + by * by <= 260.0F * 260.0F) withdrawing.add(unit);
-            if (withdrawing.size() >= 3) break;
-        }
-        if (!withdrawing.isEmpty()) {
-            context.orders().move(withdrawing, fallback.x(), fallback.y());
-        }
+        WorldPoint fallback = safeContestFallback(situation, home, enemyTower,
+                enemyType.maximumAttackRange());
         abandonedForwardTowerId = tower.id();
         forceLockFortification = true;
+        contestRecoveryActive = true;
+        contestRecoveryTargetKey = resourceKey(campaign.target());
+        contestRecoveryEnemyTowerId = enemyTower.id();
+        contestRecoveryPoint = fallback;
+        contestRecoveryTowerType = tower.raw() instanceof Unit
+                ? ((Unit) tower.raw()).r() : null;
+        contestRecoveryBuildUntil = 0L;
         frontierDefenseReservationUntil = 0L;
         campaign.retryFortification();
         System.out.println("[Strategic AI] Team " + context.team().id()
@@ -818,10 +901,231 @@ final class StrategicBuildPlanner {
                 + (int) fallback.x() + "," + (int) fallback.y());
     }
 
+    private boolean handleContestRecovery(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle,
+            StrategicResourceCampaign campaign, List<UnitView> own) {
+        if (!contestRecoveryActive) return false;
+        if (!campaign.active() || campaign.point() == null
+                || resourceKey(campaign.target()) != contestRecoveryTargetKey) {
+            contestRecoveryActive = false;
+            contestRecoveryTargetKey = Long.MIN_VALUE;
+            contestRecoveryEnemyTowerId = Long.MIN_VALUE;
+            contestRecoveryPoint = null;
+            contestRecoveryTowerType = null;
+            contestRecoveryBuildUntil = 0L;
+            abandonedForwardTowerId = Long.MIN_VALUE;
+            forceLockFortification = false;
+            return false;
+        }
+        UnitView enemyTower = unitById(situation.world().enemies(),
+                contestRecoveryEnemyTowerId);
+        if (enemyTower == null || !enemyTower.alive()
+                || !(enemyTower.raw() instanceof Unit)) {
+            // The dangerous tower disappeared; the original forward line can be used again.
+            contestRecoveryActive = false;
+            contestRecoveryTargetKey = Long.MIN_VALUE;
+            contestRecoveryEnemyTowerId = Long.MIN_VALUE;
+            contestRecoveryPoint = null;
+            contestRecoveryTowerType = null;
+            contestRecoveryBuildUntil = 0L;
+            abandonedForwardTowerId = Long.MIN_VALUE;
+            forceLockFortification = false;
+            return false;
+        }
+        AiUnitTypeCapabilities enemyType = AiUnitTypeCapabilities.capture(
+                ((Unit) enemyTower.raw()).r());
+        WorldPoint home = primaryBase != null ? primaryBase.anchor() : null;
+        if (home == null) return true;
+        contestRecoveryPoint = safeContestFallback(situation, home, enemyTower,
+                enemyType.maximumAttackRange());
+
+        List<Builder> frontline = closestFrontlineBuilders(
+                builders, campaign.point(), FRONTLINE_BUILDER_TARGET);
+        if (frontline.isEmpty()) return true;
+        ArrayList<UnitView> participants = new ArrayList<UnitView>();
+        boolean allOutsideEnemyRange = true;
+        boolean allStaged = true;
+        float dangerRange = enemyType.maximumAttackRange() + 38.0F;
+        for (Builder builder : frontline) {
+            UnitView unit = builder.capabilities.unit();
+            participants.add(unit);
+            if (distance(unit.x(), unit.y(), enemyTower.x(), enemyTower.y()) < dangerRange) {
+                allOutsideEnemyRange = false;
+            }
+            if (distance(unit.x(), unit.y(),
+                    contestRecoveryPoint.x(), contestRecoveryPoint.y()) > 88.0F) {
+                allStaged = false;
+            }
+        }
+        if (!allOutsideEnemyRange || !allStaged) {
+            context.orders().move(participants,
+                    contestRecoveryPoint.x(), contestRecoveryPoint.y());
+            return true;
+        }
+
+        UnitView replacement = closestStaticDefense(own,
+                contestRecoveryPoint.x(), contestRecoveryPoint.y(), 150.0F);
+        if (replacement != null && replacement.id() != abandonedForwardTowerId) {
+            if (replacement.constructionProgress() < 0.98F
+                    || replacement.healthFraction() < 0.985F) {
+                context.orders().repair(participants, replacement);
+                return true;
+            }
+            contestRecoveryActive = false;
+            contestRecoveryTargetKey = Long.MIN_VALUE;
+            forceLockFortification = false;
+            contestRecoveryBuildUntil = 0L;
+            campaign.markFortificationOrdered();
+            return false;
+        }
+        if (cycle < contestRecoveryBuildUntil) return true;
+
+        BuildChoice choice = recoveryTowerChoice(frontline, contestRecoveryTowerType);
+        if (choice == null) return true;
+        BuildPoint point = findRecoveryTowerPoint(context, situation, choice.builder,
+                choice.action.getBuildUnitType(), contestRecoveryPoint,
+                enemyTower, enemyType.maximumAttackRange());
+        if (point == null) return true;
+        List<UnitView> buildersForTower = buildParticipants(frontline,
+                choice.action.getBuildUnitType(), FRONTLINE_BUILDER_TARGET);
+        if (buildersForTower.isEmpty()) return true;
+        context.orders().build(buildersForTower, point.x, point.y, choice.action);
+        buildingReservations.put(point.reservationKey,
+                cycle + BUILDING_RESERVATION_CYCLES);
+        contestRecoveryBuildUntil = cycle + RECOVERY_BUILD_RESERVATION_CYCLES;
+        campaign.markFortificationOrdered();
+        System.out.println("[Strategic AI] Team " + context.team().id()
+                + " rebuilding safe front tower with " + buildersForTower.size()
+                + " builders at " + (int) point.x + "," + (int) point.y);
+        return true;
+    }
+
+    private void beginLostTowerRecovery(AiStrategicMapSnapshot situation,
+            StrategicResourceCampaign campaign, List<Builder> builders) {
+        if (contestRecoveryActive || !campaign.fortificationLost()
+                || campaign.point() == null || builders.isEmpty()) return;
+        UnitView enemyTower = closestStaticDefense(situation.world().enemies(),
+                campaign.point().x(), campaign.point().y(), 430.0F);
+        if (enemyTower == null || !(enemyTower.raw() instanceof Unit)) return;
+        WorldPoint home = primaryBase != null ? primaryBase.anchor() : null;
+        if (home == null) return;
+        BuildChoice choice = recoveryTowerChoice(closestFrontlineBuilders(
+                builders, campaign.point(), FRONTLINE_BUILDER_TARGET), null);
+        if (choice == null) return;
+        AiUnitTypeCapabilities enemyType = AiUnitTypeCapabilities.capture(
+                ((Unit) enemyTower.raw()).r());
+        contestRecoveryActive = true;
+        contestRecoveryTargetKey = resourceKey(campaign.target());
+        contestRecoveryEnemyTowerId = enemyTower.id();
+        contestRecoveryPoint = safeContestFallback(situation, home,
+                enemyTower, enemyType.maximumAttackRange());
+        contestRecoveryTowerType = choice.action.getBuildUnitType();
+        contestRecoveryBuildUntil = 0L;
+        forceLockFortification = true;
+    }
+
+    private static WorldPoint safeContestFallback(AiStrategicMapSnapshot situation,
+            WorldPoint home, UnitView enemyTower, float enemyRange) {
+        WorldPoint raw = ForwardTowerGeometry.safeFallback(home,
+                new WorldPoint(enemyTower.x(), enemyTower.y()), enemyRange, 55.0F);
+        float x = Math.max(1.0F, Math.min(situation.terrain().worldWidth() - 1.0F, raw.x()));
+        float y = Math.max(1.0F, Math.min(situation.terrain().worldHeight() - 1.0F, raw.y()));
+        AiTerrainCell cell = situation.terrain().cellAtWorld(x, y);
+        WorldPoint aligned = cell != null
+                ? cell.representativePoint(AiMovementDomain.LAND)
+                .orElse(new WorldPoint(x, y)) : new WorldPoint(x, y);
+        if (distance(aligned.x(), aligned.y(), enemyTower.x(), enemyTower.y())
+                < enemyRange + 38.0F) return new WorldPoint(x, y);
+        return aligned;
+    }
+
+    private static List<Builder> closestFrontlineBuilders(List<Builder> builders,
+            WorldPoint front, int maximum) {
+        ArrayList<Builder> result = new ArrayList<Builder>(builders);
+        result.sort(Comparator.comparingDouble((Builder builder) -> {
+            UnitView unit = builder.capabilities.unit();
+            float dx = unit.x() - front.x();
+            float dy = unit.y() - front.y();
+            return dx * dx + dy * dy;
+        }).thenComparingLong(builder -> builder.capabilities.unit().id()));
+        if (result.size() > maximum) result.subList(maximum, result.size()).clear();
+        return result;
+    }
+
+    private static BuildChoice recoveryTowerChoice(List<Builder> builders,
+            UnitType preferredType) {
+        ArrayList<BuildChoice> choices = new ArrayList<BuildChoice>();
+        for (Builder builder : builders) {
+            for (UnitAction action : availableBuildActions(builder.unit, true, false)) {
+                if (!isStaticDefense(action.getBuildUnitType())) continue;
+                choices.add(new BuildChoice(builder, action));
+            }
+        }
+        choices.sort(Comparator
+                .comparingInt((BuildChoice value) -> value.action.getBuildUnitType()
+                        == preferredType ? 0 : 1)
+                .thenComparingInt(value -> value.action.getCreditCost())
+                .thenComparing(value -> safe(value.action.getBuildUnitType().getInternalName()))
+                .thenComparingLong(value -> value.builder.capabilities.unit().id()));
+        return choices.isEmpty() ? null : choices.get(0);
+    }
+
+    private BuildPoint findRecoveryTowerPoint(AiTickContext context,
+            AiStrategicMapSnapshot situation, Builder builder, UnitType tower,
+            WorldPoint desired, UnitView enemyTower, float enemyRange) {
+        int tileWidth = situation.terrain().tileWidth();
+        int tileHeight = situation.terrain().tileHeight();
+        int[][] offsets = {{0, 0}, {-1, 0}, {1, 0}, {0, -1}, {0, 1},
+                {-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-1, -1}, {1, -1},
+                {-1, 1}, {1, 1}, {-3, 0}, {3, 0}};
+        AiTerrainCell origin = situation.terrain().cellAtWorld(
+                builder.capabilities.unit().x(), builder.capabilities.unit().y());
+        for (int[] offset : offsets) {
+            float x = desired.x() + offset[0] * tileWidth;
+            float y = desired.y() + offset[1] * tileHeight;
+            if (distance(x, y, enemyTower.x(), enemyTower.y())
+                    < enemyRange + 38.0F) continue;
+            long key = placementKey(situation, x, y);
+            if (buildingReservations.containsKey(key)) continue;
+            AiTerrainCell target = situation.terrain().cellAtWorld(x, y);
+            if (!situation.terrain().sameRegion(origin, target,
+                    builder.capabilities.movementDomain())) continue;
+            if (UnitTypes.canSpawnStarting(tower, x, y, 0.0F, 0.0F,
+                    context.rawTeam())) return new BuildPoint(x, y, key);
+        }
+        return null;
+    }
+
+    private static List<UnitView> buildParticipants(List<Builder> builders,
+            UnitType tower, int maximum) {
+        ArrayList<UnitView> result = new ArrayList<UnitView>();
+        for (Builder builder : builders) {
+            for (UnitAction action : availableBuildActions(builder.unit, true, false)) {
+                if (action.getBuildUnitType() != tower) continue;
+                result.add(builder.capabilities.unit());
+                break;
+            }
+            if (result.size() >= maximum) break;
+        }
+        return result;
+    }
+
+    private static UnitView unitById(List<UnitView> units, long id) {
+        for (UnitView unit : units) {
+            if (unit.id() == id) return unit;
+        }
+        return null;
+    }
+
+    private static float distance(float x1, float y1, float x2, float y2) {
+        return (float) Math.hypot(x1 - x2, y1 - y2);
+    }
+
     private boolean ensureFrontierFortification(AiTickContext context,
             AiStrategicMapSnapshot situation, List<Builder> builders, long cycle,
             StrategicResourceCampaign campaign) {
-        if (!campaign.allowsFortification() || campaign.point() == null) return false;
+        if (campaign.point() == null
+                || !campaign.allowsFortification() && !forceLockFortification) return false;
         if (campaign.fortificationLost()) {
             frontierDefenseReservationUntil = 0L;
             forceLockFortification = true;
@@ -876,7 +1180,7 @@ final class StrategicBuildPlanner {
                 }
             }
             if (canBuild) result.add(builder.capabilities.unit());
-            if (result.size() >= 3) break;
+            if (result.size() >= FRONTLINE_BUILDER_TARGET) break;
         }
         return result;
     }
@@ -1094,13 +1398,30 @@ final class StrategicBuildPlanner {
         return result;
     }
 
-    private int countDedicatedCombatProducers(List<UnitView> units) {
+    private int countFocusedCombatProducers(List<UnitView> units,
+            TeamPositionDoctrine.Role role) {
         int count = 0;
         for (UnitView unit : units) {
             if (!unit.alive()) continue;
             if (primaryBase != null && unit.id() == primaryBase.anchorUnitId()) continue;
-            if (unit.building() && unit.raw() instanceof Unit
-                    && offersMobileCombat((Unit) unit.raw())) count++;
+            if (!unit.building() || !(unit.raw() instanceof Unit)) continue;
+            Unit raw = (Unit) unit.raw();
+            if (!offersMobileCombat(raw)) continue;
+            if (focusFactoryId != null) {
+                if (focusFactoryId.equalsIgnoreCase(safe(raw.r() != null
+                        ? raw.r().getInternalName() : null))) count++;
+                continue;
+            }
+            for (UnitAction action : UnitActions.forUnit(raw)) {
+                UnitType product = action.getBuildUnitType();
+                if (!action.isBuildAction() || product == null || product.isBuilding()) continue;
+                AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
+                if (capabilities.mobileCombatUnit()
+                        && roleAcceptsProduct(role, capabilities)) {
+                    count++;
+                    break;
+                }
+            }
         }
         return count;
     }

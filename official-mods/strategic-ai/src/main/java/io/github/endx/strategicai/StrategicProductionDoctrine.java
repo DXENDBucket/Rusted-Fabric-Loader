@@ -49,7 +49,17 @@ final class StrategicProductionDoctrine {
                     || ownAir.airToAir < requiredEscortCore;
             ArrayList<UnitAction> mission = matchingTarget(pool, needsAirToAir);
             if (!mission.isEmpty()) pool = mission;
-            if (needsAirToAir) pool = preferAdvancedAirToAir(pool, economy.credits);
+            if (needsAirToAir) {
+                UnitAction strongest = strongestAirToAir(pool);
+                if (strongest != null) {
+                    // Once a factory exposes a materially stronger interceptor, save for it.
+                    // Falling back to a cheap T1 aircraft prevents the AI from ever banking the
+                    // cost of the T2 air-superiority unit and loses the air war by construction.
+                    if (unitCost(strongest) > economy.credits) return null;
+                    pool.clear();
+                    pool.add(strongest);
+                }
+            }
         }
         ArrayList<UnitAction> affordable = affordable(pool, economy.credits);
         if (!affordable.isEmpty()) pool = affordable;
@@ -181,6 +191,7 @@ final class StrategicProductionDoctrine {
                 score += rangeUtility(capabilities) * 3.2D;
                 score += Math.log1p(capabilities.maximumHealth()
                         + capabilities.maximumShield()) * 0.35D;
+                score += attritionRangeScore(capabilities, frontState);
             } else if (frontState != null
                     && frontState.mode() == StrategicFrontState.Mode.ASSAULT) {
                 score += capabilities.movementSpeed() * 0.75D;
@@ -193,6 +204,19 @@ final class StrategicProductionDoctrine {
         score += Math.floorMod((int) (cycle + safe(type.getInternalName()).hashCode()), 5)
                 * 0.015D;
         return score;
+    }
+
+    private static double attritionRangeScore(AiUnitTypeCapabilities capabilities,
+            StrategicFrontState frontState) {
+        UnitView defense = frontState != null ? frontState.primaryDefense() : null;
+        if (defense == null || !(defense.raw() instanceof Unit)) {
+            return capabilities.maximumAttackRange() / 45.0D;
+        }
+        AiUnitTypeCapabilities tower = AiUnitTypeCapabilities.capture(
+                ((Unit) defense.raw()).r());
+        float margin = capabilities.maximumAttackRange() - tower.maximumAttackRange();
+        return capabilities.maximumAttackRange() / 42.0D
+                + (margin >= 5.0F ? 10.0D : -Math.min(9.0D, -margin / 22.0D));
     }
 
     private static ArrayList<UnitAction> affordable(List<UnitAction> actions,
@@ -233,25 +257,31 @@ final class StrategicProductionDoctrine {
         return result.isEmpty() ? new ArrayList<UnitAction>(actions) : result;
     }
 
-    private static ArrayList<UnitAction> preferAdvancedAirToAir(
-            List<UnitAction> actions, double credits) {
-        int highestAffordableTech = -1;
+    private static UnitAction strongestAirToAir(List<UnitAction> actions) {
+        UnitAction best = null;
+        double bestValue = Double.NEGATIVE_INFINITY;
         for (UnitAction action : actions) {
             AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(
                     action.getBuildUnitType());
-            if (!capabilities.airToAirSpecialist() || unitCost(action) > credits) continue;
-            highestAffordableTech = Math.max(highestAffordableTech, capabilities.techLevel());
+            if (!capabilities.airToAirSpecialist()) continue;
+            double value = airSuperiorityValue(capabilities);
+            if (value > bestValue || value == bestValue && (best == null
+                    || safe(action.getActionIdString()).compareToIgnoreCase(
+                    safe(best.getActionIdString())) < 0)) {
+                best = action;
+                bestValue = value;
+            }
         }
-        if (highestAffordableTech < 0) return new ArrayList<UnitAction>(actions);
-        ArrayList<UnitAction> tier = new ArrayList<UnitAction>();
-        for (UnitAction action : actions) {
-            AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(
-                    action.getBuildUnitType());
-            if (capabilities.airToAirSpecialist()
-                    && capabilities.techLevel() == highestAffordableTech
-                    && unitCost(action) <= credits) tier.add(action);
-        }
-        return tier.isEmpty() ? new ArrayList<UnitAction>(actions) : tier;
+        return best;
+    }
+
+    static double airSuperiorityValue(AiUnitTypeCapabilities capabilities) {
+        if (capabilities == null || !capabilities.airToAirSpecialist()) return 0.0D;
+        double durability = Math.max(1.0D, capabilities.maximumHealth()
+                + capabilities.maximumShield());
+        return Math.sqrt(durability
+                * Math.max(0.04D, capabilities.estimatedAirDps()))
+                * (1.0D + capabilities.maximumAttackRange() / 900.0D);
     }
 
     private static AirComposition airComposition(List<UnitView> liveOwn,

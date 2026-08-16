@@ -10,6 +10,7 @@ import io.github.endx.rustedfabricapi.api.ai.AiStrategicResource;
 import io.github.endx.rustedfabricapi.api.ai.AiTerrainCell;
 import io.github.endx.rustedfabricapi.api.ai.AiTickContext;
 import io.github.endx.rustedfabricapi.api.ai.AiUnitCapabilities;
+import io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities;
 import io.github.endx.rustedfabricapi.api.client.RustedWarfareClient;
 import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
@@ -19,8 +20,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import rustedwarfare.unit.Unit;
 
 /** Forms combat units into movement-compatible groups, defenses, and reinforcement streams. */
 final class StrategicForcePlanner {
@@ -34,15 +39,93 @@ final class StrategicForcePlanner {
     private static final float MINIMUM_STANDOFF_ADVANTAGE = 8.0F;
     private static final float STANDOFF_SAFETY_PADDING = 3.0F;
     private static final float STANDOFF_INNER_PADDING = 2.0F;
+    private static final long RETREAT_LEASE_CYCLES = 12L;
+    private static final float RETREAT_STEP = 220.0F;
+    private static final long REACTIVE_LEASE_CYCLES = 2L;
+    private static final long FRONT_TARGET_LEASE_CYCLES = 12L;
+    private static final float FRONT_TARGET_RADIUS = 540.0F;
+    private static final float TACTICAL_MINIMUM_SCAN_RADIUS = 420.0F;
+    private static final float TACTICAL_MAXIMUM_SCAN_RADIUS = 680.0F;
+    private static final float LOCAL_BALANCE_RADIUS = 240.0F;
+    private static final long TACTICAL_LEASE_CYCLES = 2L;
     private final Map<Long, Long> orderLeases = new HashMap<Long, Long>();
+    private final Map<Long, Long> retreatLeases = new HashMap<Long, Long>();
+    private final Map<Long, Long> reactiveLeases = new HashMap<Long, Long>();
     private final Map<Long, AiForceRole> forceRoles = new HashMap<Long, AiForceRole>();
+    private final EnumMap<AiMovementDomain, TargetLease> frontTargetLeases =
+            new EnumMap<AiMovementDomain, TargetLease>(AiMovementDomain.class);
+    private final Map<Long, TacticalLease> tacticalLeases =
+            new HashMap<Long, TacticalLease>();
     private StrategicPosture posture;
     private StrategicAirPlan.Mode airMode;
+    private StrategicFrontState.Mode frontMode;
+    private long latestMicroCycle;
+
+    void onStrategicReplan() {
+        orderLeases.clear();
+        retreatLeases.clear();
+        reactiveLeases.clear();
+        forceRoles.clear();
+        frontTargetLeases.clear();
+        tacticalLeases.clear();
+        posture = null;
+        airMode = null;
+        frontMode = null;
+    }
+
+    void updateMicro(AiTickContext context, AiStrategicMapSnapshot situation,
+            long cycle, StrategicTeamPlan teamPlan) {
+        latestMicroCycle = cycle;
+        tacticalLeases.entrySet().removeIf(entry -> entry.getValue().untilCycle <= cycle);
+        if (teamPlan == null) return;
+        List<UnitView> own = context.world().own();
+        List<UnitView> enemies = context.world().enemies();
+        if (own.isEmpty() || enemies.isEmpty()) return;
+        ArrayList<UnitView> friendlies = new ArrayList<UnitView>(
+                own.size() + context.world().allies().size());
+        friendlies.addAll(own);
+        friendlies.addAll(context.world().allies());
+        TacticalIndex index = new TacticalIndex(friendlies, enemies);
+        Map<Long, UnitView> enemiesById = indexById(enemies);
+        for (UnitView unit : own) {
+            if (!unit.alive()) continue;
+            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
+            if (!capabilities.mobileCombatUnit()) continue;
+            if (UnitMicroPolicy.recovered(unit.healthFraction())) {
+                retreatLeases.remove(unit.id());
+            }
+            TacticalLease previous = tacticalLeases.get(unit.id());
+            float scanRadius = clamp(capabilities.maximumAttackRange() + 260.0F,
+                    TACTICAL_MINIMUM_SCAN_RADIUS, TACTICAL_MAXIMUM_SCAN_RADIUS);
+            UnitView target = selectTacticalTarget(situation, unit, index, enemiesById,
+                    previous, scanRadius);
+            if (target == null) {
+                tacticalLeases.remove(unit.id());
+                continue;
+            }
+            AiEngagementAssessment engagement =
+                    AiEngagementAssessment.capture(unit, target);
+            AiUnitCapabilities targetCapabilities = AiUnitCapabilities.capture(target);
+            float localRatio = localStrengthRatio(unit, target, index);
+            UnitMicroPolicy.Decision decision = UnitMicroPolicy.selectLive(
+                    unit.healthFraction(), unit.recentDamager(1.5F).isPresent(),
+                    engagement.canEngage(), engagement.canReturnFire(),
+                    engagement.attackerRange(), engagement.returnFireRange(),
+                    engagement.centerDistance(), capabilities.movementSpeed(),
+                    targetCapabilities.movementSpeed(), localRatio);
+            applyTacticalDecision(context, situation, unit, target,
+                    engagement, decision, previous, teamPlan.ownAnchor(), cycle);
+        }
+    }
 
     void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle,
             StrategicResourceCampaign resourceCampaign, StrategicTeamPlan teamPlan,
             StrategicFrontState frontState) {
         orderLeases.entrySet().removeIf(entry -> entry.getValue() <= cycle);
+        retreatLeases.entrySet().removeIf(entry -> entry.getValue() <= cycle);
+        reactiveLeases.entrySet().removeIf(entry -> entry.getValue() <= cycle);
+        tacticalLeases.entrySet().removeIf(
+                entry -> entry.getValue().untilCycle <= latestMicroCycle);
         int minimumAttackGroup = RustedWarfareClient.isSandboxMode()
                 ? 1 : MINIMUM_ATTACK_GROUP;
         EnumMap<AiMovementDomain, List<UnitView>> idleGroups =
@@ -56,6 +139,7 @@ final class StrategicForcePlanner {
                 new ArrayList<ForceRoleAllocator.Candidate>();
         List<UnitView> currentOwn = context.world().own();
         List<UnitView> currentEnemies = context.world().enemies();
+        Map<Long, UnitView> enemiesById = indexById(currentEnemies);
         for (UnitView unit : currentOwn) {
             if (!unit.alive()) continue;
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
@@ -66,10 +150,30 @@ final class StrategicForcePlanner {
                 continue;
             }
             combatUnits.add(unit);
+        }
+        commandEmergencyRetreat(context, situation, combatUnits,
+                currentEnemies, enemiesById, teamPlan.ownAnchor(), cycle);
+        commandEmergencyRetreat(context, situation, airCombatUnits,
+                currentEnemies, enemiesById, teamPlan.ownAnchor(), cycle);
+        combatUnits.removeIf(unit -> retreatLeases.containsKey(unit.id()));
+        airCombatUnits.removeIf(unit -> retreatLeases.containsKey(unit.id()));
+        Set<Long> reactiveUnits = commandReactiveMicro(context, situation,
+                combatUnits, enemiesById, cycle);
+        for (UnitView unit : combatUnits) {
+            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             roleCandidates.add(new ForceRoleAllocator.Candidate(unit.id(),
                     capabilities.movementSpeed(), unit.maxHealth()));
         }
         int homeThreats = countHomeThreats(homeAnchors, currentEnemies);
+        if (frontState != null && frontState.mode() != frontMode) {
+            frontMode = frontState.mode();
+            frontTargetLeases.clear();
+            for (Map.Entry<Long, AiForceRole> entry : forceRoles.entrySet()) {
+                if (entry.getValue() == AiForceRole.FRONTLINE) {
+                    orderLeases.remove(entry.getKey());
+                }
+            }
+        }
         commandAirCampaign(context, situation, airCombatUnits,
                 teamPlan, cycle);
         StrategicPosture nextPosture = StrategicPosture.select(combatUnits.size(), homeThreats,
@@ -90,6 +194,8 @@ final class StrategicForcePlanner {
                     + ", homeThreats=" + homeThreats);
         }
         for (UnitView unit : combatUnits) {
+            if (tacticallyControlled(unit.id())) continue;
+            if (reactiveUnits.contains(unit.id())) continue;
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             AiForceRole role = forceRoles.get(unit.id());
             EnumMap<AiMovementDomain, List<UnitView>> destination =
@@ -130,8 +236,11 @@ final class StrategicForcePlanner {
 
             // Every allied position reinforces the shared land front. Position doctrine changes
             // production and timing; it must not leave newly produced T2 units at their factory.
+            List<UnitView> activeFront = activeGroups.get(domain);
+            if (activeFront == null) activeFront = Collections.emptyList();
             if (commandStructuredFront(context,
-                    situation, domain, units, teamPlan, frontState, cycle)) continue;
+                    situation, domain, units, activeFront, currentEnemies,
+                    teamPlan, frontState, minimumAttackGroup, cycle)) continue;
 
             Objective objective = selectObjective(situation, domain, units, currentEnemies);
             if (objective == null) continue;
@@ -153,6 +262,283 @@ final class StrategicForcePlanner {
         }
     }
 
+    private void commandEmergencyRetreat(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<UnitView> units,
+            List<UnitView> enemies, Map<Long, UnitView> enemiesById,
+            WorldPoint home, long cycle) {
+        for (UnitView unit : units) {
+            if (tacticallyControlled(unit.id())) continue;
+            boolean active = retreatLeases.containsKey(unit.id());
+            if (active && UnitMicroPolicy.recovered(unit.healthFraction())) {
+                retreatLeases.remove(unit.id());
+                orderLeases.remove(unit.id());
+                active = false;
+            }
+            UnitView recent = unit.recentDamager(3.0F).orElse(null);
+            recent = recent != null ? enemiesById.get(recent.id()) : null;
+            UnitView threat = recent;
+            if (threat == null && unit.healthFraction() <= 0.22F) {
+                threat = closestImmediateThreat(unit, enemies);
+            }
+            AiEngagementAssessment self = threat != null
+                    ? AiEngagementAssessment.capture(unit, threat) : null;
+            AiEngagementAssessment incoming = threat != null
+                    ? AiEngagementAssessment.capture(threat, unit) : null;
+            boolean underThreat = incoming != null && incoming.canEngage()
+                    && incoming.centerDistance() <= incoming.attackerRange() + 80.0F;
+            UnitMicroPolicy.Decision decision = UnitMicroPolicy.select(
+                    unit.healthFraction(), recent != null, underThreat,
+                    self != null && self.canEngage(),
+                    self != null && self.hasSafeStandoffWindow(MINIMUM_STANDOFF_ADVANTAGE),
+                    self != null && self.attackerWithinRange(),
+                    incoming != null && incoming.attackerWithinRange());
+            if (!active && decision != UnitMicroPolicy.Decision.RETREAT) continue;
+            WorldPoint destination = retreatPoint(situation, unit, home, threat);
+            if (destination == null) continue;
+            if (!active || !orderLeases.containsKey(unit.id())) {
+                context.orders().move(Collections.singletonList(unit),
+                        destination.x(), destination.y());
+                markAssigned(Collections.singletonList(unit), cycle);
+            }
+            if (!active) retreatLeases.put(unit.id(), cycle + RETREAT_LEASE_CYCLES);
+        }
+    }
+
+    private Set<Long> commandReactiveMicro(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<UnitView> units,
+            Map<Long, UnitView> enemiesById, long cycle) {
+        HashSet<Long> controlled = new HashSet<Long>();
+        for (UnitView unit : units) {
+            if (tacticallyControlled(unit.id())) continue;
+            if (reactiveLeases.containsKey(unit.id())) {
+                controlled.add(unit.id());
+                continue;
+            }
+            UnitView attacker = unit.recentDamager(2.25F).orElse(null);
+            attacker = attacker != null ? enemiesById.get(attacker.id()) : null;
+            if (attacker == null) {
+                continue;
+            }
+            AiEngagementAssessment own = AiEngagementAssessment.capture(unit, attacker);
+            AiEngagementAssessment incoming = AiEngagementAssessment.capture(attacker, unit);
+            if (!own.canEngage() || !own.attackerWithinRange()
+                    && !incoming.attackerWithinRange()) {
+                continue;
+            }
+            engageTarget(context, situation,
+                    AiUnitCapabilities.capture(unit).movementDomain(),
+                    Collections.singletonList(unit), attacker, cycle);
+            reactiveLeases.put(unit.id(), cycle + REACTIVE_LEASE_CYCLES);
+            controlled.add(unit.id());
+        }
+        return controlled;
+    }
+
+    private static UnitView closestImmediateThreat(UnitView unit,
+            List<UnitView> enemies) {
+        UnitView best = null;
+        float bestDistance = Float.POSITIVE_INFINITY;
+        for (UnitView enemy : enemies) {
+            if (!enemy.alive()) continue;
+            AiEngagementAssessment incoming = AiEngagementAssessment.capture(enemy, unit);
+            if (!incoming.canEngage()
+                    || incoming.centerDistance() > incoming.attackerRange() + 80.0F) continue;
+            if (incoming.centerDistance() < bestDistance || incoming.centerDistance() == bestDistance
+                    && (best == null || enemy.id() < best.id())) {
+                best = enemy;
+                bestDistance = incoming.centerDistance();
+            }
+        }
+        return best;
+    }
+
+    private static WorldPoint retreatPoint(AiStrategicMapSnapshot situation,
+            UnitView unit, WorldPoint home, UnitView threat) {
+        WorldPoint current = new WorldPoint(unit.x(), unit.y());
+        AiMovementDomain domain = AiUnitCapabilities.capture(unit).movementDomain();
+        if (home != null) {
+            List<WorldPoint> path = situation.terrain().routesFrom(current, domain).pathTo(home);
+            if (!path.isEmpty()) {
+                WorldPoint previous = current;
+                float travelled = 0.0F;
+                for (WorldPoint point : path) {
+                    travelled += (float) Math.sqrt(previous.distanceSquared(point));
+                    if (travelled >= RETREAT_STEP) return point;
+                    previous = point;
+                }
+                return path.get(path.size() - 1);
+            }
+            if (domain == AiMovementDomain.AIR) {
+                return ForceCoordinationGeometry.advance(current, home, RETREAT_STEP);
+            }
+        }
+        if (threat == null) return null;
+        float dx = unit.x() - threat.x();
+        float dy = unit.y() - threat.y();
+        float length = (float) Math.hypot(dx, dy);
+        if (length < 0.01F) { dx = 1.0F; dy = 0.0F; length = 1.0F; }
+        float maxX = situation.terrain().worldWidth() - 1.0F;
+        float maxY = situation.terrain().worldHeight() - 1.0F;
+        return new WorldPoint(clamp(unit.x() + dx / length * RETREAT_STEP, 1.0F, maxX),
+                clamp(unit.y() + dy / length * RETREAT_STEP, 1.0F, maxY));
+    }
+
+    private static Map<Long, UnitView> indexById(List<UnitView> units) {
+        HashMap<Long, UnitView> result = new HashMap<Long, UnitView>();
+        for (UnitView unit : units) result.put(unit.id(), unit);
+        return result;
+    }
+
+    private UnitView selectTacticalTarget(AiStrategicMapSnapshot situation,
+            UnitView unit, TacticalIndex index, Map<Long, UnitView> enemiesById,
+            TacticalLease previous, float scanRadius) {
+        ArrayList<UnitView> candidates = index.enemiesNear(unit.x(), unit.y(), scanRadius);
+        UnitView recent = unit.recentDamager(1.5F).orElse(null);
+        recent = recent != null ? enemiesById.get(recent.id()) : null;
+        if (recent != null && !containsUnit(candidates, recent.id())) candidates.add(recent);
+        UnitView best = null;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        AiMovementDomain domain = AiUnitCapabilities.capture(unit).movementDomain();
+        WorldPoint origin = new WorldPoint(unit.x(), unit.y());
+        for (UnitView candidate : candidates) {
+            if (!candidate.alive()) continue;
+            AiEngagementAssessment own = AiEngagementAssessment.capture(unit, candidate);
+            AiEngagementAssessment incoming = AiEngagementAssessment.capture(candidate, unit);
+            if (!own.canEngage() && !incoming.canEngage()) continue;
+            float interaction = Math.max(own.attackerRange(), incoming.attackerRange()) + 180.0F;
+            boolean recentThreat = recent != null && candidate.id() == recent.id();
+            if (!recentThreat && own.centerDistance() > interaction) continue;
+            WorldPoint point = new WorldPoint(candidate.x(), candidate.y());
+            if (!own.attackerWithinRange() && domain != AiMovementDomain.AIR
+                    && !reachable(situation, domain, origin, point)) continue;
+            AiUnitTypeCapabilities type = typeCapabilities(candidate);
+            double score = -own.centerDistance() * 0.55D
+                    + (1.0F - candidate.healthFraction()) * 135.0D;
+            if (own.attackerWithinRange()) score += 85.0D;
+            if (incoming.attackerWithinRange()) score += 175.0D;
+            if (recentThreat) score += 210.0D;
+            if (previous != null && previous.targetId == candidate.id()
+                    && previous.untilCycle > latestMicroCycle) score += 70.0D;
+            if (type != null) {
+                score += type.estimatedSustainedDps() * 7.0D
+                        + type.maximumAttackRange() * 0.16D;
+            }
+            if (candidate.constructionProgress() < 0.98F) score += 180.0D;
+            if (score > bestScore || score == bestScore
+                    && (best == null || candidate.id() < best.id())) {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    private static float localStrengthRatio(UnitView unit, UnitView target,
+            TacticalIndex index) {
+        float x = (unit.x() + target.x()) * 0.5F;
+        float y = (unit.y() + target.y()) * 0.5F;
+        float friendly = liveCombatPower(unit);
+        float hostile = liveCombatPower(target);
+        for (UnitView ally : index.friendliesNear(x, y, LOCAL_BALANCE_RADIUS)) {
+            if (!ally.alive() || ally.id() == unit.id()) continue;
+            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(ally);
+            if (!capabilities.mobileCombatUnit()) continue;
+            if (AiEngagementAssessment.capture(ally, target).canEngage()) {
+                friendly += liveCombatPower(ally);
+            }
+        }
+        for (UnitView enemy : index.enemiesNear(x, y, LOCAL_BALANCE_RADIUS)) {
+            if (!enemy.alive() || enemy.id() == target.id()) continue;
+            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(enemy);
+            if (!capabilities.attacker()) continue;
+            if (AiEngagementAssessment.capture(enemy, unit).canEngage()) {
+                hostile += liveCombatPower(enemy);
+            }
+        }
+        if (hostile <= 0.001F) return 20.0F;
+        return Math.min(20.0F, friendly / hostile);
+    }
+
+    private void applyTacticalDecision(AiTickContext context,
+            AiStrategicMapSnapshot situation, UnitView unit, UnitView target,
+            AiEngagementAssessment engagement, UnitMicroPolicy.Decision decision,
+            TacticalLease previous, WorldPoint home, long cycle) {
+        if (decision == UnitMicroPolicy.Decision.ENGAGE
+                || decision == UnitMicroPolicy.Decision.SUPPORT
+                || decision == UnitMicroPolicy.Decision.STANDOFF) {
+            tacticalLeases.remove(unit.id());
+            return;
+        }
+        WorldPoint destination = null;
+        if (decision == UnitMicroPolicy.Decision.EDGE_CONTROL) {
+            destination = tacticalSpacingPoint(situation, unit, target,
+                    UnitMicroPolicy.desiredEdgeDistance(engagement.attackerRange()));
+        } else if (decision == UnitMicroPolicy.Decision.RETREAT) {
+            destination = retreatPoint(situation, unit, home, target);
+        } else if (decision == UnitMicroPolicy.Decision.DISENGAGE) {
+            destination = tacticalSpacingPoint(situation, unit, target,
+                    engagement.centerDistance() + 150.0F);
+            if (destination == null) destination = retreatPoint(situation, unit, home, target);
+        }
+        boolean changed = previous == null || previous.targetId != target.id()
+                || previous.decision != decision || previous.untilCycle <= cycle;
+        if (destination != null && previous != null
+                && previous.destination != null
+                && previous.destination.distanceSquared(destination) > 14.0F * 14.0F) {
+            changed = true;
+        }
+        List<UnitView> singleton = Collections.singletonList(unit);
+        if (decision == UnitMicroPolicy.Decision.RUSH) {
+            if (changed) context.orders().attack(singleton, target);
+        } else if (decision == UnitMicroPolicy.Decision.HOLD_FIRE_WINDOW) {
+            // Replaces a stale attack waypoint once, then native automatic fire handles the edge.
+            if (changed) context.orders().move(singleton, unit.x(), unit.y());
+        } else if (destination != null && changed) {
+            context.orders().move(singleton, destination.x(), destination.y());
+        }
+        tacticalLeases.put(unit.id(), new TacticalLease(target.id(), decision,
+                cycle + TACTICAL_LEASE_CYCLES, destination));
+        orderLeases.remove(unit.id());
+        reactiveLeases.remove(unit.id());
+    }
+
+    private static WorldPoint tacticalSpacingPoint(AiStrategicMapSnapshot situation,
+            UnitView unit, UnitView target, float desiredDistance) {
+        if (!Float.isFinite(desiredDistance) || desiredDistance < 0.0F) return null;
+        StandoffGeometry.Position position = StandoffGeometry.position(
+                unit.x(), unit.y(), unit.id(), target.x(), target.y(), desiredDistance);
+        float maxX = situation.terrain().worldWidth() - 1.0F;
+        float maxY = situation.terrain().worldHeight() - 1.0F;
+        float x = clamp(position.x, 1.0F, maxX);
+        float y = clamp(position.y, 1.0F, maxY);
+        AiMovementDomain domain = AiUnitCapabilities.capture(unit).movementDomain();
+        AiTerrainCell cell = situation.terrain().cellAtWorld(x, y);
+        WorldPoint point = cell != null
+                ? cell.representativePoint(domain).orElse(new WorldPoint(x, y))
+                : new WorldPoint(x, y);
+        WorldPoint current = new WorldPoint(unit.x(), unit.y());
+        return reachable(situation, domain, current, point) ? point : null;
+    }
+
+    private static float liveCombatPower(UnitView unit) {
+        AiUnitTypeCapabilities type = typeCapabilities(unit);
+        if (type == null || !type.attacker()) return 0.0F;
+        float durability = Math.max(1.0F, unit.health() + unit.shield());
+        float dps = Math.max(0.04F, type.estimatedEngagementDps(180.0F));
+        return (float) Math.sqrt(durability * dps);
+    }
+
+    private static AiUnitTypeCapabilities typeCapabilities(UnitView unit) {
+        if (!(unit.raw() instanceof Unit)) return null;
+        rustedwarfare.unit.UnitType type = ((Unit) unit.raw()).r();
+        return type != null ? AiUnitTypeCapabilities.capture(type) : null;
+    }
+
+    private boolean tacticallyControlled(long unitId) {
+        TacticalLease lease = tacticalLeases.get(unitId);
+        return lease != null && lease.untilCycle > latestMicroCycle;
+    }
+
     private void commandAirCampaign(AiTickContext context,
             AiStrategicMapSnapshot situation, List<UnitView> ownAir,
             StrategicTeamPlan teamPlan, long cycle) {
@@ -169,6 +555,7 @@ final class StrategicForcePlanner {
         ArrayList<UnitView> airToAir = new ArrayList<UnitView>();
         ArrayList<UnitView> airToGround = new ArrayList<UnitView>();
         for (UnitView unit : ownAir) {
+            if (tacticallyControlled(unit.id())) continue;
             if (orderLeases.containsKey(unit.id())) continue;
             if (StrategicAirPlan.isAirToAir(unit)) airToAir.add(unit);
             else if (StrategicAirPlan.isAirToGroundOnly(unit)) airToGround.add(unit);
@@ -227,8 +614,9 @@ final class StrategicForcePlanner {
 
     private boolean commandStructuredFront(AiTickContext context,
             AiStrategicMapSnapshot situation, AiMovementDomain domain,
-            List<UnitView> units, StrategicTeamPlan teamPlan,
-            StrategicFrontState frontState, long cycle) {
+            List<UnitView> units, List<UnitView> activeUnits,
+            List<UnitView> enemies, StrategicTeamPlan teamPlan,
+            StrategicFrontState frontState, int minimumAttackGroup, long cycle) {
         if (frontState == null || frontState.point() == null) return false;
         WorldPoint home = teamPlan.ownAnchor();
         if (home == null) return false;
@@ -239,26 +627,53 @@ final class StrategicForcePlanner {
                 .orElse(ForceCoordinationGeometry.advance(
                 frontState.point(), home, setback));
         if (!reachable(situation, domain, centroid(units), rally)) return false;
-        if (frontState.mode() == StrategicFrontState.Mode.OPEN) {
-            if (!arrived(units, rally)) attackMove(context, units, rally, cycle);
-            return true;
+        ArrayList<UnitView> wholeGroup = new ArrayList<UnitView>(activeUnits.size()
+                + units.size());
+        wholeGroup.addAll(activeUnits);
+        wholeGroup.addAll(units);
+        ArrayList<UnitView> ready = new ArrayList<UnitView>();
+        ArrayList<UnitView> stragglers = new ArrayList<UnitView>();
+        float rallyToFront = distance(rally, frontState.point());
+        for (UnitView unit : wholeGroup) {
+            boolean prepared = BattleGroupPolicy.readyForFront(
+                    distance(unit, rally), distance(unit, frontState.point()), rallyToFront);
+            if (prepared) ready.add(unit);
         }
-        if (frontState.mode() == StrategicFrontState.Mode.MUSTER) {
+        for (UnitView unit : units) {
+            if (!containsUnit(ready, unit.id())) stragglers.add(unit);
+        }
+        boolean commit = BattleGroupPolicy.shouldCommit(frontState.mode(),
+                wholeGroup.size(), ready.size(), minimumAttackGroup);
+        if (!commit && frontState.mode() != StrategicFrontState.Mode.ATTRITION) {
             if (!arrived(units, rally)) {
                 context.orders().move(units, rally.x(), rally.y());
                 markAssigned(units, cycle);
             }
             return true;
         }
-        UnitView defense = frontState.primaryDefense();
-        if (defense == null) return false;
+        if (!stragglers.isEmpty() && !arrived(stragglers, rally)) {
+            context.orders().move(stragglers, rally.x(), rally.y());
+            markAssigned(stragglers, cycle);
+        }
+        ArrayList<UnitView> readyIdle = new ArrayList<UnitView>();
+        for (UnitView unit : units) {
+            if (containsUnit(ready, unit.id())) readyIdle.add(unit);
+        }
+        if (readyIdle.isEmpty()) return true;
+        if (frontState.mode() == StrategicFrontState.Mode.OPEN) {
+            attackMove(context, readyIdle, frontState.point(), cycle);
+            return true;
+        }
+        UnitView defense = selectLeasedFrontTarget(situation, domain,
+                wholeGroup, enemies, frontState, cycle);
+        if (defense == null) return true;
         if (frontState.mode() == StrategicFrontState.Mode.ASSAULT) {
-            engageTarget(context, situation, domain, units, defense, cycle);
+            engageTarget(context, situation, domain, readyIdle, defense, cycle);
             return true;
         }
         ArrayList<UnitView> safePressure = new ArrayList<UnitView>();
         ArrayList<UnitView> reserve = new ArrayList<UnitView>();
-        for (UnitView unit : units) {
+        for (UnitView unit : readyIdle) {
             AiEngagementAssessment engagement =
                     AiEngagementAssessment.capture(unit, defense);
             if (engagement.hasSafeStandoffWindow(MINIMUM_STANDOFF_ADVANTAGE)) {
@@ -275,6 +690,63 @@ final class StrategicForcePlanner {
             markAssigned(reserve, cycle);
         }
         return true;
+    }
+
+    private UnitView selectLeasedFrontTarget(AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> units, List<UnitView> enemies,
+            StrategicFrontState frontState, long cycle) {
+        TargetLease lease = frontTargetLeases.get(domain);
+        if (lease != null && lease.untilCycle > cycle) {
+            for (UnitView enemy : enemies) {
+                if (enemy.id() == lease.targetId
+                        && validFrontTarget(situation, domain, units,
+                        enemy, frontState.point())) return enemy;
+            }
+        }
+        UnitView best = null;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        WorldPoint group = centroid(units);
+        for (UnitView enemy : enemies) {
+            if (!validFrontTarget(situation, domain, units,
+                    enemy, frontState.point())) continue;
+            io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities type =
+                    io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities.capture(
+                    ((rustedwarfare.unit.Unit) enemy.raw()).r());
+            float route = travelCost(situation, domain, group,
+                    new WorldPoint(enemy.x(), enemy.y()));
+            double score = -route * 0.70D
+                    - enemy.health() * 0.025D
+                    + type.estimatedSustainedDps() * 12.0D
+                    + type.maximumAttackRange() * 0.45D;
+            if (enemy.constructionProgress() < 0.98F) score += 260.0D;
+            if (score > bestScore || score == bestScore
+                    && (best == null || enemy.id() < best.id())) {
+                best = enemy;
+                bestScore = score;
+            }
+        }
+        if (best != null) {
+            frontTargetLeases.put(domain,
+                    new TargetLease(best.id(), cycle + FRONT_TARGET_LEASE_CYCLES));
+        }
+        return best;
+    }
+
+    private static boolean validFrontTarget(AiStrategicMapSnapshot situation,
+            AiMovementDomain domain, List<UnitView> units,
+            UnitView enemy, WorldPoint front) {
+        if (enemy == null || !enemy.alive() || !enemy.building()
+                || !(enemy.raw() instanceof rustedwarfare.unit.Unit)) return false;
+        io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities type =
+                io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities.capture(
+                ((rustedwarfare.unit.Unit) enemy.raw()).r());
+        if (!type.attacker() || distance(enemy, front) > FRONT_TARGET_RADIUS) return false;
+        if (!reachable(situation, domain, centroid(units),
+                new WorldPoint(enemy.x(), enemy.y()))) return false;
+        for (UnitView unit : units) {
+            if (AiEngagementAssessment.capture(unit, enemy).canEngage()) return true;
+        }
+        return false;
     }
 
     private void applyRolePlan(Map<Long, AiForceRole> nextRoles) {
@@ -545,9 +1017,18 @@ final class StrategicForcePlanner {
         ArrayList<UnitView> supportingUnits = new ArrayList<UnitView>();
         for (UnitView unit : units) {
             AiEngagementAssessment engagement = AiEngagementAssessment.capture(unit, target);
-            if (target.building()
-                    && engagement.hasSafeStandoffWindow(MINIMUM_STANDOFF_ADVANTAGE)) {
-                if (engagement.attackerWithinRange() && !engagement.defenderWithinRange()) {
+            UnitMicroPolicy.Decision decision = UnitMicroPolicy.select(
+                    unit.healthFraction(), unit.recentDamager(2.25F).isPresent(),
+                    engagement.defenderWithinRange(), engagement.canEngage(),
+                    engagement.hasSafeStandoffWindow(MINIMUM_STANDOFF_ADVANTAGE),
+                    engagement.attackerWithinRange(), engagement.defenderWithinRange());
+            if (decision == UnitMicroPolicy.Decision.RETREAT) {
+                markAssigned(Collections.singletonList(unit), cycle);
+                continue;
+            }
+            if (decision == UnitMicroPolicy.Decision.HOLD_FIRE_WINDOW
+                    || decision == UnitMicroPolicy.Decision.STANDOFF) {
+                if (decision == UnitMicroPolicy.Decision.HOLD_FIRE_WINDOW) {
                     // No attack waypoint: staying idle preserves the native automatic fire range.
                     markAssigned(Collections.singletonList(unit), cycle);
                     continue;
@@ -660,8 +1141,109 @@ final class StrategicForcePlanner {
         return new WorldPoint(x / units.size(), y / units.size());
     }
 
+    private static boolean containsUnit(List<UnitView> units, long id) {
+        for (UnitView unit : units) {
+            if (unit.id() == id) return true;
+        }
+        return false;
+    }
+
+    private static float distance(UnitView unit, WorldPoint point) {
+        return (float) Math.hypot(unit.x() - point.x(), unit.y() - point.y());
+    }
+
+    private static float distance(WorldPoint first, WorldPoint second) {
+        return (float) Math.sqrt(first.distanceSquared(second));
+    }
+
     private static float clamp(float value, float minimum, float maximum) {
         return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    private static final class TargetLease {
+        final long targetId;
+        final long untilCycle;
+
+        TargetLease(long targetId, long untilCycle) {
+            this.targetId = targetId;
+            this.untilCycle = untilCycle;
+        }
+    }
+
+    private static final class TacticalLease {
+        final long targetId;
+        final UnitMicroPolicy.Decision decision;
+        final long untilCycle;
+        final WorldPoint destination;
+
+        TacticalLease(long targetId, UnitMicroPolicy.Decision decision,
+                long untilCycle, WorldPoint destination) {
+            this.targetId = targetId;
+            this.decision = decision;
+            this.untilCycle = untilCycle;
+            this.destination = destination;
+        }
+    }
+
+    /** One-pass deterministic spatial buckets; avoids ownUnits x enemyUnits tactical scans. */
+    private static final class TacticalIndex {
+        private static final float CELL_SIZE = 256.0F;
+        private final Map<Long, List<UnitView>> friendlies =
+                new HashMap<Long, List<UnitView>>();
+        private final Map<Long, List<UnitView>> enemies =
+                new HashMap<Long, List<UnitView>>();
+
+        TacticalIndex(List<UnitView> friendlyUnits, List<UnitView> enemyUnits) {
+            addAll(friendlies, friendlyUnits);
+            addAll(enemies, enemyUnits);
+        }
+
+        ArrayList<UnitView> friendliesNear(float x, float y, float radius) {
+            return nearby(friendlies, x, y, radius);
+        }
+
+        ArrayList<UnitView> enemiesNear(float x, float y, float radius) {
+            return nearby(enemies, x, y, radius);
+        }
+
+        private static void addAll(Map<Long, List<UnitView>> buckets,
+                List<UnitView> units) {
+            for (UnitView unit : units) {
+                if (!unit.alive()) continue;
+                long key = key(cell(unit.x()), cell(unit.y()));
+                buckets.computeIfAbsent(key, ignored -> new ArrayList<UnitView>()).add(unit);
+            }
+        }
+
+        private static ArrayList<UnitView> nearby(Map<Long, List<UnitView>> buckets,
+                float x, float y, float radius) {
+            ArrayList<UnitView> result = new ArrayList<UnitView>();
+            float radiusSquared = radius * radius;
+            int minimumX = cell(x - radius);
+            int maximumX = cell(x + radius);
+            int minimumY = cell(y - radius);
+            int maximumY = cell(y + radius);
+            for (int cellX = minimumX; cellX <= maximumX; cellX++) {
+                for (int cellY = minimumY; cellY <= maximumY; cellY++) {
+                    List<UnitView> bucket = buckets.get(key(cellX, cellY));
+                    if (bucket == null) continue;
+                    for (UnitView unit : bucket) {
+                        float dx = unit.x() - x;
+                        float dy = unit.y() - y;
+                        if (dx * dx + dy * dy <= radiusSquared) result.add(unit);
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static int cell(float coordinate) {
+            return (int) Math.floor(coordinate / CELL_SIZE);
+        }
+
+        private static long key(int x, int y) {
+            return ((long) x << 32) ^ (y & 0xffffffffL);
+        }
     }
 
     private static final class Objective {

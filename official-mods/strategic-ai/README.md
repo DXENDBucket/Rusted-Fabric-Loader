@@ -24,6 +24,44 @@ The controller is intentionally omniscient, matching the original game AI. It tr
 water, over-cliff, over-cliff-water, and air reachability separately, so mountains split land plans
 without incorrectly blocking units that can cross them.
 
+The live situation layer refreshes once per simulation second. Team roles, the active land front,
+and resource ownership are reconsidered on a slower hysteretic cycle, or immediately after the
+assigned frontline loses its base, so short-lived influence changes do not make allied roles
+oscillate. Established battles can pull the plan toward an active reachable land front instead of
+leaving every army tied to the opening corridor forever.
+
+Combat control also has a per-unit reaction layer. Critically damaged units under current fire
+withdraw independently, recently attacked units answer a target they can actually engage, and any
+unit with a target-specific range advantage uses ordinary movement to hold a one-way-fire band
+against mobile units as well as buildings. Retreat and reaction leases are deliberately short so
+the strategic group controller can absorb the unit again instead of permanently detaching it.
+
+Land forces now assemble on a route-aligned rally line before committing, while units already
+fighting beyond that line remain part of the vanguard instead of being recalled. Reinforcements
+join in batches, and each movement domain keeps a short shared target lease that favours reachable,
+dangerous, unfinished or weakened forward defenses. This avoids both one-at-a-time feeding and
+the old tendency to retarget a different tower on every planning pulse.
+
+An independent live combat layer runs roughly five times per simulation second. It spatially
+indexes the current battlefield, selects an immediately relevant target for each engaged unit,
+and can override a stale group objective. Equal- or longer-ranged units work the edge of their
+target-specific firing range; outranged units rush only when local combat strength and a real
+speed advantage make closing viable, otherwise they disengage from enemy reach. The index is
+rebuilt linearly per pass so this does not degrade into an all-units-by-all-enemies scan.
+
+Team production now enforces its assigned domain: the frontline and economy/tech positions retain
+land production while mobile-support positions own the air plan. Dual-purpose gunships no longer
+count as air-superiority aircraft merely because they can shoot upward. Under parity or air
+disadvantage an upgraded air factory selects the strongest exposed interceptor and banks for it,
+rather than spending the upgrade budget on another light interceptor; health and shield are both
+included in this comparison.
+
+A lost forward tower race is a persistent operation instead of a generic retreat. Up to four
+frontline builders leave the predicted enemy-tower range together, regroup on the home side, build
+one safe replacement together, and keep repairing it. The attrition production plan concurrently
+favours ground units able to fire beyond the primary enemy defense, allowing the repaired tower to
+screen artillery pressure.
+
 This is synchronized simulation behavior and is declared `required` in multiplayer. Set the JVM
 property `-Drusted.fabric.strategicAi.enabled=false` to keep the mod installed without claiming AI
 teams during development.
