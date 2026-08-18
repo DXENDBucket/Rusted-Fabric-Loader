@@ -129,6 +129,20 @@ public final class UnitView {
                 new String[]{"isDamageImmune", "J"}));
     }
 
+    /** Native credit generation before the match and AI income multipliers are applied. */
+    public float creditGenerationPerSecond() {
+        Object value = RustedReflection.invokeInstance(unit,
+                new String[]{"getCreditGenerationPerSecond", "cy"});
+        return value instanceof Number ? ((Number) value).floatValue() : 0.0F;
+    }
+
+    /** Current native tech level of this unit instance. */
+    public int techLevel() {
+        Object value = RustedReflection.invokeInstance(unit,
+                new String[]{"getTechLevel", "V"});
+        return value instanceof Number ? ((Number) value).intValue() : 1;
+    }
+
     /** Returns the mapped movement enum name, such as {@code land}, {@code air}, or {@code water}. */
     public String movementType() {
         Object value = RustedReflection.invokeInstance(unit,

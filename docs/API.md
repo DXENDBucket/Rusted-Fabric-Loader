@@ -1430,7 +1430,10 @@ over-cliff, water, and air reachability remain separately queryable.
 `AiUnitCapabilities.capture(unit)` describes the current unit's orderability, idle state, builder,
 harvester, movement, and combat capabilities. `AiUnitTypeCapabilities.capture(type)` provides the
 same production-planning information for a unit type without registering its temporary prototype
-in the world. Its cache is cleared on map lifecycle changes. The optional official `strategic_ai`
+in the world. Besides target-specific and warmup-aware DPS, custom projectile types expose their
+estimated area-DPS contribution, maximum area radius, and native flame-weapon flag, allowing an AI
+to value crowd-control weapons without identifying units by name. Its cache is cleared on map
+lifecycle changes. The optional official `strategic_ai`
 mod is a deterministic first consumer of these APIs; it is experimental and is not installed by
 default.
 
@@ -1459,8 +1462,11 @@ List<UnitView> friendly = Units.forTeam(playerTeam);
 ```
 
 The stable view includes object identity and position, health/shield/energy/ammo, team, death and
-registration state, building/flying/underwater flags, movement type, recent damager and containing
-unit. `Units.active()`, `alive()`, `matching(...)`, `forTeam(...)`, `within(...)`, and `byId(...)`
+registration state, building/flying/underwater flags, movement type, current tech level, native
+credit generation, recent damager and containing unit. `TeamView` exposes both the match-wide and
+AI-difficulty income multipliers in addition to raw/display income, allowing economy planning to
+compare effective payback without guessing the selected difficulty. `Units.active()`, `alive()`,
+`matching(...)`, `forTeam(...)`, `within(...)`, and `byId(...)`
 cover the usual query patterns. Explicit operations currently include health, direction,
 construction progress, team changes, and removal. Call them only from game-thread callbacks or work
 scheduled through `GameThreadScheduler`.

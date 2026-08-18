@@ -149,6 +149,13 @@ tasks.register('verifyDynamicStrategy', JavaExec) {
     mainClass.set('io.github.endx.strategicai.DynamicStrategyVerification')
 }
 
+tasks.register('verifyStrategicInvestment', JavaExec) {
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.strategicai.StrategicInvestmentVerification')
+}
+
 check.dependsOn tasks.named('verifyStrategicAi')
 check.dependsOn tasks.named('verifyStandoffGeometry')
 check.dependsOn tasks.named('verifyForceCoordinationGeometry')
@@ -160,6 +167,7 @@ check.dependsOn tasks.named('verifyFrontEngagementPolicy')
 check.dependsOn tasks.named('verifyForwardTowerGeometry')
 check.dependsOn tasks.named('verifyAirCampaignPolicy')
 check.dependsOn tasks.named('verifyDynamicStrategy')
+check.dependsOn tasks.named('verifyStrategicInvestment')
 
 tasks.register('remapJarToOfficial', JavaExec) {
     group = 'rusted fabric'

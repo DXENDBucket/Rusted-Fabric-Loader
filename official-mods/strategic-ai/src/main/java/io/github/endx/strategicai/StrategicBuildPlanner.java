@@ -12,10 +12,12 @@ import io.github.endx.rustedfabricapi.api.ai.AiUnitTypeCapabilities;
 import io.github.endx.rustedfabricapi.api.game.UnitView;
 import io.github.endx.rustedfabricapi.api.unit.action.UnitActions;
 import io.github.endx.rustedfabricapi.api.unit.type.UnitTypes;
+import io.github.endx.rustedfabricapi.api.world.GameWorld;
 import io.github.endx.rustedfabricapi.api.world.WorldPoint;
 import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
+import rustedwarfare.unit.action.QueueableUnitAction;
 import rustedwarfare.unit.action.UnitAction;
 
 import java.util.ArrayList;
@@ -32,10 +34,16 @@ final class StrategicBuildPlanner {
     private static final long RESOURCE_RESERVATION_CYCLES = 30L;
     private static final long BUILDING_RESERVATION_CYCLES = 40L;
     private static final long RECOVERY_BUILD_RESERVATION_CYCLES = 8L;
+    private static final long FRONTLINE_BUILDER_RETREAT_CYCLES = 14L;
     private static final float PRIMARY_BASE_RESOURCE_RADIUS = 700.0F;
-    private static final int FRONTLINE_BUILDER_TARGET = 4;
+    private static final int FRONTLINE_BUILDER_TARGET = 3;
     private final Map<Long, Long> resourceReservations = new HashMap<Long, Long>();
     private final Map<Long, Long> buildingReservations = new HashMap<Long, Long>();
+    private final java.util.HashSet<Long> frontlineBuilderIds =
+            new java.util.HashSet<Long>();
+    private final Map<Long, Long> frontlineBuilderRetreatUntil =
+            new HashMap<Long, Long>();
+    private final AirSuperiorityGate airSuperiorityGate = new AirSuperiorityGate();
     private final EnumMap<BaseLayoutGeometry.District, Long> primaryDistrictReservations =
             new EnumMap<BaseLayoutGeometry.District, Long>(BaseLayoutGeometry.District.class);
     private BaseLayoutPlan primaryBase;
@@ -58,6 +66,7 @@ final class StrategicBuildPlanner {
     private boolean announcedEconomy;
     private int announcedOrders;
     private String announcedCapacityPlan;
+    private long economicInvestmentReservationUntil;
 
     void onStrategicReplan() {
         primaryBase = null;
@@ -68,6 +77,7 @@ final class StrategicBuildPlanner {
         productionPlanFrontMode = null;
         productionPlanFocusedCount = 0;
         primaryDistrictReservations.clear();
+        frontlineBuilderRetreatUntil.clear();
         frontierDefenseReservationUntil = 0L;
         frontierDefenseTargetKey = Long.MIN_VALUE;
         forceLockFortification = false;
@@ -78,6 +88,7 @@ final class StrategicBuildPlanner {
         contestRecoveryPoint = null;
         contestRecoveryTowerType = null;
         contestRecoveryBuildUntil = 0L;
+        economicInvestmentReservationUntil = 0L;
     }
 
     void update(AiTickContext context, AiStrategicMapSnapshot situation, long cycle,
@@ -90,36 +101,58 @@ final class StrategicBuildPlanner {
         resourceReservations.entrySet().removeIf(entry -> entry.getValue() <= cycle);
         buildingReservations.entrySet().removeIf(entry -> entry.getValue() <= cycle);
         primaryDistrictReservations.entrySet().removeIf(entry -> entry.getValue() <= cycle);
+        frontlineBuilderRetreatUntil.entrySet().removeIf(entry -> entry.getValue() <= cycle);
         List<UnitView> currentOwn = context.world().own();
+        retainLiveFrontlineBuilders(currentOwn);
         ensurePrimaryBase(situation, currentOwn, context.world().enemies(), teamPlan);
-        evaluateForwardTowerContest(context, situation, resourceCampaign, currentOwn);
-        List<Builder> builders = builders(currentOwn);
-        beginLostTowerRecovery(situation, resourceCampaign, builders);
+        boolean leadsFrontline = teamPlan.leadsFrontline();
+        if (!leadsFrontline) {
+            frontlineBuilderIds.clear();
+            frontlineBuilderRetreatUntil.clear();
+        }
+        List<Builder> allBuilders = builders(currentOwn, false);
+        List<Builder> builders = builders(currentOwn, true);
+        if (leadsFrontline) {
+            assignFrontlineBuilders(allBuilders, resourceCampaign, teamPlan);
+            evaluateForwardTowerContest(context, situation, resourceCampaign, currentOwn);
+            withdrawThreatenedFrontlineBuilders(context, situation, allBuilders, cycle);
+        }
+        builders.removeIf(builder -> frontlineBuilderRetreatUntil.containsKey(
+                builder.capabilities.unit().id()));
+        List<Builder> frontBuilders = selectBuilders(builders, true);
+        List<Builder> baseBuilders = selectBuilders(builders, false);
+        if (leadsFrontline) {
+            beginLostTowerRecovery(situation, resourceCampaign,
+                    selectBuilders(allBuilders, true), currentOwn);
+        }
         refreshProductionPlan(context, situation, currentOwn, cycle,
                 teamPlan, frontState);
-        if (!builders.isEmpty()) {
-            List<Builder> baseBuilders = buildersForBase(
-                    builders, resourceCampaign, teamPlan);
+        boolean frontHandled = leadsFrontline && handleContestRecovery(context, situation,
+                selectBuilders(allBuilders, true), cycle, resourceCampaign, currentOwn);
+        if (!frontHandled && leadsFrontline && !frontBuilders.isEmpty()) {
+            frontHandled = ensureFrontierMaintenance(context, frontBuilders,
+                    resourceCampaign, currentOwn)
+                    || ensureFrontierFortification(context, situation, frontBuilders,
+                    cycle, resourceCampaign)
+                    || claimCampaignResource(context, frontBuilders, cycle, resourceCampaign)
+                    || ensureFrontierDefense(context, situation, frontBuilders, cycle,
+                    resourceCampaign, currentOwn)
+                    || recoverOrStageFrontlineBuilders(context, frontBuilders,
+                    situation, resourceCampaign, teamPlan, currentOwn);
+        }
+        if (!baseBuilders.isEmpty()) {
             int producers = countFocusedCombatProducers(currentOwn, teamPlan.ownRole());
-            if (handleContestRecovery(context, situation, builders, cycle,
-                    resourceCampaign, currentOwn)) {
-                // A failed tower race has its own retreat, rebuild, and repair state machine.
-            } else if (ensureFrontierMaintenance(context, builders, resourceCampaign,
-                    currentOwn)) {
-                // A forward builder repairs the contested tower instead of idling beside it.
-            } else if (ensureFrontierFortification(context, situation, builders, cycle,
-                    resourceCampaign)) {
-                // A suitable front-position opener intentionally takes priority over a home factory.
-            } else if (recoverOrStageFrontlineBuilders(context, builders,
-                    situation, resourceCampaign, teamPlan, currentOwn)) {
-                // Frontline builders regroup behind a failed tower or join the established outpost.
-            } else if (producers == 0) {
+            if (producers == 0) {
                 ensureRoleProduction(context, situation, baseBuilders, cycle,
                         teamPlan, resourceCampaign, currentOwn);
-            } else if (!claimCampaignResource(context, builders, cycle, resourceCampaign)
-                    && !ensureFrontierDefense(context, situation, builders, cycle,
-                            resourceCampaign, currentOwn)
-                    && !claimResource(context, situation, baseBuilders, cycle, teamPlan)) {
+            } else if ((leadsFrontline || !claimCampaignResource(
+                            context, baseBuilders, cycle, resourceCampaign))
+                    && !claimResource(context, situation, baseBuilders, cycle, teamPlan)
+                    && !ensureStrategicDefenses(context, situation, baseBuilders, baseBuilders,
+                            cycle, teamPlan, frontState, resourceCampaign,
+                            currentOwn, producers)
+                    && !ensureEconomicInvestment(context, situation, baseBuilders, cycle,
+                            teamPlan, currentOwn)) {
                 ensureProductionCapacity(context, situation, baseBuilders, cycle,
                         teamPlan, frontState, resourceCampaign, currentOwn, producers);
             }
@@ -393,8 +426,8 @@ final class StrategicBuildPlanner {
             AiStrategicMapSnapshot situation, List<UnitView> own, long cycle,
             StrategicTeamPlan teamPlan, StrategicFrontState frontState) {
         StrategicFrontState.Mode mode = frontState != null ? frontState.mode() : null;
-        StrategicProductionDoctrine.AirBalance currentAirBalance =
-                StrategicProductionDoctrine.assessAirBalance(situation);
+        StrategicProductionDoctrine.AirBalance currentAirBalance = airSuperiorityGate.update(
+                StrategicProductionDoctrine.assessAirBalance(situation));
         int currentFocusCount = focusUnitType != null
                 ? countLiveType(own, safe(focusUnitType.getInternalName())) : 0;
         boolean focusConcentrationIncreased = focusUnitType != null
@@ -406,6 +439,8 @@ final class StrategicBuildPlanner {
                 && !focusConcentrationIncreased) return;
         java.util.LinkedHashMap<String, FactoryPlanCandidate> factories =
                 new java.util.LinkedHashMap<String, FactoryPlanCandidate>();
+        ArrayList<FactoryPortfolioPolicy.Profile> existingPortfolio =
+                new ArrayList<FactoryPortfolioPolicy.Profile>();
         for (UnitView view : own) {
             if (!view.alive() || !(view.raw() instanceof Unit)) continue;
             Unit raw = (Unit) view.raw();
@@ -423,6 +458,7 @@ final class StrategicBuildPlanner {
             }
             if (view.building() && raw.r() != null && declaresCombatProduction(raw.r())) {
                 addFactoryCandidate(factories, raw.r(), raw.r().getBuildCostCredits(), true);
+                existingPortfolio.addAll(factoryProfiles(raw.r(), teamPlan.ownRole()));
             }
         }
         FactoryPlanCandidate best = null;
@@ -430,6 +466,22 @@ final class StrategicBuildPlanner {
             selectFactoryProduct(factory, teamPlan.ownRole(), situation,
                     frontState, context.team().credits(), own);
             if (factory.unit == null) continue;
+            if (!factory.existing) {
+                factory.portfolioNovelty = FactoryPortfolioPolicy.novelty(
+                        factoryProfiles(factory.factory, teamPlan.ownRole()),
+                        existingPortfolio);
+                factory.score += factory.portfolioNovelty * 7.5D;
+            }
+            System.out.println("[Strategic AI] Team " + context.team().id()
+                    + " factory candidate=" + safe(factory.factory.getInternalName())
+                    + " main=" + safe(factory.unit.getInternalName())
+                    + " existing=" + factory.existing
+                    + " unitScore=" + String.format(java.util.Locale.ROOT,
+                    "%.2f", factory.unitScore)
+                    + " portfolioNovelty=" + String.format(java.util.Locale.ROOT,
+                    "%.2f", factory.portfolioNovelty)
+                    + " total=" + String.format(java.util.Locale.ROOT,
+                    "%.2f", factory.score));
             if (best == null || factory.score > best.score
                     || factory.score == best.score
                     && safe(factory.factory.getInternalName()).compareToIgnoreCase(
@@ -447,7 +499,10 @@ final class StrategicBuildPlanner {
                 + " production plan factory=" + focusFactoryId
                 + " main=" + safe(focusUnitType.getInternalName())
                 + " score=" + String.format(java.util.Locale.ROOT,
-                "%.2f", best.score) + " until=" + productionPlanUntil);
+                "%.2f", best.score)
+                + " portfolioNovelty=" + String.format(java.util.Locale.ROOT,
+                "%.2f", best.portfolioNovelty)
+                + " until=" + productionPlanUntil);
     }
 
     private static void addFactoryCandidate(
@@ -462,25 +517,38 @@ final class StrategicBuildPlanner {
         }
     }
 
+    private static List<FactoryPortfolioPolicy.Profile> factoryProfiles(
+            UnitType factory, TeamPositionDoctrine.Role role) {
+        ArrayList<FactoryPortfolioPolicy.Profile> result =
+                new ArrayList<FactoryPortfolioPolicy.Profile>();
+        java.util.HashSet<String> seen = new java.util.HashSet<String>();
+        for (UnitAction action : supportedTechActions(factory, 4)) {
+            UnitType product = action.getBuildUnitType();
+            if (!action.isBuildAction() || product == null || product.isBuilding()) continue;
+            AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
+            if (!capabilities.mobileCombatUnit()
+                    || StrategicProductionDoctrine.isReconType(capabilities)
+                    || !roleAcceptsProduct(role, capabilities)
+                    || !seen.add(safe(capabilities.typeId()).toLowerCase(
+                    java.util.Locale.ROOT))) continue;
+            result.add(FactoryPortfolioPolicy.profile(capabilities));
+        }
+        return result;
+    }
+
     private static void selectFactoryProduct(FactoryPlanCandidate factory,
             TeamPositionDoctrine.Role role, AiStrategicMapSnapshot situation,
             StrategicFrontState frontState, double credits, List<UnitView> liveOwn) {
         java.util.LinkedHashMap<String, UnitType> products =
                 new java.util.LinkedHashMap<String, UnitType>();
-        for (int tech = 1; tech <= 4; tech++) {
-            try {
-                for (UnitAction action : UnitActions.forType(factory.factory, tech)) {
-                    UnitType product = action.getBuildUnitType();
-                    if (!action.isBuildAction() || product == null || product.isBuilding()) continue;
-                    AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
-                    if (!capabilities.mobileCombatUnit()
-                            || StrategicProductionDoctrine.isReconType(capabilities)) continue;
-                    products.putIfAbsent(safe(product.getInternalName()).toLowerCase(
-                            java.util.Locale.ROOT), product);
-                }
-            } catch (RuntimeException ignored) {
-                // Some custom factories expose fewer synthetic tech-level action lists.
-            }
+        for (UnitAction action : supportedTechActions(factory.factory, 4)) {
+            UnitType product = action.getBuildUnitType();
+            if (!action.isBuildAction() || product == null || product.isBuilding()) continue;
+            AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
+            if (!capabilities.mobileCombatUnit()
+                    || StrategicProductionDoctrine.isReconType(capabilities)) continue;
+            products.putIfAbsent(safe(product.getInternalName()).toLowerCase(
+                    java.util.Locale.ROOT), product);
         }
         StrategicProductionDoctrine.AirBalance airBalance =
                 StrategicProductionDoctrine.assessAirBalance(situation);
@@ -550,6 +618,15 @@ final class StrategicBuildPlanner {
         double score = ProductionValuePolicy.balancedCombatValue(
                 power, efficiency, throughput)
                 + capabilities.techLevel() * 0.38D;
+        if (capabilities.areaWeapon()) {
+            double crowdControl = Math.log1p(capabilities.estimatedAreaDps()) * 0.42D
+                    + Math.min(2.6D, capabilities.maximumAreaDamageRadius() / 42.0D);
+            if (frontState != null && (frontState.mode() == StrategicFrontState.Mode.ASSAULT
+                    || frontState.mode() == StrategicFrontState.Mode.MUSTER)) {
+                crowdControl *= 1.18D;
+            }
+            score += crowdControl;
+        }
         boolean air = capabilities.movementDomain() == AiMovementDomain.AIR;
         if (role == TeamPositionDoctrine.Role.MOBILE_SUPPORT) {
             score += air ? 6.0D : -6.0D;
@@ -631,7 +708,9 @@ final class StrategicBuildPlanner {
         boolean air = capabilities.movementDomain() == AiMovementDomain.AIR;
         if (role == TeamPositionDoctrine.Role.MOBILE_SUPPORT) return air;
         if (role == TeamPositionDoctrine.Role.FRONTLINE
-                || role == TeamPositionDoctrine.Role.ECONOMY_TECH) return !air;
+                || role == TeamPositionDoctrine.Role.ECONOMY_TECH) {
+            return isLandCombatDomain(capabilities.movementDomain());
+        }
         return true;
     }
 
@@ -788,6 +867,19 @@ final class StrategicBuildPlanner {
                 situation.terrain().routesFrom(home, AiMovementDomain.LAND),
                 campaign.point(), setback,
                 ForceCoordinationGeometry.advance(campaign.point(), home, setback));
+        UnitView enemyTower = closestStaticDefense(situation.world().enemies(),
+                campaign.point().x(), campaign.point().y(), 430.0F);
+        if (enemyTower != null && enemyTower.raw() instanceof Unit
+                && enemyTower.constructionProgress() >= 0.82F) {
+            AiUnitTypeCapabilities enemyType = AiUnitTypeCapabilities.capture(
+                    ((Unit) enemyTower.raw()).r());
+            float danger = enemyType.maximumAttackRange() + 42.0F;
+            if (distance(staging.x(), staging.y(), enemyTower.x(), enemyTower.y())
+                    < danger) {
+                staging = safeContestFallback(situation, home, enemyTower,
+                        enemyType.maximumAttackRange());
+            }
+        }
         int nearby = 0;
         float frontRadiusSquared = 300.0F * 300.0F;
         for (UnitView unit : own) {
@@ -807,6 +899,7 @@ final class StrategicBuildPlanner {
             float dy = unit.y() - staging.y();
             if (dx * dx + dy * dy <= 45.0F * 45.0F) continue;
             moving.add(unit);
+            frontlineBuilderIds.add(unit.id());
             if (moving.size() >= wanted) break;
         }
         if (moving.isEmpty()) return false;
@@ -826,9 +919,6 @@ final class StrategicBuildPlanner {
     private static Predicate<UnitType> preferredProducer(TeamPositionDoctrine.Role role) {
         if (role == TeamPositionDoctrine.Role.MOBILE_SUPPORT) {
             return type -> declaresProductionDomain(type, AiMovementDomain.AIR);
-        }
-        if (role == TeamPositionDoctrine.Role.ECONOMY_TECH) {
-            return type -> declaresProductionDomain(type, AiMovementDomain.OVER_CLIFF);
         }
         return null;
     }
@@ -883,6 +973,284 @@ final class StrategicBuildPlanner {
                 outpost, BaseLayoutGeometry.District.DEFENSE,
                 StrategicBuildPlanner::isStaticDefense, "frontier");
         if (ordered) frontierDefenseReservationUntil = cycle + BUILDING_RESERVATION_CYCLES;
+        return ordered;
+    }
+
+    private boolean ensureStrategicDefenses(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<Builder> baseBuilders,
+            List<Builder> allBuilders, long cycle, StrategicTeamPlan teamPlan,
+            StrategicFrontState frontState, StrategicResourceCampaign campaign,
+            List<UnitView> own, int producers) {
+        if (primaryBase == null) return false;
+        double seconds = gameSeconds();
+        boolean airDisadvantage = productionPlanAirBalance
+                == StrategicProductionDoctrine.AirBalance.DISADVANTAGE;
+        WorldPoint forwardPoint = campaign.active() ? campaign.point() : null;
+        WorldPoint productionCenter = productionClusterCenter(own);
+
+        if (airDisadvantage && forwardPoint != null && teamPlan.leadsFrontline()) {
+            int current = countDefenseNear(own, forwardPoint, 350.0F, true);
+            int desired = DefensiveInvestmentPolicy.desiredAntiAir(
+                    true, true, seconds, producers);
+            if (current < desired && ensureForwardDefenseType(context, situation,
+                    allBuilders, cycle, forwardPoint, true, true)) return true;
+        }
+        if (airDisadvantage) {
+            int current = countDefenseNear(own, productionCenter, 440.0F, true);
+            int desired = DefensiveInvestmentPolicy.desiredAntiAir(
+                    true, false, seconds, producers);
+            if (current < desired && ensureBaseDefenseType(context, situation,
+                    baseBuilders, cycle, true, true, own, teamPlan, frontState)) return true;
+        }
+
+        int wantedForward = DefensiveInvestmentPolicy.desiredForwardGround(
+                teamPlan.leadsFrontline(), seconds, context.team().displayIncomeRate());
+        if (forwardPoint != null && wantedForward > 0
+                && countDefenseNear(own, forwardPoint, 350.0F, false) < wantedForward
+                && ensureForwardDefenseType(context, situation, allBuilders,
+                cycle, forwardPoint, false, false)) return true;
+
+        int wantedBase = DefensiveInvestmentPolicy.desiredBaseGround(
+                seconds, producers, context.team().displayIncomeRate());
+        return wantedBase > 0
+                && countDefenseNear(own, productionCenter, 440.0F, false) < wantedBase
+                && ensureBaseDefenseType(context, situation, baseBuilders,
+                cycle, false, false, own, teamPlan, frontState);
+    }
+
+    private boolean ensureForwardDefenseType(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle,
+            WorldPoint objective, boolean antiAir, boolean urgent) {
+        UnitType selected = selectDefenseType(context, builders, antiAir, urgent, true);
+        if (selected == null) return false;
+        WorldPoint home = primaryBase.anchor();
+        AiTerrainRouteMap routes = situation.terrain().routesFrom(home, AiMovementDomain.LAND);
+        WorldPoint anchor = situationRoutePoint(routes, objective, 255.0F,
+                ForceCoordinationGeometry.advance(objective, home, 255.0F));
+        BaseLayoutPlan conservative = new BaseLayoutPlan(
+                -placementKey(situation, objective.x(), objective.y()),
+                anchor, objective);
+        boolean ordered = ensurePlannedBuildingAt(context, situation, builders, cycle,
+                conservative, BaseLayoutGeometry.District.DEFENSE,
+                type -> type == selected, antiAir ? "forward anti-air" : "forward line");
+        if (ordered) frontierDefenseReservationUntil = cycle + BUILDING_RESERVATION_CYCLES;
+        return ordered;
+    }
+
+    private boolean ensureBaseDefenseType(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle,
+            boolean antiAir, boolean urgent, List<UnitView> own,
+            StrategicTeamPlan teamPlan, StrategicFrontState frontState) {
+        UnitType selected = selectDefenseType(context, builders, antiAir, urgent, false);
+        if (selected == null || primaryBase == null) return false;
+        if (primaryDistrictReservations.containsKey(BaseLayoutGeometry.District.DEFENSE)) {
+            return true;
+        }
+        WorldPoint center = productionClusterCenter(own);
+        AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(selected);
+        WorldPoint threat;
+        if (capabilities.canAttackAir()) {
+            threat = closestEnemyBuildingPoint(situation.world().enemies(), center);
+        } else {
+            threat = frontState != null ? frontState.point() : null;
+            if (threat == null) threat = teamPlan.preferredFrontierPoint();
+            if (threat == null) threat = situation.primaryFront().orElse(primaryBase.front());
+        }
+        BaseLayoutPlan perimeter = productionClusterLayout(own, threat);
+        boolean ordered = ensurePlannedBuildingAt(context, situation, builders, cycle,
+                perimeter, BaseLayoutGeometry.District.DEFENSE,
+                type -> type == selected, antiAir ? "base anti-air perimeter"
+                        : "base factory perimeter");
+        if (ordered) primaryDistrictReservations.put(BaseLayoutGeometry.District.DEFENSE,
+                cycle + BUILDING_RESERVATION_CYCLES);
+        return ordered;
+    }
+
+    private WorldPoint productionClusterCenter(List<UnitView> own) {
+        float x = 0.0F;
+        float y = 0.0F;
+        int count = 0;
+        for (UnitView view : own) {
+            if (!view.alive() || !view.building() || !(view.raw() instanceof Unit)) continue;
+            Unit raw = (Unit) view.raw();
+            if (raw.r() == null || !declaresCombatProduction(raw.r())) continue;
+            x += view.x();
+            y += view.y();
+            count++;
+        }
+        return count > 0 ? new WorldPoint(x / count, y / count)
+                : primaryBase.anchor();
+    }
+
+    private BaseLayoutPlan productionClusterLayout(List<UnitView> own, WorldPoint threat) {
+        WorldPoint center = productionClusterCenter(own);
+        WorldPoint front = threat != null ? threat : primaryBase.front();
+        return new BaseLayoutPlan(primaryBase.anchorUnitId(), center, front);
+    }
+
+    private static WorldPoint closestEnemyBuildingPoint(List<UnitView> enemies,
+            WorldPoint center) {
+        UnitView closest = null;
+        float best = Float.POSITIVE_INFINITY;
+        for (UnitView enemy : enemies) {
+            if (!enemy.alive() || !enemy.building()) continue;
+            float distance = center.distanceSquared(new WorldPoint(enemy.x(), enemy.y()));
+            if (distance < best || distance == best
+                    && (closest == null || enemy.id() < closest.id())) {
+                closest = enemy;
+                best = distance;
+            }
+        }
+        return closest != null ? new WorldPoint(closest.x(), closest.y()) : center;
+    }
+
+    private static UnitType selectDefenseType(AiTickContext context,
+            List<Builder> builders, boolean antiAir, boolean urgent, boolean frontline) {
+        UnitType selected = null;
+        double best = Double.NEGATIVE_INFINITY;
+        java.util.HashSet<UnitType> seen = new java.util.HashSet<UnitType>();
+        for (Builder builder : builders) {
+            for (UnitAction action : availableBuildActions(builder.unit, true, false)) {
+                UnitType type = action.getBuildUnitType();
+                if (!seen.add(type) || !isStaticDefense(type)) continue;
+                AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(type);
+                if (antiAir ? !capabilities.canAttackAir() : !capabilities.canAttackGround()) {
+                    continue;
+                }
+                double cost = Math.max(1, Math.max(action.getCreditCost(),
+                        capabilities.creditCost()));
+                if (!DefensiveInvestmentPolicy.canAfford(context.team().credits(),
+                        context.team().displayIncomeRate(), cost, urgent, frontline)) continue;
+                double dps = antiAir ? capabilities.estimatedAirDps()
+                        : capabilities.estimatedGroundDps();
+                double durability = capabilities.maximumHealth()
+                        + capabilities.maximumShield();
+                double score = Math.sqrt(Math.max(1.0D, durability)
+                        * Math.max(0.02D, dps))
+                        + capabilities.maximumAttackRange() * 0.16D;
+                score /= Math.sqrt(cost);
+                if (antiAir && !capabilities.canAttackGround()) score += 0.22D;
+                if (score > best || score == best && selected != null
+                        && safe(type.getInternalName()).compareToIgnoreCase(
+                        safe(selected.getInternalName())) < 0) {
+                    selected = type;
+                    best = score;
+                }
+            }
+        }
+        return selected;
+    }
+
+    private static int countDefenseNear(List<UnitView> units, WorldPoint point,
+            float radius, boolean antiAir) {
+        int result = 0;
+        float radiusSquared = radius * radius;
+        for (UnitView view : units) {
+            if (!view.alive() || !view.building() || !(view.raw() instanceof Unit)) continue;
+            UnitType type = ((Unit) view.raw()).r();
+            if (!isStaticDefense(type)) continue;
+            AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(type);
+            if (antiAir ? !capabilities.canAttackAir() : !capabilities.canAttackGround()) continue;
+            float dx = view.x() - point.x();
+            float dy = view.y() - point.y();
+            if (dx * dx + dy * dy <= radiusSquared) result++;
+        }
+        return result;
+    }
+
+    private boolean ensureEconomicInvestment(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle,
+            StrategicTeamPlan teamPlan, List<UnitView> own) {
+        if (cycle < economicInvestmentReservationUntil) return false;
+        double seconds = gameSeconds();
+        double multiplier = context.team().effectiveIncomeMultiplier();
+        double effectiveIncome = context.team().displayIncomeRate();
+        boolean economyRole = teamPlan.ownRole() == TeamPositionDoctrine.Role.ECONOMY_TECH;
+
+        EconomicUpgrade bestUpgrade = null;
+        for (UnitView view : own) {
+            if (!view.alive() || !view.building() || !(view.raw() instanceof OrderableUnit)) {
+                continue;
+            }
+            Unit raw = (Unit) view.raw();
+            if (!isEconomicBuilding(raw, view.creditGenerationPerSecond())
+                    || hasQueuedUpgrade(raw)) continue;
+            UnitAction upgrade = availableUpgrade(raw);
+            if (upgrade == null) continue;
+            double delta = expectedUpgradeIncomeDelta(view, raw, upgrade);
+            double cost = Math.max(1, upgrade.getCreditCost());
+            double buildSeconds = actionBuildTimeSeconds(upgrade);
+            if (!EconomicInvestmentPolicy.shouldInvest(
+                    EconomicInvestmentPolicy.Kind.RESOURCE_UPGRADE,
+                    seconds, context.team().credits(), effectiveIncome,
+                    cost, delta, multiplier, buildSeconds, economyRole)) continue;
+            double payback = EconomicInvestmentPolicy.paybackSeconds(
+                    cost, delta, multiplier, buildSeconds);
+            if (bestUpgrade == null || payback < bestUpgrade.payback
+                    || payback == bestUpgrade.payback && view.id() < bestUpgrade.view.id()) {
+                bestUpgrade = new EconomicUpgrade(view, (OrderableUnit) raw,
+                        upgrade, payback, delta);
+            }
+        }
+        if (bestUpgrade != null) {
+            UnitActions.issue(context.rawTeam(), Collections.singletonList(
+                    bestUpgrade.unit), bestUpgrade.action);
+            economicInvestmentReservationUntil = cycle + 8L;
+            System.out.println("[Strategic AI] Team " + context.team().id()
+                    + " queued economic upgrade "
+                    + safe(bestUpgrade.action.getActionIdString())
+                    + " payback=" + Math.round(bestUpgrade.payback) + "s"
+                    + " delta=" + String.format(java.util.Locale.ROOT,
+                    "%.1f", bestUpgrade.delta * multiplier) + "/s"
+                    + " multiplier=" + String.format(java.util.Locale.ROOT,
+                    "%.2f", multiplier));
+            return true;
+        }
+
+        int manufacturerLimit = EconomicInvestmentPolicy.manufacturerLimit(
+                seconds, effectiveIncome, economyRole);
+        int manufacturers = 0;
+        for (UnitView view : own) {
+            if (!view.alive() || !(view.raw() instanceof Unit)) continue;
+            Unit raw = (Unit) view.raw();
+            if (isResourceManufacturer(raw.r())) manufacturers++;
+        }
+        if (manufacturers >= manufacturerLimit || builders.isEmpty()) return false;
+
+        EconomicBuild bestBuild = null;
+        java.util.HashSet<UnitType> seen = new java.util.HashSet<UnitType>();
+        for (Builder builder : builders) {
+            for (UnitAction action : availableBuildActions(builder.unit, true, false)) {
+                UnitType type = action.getBuildUnitType();
+                if (!seen.add(type) || !isResourceManufacturer(type)) continue;
+                AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(type);
+                double rate = capabilities.creditGenerationPerSecond();
+                double cost = Math.max(1, Math.max(action.getCreditCost(),
+                        capabilities.creditCost()));
+                double buildSeconds = capabilities.nominalBuildTimeSeconds();
+                if (!EconomicInvestmentPolicy.shouldInvest(
+                        EconomicInvestmentPolicy.Kind.RESOURCE_MANUFACTURER,
+                        seconds, context.team().credits(), effectiveIncome,
+                        cost, rate, multiplier, buildSeconds, economyRole)) continue;
+                double payback = EconomicInvestmentPolicy.paybackSeconds(
+                        cost, rate, multiplier, buildSeconds);
+                if (bestBuild == null || payback < bestBuild.payback) {
+                    bestBuild = new EconomicBuild(type, payback, rate);
+                }
+            }
+        }
+        if (bestBuild == null) return false;
+        final UnitType selected = bestBuild.type;
+        boolean ordered = ensurePrimaryBuilding(context, situation, builders, cycle,
+                BaseLayoutGeometry.District.SUPPORT, type -> type == selected);
+        if (ordered) {
+            economicInvestmentReservationUntil = cycle + BUILDING_RESERVATION_CYCLES;
+            System.out.println("[Strategic AI] Team " + context.team().id()
+                    + " ordered resource manufacturer " + safe(selected.getInternalName())
+                    + " payback=" + Math.round(bestBuild.payback) + "s"
+                    + " output=" + String.format(java.util.Locale.ROOT,
+                    "%.1f", bestBuild.rate * multiplier) + "/s");
+        }
         return ordered;
     }
 
@@ -1023,16 +1391,36 @@ final class StrategicBuildPlanner {
         contestRecoveryPoint = safeContestFallback(situation, home, enemyTower,
                 enemyType.maximumAttackRange());
 
-        List<Builder> frontline = closestFrontlineBuilders(
-                builders, campaign.point(), FRONTLINE_BUILDER_TARGET);
+        List<Builder> frontline = recoveryFrontlineBuilders(
+                builders, campaign.point(), enemyTower,
+                enemyType.maximumAttackRange(), FRONTLINE_BUILDER_TARGET);
         if (frontline.isEmpty()) return true;
-        ArrayList<UnitView> participants = new ArrayList<UnitView>();
+        java.util.LinkedHashMap<Long, UnitView> evacuation =
+                new java.util.LinkedHashMap<Long, UnitView>();
+        for (Builder builder : frontline) {
+            UnitView unit = builder.capabilities.unit();
+            evacuation.put(unit.id(), unit);
+            frontlineBuilderIds.add(unit.id());
+        }
+        float frontSweepRange = Math.max(560.0F,
+                enemyType.maximumAttackRange() + 250.0F);
+        for (Builder builder : builders) {
+            UnitView unit = builder.capabilities.unit();
+            if (distance(unit.x(), unit.y(), enemyTower.x(), enemyTower.y())
+                    < enemyType.maximumAttackRange() + 95.0F
+                    || distance(unit.x(), unit.y(), campaign.point().x(),
+                    campaign.point().y()) < frontSweepRange
+                    && (frontlineBuilderIds.contains(unit.id())
+                    || builder.capabilities.idle())) {
+                evacuation.put(unit.id(), unit);
+                frontlineBuilderIds.add(unit.id());
+            }
+        }
+        ArrayList<UnitView> participants = new ArrayList<UnitView>(evacuation.values());
         boolean allOutsideEnemyRange = true;
         boolean allStaged = true;
         float dangerRange = enemyType.maximumAttackRange() + 38.0F;
-        for (Builder builder : frontline) {
-            UnitView unit = builder.capabilities.unit();
-            participants.add(unit);
+        for (UnitView unit : participants) {
             if (distance(unit.x(), unit.y(), enemyTower.x(), enemyTower.y()) < dangerRange) {
                 allOutsideEnemyRange = false;
             }
@@ -1074,6 +1462,7 @@ final class StrategicBuildPlanner {
                 choice.action.getBuildUnitType(), FRONTLINE_BUILDER_TARGET);
         if (buildersForTower.isEmpty()) return true;
         context.orders().build(buildersForTower, point.x, point.y, choice.action);
+        for (UnitView builder : buildersForTower) frontlineBuilderIds.add(builder.id());
         buildingReservations.put(point.reservationKey,
                 cycle + BUILDING_RESERVATION_CYCLES);
         contestRecoveryBuildUntil = cycle + RECOVERY_BUILD_RESERVATION_CYCLES;
@@ -1084,20 +1473,62 @@ final class StrategicBuildPlanner {
         return true;
     }
 
+    /**
+     * A front builder that has actually taken fire gets a short retreat lease. This is deliberately
+     * separate from ordinary idle planning: an unfinished safe build keeps its builders, while a
+     * builder under live fire is not ordered back and forth on consecutive planning pulses.
+     */
+    private void withdrawThreatenedFrontlineBuilders(AiTickContext context,
+            AiStrategicMapSnapshot situation, List<Builder> builders, long cycle) {
+        WorldPoint home = primaryBase != null ? primaryBase.anchor() : null;
+        if (home == null) return;
+        for (Builder builder : builders) {
+            UnitView unit = builder.capabilities.unit();
+            if (!frontlineBuilderIds.contains(unit.id())) continue;
+            boolean freshlyHit = unit.recentDamager(2.75F).isPresent();
+            Long until = frontlineBuilderRetreatUntil.get(unit.id());
+            if (freshlyHit) {
+                until = cycle + FRONTLINE_BUILDER_RETREAT_CYCLES;
+                frontlineBuilderRetreatUntil.put(unit.id(), until);
+            }
+            if (until == null || until <= cycle) continue;
+            // Reissue only after another hit or after the retreat order has completed. Avoids
+            // resetting the path every strategic tick while still preventing idle hesitation.
+            if (freshlyHit || builder.capabilities.idle()) {
+                WorldPoint position = new WorldPoint(unit.x(), unit.y());
+                WorldPoint retreat = passableRoutePointAfter(
+                        situation.terrain().routesFrom(position, AiMovementDomain.LAND),
+                        home, 260.0F).orElse(home);
+                context.orders().move(Collections.singletonList(unit),
+                        retreat.x(), retreat.y());
+            }
+        }
+    }
+
     private void beginLostTowerRecovery(AiStrategicMapSnapshot situation,
-            StrategicResourceCampaign campaign, List<Builder> builders) {
-        if (contestRecoveryActive || !campaign.fortificationLost()
+            StrategicResourceCampaign campaign, List<Builder> builders,
+            List<UnitView> own) {
+        if (contestRecoveryActive || !campaign.active()
                 || campaign.point() == null || builders.isEmpty()) return;
         UnitView enemyTower = closestStaticDefense(situation.world().enemies(),
                 campaign.point().x(), campaign.point().y(), 430.0F);
         if (enemyTower == null || !(enemyTower.raw() instanceof Unit)) return;
+        AiUnitTypeCapabilities enemyType = AiUnitTypeCapabilities.capture(
+                ((Unit) enemyTower.raw()).r());
+        float distanceToFront = distance(enemyTower.x(), enemyTower.y(),
+                campaign.point().x(), campaign.point().y());
+        boolean controlsFront = distanceToFront
+                <= enemyType.maximumAttackRange() + 45.0F;
+        boolean established = enemyTower.constructionProgress() >= 0.82F;
+        boolean ownLineReady = hasCompletedStaticDefenseNear(
+                own, campaign.point(), 340.0F);
+        if (!campaign.fortificationLost()
+                && (!established || !controlsFront || ownLineReady)) return;
         WorldPoint home = primaryBase != null ? primaryBase.anchor() : null;
         if (home == null) return;
         BuildChoice choice = recoveryTowerChoice(closestFrontlineBuilders(
                 builders, campaign.point(), FRONTLINE_BUILDER_TARGET), null);
         if (choice == null) return;
-        AiUnitTypeCapabilities enemyType = AiUnitTypeCapabilities.capture(
-                ((Unit) enemyTower.raw()).r());
         contestRecoveryActive = true;
         contestRecoveryTargetKey = resourceKey(campaign.target());
         contestRecoveryEnemyTowerId = enemyTower.id();
@@ -1106,21 +1537,28 @@ final class StrategicBuildPlanner {
         contestRecoveryTowerType = choice.action.getBuildUnitType();
         contestRecoveryBuildUntil = 0L;
         forceLockFortification = true;
+        System.out.println("[Strategic AI] Enemy front tower established before own line; "
+                + "redirecting every exposed builder to "
+                + (int) contestRecoveryPoint.x() + "," + (int) contestRecoveryPoint.y());
     }
 
     private static WorldPoint safeContestFallback(AiStrategicMapSnapshot situation,
             WorldPoint home, UnitView enemyTower, float enemyRange) {
-        WorldPoint raw = ForwardTowerGeometry.safeFallback(home,
-                new WorldPoint(enemyTower.x(), enemyTower.y()), enemyRange, 55.0F);
-        float x = Math.max(1.0F, Math.min(situation.terrain().worldWidth() - 1.0F, raw.x()));
-        float y = Math.max(1.0F, Math.min(situation.terrain().worldHeight() - 1.0F, raw.y()));
-        AiTerrainCell cell = situation.terrain().cellAtWorld(x, y);
-        WorldPoint aligned = cell != null
-                ? cell.representativePoint(AiMovementDomain.LAND)
-                .orElse(new WorldPoint(x, y)) : new WorldPoint(x, y);
-        if (distance(aligned.x(), aligned.y(), enemyTower.x(), enemyTower.y())
-                < enemyRange + 38.0F) return new WorldPoint(x, y);
-        return aligned;
+        AiTerrainRouteMap routes = situation.terrain().routesFrom(home, AiMovementDomain.LAND);
+        WorldPoint enemy = new WorldPoint(enemyTower.x(), enemyTower.y());
+        for (float setback = enemyRange + 90.0F;
+                setback <= enemyRange + 570.0F; setback += 80.0F) {
+            java.util.Optional<WorldPoint> candidate =
+                    passableRoutePointBefore(routes, enemy, setback);
+            if (candidate.isPresent()
+                    && distance(candidate.get().x(), candidate.get().y(),
+                    enemyTower.x(), enemyTower.y()) >= enemyRange + 38.0F) {
+                return candidate.get();
+            }
+        }
+        AiTerrainCell homeCell = situation.terrain().cellAtWorld(home.x(), home.y());
+        return homeCell != null
+                ? homeCell.representativePoint(AiMovementDomain.LAND).orElse(home) : home;
     }
 
     private static List<Builder> closestFrontlineBuilders(List<Builder> builders,
@@ -1134,6 +1572,39 @@ final class StrategicBuildPlanner {
         }).thenComparingLong(builder -> builder.capabilities.unit().id()));
         if (result.size() > maximum) result.subList(maximum, result.size()).clear();
         return result;
+    }
+
+    private List<Builder> recoveryFrontlineBuilders(List<Builder> builders,
+            WorldPoint front, UnitView enemyTower, float enemyRange, int maximum) {
+        ArrayList<Builder> eligible = new ArrayList<Builder>();
+        ArrayList<Builder> idleReserve = new ArrayList<Builder>();
+        float sweep = Math.max(560.0F, enemyRange + 250.0F);
+        for (Builder builder : builders) {
+            UnitView unit = builder.capabilities.unit();
+            boolean assigned = frontlineBuilderIds.contains(unit.id());
+            boolean exposed = distance(unit.x(), unit.y(), enemyTower.x(), enemyTower.y())
+                    < enemyRange + 95.0F;
+            boolean nearFront = distance(unit.x(), unit.y(), front.x(), front.y()) < sweep;
+            if (assigned || exposed || nearFront && builder.capabilities.idle()) {
+                eligible.add(builder);
+            } else if (builder.capabilities.idle()) {
+                idleReserve.add(builder);
+            }
+        }
+        Comparator<Builder> byFront = Comparator.comparingDouble((Builder builder) -> {
+            UnitView unit = builder.capabilities.unit();
+            float dx = unit.x() - front.x();
+            float dy = unit.y() - front.y();
+            return dx * dx + dy * dy;
+        }).thenComparingLong(builder -> builder.capabilities.unit().id());
+        eligible.sort(byFront);
+        idleReserve.sort(byFront);
+        for (Builder builder : idleReserve) {
+            if (eligible.size() >= maximum) break;
+            eligible.add(builder);
+        }
+        if (eligible.size() > maximum) eligible.subList(maximum, eligible.size()).clear();
+        return eligible;
     }
 
     private static BuildChoice recoveryTowerChoice(List<Builder> builders,
@@ -1164,18 +1635,34 @@ final class StrategicBuildPlanner {
                 {-1, 1}, {1, 1}, {-3, 0}, {3, 0}};
         AiTerrainCell origin = situation.terrain().cellAtWorld(
                 builder.capabilities.unit().x(), builder.capabilities.unit().y());
-        for (int[] offset : offsets) {
-            float x = desired.x() + offset[0] * tileWidth;
-            float y = desired.y() + offset[1] * tileHeight;
-            if (distance(x, y, enemyTower.x(), enemyTower.y())
-                    < enemyRange + 38.0F) continue;
-            long key = placementKey(situation, x, y);
-            if (buildingReservations.containsKey(key)) continue;
-            AiTerrainCell target = situation.terrain().cellAtWorld(x, y);
-            if (!situation.terrain().sameRegion(origin, target,
-                    builder.capabilities.movementDomain())) continue;
-            if (UnitTypes.canSpawnStarting(tower, x, y, 0.0F, 0.0F,
-                    context.rawTeam())) return new BuildPoint(x, y, key);
+        ArrayList<WorldPoint> bases = new ArrayList<WorldPoint>();
+        bases.add(desired);
+        WorldPoint home = primaryBase != null ? primaryBase.anchor()
+                : new WorldPoint(builder.capabilities.unit().x(),
+                builder.capabilities.unit().y());
+        AiTerrainRouteMap routes = situation.terrain().routesFrom(home, AiMovementDomain.LAND);
+        for (float fartherHome : new float[]{90.0F, 180.0F, 270.0F}) {
+            java.util.Optional<WorldPoint> base = passableRoutePointBefore(
+                    routes, desired, fartherHome);
+            if (base.isPresent()) bases.add(base.get());
+        }
+        for (WorldPoint base : bases) {
+            for (int[] offset : offsets) {
+                float x = base.x() + offset[0] * tileWidth;
+                float y = base.y() + offset[1] * tileHeight;
+                if (distance(x, y, enemyTower.x(), enemyTower.y())
+                        < enemyRange + 38.0F) continue;
+                long key = placementKey(situation, x, y);
+                if (buildingReservations.containsKey(key)) continue;
+                AiTerrainCell target = situation.terrain().cellAtWorld(x, y);
+                if (target == null
+                        || target.passableFraction(AiMovementDomain.LAND) < 0.12F
+                        || !target.representativePoint(AiMovementDomain.LAND).isPresent()
+                        || !situation.terrain().sameRegion(origin, target,
+                        builder.capabilities.movementDomain())) continue;
+                if (UnitTypes.canSpawnStarting(tower, x, y, 0.0F, 0.0F,
+                        context.rawTeam())) return new BuildPoint(x, y, key);
+            }
         }
         return null;
     }
@@ -1223,7 +1710,13 @@ final class StrategicBuildPlanner {
         ArrayList<BuildChoice> choices = new ArrayList<BuildChoice>();
         for (Builder builder : builders) {
             for (UnitAction action : availableBuildActions(builder.unit, true, false)) {
-                if (isStaticDefense(action.getBuildUnitType())) {
+                UnitType type = action.getBuildUnitType();
+                if (isStaticDefense(type)
+                        && AiUnitTypeCapabilities.capture(type).canAttackGround()
+                        && DefensiveInvestmentPolicy.canAfford(
+                        context.team().credits(), context.team().displayIncomeRate(),
+                        Math.max(action.getCreditCost(), type.getBuildCostCredits()),
+                        false, true)) {
                     choices.add(new BuildChoice(builder, action));
                 }
             }
@@ -1233,7 +1726,7 @@ final class StrategicBuildPlanner {
                 .thenComparingLong(value -> value.builder.capabilities.unit().id()));
         for (BuildChoice choice : choices) {
             ForwardTowerPoint point = findForwardTowerPoint(context, situation,
-                    choice.builder, choice.action.getBuildUnitType(), campaign.point(), builders);
+                    choice.builder, choice.action.getBuildUnitType(), campaign.point());
             if (point == null) continue;
             List<UnitView> participants = forwardBuildParticipants(
                     builders, choice.action.getBuildUnitType());
@@ -1242,9 +1735,9 @@ final class StrategicBuildPlanner {
                     cycle + BUILDING_RESERVATION_CYCLES);
             frontierDefenseReservationUntil = cycle + BUILDING_RESERVATION_CYCLES;
             campaign.markFortificationOrdered();
-            System.out.println("[Strategic AI] Planned forward-opening defense "
+            System.out.println("[Strategic AI] Planned conservative forward defense "
                     + safe(choice.action.getBuildUnitType().getInternalName())
-                    + " mode=" + (point.lockMode ? "lock" : "contest")
+                    + " mode=route-safe-line"
                     + " at " + (int) point.x + "," + (int) point.y);
             forceLockFortification = false;
             return true;
@@ -1252,7 +1745,7 @@ final class StrategicBuildPlanner {
         return false;
     }
 
-    private static List<UnitView> forwardBuildParticipants(List<Builder> builders,
+    private List<UnitView> forwardBuildParticipants(List<Builder> builders,
             UnitType tower) {
         ArrayList<UnitView> result = new ArrayList<UnitView>();
         for (Builder builder : builders) {
@@ -1263,7 +1756,11 @@ final class StrategicBuildPlanner {
                     break;
                 }
             }
-            if (canBuild) result.add(builder.capabilities.unit());
+            if (canBuild) {
+                UnitView unit = builder.capabilities.unit();
+                result.add(unit);
+                frontlineBuilderIds.add(unit.id());
+            }
             if (result.size() >= FRONTLINE_BUILDER_TARGET) break;
         }
         return result;
@@ -1271,121 +1768,80 @@ final class StrategicBuildPlanner {
 
     private ForwardTowerPoint findForwardTowerPoint(AiTickContext context,
             AiStrategicMapSnapshot situation, Builder builder, UnitType tower,
-            WorldPoint resource, List<Builder> ownBuilders) {
+            WorldPoint resource) {
         WorldPoint home = primaryBase != null ? primaryBase.anchor()
                 : new WorldPoint(builder.capabilities.unit().x(),
                 builder.capabilities.unit().y());
         float towerRange = Math.max(90.0F,
                 AiUnitTypeCapabilities.capture(tower).maximumAttackRange());
-        WorldPoint contestPoint = pathAwareTowerPlacement(
-                situation, home, resource, towerRange, false, 0.0F, 0.0F);
-        boolean lock = forceLockFortification
-                || enemyWinsBuilderRace(situation, resource, ownBuilders, tower)
-                || enemyTowerControls(situation.world().enemies(),
-                contestPoint.x(), contestPoint.y(), 25.0F);
-        float[] lateral = {0.0F, -42.0F, 42.0F, -78.0F, 78.0F};
-        float[] radial = {0.0F, -24.0F, 24.0F, -48.0F, 48.0F};
+        float setback = Math.max(230.0F, towerRange + 70.0F);
+        AiTerrainRouteMap routes = situation.terrain().routesFrom(home, AiMovementDomain.LAND);
+        WorldPoint base = passableRoutePointBefore(routes, resource, setback)
+                .orElseGet(() -> ForwardTowerGeometry.placement(
+                        home, resource, towerRange, 0.0F, 0.0F));
+        float dx = resource.x() - base.x();
+        float dy = resource.y() - base.y();
+        float length = (float) Math.hypot(dx, dy);
+        if (length < 1.0F) { dx = 1.0F; dy = 0.0F; }
+        else { dx /= length; dy /= length; }
+        float[] lateral = {0.0F, -42.0F, 42.0F, -78.0F, 78.0F, -118.0F, 118.0F};
+        // Search toward home first. A failed race must make the next line safer, not closer.
+        float[] radial = {0.0F, -48.0F, -96.0F, -144.0F, 48.0F};
         AiTerrainCell origin = situation.terrain().cellAtWorld(
                 builder.capabilities.unit().x(), builder.capabilities.unit().y());
         for (float radialOffset : radial) {
             for (float lateralOffset : lateral) {
-                WorldPoint candidate = pathAwareTowerPlacement(situation, home, resource,
-                        towerRange, lock, radialOffset, lateralOffset);
-                float x = candidate.x();
-                float y = candidate.y();
-                if (lock) {
-                    float toResource = (float) Math.hypot(x - resource.x(), y - resource.y());
-                    if (toResource > towerRange - 18.0F) continue;
-                }
+                float x = base.x() + dx * radialOffset - dy * lateralOffset;
+                float y = base.y() + dy * radialOffset + dx * lateralOffset;
                 if (enemyTowerControls(situation.world().enemies(), x, y, 18.0F)) continue;
                 long key = placementKey(situation, x, y);
                 if (buildingReservations.containsKey(key)) continue;
                 AiTerrainCell target = situation.terrain().cellAtWorld(x, y);
+                if (target == null
+                        || target.passableFraction(AiMovementDomain.LAND) < 0.12F
+                        || !target.representativePoint(AiMovementDomain.LAND).isPresent()) continue;
                 if (!situation.terrain().sameRegion(origin, target,
                         builder.capabilities.movementDomain())) continue;
                 if (UnitTypes.canSpawnStarting(tower, x, y, 0.0F, 0.0F,
-                        context.rawTeam())) return new ForwardTowerPoint(x, y, key, lock);
+                        context.rawTeam())) return new ForwardTowerPoint(x, y, key);
             }
         }
         return null;
     }
 
-    private static WorldPoint pathAwareTowerPlacement(AiStrategicMapSnapshot situation,
-            WorldPoint home, WorldPoint resource, float towerRange,
-            boolean lockMode, float radialOffset, float lateralOffset) {
-        AiTerrainRouteMap routes = situation.terrain().routesFrom(
-                home, AiMovementDomain.LAND);
+    private static java.util.Optional<WorldPoint> passableRoutePointBefore(
+            AiTerrainRouteMap routes, WorldPoint resource, float distanceBefore) {
         List<WorldPoint> path = routes.pathTo(resource);
-        if (path.size() < 2) {
-            return ForwardTowerGeometry.placement(home, resource, towerRange,
-                    lockMode, radialOffset, lateralOffset);
+        if (path.isEmpty()) return java.util.Optional.empty();
+        float remaining = Math.max(0.0F, distanceBefore);
+        for (int index = path.size() - 1; index > 0; index--) {
+            WorldPoint to = path.get(index);
+            WorldPoint from = path.get(index - 1);
+            float segment = (float) Math.sqrt(to.distanceSquared(from));
+            if (segment >= remaining) return java.util.Optional.of(from);
+            remaining -= segment;
         }
-        WorldPoint end = path.get(path.size() - 1);
-        WorldPoint previous = path.get(path.size() - 2);
-        float dx = end.x() - previous.x();
-        float dy = end.y() - previous.y();
-        float length = (float) Math.hypot(dx, dy);
-        if (length < 1.0F) { dx = 1.0F; dy = 0.0F; }
-        else { dx /= length; dy /= length; }
-        float baseForward = lockMode
-                ? -Math.min(towerRange - 28.0F, towerRange * 0.72F) : 55.0F;
-        float x = resource.x() + dx * (baseForward + radialOffset) - dy * lateralOffset;
-        float y = resource.y() + dy * (baseForward + radialOffset) + dx * lateralOffset;
-        AiTerrainCell cell = situation.terrain().cellAtWorld(x, y);
-        return cell != null ? cell.representativePoint(AiMovementDomain.LAND)
-                .orElse(new WorldPoint(x, y)) : new WorldPoint(x, y);
+        return java.util.Optional.of(path.get(0));
+    }
+
+    private static java.util.Optional<WorldPoint> passableRoutePointAfter(
+            AiTerrainRouteMap routes, WorldPoint destination, float distanceAfter) {
+        List<WorldPoint> path = routes.pathTo(destination);
+        if (path.isEmpty()) return java.util.Optional.empty();
+        float remaining = Math.max(0.0F, distanceAfter);
+        for (int index = 1; index < path.size(); index++) {
+            WorldPoint from = path.get(index - 1);
+            WorldPoint to = path.get(index);
+            float segment = (float) Math.sqrt(to.distanceSquared(from));
+            if (segment >= remaining) return java.util.Optional.of(to);
+            remaining -= segment;
+        }
+        return java.util.Optional.of(path.get(path.size() - 1));
     }
 
     private static WorldPoint situationRoutePoint(AiTerrainRouteMap routes,
             WorldPoint destination, float distanceBefore, WorldPoint fallback) {
-        return routes.pointBefore(destination, distanceBefore).orElse(fallback);
-    }
-
-    private static boolean enemyWinsBuilderRace(AiStrategicMapSnapshot situation,
-            WorldPoint point, List<Builder> ownBuilders, UnitType tower) {
-        Unit target = UnitTypes.createUnregisteredPrototype(tower);
-        float own = Float.POSITIVE_INFINITY;
-        for (Builder builder : ownBuilders) {
-            own = Math.min(own, builderCompletionTime(situation,
-                    builder.capabilities.unit(), builder.capabilities, point, target));
-        }
-        float enemy = Float.POSITIVE_INFINITY;
-        for (UnitView unit : situation.world().enemies()) {
-            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
-            if (!capabilities.builder() || !capabilities.movable()) continue;
-            enemy = Math.min(enemy, builderCompletionTime(
-                    situation, unit, capabilities, point, target));
-        }
-        return Float.isFinite(enemy) && (!Float.isFinite(own) || own > enemy * 1.06F + 18.0F);
-    }
-
-    private static float builderCompletionTime(AiStrategicMapSnapshot situation,
-            UnitView builder, AiUnitCapabilities capabilities,
-            WorldPoint point, Unit target) {
-        float route = routeCost(situation, builder, point,
-                capabilities.movementDomain());
-        if (!Float.isFinite(route)) return Float.POSITIVE_INFINITY;
-        float speed = Math.max(0.1F, capabilities.movementSpeed());
-        float construction = 1000.0F;
-        if (builder.raw() instanceof OrderableUnit) {
-            try {
-                float progress = ((OrderableUnit) builder.raw())
-                        .getBuildProgressSpeedForTarget(target);
-                if (Float.isFinite(progress) && progress > 0.0F) {
-                    construction = 1.0F / progress;
-                }
-            } catch (RuntimeException ignored) {
-                // Keep the conservative fallback when a custom builder requires live target state.
-            }
-        }
-        return route / speed + construction;
-    }
-
-    private static float routeCost(AiStrategicMapSnapshot situation, UnitView unit,
-            WorldPoint point, AiMovementDomain domain) {
-        java.util.OptionalDouble cost = situation.terrain().routesFrom(
-                new WorldPoint(unit.x(), unit.y()), domain).costTo(point);
-        return cost.isPresent() ? (float) cost.getAsDouble() : Float.POSITIVE_INFINITY;
+        return passableRoutePointBefore(routes, destination, distanceBefore).orElse(fallback);
     }
 
     private static boolean enemyTowerControls(List<UnitView> enemies,
@@ -1403,13 +1859,13 @@ final class StrategicBuildPlanner {
         return false;
     }
 
-    private static List<Builder> builders(List<UnitView> own) {
+    private static List<Builder> builders(List<UnitView> own, boolean idleOnly) {
         ArrayList<Builder> result = new ArrayList<Builder>();
         for (UnitView unit : own) {
             if (!unit.alive()) continue;
             AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
             if (capabilities.builder() && capabilities.movable()
-                    && capabilities.orderable() && capabilities.idle()) {
+                    && capabilities.orderable() && (!idleOnly || capabilities.idle())) {
                 result.add(new Builder((Unit) unit.raw(), capabilities));
             }
         }
@@ -1417,30 +1873,48 @@ final class StrategicBuildPlanner {
         return result;
     }
 
-    private static List<Builder> buildersForBase(List<Builder> builders,
+    private void assignFrontlineBuilders(List<Builder> builders,
             StrategicResourceCampaign campaign, StrategicTeamPlan teamPlan) {
-        if (!teamPlan.leadsFrontline() || !campaign.active()
-                || campaign.point() == null || builders.size() <= 1) return builders;
-        ArrayList<Builder> byFrontDistance = new ArrayList<Builder>(builders);
-        WorldPoint front = campaign.point();
-        byFrontDistance.sort(Comparator.comparingDouble((Builder builder) -> {
+        if (frontlineBuilderIds.size() >= FRONTLINE_BUILDER_TARGET) return;
+        WorldPoint front = campaign.point() != null
+                ? campaign.point() : teamPlan.preferredFrontierPoint();
+        if (front == null) return;
+        ArrayList<Builder> candidates = new ArrayList<Builder>();
+        for (Builder builder : builders) {
+            UnitView unit = builder.capabilities.unit();
+            if (!frontlineBuilderIds.contains(unit.id())
+                    && builder.capabilities.idle()) candidates.add(builder);
+        }
+        candidates.sort(Comparator.comparingDouble((Builder builder) -> {
             UnitView unit = builder.capabilities.unit();
             float dx = unit.x() - front.x();
             float dy = unit.y() - front.y();
             return dx * dx + dy * dy;
         }).thenComparingLong(builder -> builder.capabilities.unit().id()));
-        java.util.HashSet<Long> reserved = new java.util.HashSet<Long>();
-        for (int index = 0; index < Math.min(3, byFrontDistance.size()); index++) {
-            UnitView unit = byFrontDistance.get(index).capabilities.unit();
-            float dx = unit.x() - front.x();
-            float dy = unit.y() - front.y();
-            if (dx * dx + dy * dy <= 520.0F * 520.0F) reserved.add(unit.id());
+        for (Builder builder : candidates) {
+            if (frontlineBuilderIds.size() >= FRONTLINE_BUILDER_TARGET) break;
+            frontlineBuilderIds.add(builder.capabilities.unit().id());
         }
-        ArrayList<Builder> result = new ArrayList<Builder>();
+    }
+
+    private List<Builder> selectBuilders(List<Builder> builders, boolean frontline) {
+        ArrayList<Builder> selected = new ArrayList<Builder>();
         for (Builder builder : builders) {
-            if (!reserved.contains(builder.capabilities.unit().id())) result.add(builder);
+            if (frontlineBuilderIds.contains(builder.capabilities.unit().id()) == frontline) {
+                selected.add(builder);
+            }
         }
-        return result;
+        return selected;
+    }
+
+    private void retainLiveFrontlineBuilders(List<UnitView> own) {
+        java.util.HashSet<Long> live = new java.util.HashSet<Long>();
+        for (UnitView unit : own) {
+            if (!unit.alive()) continue;
+            AiUnitCapabilities capabilities = AiUnitCapabilities.capture(unit);
+            if (capabilities.builder() && capabilities.movable()) live.add(unit.id());
+        }
+        frontlineBuilderIds.retainAll(live);
     }
 
     private static UnitAction resourceExtractorAction(Unit builder) {
@@ -1518,6 +1992,20 @@ final class StrategicBuildPlanner {
             if (unit.raw() instanceof Unit && offersMobileCombat((Unit) unit.raw())) continue;
             if (!AiUnitCapabilities.capture(unit).attacker()) continue;
             if (unit.constructionProgress() < 0.98F) continue;
+            float dx = unit.x() - point.x();
+            float dy = unit.y() - point.y();
+            if (dx * dx + dy * dy <= radiusSquared) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasCompletedStaticDefenseNear(List<UnitView> units,
+            WorldPoint point, float radius) {
+        float radiusSquared = radius * radius;
+        for (UnitView unit : units) {
+            if (!unit.alive() || !unit.building() || unit.constructionProgress() < 0.98F
+                    || !(unit.raw() instanceof Unit)
+                    || !isStaticDefense(((Unit) unit.raw()).r())) continue;
             float dx = unit.x() - point.x();
             float dy = unit.y() - point.y();
             if (dx * dx + dy * dy <= radiusSquared) return true;
@@ -1614,10 +2102,96 @@ final class StrategicBuildPlanner {
         return false;
     }
 
+    private static boolean declaresNonReconGroundProduction(UnitType building) {
+        if (building == null || !building.isBuilding()) return false;
+        for (UnitAction action : supportedTechActions(building, 4)) {
+            UnitType product = action.getBuildUnitType();
+            if (!action.isBuildAction() || product == null || product.isBuilding()) continue;
+            AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
+            if (capabilities.mobileCombatUnit()
+                    && !StrategicProductionDoctrine.isReconType(capabilities)
+                    && isLandCombatDomain(capabilities.movementDomain())) return true;
+        }
+        return false;
+    }
+
+    private static boolean isLandCombatDomain(AiMovementDomain domain) {
+        return domain == AiMovementDomain.LAND || domain == AiMovementDomain.HOVER
+                || domain == AiMovementDomain.OVER_CLIFF
+                || domain == AiMovementDomain.OVER_CLIFF_WATER;
+    }
+
+    /** Enumerates only action tables that the concrete unit type actually supports. */
+    private static List<UnitAction> supportedTechActions(UnitType type, int requestedMaximum) {
+        ArrayList<UnitAction> actions = new ArrayList<UnitAction>();
+        for (int tech = 1; tech <= requestedMaximum; tech++) {
+            try {
+                actions.addAll(UnitActions.forType(type, tech));
+            } catch (RuntimeException failure) {
+                String message = failure.getMessage();
+                if (message != null && message.startsWith("Tech level:")
+                        && message.contains("greater than maxTechLevel")) break;
+                throw failure;
+            }
+        }
+        return actions;
+    }
+
     private static boolean isStaticDefense(UnitType building) {
         return building != null && building.isBuilding()
                 && AiUnitTypeCapabilities.capture(building).attacker()
                 && !declaresCombatProduction(building);
+    }
+
+    private static boolean isEconomicBuilding(Unit unit, float currentRate) {
+        return unit != null && unit.r() != null && currentRate > 0.0F
+                && (isResourceManufacturer(unit.r())
+                || unit.r().isPlaceOnlyOnResourcePool());
+    }
+
+    private static boolean isResourceManufacturer(UnitType type) {
+        if (type == null || !type.isBuilding() || type.isPlaceOnlyOnResourcePool()) return false;
+        AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(type);
+        if (capabilities.creditGenerationPerSecond() <= 0.0F) return false;
+        String id = safe(type.getInternalName()).toLowerCase(java.util.Locale.ROOT);
+        return capabilities.harvester() || id.contains("fabricator")
+                || id.contains("resource") || id.contains("extractor");
+    }
+
+    private static double expectedUpgradeIncomeDelta(UnitView view, Unit raw,
+            UnitAction upgrade) {
+        double current = Math.max(0.0D, view.creditGenerationPerSecond());
+        UnitType target = upgrade.getBuildUnitType();
+        if (target != null) {
+            double targetRate = AiUnitTypeCapabilities.capture(target)
+                    .creditGenerationPerSecond();
+            if (targetRate > current) return targetRate - current;
+        }
+        String id = safe(raw.r() != null ? raw.r().getInternalName() : null)
+                .toLowerCase(java.util.Locale.ROOT);
+        int tech = Math.max(1, view.techLevel());
+        if (id.contains("extractor")) {
+            double next = tech <= 1 ? 12.0D : tech == 2 ? 18.0D : current;
+            if (next > current) return next - current;
+        }
+        if (id.contains("fabricator")) {
+            double next = tech <= 1 ? 7.0D : tech == 2 ? 14.0D : current;
+            if (next > current) return next - current;
+        }
+        // Custom economic upgrades do not always expose their conversion target. Use a
+        // conservative lower-bound estimate instead of assuming a dramatic tier jump.
+        return Math.max(1.0D, current * (tech <= 1 ? 0.55D : 0.42D));
+    }
+
+    private static double actionBuildTimeSeconds(UnitAction action) {
+        if (!(action instanceof QueueableUnitAction)) return 0.0D;
+        float speed = ((QueueableUnitAction) action).getBuildSpeed();
+        return Float.isFinite(speed) && speed > 0.0F
+                ? 1.0D / (speed * 60.0D) : 0.0D;
+    }
+
+    private static double gameSeconds() {
+        return Math.max(0, GameWorld.gameTimeMillis()) / 1000.0D;
     }
 
     private BuildPoint findBuildPoint(AiTickContext context,
@@ -1632,7 +2206,7 @@ final class StrategicBuildPlanner {
         ArrayList<WorldPoint> slots = new ArrayList<WorldPoint>(layout.slots(district));
         if (district == BaseLayoutGeometry.District.DEFENSE) {
             slots.sort(Comparator.comparingDouble((WorldPoint point) ->
-                    -defenseTerrainScore(situation, point)));
+                    -defenseTerrainScore(situation, layout, point)));
         }
         for (WorldPoint slot : slots) {
             for (int[] nudge : nudges) {
@@ -1652,11 +2226,14 @@ final class StrategicBuildPlanner {
         return null;
     }
 
-    private static float defenseTerrainScore(AiStrategicMapSnapshot situation,
-            WorldPoint point) {
+    private static double defenseTerrainScore(AiStrategicMapSnapshot situation,
+            BaseLayoutPlan layout, WorldPoint point) {
         AiTerrainCell cell = situation.terrain().cellAtWorld(point.x(), point.y());
-        if (cell == null) return Float.NEGATIVE_INFINITY;
-        return cell.landChokeScore() * 0.65F
+        if (cell == null) return Double.NEGATIVE_INFINITY;
+        double placement = DefensiveInvestmentPolicy.placementPriority(
+                layout.anchor(), layout.front(), point,
+                situation.terrain().worldWidth(), situation.terrain().worldHeight());
+        return placement + cell.landChokeScore() * 0.45F
                 + cell.passableFraction(AiMovementDomain.LAND) * 0.2F
                 - cell.buildingBlockedFraction() * 0.15F;
     }
@@ -1702,11 +2279,8 @@ final class StrategicBuildPlanner {
     }
 
     private static final class ForwardTowerPoint extends BuildPoint {
-        final boolean lockMode;
-
-        ForwardTowerPoint(float x, float y, long reservationKey, boolean lockMode) {
+        ForwardTowerPoint(float x, float y, long reservationKey) {
             super(x, y, reservationKey);
-            this.lockMode = lockMode;
         }
     }
 
@@ -1720,6 +2294,35 @@ final class StrategicBuildPlanner {
         }
     }
 
+    private static final class EconomicUpgrade {
+        final UnitView view;
+        final OrderableUnit unit;
+        final UnitAction action;
+        final double payback;
+        final double delta;
+
+        EconomicUpgrade(UnitView view, OrderableUnit unit, UnitAction action,
+                double payback, double delta) {
+            this.view = view;
+            this.unit = unit;
+            this.action = action;
+            this.payback = payback;
+            this.delta = delta;
+        }
+    }
+
+    private static final class EconomicBuild {
+        final UnitType type;
+        final double payback;
+        final double rate;
+
+        EconomicBuild(UnitType type, double payback, double rate) {
+            this.type = type;
+            this.payback = payback;
+            this.rate = rate;
+        }
+    }
+
     private static final class FactoryPlanCandidate {
         final UnitType factory;
         final int cost;
@@ -1727,6 +2330,7 @@ final class StrategicBuildPlanner {
         UnitType unit;
         double unitScore = Double.NEGATIVE_INFINITY;
         double score = Double.NEGATIVE_INFINITY;
+        double portfolioNovelty;
 
         FactoryPlanCandidate(UnitType factory, int cost, boolean existing) {
             this.factory = factory;

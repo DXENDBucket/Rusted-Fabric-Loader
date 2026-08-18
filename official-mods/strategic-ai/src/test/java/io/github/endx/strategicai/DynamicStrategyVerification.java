@@ -80,6 +80,18 @@ public final class DynamicStrategyVerification {
                         1.0F, 1.0F, 2.0F)
                         == UnitMicroPolicy.Decision.RETREAT,
                 "critical live micro did not override a favourable fight");
+        double activeLandContact = DynamicFrontlineMap.sectorScore(
+                80.0D, 70.0D, 0.85D, 0.35D, 0.40D, 5);
+        double quietInfluenceEdge = DynamicFrontlineMap.sectorScore(
+                7.0D, 1.0D, 0.35D, 0.25D, 0.30D, 2);
+        require(activeLandContact > quietInfluenceEdge,
+                "the live contested land sector did not outrank a quiet influence edge");
+        double reachableSector = DynamicFrontlineMap.sectorScore(
+                35.0D, 31.0D, 0.70D, 0.30D, 0.50D, 4);
+        double unreachableSector = DynamicFrontlineMap.sectorScore(
+                35.0D, 31.0D, 0.70D, 3.00D, 0.50D, 4);
+        require(reachableSector > unreachableSector,
+                "land route cost did not affect dynamic frontline selection");
         System.out.println("Strategic AI dynamic strategy and micro contracts passed");
     }
 

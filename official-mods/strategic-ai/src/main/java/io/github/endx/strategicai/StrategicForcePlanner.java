@@ -58,6 +58,7 @@ final class StrategicForcePlanner {
             new HashMap<Long, TacticalLease>();
     private StrategicPosture posture;
     private StrategicAirPlan.Mode airMode;
+    private long airTargetId = Long.MIN_VALUE;
     private StrategicFrontState.Mode frontMode;
     private long latestMicroCycle;
 
@@ -70,6 +71,7 @@ final class StrategicForcePlanner {
         tacticalLeases.clear();
         posture = null;
         airMode = null;
+        airTargetId = Long.MIN_VALUE;
         frontMode = null;
     }
 
@@ -544,6 +546,14 @@ final class StrategicForcePlanner {
             StrategicTeamPlan teamPlan, long cycle) {
         if (ownAir.isEmpty()) return;
         StrategicAirPlan plan = StrategicAirPlan.assess(situation, teamPlan, cycle);
+        long nextAirTargetId = plan.airTarget() != null
+                ? plan.airTarget().id() : Long.MIN_VALUE;
+        if (nextAirTargetId != airTargetId) {
+            airTargetId = nextAirTargetId;
+            for (UnitView unit : ownAir) {
+                if (StrategicAirPlan.isAirToAir(unit)) orderLeases.remove(unit.id());
+            }
+        }
         if (plan.mode() != airMode) {
             airMode = plan.mode();
             for (UnitView unit : ownAir) orderLeases.remove(unit.id());

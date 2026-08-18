@@ -101,7 +101,9 @@ final class StrategicProductionDoctrine {
         float enemy = airToAirStrength(situation.world().enemies());
         if (friendly + enemy < 0.01F) return AirBalance.PARITY;
         if (friendly < enemy * 0.88F) return AirBalance.DISADVANTAGE;
-        if (friendly <= enemy * 1.80F + 0.01F) return AirBalance.PARITY;
+        // Air-to-ground production is released only behind a clear, durable air lead.
+        // A marginal paper advantage is still parity because a single interception can erase it.
+        if (friendly <= enemy * 2.35F + 0.01F) return AirBalance.PARITY;
         return AirBalance.SUPERIORITY;
     }
 
@@ -119,7 +121,8 @@ final class StrategicProductionDoctrine {
             double power = combatPower(capabilities);
             double score = ProductionValuePolicy.balancedCombatValue(
                     power, costEfficiency(capabilities, unitCost(action)),
-                    productionThroughput(power, actionBuildSpeed(action)));
+                    productionThroughput(power, actionBuildSpeed(action)))
+                    + tacticalCapabilityValue(capabilities);
             if (wanted != null) {
                 if (capabilities.movementDomain() == wanted.movementDomain()) score += 5.0D;
                 if (capabilities.canAttackAir() == wanted.canAttackAir()) score += 1.2D;
@@ -174,7 +177,8 @@ final class StrategicProductionDoctrine {
         double efficiency = costEfficiency(capabilities, cost);
         double score = ProductionValuePolicy.balancedCombatValue(
                 power, efficiency,
-                productionThroughput(power, actionBuildSpeed(action)));
+                productionThroughput(power, actionBuildSpeed(action)))
+                + tacticalCapabilityValue(capabilities);
         score += capabilities.techLevel() * (preferHeavy ? 0.85D : 0.25D);
         if (!preferHeavy) score -= cost * 0.00022D;
 
@@ -210,6 +214,14 @@ final class StrategicProductionDoctrine {
         score += Math.floorMod((int) (cycle + safe(type.getInternalName()).hashCode()), 5)
                 * 0.015D;
         return score;
+    }
+
+    private static double tacticalCapabilityValue(AiUnitTypeCapabilities capabilities) {
+        if (!capabilities.areaWeapon()) return 0.0D;
+        return Math.min(4.5D,
+                Math.log1p(capabilities.estimatedAreaDps()) * 0.48D
+                        + capabilities.maximumAreaDamageRadius() / 48.0D
+                        + (capabilities.flameWeapon() ? 0.25D : 0.0D));
     }
 
     private static double attritionRangeScore(AiUnitTypeCapabilities capabilities,

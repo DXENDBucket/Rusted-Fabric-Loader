@@ -63,7 +63,8 @@ final class StrategicAirPlan {
         boolean assembled = assembled(friendlyAirToAir, staging);
         float friendlyStrength = strength(friendlyAirToAir);
         float enemyStrength = strength(enemyAirToAir);
-        UnitView airTarget = closest(enemyAirToAir, staging);
+        UnitView airTarget = closestToAny(enemyAirToAir,
+                friendlyAirToAir.isEmpty() ? friendly : friendlyAirToAir, staging);
         UnitView strike = assembled(friendlyAirToGround, staging)
                 ? selectStrikeTarget(situation, friendlyAirToGround,
                 friendlyAirToAir, staging) : null;
@@ -202,6 +203,27 @@ final class StrategicAirPlan {
             if (distance < bestDistance || distance == bestDistance
                     && (best == null || unit.id() < best.id())) {
                 best = unit;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static UnitView closestToAny(List<UnitView> targets,
+            List<UnitView> hunters, WorldPoint fallback) {
+        UnitView best = null;
+        float bestDistance = Float.POSITIVE_INFINITY;
+        for (UnitView target : targets) {
+            float distance = fallback.distanceSquared(
+                    new WorldPoint(target.x(), target.y()));
+            for (UnitView hunter : hunters) {
+                float dx = target.x() - hunter.x();
+                float dy = target.y() - hunter.y();
+                distance = Math.min(distance, dx * dx + dy * dy);
+            }
+            if (distance < bestDistance || distance == bestDistance
+                    && (best == null || target.id() < best.id())) {
+                best = target;
                 bestDistance = distance;
             }
         }

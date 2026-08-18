@@ -5,6 +5,7 @@ import rustedwarfare.unit.OrderableUnit;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
 import rustedwarfare.custom.CustomUnit;
+import rustedwarfare.custom.CustomProjectileTemplate;
 import rustedwarfare.custom.TurretTemplate;
 
 import java.util.IdentityHashMap;
@@ -34,12 +35,16 @@ public final class AiUnitTypeCapabilities {
     private final float estimatedInitialDps;
     private final float estimatedAirDps;
     private final float estimatedGroundDps;
+    private final float estimatedAreaDps;
+    private final float maximumAreaDamageRadius;
+    private final boolean flameWeapon;
     private final float maximumWarmupTime;
     private final float warmupCooldownRate;
     private final boolean retainsWarmupAfterFiring;
     private final int techLevel;
     private final int creditCost;
     private final float buildSpeed;
+    private final float creditGenerationPerSecond;
 
     private AiUnitTypeCapabilities(UnitType type, boolean movable, boolean attacker,
             boolean canAttackAir, boolean canAttackGround,
@@ -47,8 +52,10 @@ public final class AiUnitTypeCapabilities {
             float maximumHealth, float maximumShield,
             float estimatedInitialDps, float estimatedSustainedDps,
             float estimatedAirDps, float estimatedGroundDps,
+            float estimatedAreaDps, float maximumAreaDamageRadius,
+            boolean flameWeapon,
             float maximumWarmupTime, float warmupCooldownRate,
-            boolean retainsWarmupAfterFiring) {
+            boolean retainsWarmupAfterFiring, float creditGenerationPerSecond) {
         this.type = type;
         this.typeId = safe(type.getInternalName());
         this.displayName = safe(type.getDisplayName());
@@ -69,12 +76,16 @@ public final class AiUnitTypeCapabilities {
         this.estimatedInitialDps = finiteNonNegative(estimatedInitialDps);
         this.estimatedAirDps = finiteNonNegative(estimatedAirDps);
         this.estimatedGroundDps = finiteNonNegative(estimatedGroundDps);
+        this.estimatedAreaDps = finiteNonNegative(estimatedAreaDps);
+        this.maximumAreaDamageRadius = finiteNonNegative(maximumAreaDamageRadius);
+        this.flameWeapon = flameWeapon;
         this.maximumWarmupTime = finiteNonNegative(maximumWarmupTime);
         this.warmupCooldownRate = finiteNonNegative(warmupCooldownRate);
         this.retainsWarmupAfterFiring = retainsWarmupAfterFiring;
         this.techLevel = Math.max(0, type.getTechLevel());
         this.creditCost = Math.max(0, type.getBuildCostCredits());
         this.buildSpeed = finiteNonNegative(type.getBuildSpeed());
+        this.creditGenerationPerSecond = finiteNonNegative(creditGenerationPerSecond);
     }
 
     public static AiUnitTypeCapabilities capture(UnitType type) {
@@ -96,6 +107,9 @@ public final class AiUnitTypeCapabilities {
         float initialDps = 0.0F;
         float airDps = 0.0F;
         float groundDps = 0.0F;
+        float areaDps = 0.0F;
+        float areaRadius = 0.0F;
+        boolean flameWeapon = false;
         float warmupTime = 0.0F;
         float cooldownRate = 0.0F;
         boolean retainsWarmup = false;
@@ -122,6 +136,25 @@ public final class AiUnitTypeCapabilities {
                         if (template != null) {
                             cooldownRate = Math.max(cooldownRate,
                                     finiteNonNegative(template.warmupCallDownRate));
+                            CustomProjectileTemplate primary = customProjectile(
+                                    (CustomUnit) orderable, template.projectileIndex);
+                            CustomProjectileTemplate selected = customProjectile(
+                                    (CustomUnit) orderable,
+                                    template.getProjectileIndexForUnit((CustomUnit) orderable));
+                            CustomProjectileTemplate alternate = customProjectile(
+                                    (CustomUnit) orderable, template.altProjectileIndex);
+                            float delay = effectiveFireDelay(orderable, turret, true);
+                            float turretAreaDamage = 0.0F;
+                            for (CustomProjectileTemplate projectile
+                                    : new CustomProjectileTemplate[]{primary, selected, alternate}) {
+                                if (projectile == null) continue;
+                                areaRadius = Math.max(areaRadius,
+                                        finiteNonNegative(projectile.areaRadius));
+                                turretAreaDamage = Math.max(turretAreaDamage,
+                                        finiteNonNegative(projectile.areaDamage));
+                                flameWeapon |= projectile.flameWeapon;
+                            }
+                            if (delay > 0.0F) areaDps += turretAreaDamage / delay;
                         }
                     }
                     retainsWarmup |= orderable.isTurretWarmupNoReset(turret);
@@ -131,7 +164,9 @@ public final class AiUnitTypeCapabilities {
         AiUnitTypeCapabilities captured = new AiUnitTypeCapabilities(
                 type, movable, attacker, attacksAir, attacksGround, range, speed,
                 maximumHealth, maximumShield, initialDps, sustainedDps,
-                airDps, groundDps, warmupTime, cooldownRate, retainsWarmup);
+                airDps, groundDps, areaDps, areaRadius, flameWeapon,
+                warmupTime, cooldownRate, retainsWarmup,
+                prototype.getCreditGenerationPerSecond());
         synchronized (CACHE) {
             AiUnitTypeCapabilities raced = CACHE.get(type);
             if (raced != null) return raced;
@@ -169,6 +204,16 @@ public final class AiUnitTypeCapabilities {
     public float estimatedAirDps() { return estimatedAirDps; }
     /** Direct DPS from turrets that can actually acquire a representative ground target. */
     public float estimatedGroundDps() { return estimatedGroundDps; }
+    /** Coarse area-damage contribution per native time unit for custom projectile weapons. */
+    public float estimatedAreaDps() { return estimatedAreaDps; }
+    /** Largest configured area-damage radius among this type's custom projectile weapons. */
+    public float maximumAreaDamageRadius() { return maximumAreaDamageRadius; }
+    /** True when a custom projectile explicitly uses the native flame-weapon behavior. */
+    public boolean flameWeapon() { return flameWeapon; }
+    /** True when the type exposes a meaningful multi-target weapon characteristic. */
+    public boolean areaWeapon() {
+        return maximumAreaDamageRadius > 0.0F && estimatedAreaDps > 0.0F || flameWeapon;
+    }
     public float maximumWarmupTime() { return maximumWarmupTime; }
     public float warmupCooldownRate() { return warmupCooldownRate; }
     public boolean retainsWarmupAfterFiring() { return retainsWarmupAfterFiring; }
@@ -195,6 +240,8 @@ public final class AiUnitTypeCapabilities {
     public int creditCost() { return creditCost; }
     /** Native queue progress added per simulation tick before producer-specific modifiers. */
     public float buildSpeed() { return buildSpeed; }
+    /** Native credit generation before match and AI income multipliers. */
+    public float creditGenerationPerSecond() { return creditGenerationPerSecond; }
     /** Nominal production time at 60 simulation ticks per second. */
     public float nominalBuildTimeSeconds() {
         return buildSpeed > 0.0F ? 1.0F / (buildSpeed * 60.0F)
@@ -273,6 +320,13 @@ public final class AiUnitTypeCapabilities {
                 || unit.unitMetadata.turretTemplates == null
                 || index < 0 || index >= unit.unitMetadata.turretTemplates.length) return null;
         return unit.unitMetadata.turretTemplates[index];
+    }
+
+    private static CustomProjectileTemplate customProjectile(CustomUnit unit, int index) {
+        if (unit == null || unit.unitMetadata == null
+                || unit.unitMetadata.projectileTemplates == null
+                || index < 0 || index >= unit.unitMetadata.projectileTemplates.length) return null;
+        return unit.unitMetadata.projectileTemplates[index];
     }
 
     private static float finiteNonNegative(float value) {

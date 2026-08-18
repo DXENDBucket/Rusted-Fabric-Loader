@@ -25,9 +25,17 @@ final class StrategicFrontState {
     private final int friendlyUnits;
     private final int alliedUnits;
     private final int enemyDefenses;
+    private final int sectorCount;
 
     private StrategicFrontState(Mode mode, WorldPoint point, UnitView primaryDefense,
             float exchangeRatio, int friendlyUnits, int alliedUnits, int enemyDefenses) {
+        this(mode, point, primaryDefense, exchangeRatio,
+                friendlyUnits, alliedUnits, enemyDefenses, 0);
+    }
+
+    private StrategicFrontState(Mode mode, WorldPoint point, UnitView primaryDefense,
+            float exchangeRatio, int friendlyUnits, int alliedUnits,
+            int enemyDefenses, int sectorCount) {
         this.mode = mode;
         this.point = point;
         this.primaryDefense = primaryDefense;
@@ -35,11 +43,13 @@ final class StrategicFrontState {
         this.friendlyUnits = friendlyUnits;
         this.alliedUnits = alliedUnits;
         this.enemyDefenses = enemyDefenses;
+        this.sectorCount = sectorCount;
     }
 
     static StrategicFrontState assess(io.github.endx.rustedfabricapi.api.ai.AiStrategicMapSnapshot situation,
             StrategicTeamPlan teamPlan) {
-        WorldPoint point = teamPlan.preferredFrontierPoint();
+        DynamicFrontlineMap frontMap = DynamicFrontlineMap.capture(situation, teamPlan);
+        WorldPoint point = frontMap.primaryPoint().orElse(teamPlan.preferredFrontierPoint());
         if (point == null) point = situation.primaryFront().orElse(null);
         if (point == null) return new StrategicFrontState(
                 Mode.OPEN, null, null, Float.POSITIVE_INFINITY, 0, 0, 0);
@@ -50,7 +60,8 @@ final class StrategicFrontState {
         UnitView primary = primaryDefense(situation.world().enemies(), point);
         if (enemyTowers.count == 0) {
             return new StrategicFrontState(Mode.OPEN, point, null,
-                    Float.POSITIVE_INFINITY, own.count, allies.count, 0);
+                    Float.POSITIVE_INFINITY, own.count, allies.count, 0,
+                    frontMap.sectorCount());
         }
         float friendlyHp = own.durability + allies.durability;
         float friendlyDps = own.dps + allies.dps;
@@ -62,7 +73,7 @@ final class StrategicFrontState {
         Mode mode = FrontEngagementPolicy.select(
                 ratio, friendlyCount, enemyTowers.count);
         return new StrategicFrontState(mode, point, primary, ratio,
-                own.count, allies.count, enemyTowers.count);
+                own.count, allies.count, enemyTowers.count, frontMap.sectorCount());
     }
 
     Mode mode() { return mode; }
@@ -72,6 +83,7 @@ final class StrategicFrontState {
     int friendlyUnits() { return friendlyUnits; }
     int alliedUnits() { return alliedUnits; }
     int enemyDefenses() { return enemyDefenses; }
+    int sectorCount() { return sectorCount; }
 
     private static CombatMass combatMass(List<UnitView> units, WorldPoint point,
             boolean buildingsOnly) {

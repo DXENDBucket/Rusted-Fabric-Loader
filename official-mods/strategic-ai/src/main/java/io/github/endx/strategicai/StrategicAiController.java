@@ -99,7 +99,8 @@ public final class StrategicAiController implements AiController {
                         "%.2f", frontState.exchangeRatio())
                         + ", own=" + frontState.friendlyUnits()
                         + ", allies=" + frontState.alliedUnits()
-                        + ", defenses=" + frontState.enemyDefenses());
+                        + ", defenses=" + frontState.enemyDefenses()
+                        + ", sectors=" + frontState.sectorCount());
             }
             resourceCampaign.update(cachedSituation, context.world().own(),
                     context.world().enemies(), forceCycle,

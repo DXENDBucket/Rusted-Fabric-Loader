@@ -75,6 +75,21 @@ public final class TeamView {
         return intResult(new String[]{"getDisplayIncomeRate", "v"});
     }
 
+    /** Match-wide economy multiplier selected by the game setup. */
+    public float gameIncomeMultiplier() {
+        return positiveFloatResult(new String[]{"getGameIncomeMultiplier", "D"});
+    }
+
+    /** Per-team AI income multiplier derived from the effective AI difficulty. */
+    public float aiIncomeMultiplier() {
+        return positiveFloatResult(new String[]{"getAiIncomeMultiplier", "E"});
+    }
+
+    /** Multiplier applied to a native credit-generation rate for this team. */
+    public float effectiveIncomeMultiplier() {
+        return gameIncomeMultiplier() * aiIncomeMultiplier();
+    }
+
     public boolean enemyOf(TeamView other) {
         requireOther(other);
         return Boolean.TRUE.equals(RustedReflection.invokeInstance(team,
@@ -94,6 +109,12 @@ public final class TeamView {
     private int intResult(String[] names) {
         Object value = RustedReflection.invokeInstance(team, names);
         return value instanceof Number ? ((Number) value).intValue() : 0;
+    }
+
+    private float positiveFloatResult(String[] names) {
+        Object value = RustedReflection.invokeInstance(team, names);
+        float result = value instanceof Number ? ((Number) value).floatValue() : 1.0F;
+        return Float.isFinite(result) && result > 0.0F ? result : 1.0F;
     }
 
     private static void requireOther(TeamView other) {
