@@ -39,6 +39,7 @@ public final class AiUnitTypeCapabilities {
     private final boolean retainsWarmupAfterFiring;
     private final int techLevel;
     private final int creditCost;
+    private final float buildSpeed;
 
     private AiUnitTypeCapabilities(UnitType type, boolean movable, boolean attacker,
             boolean canAttackAir, boolean canAttackGround,
@@ -73,6 +74,7 @@ public final class AiUnitTypeCapabilities {
         this.retainsWarmupAfterFiring = retainsWarmupAfterFiring;
         this.techLevel = Math.max(0, type.getTechLevel());
         this.creditCost = Math.max(0, type.getBuildCostCredits());
+        this.buildSpeed = finiteNonNegative(type.getBuildSpeed());
     }
 
     public static AiUnitTypeCapabilities capture(UnitType type) {
@@ -191,6 +193,13 @@ public final class AiUnitTypeCapabilities {
     }
     public int techLevel() { return techLevel; }
     public int creditCost() { return creditCost; }
+    /** Native queue progress added per simulation tick before producer-specific modifiers. */
+    public float buildSpeed() { return buildSpeed; }
+    /** Nominal production time at 60 simulation ticks per second. */
+    public float nominalBuildTimeSeconds() {
+        return buildSpeed > 0.0F ? 1.0F / (buildSpeed * 60.0F)
+                : Float.POSITIVE_INFINITY;
+    }
     public boolean mobileCombatUnit() { return movable && attacker && !builder; }
 
     private static Unit representativeTarget(AiMovementDomain domain) {

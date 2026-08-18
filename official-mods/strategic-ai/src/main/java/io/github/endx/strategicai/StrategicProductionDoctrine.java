@@ -9,6 +9,7 @@ import io.github.endx.rustedfabricapi.api.game.UnitView;
 import rustedwarfare.unit.Unit;
 import rustedwarfare.unit.UnitType;
 import rustedwarfare.unit.action.UnitAction;
+import rustedwarfare.unit.action.QueueableUnitAction;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,9 +51,10 @@ final class StrategicProductionDoctrine {
             ArrayList<UnitAction> mission = matchingTarget(pool, needsAirToAir);
             if (!mission.isEmpty()) pool = mission;
             if (needsAirToAir) {
-                UnitAction strongest = strongestAirToAir(pool);
+                UnitAction strongest = bestAirToAirInvestment(pool);
                 if (strongest != null) {
-                    // Once a factory exposes a materially stronger interceptor, save for it.
+                    // Once a factory exposes the best equal-credit air-superiority investment,
+                    // save for it. This considers mobility as well as paper DPS and durability.
                     // Falling back to a cheap T1 aircraft prevents the AI from ever banking the
                     // cost of the T2 air-superiority unit and loses the air war by construction.
                     if (unitCost(strongest) > economy.credits) return null;
@@ -114,8 +116,10 @@ final class StrategicProductionDoctrine {
             AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(
                     action.getBuildUnitType());
             if (isReconType(capabilities) || unitCost(action) > credits) continue;
-            double score = Math.log1p(combatPower(capabilities)) * 1.8D
-                    + costEfficiency(capabilities, unitCost(action)) * 32.0D;
+            double power = combatPower(capabilities);
+            double score = ProductionValuePolicy.balancedCombatValue(
+                    power, costEfficiency(capabilities, unitCost(action)),
+                    productionThroughput(power, actionBuildSpeed(action)));
             if (wanted != null) {
                 if (capabilities.movementDomain() == wanted.movementDomain()) score += 5.0D;
                 if (capabilities.canAttackAir() == wanted.canAttackAir()) score += 1.2D;
@@ -168,7 +172,9 @@ final class StrategicProductionDoctrine {
         double cost = Math.max(action.getCreditCost(), capabilities.creditCost());
         double power = combatPower(capabilities);
         double efficiency = costEfficiency(capabilities, cost);
-        double score = Math.log1p(power) * 1.65D + efficiency * 42.0D;
+        double score = ProductionValuePolicy.balancedCombatValue(
+                power, efficiency,
+                productionThroughput(power, actionBuildSpeed(action)));
         score += capabilities.techLevel() * (preferHeavy ? 0.85D : 0.25D);
         if (!preferHeavy) score -= cost * 0.00022D;
 
@@ -257,14 +263,14 @@ final class StrategicProductionDoctrine {
         return result.isEmpty() ? new ArrayList<UnitAction>(actions) : result;
     }
 
-    private static UnitAction strongestAirToAir(List<UnitAction> actions) {
+    private static UnitAction bestAirToAirInvestment(List<UnitAction> actions) {
         UnitAction best = null;
         double bestValue = Double.NEGATIVE_INFINITY;
         for (UnitAction action : actions) {
             AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(
                     action.getBuildUnitType());
             if (!capabilities.airToAirSpecialist()) continue;
-            double value = airSuperiorityValue(capabilities);
+            double value = airSuperiorityValue(capabilities, unitCost(action));
             if (value > bestValue || value == bestValue && (best == null
                     || safe(action.getActionIdString()).compareToIgnoreCase(
                     safe(best.getActionIdString())) < 0)) {
@@ -276,12 +282,19 @@ final class StrategicProductionDoctrine {
     }
 
     static double airSuperiorityValue(AiUnitTypeCapabilities capabilities) {
+        return airSuperiorityValue(capabilities,
+                capabilities != null ? capabilities.creditCost() : 0.0D);
+    }
+
+    private static double airSuperiorityValue(AiUnitTypeCapabilities capabilities,
+            double creditCost) {
         if (capabilities == null || !capabilities.airToAirSpecialist()) return 0.0D;
         double durability = Math.max(1.0D, capabilities.maximumHealth()
                 + capabilities.maximumShield());
-        return Math.sqrt(durability
-                * Math.max(0.04D, capabilities.estimatedAirDps()))
-                * (1.0D + capabilities.maximumAttackRange() / 900.0D);
+        return ProductionValuePolicy.airSuperiorityInvestmentValue(
+                durability, capabilities.estimatedAirDps(),
+                capabilities.maximumAttackRange(), capabilities.movementSpeed(),
+                creditCost, capabilities.buildSpeed(), capabilities.techLevel());
     }
 
     private static AirComposition airComposition(List<UnitView> liveOwn,
@@ -322,6 +335,19 @@ final class StrategicProductionDoctrine {
     private static double costEfficiency(AiUnitTypeCapabilities capabilities,
             double cost) {
         return combatPower(capabilities) * 100.0D / Math.max(1.0D, cost);
+    }
+
+    private static double productionThroughput(double power, double buildSpeed) {
+        return ProductionValuePolicy.productionThroughput(power, buildSpeed);
+    }
+
+    private static double actionBuildSpeed(UnitAction action) {
+        if (action instanceof QueueableUnitAction) {
+            float speed = ((QueueableUnitAction) action).getBuildSpeed();
+            if (Float.isFinite(speed) && speed >= 0.0F) return speed;
+        }
+        UnitType type = action != null ? action.getBuildUnitType() : null;
+        return type != null ? AiUnitTypeCapabilities.capture(type).buildSpeed() : 0.0D;
     }
 
     private static double rangeUtility(AiUnitTypeCapabilities capabilities) {
@@ -447,8 +473,9 @@ final class StrategicProductionDoctrine {
                     ? Math.max(0.15F, unit.health() / unit.maxHealth()) : 1.0F;
             double durability = Math.max(1.0D, capabilities.maximumHealth()
                     + capabilities.maximumShield());
-            double airPower = Math.sqrt(durability
-                    * Math.max(0.04D, capabilities.estimatedAirDps()));
+            double airPower = ProductionValuePolicy.airSuperiorityPower(
+                    durability, capabilities.estimatedAirDps(),
+                    capabilities.maximumAttackRange(), capabilities.movementSpeed());
             result += (float) airPower * healthFraction;
         }
         return result;
@@ -498,6 +525,12 @@ final class StrategicProductionDoctrine {
             System.out.println("[Strategic AI] Air capability " + capabilities.typeId()
                     + " airDps=" + capabilities.estimatedAirDps()
                     + " groundDps=" + capabilities.estimatedGroundDps()
+                    + " speed=" + capabilities.movementSpeed()
+                    + " durability=" + (capabilities.maximumHealth()
+                    + capabilities.maximumShield())
+                    + " cost=" + unitCost(action)
+                    + " superiorityValue=" + airSuperiorityValue(
+                    capabilities, unitCost(action))
                     + " specialist=" + capabilities.airToAirSpecialist());
         }
     }

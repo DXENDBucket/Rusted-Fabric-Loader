@@ -54,8 +54,10 @@ final class StrategicBuildPlanner {
     private long productionPlanUntil;
     private StrategicFrontState.Mode productionPlanFrontMode;
     private StrategicProductionDoctrine.AirBalance productionPlanAirBalance;
+    private int productionPlanFocusedCount;
     private boolean announcedEconomy;
     private int announcedOrders;
+    private String announcedCapacityPlan;
 
     void onStrategicReplan() {
         primaryBase = null;
@@ -64,6 +66,7 @@ final class StrategicBuildPlanner {
         productionPlanUntil = 0L;
         productionPlanAirBalance = null;
         productionPlanFrontMode = null;
+        productionPlanFocusedCount = 0;
         primaryDistrictReservations.clear();
         frontierDefenseReservationUntil = 0L;
         frontierDefenseTargetKey = Long.MIN_VALUE;
@@ -118,7 +121,7 @@ final class StrategicBuildPlanner {
                             resourceCampaign, currentOwn)
                     && !claimResource(context, situation, baseBuilders, cycle, teamPlan)) {
                 ensureProductionCapacity(context, situation, baseBuilders, cycle,
-                        teamPlan, resourceCampaign, currentOwn, producers);
+                        teamPlan, frontState, resourceCampaign, currentOwn, producers);
             }
         }
         queueUnits(context, situation, cycle, teamPlan, frontState, resourceCampaign);
@@ -392,9 +395,15 @@ final class StrategicBuildPlanner {
         StrategicFrontState.Mode mode = frontState != null ? frontState.mode() : null;
         StrategicProductionDoctrine.AirBalance currentAirBalance =
                 StrategicProductionDoctrine.assessAirBalance(situation);
+        int currentFocusCount = focusUnitType != null
+                ? countLiveType(own, safe(focusUnitType.getInternalName())) : 0;
+        boolean focusConcentrationIncreased = focusUnitType != null
+                && focusTypeSaturated(own, focusUnitType)
+                && currentFocusCount > productionPlanFocusedCount;
         if (focusFactoryId != null && focusUnitType != null
                 && cycle < productionPlanUntil && mode == productionPlanFrontMode
-                && currentAirBalance == productionPlanAirBalance) return;
+                && currentAirBalance == productionPlanAirBalance
+                && !focusConcentrationIncreased) return;
         java.util.LinkedHashMap<String, FactoryPlanCandidate> factories =
                 new java.util.LinkedHashMap<String, FactoryPlanCandidate>();
         for (UnitView view : own) {
@@ -419,7 +428,7 @@ final class StrategicBuildPlanner {
         FactoryPlanCandidate best = null;
         for (FactoryPlanCandidate factory : factories.values()) {
             selectFactoryProduct(factory, teamPlan.ownRole(), situation,
-                    frontState, context.team().credits());
+                    frontState, context.team().credits(), own);
             if (factory.unit == null) continue;
             if (best == null || factory.score > best.score
                     || factory.score == best.score
@@ -432,6 +441,8 @@ final class StrategicBuildPlanner {
         productionPlanUntil = cycle + 48L;
         productionPlanFrontMode = mode;
         productionPlanAirBalance = currentAirBalance;
+        productionPlanFocusedCount = countLiveType(
+                own, safe(focusUnitType.getInternalName()));
         System.out.println("[Strategic AI] Team " + context.team().id()
                 + " production plan factory=" + focusFactoryId
                 + " main=" + safe(focusUnitType.getInternalName())
@@ -453,7 +464,7 @@ final class StrategicBuildPlanner {
 
     private static void selectFactoryProduct(FactoryPlanCandidate factory,
             TeamPositionDoctrine.Role role, AiStrategicMapSnapshot situation,
-            StrategicFrontState frontState, double credits) {
+            StrategicFrontState frontState, double credits, List<UnitView> liveOwn) {
         java.util.LinkedHashMap<String, UnitType> products =
                 new java.util.LinkedHashMap<String, UnitType>();
         for (int tech = 1; tech <= 4; tech++) {
@@ -491,7 +502,7 @@ final class StrategicBuildPlanner {
                 factory.unit = strongest;
                 factory.unitScore = plannedUnitValue(
                         AiUnitTypeCapabilities.capture(strongest), role,
-                        frontState, airBalance, credits) + 16.0D;
+                        frontState, airBalance, credits, liveOwn) + 16.0D;
                 factory.score = factory.unitScore
                         - Math.max(0, factory.cost) * 0.00016D
                         + (factory.existing ? 0.22D : 0.0D);
@@ -502,7 +513,7 @@ final class StrategicBuildPlanner {
             AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(product);
             if (!roleAcceptsProduct(role, capabilities)) continue;
             double score = plannedUnitValue(capabilities, role, frontState,
-                    airBalance, credits);
+                    airBalance, credits, liveOwn);
             if (factory.unit == null || score > factory.unitScore
                     || score == factory.unitScore
                     && safe(product.getInternalName()).compareToIgnoreCase(
@@ -520,7 +531,8 @@ final class StrategicBuildPlanner {
 
     private static double plannedUnitValue(AiUnitTypeCapabilities capabilities,
             TeamPositionDoctrine.Role role, StrategicFrontState frontState,
-            StrategicProductionDoctrine.AirBalance airBalance, double credits) {
+            StrategicProductionDoctrine.AirBalance airBalance, double credits,
+            List<UnitView> liveOwn) {
         double durability = Math.max(1.0D, capabilities.maximumHealth()
                 + capabilities.maximumShield());
         boolean sustainedFight = frontState != null
@@ -533,7 +545,10 @@ final class StrategicBuildPlanner {
         double power = Math.sqrt(durability * dps);
         double cost = Math.max(1.0D, capabilities.creditCost());
         double efficiency = power * 100.0D / cost;
-        double score = Math.log1p(power) * 1.65D + efficiency * 38.0D
+        double throughput = ProductionValuePolicy.productionThroughput(
+                power, capabilities.buildSpeed());
+        double score = ProductionValuePolicy.balancedCombatValue(
+                power, efficiency, throughput)
                 + capabilities.techLevel() * 0.38D;
         boolean air = capabilities.movementDomain() == AiMovementDomain.AIR;
         if (role == TeamPositionDoctrine.Role.MOBILE_SUPPORT) {
@@ -543,6 +558,12 @@ final class StrategicBuildPlanner {
             }
         } else {
             score += air ? -4.5D : 1.2D;
+            if (!air) {
+                int groundTotal = groundCombatCount(liveOwn);
+                int sameType = countLiveType(liveOwn, capabilities.typeId());
+                score -= ProductionValuePolicy.exactTypeSaturationPenalty(
+                        sameType, groundTotal);
+            }
             if (role == TeamPositionDoctrine.Role.FRONTLINE) {
                 score += Math.min(3.5D, capabilities.maximumAttackRange() / 95.0D);
                 if (frontState != null
@@ -570,6 +591,39 @@ final class StrategicBuildPlanner {
             }
         }
         return score;
+    }
+
+    private static boolean focusTypeSaturated(List<UnitView> own, UnitType focused) {
+        AiUnitTypeCapabilities capabilities = AiUnitTypeCapabilities.capture(focused);
+        if (capabilities.movementDomain() == AiMovementDomain.AIR) return false;
+        return ProductionValuePolicy.exactTypeSaturated(
+                countLiveType(own, capabilities.typeId()), groundCombatCount(own));
+    }
+
+    private static int groundCombatCount(List<UnitView> units) {
+        int result = 0;
+        for (UnitView unit : units) {
+            AiUnitTypeCapabilities capabilities = type(unit);
+            if (capabilities != null && capabilities.mobileCombatUnit()
+                    && capabilities.movementDomain() != AiMovementDomain.AIR) result++;
+        }
+        return result;
+    }
+
+    private static int countLiveType(List<UnitView> units, String typeId) {
+        int result = 0;
+        for (UnitView unit : units) {
+            AiUnitTypeCapabilities capabilities = type(unit);
+            if (capabilities != null && safe(capabilities.typeId())
+                    .equalsIgnoreCase(safe(typeId))) result++;
+        }
+        return result;
+    }
+
+    private static AiUnitTypeCapabilities type(UnitView unit) {
+        if (unit == null || !(unit.raw() instanceof Unit)) return null;
+        UnitType type = ((Unit) unit.raw()).r();
+        return type != null ? AiUnitTypeCapabilities.capture(type) : null;
     }
 
     private static boolean roleAcceptsProduct(TeamPositionDoctrine.Role role,
@@ -661,22 +715,52 @@ final class StrategicBuildPlanner {
 
     private void ensureProductionCapacity(AiTickContext context,
             AiStrategicMapSnapshot situation, List<Builder> builders, long cycle,
-            StrategicTeamPlan teamPlan, StrategicResourceCampaign campaign,
+            StrategicTeamPlan teamPlan, StrategicFrontState frontState,
+            StrategicResourceCampaign campaign,
             List<UnitView> own, int producers) {
         double credits = context.team().credits();
-        int desired = credits >= 18000.0D ? 4 : credits >= 8500.0D ? 3
-                : credits >= 3200.0D ? 2 : 1;
-        int combat = 0;
-        for (UnitView unit : own) {
-            if (unit.alive() && !unit.building()
-                    && AiUnitCapabilities.capture(unit).mobileCombatUnit()) combat++;
+        AiUnitTypeCapabilities focus = focusUnitType != null
+                ? AiUnitTypeCapabilities.capture(focusUnitType) : null;
+        if (focus == null) return;
+        double unitCost = Math.max(1.0D, focus.creditCost());
+        double burnPerSecond = ProductionValuePolicy.creditBurnPerSecond(
+                unitCost, focus.buildSpeed());
+        double reserveFactor = teamPlan.ownRole() == TeamPositionDoctrine.Role.ECONOMY_TECH
+                ? 2.0D : teamPlan.leadsFrontline() ? 1.25D : 1.55D;
+        double reserve = Math.max(1200.0D, unitCost * reserveFactor);
+        double horizon = productionBurstHorizon(teamPlan, frontState);
+        int desired = ProductionValuePolicy.sustainableProducerTarget(
+                context.team().incomeRate(), credits, reserve,
+                burnPerSecond, horizon, 4);
+        String capacityPlan = safe(focus.typeId()) + ':' + desired;
+        if (!capacityPlan.equals(announcedCapacityPlan)) {
+            announcedCapacityPlan = capacityPlan;
+            System.out.println("[Strategic AI] Team " + context.team().id()
+                    + " production capacity main=" + safe(focus.typeId())
+                    + " income=" + context.team().incomeRate()
+                    + " burnPerFactory=" + String.format(java.util.Locale.ROOT,
+                    "%.1f", burnPerSecond) + "/s bank=" + (long) credits
+                    + " reserve=" + (long) reserve + " desired=" + desired);
         }
-        desired = Math.max(desired, Math.min(4, 1 + combat / 12));
-        if (teamPlan.leadsFrontline() && credits >= 2400.0D) desired = Math.max(2, desired);
+        // Do not spend the reserve that was deliberately kept for the selected production
+        // rhythm merely because a builder happens to expose another factory action.
+        if (credits < reserve) return;
         if (producers < desired) {
             ensureRoleProduction(context, situation, builders, cycle,
                     teamPlan, campaign, own);
         }
+    }
+
+    private static double productionBurstHorizon(StrategicTeamPlan plan,
+            StrategicFrontState frontState) {
+        if (plan.leadsFrontline()) {
+            if (frontState != null && (frontState.mode() == StrategicFrontState.Mode.ASSAULT
+                    || frontState.mode() == StrategicFrontState.Mode.ATTRITION)) return 30.0D;
+            return 40.0D;
+        }
+        if (plan.ownRole() == TeamPositionDoctrine.Role.MOBILE_SUPPORT) return 42.0D;
+        if (plan.ownRole() == TeamPositionDoctrine.Role.ECONOMY_TECH) return 55.0D;
+        return 45.0D;
     }
 
     private BaseLayoutPlan frontlineProductionLayout(StrategicTeamPlan teamPlan,

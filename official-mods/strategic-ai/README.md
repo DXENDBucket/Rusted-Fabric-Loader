@@ -52,9 +52,24 @@ rebuilt linearly per pass so this does not degrade into an all-units-by-all-enem
 Team production now enforces its assigned domain: the frontline and economy/tech positions retain
 land production while mobile-support positions own the air plan. Dual-purpose gunships no longer
 count as air-superiority aircraft merely because they can shoot upward. Under parity or air
-disadvantage an upgraded air factory selects the strongest exposed interceptor and banks for it,
-rather than spending the upgrade budget on another light interceptor; health and shield are both
-included in this comparison.
+disadvantage an upgraded air factory selects the best equal-credit air-superiority investment and
+banks for it, rather than spending the upgrade budget on another light interceptor. Health,
+shield, target-specific air DPS, range, pursuit speed, and price all enter this comparison, so a
+slow paper-stat winner no longer displaces a faster interceptor that wins the actual squad fight.
+Land production still commits to coherent batches, but an exact unit type above roughly 45% of a
+developed ground force receives a growing planning penalty and triggers an early replan. This
+prevents one efficient T1 chassis from permanently monopolising every land factory without forcing
+random one-of-each production. Absolute combat quality and cost efficiency use diminishing-return
+curves, leaving range, tech, current front mode, and force composition enough weight to choose the
+right batch instead of always selecting the cheapest efficient chassis.
+Factory-slot throughput is scored separately as combat power multiplied by native queue build
+speed. A higher-tier unit can therefore be preferred when it converts one factory's time into
+combat power faster, even if its credit efficiency is only equal or slightly worse.
+Additional factories are budgeted from the selected unit's full-queue credit burn per second.
+Current income funds sustained capacity; only credits above a role-specific reserve fund a bounded
+30--55 second burst. Frontline positions can expand capacity more aggressively during assault or
+attrition, while economy/tech positions preserve a longer reserve horizon. A large temporary bank
+therefore no longer causes factories that the current economy cannot meaningfully feed.
 
 A lost forward tower race is a persistent operation instead of a generic retreat. Up to four
 frontline builders leave the predicted enemy-tower range together, regroup on the home side, build
