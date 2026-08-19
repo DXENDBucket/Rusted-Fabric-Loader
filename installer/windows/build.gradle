@@ -67,6 +67,7 @@ tasks.register('prepareWindowsInstallerPayload', Zip) {
             project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial'),
             project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial'),
             project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial'),
+            project(':official-mods:vulkan-mod').tasks.named('remapJarToOfficial'),
             tasks.named('compileWindowsLauncher'), tasks.named('generateInstallerPayloadMetadata')
 
     archiveFileName.set("rusted-fabric-installer-payload-${project.version}.zip")
@@ -96,6 +97,9 @@ tasks.register('prepareWindowsInstallerPayload', Zip) {
     }
     into('components/performance_profiler/javamods') {
         from project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/vulkan_mod/javamods') {
+        from project(':official-mods:vulkan-mod').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
     }
     into('metadata') {
         from generatedMetadata
@@ -150,6 +154,7 @@ tasks.register('verifyWindowsInstallerPayload') {
                     ~/components\/mod_menu\/javamods\/java-mod-menu-.*\.jar/,
                     ~/components\/ini_essentials\/javamods\/ini-essentials-.*\.jar/,
                     ~/components\/performance_profiler\/javamods\/performance-profiler-.*\.jar/,
+                    ~/components\/vulkan_mod\/javamods\/vulkan-mod-.*\.jar/,
                     ~/metadata\/version\.txt/
             ]
             required.each { pattern ->
@@ -197,6 +202,7 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
         new File(root, 'javamods/third-party-keep.jar').bytes = new byte[] { 1, 2, 3 }
         new File(root, 'javamods/rusted-fabric-api-0.0.9.jar').bytes = new byte[] { 4, 5, 6 }
         new File(root, 'javamods/java-mod-menu-0.0.9.jar').bytes = new byte[] { 7, 8, 9 }
+        new File(root, 'javamods/vulkan-mod-0.0.9.jar').bytes = new byte[] { 10, 11, 12 }
         new File(root, 'user-settings-keep.txt').text = 'keep me'
         commandLine installerExe.get().asFile.absolutePath,
                 '--install-test', root.absolutePath
@@ -225,11 +231,13 @@ tasks.register('verifyWindowsInstallerInstallation', Exec) {
             throw new GradleException('Default player installation unexpectedly included an example or optional INI mod')
         }
         if (!new File(root, 'javamods').listFiles().any { it.name.startsWith('rusted-fabric-api-') }
-                || !new File(root, 'javamods').listFiles().any { it.name.startsWith('java-mod-menu-') }) {
-            throw new GradleException('Default player installation did not include API and Java Mod Menu')
+                || !new File(root, 'javamods').listFiles().any { it.name.startsWith('java-mod-menu-') }
+                || !new File(root, 'javamods').listFiles().any { it.name.startsWith('vulkan-mod-') }) {
+            throw new GradleException('Test installation did not include API, Java Mod Menu, and Vulkan Mod')
         }
         if (new File(root, 'javamods/rusted-fabric-api-0.0.9.jar').exists()
-                || new File(root, 'javamods/java-mod-menu-0.0.9.jar').exists()) {
+                || new File(root, 'javamods/java-mod-menu-0.0.9.jar').exists()
+                || new File(root, 'javamods/vulkan-mod-0.0.9.jar').exists()) {
             throw new GradleException('Windows update did not replace older official mod versions')
         }
     }
@@ -268,6 +276,7 @@ tasks.register('prepareEndXiomDevSignedInstallerPayload', Zip) {
             project(':official-mods:java-mod-menu').tasks.named('remapJarToOfficial'),
             project(':official-mods:ini-essentials').tasks.named('remapJarToOfficial'),
             project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial'),
+            project(':official-mods:vulkan-mod').tasks.named('remapJarToOfficial'),
             tasks.named('signWindowsLauncherEndXiomDev'), tasks.named('generateInstallerPayloadMetadata')
 
     archiveFileName.set("rusted-fabric-installer-payload-${project.version}-EndXiom-dev-signed.zip")
@@ -297,6 +306,9 @@ tasks.register('prepareEndXiomDevSignedInstallerPayload', Zip) {
     }
     into('components/performance_profiler/javamods') {
         from project(':official-mods:performance-profiler').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
+    }
+    into('components/vulkan_mod/javamods') {
+        from project(':official-mods:vulkan-mod').tasks.named('remapJarToOfficial').map { it.outputs.files.singleFile }
     }
     into('metadata') {
         from generatedMetadata

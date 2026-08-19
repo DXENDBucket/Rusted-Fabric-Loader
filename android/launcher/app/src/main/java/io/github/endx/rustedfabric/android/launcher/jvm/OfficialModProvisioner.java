@@ -15,6 +15,7 @@ public final class OfficialModProvisioner {
     private static final OfficialMod[] MODS = {
             new OfficialMod("rusted-fabric-api.jar", "rusted_fabric_api", true),
             new OfficialMod("java-mod-menu.jar", "java_mod_menu", true),
+            new OfficialMod("vulkan-mod.jar", "vulkan_mod", true),
             new OfficialMod("ini-essentials.jar", "ini_essentials", false),
             new OfficialMod("performance-profiler.jar", "performance_profiler", false)
     };

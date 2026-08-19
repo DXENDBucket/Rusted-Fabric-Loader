@@ -10,8 +10,8 @@ android {
         applicationId 'io.github.endx.rustedfabric.android.launcher'
         minSdk 27
         targetSdk 35
-        versionCode 30
-        versionName '0.15.4'
+        versionCode 31
+        versionName '0.15.5'
 
         ndk {
             abiFilters 'arm64-v8a'
@@ -159,7 +159,8 @@ android.sourceSets.main.jniLibs.srcDir(generatedLwjglNatives)
 def repositoryRoot = rootProject.file('../..')
 def repositoryVersions = new Properties()
 new File(repositoryRoot, 'versions.properties').withInputStream { repositoryVersions.load(it) }
-def requiredOfficialVersions = ['api', 'javaModMenu', 'iniEssentials', 'performanceProfiler']
+def requiredOfficialVersions = ['api', 'javaModMenu', 'iniEssentials', 'performanceProfiler',
+                                'vulkanMod']
 requiredOfficialVersions.each { key ->
     if (!repositoryVersions.getProperty(key)?.trim()) {
         throw new GradleException("Missing ${key} in repository versions.properties")
@@ -173,6 +174,8 @@ def officialIniJar = repositoryRoot.toPath().resolve(
         "official-mods/ini-essentials/build/libs/ini-essentials-${repositoryVersions.getProperty('iniEssentials')}-official.jar").toFile()
 def officialProfilerJar = repositoryRoot.toPath().resolve(
         "official-mods/performance-profiler/build/libs/performance-profiler-${repositoryVersions.getProperty('performanceProfiler')}-official.jar").toFile()
+def officialVulkanJar = repositoryRoot.toPath().resolve(
+        "official-mods/vulkan-mod/build/libs/vulkan-mod-${repositoryVersions.getProperty('vulkanMod')}-official.jar").toFile()
 
 tasks.register('buildOfficialModAssets', Exec) {
     group = 'build setup'
@@ -183,19 +186,23 @@ tasks.register('buildOfficialModAssets', Exec) {
                ':rusted-fabric-api:remapJarToOfficial',
                ':official-mods:java-mod-menu:remapJarToOfficial',
                ':official-mods:ini-essentials:remapJarToOfficial',
-               ':official-mods:performance-profiler:remapJarToOfficial']
+               ':official-mods:performance-profiler:remapJarToOfficial',
+               ':official-mods:vulkan-mod:remapJarToOfficial']
             : [new File(repositoryRoot, 'gradlew').absolutePath,
                ':rusted-fabric-api:remapJarToOfficial',
                ':official-mods:java-mod-menu:remapJarToOfficial',
                ':official-mods:ini-essentials:remapJarToOfficial',
-               ':official-mods:performance-profiler:remapJarToOfficial']
+               ':official-mods:performance-profiler:remapJarToOfficial',
+               ':official-mods:vulkan-mod:remapJarToOfficial']
     inputs.files(fileTree(new File(repositoryRoot, 'rusted-fabric-api/src')),
             fileTree(new File(repositoryRoot, 'official-mods/java-mod-menu/src')),
             fileTree(new File(repositoryRoot, 'official-mods/ini-essentials/src')),
             fileTree(new File(repositoryRoot, 'official-mods/performance-profiler/src')),
+            fileTree(new File(repositoryRoot, 'official-mods/vulkan-mod/src')),
             new File(repositoryRoot, 'src/main/resources/mappings/mappings.tiny'),
             new File(repositoryRoot, 'versions.properties'))
-    outputs.files(officialApiJar, officialMenuJar, officialIniJar, officialProfilerJar)
+    outputs.files(officialApiJar, officialMenuJar, officialIniJar, officialProfilerJar,
+            officialVulkanJar)
 }
 
 tasks.register('prepareOfficialModAssets', Copy) {
@@ -205,6 +212,7 @@ tasks.register('prepareOfficialModAssets', Copy) {
     from(officialMenuJar) { rename { 'java-mod-menu.jar' } }
     from(officialIniJar) { rename { 'ini-essentials.jar' } }
     from(officialProfilerJar) { rename { 'performance-profiler.jar' } }
+    from(officialVulkanJar) { rename { 'vulkan-mod.jar' } }
 }
 
 tasks.register('prepareComplianceAssets') {
@@ -657,9 +665,9 @@ tasks.register('verifyNoGamePayload') {
                 || !sourceOfferFound || !thirdPartyNoticesFound || !disclaimerFound) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
-        if (officialModsFound != 4 || officialModIds != [
+        if (officialModsFound != 5 || officialModIds != [
                 'rusted_fabric_api', 'java_mod_menu', 'ini_essentials',
-                'performance_profiler'] as Set) {
+                'performance_profiler', 'vulkan_mod'] as Set) {
             throw new GradleException('Android launcher APK is missing a required JVM component')
         }
         if (!forbidden.isEmpty()) {

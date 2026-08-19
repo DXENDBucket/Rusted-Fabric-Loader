@@ -48,6 +48,7 @@ namespace RustedFabricInstaller
                         InstallModMenu = true,
                         InstallIniEssentials = false,
                         InstallPerformanceProfiler = true,
+                        InstallVulkanMod = true,
                         CreateShortcut = false
                     }, delegate(string ignored) { });
                     return 0;
@@ -73,6 +74,7 @@ namespace RustedFabricInstaller
         private readonly CheckBox modMenu = new CheckBox();
         private readonly CheckBox iniEssentials = new CheckBox();
         private readonly CheckBox performanceProfiler = new CheckBox();
+        private readonly CheckBox vulkanMod = new CheckBox();
         private readonly CheckBox shortcut = new CheckBox();
         private readonly CheckBox riskAcceptance = new CheckBox();
         private readonly LinkLabel disclaimerLink = new LinkLabel();
@@ -87,8 +89,8 @@ namespace RustedFabricInstaller
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
             catch { }
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(690, 640);
-            MinimumSize = new Size(650, 620);
+            ClientSize = new Size(690, 680);
+            MinimumSize = new Size(650, 660);
             MaximizeBox = false;
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
@@ -135,7 +137,7 @@ namespace RustedFabricInstaller
             GroupBox components = new GroupBox();
             components.Text = "安装组件 / Components";
             components.Location = new Point(30, 158);
-            components.Size = new Size(630, 173);
+            components.Size = new Size(630, 201);
             components.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(components);
 
@@ -165,16 +167,22 @@ namespace RustedFabricInstaller
             performanceProfiler.CheckedChanged += ComponentDependencyChanged;
             components.Controls.Add(performanceProfiler);
 
+            vulkanMod.Text = "Vulkan Mod (optional, experimental renderer)";
+            vulkanMod.Checked = false;
+            vulkanMod.AutoSize = true;
+            vulkanMod.Location = new Point(18, 140);
+            components.Controls.Add(vulkanMod);
+
             shortcut.Text = "创建桌面快捷方式 / Create desktop shortcut";
             shortcut.Checked = true;
             shortcut.AutoSize = true;
-            shortcut.Location = new Point(18, 140);
+            shortcut.Location = new Point(18, 168);
             components.Controls.Add(shortcut);
             ComponentDependencyChanged(null, EventArgs.Empty);
 
             GroupBox safety = new GroupBox();
             safety.Text = "安全与免责声明 / Security notice";
-            safety.Location = new Point(30, 343);
+            safety.Location = new Point(30, 371);
             safety.Size = new Size(630, 125);
             safety.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(safety);
@@ -200,7 +208,7 @@ namespace RustedFabricInstaller
             disclaimerLink.LinkClicked += ShowDisclaimer;
             safety.Controls.Add(disclaimerLink);
 
-            log.Location = new Point(30, 480);
+            log.Location = new Point(30, 508);
             log.Size = new Size(630, 82);
             log.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             log.Multiline = true;
@@ -209,13 +217,13 @@ namespace RustedFabricInstaller
             log.BackColor = SystemColors.Window;
             Controls.Add(log);
 
-            progress.Location = new Point(30, 575);
+            progress.Location = new Point(30, 615);
             progress.Size = new Size(480, 22);
             progress.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(progress);
 
             install.Text = "安装或更新 / Install or update";
-            install.Location = new Point(525, 570);
+            install.Location = new Point(525, 610);
             install.Size = new Size(135, 34);
             install.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             install.Enabled = false;
@@ -295,6 +303,7 @@ namespace RustedFabricInstaller
             options.InstallModMenu = modMenu.Checked;
             options.InstallIniEssentials = iniEssentials.Checked;
             options.InstallPerformanceProfiler = performanceProfiler.Checked;
+            options.InstallVulkanMod = vulkanMod.Checked;
             options.CreateShortcut = shortcut.Checked;
 
             SetBusy(true);
@@ -399,6 +408,8 @@ namespace RustedFabricInstaller
             gameDirectory.Enabled = !busy;
             modMenu.Enabled = !busy;
             iniEssentials.Enabled = !busy;
+            performanceProfiler.Enabled = !busy;
+            vulkanMod.Enabled = !busy;
             shortcut.Enabled = !busy;
             riskAcceptance.Enabled = !busy;
             disclaimerLink.Enabled = !busy;
@@ -529,6 +540,7 @@ namespace RustedFabricInstaller
         public bool InstallModMenu;
         public bool InstallIniEssentials;
         public bool InstallPerformanceProfiler;
+        public bool InstallVulkanMod;
         public bool CreateShortcut;
     }
 
@@ -564,6 +576,7 @@ namespace RustedFabricInstaller
             if (options.InstallModMenu) installedComponents.Add("mod_menu");
             if (options.InstallIniEssentials) installedComponents.Add("ini_essentials");
             if (options.InstallPerformanceProfiler) installedComponents.Add("performance_profiler");
+            if (options.InstallVulkanMod) installedComponents.Add("vulkan_mod");
 
             try
             {
@@ -688,6 +701,13 @@ namespace RustedFabricInstaller
                 relative = entry.Substring("components/performance_profiler/".Length);
                 return true;
             }
+            if (options.InstallVulkanMod
+                && entry.StartsWith("components/vulkan_mod/", StringComparison.Ordinal))
+            {
+                component = "vulkan_mod";
+                relative = entry.Substring("components/vulkan_mod/".Length);
+                return true;
+            }
             return false;
         }
 
@@ -783,6 +803,8 @@ namespace RustedFabricInstaller
                 CleanupPattern(Path.Combine(game, "javamods"), "ini-essentials-*.jar", retained, log);
             if (options.InstallPerformanceProfiler)
                 CleanupPattern(Path.Combine(game, "javamods"), "performance-profiler-*.jar", retained, log);
+            if (options.InstallVulkanMod)
+                CleanupPattern(Path.Combine(game, "javamods"), "vulkan-mod-*.jar", retained, log);
         }
 
         private static void CleanupPattern(string directory, string pattern, HashSet<string> retained,
@@ -932,6 +954,7 @@ namespace RustedFabricInstaller
                 RequirePrefix(names, "components/mod_menu/javamods/java-mod-menu-");
                 RequirePrefix(names, "components/ini_essentials/javamods/ini-essentials-");
                 RequirePrefix(names, "components/performance_profiler/javamods/performance-profiler-");
+                RequirePrefix(names, "components/vulkan_mod/javamods/vulkan-mod-");
                 Require(names, "metadata/version.txt");
                 foreach (string name in names)
                 {

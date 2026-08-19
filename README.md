@@ -73,7 +73,8 @@ gradlew.bat windowsInstaller
 The single executable is written to
 `installer/windows/build/dist/Rusted-Fabric-Installer-<version>.exe`. It locates or asks for an
 existing Rusted Warfare directory and installs a small EXE launcher plus a BAT fallback. Rusted
-Fabric API, Java Mod Menu, and Performance Profiler are selected by default; INI Essentials is optional. The installer
+Fabric API and Java Mod Menu are selected by default; INI Essentials, Performance Profiler, and
+Vulkan Mod are optional. The installer
 never embeds the game, `game-lib.jar`, an APK, or the example mod, and preserves unrelated files in
 `javamods`. See [`installer/windows/README.md`](installer/windows/README.md).
 
@@ -95,8 +96,9 @@ powershell -ExecutionPolicy Bypass -File scripts/prepare-release-output.ps1
 ```
 
 The versioned output is written to `release-output/v<loader-version>/`. The Android artifact uses
-an uppercase `.APK` extension for direct community-file distribution. Vulkan Mod, Strategic AI,
-and Example Mod remain development artifacts and are intentionally excluded from this player bundle.
+an uppercase `.APK` extension for direct community-file distribution. Vulkan Mod is included as an
+independent artifact and in the Android launcher; Strategic AI and Example Mod remain development
+artifacts and are intentionally excluded from this player bundle.
 
 For development-only direct installation, use `installToGameDir` to build and install the loader
 artifacts into an existing Rusted Warfare directory:

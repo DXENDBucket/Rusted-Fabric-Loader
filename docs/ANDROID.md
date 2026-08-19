@@ -50,8 +50,8 @@ import:
   `mods-disabled/maps` without altering its contents.
 - Java mods accept Fabric Jars and `.javamod` packages after validating `fabric.mod.json`. Disable
   moves them between `javamods` and `javamods-disabled`, taking effect on the next launch.
-- Rusted Fabric API, Java Mod Menu, and Performance Profiler are provisioned enabled from
-  Loader-owned APK assets. INI Essentials is also provisioned and listed, but starts disabled. Updates preserve later user
+- Rusted Fabric API, Java Mod Menu, Vulkan Mod, and Performance Profiler are provisioned enabled
+  from Loader-owned APK assets. INI Essentials is also provisioned and listed, but starts disabled. Updates preserve later user
   enable choices unless a manually imported same-ID Jar takes precedence.
 - Enable switches are committed only by the dialog's confirmation button; cancellation discards
   pending switch changes. Every managed item, including the bundled API, can be disabled or deleted.

@@ -139,15 +139,13 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         status.setTextSize(14);
         status.setPadding(dp(16), dp(12), dp(16), dp(12));
         status.setBackgroundColor(0xCC000000);
-        // The old smoke-test overlay was click-to-close. A full-screen game launch cover must
-        // not turn the same tap that opened this Activity into an accidental game shutdown.
+        // The game status bar is informational. Do not turn the same tap that opened this
+        // Activity into an accidental game shutdown.
         if (!gameProbe) status.setOnClickListener(ignored -> finish());
-        if (gameProbe) status.setGravity(Gravity.CENTER);
         FrameLayout.LayoutParams overlay = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                gameProbe ? ViewGroup.LayoutParams.MATCH_PARENT
-                        : ViewGroup.LayoutParams.WRAP_CONTENT,
-                gameProbe ? Gravity.CENTER : Gravity.TOP);
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP);
         root.addView(status, overlay);
         setContentView(root);
         applyImmersiveMode();

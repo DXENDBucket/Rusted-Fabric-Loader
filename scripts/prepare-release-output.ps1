@@ -71,7 +71,8 @@ function Copy-RequiredArtifact {
 }
 
 $Versions = Read-Versions
-foreach ($key in @('loader', 'api', 'javaModMenu', 'iniEssentials', 'performanceProfiler')) {
+foreach ($key in @('loader', 'api', 'javaModMenu', 'iniEssentials', 'performanceProfiler',
+        'vulkanMod')) {
     if (!$Versions.ContainsKey($key) -or !$Versions[$key]) {
         throw "Missing $key in versions.properties"
     }
@@ -129,6 +130,9 @@ Copy-RequiredArtifact `
 Copy-RequiredArtifact `
     -Source (Join-Path $RepositoryRoot "official-mods/performance-profiler/build/libs/performance-profiler-$($Versions.performanceProfiler)-official.jar") `
     -DestinationName "performance-profiler-$($Versions.performanceProfiler).jar"
+Copy-RequiredArtifact `
+    -Source (Join-Path $RepositoryRoot "official-mods/vulkan-mod/build/libs/vulkan-mod-$($Versions.vulkanMod)-official.jar") `
+    -DestinationName "vulkan-mod-$($Versions.vulkanMod).jar"
 Copy-RequiredArtifact `
     -Source (Join-Path $RepositoryRoot 'official-mods/ini-essentials/docs/INI Essentials Unit Modding Reference.xlsx') `
     -DestinationName "INI-Essentials-Unit-Modding-Reference-$($Versions.iniEssentials).xlsx"
