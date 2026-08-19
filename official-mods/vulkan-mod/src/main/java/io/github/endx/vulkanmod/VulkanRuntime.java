@@ -54,6 +54,10 @@ public final class VulkanRuntime {
     private static VulkanTextTextureCache textTextureCache;
     private static SlickImageVulkanTextureCache slickImageTextureCache;
     private static long nativeFramesPresented;
+    private static long nativeEmptyFramesHeld;
+    private static Object nativeUiDocument;
+    private static boolean nativeUiDocumentFrameHoldPending;
+    private static long lastTransitionTraceNanos;
     private static boolean legacyDisplayInvariantChecked;
     private static NativeSlickGameBridge nativeGame;
     private static boolean nativeGameSystemsStarted;
@@ -321,9 +325,14 @@ public final class VulkanRuntime {
         long gameWorkFinished = System.nanoTime();
         int frameCommandCount = frame.commandCount();
         VulkanFrameSubmission submission = new VulkanFrameSubmission(renderTargetPasses, frame);
+        traceTransitionSubmission(submission);
         VulkanSurfaceInfo updated;
         try {
-            updated = presentSubmission(submission);
+            if (shouldHoldLastPresentedFrame(submission)) {
+                updated = null;
+            } else {
+                updated = presentSubmission(submission);
+            }
         } finally {
             submission.releasePooledCommands();
         }
@@ -458,8 +467,12 @@ public final class VulkanRuntime {
         nativeRenderTargetPasses = new ArrayList<VulkanRenderTargetPass>();
         VulkanFrameSubmission submission = new VulkanFrameSubmission(
                 progressPasses, progressFrame);
+        traceTransitionSubmission(submission);
         VulkanSurfaceInfo updated;
         try {
+            if (shouldHoldLastPresentedFrame(submission)) {
+                return true;
+            }
             updated = presentSubmission(submission);
         } finally {
             submission.releasePooledCommands();
@@ -471,6 +484,69 @@ public final class VulkanRuntime {
             log("First native loading frame presented without creating LWJGL2 Display/OpenGL");
         }
         return true;
+    }
+
+    private static boolean shouldHoldLastPresentedFrame(VulkanFrameSubmission submission) {
+        if (nativeFramesPresented != 0 && nativeUiDocumentFrameHoldPending) {
+            nativeUiDocumentFrameHoldPending = false;
+            if (submission.renderTargetPasses().isEmpty()) {
+                log("Holding the first frame after a LibRocket document switch");
+                return true;
+            }
+            // A document switch back to the live main-menu background can carry one-shot map
+            // cache updates in offscreen passes. Dropping the whole submission to preserve the
+            // previous compositor image also drops those writes, leaving later frames sampling
+            // stale or partially rebuilt terrain targets. Until the driver can execute offscreen
+            // passes without replacing the swapchain image, prefer a complete frame over a
+            // transient presentation hold whenever the graph contains render-target work.
+            log("Presenting LibRocket document switch frame with "
+                    + submission.renderTargetPasses().size()
+                    + " required offscreen pass(es)");
+        }
+        if (nativeFramesPresented == 0
+                || submission.presentationFrame().commandCount() != 0) {
+            return false;
+        }
+        for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
+            if (pass.frame().commandCount() != 0) return false;
+        }
+        nativeEmptyFramesHeld++;
+        if (nativeEmptyFramesHeld == 1) {
+            log("Holding clear-only transition frames until the next drawable UI/game frame");
+        }
+        return true;
+    }
+
+    /**
+     * Marks the first render of a newly activated LibRocket document as transitional. Rusted
+     * Warfare can append the new document twice while its page setup callback is still running
+     * (the Advanced lobby page is one example). Presenting that partial frame briefly replaces
+     * the previous complete page with an incomplete/black image. Keep the compositor's previous
+     * buffer for that single frame and present the next, stable render instead.
+     */
+    public static synchronized void observeNativeUiDocument(Object document) {
+        if (!isNativeRendererSelected() || document == null || document == nativeUiDocument) {
+            return;
+        }
+        if (nativeUiDocument != null) nativeUiDocumentFrameHoldPending = true;
+        nativeUiDocument = document;
+    }
+
+    private static void traceTransitionSubmission(VulkanFrameSubmission submission) {
+        if (!Boolean.getBoolean("rusted.fabric.vulkan.traceTransitions")) return;
+        long now = System.nanoTime();
+        if (now - lastTransitionTraceNanos < 100_000_000L) return;
+        lastTransitionTraceNanos = now;
+        StringBuilder passes = new StringBuilder();
+        for (VulkanRenderTargetPass pass : submission.renderTargetPasses()) {
+            if (passes.length() != 0) passes.append(',');
+            passes.append(pass.frame().commandCount());
+        }
+        VulkanFrameCommands root = submission.presentationFrame();
+        log("Transition frame: root=" + root.commandCount()
+                + ", passes=[" + passes + "]"
+                + ", clear=" + root.clearRed() + ',' + root.clearGreen() + ','
+                + root.clearBlue() + ',' + root.clearAlpha());
     }
 
     private static VulkanSurfaceInfo presentSubmission(VulkanFrameSubmission submission) {
@@ -1177,6 +1253,11 @@ public final class VulkanRuntime {
         spriteRunCommandsSubmitted = 0L;
         coloredQuadsSubmitted = 0L;
         coloredRunCommandsSubmitted = 0L;
+        nativeFramesPresented = 0L;
+        nativeEmptyFramesHeld = 0L;
+        nativeUiDocument = null;
+        nativeUiDocumentFrameHoldPending = false;
+        lastTransitionTraceNanos = 0L;
         nativeFrameClock.clear();
     }
 

@@ -34,6 +34,11 @@ public final class NativeVulkanBridge {
                 : "Vulkan native library unavailable: " + LOAD_FAILURE;
     }
 
+    /** Number of frames successfully handed to Android's compositor by this process. */
+    public static long presentedFrameCount() {
+        return LOAD_FAILURE == null ? nativePresentedFrameCount() : 0L;
+    }
+
     public static void stop() {
         if (LOAD_FAILURE == null) nativeStop();
     }
@@ -47,5 +52,6 @@ public final class NativeVulkanBridge {
     private static native boolean nativePresentClear(float red, float green,
                                                       float blue, float alpha);
     private static native String nativeLastDiagnostic();
+    private static native long nativePresentedFrameCount();
     private static native void nativeStop();
 }

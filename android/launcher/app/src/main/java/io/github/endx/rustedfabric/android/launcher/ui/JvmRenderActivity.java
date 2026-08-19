@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.DisplayCutout;
 import android.view.Display;
@@ -65,6 +66,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private static final AtomicBoolean RUNNING = new AtomicBoolean();
     private final Handler surfaceHandler = new Handler(Looper.getMainLooper());
     private final Runnable startAfterSurfaceSettles = this::startRenderer;
+    private Runnable firstFrameWatcher;
     private TextView status;
     private boolean gameProbe;
     private boolean vulkanSmoke;
@@ -137,10 +139,15 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         status.setTextSize(14);
         status.setPadding(dp(16), dp(12), dp(16), dp(12));
         status.setBackgroundColor(0xCC000000);
-        status.setOnClickListener(ignored -> finish());
+        // The old smoke-test overlay was click-to-close. A full-screen game launch cover must
+        // not turn the same tap that opened this Activity into an accidental game shutdown.
+        if (!gameProbe) status.setOnClickListener(ignored -> finish());
+        if (gameProbe) status.setGravity(Gravity.CENTER);
         FrameLayout.LayoutParams overlay = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP);
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                gameProbe ? ViewGroup.LayoutParams.MATCH_PARENT
+                        : ViewGroup.LayoutParams.WRAP_CONTENT,
+                gameProbe ? Gravity.CENTER : Gravity.TOP);
         root.addView(status, overlay);
         setContentView(root);
         applyImmersiveMode();
@@ -558,9 +565,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         plan = GameLaunchPreferences.apply(this, plan);
         runOnUiThread(() -> {
             status.setText(R.string.jvm_game_probe_starting);
-            status.postDelayed(() -> {
-                if (RUNNING.get()) status.setVisibility(android.view.View.GONE);
-            }, 5000);
+            hideLaunchCoverAfterFirstVulkanFrame();
         });
         NativeJvmHost.Result launch = NativeJvmHost.launch(plan);
         if (!launch.succeeded()) {
@@ -568,6 +573,26 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                     + launch.detail() + ". See logcat tag RustedFabricJvm for the Java stack.");
         }
         return "rusted-fabric-game-probe=ok\nFabric/game main returned normally";
+    }
+
+    private void hideLaunchCoverAfterFirstVulkanFrame() {
+        if (!gameProbe) return;
+        if (firstFrameWatcher != null) surfaceHandler.removeCallbacks(firstFrameWatcher);
+        final long baseline = NativeVulkanBridge.presentedFrameCount();
+        final long deadline = SystemClock.uptimeMillis() + 8000L;
+        firstFrameWatcher = new Runnable() {
+            @Override public void run() {
+                if (!RUNNING.get() || status.getVisibility() != View.VISIBLE) return;
+                if (NativeVulkanBridge.presentedFrameCount() > baseline
+                        || SystemClock.uptimeMillis() >= deadline) {
+                    status.setVisibility(View.GONE);
+                    firstFrameWatcher = null;
+                    return;
+                }
+                surfaceHandler.postDelayed(this, 40L);
+            }
+        };
+        surfaceHandler.post(firstFrameWatcher);
     }
 
     @SuppressWarnings("deprecation")
@@ -634,6 +659,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     @Override
     protected void onDestroy() {
         surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
+        if (firstFrameWatcher != null) surfaceHandler.removeCallbacks(firstFrameWatcher);
         if (vulkanSmoke) NativeVulkanBridge.stop();
         NativeRenderBridge.detachSurface();
         super.onDestroy();

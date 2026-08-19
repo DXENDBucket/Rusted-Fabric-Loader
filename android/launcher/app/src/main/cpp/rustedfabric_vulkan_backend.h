@@ -37,6 +37,7 @@ uint32_t instance_version();
 size_t device_count();
 DeviceInfo device(size_t index);
 std::array<int64_t, 4> surface_state();
+uint64_t presented_frame_count();
 
 bool create_surface(SurfaceInfo* result);
 uint64_t upload_texture(uint32_t width, uint32_t height,

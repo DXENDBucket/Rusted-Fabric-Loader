@@ -98,6 +98,7 @@ uint32_t loader_instance_version = VK_API_VERSION_1_0;
 std::string diagnostic = "Android Vulkan backend has not been initialized";
 std::vector<DeviceInfo> probe_devices;
 Session session;
+uint64_t presented_frames = 0;
 
 void set_diagnostic(const std::string& value) {
     diagnostic = value;
@@ -154,6 +155,26 @@ VkResult create_instance(VkInstance* result) {
     return vkCreateInstance(&info, nullptr, result);
 }
 
+void destroy_swapchain_locked() {
+    for (VkFramebuffer framebuffer : session.framebuffers) {
+        if (framebuffer != VK_NULL_HANDLE) {
+            vkDestroyFramebuffer(session.device, framebuffer, nullptr);
+        }
+    }
+    session.framebuffers.clear();
+    for (VkImageView image_view : session.image_views) {
+        if (image_view != VK_NULL_HANDLE) {
+            vkDestroyImageView(session.device, image_view, nullptr);
+        }
+    }
+    session.image_views.clear();
+    session.images.clear();
+    if (session.swapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(session.device, session.swapchain, nullptr);
+        session.swapchain = VK_NULL_HANDLE;
+    }
+}
+
 void destroy_session_locked() {
     if (session.device != VK_NULL_HANDLE) vkDeviceWaitIdle(session.device);
     for (TextureResource& texture : session.textures) {
@@ -207,9 +228,7 @@ void destroy_session_locked() {
     if (session.texture_set_layout != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(session.device, session.texture_set_layout, nullptr);
     }
-    for (VkFramebuffer framebuffer : session.framebuffers) {
-        vkDestroyFramebuffer(session.device, framebuffer, nullptr);
-    }
+    destroy_swapchain_locked();
     if (session.render_pass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(session.device, session.render_pass, nullptr);
     }
@@ -218,12 +237,6 @@ void destroy_session_locked() {
     }
     if (session.offscreen_load_render_pass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(session.device, session.offscreen_load_render_pass, nullptr);
-    }
-    for (VkImageView image_view : session.image_views) {
-        vkDestroyImageView(session.device, image_view, nullptr);
-    }
-    if (session.swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(session.device, session.swapchain, nullptr);
     }
     if (session.device != VK_NULL_HANDLE) vkDestroyDevice(session.device, nullptr);
     if (session.surface != VK_NULL_HANDLE && session.instance != VK_NULL_HANDLE) {
@@ -1171,6 +1184,44 @@ bool create_pipeline_resources_locked() {
             && create_pipeline_locked(true, &session.textured_pipeline);
 }
 
+bool create_swapchain_framebuffers_locked() {
+    session.image_views.resize(session.images.size());
+    session.framebuffers.resize(session.images.size());
+    for (size_t index = 0; index < session.images.size(); ++index) {
+        VkImageViewCreateInfo view_info{};
+        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view_info.image = session.images[index];
+        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view_info.format = session.format;
+        view_info.components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                                VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
+        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        view_info.subresourceRange.levelCount = 1;
+        view_info.subresourceRange.layerCount = 1;
+        VkResult result = vkCreateImageView(
+                session.device, &view_info, nullptr, &session.image_views[index]);
+        if (result != VK_SUCCESS) {
+            set_diagnostic(result_message("vkCreateImageView", result));
+            return false;
+        }
+        VkFramebufferCreateInfo framebuffer_info{};
+        framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_info.renderPass = session.render_pass;
+        framebuffer_info.attachmentCount = 1;
+        framebuffer_info.pAttachments = &session.image_views[index];
+        framebuffer_info.width = session.extent.width;
+        framebuffer_info.height = session.extent.height;
+        framebuffer_info.layers = 1;
+        result = vkCreateFramebuffer(
+                session.device, &framebuffer_info, nullptr, &session.framebuffers[index]);
+        if (result != VK_SUCCESS) {
+            set_diagnostic(result_message("vkCreateFramebuffer", result));
+            return false;
+        }
+    }
+    return true;
+}
+
 bool create_render_resources_locked() {
     VkAttachmentDescription attachment{};
     attachment.format = session.format;
@@ -1243,40 +1294,7 @@ bool create_render_resources_locked() {
     }
     if (!create_pipeline_resources_locked()) return false;
 
-    session.image_views.resize(session.images.size());
-    session.framebuffers.resize(session.images.size());
-    for (size_t index = 0; index < session.images.size(); ++index) {
-        VkImageViewCreateInfo view_info{};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view_info.image = session.images[index];
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = session.format;
-        view_info.components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-                                VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
-        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.layerCount = 1;
-        result = vkCreateImageView(
-                session.device, &view_info, nullptr, &session.image_views[index]);
-        if (result != VK_SUCCESS) {
-            set_diagnostic(result_message("vkCreateImageView", result));
-            return false;
-        }
-        VkFramebufferCreateInfo framebuffer_info{};
-        framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebuffer_info.renderPass = session.render_pass;
-        framebuffer_info.attachmentCount = 1;
-        framebuffer_info.pAttachments = &session.image_views[index];
-        framebuffer_info.width = session.extent.width;
-        framebuffer_info.height = session.extent.height;
-        framebuffer_info.layers = 1;
-        result = vkCreateFramebuffer(
-                session.device, &framebuffer_info, nullptr, &session.framebuffers[index]);
-        if (result != VK_SUCCESS) {
-            set_diagnostic(result_message("vkCreateFramebuffer", result));
-            return false;
-        }
-    }
+    if (!create_swapchain_framebuffers_locked()) return false;
 
     VkCommandPoolCreateInfo pool_info{};
     pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -1417,6 +1435,68 @@ bool create_surface_locked(SurfaceInfo* output) {
 bool surface_generation_current_locked() {
     return session.swapchain != VK_NULL_HANDLE
             && rustedfabric_native_window_generation() == session.window_generation;
+}
+
+bool recreate_surface_locked(SurfaceInfo* output) {
+    uint64_t replacement_generation = 0;
+    ANativeWindow* replacement = rustedfabric_acquire_native_window_for_generation(
+            &replacement_generation);
+    if (replacement == nullptr) {
+        set_diagnostic("Android Surface is detached; waiting for the Activity to resume");
+        return false;
+    }
+    if (session.device == VK_NULL_HANDLE || session.instance == VK_NULL_HANDLE) {
+        rustedfabric_release_native_window(replacement);
+        return create_surface_locked(output);
+    }
+
+    vkDeviceWaitIdle(session.device);
+    destroy_swapchain_locked();
+    if (session.surface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(session.instance, session.surface, nullptr);
+        session.surface = VK_NULL_HANDLE;
+    }
+    rustedfabric_release_native_window(session.window);
+    session.window = replacement;
+    session.window_generation = replacement_generation;
+
+    VkAndroidSurfaceCreateInfoKHR surface_info{};
+    surface_info.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    surface_info.window = session.window;
+    VkResult result = vkCreateAndroidSurfaceKHR(
+            session.instance, &surface_info, nullptr, &session.surface);
+    if (result != VK_SUCCESS) {
+        set_diagnostic(result_message("vkCreateAndroidSurfaceKHR(recreate)", result));
+        return false;
+    }
+    VkBool32 present_supported = VK_FALSE;
+    result = vkGetPhysicalDeviceSurfaceSupportKHR(
+            session.physical_device, session.present_family, session.surface,
+            &present_supported);
+    if (result != VK_SUCCESS || present_supported != VK_TRUE) {
+        set_diagnostic(result != VK_SUCCESS
+                ? result_message("vkGetPhysicalDeviceSurfaceSupportKHR(recreate)", result)
+                : "Replacement Android Surface does not support the existing present queue");
+        return false;
+    }
+
+    VkFormat previous_format = session.format;
+    if (!create_swapchain_locked()) return false;
+    if (session.format != previous_format) {
+        // Textures and offscreen render targets intentionally survive Activity pause/resume.
+        // Android SurfaceView recreation on one display is expected to keep this format stable.
+        set_diagnostic("Replacement Android Surface changed Vulkan color format");
+        destroy_swapchain_locked();
+        return false;
+    }
+    if (!create_swapchain_framebuffers_locked()) {
+        destroy_swapchain_locked();
+        return false;
+    }
+    session.next_frame = 0;
+    set_diagnostic("Android Vulkan Surface/swapchain recreated; device textures preserved");
+    if (output != nullptr) *output = current_surface_info_locked();
+    return true;
 }
 
 bool ensure_geometry_buffer_locked(FrameSlot& slot, size_t required) {
@@ -1566,10 +1646,9 @@ bool record_frame_stream_pass_locked(VkCommandBuffer command, FrameSlot& slot,
 }
 
 bool present_frame_stream_locked(const framestream::Frame& stream,
-                                 SurfaceInfo* output) {
+                                 SurfaceInfo* output, bool retry) {
     if (!surface_generation_current_locked()) {
-        set_diagnostic("Android Surface changed after FrameStream resources were created");
-        return false;
+        if (!recreate_surface_locked(output)) return false;
     }
     FrameSlot& slot = session.frames[session.next_frame];
     VkResult status = vkWaitForFences(
@@ -1582,6 +1661,12 @@ bool present_frame_stream_locked(const framestream::Frame& stream,
     status = vkAcquireNextImageKHR(session.device, session.swapchain,
                                    kAcquireTimeoutNanos, slot.image_available,
                                    VK_NULL_HANDLE, &image_index);
+    if (status == VK_ERROR_OUT_OF_DATE_KHR && retry) {
+        if (recreate_surface_locked(output)) {
+            return present_frame_stream_locked(stream, output, false);
+        }
+        return false;
+    }
     if ((status != VK_SUCCESS && status != VK_SUBOPTIMAL_KHR)
             || image_index >= session.framebuffers.size()) {
         set_diagnostic(result_message("vkAcquireNextImageKHR(FrameStream)", status));
@@ -1679,11 +1764,18 @@ bool present_frame_stream_locked(const framestream::Frame& stream,
     // report that legal swapchain as SUBOPTIMAL on every present even though it is the only path
     // that avoids a second 90-degree rotation. Treat it as a rendered frame and defer recreation
     // until the surface is actually OUT_OF_DATE.
+    if (status == VK_ERROR_OUT_OF_DATE_KHR && retry) {
+        if (recreate_surface_locked(output)) {
+            return present_frame_stream_locked(stream, output, false);
+        }
+        return false;
+    }
     if (status != VK_SUCCESS && status != VK_SUBOPTIMAL_KHR) {
         set_diagnostic(result_message("vkQueuePresentKHR(FrameStream)", status));
         return false;
     }
     session.next_frame = (session.next_frame + 1) % kFramesInFlight;
+    presented_frames++;
     set_diagnostic("Android Vulkan FrameStream rendered and presented");
     if (output != nullptr) *output = current_surface_info_locked();
     return true;
@@ -1782,6 +1874,7 @@ bool present_clear_locked(float red, float green, float blue, float alpha,
         return false;
     }
     session.next_frame = (session.next_frame + 1) % kFramesInFlight;
+    presented_frames++;
     set_diagnostic("Android Vulkan clear-only frame presented");
     if (output != nullptr) *output = current_surface_info_locked();
     return true;
@@ -1838,6 +1931,11 @@ std::array<int64_t, 4> surface_state() {
             window == nullptr ? 0 : ANativeWindow_getHeight(window)};
     rustedfabric_release_native_window(window);
     return result;
+}
+
+uint64_t presented_frame_count() {
+    std::lock_guard<std::mutex> lock(state_mutex);
+    return presented_frames;
 }
 
 bool create_surface(SurfaceInfo* result) {
@@ -1902,7 +2000,7 @@ bool present_frame_stream(const uint8_t* bytes, size_t byte_count,
         return false;
     }
     std::lock_guard<std::mutex> lock(state_mutex);
-    return present_frame_stream_locked(frame, result);
+    return present_frame_stream_locked(frame, result, true);
 }
 
 bool present_clear(float red, float green, float blue, float alpha,

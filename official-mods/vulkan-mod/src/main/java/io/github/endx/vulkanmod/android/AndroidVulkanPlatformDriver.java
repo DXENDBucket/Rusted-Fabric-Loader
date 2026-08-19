@@ -244,9 +244,27 @@ public final class AndroidVulkanPlatformDriver implements VulkanPlatformDriver {
         if (!frameStream.isDirect()) {
             throw new IllegalArgumentException("Android FrameStream must use direct memory");
         }
+        long[] state = currentSurfaceState();
+        if (state[1] == 0L) {
+            // SurfaceView is legitimately detached while Android backgrounds the Activity.
+            // Keep the JVM/game loop alive. The first frame after surfaceChanged recreates only
+            // WSI objects, preserving every uploaded texture and render target.
+            return surfaceInfo;
+        }
         ByteBuffer submitted = frameStream.slice();
         long[] result = nativePresentFrameStream(submitted);
-        if (result == null) throw new IllegalStateException(nativeLastDiagnostic());
+        if (result == null) {
+            String diagnostic = nativeLastDiagnostic();
+            long[] after = currentSurfaceState();
+            if (after[1] == 0L || after[0] != state[0]
+                    || isTransientSurfaceFailure(diagnostic)) {
+                // surfaceDestroyed can race this JNI call after the attached check above. It is
+                // an Android lifecycle transition, not a renderer failure; a later frame will
+                // recreate the swapchain for the newly attached generation.
+                return surfaceInfo;
+            }
+            throw new IllegalStateException(diagnostic);
+        }
         surfaceInfo = surfaceInfo(result);
         return surfaceInfo;
     }
@@ -304,6 +322,15 @@ public final class AndroidVulkanPlatformDriver implements VulkanPlatformDriver {
     private static String messageOf(Throwable failure) {
         String message = failure.getMessage();
         return message == null || message.trim().isEmpty() ? "no detail" : message.trim();
+    }
+
+    private static boolean isTransientSurfaceFailure(String diagnostic) {
+        if (diagnostic == null) return false;
+        String lower = diagnostic.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("surface is detached")
+                || lower.contains("surface changed")
+                || lower.contains("surface/swapchain")
+                || lower.contains("out of date");
     }
 
     private static native int nativeInitialize(int backendMajor, int backendMinor,

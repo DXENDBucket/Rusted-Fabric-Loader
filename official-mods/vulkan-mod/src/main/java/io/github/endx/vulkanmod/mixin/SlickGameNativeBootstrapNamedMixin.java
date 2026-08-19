@@ -113,6 +113,7 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
                 .vulkanmod$getLibRocketRenderer();
         if (ui != null) {
             ui.scriptEngine.update(delta);
+            VulkanRuntime.observeNativeUiDocument(ui.getActiveDocument());
             if (!ui.isNoDocumentOrPopupActive()) {
                 nativeGraphics.saveTransform();
                 try {

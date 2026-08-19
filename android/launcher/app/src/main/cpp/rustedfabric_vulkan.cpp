@@ -239,6 +239,12 @@ Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeVulkanBridge_nativeL
     return env->NewStringUTF(diagnostic.c_str());
 }
 
+extern "C" JNIEXPORT jlong JNICALL
+Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeVulkanBridge_nativePresentedFrameCount(
+        JNIEnv*, jclass) {
+    return static_cast<jlong>(rustedfabric::vulkan::presented_frame_count());
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeVulkanBridge_nativeStop(
         JNIEnv*, jclass) {
