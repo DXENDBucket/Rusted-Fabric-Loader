@@ -105,6 +105,7 @@ public final class JvmLauncherActivity extends Activity {
     private Button gameRendererButton;
     private Button gameFpsButton;
     private Button gameVulkanProfileButton;
+    private Button gameSideBordersButton;
     private Button gameResetButton;
     private boolean busy;
     private boolean smokeReady;
@@ -191,6 +192,7 @@ public final class JvmLauncherActivity extends Activity {
         gameRendererButton = findViewById(R.id.game_renderer_button);
         gameFpsButton = findViewById(R.id.game_fps_button);
         gameVulkanProfileButton = findViewById(R.id.game_vulkan_profile_button);
+        gameSideBordersButton = findViewById(R.id.game_side_borders_button);
         gameResetButton = findViewById(R.id.game_reset_button);
         refreshGameOptionLabels();
     }
@@ -226,6 +228,7 @@ public final class JvmLauncherActivity extends Activity {
         gameRendererButton.setOnClickListener(ignored -> chooseGameRenderer());
         gameFpsButton.setOnClickListener(ignored -> chooseMaximumFps());
         gameVulkanProfileButton.setOnClickListener(ignored -> chooseVulkanProfile());
+        gameSideBordersButton.setOnClickListener(ignored -> chooseSideBorders());
         gameResetButton.setOnClickListener(ignored -> confirmResetGameOptions());
     }
 
@@ -307,6 +310,23 @@ public final class JvmLauncherActivity extends Activity {
                 .show();
     }
 
+    private void chooseSideBorders() {
+        SharedPreferences preferences = GameLaunchPreferences.preferences(this);
+        String[] labels = {getString(R.string.game_side_borders_none),
+                getString(R.string.game_side_borders_safe)};
+        int checked = GameLaunchPreferences.safeSideBorders(preferences) ? 1 : 0;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_side_borders_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    preferences.edit().putBoolean(GameLaunchPreferences.KEY_SAFE_SIDE_BORDERS,
+                            which == 1).apply();
+                    refreshGameOptionLabels();
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
     private void confirmResetGameOptions() {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.game_reset_title)
@@ -341,6 +361,10 @@ public final class JvmLauncherActivity extends Activity {
         gameVulkanProfileButton.setText(getString(R.string.game_vulkan_profile_value,
                 getString(profileLabel)));
         gameVulkanProfileButton.setEnabled(!openGl);
+        gameSideBordersButton.setText(getString(R.string.game_side_borders_value,
+                getString(GameLaunchPreferences.safeSideBorders(preferences)
+                        ? R.string.game_side_borders_safe
+                        : R.string.game_side_borders_none)));
     }
 
     private void showOpenSourceNotice() {

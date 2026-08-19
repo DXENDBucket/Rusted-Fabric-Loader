@@ -128,6 +128,12 @@
     <string name="game_renderer_vulkan">Vulkan Native (recommended)</string>
     <string name="game_renderer_opengl">OpenGL compatibility</string>
     <string name="game_renderer_value">Renderer: %1$s</string>
+    <string name="game_display_title">Display area</string>
+    <string name="game_side_borders_title">Side borders</string>
+    <string name="game_side_borders_description">Choose whether the game extends beneath a camera cutout or keeps safe margins on both sides. Changes take effect on the next launch.</string>
+    <string name="game_side_borders_none">No borders (fullscreen, default)</string>
+    <string name="game_side_borders_safe">Keep safe borders around the cutout</string>
+    <string name="game_side_borders_value">Side borders: %1$s</string>
     <string name="game_performance_title">Performance</string>
     <string name="game_fps_title">Maximum frame rate</string>
     <string name="game_fps_unlimited">Unlimited (software limiter off)</string>
@@ -142,7 +148,7 @@
     <string name="game_performance_description">The frame limit and Vulkan buffers are launcher-level parameters. Larger buffers can reduce allocation pressure in heavy scenes but use more memory.</string>
     <string name="game_reset_button">Restore default game options</string>
     <string name="game_reset_title">Restore game defaults?</string>
-    <string name="game_reset_message">Renderer, maximum frame rate, and Vulkan buffer settings will return to their recommended defaults. In-game saves and settings are not changed.</string>
+    <string name="game_reset_message">Renderer, display area, maximum frame rate, and Vulkan buffer settings will return to their recommended defaults. In-game saves and settings are not changed.</string>
     <string name="game_reset_confirm">Restore</string>
     <string name="game_reset_complete">Default game options restored</string>
 </resources>

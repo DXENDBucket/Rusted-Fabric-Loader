@@ -128,6 +128,12 @@
     <string name="game_renderer_vulkan">Vulkan Native（推荐）</string>
     <string name="game_renderer_opengl">OpenGL 兼容模式</string>
     <string name="game_renderer_value">渲染器：%1$s</string>
+    <string name="game_display_title">显示区域</string>
+    <string name="game_side_borders_title">两侧灰边</string>
+    <string name="game_side_borders_description">选择让游戏延伸到摄像头挖孔区域，或在屏幕两侧保留安全边距；修改将在下次启动游戏时生效。</string>
+    <string name="game_side_borders_none">无灰边（全屏，默认）</string>
+    <string name="game_side_borders_safe">避开挖孔并保留安全边</string>
+    <string name="game_side_borders_value">两侧灰边：%1$s</string>
     <string name="game_performance_title">性能</string>
     <string name="game_fps_title">最大帧率</string>
     <string name="game_fps_unlimited">无限制（关闭软件限帧）</string>
@@ -142,7 +148,7 @@
     <string name="game_performance_description">帧率上限和 Vulkan 缓冲属于启动器参数。更大的缓冲可减少复杂场景中的临时分配，但会占用更多内存。</string>
     <string name="game_reset_button">恢复游戏参数默认值</string>
     <string name="game_reset_title">恢复游戏默认参数？</string>
-    <string name="game_reset_message">渲染器、最大帧率和 Vulkan 缓冲将恢复为推荐默认值；不会修改游戏存档或游戏内设置。</string>
+    <string name="game_reset_message">渲染器、显示区域、最大帧率和 Vulkan 缓冲将恢复为推荐默认值；不会修改游戏存档或游戏内设置。</string>
     <string name="game_reset_confirm">恢复</string>
     <string name="game_reset_complete">已恢复游戏参数默认值</string>
 </resources>

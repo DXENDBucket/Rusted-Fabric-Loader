@@ -92,14 +92,17 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private int settledSurfaceWidth;
     private int settledSurfaceHeight;
     private int requestedMaximumFps;
+    private boolean safeSideBorders;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         gameProbe = getIntent().getBooleanExtra(EXTRA_GAME_PROBE, false);
         vulkanSmoke = getIntent().getBooleanExtra(EXTRA_VULKAN_SMOKE, false);
-        requestedMaximumFps = GameLaunchPreferences.maximumFps(
-                GameLaunchPreferences.preferences(this));
+        android.content.SharedPreferences gamePreferences =
+                GameLaunchPreferences.preferences(this);
+        requestedMaximumFps = GameLaunchPreferences.maximumFps(gamePreferences);
+        safeSideBorders = GameLaunchPreferences.safeSideBorders(gamePreferences);
         touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
         configureGameWindow();
         if (Build.VERSION.SDK_INT >= 33) {
@@ -114,18 +117,15 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         surface.setOnGenericMotionListener((view, event) -> handleGenericMotion(event));
         root.addView(surface, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        if (Build.VERSION.SDK_INT >= 28) {
+        if (Build.VERSION.SDK_INT >= 28 && safeSideBorders) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 DisplayCutout cutout = insets.getDisplayCutout();
                 int left = cutout == null ? 0 : cutout.getSafeInsetLeft();
-                int top = cutout == null ? 0 : cutout.getSafeInsetTop();
                 int right = cutout == null ? 0 : cutout.getSafeInsetRight();
-                int bottom = cutout == null ? 0 : cutout.getSafeInsetBottom();
                 FrameLayout.LayoutParams params =
                         (FrameLayout.LayoutParams) surface.getLayoutParams();
-                if (params.leftMargin != left || params.topMargin != top
-                        || params.rightMargin != right || params.bottomMargin != bottom) {
-                    params.setMargins(left, top, right, bottom);
+                if (params.leftMargin != left || params.rightMargin != right) {
+                    params.setMargins(left, 0, right, 0);
                     surface.setLayoutParams(params);
                 }
                 return insets;

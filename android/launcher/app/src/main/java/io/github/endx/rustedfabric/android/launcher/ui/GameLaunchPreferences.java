@@ -14,6 +14,7 @@ final class GameLaunchPreferences {
     static final String KEY_RENDERER = "renderer";
     static final String KEY_MAX_FPS = "max_fps";
     static final String KEY_VULKAN_PROFILE = "vulkan_profile";
+    static final String KEY_SAFE_SIDE_BORDERS = "safe_side_borders";
 
     static final String RENDERER_VULKAN = "vulkan";
     static final String RENDERER_OPENGL = "opengl";
@@ -42,6 +43,10 @@ final class GameLaunchPreferences {
         String value = preferences.getString(KEY_VULKAN_PROFILE, PROFILE_BALANCED);
         if (PROFILE_MEMORY.equals(value) || PROFILE_THROUGHPUT.equals(value)) return value;
         return PROFILE_BALANCED;
+    }
+
+    static boolean safeSideBorders(SharedPreferences preferences) {
+        return preferences.getBoolean(KEY_SAFE_SIDE_BORDERS, false);
     }
 
     static JvmLaunchPlan apply(Context context, JvmLaunchPlan plan) {
