@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -61,8 +62,9 @@ public final class JvmLauncherActivity extends Activity {
     private static final int REQUEST_DIAGNOSTIC_REPORT = 2008;
     private static final String STATE_PAGE = "selected_page";
     private static final int PAGE_LAUNCH = 0;
-    private static final int PAGE_CONTENT = 1;
-    private static final int PAGE_SETTINGS = 2;
+    private static final int PAGE_GAME = 1;
+    private static final int PAGE_CONTENT = 2;
+    private static final int PAGE_SETTINGS = 3;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private TextView readinessBadge;
@@ -91,13 +93,19 @@ public final class JvmLauncherActivity extends Activity {
     private LinearLayout contentPanel;
     private LinearLayout contentUnavailablePanel;
     private View launchPage;
+    private View gamePage;
     private View contentPage;
     private View settingsPage;
     private Button navLaunchButton;
+    private Button navGameButton;
     private Button navContentButton;
     private Button navSettingsButton;
     private TextView contentSummary;
     private TextView contentStorageStatus;
+    private Button gameRendererButton;
+    private Button gameFpsButton;
+    private Button gameVulkanProfileButton;
+    private Button gameResetButton;
     private boolean busy;
     private boolean smokeReady;
     private boolean gameProbeReady;
@@ -173,11 +181,18 @@ public final class JvmLauncherActivity extends Activity {
         contentSummary = findViewById(R.id.content_summary);
         contentStorageStatus = findViewById(R.id.content_storage_status);
         launchPage = findViewById(R.id.launch_page);
+        gamePage = findViewById(R.id.game_page);
         contentPage = findViewById(R.id.content_page);
         settingsPage = findViewById(R.id.settings_page);
         navLaunchButton = findViewById(R.id.nav_launch_button);
+        navGameButton = findViewById(R.id.nav_game_button);
         navContentButton = findViewById(R.id.nav_content_button);
         navSettingsButton = findViewById(R.id.nav_settings_button);
+        gameRendererButton = findViewById(R.id.game_renderer_button);
+        gameFpsButton = findViewById(R.id.game_fps_button);
+        gameVulkanProfileButton = findViewById(R.id.game_vulkan_profile_button);
+        gameResetButton = findViewById(R.id.game_reset_button);
+        refreshGameOptionLabels();
     }
 
     private void bindActions() {
@@ -185,8 +200,9 @@ public final class JvmLauncherActivity extends Activity {
         directoryButton.setOnClickListener(ignored -> chooseDesktopDirectory());
         runtimeButton.setOnClickListener(ignored -> chooseJavaRuntime());
         smokeButton.setOnClickListener(ignored -> testJavaRuntime());
-        rendererButton.setOnClickListener(ignored ->
-                startActivity(new Intent(this, JvmRenderActivity.class)));
+        rendererButton.setOnClickListener(ignored -> startActivity(
+                new Intent(this, JvmRenderActivity.class)
+                        .putExtra(JvmRenderActivity.EXTRA_VULKAN_SMOKE, true)));
         advancedButton.setOnClickListener(ignored -> showAdvanced(!advancedVisible));
         licenseButton.setOnClickListener(ignored -> showOpenSourceNotice());
         diagnosticReportButton.setOnClickListener(ignored -> chooseDiagnosticReportDestination());
@@ -204,19 +220,127 @@ public final class JvmLauncherActivity extends Activity {
         openJavaFolderButton.setOnClickListener(ignored ->
                 openSharedFolder(ManagedContentLibrary.Kind.JAVA_MOD));
         navLaunchButton.setOnClickListener(ignored -> showPage(PAGE_LAUNCH));
+        navGameButton.setOnClickListener(ignored -> showPage(PAGE_GAME));
         navContentButton.setOnClickListener(ignored -> showPage(PAGE_CONTENT));
         navSettingsButton.setOnClickListener(ignored -> showPage(PAGE_SETTINGS));
+        gameRendererButton.setOnClickListener(ignored -> chooseGameRenderer());
+        gameFpsButton.setOnClickListener(ignored -> chooseMaximumFps());
+        gameVulkanProfileButton.setOnClickListener(ignored -> chooseVulkanProfile());
+        gameResetButton.setOnClickListener(ignored -> confirmResetGameOptions());
     }
 
     private void showPage(int page) {
         if (page < PAGE_LAUNCH || page > PAGE_SETTINGS) page = PAGE_LAUNCH;
         selectedPage = page;
         launchPage.setVisibility(page == PAGE_LAUNCH ? View.VISIBLE : View.GONE);
+        gamePage.setVisibility(page == PAGE_GAME ? View.VISIBLE : View.GONE);
         contentPage.setVisibility(page == PAGE_CONTENT ? View.VISIBLE : View.GONE);
         settingsPage.setVisibility(page == PAGE_SETTINGS ? View.VISIBLE : View.GONE);
         navLaunchButton.setSelected(page == PAGE_LAUNCH);
+        navGameButton.setSelected(page == PAGE_GAME);
         navContentButton.setSelected(page == PAGE_CONTENT);
         navSettingsButton.setSelected(page == PAGE_SETTINGS);
+    }
+
+    private void chooseGameRenderer() {
+        SharedPreferences preferences = GameLaunchPreferences.preferences(this);
+        String current = GameLaunchPreferences.renderer(preferences);
+        String[] values = {GameLaunchPreferences.RENDERER_VULKAN,
+                GameLaunchPreferences.RENDERER_OPENGL};
+        String[] labels = {getString(R.string.game_renderer_vulkan),
+                getString(R.string.game_renderer_opengl)};
+        int checked = GameLaunchPreferences.RENDERER_OPENGL.equals(current) ? 1 : 0;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_renderer_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    preferences.edit().putString(GameLaunchPreferences.KEY_RENDERER,
+                            values[which]).apply();
+                    refreshGameOptionLabels();
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void chooseMaximumFps() {
+        SharedPreferences preferences = GameLaunchPreferences.preferences(this);
+        int[] values = {0, 300};
+        String[] labels = {getString(R.string.game_fps_unlimited),
+                getString(R.string.game_fps_original)};
+        int current = GameLaunchPreferences.maximumFps(preferences);
+        int checked = 0;
+        for (int index = 0; index < values.length; index++) {
+            if (values[index] == current) checked = index;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_fps_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    preferences.edit().putInt(GameLaunchPreferences.KEY_MAX_FPS,
+                            values[which]).apply();
+                    refreshGameOptionLabels();
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void chooseVulkanProfile() {
+        SharedPreferences preferences = GameLaunchPreferences.preferences(this);
+        String[] values = {GameLaunchPreferences.PROFILE_MEMORY,
+                GameLaunchPreferences.PROFILE_BALANCED,
+                GameLaunchPreferences.PROFILE_THROUGHPUT};
+        String[] labels = {getString(R.string.game_vulkan_profile_memory),
+                getString(R.string.game_vulkan_profile_balanced),
+                getString(R.string.game_vulkan_profile_throughput)};
+        String current = GameLaunchPreferences.vulkanProfile(preferences);
+        int checked = GameLaunchPreferences.PROFILE_MEMORY.equals(current) ? 0
+                : GameLaunchPreferences.PROFILE_THROUGHPUT.equals(current) ? 2 : 1;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_vulkan_profile_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    preferences.edit().putString(GameLaunchPreferences.KEY_VULKAN_PROFILE,
+                            values[which]).apply();
+                    refreshGameOptionLabels();
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmResetGameOptions() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_reset_title)
+                .setMessage(R.string.game_reset_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.game_reset_confirm, (dialog, which) -> {
+                    GameLaunchPreferences.reset(this);
+                    refreshGameOptionLabels();
+                    Toast.makeText(this, R.string.game_reset_complete, Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private void refreshGameOptionLabels() {
+        if (gameRendererButton == null) return;
+        SharedPreferences preferences = GameLaunchPreferences.preferences(this);
+        boolean openGl = GameLaunchPreferences.RENDERER_OPENGL.equals(
+                GameLaunchPreferences.renderer(preferences));
+        gameRendererButton.setText(getString(R.string.game_renderer_value,
+                getString(openGl ? R.string.game_renderer_opengl
+                        : R.string.game_renderer_vulkan)));
+        int maximumFps = GameLaunchPreferences.maximumFps(preferences);
+        gameFpsButton.setText(getString(R.string.game_fps_current,
+                maximumFps == 0 ? getString(R.string.game_fps_unlimited)
+                        : getString(R.string.game_fps_original)));
+        String profile = GameLaunchPreferences.vulkanProfile(preferences);
+        int profileLabel = GameLaunchPreferences.PROFILE_MEMORY.equals(profile)
+                ? R.string.game_vulkan_profile_memory
+                : GameLaunchPreferences.PROFILE_THROUGHPUT.equals(profile)
+                ? R.string.game_vulkan_profile_throughput
+                : R.string.game_vulkan_profile_balanced;
+        gameVulkanProfileButton.setText(getString(R.string.game_vulkan_profile_value,
+                getString(profileLabel)));
+        gameVulkanProfileButton.setEnabled(!openGl);
     }
 
     private void showOpenSourceNotice() {

@@ -14835,6 +14835,8 @@ c	com/corrodinggames/rts/java/u	rw/client/SlickGame	rustedwarfare/client/SlickGa
 	f	Lcom/corrodinggames/rts/java/s;	m	field_SlickGameAdapter_m_loadingLogo	loadingLogo
 	f	Lcom/corrodinggames/rts/java/s;	n	field_SlickGameAdapter_n_pointerImage	pointerImage
 	f	F	P	field_SlickGame_inputScale	inputScale
+	f	F	Q	field_SlickGame_renderDensityCache	renderDensityCache
+	f	F	R	field_SlickGame_rocketScale	rocketScale
 	f	Z	p	field_SlickGame_threadedLoadStarted	threadedLoadStarted
 	f	Z	q	field_SlickGame_nonThreadedLoadStarted	nonThreadedLoadStarted
 	f	Z	r	field_SlickGame_finishedInitialLoad	finishedInitialLoad

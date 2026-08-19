@@ -9,6 +9,46 @@ add_library(rustedfabric_renderbridge SHARED rustedfabric_renderbridge.cpp)
 target_compile_features(rustedfabric_renderbridge PRIVATE cxx_std_17)
 target_link_libraries(rustedfabric_renderbridge PRIVATE android log dl EGL GLESv2)
 
+find_program(RUSTED_FABRIC_GLSLC glslc
+        HINTS "${ANDROID_NDK}/shader-tools/windows-x86_64"
+        REQUIRED)
+set(RUSTED_FABRIC_SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
+set(RUSTED_FABRIC_GENERATED_SHADER_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated-shaders")
+file(MAKE_DIRECTORY "${RUSTED_FABRIC_GENERATED_SHADER_DIR}")
+set(RUSTED_FABRIC_SHADER_HEADERS)
+foreach(shader_name
+        framestream_colored.vert framestream_colored.frag
+        framestream_textured.vert framestream_textured.frag)
+    string(REPLACE "." "_" shader_symbol "${shader_name}")
+    set(shader_spv "${RUSTED_FABRIC_GENERATED_SHADER_DIR}/${shader_name}.spv")
+    set(shader_header "${RUSTED_FABRIC_GENERATED_SHADER_DIR}/${shader_name}.h")
+    add_custom_command(OUTPUT "${shader_header}"
+            COMMAND "${RUSTED_FABRIC_GLSLC}" "${RUSTED_FABRIC_SHADER_DIR}/${shader_name}"
+                    -o "${shader_spv}"
+            COMMAND "${CMAKE_COMMAND}"
+                    -DINPUT=${shader_spv} -DOUTPUT=${shader_header}
+                    -DVARIABLE=rustedfabric_${shader_symbol}_spv
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/EmbedSpirv.cmake"
+            DEPENDS "${RUSTED_FABRIC_SHADER_DIR}/${shader_name}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/EmbedSpirv.cmake"
+            VERBATIM)
+    list(APPEND RUSTED_FABRIC_SHADER_HEADERS "${shader_header}")
+endforeach()
+add_custom_target(rustedfabric_vulkan_shaders DEPENDS ${RUSTED_FABRIC_SHADER_HEADERS})
+
+add_library(rustedfabric_vulkan SHARED
+        rustedfabric_vulkan.cpp
+        rustedfabric_vulkan_backend.cpp
+        rustedfabric_framestream.cpp
+        ${RUSTED_FABRIC_SHADER_HEADERS})
+add_dependencies(rustedfabric_vulkan rustedfabric_vulkan_shaders)
+target_compile_features(rustedfabric_vulkan PRIVATE cxx_std_17)
+target_compile_definitions(rustedfabric_vulkan PRIVATE VK_USE_PLATFORM_ANDROID_KHR)
+target_include_directories(rustedfabric_vulkan PRIVATE
+        "${RUSTED_FABRIC_GENERATED_SHADER_DIR}")
+target_link_libraries(rustedfabric_vulkan PRIVATE
+        rustedfabric_renderbridge android log vulkan)
+
 add_library(pojavexec SHARED rustedfabric_pojavexec.cpp)
 target_compile_features(pojavexec PRIVATE cxx_std_17)
 target_link_libraries(pojavexec PRIVATE rustedfabric_renderbridge android log EGL)

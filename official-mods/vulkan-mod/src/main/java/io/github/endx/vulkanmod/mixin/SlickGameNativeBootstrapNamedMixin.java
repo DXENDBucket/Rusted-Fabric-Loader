@@ -20,6 +20,7 @@ import com.corrodinggames.rts.R$drawable;
 import org.spongepowered.asm.mixin.Unique;
 import android.graphics.Paint;
 import io.github.endx.vulkanmod.render.SlickDefaultFontRenderer;
+import io.github.endx.vulkanmod.render.VulkanGraphicsEngine;
 
 /** Restores game-system initialization without entering SlickGame's OpenGL setup method. */
 @Mixin(SlickGame.class)
@@ -30,6 +31,9 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     @Shadow DesktopAppFramework appFramework;
     @Shadow int lastDeltaMs;
     @Shadow boolean finishedInitialLoad;
+    @Shadow float inputScale;
+    @Shadow float renderDensityCache;
+    @Shadow float rocketScale;
     @Shadow public abstract void startLoadingThreaded();
     @Unique private int vulkanmod$pointerX;
     @Unique private int vulkanmod$pointerY;
@@ -47,6 +51,8 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
     @Unique private volatile String vulkanmod$loadingStatus = "";
     @Unique private long vulkanmod$lastLoadingPresentNanos;
     @Unique private int vulkanmod$loadingFramesPresented;
+    @Unique private static java.lang.reflect.Method vulkanmod$androidTouchApply;
+    @Unique private static boolean vulkanmod$androidTouchUnavailable;
 
     @Override
     public void vulkanmod$bindNativeContainer(GameContainer container) {
@@ -80,14 +86,25 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
         }
         if (gameEngine == null) gameEngine = GameEngine.getInstance();
         if (gameEngine == null || main == null) return;
-        vulkanmod$ensureNativePointer();
+        // Android's loader patch normally applies the raw MotionEvent pointer frame at the
+        // beginning of SlickGame.update(). Native takeover deliberately bypasses that OpenGL-era
+        // update method, so preserve the same ordering here before gameLoop consumes input.
+        vulkanmod$applyAndroidTouchFrame();
+        if (vulkanmod$androidTouchApply == null) vulkanmod$ensureNativePointer();
         // SlickGame.render normally performs this assignment for the duration of a GL frame.
         // In native mode the Vulkan engine is the permanent window render target instead.
-        gameEngine.renderGraphicsEngine = VulkanRuntime.nativeGraphicsEngine();
+        rustedwarfare.render.GraphicsEngine nativeGraphics = VulkanRuntime.nativeGraphicsEngine();
+        gameEngine.renderGraphicsEngine = nativeGraphics;
         float delta = lastDeltaMs * 0.060000002f;
         main.updateTaskQueue(delta);
         if (gameEngine.hasLoadedLevel) {
-            gameEngine.gameLoop(delta, lastDeltaMs);
+            nativeGraphics.saveTransform();
+            try {
+                if (inputScale != 1.0f) nativeGraphics.scale(inputScale, inputScale);
+                gameEngine.gameLoop(delta, lastDeltaMs);
+            } finally {
+                nativeGraphics.restoreTransform();
+            }
         } else {
             gameEngine.networkEngine.b(delta);
             gameEngine.musicManager.update(delta);
@@ -97,10 +114,18 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
         if (ui != null) {
             ui.scriptEngine.update(delta);
             if (!ui.isNoDocumentOrPopupActive()) {
-                ui.update();
-                ui.render();
-                ui.scriptEngine.checkForErrors();
-                ui.debug = false;
+                nativeGraphics.saveTransform();
+                try {
+                    if (rocketScale != 1.0f) {
+                        nativeGraphics.scale(rocketScale, rocketScale);
+                    }
+                    ui.update();
+                    ui.render();
+                    ui.scriptEngine.checkForErrors();
+                    ui.debug = false;
+                } finally {
+                    nativeGraphics.restoreTransform();
+                }
             }
             ui.postUpdate();
             if (!vulkanmod$nativeInputReady && finishedInitialLoad
@@ -115,11 +140,30 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
         }
         // Slick installs this image as the native cursor during its skipped OpenGL init. Draw the
         // same asset last in native mode so menus and the game retain Rusted Warfare's pointer.
-        if (vulkanmod$pointerImage != null) {
+        if (vulkanmod$pointerImage != null && vulkanmod$androidTouchApply == null) {
             VulkanRuntime.drawNativePointer(
                     vulkanmod$pointerImage, vulkanmod$pointerX, vulkanmod$pointerY);
         }
         lastDeltaMs = 0;
+    }
+
+    @Unique
+    private void vulkanmod$applyAndroidTouchFrame() {
+        if (vulkanmod$androidTouchUnavailable) return;
+        try {
+            if (vulkanmod$androidTouchApply == null) {
+                Class<?> bridge = Class.forName("org.lwjgl.system.RustedFabricTouch", false,
+                        getClass().getClassLoader());
+                vulkanmod$androidTouchApply = bridge.getMethod("apply", Object.class);
+            }
+            vulkanmod$androidTouchApply.invoke(null, this);
+        } catch (ClassNotFoundException absentOnDesktop) {
+            vulkanmod$androidTouchUnavailable = true;
+        } catch (ReflectiveOperationException failure) {
+            vulkanmod$androidTouchUnavailable = true;
+            System.err.println("[Vulkan Mod] Android touch bridge failed in native mode: "
+                    + failure);
+        }
     }
 
     @Unique
@@ -286,21 +330,54 @@ public abstract class SlickGameNativeBootstrapNamedMixin implements NativeSlickG
 
     @Override
     public void vulkanmod$syncNativeResolution(int width, int height) {
-        int nativeWidth = Math.max(1, width);
-        int nativeHeight = Math.max(1, height);
+        int physicalWidth = Math.max(1, width);
+        int physicalHeight = Math.max(1, height);
+        float automaticScale = 1.0f;
+        if (physicalWidth > 3360 || physicalHeight > 1890) automaticScale = 2.0f;
+        else if (physicalWidth > 2688 || physicalHeight > 1512) automaticScale = 1.5f;
+        float configuredUiScale = gameEngine == null || gameEngine.settingsEngine == null
+                ? 1.0f : gameEngine.settingsEngine.uiRenderScale;
+        float density = gameEngine == null || gameEngine.settingsEngine == null
+                ? 1.0f : gameEngine.settingsEngine.renderDensity;
+        if (!Float.isFinite(configuredUiScale) || configuredUiScale <= 0.0f) {
+            configuredUiScale = 1.0f;
+        }
+        if (!Float.isFinite(density) || density <= 0.0f) density = 1.0f;
+        inputScale = automaticScale * configuredUiScale;
+        renderDensityCache = density;
+        rocketScale = inputScale * ((density - 1.0f) * 0.5f + 1.0f);
+        VulkanRuntime.setNativeLibRocketScale(rocketScale);
+        int gameWidth = Math.max(1, (int) (physicalWidth / inputScale));
+        int gameHeight = Math.max(1, (int) (physicalHeight / inputScale));
+        int rocketWidth = Math.max(1, (int) (physicalWidth / rocketScale));
+        int rocketHeight = Math.max(1, (int) (physicalHeight / rocketScale));
         if (appFramework != null) {
-            appFramework.width = nativeWidth;
-            appFramework.height = nativeHeight;
+            appFramework.width = gameWidth;
+            appFramework.height = gameHeight;
         }
         if (gameEngine != null) {
-            gameEngine.updateWindowResolution(nativeWidth, nativeHeight);
+            gameEngine.updateWindowResolution(gameWidth, gameHeight);
             gameEngine.refreshPaintSizesIfScaleChanged();
+        }
+        if (VulkanRuntime.nativeGraphicsEngine() instanceof VulkanGraphicsEngine) {
+            VulkanGraphicsEngine graphics =
+                    (VulkanGraphicsEngine) VulkanRuntime.nativeGraphicsEngine();
+            graphics.setSize(gameWidth, gameHeight);
+            graphics.setNativeUiScale(inputScale);
         }
         if (main != null) {
             LibRocketSlickRenderer ui = ((RustedWarfareMainUiAccessor) (Object) main)
                     .vulkanmod$getLibRocketRenderer();
-            if (ui != null) ui.setDimensionsWrap(nativeWidth, nativeHeight);
+            if (ui != null) ui.setDimensionsWrap(rocketWidth, rocketHeight);
         }
+        System.out.println("[Vulkan Mod] Native UI scale applied: game=" + inputScale
+                + ", density=" + density + ", gameLogical=" + gameWidth + "x"
+                + gameHeight + ", rocketLogical=" + rocketWidth + "x" + rocketHeight);
+    }
+
+    @Inject(method = "applyDisplayMode", at = @At("HEAD"), cancellable = true)
+    private void vulkanmod$applyNativeDisplayMode(CallbackInfo ci) {
+        if (VulkanRuntime.syncCurrentNativeResolution()) ci.cancel();
     }
 
     @Unique

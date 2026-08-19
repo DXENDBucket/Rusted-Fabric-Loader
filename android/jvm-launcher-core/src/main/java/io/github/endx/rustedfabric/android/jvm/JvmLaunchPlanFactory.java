@@ -126,6 +126,9 @@ public final class JvmLaunchPlanFactory {
                 "-Dorg.lwjgl.util.Debug=true",
                 "-Dorg.lwjgl.util.DebugLoader=true",
                 "-Drustedfabric.platform=android-jvm",
+                // When Vulkan Mod is installed, exercise its final pre-Display ownership path.
+                // The property is inert when no Vulkan renderer provider is installed.
+                "-Drusted.fabric.vulkan.mode=native",
                 "-Drusted.gameDir=" + gameRoot.toAbsolutePath().normalize(),
                 "-Drusted.android.lwjglJar=" + lwjglAdapter.toAbsolutePath().normalize(),
                 "-Drusted.android.lwjglCompatJar="

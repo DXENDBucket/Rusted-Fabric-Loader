@@ -235,7 +235,11 @@ performance runs remain unaffected.
    the common atlas is ready for an Android FreeType/Skia implementation. The obsolete takeover
    presenter, Slick draw capture, and whole-string text compatibility surface have been removed.
    Next, add the Android text implementation.
-6. Add the Android JNI platform driver, surface lifecycle and device-loss handling.
+6. Android work has started: `android-jvm` now selects an APK-owned JNI platform driver instead of
+   extracting the Windows LWJGL3 bundle. The APK packages an inert ARM64 Vulkan library with exact
+   backend/FrameStream/ResourceStream ABI negotiation, physical-device probing, and
+   generation-aware access to the existing `ANativeWindow` bridge. Clear-only presentation,
+   swapchain ownership, full Surface lifecycle verification, and device-loss handling are next.
 
 The mobile baseline should prefer Vulkan 1.1-era features and keep optional descriptor indexing or
 timeline semaphore paths behind capability checks. The primary performance target is CPU submission

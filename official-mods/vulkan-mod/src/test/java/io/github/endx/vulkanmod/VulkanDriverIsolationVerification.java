@@ -171,5 +171,18 @@ public final class VulkanDriverIsolationVerification {
                 : !libraryPathBefore.equals(libraryPathAfter)) {
             throw new AssertionError("LWJGL 3 polluted the parent org.lwjgl.librarypath");
         }
+        String platformBefore = System.getProperty("rustedfabric.platform");
+        try {
+            System.setProperty("rustedfabric.platform", "android-jvm");
+            try (VulkanDriverLoader.LoadedDriver loaded = VulkanDriverLoader.loadPlatform()) {
+                VulkanProbeResult result = loaded.probe();
+                if (!"RustedVK Android NDK".equals(loaded.name()) || result == null) {
+                    throw new AssertionError("Android JVM did not select its APK-owned driver");
+                }
+            }
+        } finally {
+            if (platformBefore == null) System.clearProperty("rustedfabric.platform");
+            else System.setProperty("rustedfabric.platform", platformBefore);
+        }
     }
 }

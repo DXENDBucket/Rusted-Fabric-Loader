@@ -534,6 +534,7 @@ tasks.register('verifyNoGamePayload') {
         def jvmBackendFound = false
         def jvmHostFound = false
         def renderBridgeFound = false
+        def vulkanBackendFound = false
         def jvmSmokeAssetFound = false
         def jvmLauncherAssetFound = false
         def lwjglCompatAssetFound = false
@@ -564,6 +565,9 @@ tasks.register('verifyNoGamePayload') {
                 }
                 if (entry.name == 'lib/arm64-v8a/librustedfabric_renderbridge.so') {
                     renderBridgeFound = true
+                }
+                if (entry.name == 'lib/arm64-v8a/librustedfabric_vulkan.so') {
+                    vulkanBackendFound = true
                 }
                 if (entry.name == 'assets/rusted-fabric/jvm-host-smoke.jar') {
                     jvmSmokeAssetFound = true
@@ -642,7 +646,8 @@ tasks.register('verifyNoGamePayload') {
             }
         }
         if (!jvmBackendFound
-                || !jvmHostFound || !renderBridgeFound || !jvmSmokeAssetFound
+                || !jvmHostFound || !renderBridgeFound || !vulkanBackendFound
+                || !jvmSmokeAssetFound
                 || !jvmLauncherAssetFound
                 || !lwjglCompatAssetFound
                 || !lwjglAdapterFound || !gl4esFound || !lwjglNativeFound

@@ -1,7 +1,9 @@
 # Android native Vulkan backend
 
-Status: implementation plan. This backend does not exist yet; the current Android desktop-JVM port
-uses its working LWJGL2/GL4ES compatibility renderer.
+Status: stage 2 in progress. The APK now packages an inert ARM64 Vulkan backend, the shared Java mod
+selects it on `rustedfabric.platform=android-jvm`, and backend/FrameStream/ResourceStream ABI plus
+physical-device probing are implemented. The current playable Android desktop-JVM port still uses
+its working LWJGL2/GL4ES compatibility renderer; Vulkan presentation is not enabled yet.
 
 The binary renderer contract is defined in [FRAME_STREAM_ABI.md](FRAME_STREAM_ABI.md).
 
@@ -278,9 +280,10 @@ profiler provide complementary evidence.
 
 ## Delivery stages
 
-1. Finalize and test FrameStream on Windows; Android code is not started against an unstable object
-   boundary.
-2. Add an inert ARM64 native backend to the APK and verify ABI negotiation plus Surface lifecycle.
+1. **Done:** finalize and test FrameStream on Windows.
+2. **In progress:** the inert ARM64 APK backend, exact ABI negotiation, physical-device probe, and
+   generation-aware access to the launcher's existing `ANativeWindow` bridge are implemented.
+   Physical-device and repeated Surface attach/detach verification on Android hardware remains.
 3. Decode and present clear-only FrameStreams.
 4. Add colored/textured batches and reliable texture resources.
 5. Add ordered offscreen passes, terrain cache, minimap, and Canvas targets.

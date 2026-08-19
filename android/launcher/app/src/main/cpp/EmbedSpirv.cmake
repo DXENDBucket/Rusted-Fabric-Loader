@@ -1,0 +1,6 @@
+if(NOT DEFINED INPUT OR NOT DEFINED OUTPUT OR NOT DEFINED VARIABLE)
+    message(FATAL_ERROR "INPUT, OUTPUT and VARIABLE are required")
+endif()
+file(READ "${INPUT}" SPIRV_HEX HEX)
+string(REGEX REPLACE "([0-9a-fA-F][0-9a-fA-F])" "0x\\1," SPIRV_BYTES "${SPIRV_HEX}")
+file(WRITE "${OUTPUT}" "#pragma once\n#include <cstddef>\n#include <cstdint>\nalignas(4) static const uint8_t ${VARIABLE}[] = {${SPIRV_BYTES}};\nstatic constexpr size_t ${VARIABLE}_bytes = sizeof(${VARIABLE});\n")

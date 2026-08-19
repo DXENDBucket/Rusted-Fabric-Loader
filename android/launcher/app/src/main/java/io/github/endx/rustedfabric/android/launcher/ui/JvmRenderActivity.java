@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.DisplayCutout;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -37,12 +38,14 @@ import io.github.endx.rustedfabric.android.jvm.JvmLaunchPlanFactory;
 import io.github.endx.rustedfabric.android.jvm.DesktopGameLayout;
 import io.github.endx.rustedfabric.android.launcher.jvm.NativeJvmHost;
 import io.github.endx.rustedfabric.android.launcher.jvm.NativeRenderBridge;
+import io.github.endx.rustedfabric.android.launcher.jvm.NativeVulkanBridge;
 import io.github.endx.rustedfabric.android.launcher.jvm.DesktopGameImportService;
 import io.github.endx.rustedfabric.android.launcher.jvm.SharedContentWorkspace;
 
-/** Runs a real LWJGL2 call path from HotSpot into GL4ES and the Android Surface. */
+/** Runs the imported game or an isolated GL4ES/Vulkan renderer test on the Android Surface. */
 public final class JvmRenderActivity extends Activity implements SurfaceHolder.Callback {
     public static final String EXTRA_GAME_PROBE = "rusted-fabric.game-probe";
+    public static final String EXTRA_VULKAN_SMOKE = "rusted-fabric.vulkan-smoke";
     private static final String STATUS_FILE = "lwjgl2-smoke-status.txt";
     private static final String PAYLOAD_ASSET = "rusted-fabric/jvm-host-smoke.jar";
     private static final String LWJGL_ASSET = "rusted-fabric/lwjgl-glfw-classes.jar";
@@ -64,6 +67,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private final Runnable startAfterSurfaceSettles = this::startRenderer;
     private TextView status;
     private boolean gameProbe;
+    private boolean vulkanSmoke;
     private int touchSlop;
     private int primaryPointerId = -1;
     private boolean leftButtonDown;
@@ -85,11 +89,15 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private final int[] gameTouchIds = new int[10];
     private int settledSurfaceWidth;
     private int settledSurfaceHeight;
+    private int requestedMaximumFps;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         gameProbe = getIntent().getBooleanExtra(EXTRA_GAME_PROBE, false);
+        vulkanSmoke = getIntent().getBooleanExtra(EXTRA_VULKAN_SMOKE, false);
+        requestedMaximumFps = GameLaunchPreferences.maximumFps(
+                GameLaunchPreferences.preferences(this));
         touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
         configureGameWindow();
         if (Build.VERSION.SDK_INT >= 33) {
@@ -99,6 +107,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         FrameLayout root = new FrameLayout(this);
         SurfaceView surface = new SurfaceView(this);
         surface.getHolder().addCallback(this);
+        requestGameFrameRate(surface);
         surface.setOnTouchListener((view, event) -> handleTouch(event));
         surface.setOnGenericMotionListener((view, event) -> handleGenericMotion(event));
         root.addView(surface, new FrameLayout.LayoutParams(
@@ -318,12 +327,60 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                 | WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        float preferredRefreshRate = preferredDisplayRefreshRate(requestedMaximumFps);
+        if (preferredRefreshRate > 0.0f) {
+            attributes.preferredRefreshRate = preferredRefreshRate;
+        }
         if (Build.VERSION.SDK_INT >= 28) {
-            WindowManager.LayoutParams attributes = getWindow().getAttributes();
             attributes.layoutInDisplayCutoutMode =
                     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-            getWindow().setAttributes(attributes);
         }
+        getWindow().setAttributes(attributes);
+    }
+
+    private void requestGameFrameRate(SurfaceView surface) {
+        if (Build.VERSION.SDK_INT < 30) return;
+        float rate = preferredDisplayRefreshRate(requestedMaximumFps);
+        if (rate <= 0.0f) return;
+        surface.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override public void surfaceCreated(SurfaceHolder holder) {
+                holder.getSurface().setFrameRate(rate,
+                        android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+            }
+
+            @Override public void surfaceChanged(SurfaceHolder holder, int format,
+                                                  int width, int height) {
+                holder.getSurface().setFrameRate(rate,
+                        android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+            }
+
+            @Override public void surfaceDestroyed(SurfaceHolder holder) {
+                // The Surface is already invalid here; the next one receives the request again.
+            }
+        });
+    }
+
+    @SuppressWarnings("deprecation")
+    private float preferredDisplayRefreshRate(int maximumFps) {
+        Display display = getWindowManager().getDefaultDisplay();
+        Display.Mode[] modes = display.getSupportedModes();
+        float best = 0.0f;
+        float bestDistance = Float.MAX_VALUE;
+        for (Display.Mode mode : modes) {
+            float rate = mode.getRefreshRate();
+            if (maximumFps <= 0) {
+                if (rate > best) best = rate;
+                continue;
+            }
+            float distance = Math.abs(rate - maximumFps);
+            if (distance < bestDistance
+                    || (Math.abs(distance - bestDistance) < 0.1f && rate > best)) {
+                best = rate;
+                bestDistance = distance;
+            }
+        }
+        return best > 0.0f ? best : display.getRefreshRate();
     }
 
     private void applyImmersiveMode() {
@@ -425,16 +482,21 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         Thread renderer = new Thread(() -> {
             String detail;
             try {
-                detail = gameProbe ? runGameProbe(width, height) : runLwjglTest();
+                detail = gameProbe ? runGameProbe(width, height)
+                        : vulkanSmoke ? runVulkanTest() : runLwjglTest();
             } catch (Throwable failure) {
                 detail = (gameProbe ? "Android Fabric game launch failed: "
+                        : vulkanSmoke ? "Android Vulkan test failed: "
                         : "Android LWJGL2 bridge failed: ") + safeMessage(failure);
+            } finally {
+                if (vulkanSmoke) RUNNING.set(false);
             }
             writeStatus(this, detail);
             String finalDetail = detail;
             runOnUiThread(() -> {
                 status.setVisibility(android.view.View.VISIBLE);
                 boolean succeeded = finalDetail.startsWith("rusted-fabric-lwjgl2-smoke=ok")
+                        || finalDetail.startsWith("rusted-fabric-vulkan-smoke=ok")
                         || finalDetail.startsWith("rusted-fabric-game-probe=ok");
                 status.setText(getString(succeeded
                                 ? (gameProbe ? R.string.jvm_game_probe_finished
@@ -443,8 +505,29 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                                 : R.string.jvm_renderer_failed),
                         finalDetail));
             });
-        }, "rusted-fabric-egl-smoke");
+        }, vulkanSmoke ? "rusted-fabric-vulkan-smoke" : "rusted-fabric-egl-smoke");
         renderer.start();
+    }
+
+    private String runVulkanTest() throws IOException, InterruptedException {
+        String detail = NativeVulkanBridge.start();
+        try {
+            for (int frame = 0; frame < 300; frame++) {
+                int phase = Math.min(2, frame / 100);
+                float red = phase == 0 ? 0.85f : 0.05f;
+                float green = phase == 1 ? 0.85f : 0.05f;
+                float blue = phase == 2 ? 0.85f : 0.05f;
+                if (!NativeVulkanBridge.presentClear(red, green, blue, 1.0f)) {
+                    throw new IOException("clear frame " + frame + " was not presented: "
+                            + NativeVulkanBridge.lastDiagnostic());
+                }
+                Thread.sleep(16L);
+            }
+            return "rusted-fabric-vulkan-smoke=ok\n" + detail
+                    + "\n300 clear-only frames presented";
+        } finally {
+            NativeVulkanBridge.stop();
+        }
     }
 
     private String runGameProbe(int width, int height) throws IOException {
@@ -472,6 +555,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                 desktopRoot.toPath(), runtimeHome.toPath(), launcherDirectory.toPath(),
                 nativeDirectory.toPath(), capabilities, 1024,
                 Math.max(width, 320), Math.max(height, 240), deviceLocale());
+        plan = GameLaunchPreferences.apply(this, plan);
         runOnUiThread(() -> {
             status.setText(R.string.jvm_game_probe_starting);
             status.postDelayed(() -> {
@@ -543,12 +627,14 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
+        if (vulkanSmoke) NativeVulkanBridge.stop();
         NativeRenderBridge.detachSurface();
     }
 
     @Override
     protected void onDestroy() {
         surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
+        if (vulkanSmoke) NativeVulkanBridge.stop();
         NativeRenderBridge.detachSurface();
         super.onDestroy();
     }

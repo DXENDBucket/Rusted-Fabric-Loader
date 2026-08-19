@@ -18,7 +18,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
     private static final int ATLAS_SIZE = 1024;
     private static final int ATLAS_PADDING = 1;
     private static final int MAX_ATLAS_PAGES = 16;
-    private static final int MAX_NEW_GLYPHS_PER_FRAME = 96;
 
     private final TextureAccess textures;
     private final TextAccess text;
@@ -31,7 +30,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
             new LinkedHashMap<Long, AtlasGlyph>(256, 0.75f, true);
     private final ArrayList<AtlasPage> atlasPages = new ArrayList<AtlasPage>();
     private boolean closed;
-    private int glyphUploadsStartedThisFrame;
 
     VulkanTextTextureCache(VulkanDriverLoader.LoadedDriver driver,
                            LongConsumer textureDestroyer) {
@@ -57,10 +55,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
             Map.Entry<Key, Entry> oldest = entries.entrySet().iterator().next();
             entries.remove(oldest.getKey());
         }
-    }
-
-    synchronized void beginFrame() {
-        glyphUploadsStartedThisFrame = 0;
     }
 
     @Override public synchronized void close() {
@@ -104,7 +98,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
         Long key = Long.valueOf(glyphKey);
         AtlasGlyph cached = glyphs.get(key);
         if (cached != null) return cached;
-        if (glyphUploadsStartedThisFrame >= MAX_NEW_GLYPHS_PER_FRAME) return null;
         VulkanGlyphBitmap raster = text.rasterizeGlyph(glyphKey);
         if (raster.empty()) {
             AtlasGlyph empty = AtlasGlyph.empty(raster.bearingX(), raster.bearingY());
@@ -138,7 +131,6 @@ final class VulkanTextTextureCache implements AutoCloseable {
         }
         textures.updateTextureRegion(page.textureHandle, location.x, location.y,
                 new VulkanTextureData(cellWidth, cellHeight, padded));
-        glyphUploadsStartedThisFrame++;
         float inverse = 1.0f / ATLAS_SIZE;
         AtlasGlyph created = new AtlasGlyph(page.textureHandle,
                 raster.bearingX(), raster.bearingY(), raster.width(), raster.height(),

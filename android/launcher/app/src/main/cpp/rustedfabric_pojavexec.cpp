@@ -458,6 +458,29 @@ rustedfabric_queue_key(int key, int action, int modifiers) {
     queue_input({InputKind::Key, 0.0, 0.0, key, action, modifiers});
 }
 
+// Vulkan native mode never creates/polls a GLFW window. Expose the same Activity-owned queue to
+// the APK Vulkan driver so it can translate events into the renderer-neutral VulkanInputEvent
+// ABI instead of relying on GLFW callbacks that deliberately do not exist in this mode.
+extern "C" __attribute__((visibility("default"))) bool
+rustedfabric_poll_vulkan_input(int* kind, double* first, double* second,
+                               int* button, int* action, int* modifiers) {
+    if (kind == nullptr || first == nullptr || second == nullptr || button == nullptr
+            || action == nullptr || modifiers == nullptr) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(input_mutex);
+    if (input_events.empty()) return false;
+    InputEvent event = input_events.front();
+    input_events.pop_front();
+    *kind = static_cast<int>(event.kind);
+    *first = event.first;
+    *second = event.second;
+    *button = event.button;
+    *action = event.action;
+    *modifiers = event.modifiers;
+    return true;
+}
+
 extern "C" __attribute__((visibility("default"))) void
 rustedfabric_queue_touch_frame(const float* xs, const float* ys, const int* ids,
                                int count, bool down, int action) {

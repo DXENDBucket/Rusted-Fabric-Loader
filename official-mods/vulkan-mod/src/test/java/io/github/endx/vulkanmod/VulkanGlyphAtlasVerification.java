@@ -64,6 +64,17 @@ public final class VulkanGlyphAtlasVerification {
                             && longRun.batches[0].quadCount() == 2_000
                             && backend.regionUpdates == 2,
                     "large repeated text did not collapse to one cached batch");
+
+            StringBuilder manyUniqueGlyphs = new StringBuilder(160);
+            for (int index = 0; index < 160; index++) {
+                manyUniqueGlyphs.append((char) (0x100 + index));
+            }
+            VulkanTextTextureCache.Entry retainedPanelText = cache.texture(
+                    manyUniqueGlyphs.toString(), 24, false);
+            require(retainedPanelText != null
+                            && retainedPanelText.glyphs.length == manyUniqueGlyphs.length()
+                            && backend.regionUpdates == 162,
+                    "one-shot retained UI text silently dropped glyphs");
         } finally {
             cache.close();
         }

@@ -12,6 +12,7 @@ public abstract class RustedWarfareGameLoopVulkanPresentNamedMixin {
     @Inject(method = "gameLoop()V", at = @At("HEAD"), cancellable = true, require = 1)
     private void vulkanmod$beforeOpenGlFrame(CallbackInfo callback) {
         if (VulkanRuntime.isNativeRendererSelected()) {
+            VulkanRuntime.paceNativeGameLoop();
             if (!VulkanRuntime.runNativeBootstrapFrame()) {
                 setRunning(false);
             }

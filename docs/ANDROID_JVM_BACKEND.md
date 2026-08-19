@@ -129,7 +129,9 @@ Surface through `libpojavexec.so`, and real LWJGL2 `GL11.glClearColor`, `glClear
 buffer-swap calls ran through GL4ES 1.1.5. The visible framebuffer was purple and reported the real
 Adreno 750 renderer. The APK audit still rejects every Rusted Warfare class or game payload.
 
-The planned high-performance Vulkan path does not replace this working compatibility baseline.
+The high-performance Vulkan path has entered its inert-backend stage: the APK packages an ARM64
+probe/ABI library, but presentation remains disabled. It does not replace this working
+compatibility baseline; unsupported or incomplete Vulkan paths continue to use GL4ES.
 It keeps the same desktop JVM and Java mods, but transports a whole-frame binary stream to an NDK
 renderer instead of making per-draw JNI calls. Its contracts are documented in
 [FrameStream ABI](../official-mods/vulkan-mod/docs/FRAME_STREAM_ABI.md) and

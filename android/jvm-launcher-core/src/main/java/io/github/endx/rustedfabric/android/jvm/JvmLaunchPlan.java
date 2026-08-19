@@ -35,6 +35,14 @@ public final class JvmLaunchPlan {
     public String mainClass() { return mainClass; }
     public List<String> gameArguments() { return gameArguments; }
 
+    /** Returns a copy with launcher-selected VM properties appended after built-in defaults. */
+    public JvmLaunchPlan withAdditionalVirtualMachineArguments(List<String> additional) {
+        List<String> merged = new ArrayList<>(virtualMachineArguments);
+        if (additional != null) merged.addAll(additional);
+        return new JvmLaunchPlan(workingDirectory, runtimeHome, nativeLibraryDirectory,
+                classpath, merged, mainClass, gameArguments);
+    }
+
     private static List<Path> immutable(List<Path> values) {
         return Collections.unmodifiableList(new ArrayList<>(values));
     }

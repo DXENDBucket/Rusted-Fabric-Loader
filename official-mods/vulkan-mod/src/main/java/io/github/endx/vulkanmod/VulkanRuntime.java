@@ -57,6 +57,10 @@ public final class VulkanRuntime {
     private static boolean legacyDisplayInvariantChecked;
     private static NativeSlickGameBridge nativeGame;
     private static boolean nativeGameSystemsStarted;
+    private static volatile float nativeLibRocketScale = 1.0f;
+    private static final boolean NATIVE_ORIGINAL_FRAME_LIMIT =
+            Integer.getInteger("rusted.fabric.maxFps", 0) == 300;
+    private static volatile long nativeNextFrameNanos;
     private static VulkanFrameCommands.Builder nativeFrameBuilder;
     private static List<VulkanRenderTargetPass> nativeRenderTargetPasses;
     private static final NativeFrameClock nativeFrameClock = new NativeFrameClock();
@@ -92,7 +96,7 @@ public final class VulkanRuntime {
         if (mode == VulkanMode.OFF || probeResult != null) return;
         VulkanDriverLoader.LoadedDriver loaded = null;
         try {
-            loaded = VulkanDriverLoader.loadDesktop();
+            loaded = VulkanDriverLoader.loadPlatform();
             VulkanProbeResult result = loaded.probe();
             probeResult = result;
             if (!result.available()) {
@@ -284,7 +288,6 @@ public final class VulkanRuntime {
         long now = System.nanoTime();
         int deltaMillis = nativeFrameClock.nextDeltaMillis(now);
         long frameWorkStarted = System.nanoTime();
-        if (textTextureCache != null) textTextureCache.beginFrame();
         nativeFrameBuilder = VulkanFrameCommands.pooledBuilder(current.width(), current.height())
                 .clear(0.035f, 0.045f, 0.06f, 1.0f);
         nativeRenderTargetPasses = new ArrayList<VulkanRenderTargetPass>();
@@ -350,6 +353,23 @@ public final class VulkanRuntime {
             }
         }
         return true;
+    }
+
+    /** Applies Slick's original 300 FPS ceiling before entering the synchronized frame path. */
+    public static void paceNativeGameLoop() {
+        if (!NATIVE_ORIGINAL_FRAME_LIMIT) return;
+        final long interval = 1_000_000_000L / 300L;
+        long now = System.nanoTime();
+        long target = nativeNextFrameNanos;
+        if (target == 0L || now - target > interval * 4L) {
+            nativeNextFrameNanos = now + interval;
+            return;
+        }
+        long remaining;
+        while ((remaining = target - System.nanoTime()) > 0L) {
+            java.util.concurrent.locks.LockSupport.parkNanos(remaining);
+        }
+        nativeNextFrameNanos = target + interval;
     }
 
     private static void initializeNativeTextureCaches() {
@@ -615,7 +635,8 @@ public final class VulkanRuntime {
             invokeContainerOption(container, "setAlwaysRender", boolean.class, true);
             invokeContainerOption(container, "setForceExit", boolean.class, true);
             invokeContainerOption(container, "setShowFPS", boolean.class, false);
-            invokeContainerOption(container, "setTargetFrameRate", int.class, 300);
+            invokeContainerOption(container, "setTargetFrameRate", int.class,
+                    NATIVE_ORIGINAL_FRAME_LIMIT ? 300 : -1);
             invokeContainerOption(container, "setUpdateOnlyWhenVisible", boolean.class, false);
 
             if (!(game instanceof NativeSlickGameBridge)) {
@@ -732,9 +753,11 @@ public final class VulkanRuntime {
                 (LibRocketUiEngineStateAccessor) (Object) renderer;
         android.graphics.RectF clipRect = state.vulkanmod$isScissorEnabled()
                 ? state.vulkanmod$getScissorRectF() : null;
+        float uiScale = nativeLibRocketScale;
         VulkanClipRect clip = clipRect == null ? null : new VulkanClipRect(
-                clipRect.a, clipRect.b, Math.max(0.0f, clipRect.c - clipRect.a),
-                Math.max(0.0f, clipRect.d - clipRect.b));
+                clipRect.a * uiScale, clipRect.b * uiScale,
+                Math.max(0.0f, clipRect.c - clipRect.a) * uiScale,
+                Math.max(0.0f, clipRect.d - clipRect.b) * uiScale);
         final long capturedTexture = textureHandle;
         final float capturedUScale = uScale;
         final float capturedVScale = vScale;
@@ -742,7 +765,7 @@ public final class VulkanRuntime {
         final float capturedAlpha = alpha;
         return appendNativeLibRocketGeometry(positions, uvs, colors, indices,
                 translationX, translationY, capturedTexture, capturedUScale,
-                capturedVScale, capturedNoColor, capturedAlpha, clip);
+                capturedVScale, capturedNoColor, capturedAlpha, clip, uiScale);
     }
 
     private static boolean drawNativeLibRocketUnit(
@@ -796,7 +819,7 @@ public final class VulkanRuntime {
             float[] positions, float[] uvs, int[] packedColors, int[] indices,
             float translationX, float translationY, long textureHandle,
             float uScale, float vScale, boolean ignoreVertexColor, float alpha,
-            VulkanClipRect clip) {
+            VulkanClipRect clip, float uiScale) {
         if (nativeFrameBuilder == null || positions == null || uvs == null
                 || packedColors == null || indices == null
                 || positions.length % 2 != 0 || uvs.length < positions.length
@@ -814,9 +837,10 @@ public final class VulkanRuntime {
             for (int vertex = 0; vertex < 3; vertex++) {
                 int sourceVertex = indices[triangleIndex + vertex];
                 if (sourceVertex < 0 || sourceVertex * 2 + 1 >= positions.length) return false;
-                trianglePositions[vertex * 2] = positions[sourceVertex * 2] + translationX;
-                trianglePositions[vertex * 2 + 1] = positions[sourceVertex * 2 + 1]
-                        + translationY;
+                trianglePositions[vertex * 2] =
+                        (positions[sourceVertex * 2] + translationX) * uiScale;
+                trianglePositions[vertex * 2 + 1] =
+                        (positions[sourceVertex * 2 + 1] + translationY) * uiScale;
                 if (triangleUvs != null) {
                     triangleUvs[vertex * 2] = uvs[sourceVertex * 2] * uScale;
                     triangleUvs[vertex * 2 + 1] = uvs[sourceVertex * 2 + 1] * vScale;
@@ -1046,6 +1070,26 @@ public final class VulkanRuntime {
 
     public static Optional<VulkanSurfaceInfo> surfaceInfo() {
         return Optional.ofNullable(surfaceInfo);
+    }
+
+    /**
+     * Re-applies the game's logical and UI resolution to the current native surface.
+     *
+     * <p>The settings screen calls SlickGame.applyDisplayMode synchronously while its slider
+     * values are temporarily installed in SettingsEngine. Native takeover has no LWJGL Display,
+     * so its mixin redirects that call here instead of letting the legacy method touch OpenGL.</p>
+     */
+    public static synchronized boolean syncCurrentNativeResolution() {
+        if (!isNativeRendererSelected() || nativeGame == null || surfaceInfo == null) {
+            return false;
+        }
+        nativeGame.vulkanmod$syncNativeResolution(surfaceInfo.width(), surfaceInfo.height());
+        return true;
+    }
+
+    /** Scale normally supplied by Slick Graphics.scale() around LibRocket rendering. */
+    public static void setNativeLibRocketScale(float scale) {
+        nativeLibRocketScale = Float.isFinite(scale) && scale > 0.0f ? scale : 1.0f;
     }
 
     /** Cumulative renderer counters intended for low-frequency profiler sampling. */

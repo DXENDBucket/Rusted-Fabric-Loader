@@ -72,6 +72,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     private VulkanFrameCommands.Builder offscreenBuilder;
     private int width;
     private int height;
+    private float uiScale = 1.0f;
     private GameImage errorImage;
     private VulkanTransform2D transform = VulkanTransform2D.IDENTITY;
     private VulkanClipRect clip;
@@ -114,6 +115,11 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
 
     public SlickGraphicsBackend compatibilityDelegate() {
         return slickDelegate;
+    }
+
+    /** Mirrors SlickGraphicsBackend.uiScale for native game-space rendering. */
+    public void setNativeUiScale(float uiScale) {
+        this.uiScale = Float.isFinite(uiScale) && uiScale > 0.0f ? uiScale : 1.0f;
     }
 
     /** Draws a top-level native image in physical screen space, independent of game transforms. */
@@ -566,21 +572,19 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         else delegate.drawImageCentered(image, x, y, paint);
     }
     @Override public void drawImageTransformed(GameImage image, float x, float y, Paint paint,
-                                               float scale, float angle) {
+                                               float angle, float scale) {
         if (renderTarget != null) {
             float scaledWidth = image.getWidth() * scale;
             float scaledHeight = image.getHeight() * scale;
-            drawImageCpu(image, full(image), x - scaledWidth * 0.5f,
-                    y - scaledHeight * 0.5f, x + scaledWidth * 0.5f,
-                    y + scaledHeight * 0.5f, paint,
+            drawImageCpu(image, full(image), x, y,
+                    x + scaledWidth, y + scaledHeight, paint,
                     safeRotation(angle, x, y));
         } else if (nativeRoot()) {
             float w = image.getWidth() * scale;
             float h = image.getHeight() * scale;
-            nativeImage(image, full(image), x - w * 0.5f, y - h * 0.5f,
-                    x + w * 0.5f, y + h * 0.5f, paint,
+            nativeImage(image, full(image), x, y, x + w, y + h, paint,
                     safeRotation(angle, x, y));
-        } else delegate.drawImageTransformed(image, x, y, paint, scale, angle);
+        } else delegate.drawImageTransformed(image, x, y, paint, angle, scale);
     }
     @Override public void drawImageRaw(GameImage image, float x, float y, Paint paint) {
         if (renderTarget != null) {
@@ -860,12 +864,14 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
     }
     @Override public int getWidth() {
         if (renderTarget != null) return width;
-        if (nativeRoot()) return VulkanRuntime.surfaceInfo().map(info -> info.width()).orElse(1);
+        if (nativeRoot()) return width > 0 ? width
+                : VulkanRuntime.surfaceInfo().map(info -> info.width()).orElse(1);
         return delegate.getWidth();
     }
     @Override public int getHeight() {
         if (renderTarget != null) return height;
-        if (nativeRoot()) return VulkanRuntime.surfaceInfo().map(info -> info.height()).orElse(1);
+        if (nativeRoot()) return height > 0 ? height
+                : VulkanRuntime.surfaceInfo().map(info -> info.height()).orElse(1);
         return delegate.getHeight();
     }
     @Override public void setSize(int width, int height) {
@@ -949,7 +955,7 @@ public final class VulkanGraphicsEngine implements GraphicsEngine {
         } else delegate.compileShader(shader);
     }
     @Override public float getUiScale() {
-        return nativeRoot() || cpuTarget() ? 1.0f : delegate.getUiScale();
+        return nativeRoot() ? uiScale : cpuTarget() ? 1.0f : delegate.getUiScale();
     }
 
     private static FontMetrics fontMetrics(Paint paint) {

@@ -30,8 +30,20 @@ import java.util.Properties;
 final class VulkanDriverLoader {
     private static final String ROOT = "META-INF/vulkan-driver/";
     private static final String LWJGL_LIBRARY_PATH = "org.lwjgl.librarypath";
+    private static final String PLATFORM_PROPERTY = "rustedfabric.platform";
+    private static final String ANDROID_JVM_PLATFORM = "android-jvm";
 
     private VulkanDriverLoader() { }
+
+    static LoadedDriver loadPlatform() {
+        if (ANDROID_JVM_PLATFORM.equalsIgnoreCase(
+                System.getProperty(PLATFORM_PROPERTY, "").trim())) {
+            io.github.endx.vulkanmod.android.AndroidVulkanPlatformDriver driver =
+                    new io.github.endx.vulkanmod.android.AndroidVulkanPlatformDriver();
+            return new LoadedDriver(driver, driver.getClass().getClassLoader(), null);
+        }
+        return loadDesktop();
+    }
 
     static LoadedDriver loadDesktop() {
         Path cache = FabricLoader.getInstance().getGameDir().resolve(".rusted-fabric")
@@ -63,7 +75,7 @@ final class VulkanDriverLoader {
                 throw new IllegalStateException("Driver does not implement VulkanPlatformDriver: "
                         + driverClass);
             }
-            return new LoadedDriver((VulkanPlatformDriver) instance, loader);
+            return new LoadedDriver((VulkanPlatformDriver) instance, loader, loader);
         } catch (ReflectiveOperationException | IOException failure) {
             throw new IllegalStateException("Could not load isolated Vulkan driver", failure);
         }
@@ -130,13 +142,16 @@ final class VulkanDriverLoader {
 
     static final class LoadedDriver implements AutoCloseable {
         private final VulkanPlatformDriver driver;
-        private final IsolatedDriverClassLoader loader;
+        private final ClassLoader invocationLoader;
+        private final IsolatedDriverClassLoader loaderToClose;
         private final ResourceStreamClient resources;
         private VulkanTextRasterizer textRasterizer;
 
-        private LoadedDriver(VulkanPlatformDriver driver, IsolatedDriverClassLoader loader) {
+        private LoadedDriver(VulkanPlatformDriver driver, ClassLoader invocationLoader,
+                             IsolatedDriverClassLoader loaderToClose) {
             this.driver = driver;
-            this.loader = loader;
+            this.invocationLoader = invocationLoader;
+            this.loaderToClose = loaderToClose;
             this.resources = driver.supportsResourceStream()
                     && !Boolean.getBoolean("rusted.fabric.vulkan.objectResources")
                     ? new ResourceStreamClient(new ResourceStreamClient.Submitter() {
@@ -381,7 +396,7 @@ final class VulkanDriverLoader {
             ClassLoader previous = thread.getContextClassLoader();
             String previousLibraryPath = System.getProperty(LWJGL_LIBRARY_PATH);
             try {
-                thread.setContextClassLoader(loader);
+                thread.setContextClassLoader(invocationLoader);
                 return operation.get();
             } finally {
                 thread.setContextClassLoader(previous);
@@ -407,11 +422,13 @@ final class VulkanDriverLoader {
                 if (driverFailure != null) driverFailure.addSuppressed(failure);
                 else driverFailure = failure;
             }
-            try {
-                loader.close();
-            } catch (IOException failure) {
-                if (driverFailure != null) driverFailure.addSuppressed(failure);
-                else throw new IllegalStateException("Could not close Vulkan driver", failure);
+            if (loaderToClose != null) {
+                try {
+                    loaderToClose.close();
+                } catch (IOException failure) {
+                    if (driverFailure != null) driverFailure.addSuppressed(failure);
+                    else throw new IllegalStateException("Could not close Vulkan driver", failure);
+                }
             }
             if (driverFailure != null) {
                 throw driverFailure;

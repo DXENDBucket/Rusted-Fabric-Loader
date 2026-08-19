@@ -73,6 +73,8 @@ public final class JvmLauncherCoreVerification {
                             + sharedContent.toAbsolutePath().normalize())
                             && plan.virtualMachineArguments().contains("-Drusted.javamodsDir="
                             + sharedContent.toAbsolutePath().normalize().resolve("javamods"))
+                            && plan.virtualMachineArguments().contains(
+                            "-Drusted.fabric.vulkan.mode=native")
                             && plan.virtualMachineArguments().stream()
                             .noneMatch(value -> value.startsWith("-Drusted.javamodsDev"))
                             && plan.virtualMachineArguments().stream()
