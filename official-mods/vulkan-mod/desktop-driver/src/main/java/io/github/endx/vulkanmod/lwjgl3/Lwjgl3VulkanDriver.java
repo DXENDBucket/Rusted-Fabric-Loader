@@ -2362,10 +2362,11 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 throw new IllegalArgumentException("unknown render-target handle "
                         + textureHandle);
             }
-            if (target.width != frame.width() || target.height != frame.height()) {
-                throw new IllegalArgumentException("render-target command size changed from "
-                        + target.width + "x" + target.height + " to "
-                        + frame.width() + "x" + frame.height());
+            if (frame.width() <= 0 || frame.height() <= 0
+                    || frame.width() > target.width || frame.height() > target.height) {
+                throw new IllegalArgumentException("render-target command viewport "
+                        + frame.width() + "x" + frame.height()
+                        + " exceeds texture " + target.width + "x" + target.height);
             }
             return target;
         }
@@ -2395,7 +2396,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
             if (upload.totalVertexCount() > 0) {
                 VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
                 viewport.get(0).x(0.0f).y(0.0f)
-                        .width(target.width).height(target.height)
+                        .width(frame.width()).height(frame.height())
                         .minDepth(0.0f).maxDepth(1.0f);
                 vkCmdSetViewport(command, 0, viewport);
             }
@@ -2412,8 +2413,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                             colorPipeline(stack, batch.blendMode));
                     commandState.bindVertexBuffer(command, vertexBuffer, batch.vertexByteOffset,
                             drawVertexBuffer, drawVertexOffset);
-                    if (commandState.setScissor(command, batch.clip, target.width,
-                            target.height, drawScissor)) {
+                    if (commandState.setScissor(command, batch.clip, frame.width(),
+                            frame.height(), drawScissor)) {
                         recordDraw(command, batch, vertexBuffer);
                     }
                 } else {
@@ -2433,7 +2434,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                     commandState.bindVertexBuffer(command, vertexBuffer, batch.vertexByteOffset,
                             drawVertexBuffer, drawVertexOffset);
                     if (commandState.setScissor(command, batch.clip,
-                            target.width, target.height,
+                            frame.width(), frame.height(),
                             drawScissor)) {
                         commandState.bindDescriptor(command, pipelines.texturePipelineLayout(),
                                 batch.descriptorSet, drawDescriptorSet);
@@ -2516,7 +2517,7 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                 if (upload.totalVertexCount() > 0) {
                     VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
                     viewport.get(0).x(0.0f).y(0.0f)
-                            .width(target.width).height(target.height)
+                            .width(frame.width()).height(frame.height())
                             .minDepth(0.0f).maxDepth(1.0f);
                     vkCmdSetViewport(command, 0, viewport);
                 }
@@ -2535,8 +2536,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         commandState.bindVertexBuffer(command, vertexBuffer,
                                 batch.vertexByteOffset,
                                 drawVertexBuffer, drawVertexOffset);
-                        if (commandState.setScissor(command, batch.clip, target.width,
-                                target.height, drawScissor)) {
+                        if (commandState.setScissor(command, batch.clip, frame.width(),
+                                frame.height(), drawScissor)) {
                             recordDraw(command, batch, vertexBuffer);
                         }
                     } else {
@@ -2556,8 +2557,8 @@ public final class Lwjgl3VulkanDriver implements VulkanPlatformDriver {
                         commandState.bindVertexBuffer(command, vertexBuffer,
                                 batch.vertexByteOffset,
                                 drawVertexBuffer, drawVertexOffset);
-                        if (commandState.setScissor(command, batch.clip, target.width,
-                                target.height, drawScissor)) {
+                        if (commandState.setScissor(command, batch.clip, frame.width(),
+                                frame.height(), drawScissor)) {
                             commandState.bindDescriptor(command, pipelines.texturePipelineLayout(),
                                     batch.descriptorSet, drawDescriptorSet);
                             pushShaderStateCached(command, batch.shaderState,

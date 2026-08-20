@@ -33,6 +33,8 @@ import java.util.Set;
 final class AwtTextRasterizer implements VulkanTextRasterizer {
     private final Font regularFont;
     private final Font boldFont;
+    private final Font cjkRegularFont;
+    private final Font cjkBoldFont;
     private final Font legacyFallbackFont;
     private final List<Font> systemFallbackFonts;
     private final Map<String, Font> systemFallbackCache = new HashMap<String, Font>();
@@ -44,6 +46,8 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
     AwtTextRasterizer() {
         regularFont = loadGameFont("font/Roboto-Regular.ttf", Font.PLAIN);
         boldFont = loadGameFont("font/Roboto-Bold.ttf", Font.BOLD);
+        cjkRegularFont = loadGameFont("font/NotoSansCJKsc-Regular.otf", Font.PLAIN);
+        cjkBoldFont = loadGameFont("font/NotoSansCJKsc-Black.otf", Font.BOLD);
         legacyFallbackFont = loadGameFont("font/DroidSansFallback.ttf", Font.PLAIN);
         systemFallbackFonts = discoverSystemFallbackFonts();
     }
@@ -53,8 +57,9 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         if (text == null) throw new NullPointerException("text");
         int size = clampSize(requestedSize);
         Font primary = slickFont((bold ? boldFont : regularFont).deriveFont((float) size));
+        Font cjk = slickFont((bold ? cjkBoldFont : cjkRegularFont)
+                .deriveFont((float) size));
         Font legacy = slickFont(legacyFallbackFont.deriveFont((float) size));
-        boolean preferLegacy = containsNonAscii(text);
         BufferedImage contextImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = contextImage.createGraphics();
         configure(graphics);
@@ -64,11 +69,10 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
             int lineHeight = 1;
             int baselineTail = 0;
             for (String line : lines) {
-                List<FontRun> runs = fontRuns(line, primary, legacy, size,
-                        bold, preferLegacy);
+                List<FontRun> runs = fontRuns(line, primary, cjk, legacy, size, bold);
                 lineRuns.add(runs);
                 if (runs.isEmpty()) {
-                    graphics.setFont(preferLegacy ? legacy : primary);
+                    graphics.setFont(primary);
                     FontMetrics metrics = graphics.getFontMetrics();
                     lineHeight = Math.max(lineHeight, metrics.getHeight());
                     baselineTail = Math.max(baselineTail,
@@ -176,14 +180,14 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         missingFallbackCache.clear();
     }
 
-    private List<FontRun> fontRuns(String text, Font primary, Font legacy,
-                                   int size, boolean bold, boolean preferLegacy) {
+    private List<FontRun> fontRuns(String text, Font primary, Font cjk, Font legacy,
+                                   int size, boolean bold) {
         ArrayList<FontRun> runs = new ArrayList<FontRun>();
         int offset = 0;
         while (offset < text.length()) {
             int end = nextClusterEnd(text, offset);
             String cluster = text.substring(offset, end);
-            Font font = selectFont(cluster, primary, legacy, size, bold, preferLegacy);
+            Font font = selectFont(cluster, primary, cjk, legacy, size, bold);
             if (!runs.isEmpty() && runs.get(runs.size() - 1).font.equals(font)) {
                 runs.get(runs.size() - 1).text += cluster;
             } else {
@@ -194,14 +198,14 @@ final class AwtTextRasterizer implements VulkanTextRasterizer {
         return runs;
     }
 
-    private Font selectFont(String cluster, Font primary, Font legacy,
-                            int size, boolean bold, boolean preferLegacy) {
-        Font first = preferLegacy ? legacy : primary;
-        Font second = preferLegacy ? primary : legacy;
-        if (canDisplay(first, cluster)) return first;
-        if (canDisplay(second, cluster)) return second;
+    private Font selectFont(String cluster, Font primary, Font cjk, Font legacy,
+                            int size, boolean bold) {
+        if (!containsNonAscii(cluster) && canDisplay(primary, cluster)) return primary;
+        if (canDisplay(cjk, cluster)) return cjk;
+        if (canDisplay(legacy, cluster)) return legacy;
+        if (canDisplay(primary, cluster)) return primary;
         Font system = systemFallback(cluster);
-        if (system == null) return first;
+        if (system == null) return cjk;
         int style = bold && system.getFamily().indexOf("Emoji") < 0
                 ? Font.BOLD : Font.PLAIN;
         return slickFont(system.deriveFont(style, (float) size));

@@ -7,12 +7,16 @@ import android.os.Build;
 import android.os.Environment;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import io.github.endx.rustedfabric.android.jvm.ManagedContentLibrary;
 
@@ -25,8 +29,12 @@ public final class SharedContentWorkspace {
 
     public static boolean hasStorageAccess(Context context) {
         if (Build.VERSION.SDK_INT >= 30) return Environment.isExternalStorageManager();
-        return context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED;
+        if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) return false;
+        // Apps targeting a modern SDK can hold WRITE_EXTERNAL_STORAGE on Android 10 while still
+        // being confined by scoped storage. The manifest opts into Android 10's legacy mode; make
+        // sure the OS actually honored it before claiming the ordinary public folders are usable.
+        return Build.VERSION.SDK_INT < 29 || Environment.isExternalStorageLegacy();
     }
 
     public static Path root() {
@@ -60,10 +68,16 @@ public final class SharedContentWorkspace {
         Path gameRoot = DesktopGameImportService.importedRoot(context).toPath();
         if (!Files.isDirectory(gameRoot)) throw new IOException("Desktop game is not imported");
         configureManagedContent();
-        Files.createDirectories(root());
+        prepareWritableDirectory(root(), "shared content root");
         for (Link link : links(gameRoot)) {
-            Files.createDirectories(link.shared);
-            migrateAndDetach(link.privatePath, link.shared);
+            prepareWritableDirectory(link.shared,
+                    "shared " + link.shared.getFileName() + " directory");
+            try {
+                migrateAndDetach(link.privatePath, link.shared);
+            } catch (IOException failure) {
+                throw new IOException("Could not migrate " + link.privatePath + " to "
+                        + link.shared + ": " + failureDetail(failure), failure);
+            }
         }
     }
 
@@ -128,6 +142,35 @@ public final class SharedContentWorkspace {
         }
     }
 
+    /**
+     * Verifies real directory access instead of trusting Android's permission bit alone. Some
+     * Android 10 vendor builds report WRITE_EXTERNAL_STORAGE as granted while scoped storage still
+     * rejects java.nio operations under /storage/emulated/0.
+     */
+    private static void prepareWritableDirectory(Path directory, String label) throws IOException {
+        try {
+            Files.createDirectories(directory);
+            if (!Files.isDirectory(directory) || !Files.isReadable(directory)
+                    || !Files.isWritable(directory)) {
+                throw new IOException("directory is not readable and writable");
+            }
+            try (DirectoryStream<Path> ignored = Files.newDirectoryStream(directory)) {
+                // Opening the directory verifies traversal through Android's emulated-storage
+                // layer; metadata checks alone can return a false positive.
+            }
+            Path probe = directory.resolve(".rusted-fabric-write-probe-" + UUID.randomUUID());
+            try {
+                Files.write(probe, new byte[]{0}, StandardOpenOption.CREATE_NEW,
+                        StandardOpenOption.WRITE);
+            } finally {
+                Files.deleteIfExists(probe);
+            }
+        } catch (IOException failure) {
+            throw new IOException("Cannot access " + label + " " + directory + ": "
+                    + failureDetail(failure), failure);
+        }
+    }
+
     private static void mergeDirectory(Path source, Path target) throws IOException {
         Files.createDirectories(target);
         try (DirectoryStream<Path> entries = Files.newDirectoryStream(source)) {
@@ -160,18 +203,46 @@ public final class SharedContentWorkspace {
     }
 
     private static void moveAcrossStorage(Path source, Path target) throws IOException {
-        try {
-            Files.move(source, target);
-        } catch (IOException crossDevice) {
-            if (Files.isDirectory(source, LinkOption.NOFOLLOW_LINKS)) {
-                Files.createDirectories(target);
-                mergeDirectory(source, target);
-                Files.delete(source);
-            } else {
-                Files.copy(source, target);
-                Files.delete(source);
-            }
+        // The imported game is app-private while the editable content root is emulated public
+        // storage. Files.move across those providers can block for a long time on some EMUI/FUSE
+        // implementations before eventually reporting EXDEV. Copy deliberately and only delete a
+        // source after its destination has been committed.
+        if (Files.isDirectory(source, LinkOption.NOFOLLOW_LINKS)) {
+            Files.createDirectories(target);
+            mergeDirectory(source, target);
+            Files.delete(source);
+            return;
         }
+        Path staging = target.resolveSibling("." + target.getFileName()
+                + ".rusted-fabric-migrating-" + UUID.randomUUID());
+        try {
+            Files.copy(source, staging);
+            try {
+                Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                Files.move(staging, target);
+            }
+            try {
+                Files.delete(source);
+            } catch (IOException sourceDeleteFailure) {
+                // Preserve retry safety: if the source could not be retired, remove the complete
+                // destination so a later preparation attempt cannot create a duplicate copy.
+                try {
+                    Files.deleteIfExists(target);
+                } catch (IOException rollbackFailure) {
+                    sourceDeleteFailure.addSuppressed(rollbackFailure);
+                }
+                throw sourceDeleteFailure;
+            }
+        } finally {
+            Files.deleteIfExists(staging);
+        }
+    }
+
+    private static String failureDetail(Throwable failure) {
+        String message = failure.getMessage();
+        return failure.getClass().getSimpleName()
+                + (message == null || message.trim().isEmpty() ? "" : ": " + message);
     }
 
     private static boolean pointsTo(Path link, Path target) throws IOException {

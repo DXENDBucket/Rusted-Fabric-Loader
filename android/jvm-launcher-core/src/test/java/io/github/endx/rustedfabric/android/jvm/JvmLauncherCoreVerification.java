@@ -29,6 +29,7 @@ public final class JvmLauncherCoreVerification {
                             && Files.isDirectory(game.resolve("replays")),
                     "Writable desktop game directories were not prepared");
             verifyManagedContentLibrary(temporary, game);
+            verifyBundledVulkanModIsOfficial(temporary, game);
 
             Path sharedContent = Files.createDirectories(temporary.resolve("shared-content"));
             System.setProperty(ManagedContentLibrary.CONTENT_ROOT_PROPERTY,
@@ -68,6 +69,10 @@ public final class JvmLauncherCoreVerification {
                             .anyMatch(value -> value.startsWith("-Drusted.android.lwjglJar="))
                             && plan.virtualMachineArguments().stream()
                             .anyMatch(value -> value.startsWith("-Drusted.android.lwjglCompatJar="))
+                            && plan.virtualMachineArguments().contains(
+                            "-Dglfwstub.windowWidth=1280")
+                            && plan.virtualMachineArguments().contains(
+                            "-Dglfwstub.windowHeight=720")
                             && plan.virtualMachineArguments().contains("-D"
                             + ManagedContentLibrary.CONTENT_ROOT_PROPERTY + "="
                             + sharedContent.toAbsolutePath().normalize())
@@ -356,6 +361,17 @@ public final class JvmLauncherCoreVerification {
         }
         require(rejected && !Files.exists(game.resolve("mods/escaped.tmx")),
                 "Managed-content archive traversal was not rejected");
+    }
+
+    private static void verifyBundledVulkanModIsOfficial(Path temporary, Path game)
+            throws Exception {
+        Path source = temporary.resolve("vulkan-mod.jar");
+        createFabricModJar(source, "vulkan_mod", "Vulkan Mod", "0.3.2");
+        ManagedContentLibrary.Item installed = ManagedContentLibrary.provisionOfficialJavaMod(
+                game, source, "vulkan_mod", true);
+        require(installed.official() && installed.enabled()
+                        && "vulkan_mod".equals(installed.id()),
+                "Bundled Vulkan Mod was rejected by the official-mod allowlist");
     }
 
     private static byte[] runtimeRelease(String osName) {

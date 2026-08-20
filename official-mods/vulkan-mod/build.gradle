@@ -202,6 +202,14 @@ tasks.register('verifyGlyphAtlas', JavaExec) {
     mainClass.set('io.github.endx.vulkanmod.VulkanGlyphAtlasVerification')
 }
 
+tasks.register('verifyLibRocketTextureRefresh', JavaExec) {
+    group = 'verification'
+    description = 'Checks regenerated LibRocket font atlases refresh live Vulkan textures.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.endx.vulkanmod.SlickImageVulkanTextureCacheVerification')
+}
+
 check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolatedVulkanDriver'),
         tasks.named('verifyTextureReadbackInference'), tasks.named('verifyNativeFrameClock'),
         tasks.named('verifyFrameCommandArena'), tasks.named('verifyFrameStreamAbi'),
@@ -209,6 +217,7 @@ check.dependsOn tasks.named('verifyVulkanModBundle'), tasks.named('verifyIsolate
         tasks.named('verifyResourceUploadArenas'),
         tasks.named('verifyNativeShaderCoverage'),
         tasks.named('verifyGlyphAtlas'),
+        tasks.named('verifyLibRocketTextureRefresh'),
         ':official-mods:vulkan-mod:desktop-driver:verifyCustomShaderTranslation'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifyResourceStreamExecution'
 check.dependsOn ':official-mods:vulkan-mod:desktop-driver:verifySpriteRunSubmission'

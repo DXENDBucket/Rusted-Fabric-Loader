@@ -125,6 +125,10 @@ public final class JvmLaunchPlanFactory {
                 "-Dorg.lwjgl.opengl.libname=" + gl4es,
                 "-Dorg.lwjgl.util.Debug=true",
                 "-Dorg.lwjgl.util.DebugLoader=true",
+                // FCL's Android GLFW adapter reads these during its static initializer, before
+                // the native bridge has a chance to publish the attached Surface dimensions.
+                "-Dglfwstub.windowWidth=" + width,
+                "-Dglfwstub.windowHeight=" + height,
                 "-Drustedfabric.platform=android-jvm",
                 // When Vulkan Mod is installed, exercise its final pre-Display ownership path.
                 // The property is inert when no Vulkan renderer provider is installed.

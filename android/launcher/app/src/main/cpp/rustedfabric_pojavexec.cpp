@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <deque>
 #include <mutex>
+#include <string>
 
 #include "rustedfabric_renderbridge.h"
 
@@ -27,6 +28,7 @@ JavaVM* hotspot_vm = nullptr;
 EGLDisplay egl_display = EGL_NO_DISPLAY;
 EGLConfig egl_config = nullptr;
 std::mutex egl_mutex;
+std::string initialization_diagnostic = "GLFW/EGL initialization has not run";
 thread_local RenderContext* current_context = nullptr;
 std::array<float, 6> gamepad_axes{};
 std::array<unsigned char, 16> gamepad_buttons{};
@@ -113,24 +115,55 @@ bool initialize_egl() {
     if (egl_display != EGL_NO_DISPLAY) return true;
     egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (egl_display == EGL_NO_DISPLAY || eglInitialize(egl_display, nullptr, nullptr) != EGL_TRUE) {
+        const EGLint error = eglGetError();
+        initialization_diagnostic = "eglGetDisplay/eglInitialize failed with EGL error "
+                + std::to_string(static_cast<unsigned int>(error));
         egl_display = EGL_NO_DISPLAY;
         return false;
     }
-    const EGLint attributes[] = {
+    const EGLint rgba8_attributes[] = {
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
             EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
             EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8, EGL_ALPHA_SIZE, 8,
             EGL_DEPTH_SIZE, 16,
             EGL_NONE
     };
-    EGLint count = 0;
-    if (eglChooseConfig(egl_display, attributes, &egl_config, 1, &count) != EGL_TRUE
-            || count < 1) {
+    const EGLint rgb8_attributes[] = {
+            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
+            EGL_DEPTH_SIZE, 16,
+            EGL_NONE
+    };
+    const EGLint rgb565_attributes[] = {
+            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL_RED_SIZE, 5, EGL_GREEN_SIZE, 6, EGL_BLUE_SIZE, 5,
+            EGL_DEPTH_SIZE, 16,
+            EGL_NONE
+    };
+    const EGLint* candidates[] = {rgba8_attributes, rgb8_attributes, rgb565_attributes};
+    int selected = -1;
+    for (int index = 0; index < 3; ++index) {
+        EGLint count = 0;
+        if (eglChooseConfig(egl_display, candidates[index], &egl_config, 1, &count) == EGL_TRUE
+                && count > 0) {
+            selected = index;
+            break;
+        }
+    }
+    if (selected < 0) {
+        const EGLint error = eglGetError();
+        initialization_diagnostic = "No compatible EGL window configuration; EGL error "
+                + std::to_string(static_cast<unsigned int>(error));
         eglTerminate(egl_display);
         egl_display = EGL_NO_DISPLAY;
         egl_config = nullptr;
         return false;
     }
+    initialization_diagnostic = selected == 0 ? "EGL initialized with RGBA8/depth16"
+            : selected == 1 ? "EGL initialized with RGB8/depth16 compatibility config"
+            : "EGL initialized with RGB565/depth16 compatibility config";
     return true;
 }
 
@@ -247,14 +280,28 @@ Java_org_lwjgl_system_RustedFabricMemory_getDirectBufferAddress(
     return reinterpret_cast<jlong>(address);
 }
 
+extern "C" JNIEXPORT jstring JNICALL
+Java_org_lwjgl_system_RustedFabricMemory_getInitializationDiagnostic(
+        JNIEnv* env, jclass) {
+    std::lock_guard<std::mutex> lock(egl_mutex);
+    return env->NewStringUTF(initialization_diagnostic.c_str());
+}
+
 // ABI consumed by Pojav's Android GLFW replacement inside lwjgl-glfw-classes.jar.
 extern "C" __attribute__((visibility("default"))) int pojavInit() {
     ANativeWindow* window = rustedfabric_acquire_native_window();
-    if (window == nullptr) return 0;
+    if (!initialize_egl()) return 0;
+    if (window == nullptr) {
+        // GLFW initialization is process-wide and does not logically require a window. Huawei's
+        // Android 10 linker/Surface lifecycle can make the Activity-owned ANativeWindow briefly
+        // unavailable here; context binding will acquire the current generation later.
+        __android_log_print(ANDROID_LOG_WARN, kTag,
+                            "GLFW initialized before an Android Surface was available");
+        return 1;
+    }
     const int width = ANativeWindow_getWidth(window);
     const int height = ANativeWindow_getHeight(window);
     rustedfabric_release_native_window(window);
-    if (!initialize_egl()) return 0;
     __android_log_print(ANDROID_LOG_INFO, kTag, "GLFW initialized for Surface %dx%d", width, height);
     publish_surface_size(width, height);
     return 1;

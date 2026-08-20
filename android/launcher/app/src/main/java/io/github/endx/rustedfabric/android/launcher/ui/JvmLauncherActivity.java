@@ -921,9 +921,11 @@ public final class JvmLauncherActivity extends Activity {
     }
 
     private void ensureOfficialMods(Runnable afterReady) {
+        String assetRevision = io.github.endx.rustedfabric.android.launcher.BuildConfig
+                .OFFICIAL_MOD_ASSET_REVISION;
         boolean currentAssets = getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE)
-                .getInt("official_mod_assets", -1)
-                == io.github.endx.rustedfabric.android.launcher.BuildConfig.VERSION_CODE;
+                .getString("official_mod_assets_revision", "")
+                .equals(assetRevision);
         if (!gameImported || !workspaceReady || officialProvisioning || currentAssets) {
             if (afterReady != null && !officialProvisioning) afterReady.run();
             return;
@@ -933,7 +935,7 @@ public final class JvmLauncherActivity extends Activity {
         worker.execute(() -> {
             try {
                 OfficialModProvisioner.provision(this);
-                markOfficialModsProvisioned();
+                markOfficialModsProvisioned(assetRevision);
                 runOnUiThread(() -> {
                     officialProvisioning = false;
                     setBusy(false, getString(R.string.content_official_ready));
@@ -970,9 +972,10 @@ public final class JvmLauncherActivity extends Activity {
         }
     }
 
-    private void markOfficialModsProvisioned() {
+    private void markOfficialModsProvisioned(String assetRevision) {
         getSharedPreferences(LAUNCHER_PREFERENCES, MODE_PRIVATE).edit()
-                .putInt("official_mod_assets", io.github.endx.rustedfabric.android.launcher.BuildConfig.VERSION_CODE)
+                .putString("official_mod_assets_revision", assetRevision)
+                .remove("official_mod_assets")
                 .apply();
     }
 

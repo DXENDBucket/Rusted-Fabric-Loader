@@ -27,5 +27,12 @@ public final class RustedFabricMemory {
         return address;
     }
 
+    /** Returns the last native GLFW/EGL initialization result for crash reports. */
+    public static String initializationDiagnostic() {
+        String detail = getInitializationDiagnostic();
+        return detail == null || detail.trim().isEmpty() ? "no native detail" : detail;
+    }
+
     private static native long getDirectBufferAddress(Buffer buffer);
+    private static native String getInitializationDiagnostic();
 }

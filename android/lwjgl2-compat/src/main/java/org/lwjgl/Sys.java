@@ -2,6 +2,8 @@ package org.lwjgl;
 
 import java.lang.reflect.Method;
 
+import org.lwjgl.system.RustedFabricMemory;
+
 /** Minimal LWJGL2 ABI shim layered ahead of the LWJGLX Android implementation. */
 public final class Sys {
     private static final long TIMER_RESOLUTION = 1000L;
@@ -19,7 +21,8 @@ public final class Sys {
             Method init = glfw.getMethod("glfwInit");
             Object result = init.invoke(null);
             if (Boolean.FALSE.equals(result)) {
-                throw new IllegalStateException("Unable to initialize GLFW");
+                throw new IllegalStateException("Unable to initialize GLFW: "
+                        + RustedFabricMemory.initializationDiagnostic());
             }
         } catch (ReflectiveOperationException failure) {
             throw new IllegalStateException("LWJGLX GLFW initialization is unavailable", failure);

@@ -101,6 +101,18 @@ public final class AwtTextRasterizerVerification {
             require(!rasterizer.usesMissingGlyph(mixed.glyph(glyph).glyphKey()),
                     "mixed Latin/CJK/emoji text retained a missing glyph");
         }
+
+        String searchUnits = "\u641c\u7d22\u5355\u4f4d \u5efa\u9020\u8005 "
+                + "\u91cd\u578b\u62e6\u622a\u673a \u5b9e\u9a8c\u6218\u6597\u8718\u86db "
+                + "\u8150\u8680 \u751f\u7269\u8d28";
+        VulkanTextLayout searchLayout = rasterizer.layout(searchUnits, 18, false);
+        require(searchLayout.glyphCount()
+                        >= searchUnits.codePointCount(0, searchUnits.length()),
+                "sandbox search-unit text dropped CJK glyphs");
+        for (int glyph = 0; glyph < searchLayout.glyphCount(); glyph++) {
+            require(!rasterizer.usesMissingGlyph(searchLayout.glyph(glyph).glyphKey()),
+                    "sandbox search-unit text retained a missing CJK glyph");
+        }
     }
 
     private static Font sourceFont(AwtTextRasterizer rasterizer) throws Exception {

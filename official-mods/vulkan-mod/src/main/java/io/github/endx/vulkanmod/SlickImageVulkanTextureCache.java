@@ -16,7 +16,7 @@ import java.util.function.LongConsumer;
 
 /** Caches LibRocket/Slick textures that are not represented by GameImage. */
 final class SlickImageVulkanTextureCache implements AutoCloseable {
-    private final VulkanDriverLoader.LoadedDriver driver;
+    private final TextureAccess driver;
     private final LongConsumer textureDestroyer;
     private final Map<Object, Entry> entries = new IdentityHashMap<Object, Entry>();
     private final Map<Object, CpuPixels> cpuSources = new IdentityHashMap<Object, CpuPixels>();
@@ -26,6 +26,18 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
 
     SlickImageVulkanTextureCache(VulkanDriverLoader.LoadedDriver driver,
                                 LongConsumer textureDestroyer) {
+        this(new TextureAccess() {
+            @Override public long uploadTexture(VulkanTextureData texture) {
+                return driver.uploadTexture(texture);
+            }
+
+            @Override public void updateTexture(long textureHandle, VulkanTextureData texture) {
+                driver.updateTexture(textureHandle, texture);
+            }
+        }, textureDestroyer);
+    }
+
+    SlickImageVulkanTextureCache(TextureAccess driver, LongConsumer textureDestroyer) {
         this.driver = driver;
         this.textureDestroyer = textureDestroyer;
     }
@@ -42,7 +54,7 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
             else unavailableSources.put(holder, Boolean.TRUE);
         }
         if (pixels == null) return null;
-        Entry created = new Entry(0L, 1.0f, 1.0f);
+        Entry created = new Entry(0L, 1.0f, 1.0f, pixels.width, pixels.height);
         entries.put(holder, created);
         VulkanTextureData data = new VulkanTextureData(pixels.width, pixels.height, pixels.rgba);
         created.textureHandle = driver.uploadTexture(data);
@@ -51,6 +63,8 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
 
     synchronized void invalidate(Object image) {
         Entry removed = entries.remove(image);
+        cpuSources.remove(image);
+        unavailableSources.remove(image);
         release(removed);
     }
 
@@ -62,6 +76,21 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
         System.arraycopy(rgba, 0, copy, 0, expected);
         cpuSources.put(holder, new CpuPixels(width, height, copy));
         unavailableSources.remove(holder);
+
+        // LibRocket regenerates a font atlas under the same texture holder when text introduces
+        // glyphs which were not present in the original atlas. Merely replacing the retained CPU
+        // pixels leaves the already-uploaded Vulkan texture unchanged, so late Unicode glyphs
+        // (notably CJK text in the sandbox unit search) remain transparent forever. Update an
+        // existing same-sized image in place so recorded geometry keeps a stable logical handle.
+        Entry current = entries.get(holder);
+        if (current == null) return;
+        if (current.textureHandle != 0L && current.width == width && current.height == height) {
+            driver.updateTexture(current.textureHandle,
+                    new VulkanTextureData(width, height, copy));
+            return;
+        }
+        entries.remove(holder);
+        release(current);
     }
 
     synchronized void observeHolder(Object holder) {
@@ -214,12 +243,21 @@ final class SlickImageVulkanTextureCache implements AutoCloseable {
         volatile long textureHandle;
         final float uScale;
         final float vScale;
+        final int width;
+        final int height;
 
-        private Entry(long textureHandle, float uScale, float vScale) {
+        private Entry(long textureHandle, float uScale, float vScale, int width, int height) {
             this.textureHandle = textureHandle;
             this.uScale = uScale;
             this.vScale = vScale;
+            this.width = width;
+            this.height = height;
         }
+    }
+
+    interface TextureAccess {
+        long uploadTexture(VulkanTextureData texture);
+        void updateTexture(long textureHandle, VulkanTextureData texture);
     }
 
     private static final class CpuPixels {

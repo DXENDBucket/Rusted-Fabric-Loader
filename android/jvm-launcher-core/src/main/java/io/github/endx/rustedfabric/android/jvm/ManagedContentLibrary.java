@@ -43,6 +43,7 @@ public final class ManagedContentLibrary {
         Set<String> ids = new HashSet<>();
         ids.add("rusted_fabric_api");
         ids.add("java_mod_menu");
+        ids.add("vulkan_mod");
         ids.add("ini_essentials");
         ids.add("performance_profiler");
         OFFICIAL_JAVA_IDS = Collections.unmodifiableSet(ids);

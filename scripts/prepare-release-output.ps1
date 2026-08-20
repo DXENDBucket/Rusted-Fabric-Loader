@@ -72,7 +72,7 @@ function Copy-RequiredArtifact {
 
 $Versions = Read-Versions
 foreach ($key in @('loader', 'api', 'javaModMenu', 'iniEssentials', 'performanceProfiler',
-        'vulkanMod')) {
+        'vulkanMod', 'strategicAi')) {
     if (!$Versions.ContainsKey($key) -or !$Versions[$key]) {
         throw "Missing $key in versions.properties"
     }
@@ -133,6 +133,9 @@ Copy-RequiredArtifact `
 Copy-RequiredArtifact `
     -Source (Join-Path $RepositoryRoot "official-mods/vulkan-mod/build/libs/vulkan-mod-$($Versions.vulkanMod)-official.jar") `
     -DestinationName "vulkan-mod-$($Versions.vulkanMod).jar"
+Copy-RequiredArtifact `
+    -Source (Join-Path $RepositoryRoot "official-mods/strategic-ai/build/libs/strategic-ai-$($Versions.strategicAi)-official.jar") `
+    -DestinationName "strategic-ai-$($Versions.strategicAi).jar"
 Copy-RequiredArtifact `
     -Source (Join-Path $RepositoryRoot 'official-mods/ini-essentials/docs/INI Essentials Unit Modding Reference.xlsx') `
     -DestinationName "INI-Essentials-Unit-Modding-Reference-$($Versions.iniEssentials).xlsx"
