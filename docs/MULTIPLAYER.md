@@ -10,9 +10,9 @@ carry it in game system packet `179`, which unmodified 1.15 peers safely ignore.
 
 After client registration/server info, each Loader sends its hello and evaluates the remote
 manifest. An incompatible Loader peer is disconnected with the first concrete mismatch. A peer
-that does not answer within five seconds is treated as vanilla/legacy: it remains allowed only when
-all local mods are truly `client_only`, `server_only`, or `optional`. The transport is capped at 256 KiB. This is Loader-level
-compatibility negotiation, not encryption or an anti-cheat system.
+that does not answer within five seconds is treated as vanilla/legacy and remains allowed: Loader
+or API support is never itself a prerequisite for joining a game. The transport is capped at
+256 KiB. This is Loader-level compatibility negotiation, not encryption or an anti-cheat system.
 
 ## Mod modes
 
@@ -26,8 +26,10 @@ compatibility negotiation, not encryption or an anti-cheat system.
   `PEER_EVALUATED` and enable extra negotiated features. Missing or different optional versions never
   reject a connection, so such enhancements must have their own backward-compatible negotiation and
   must not be required for deterministic simulation.
-- `required`: changes synchronized content or behavior. Every peer must have the same mod ID,
-  version, multiplayer protocol, and synchronized-content SHA-256.
+- `required`: changes synchronized content or behavior. Two Loader peers must have the same mod ID,
+  version, multiplayer protocol, and synchronized-content SHA-256. A vanilla/legacy peer cannot
+  participate in this negotiation and is allowed through; the game or mod must use native
+  synchronization where that peer also needs the content.
 - `unsafe`: no reviewed multiplayer declaration. This is the default for old or incomplete
   metadata and makes the local setup unsuitable for modded multiplayer.
 
@@ -74,9 +76,10 @@ if (!report.compatible()) {
 }
 ```
 
-The evaluator ignores differing `client_only`, `server_only`, and `optional` mods. It rejects unsafe declarations, missing
-required mods, mode differences, and required-mod version/protocol/hash differences. Comparing with
-`evaluateVanillaPeer` succeeds when every enabled mod is genuinely client-only, server-only, or optional.
+The evaluator ignores differing `client_only`, `server_only`, and `optional` mods. Between two
+Loader peers it rejects unsafe declarations, missing required mods, mode differences, and
+required-mod version/protocol/hash differences. `evaluateVanillaPeer` always succeeds because the
+absence of Loader negotiation is not evidence that the native game connection is incompatible.
 
 `RuntimeLifecycleEvents.LOADER_READY` is the earliest portable point at which the static local
 manifest is available. `MultiplayerCompatibilityEvents.LOCAL_MANIFEST_READY` announces its current

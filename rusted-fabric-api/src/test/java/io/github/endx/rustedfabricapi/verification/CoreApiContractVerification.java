@@ -194,8 +194,8 @@ public final class CoreApiContractVerification {
                         && rejected.issues().stream().anyMatch(issue ->
                         issue.problem() == MultiplayerCompatibility.Problem.SYNC_HASH_MISMATCH),
                 "synchronized content mismatch was accepted");
-        require(!MultiplayerCompatibility.evaluateVanillaPeer(windows).compatible(),
-                "vanilla peer was accepted with a required mod");
+        require(MultiplayerCompatibility.evaluateVanillaPeer(windows).compatible(),
+                "vanilla peer was rejected solely for not supporting Loader negotiation");
         MultiplayerManifest clientOnly = new MultiplayerManifest("android",
                 Arrays.asList(MultiplayerMod.clientOnly("touch_controls", "1.0")));
         require(MultiplayerCompatibility.evaluateVanillaPeer(clientOnly).compatible(),
@@ -325,10 +325,10 @@ public final class CoreApiContractVerification {
         FakeConnection legacy = new FakeConnection();
         strict.connectionReady(new FakeEngine(), legacy, MultiplayerNetworkBridge.Side.HOST);
         Thread.sleep(200L);
-        require(legacy.disconnectReason != null,
-                "legacy peer was not rejected when a required mod was active");
-        require(!strict.allowGameStart(null),
-                "incompatible broadcast ignored a rejected registered peer");
+        require(legacy.disconnectReason == null,
+                "legacy peer was rejected solely for not supporting Loader negotiation");
+        require(strict.allowGameStart(null),
+                "vanilla fallback blocked a registered peer without RFH1");
     }
 
     private static void verifyLethalHealthModifier() {

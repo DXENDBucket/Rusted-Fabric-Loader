@@ -36,7 +36,15 @@ public final class MultiplayerCompatibility {
     }
 
     public static Report evaluateVanillaPeer(MultiplayerManifest local) {
-        return evaluate(local, MultiplayerManifest.empty("vanilla"));
+        if (local == null) throw new NullPointerException("manifest");
+        // A peer without RFH1 cannot prove which Loader mods it has, and Loader support must
+        // remain an optional enhancement to the game's native multiplayer protocol. Preserve the
+        // local manifest for diagnostics, but do not turn absence of Loader/API into a rejection.
+        Report report = new Report(local, MultiplayerManifest.empty("vanilla"),
+                Collections.<Issue>emptyList());
+        io.github.endx.rustedfabricapi.api.event.MultiplayerCompatibilityEvents
+                .COMPATIBILITY_EVALUATED.dispatch(report);
+        return report;
     }
 
     private static void compare(MultiplayerMod local, MultiplayerMod remote, List<Issue> issues) {
