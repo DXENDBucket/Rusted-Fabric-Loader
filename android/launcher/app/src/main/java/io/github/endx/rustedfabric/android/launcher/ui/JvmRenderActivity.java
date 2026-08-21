@@ -59,6 +59,8 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private static final int GLFW_PRESS = 1;
     private static final long TWO_FINGER_TAP_MILLIS = 500L;
     private static final long SURFACE_SETTLE_DELAY_MILLIS = 400L;
+    private static final long TEXT_FOCUS_POLL_MILLIS = 40L;
+    private static final int TEXT_FOCUS_POLL_ATTEMPTS = 25;
     private static final float TOUCH_SCROLL_PIXELS_PER_STEP = 32.0f;
     // HotSpot permits only one embedded VM in this dedicated Android process. Keep the guard
     // process-wide so Activity recreation (rotation, task restoration, or Surface recovery) does
@@ -67,7 +69,10 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     private final Handler surfaceHandler = new Handler(Looper.getMainLooper());
     private final Runnable startAfterSurfaceSettles = this::startRenderer;
     private Runnable firstFrameWatcher;
+    private Runnable textFocusWatcher;
     private TextView status;
+    private SurfaceView gameSurface;
+    private GameTextInputView textInput;
     private boolean gameProbe;
     private boolean vulkanSmoke;
     private int touchSlop;
@@ -111,12 +116,31 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         }
         FrameLayout root = new FrameLayout(this);
         SurfaceView surface = new SurfaceView(this);
+        gameSurface = surface;
+        surface.setFocusable(true);
+        surface.setFocusableInTouchMode(true);
         surface.getHolder().addCallback(this);
         requestGameFrameRate(surface);
         surface.setOnTouchListener((view, event) -> handleTouch(event));
         surface.setOnGenericMotionListener((view, event) -> handleGenericMotion(event));
         root.addView(surface, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        textInput = new GameTextInputView(this, new GameTextInputView.Sink() {
+            @Override public void commitText(String text) {
+                NativeRenderBridge.sendText(text);
+            }
+
+            @Override public void backspace(int count) {
+                NativeRenderBridge.sendTextBackspace(count);
+            }
+
+            @Override public void enter() {
+                NativeRenderBridge.sendTextEnter();
+            }
+        });
+        FrameLayout.LayoutParams textInputLayout = new FrameLayout.LayoutParams(1, 1,
+                Gravity.BOTTOM | Gravity.END);
+        root.addView(textInput, textInputLayout);
         if (Build.VERSION.SDK_INT >= 28 && safeSideBorders) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 DisplayCutout cutout = insets.getDisplayCutout();
@@ -263,6 +287,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
                         NativeRenderBridge.sendMouseButton(0, GLFW_RELEASE);
                     } else if (!singleScrolling) {
                         NativeRenderBridge.sendMouseClick(0, x, y);
+                        scheduleSoftKeyboardSync();
                     }
                 }
                 resetTouchState();
@@ -304,6 +329,33 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
         multiGesture = false;
         previousSpan = 0.0f;
         pendingScroll = 0.0;
+    }
+
+    private void scheduleSoftKeyboardSync() {
+        if (textFocusWatcher != null) surfaceHandler.removeCallbacks(textFocusWatcher);
+        textFocusWatcher = new Runnable() {
+            private int attempts;
+
+            @Override public void run() {
+                if (!RUNNING.get()) {
+                    textFocusWatcher = null;
+                    return;
+                }
+                if (NativeRenderBridge.uiTextInputActive()) {
+                    textInput.showKeyboard();
+                    textFocusWatcher = null;
+                    return;
+                }
+                if (++attempts < TEXT_FOCUS_POLL_ATTEMPTS) {
+                    surfaceHandler.postDelayed(this, TEXT_FOCUS_POLL_MILLIS);
+                    return;
+                }
+                textInput.hideKeyboard();
+                gameSurface.requestFocus();
+                textFocusWatcher = null;
+            }
+        };
+        surfaceHandler.postDelayed(textFocusWatcher, TEXT_FOCUS_POLL_MILLIS);
     }
 
     private static float pointerCenterX(MotionEvent event) {
@@ -650,6 +702,8 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
+        if (textFocusWatcher != null) surfaceHandler.removeCallbacks(textFocusWatcher);
+        if (textInput != null) textInput.hideKeyboard();
         if (vulkanSmoke) NativeVulkanBridge.stop();
         NativeRenderBridge.detachSurface();
     }
@@ -657,6 +711,7 @@ public final class JvmRenderActivity extends Activity implements SurfaceHolder.C
     @Override
     protected void onDestroy() {
         surfaceHandler.removeCallbacks(startAfterSurfaceSettles);
+        if (textFocusWatcher != null) surfaceHandler.removeCallbacks(textFocusWatcher);
         if (firstFrameWatcher != null) surfaceHandler.removeCallbacks(firstFrameWatcher);
         if (vulkanSmoke) NativeVulkanBridge.stop();
         NativeRenderBridge.detachSurface();

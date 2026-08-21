@@ -6,6 +6,7 @@
 #include <GLES2/gl2.h>
 
 #include <mutex>
+#include <cstdint>
 #include <sstream>
 #include <string>
 
@@ -40,6 +41,16 @@ bool call_pojav_input(const char* symbol, Arguments... arguments) {
     if (function != nullptr) function(arguments...);
     dlclose(library);
     return function != nullptr;
+}
+
+template<typename Function, typename... Arguments>
+bool call_rocket_input(const char* symbol, Arguments... arguments) {
+    void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return false;
+    auto function = reinterpret_cast<Function>(dlsym(library, symbol));
+    const bool result = function != nullptr && function(arguments...);
+    dlclose(library);
+    return result;
 }
 }
 
@@ -142,6 +153,27 @@ Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeS
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeSendText(
+        JNIEnv* env, jclass, jstring text) {
+    if (text == nullptr) return JNI_FALSE;
+    const jsize length = env->GetStringLength(text);
+    const jchar* characters = env->GetStringChars(text, nullptr);
+    if (characters == nullptr) return JNI_FALSE;
+    const bool sent = call_rocket_input<bool (*)(const uint16_t*, int)>(
+            "rustedfabric_rocket_queue_text_utf16",
+            reinterpret_cast<const uint16_t*>(characters), static_cast<int>(length));
+    env->ReleaseStringChars(text, characters);
+    return sent ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeSendTextKey(
+        JNIEnv*, jclass, jint key, jint count) {
+    return call_rocket_input<bool (*)(int, int)>(
+            "rustedfabric_rocket_queue_text_key", key, count) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
 Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeSendTouchFrame(
         JNIEnv* env, jclass, jfloatArray xs, jfloatArray ys, jintArray pointer_ids,
         jint count, jboolean down, jint action) {
@@ -195,6 +227,18 @@ Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeU
     if (library == nullptr) return JNI_FALSE;
     auto query = reinterpret_cast<bool (*)(void)>(
             dlsym(library, "rustedfabric_rocket_document_active"));
+    const bool active = query != nullptr && query();
+    dlclose(library);
+    return active ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_endx_rustedfabric_android_launcher_jvm_NativeRenderBridge_nativeUiTextInputActive(
+        JNIEnv*, jclass) {
+    void* library = dlopen("librocketConnector.so", RTLD_NOW | RTLD_NOLOAD);
+    if (library == nullptr) return JNI_FALSE;
+    auto query = reinterpret_cast<bool (*)(void)>(
+            dlsym(library, "rustedfabric_rocket_text_input_active"));
     const bool active = query != nullptr && query();
     dlclose(library);
     return active ? JNI_TRUE : JNI_FALSE;

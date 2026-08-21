@@ -63,6 +63,19 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeSendKey(key, action);
     }
 
+    /** Queues committed Android IME text for the focused libRocket form control. */
+    public static boolean sendText(String text) {
+        return PACKAGED && text != null && !text.isEmpty() && nativeSendText(text);
+    }
+
+    public static boolean sendTextBackspace(int count) {
+        return PACKAGED && count > 0 && nativeSendTextKey(0, count);
+    }
+
+    public static boolean sendTextEnter() {
+        return PACKAGED && nativeSendTextKey(1, 1);
+    }
+
     /** Publishes one Android touch frame to the embedded desktop game core. */
     public static boolean sendTouchFrame(float[] xs, float[] ys, int[] pointerIds,
                                          int count, boolean down, int action) {
@@ -90,6 +103,11 @@ public final class NativeRenderBridge {
         return PACKAGED && nativeUiIsActive();
     }
 
+    /** True when the current libRocket focus accepts typed text. */
+    public static boolean uiTextInputActive() {
+        return PACKAGED && nativeUiTextInputActive();
+    }
+
     public static String smokeTest(int width, int height) {
         if (!PACKAGED) return "Android EGL bridge is not packaged for this ABI";
         return nativeSmokeTest(width, height);
@@ -103,11 +121,14 @@ public final class NativeRenderBridge {
     private static native boolean nativeSendMouseButton(int button, int action);
     private static native boolean nativeSendMouseClick(int button, float x, float y);
     private static native boolean nativeSendKey(int key, int action);
+    private static native boolean nativeSendText(String text);
+    private static native boolean nativeSendTextKey(int key, int count);
     private static native boolean nativeSendTouchFrame(float[] xs, float[] ys,
                                                        int[] pointerIds, int count,
                                                        boolean down, int action);
     private static native boolean nativeUiWantsScroll();
     private static native boolean nativeUiPrefersDrag();
     private static native boolean nativeUiIsActive();
+    private static native boolean nativeUiTextInputActive();
     private static native String nativeSmokeTest(int width, int height);
 }

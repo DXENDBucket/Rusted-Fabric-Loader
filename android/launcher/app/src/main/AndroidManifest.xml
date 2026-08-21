@@ -38,7 +38,8 @@
             android:hardwareAccelerated="false"
             android:launchMode="singleTop"
             android:process=":desktop_jvm"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="adjustNothing" />
 
         <service
             android:name=".jvm.JvmHostService"

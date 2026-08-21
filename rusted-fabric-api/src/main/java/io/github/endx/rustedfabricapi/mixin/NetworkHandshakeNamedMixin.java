@@ -5,6 +5,8 @@ import io.github.endx.rustedfabricapi.api.networking.NamedChannelTransport;
 import io.github.endx.rustedfabricapi.api.networking.event.ConnectionEvents;
 import io.github.endx.rustedfabricapi.desktop.DesktopMultiplayerTransport;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,6 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "rustedwarfare.network.NetworkEngine", remap = false)
 public abstract class NetworkHandshakeNamedMixin {
+    /** Native SERVER_INFO. Relay control packets occupy a separate 160+ range. */
+    @Unique private static final int RUSTEDFABRICAPI_SERVER_INFO_PACKET = 106;
+
+    @Shadow private boolean isServer;
+
     @Inject(method = "sendPreRegisterInfoRequest(Lrustedwarfare/network/NetworkConnection;)V",
             at = @At("HEAD"), require = 1)
     private void rustedfabricapi$beforeSendPreRegisterInfoRequest(@Coerce Object connection, CallbackInfo ci) {
@@ -47,10 +54,6 @@ public abstract class NetworkHandshakeNamedMixin {
             at = @At("RETURN"), require = 1)
     private void rustedfabricapi$afterSendRegisterConnection(@Coerce Object connection, CallbackInfo ci) {
         NetworkHandshakeEvents.AFTER_SEND_REGISTER_CONNECTION.invoker().onPacket(this, connection);
-        DesktopMultiplayerTransport.afterClientRegistration(this, connection);
-        ConnectionEvents.CLIENT_CONNECTION_READY.invoker().onReady(
-                (rustedwarfare.network.NetworkEngine) (Object) this,
-                (rustedwarfare.network.NetworkConnection) connection);
     }
 
     @Inject(method = "sendServerInfo(Lrustedwarfare/network/NetworkConnection;)V",
@@ -77,6 +80,23 @@ public abstract class NetworkHandshakeNamedMixin {
                 (rustedwarfare.network.NetworkEngine) (Object) this,
                 (rustedwarfare.network.Packet) packet)) {
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "processSystemPacket(Lrustedwarfare/network/Packet;)V",
+            at = @At("RETURN"), require = 1)
+    private void rustedfabricapi$afterClientSystemPacket(@Coerce Object packet, CallbackInfo ci) {
+        if (isServer || packet == null) return;
+        rustedwarfare.network.Packet nativePacket = (rustedwarfare.network.Packet) packet;
+        // Registration and Relay-version packets can mark the physical Relay socket usable
+        // before it has redirected or attached a real peer. SERVER_INFO is the first native
+        // packet that proves the remote endpoint is an actual game server.
+        if (nativePacket.type != RUSTEDFABRICAPI_SERVER_INFO_PACKET) return;
+        rustedwarfare.network.NetworkConnection connection = nativePacket.connection;
+        if (connection == null || !connection.validated) return;
+        if (DesktopMultiplayerTransport.clientConnectionReady(this, connection)) {
+            ConnectionEvents.CLIENT_CONNECTION_READY.invoker().onReady(
+                    (rustedwarfare.network.NetworkEngine) (Object) this, connection);
         }
     }
 

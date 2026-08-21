@@ -23,6 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -35,9 +36,18 @@ const auto start_time = std::chrono::steady_clock::now();
 std::atomic<bool> rocket_hover_scrollable{false};
 std::atomic<bool> rocket_hover_prefers_drag{false};
 std::atomic<bool> rocket_document_active{false};
+std::atomic<bool> rocket_text_input_active{false};
 std::atomic<int> rocket_touch_scroll_millipixels{0};
 std::mutex rocket_touch_click_mutex;
 std::deque<int> rocket_touch_clicks;
+enum class TextInputKind { Text, Backspace, Enter };
+struct TextInputEvent {
+    TextInputKind kind;
+    std::u16string text;
+    int count = 0;
+};
+std::mutex rocket_text_input_mutex;
+std::deque<TextInputEvent> rocket_text_inputs;
 
 void apply_touch_clicks() {
     if (rocket_context == nullptr) return;
@@ -52,6 +62,47 @@ void apply_touch_clicks() {
         // control behavior. A short tap is a real down/up pair at the resolved cursor position.
         rocket_context->ProcessMouseButtonDown(button, 0);
         rocket_context->ProcessMouseButtonUp(button, 0);
+    }
+}
+
+bool focused_text_control() {
+    if (rocket_context == nullptr) return false;
+    for (Rocket::Core::Element* element = rocket_context->GetFocusElement();
+         element != nullptr; element = element->GetParentNode()) {
+        const Rocket::Core::String& tag = element->GetTagName();
+        if (tag == "textarea") return true;
+        if (tag != "input") continue;
+        const Rocket::Core::String type =
+                element->GetAttribute<Rocket::Core::String>("type", "text");
+        return type == "text" || type == "password";
+    }
+    return false;
+}
+
+void apply_text_inputs() {
+    if (rocket_context == nullptr) return;
+    std::deque<TextInputEvent> pending;
+    {
+        std::lock_guard<std::mutex> lock(rocket_text_input_mutex);
+        pending.swap(rocket_text_inputs);
+    }
+    for (const TextInputEvent& event : pending) {
+        if (event.kind == TextInputKind::Text) {
+            for (char16_t character : event.text) {
+                // libRocket 1.3 accepts UCS-2. BMP text, including Chinese IME output, maps
+                // directly; unmatched UTF-16 surrogate halves become the replacement glyph.
+                const uint16_t value = character >= 0xD800 && character <= 0xDFFF
+                        ? 0xFFFD : static_cast<uint16_t>(character);
+                rocket_context->ProcessTextInput(static_cast<Rocket::Core::word>(value));
+            }
+        } else {
+            const Rocket::Core::Input::KeyIdentifier key = event.kind == TextInputKind::Backspace
+                    ? Rocket::Core::Input::KI_BACK : Rocket::Core::Input::KI_RETURN;
+            for (int index = 0; index < event.count; ++index) {
+                rocket_context->ProcessKeyDown(key, 0);
+                rocket_context->ProcessKeyUp(key, 0);
+            }
+        }
     }
 }
 
@@ -632,6 +683,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_update(JNIEnv*, jobject) {
     // Mouse movement from the desktop callback is reflected in Rocket's hover state during
     // this update. Dispatch taps afterwards so modal buttons do not remain merely hovered.
     apply_touch_clicks();
+    apply_text_inputs();
     apply_touch_scroll();
     bool active = false;
     for (int index = 0; index < rocket_context->GetNumDocuments(); ++index) {
@@ -642,6 +694,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_update(JNIEnv*, jobject) {
         }
     }
     rocket_document_active.store(active, std::memory_order_relaxed);
+    rocket_text_input_active.store(focused_text_control(), std::memory_order_relaxed);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_render(JNIEnv*, jobject) {
@@ -764,6 +817,34 @@ extern "C" bool rustedfabric_rocket_hover_prefers_drag(void) {
 
 extern "C" bool rustedfabric_rocket_document_active(void) {
     return rocket_document_active.load(std::memory_order_relaxed);
+}
+
+extern "C" bool rustedfabric_rocket_text_input_active(void) {
+    return rocket_text_input_active.load(std::memory_order_relaxed);
+}
+
+extern "C" bool rustedfabric_rocket_queue_text_utf16(
+        const uint16_t* text, int length) {
+    if (text == nullptr || length <= 0 || length > 4096) return false;
+    TextInputEvent event;
+    event.kind = TextInputKind::Text;
+    event.text.assign(reinterpret_cast<const char16_t*>(text),
+                      reinterpret_cast<const char16_t*>(text) + length);
+    std::lock_guard<std::mutex> lock(rocket_text_input_mutex);
+    if (rocket_text_inputs.size() >= 64) rocket_text_inputs.pop_front();
+    rocket_text_inputs.push_back(std::move(event));
+    return true;
+}
+
+extern "C" bool rustedfabric_rocket_queue_text_key(int key, int count) {
+    if ((key != 0 && key != 1) || count <= 0) return false;
+    TextInputEvent event;
+    event.kind = key == 0 ? TextInputKind::Backspace : TextInputKind::Enter;
+    event.count = std::min(count, 256);
+    std::lock_guard<std::mutex> lock(rocket_text_input_mutex);
+    if (rocket_text_inputs.size() >= 64) rocket_text_inputs.pop_front();
+    rocket_text_inputs.push_back(std::move(event));
+    return true;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_LibRocket_processTextInput(
