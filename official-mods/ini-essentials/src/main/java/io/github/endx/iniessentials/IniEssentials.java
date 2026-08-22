@@ -7,6 +7,7 @@ import io.github.endx.iniessentials.action.MovementActionFields;
 import io.github.endx.iniessentials.action.PerActionAutoTriggerCooldownFields;
 import io.github.endx.iniessentials.client.ProductionNameColorFields;
 import io.github.endx.iniessentials.decal.DecalMaskDefinitions;
+import io.github.endx.iniessentials.decal.GlobalDecalLayerDefinitions;
 import io.github.endx.iniessentials.event.EventRuleDefinitions;
 import io.github.endx.iniessentials.economy.GenerationDisplayFields;
 import io.github.endx.iniessentials.health.NegativeHpPolicy;
@@ -61,6 +62,7 @@ public final class IniEssentials implements ModInitializer {
         ProjectileRuleDefinitions.register();
         GeometryDefinitions.register();
         DecalMaskDefinitions.register();
+        GlobalDecalLayerDefinitions.register();
         OverlayDefinitions.register();
         FogActionFields.register();
         CameraActionFields.register();

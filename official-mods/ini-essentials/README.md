@@ -523,6 +523,27 @@ Decal's unscaled local pixel coordinates. A masked native Decal currently requir
 both definitions; `imageStack`, leg-end anchors, and turret anchors are rejected rather than being
 rendered with misleading alignment. Ordinary Decals without mask fields remain entirely native.
 
+## Global Decal layers
+
+Native `beforeBody`, `afterBody`, and `onTop` only order a Decal around the body of the unit it is
+bound to. INI Essentials extends the existing `layer` field with two world-global values:
+
+```ini
+[decal_groundMarker]
+layer: underAllUnits
+image: ground_marker.png
+
+[decal_worldNotice]
+layer: overAllUnits
+image: notice.png
+```
+
+`underAllUnits` draws after terrain and before every visible unit. `overAllUnits` draws after every
+visible unit (including special draw-layer 10 objects) and before later world overlays and the HUD.
+All ordinary native Decal placement, visibility, frame, dynamic expression, mask, bar, color, and
+`order` fields continue to work. `order` retains its native meaning within the Decals attached to
+one unit; the bound units themselves retain the game's native world render order.
+
 ## Dynamic projectile rules
 
 Native projectile mutators keep their tag checks, resource side effects, effect selection, and

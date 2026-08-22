@@ -153,17 +153,29 @@ public final class ClientRenderContractVerification {
         require(calls.get() == 21, "typed HUD event was not dispatched");
         hud.close();
 
+        RustedFabricEvent.Registration beforeUnits = WorldRenderEvents.BEFORE_UNITS.subscribe(
+                context -> calls.addAndGet(100));
+        WorldRenderEvents.BEFORE_UNITS.invoker().draw(null);
+        require(calls.get() == 121, "typed before-units event was not dispatched");
+        beforeUnits.close();
+
+        RustedFabricEvent.Registration afterUnits = WorldRenderEvents.AFTER_UNITS.subscribe(
+                context -> calls.addAndGet(100));
+        WorldRenderEvents.AFTER_UNITS.invoker().draw(null);
+        require(calls.get() == 221, "typed after-units event was not dispatched");
+        afterUnits.close();
+
         RustedFabricEvent.Registration world = WorldRenderEvents.AFTER_WORLD.subscribe(
                 context -> calls.addAndGet(100));
         WorldRenderEvents.AFTER_WORLD.invoker().draw(null);
-        require(calls.get() == 121, "typed world event was not dispatched");
+        require(calls.get() == 321, "typed world event was not dispatched");
         world.close();
 
         RustedFabricEvent.Registration decal = DecalRenderEvents.BEFORE_LAYER.subscribe(
                 (unit, delta, layer, templates) -> calls.addAndGet(1000));
         DecalRenderEvents.BEFORE_LAYER.invoker().onLayer(null, 0.0F, null,
                 java.util.Collections.emptyList());
-        require(calls.get() == 1121, "typed Decal layer event was not dispatched");
+        require(calls.get() == 1321, "typed Decal layer event was not dispatched");
         decal.close();
     }
 

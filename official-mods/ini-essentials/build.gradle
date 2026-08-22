@@ -77,6 +77,7 @@ tasks.register('verifyIniEssentialsMetadata') {
     def booleanExpression = file('src/main/java/io/github/endx/iniessentials/BooleanExpression.java')
     def geometryFields = file('src/main/java/io/github/endx/iniessentials/GeometryDefinitions.java')
     def decalMaskFields = file('src/main/java/io/github/endx/iniessentials/decal/DecalMaskDefinitions.java')
+    def globalDecalLayerFields = file('src/main/java/io/github/endx/iniessentials/decal/GlobalDecalLayerDefinitions.java')
     def overlayFields = file('src/main/java/io/github/endx/iniessentials/overlay/OverlayDefinitions.java')
     def overlayContext = file('src/main/java/io/github/endx/iniessentials/overlay/OverlayEvaluationContext.java')
     def fogFields = file('src/main/java/io/github/endx/iniessentials/action/FogActionFields.java')
@@ -97,7 +98,7 @@ tasks.register('verifyIniEssentialsMetadata') {
             customProjectileExpression,
             customProjectileTurretFields, customProjectileDecalRenderer,
             booleanExpression,
-            geometryFields, decalMaskFields, overlayFields, overlayContext, fogFields, mathFields,
+            geometryFields, decalMaskFields, globalDecalLayerFields, overlayFields, overlayContext, fogFields, mathFields,
             gameContextFunctions,
             unitContextProperties, referenceGenerator, referenceWorkbook, releaseVersions
     doLast {
@@ -188,6 +189,7 @@ tasks.register('verifyIniEssentialsMetadata') {
         def actionPositionSource = actionPositionReference.getText('UTF-8')
         def geometrySource = geometryFields.getText('UTF-8')
         def decalMaskSource = decalMaskFields.getText('UTF-8')
+        def globalDecalLayerSource = globalDecalLayerFields.getText('UTF-8')
         def overlaySource = overlayFields.getText('UTF-8')
         def overlayContextSource = overlayContext.getText('UTF-8')
         def fogSource = fogFields.getText('UTF-8')
@@ -290,6 +292,12 @@ tasks.register('verifyIniEssentialsMetadata') {
                 || !decalMaskSource.contains('ClientImages.createBar')
                 || !decalMaskSource.contains('AlphaMasks.imageAffine')
                 || !decalMaskSource.contains('GeometryDefinitions.require(')
+                || !initializerSource.contains('GlobalDecalLayerDefinitions.register();')
+                || !globalDecalLayerSource.contains('"underAllUnits"')
+                || !globalDecalLayerSource.contains('"overAllUnits"')
+                || !globalDecalLayerSource.contains('WorldRenderEvents.BEFORE_UNITS')
+                || !globalDecalLayerSource.contains('WorldRenderEvents.AFTER_UNITS')
+                || !globalDecalLayerSource.contains('.nativeFallback((context, value) -> "inactive")')
                 || !fogCodes.every { fogSource.contains('"' + it + '"') }
                 || !['event', 'phase', 'when', 'withTag', 'withoutTag', 'cancelEventActions',
                     'setEventNumber', 'addEventNumber', 'multiplyEventNumber',

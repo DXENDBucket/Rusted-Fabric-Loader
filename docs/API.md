@@ -699,6 +699,15 @@ WorldRenderEvents.AFTER_WORLD.register(draw -> {
 });
 ```
 
+For code that must participate in native world ordering, `WorldRenderEvents.BEFORE_UNITS` runs
+after the terrain and path-debug pass but before the first visible game object.
+`WorldRenderEvents.AFTER_UNITS` runs after all visible object layers (including draw-layer 10) and
+before weather, mission overlays, and the HUD. Their `WorldLayerDrawContext` exposes the native
+graphics engine with the world transform and viewport clip already active, plus allocation-free
+access to visible objects in native render order. It is intended for native render helpers such as
+Decal; unlike `AFTER_WORLD`, it is not a screen-space drawing facade. The context and visible-object
+view must not be retained after the synchronous callback.
+
 `WorldViewport` is an immutable per-frame snapshot based on the renderer's pixel-snapped camera.
 It provides world/screen conversion, zoom-aware length conversion, viewport bounds, and circle
 visibility checks. `WorldDrawContext.screen()` is available when an overlay also needs an explicit

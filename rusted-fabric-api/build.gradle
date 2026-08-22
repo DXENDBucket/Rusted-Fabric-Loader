@@ -346,6 +346,7 @@ tasks.register('verifyOfficialApiNamespace') {
                 'io/github/endx/rustedfabricapi/api/client/render/ScreenPosition.java',
                 'io/github/endx/rustedfabricapi/api/client/render/TextAlignment.java',
                 'io/github/endx/rustedfabricapi/api/client/render/WorldDrawContext.java',
+                'io/github/endx/rustedfabricapi/api/client/render/WorldLayerDrawContext.java',
                 'io/github/endx/rustedfabricapi/api/client/render/WorldViewport.java',
                 'io/github/endx/rustedfabricapi/api/client/event/WorldRenderEvents.java',
                 'io/github/endx/rustedfabricapi/api/client/render/event/ClientImageEvents.java',
